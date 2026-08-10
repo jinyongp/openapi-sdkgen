@@ -1226,6 +1226,261 @@ describe("generated runtime", () => {
     ).resolves.toEqual({ first: { displayName: "response" } });
   });
 
+  it("preserves unknown response properties through refs, variants, and nested schemas", async () => {
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        jsonResponse({
+          wire_name: "response",
+          futureRoot: true,
+          nested: { wire_nested: "nested", futureNested: 1 },
+          choice: { kind: "known", wire_value: "variant", futureChoice: ["new"] },
+          composed: { wire_detail: "detail", futureUnevaluated: { enabled: true } },
+        }),
+    });
+    const outputSchemas = {
+      Payload: {
+        types: ["object"],
+        required: ["wire_name", "nested", "choice", "composed"],
+        properties: {
+          wire_name: { property: "displayName", schema: { types: ["string"] } },
+          nested: { property: "nested", schema: { reference: "Nested" } },
+          choice: {
+            property: "choice",
+            schema: {
+              oneOf: [
+                {
+                  types: ["object"],
+                  required: ["kind", "wire_value"],
+                  properties: {
+                    kind: { property: "kind", schema: { constValue: "known" } },
+                    wire_value: { property: "value", schema: { types: ["string"] } },
+                  },
+                  additionalProperties: false,
+                },
+                {
+                  types: ["object"],
+                  required: ["kind", "wire_value"],
+                  properties: {
+                    kind: { property: "kind", schema: { constValue: "other" } },
+                    wire_value: { property: "value", schema: { types: ["number"] } },
+                  },
+                  additionalProperties: false,
+                },
+              ],
+            },
+          },
+          composed: {
+            property: "composed",
+            schema: {
+              types: ["object"],
+              allOf: [
+                {
+                  properties: {
+                    wire_detail: { property: "detail", schema: { types: ["string"] } },
+                  },
+                },
+              ],
+              unevaluatedProperties: false,
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+      Nested: {
+        types: ["object"],
+        required: ["wire_nested"],
+        properties: {
+          wire_nested: { property: "nestedName", schema: { types: ["string"] } },
+        },
+        additionalProperties: false,
+      },
+    } as const;
+
+    await expect(
+      request(
+        operation({
+          path: "/tolerant",
+          responses: [
+            {
+              status: "200",
+              contentType: "application/json",
+              schema: { reference: "Payload" },
+            },
+          ],
+          outputSchemas,
+        }),
+      ),
+    ).resolves.toEqual({
+      displayName: "response",
+      futureRoot: true,
+      nested: { nestedName: "nested", futureNested: 1 },
+      choice: { kind: "known", value: "variant", futureChoice: ["new"] },
+      composed: { detail: "detail", futureUnevaluated: { enabled: true } },
+    });
+  });
+
+  it("keeps known response fields validated while preserving unknown fields", async () => {
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () => jsonResponse({ wire_name: 42, future: true }),
+    });
+    const error = await request(
+      operation({
+        path: "/invalid-known-response",
+        responses: [
+          {
+            status: "200",
+            contentType: "application/json",
+            schema: {
+              types: ["object"],
+              required: ["wire_name"],
+              properties: {
+                wire_name: { property: "displayName", schema: { types: ["string"] } },
+              },
+              additionalProperties: false,
+            },
+          },
+        ],
+        outputSchemas: {},
+      }),
+    ).catch((cause: unknown) => cause);
+
+    expect(isAPIError(error)).toBe(true);
+    if (!isAPIError(error)) throw new Error("expected API error");
+    expect(error.code).toBe(TransportErrorCode.RESPONSE_DECODE_FAILED);
+    expect(String(error.cause)).toContain("property wire_name: expected string");
+  });
+
+  it("preserves unknown properties in ordinary and streaming error responses", async () => {
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        jsonResponse(
+          {
+            error: { code: "future_error", message: "failed", futureDetail: true },
+            futureRoot: "kept",
+          },
+          422,
+        ),
+    });
+    const errorOperation = operation({
+      path: "/tolerant-error",
+      responses: [
+        {
+          status: "422",
+          contentType: "application/json",
+          schema: {
+            types: ["object"],
+            required: ["error"],
+            properties: {
+              error: {
+                property: "error",
+                schema: {
+                  types: ["object"],
+                  required: ["code", "message"],
+                  properties: {
+                    code: { property: "code", schema: { types: ["string"] } },
+                    message: { property: "message", schema: { types: ["string"] } },
+                  },
+                  additionalProperties: false,
+                },
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+      ],
+      outputSchemas: {},
+    });
+    const failures = [
+      await request(errorOperation).catch((cause: unknown) => cause),
+      await collect(request.stream(errorOperation)).catch((cause: unknown) => cause),
+    ];
+
+    for (const error of failures) {
+      expect(isAPIError(error)).toBe(true);
+      if (!isAPIError(error)) throw new Error("expected API error");
+      expect(error.code).toBe("future_error");
+      expect(error.data).toEqual({
+        error: { code: "future_error", message: "failed", futureDetail: true },
+        futureRoot: "kept",
+      });
+    }
+  });
+
+  it("preserves unknown properties in generated and custom stream items", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    const streamOperation = (contentType: string): OperationDefinition =>
+      operation({
+        path: "/tolerant-stream",
+        responses: [{ status: "200", contentType, schema: {}, itemSchema }],
+        outputSchemas: {},
+      });
+    const generated = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        new Response('{"wire_name":"generated","future":true}\n', {
+          headers: { "content-type": "application/x-ndjson" },
+        }),
+    });
+    const custom = createRequest({
+      baseURL: "https://api.example.test",
+      codecs: {
+        "application/x-tolerant-stream": {
+          decodeStream: async function* () {
+            yield { wire_name: "custom", future: true };
+          },
+        },
+      },
+      fetch: async () =>
+        new Response("stream", {
+          headers: { "content-type": "application/x-tolerant-stream" },
+        }),
+    });
+
+    await expect(
+      collect(generated.stream(streamOperation("application/x-ndjson"))),
+    ).resolves.toEqual([{ displayName: "generated", future: true }]);
+    await expect(
+      collect(custom.stream(streamOperation("application/x-tolerant-stream"))),
+    ).resolves.toEqual([{ displayName: "custom", future: true }]);
+  });
+
+  it("keeps request encoding strict for closed objects", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => jsonResponse({ ok: true }));
+    const request = createRequest({ baseURL: "https://api.example.test", fetch });
+    const error = await request(
+      operation({
+        path: "/strict-request",
+        requestBodies: [
+          {
+            contentType: "application/json",
+            schema: {
+              types: ["object"],
+              properties: { known: { property: "known", schema: { types: ["string"] } } },
+              additionalProperties: false,
+            },
+          },
+        ],
+        inputSchemas: {},
+      }),
+      { body: { known: "value", future: true } },
+    ).catch((cause: unknown) => cause);
+
+    expect(isAPIError(error)).toBe(true);
+    if (!isAPIError(error)) throw new Error("expected API error");
+    expect(error.code).toBe(TransportErrorCode.REQUEST_ENCODE_FAILED);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("honors cancellation even when fetch ignores its AbortSignal", async () => {
     let receivedSignal: AbortSignal | undefined;
     const request = createRequest({

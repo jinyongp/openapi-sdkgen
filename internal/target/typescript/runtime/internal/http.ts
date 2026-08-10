@@ -52,6 +52,8 @@ const reservedHeaders = /* @__PURE__ */ new Set([
   "x-request-id",
 ]);
 
+const tolerantResponseTransformOptions = { unknownProperties: "preserve" } as const;
+
 /**
  * Creates the endpoint-neutral Fetch API request executor used by a generated client.
  *
@@ -290,7 +292,8 @@ async function* streamOperation<Item>(
     receivedResponse = true;
     const request = requestMetadata(response);
     if (!response.ok) {
-      const body = await decodeResponse(operation, response, request, codecs);
+      const decodedBody = await decodeResponse(operation, response, request, codecs);
+      const body = decodeResponseWireValue(operation, response, decodedBody);
       throw serverError(response, request, body);
     }
     const definition = selectResponseDefinition(operation, response, true);
@@ -318,6 +321,7 @@ async function* streamOperation<Item>(
           definition.itemSchema,
           operation.outputSchemas ?? {},
           "decode",
+          tolerantResponseTransformOptions,
         ) as Item;
       }
     } else {
@@ -336,6 +340,7 @@ async function* streamOperation<Item>(
             definition.itemSchema,
             operation.outputSchemas ?? {},
             "decode",
+            tolerantResponseTransformOptions,
           ) as Item;
         }
       } finally {
@@ -2431,7 +2436,13 @@ function decodeResponseWireValue(
   }
   return definition === undefined
     ? value
-    : transformWireValue(value, definition.schema, operation.outputSchemas ?? {}, "decode");
+    : transformWireValue(
+        value,
+        definition.schema,
+        operation.outputSchemas ?? {},
+        "decode",
+        tolerantResponseTransformOptions,
+      );
 }
 
 function selectResponseDefinition(
