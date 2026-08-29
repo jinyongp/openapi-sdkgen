@@ -403,8 +403,8 @@ func prepareErrorCategories(document *ir.Document, consumed map[string]bool) []d
 			continue
 		}
 		schema := document.ComponentSchemas[schemaName]
-		codes, errorSchema, recognized := recognizedErrorEnvelope(document, schema)
-		if !recognized {
+		variants := recognizedErrorEnvelopes(document, schema)
+		if len(variants) == 0 {
 			continue
 		}
 		pointer := "#/components/schemas/" + escapePointerToken(schemaName) + "/x-error-category"
@@ -412,40 +412,68 @@ func prepareErrorCategories(document *ir.Document, consumed map[string]bool) []d
 		if extensionPresent {
 			consumed[pointer] = true
 		}
-		category, categoryPresent, categoryExact := nestedWireCategory(document, errorSchema)
-		selected := ""
-		if categoryPresent && categoryExact {
-			selected = category
-		}
+		static, staticValid := rawCategory.(string)
 		if extensionPresent {
-			static, valid := rawCategory.(string)
-			if !valid || static == "" {
+			if !staticValid || static == "" {
 				result = append(result, schemaExtensionDiagnostic(document, pointer, "SDKGEN-E640", "x-error-category must be a non-empty string.", "Use a non-empty static category, or omit the extension."))
-			} else if categoryPresent && !categoryExact {
-				result = append(result, schemaExtensionDiagnostic(document, pointer, "SDKGEN-E641", "x-error-category cannot override an optional or non-exact wire error.category property.", "Make error.category required with a string const or one-value enum, or remove one declaration."))
-			} else if categoryExact && static != category {
-				result = append(result, schemaExtensionDiagnostic(document, pointer, "SDKGEN-E642", fmt.Sprintf("x-error-category %q conflicts with wire category %q.", static, category), "Remove x-error-category and use the required wire category."))
-			} else if categoryExact {
-				location, related := extensionDiagnosticLocation(document, pointer)
-				result = append(result, diagnostic.Diagnostic{
-					Severity: diagnostic.SeverityWarning, Code: "SDKGEN-W641", Phase: diagnostic.PhaseTarget,
-					Location: location, Related: related, Target: "typescript",
-					Message: "x-error-category repeats the exact required wire error.category value.",
-					Hint:    "Remove x-error-category; the wire schema is authoritative.",
-				})
+			}
+		}
+		selectedCategories := make(map[string]bool)
+		allVariantsRepeatStatic := extensionPresent && staticValid && static != ""
+		nonExactWireCategory := false
+		conflictingWireCategories := make(map[string]bool)
+		for _, variant := range variants {
+			category, categoryPresent, categoryExact := nestedWireCategory(document, variant.ErrorSchema)
+			selected := ""
+			if categoryExact {
+				selected = category
+			}
+			if extensionPresent && staticValid && static != "" {
+				switch {
+				case categoryPresent && !categoryExact:
+					nonExactWireCategory = true
+					allVariantsRepeatStatic = false
+				case categoryExact && static != category:
+					conflictingWireCategories[category] = true
+					allVariantsRepeatStatic = false
+				case !categoryPresent:
+					selected = static
+					allVariantsRepeatStatic = false
+				}
 			} else {
-				selected = static
+				allVariantsRepeatStatic = false
+			}
+			if selected == "" {
+				continue
+			}
+			selectedCategories[selected] = true
+			for _, code := range variant.Codes {
+				if codeCategories[code] == nil {
+					codeCategories[code] = make(map[string][]string)
+				}
+				codeCategories[code][selected] = append(codeCategories[code][selected], schemaName)
 			}
 		}
-		if selected == "" {
-			continue
+		if nonExactWireCategory {
+			result = append(result, schemaExtensionDiagnostic(document, pointer, "SDKGEN-E641", "x-error-category cannot override an optional or non-exact wire error.category property.", "Make error.category required with a string const or one-value enum, or remove one declaration."))
 		}
-		document.ErrorCategories[schemaName] = selected
-		for _, code := range codes {
-			if codeCategories[code] == nil {
-				codeCategories[code] = make(map[string][]string)
+		if len(conflictingWireCategories) > 0 {
+			categories := sortedStringKeys(conflictingWireCategories)
+			result = append(result, schemaExtensionDiagnostic(document, pointer, "SDKGEN-E642", fmt.Sprintf("x-error-category %q conflicts with wire categories %s.", static, strings.Join(quotedStrings(categories), ", ")), "Remove x-error-category and use the required wire categories."))
+		}
+		if allVariantsRepeatStatic {
+			location, related := extensionDiagnosticLocation(document, pointer)
+			result = append(result, diagnostic.Diagnostic{
+				Severity: diagnostic.SeverityWarning, Code: "SDKGEN-W641", Phase: diagnostic.PhaseTarget,
+				Location: location, Related: related, Target: "typescript",
+				Message: "x-error-category repeats the exact required wire error.category value.",
+				Hint:    "Remove x-error-category; the wire schema is authoritative.",
+			})
+		}
+		if len(selectedCategories) == 1 {
+			for selected := range selectedCategories {
+				document.ErrorCategories[schemaName] = selected
 			}
-			codeCategories[code][selected] = append(codeCategories[code][selected], schemaName)
 		}
 	}
 	for code, categories := range codeCategories {
@@ -464,22 +492,134 @@ func prepareErrorCategories(document *ir.Document, consumed map[string]bool) []d
 	return result
 }
 
-func recognizedErrorEnvelope(document *ir.Document, schema map[string]any) ([]string, map[string]any, bool) {
-	schema = effectiveErrorObjectSchema(document, schema, make(map[string]bool))
-	if !stringListContains(schema["required"], "error") {
-		return nil, nil, false
+type recognizedErrorEnvelopeVariant struct {
+	Codes       []string
+	ErrorSchema map[string]any
+}
+
+func recognizedErrorEnvelopes(document *ir.Document, schema map[string]any) []recognizedErrorEnvelopeVariant {
+	var result []recognizedErrorEnvelopeVariant
+	for _, outerAlternative := range errorSchemaAlternatives(document, schema, make(map[string]bool)) {
+		outerSchema := effectiveErrorObjectSchema(document, outerAlternative, make(map[string]bool))
+		if !stringListContains(outerSchema["required"], "error") {
+			continue
+		}
+		properties, _ := outerSchema["properties"].(map[string]any)
+		errorSchema, _ := properties["error"].(map[string]any)
+		for _, errorAlternative := range errorSchemaAlternatives(document, errorSchema, make(map[string]bool)) {
+			effective := effectiveErrorObjectSchema(document, errorAlternative, make(map[string]bool))
+			if !stringListContains(effective["required"], "code") {
+				continue
+			}
+			errorProperties, _ := effective["properties"].(map[string]any)
+			codeSchema, _ := errorProperties["code"].(map[string]any)
+			codes := exactStringValuesFromSchema(document, codeSchema)
+			if len(codes) == 0 {
+				continue
+			}
+			result = append(result, recognizedErrorEnvelopeVariant{Codes: codes, ErrorSchema: effective})
+		}
 	}
-	properties, _ := schema["properties"].(map[string]any)
-	errorSchema, _ := properties["error"].(map[string]any)
-	errorSchema = effectiveErrorObjectSchema(document, errorSchema, make(map[string]bool))
-	if !stringListContains(errorSchema["required"], "code") {
-		return nil, nil, false
+	return result
+}
+
+func errorSchemaAlternatives(document *ir.Document, schema map[string]any, seen map[string]bool) []map[string]any {
+	base := make(map[string]any)
+	for key, value := range schema {
+		switch key {
+		case "$ref", "allOf", "oneOf", "anyOf":
+			continue
+		default:
+			base[key] = value
+		}
 	}
-	errorProperties, _ := errorSchema["properties"].(map[string]any)
-	codeSchema, _ := errorProperties["code"].(map[string]any)
-	codeSchema = resolveSchemaReference(document, codeSchema, make(map[string]bool))
-	codes := exactStringValues(codeSchema)
-	return codes, errorSchema, len(codes) > 0
+	result := []map[string]any{base}
+	if reference, _ := schema["$ref"].(string); reference != "" {
+		if name, err := componentSchemaReferenceName(reference); err == nil && !seen[name] {
+			nextSeen := copyStringBoolMap(seen)
+			nextSeen[name] = true
+			result = intersectErrorSchemaAlternatives(result, errorSchemaAlternatives(document, document.ComponentSchemas[name], nextSeen))
+		}
+	}
+	if variants, _ := schema["allOf"].([]any); len(variants) > 0 {
+		for _, value := range variants {
+			variant, _ := value.(map[string]any)
+			result = intersectErrorSchemaAlternatives(result, errorSchemaAlternatives(document, variant, copyStringBoolMap(seen)))
+		}
+	}
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		variants, _ := schema[keyword].([]any)
+		if len(variants) == 0 {
+			continue
+		}
+		var union []map[string]any
+		for _, value := range variants {
+			variant, _ := value.(map[string]any)
+			union = append(union, errorSchemaAlternatives(document, variant, copyStringBoolMap(seen))...)
+		}
+		result = intersectErrorSchemaAlternatives(result, union)
+	}
+	return result
+}
+
+func intersectErrorSchemaAlternatives(left, right []map[string]any) []map[string]any {
+	if len(left) == 0 || len(right) == 0 {
+		return nil
+	}
+	result := make([]map[string]any, 0, len(left)*len(right))
+	for _, leftSchema := range left {
+		for _, rightSchema := range right {
+			result = append(result, map[string]any{"allOf": []any{leftSchema, rightSchema}})
+		}
+	}
+	return result
+}
+
+func exactStringValuesFromSchema(document *ir.Document, schema map[string]any) []string {
+	values := make(map[string]bool)
+	for _, alternative := range errorSchemaAlternatives(document, schema, make(map[string]bool)) {
+		exact, _ := exactStringValuesFromIntersection(alternative)
+		for _, value := range exact {
+			values[value] = true
+		}
+	}
+	return sortedStringKeys(values)
+}
+
+func exactStringValuesFromIntersection(schema map[string]any) ([]string, bool) {
+	var selected map[string]bool
+	constrained := false
+	if values := exactStringValues(schema); len(values) > 0 {
+		constrained = true
+		selected = make(map[string]bool, len(values))
+		for _, value := range values {
+			selected[value] = true
+		}
+	}
+	variants, _ := schema["allOf"].([]any)
+	for _, value := range variants {
+		variant, _ := value.(map[string]any)
+		values, variantConstrained := exactStringValuesFromIntersection(variant)
+		if !variantConstrained {
+			continue
+		}
+		constrained = true
+		if selected == nil {
+			selected = make(map[string]bool, len(values))
+			for _, exact := range values {
+				selected[exact] = true
+			}
+			continue
+		}
+		intersection := make(map[string]bool)
+		for _, exact := range values {
+			if selected[exact] {
+				intersection[exact] = true
+			}
+		}
+		selected = intersection
+	}
+	return sortedStringKeys(selected), constrained
 }
 
 func effectiveErrorObjectSchema(document *ir.Document, schema map[string]any, seen map[string]bool) map[string]any {

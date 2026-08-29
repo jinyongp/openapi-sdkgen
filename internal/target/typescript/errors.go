@@ -141,25 +141,26 @@ func errorContractsDiagnostics(document *ir.Document) ([]aggregatedErrorContract
 			continue
 		}
 		schema := document.ComponentSchemas[schemaName]
-		codes, detailsSchema := schemaErrorCodes(document, schema)
-		if len(codes) == 0 {
-			continue
-		}
-		detailsType := "unknown"
-		if len(detailsSchema) > 0 {
-			value, err := schemaTypeForScope(document, detailsSchema, projectionOutput, typeRenderContract)
-			if err != nil {
-				failures = append(failures, fmt.Errorf("error %s details: %w", schemaName, err))
-				continue
+		for _, variant := range schemaErrorVariants(document, schema) {
+			detailsType := "unknown"
+			if len(variant.DetailsSchema) > 0 {
+				value, err := schemaTypeForScope(document, variant.DetailsSchema, projectionOutput, typeRenderContract)
+				if err != nil {
+					failures = append(failures, fmt.Errorf("error %s details: %w", schemaName, err))
+					continue
+				}
+				detailsType = value
 			}
-			detailsType = value
-		}
-		category := document.ErrorCategories[schemaName]
-		description, _ := schema["description"].(string)
-		for _, code := range codes {
-			contract := errorContract{Code: code, Category: category, Description: description, Details: detailsType, SchemaName: schemaName}
-			byCode[code] = append(byCode[code], contract)
-			bySchema[schemaName] = append(bySchema[schemaName], contract)
+			category := errorVariantCategory(document, schemaName, schema, variant.ErrorSchema)
+			description, _ := schema["description"].(string)
+			for _, code := range variant.Codes {
+				contract := errorContract{Code: code, Category: category, Description: description, Details: detailsType, SchemaName: schemaName}
+				if containsErrorContract(bySchema[schemaName], contract) {
+					continue
+				}
+				byCode[code] = append(byCode[code], contract)
+				bySchema[schemaName] = append(bySchema[schemaName], contract)
+			}
 		}
 	}
 	for range names {
@@ -310,19 +311,35 @@ func sortedStringKeys(values map[string]bool) []string {
 	return result
 }
 
-func schemaErrorCodes(document *ir.Document, schema map[string]any) ([]string, map[string]any) {
-	codes, errorSchema, recognized := recognizedErrorEnvelope(document, schema)
-	if !recognized {
-		return nil, nil
-	}
-	errorProperties, _ := errorSchema["properties"].(map[string]any)
-	detailsSchema, _ := errorProperties["details"].(map[string]any)
-	return codes, detailsSchema
+type schemaErrorVariant struct {
+	Codes         []string
+	DetailsSchema map[string]any
+	ErrorSchema   map[string]any
 }
 
-func isErrorSchema(document *ir.Document, schema map[string]any) bool {
-	codes, _ := schemaErrorCodes(document, schema)
-	return len(codes) > 0
+func schemaErrorVariants(document *ir.Document, schema map[string]any) []schemaErrorVariant {
+	recognized := recognizedErrorEnvelopes(document, schema)
+	result := make([]schemaErrorVariant, 0, len(recognized))
+	for _, variant := range recognized {
+		errorProperties, _ := variant.ErrorSchema["properties"].(map[string]any)
+		detailsSchema, _ := errorProperties["details"].(map[string]any)
+		result = append(result, schemaErrorVariant{
+			Codes:         variant.Codes,
+			DetailsSchema: detailsSchema,
+			ErrorSchema:   variant.ErrorSchema,
+		})
+	}
+	return result
+}
+
+func errorVariantCategory(document *ir.Document, schemaName string, schema, errorSchema map[string]any) string {
+	if category, _, exact := nestedWireCategory(document, errorSchema); exact {
+		return category
+	}
+	if category, ok := schema["x-error-category"].(string); ok && category != "" {
+		return category
+	}
+	return document.ErrorCategories[schemaName]
 }
 
 func operationErrorTypes(document *ir.Document, operation ir.Operation, bySchema map[string][]errorContract) ([]string, error) {
