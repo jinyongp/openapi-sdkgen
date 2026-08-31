@@ -38,8 +38,21 @@ Vite, Next.js, Nuxt, and similar bundlers resolve the generated directory to
 its `index.ts` entry. Applications that run compiled Node ESM directly should
 import `./generated/api/index.js`.
 
-The output directory must not already exist. Remove the previous generated
-directory before regenerating it.
+The default command creates a new output directory. For later runs, add
+`--incremental` to update only changed generated files while preserving
+unchanged file identities and timestamps:
+
+```sh
+pnpm dlx openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --output ./src/generated/api \
+  --incremental
+```
+
+Incremental generation uses the manifest created on the first run. It refuses
+to overwrite edited generated files and leaves files outside that manifest
+untouched.
 
 ## Install
 

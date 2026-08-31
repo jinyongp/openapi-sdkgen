@@ -12,6 +12,22 @@ openapi-sdkgen generate \
 The TypeScript target generates the client, types, runtime code, and OpenAPI metadata.
 Rerun the command whenever the OpenAPI file changes.
 
+For repeated local generation, keep the first command unchanged and add
+`--incremental` on later runs. This updates changed generated files without
+making file watchers reprocess every unchanged file.
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.json \
+  --target typescript \
+  --output ./src/generated/api \
+  --incremental
+```
+
+Do not edit generated files in place. Incremental generation verifies their
+manifest hashes and stops if an owned file differs from the previous output.
+Files you add outside the manifest are preserved.
+
 ## Generate Webhook and Callback code
 
 When the OpenAPI file defines a Webhook or Callback that your application

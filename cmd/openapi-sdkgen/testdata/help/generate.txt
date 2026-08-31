@@ -6,9 +6,10 @@ Usage:
 Required:
   --input <source>                OpenAPI file, file:// URL, HTTP(S) URL, or -
   --target <name>                 SDK target (available: typescript)
-  --output <directory>            Fresh output directory
+  --output <directory>            Generated-code directory
 
 Generation:
+  --incremental                   Update a manifest-owned output directory
   --with <addon>                  Add generated artifacts (available: server)
                                   (repeatable)
 

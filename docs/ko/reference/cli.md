@@ -27,10 +27,31 @@ openapi-sdkgen generate \
   또는 YAML 파일. 로컬 경로, `file://` URL, HTTP(S) URL, 표준 입력을 뜻하는
   `-`를 사용할 수 있습니다.
 - `--target typescript`: TypeScript SDK를 생성합니다.
-- `--output <directory>`: 생성된 코드를 저장할 빈 디렉터리입니다.
+- `--output <directory>`: 생성 코드를 저장할 디렉터리입니다. `--incremental`을
+  사용하지 않으면 아직 존재하지 않는 경로여야 합니다.
 
 `--output`은 항상 디렉터리 경로를 받습니다. `--input -`와 달리
 `--output -`는 표준 출력을 뜻하지 않습니다.
+
+## 기존 출력 갱신하기
+
+최초 생성이 끝난 뒤에는 `--incremental`로 기존 출력 디렉터리를 갱신할 수
+있습니다.
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --output ./src/generated/api \
+  --incremental
+```
+
+최초 실행은 `.openapi-sdkgen-manifest.json`을 만듭니다. 이후 실행에서는 내용이
+같은 생성 파일의 inode와 수정 시각을 유지하고, 바뀐 파일만 원자적으로
+교체합니다. 사라진 파일도 매니페스트가 소유한 경우에만 지우며, 사용자가 따로
+둔 파일은 건드리지 않습니다. 매니페스트가 없거나 손상됐거나, 생성 파일을
+직접 수정했거나, 새 파일 경로가 기존 사용자 파일과 충돌하거나, 다른 생성
+작업이 같은 출력을 잠근 경우에는 출력 변경 없이 중단합니다.
 
 ## OpenAPI 파일 가져오기
 

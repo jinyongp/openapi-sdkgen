@@ -26,7 +26,8 @@ GitHub Releases에서도 운영체제별 실행 파일을 내려받을 수 있�
 ## 2. OpenAPI 파일에서 클라이언트 생성
 
 `--input`에는 SDK 생성에 사용할 OpenAPI JSON 또는 YAML 파일을 지정합니다.
-`--output`에는 생성된 코드를 저장할 빈 디렉터리를 지정합니다.
+`--output`에는 최초 실행 시 아직 존재하지 않는 경로를 지정합니다. 같은 생성
+디렉터리를 다시 갱신할 때는 `--incremental`을 추가합니다.
 
 ```sh
 openapi-sdkgen generate \

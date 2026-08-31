@@ -11,10 +11,26 @@ openapi-sdkgen generate \
 
 - `--input`: SDK 생성에 사용할 OpenAPI JSON 또는 YAML 파일
 - `--target`: 생성할 SDK 종류
-- `--output`: 생성된 코드를 저장할 빈 디렉터리
+- `--output`: 생성된 코드를 저장할 디렉터리
 
 TypeScript를 선택하면 클라이언트, 타입, 실행 코드, OpenAPI 메타데이터가
 생성됩니다. OpenAPI 파일이 바뀌면 같은 명령을 다시 실행합니다.
+
+같은 경로에 다시 생성할 때는 최초 실행 이후 `--incremental`을 추가하세요.
+바뀐 생성 파일만 교체하므로 파일 감시 도구가 변경 없는 파일까지 다시 처리하지
+않습니다.
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.json \
+  --target typescript \
+  --output ./src/generated/api \
+  --incremental
+```
+
+생성 파일은 직접 수정하지 마세요. 증분 생성은 이전 매니페스트의 해시와 파일
+내용을 비교하며, 소유한 파일이 달라졌다면 출력을 바꾸지 않고 중단합니다.
+매니페스트에 없는 사용자 파일은 그대로 보존합니다.
 
 ## Webhook과 Callback 코드 생성
 

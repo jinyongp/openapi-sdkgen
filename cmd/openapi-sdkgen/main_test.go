@@ -770,6 +770,156 @@ func TestWriteArtifactsPreservesExistingOutputAndRejectsDuplicatePaths(t *testin
 	}
 }
 
+func TestIncrementalArtifactsPreserveUnchangedFilesAndOwnedBoundaries(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	initial := []generator.Artifact{
+		{Path: "stable.ts", Data: []byte("stable\n")},
+		{Path: "changed.ts", Data: []byte("before\n")},
+		{Path: "stale.ts", Data: []byte("stale\n")},
+	}
+	if err := writeArtifacts(output, initial); err != nil {
+		t.Fatal(err)
+	}
+	stableBefore, err := os.Stat(filepath.Join(output, "stable.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	changedBefore, err := os.Stat(filepath.Join(output, "changed.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	userFile := filepath.Join(output, "notes.txt")
+	if err := os.WriteFile(userFile, []byte("user-owned\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeArtifactsIncremental(output, []generator.Artifact{
+		{Path: "stable.ts", Data: []byte("stable\n")},
+		{Path: "changed.ts", Data: []byte("after\n")},
+		{Path: "new.ts", Data: []byte("new\n")},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	stableAfter, err := os.Stat(filepath.Join(output, "stable.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	changedAfter, err := os.Stat(filepath.Join(output, "changed.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(stableBefore, stableAfter) || !stableBefore.ModTime().Equal(stableAfter.ModTime()) {
+		t.Fatal("unchanged generated artifact did not preserve inode and mtime")
+	}
+	if os.SameFile(changedBefore, changedAfter) {
+		t.Fatal("changed generated artifact was not atomically replaced")
+	}
+	if data, err := os.ReadFile(filepath.Join(output, "changed.ts")); err != nil || string(data) != "after\n" {
+		t.Fatalf("changed artifact = %q, %v", data, err)
+	}
+	if _, err := os.Stat(filepath.Join(output, "stale.ts")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stale artifact still exists: %v", err)
+	}
+	if data, err := os.ReadFile(userFile); err != nil || string(data) != "user-owned\n" {
+		t.Fatalf("user-owned file = %q, %v", data, err)
+	}
+	manifest, err := readArtifactManifest(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest) != 3 || manifest["stale.ts"] != "" || manifest["new.ts"] == "" {
+		t.Fatalf("incremental manifest = %#v", manifest)
+	}
+}
+
+func TestIncrementalArtifactsRejectEditedOwnedFileAndUnmanagedOutput(t *testing.T) {
+	directory := t.TempDir()
+	output := filepath.Join(directory, "generated")
+	if err := writeArtifacts(output, []generator.Artifact{{Path: "client.ts", Data: []byte("before\n")}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(output, "client.ts"), []byte("edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := writeArtifactsIncremental(output, []generator.Artifact{{Path: "client.ts", Data: []byte("after\n")}})
+	if err == nil || !strings.Contains(err.Error(), "was edited") {
+		t.Fatalf("edited artifact error = %v", err)
+	}
+	if data, readErr := os.ReadFile(filepath.Join(output, "client.ts")); readErr != nil || string(data) != "edited\n" {
+		t.Fatalf("edited artifact was overwritten: %q, %v", data, readErr)
+	}
+
+	unmanaged := filepath.Join(directory, "unmanaged")
+	if err := os.Mkdir(unmanaged, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err = writeArtifactsIncremental(unmanaged, []generator.Artifact{{Path: "client.ts", Data: []byte("new\n")}})
+	if err == nil || !strings.Contains(err.Error(), "requires a valid") {
+		t.Fatalf("unmanaged output error = %v", err)
+	}
+}
+
+func TestIncrementalArtifactsRollBackUnsafeParentAndReleaseLock(t *testing.T) {
+	directory := t.TempDir()
+	output := filepath.Join(directory, "generated")
+	if err := writeArtifacts(output, []generator.Artifact{{Path: "stable.ts", Data: []byte("stable\n")}}); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(output, "unsafe")); err != nil {
+		t.Fatal(err)
+	}
+	err := writeArtifactsIncremental(output, []generator.Artifact{
+		{Path: "stable.ts", Data: []byte("changed\n")},
+		{Path: "unsafe/new.ts", Data: []byte("unsafe\n")},
+	})
+	if err == nil || !strings.Contains(err.Error(), "not a safe directory") {
+		t.Fatalf("unsafe parent error = %v", err)
+	}
+	if data, readErr := os.ReadFile(filepath.Join(output, "stable.ts")); readErr != nil || string(data) != "stable\n" {
+		t.Fatalf("rollback artifact = %q, %v", data, readErr)
+	}
+	if _, err := readArtifactManifest(output); err != nil {
+		t.Fatalf("rollback manifest: %v", err)
+	}
+	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("incremental lock remains: %v", err)
+	}
+}
+
+func TestIncrementalArtifactPublisherLocksConcurrentGeneration(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	if err := writeArtifacts(output, []generator.Artifact{{Path: "client.ts", Data: []byte("stable\n")}}); err != nil {
+		t.Fatal(err)
+	}
+	first, err := newArtifactPublisherWithMode(output, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := newArtifactPublisherWithMode(output, true); err == nil || !strings.Contains(err.Error(), "locked by another generation") {
+		t.Fatalf("concurrent incremental publisher error = %v", err)
+	}
+	first.Rollback()
+	second, err := newArtifactPublisherWithMode(output, true)
+	if err != nil {
+		t.Fatalf("released incremental lock was not reusable: %v", err)
+	}
+	second.Rollback()
+}
+
+func TestGenerateIncrementalFlagReusesManagedOutput(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	previous := standardInput
+	t.Cleanup(func() { standardInput = previous })
+	standardInput = strings.NewReader(minimalDocument)
+	if err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	standardInput = strings.NewReader(minimalDocument)
+	if err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output, "--incremental"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 const minimalDocument = `{
   "openapi": "3.2.0",
   "info": { "title": "Example API", "version": "1.2.3" },

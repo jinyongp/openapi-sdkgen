@@ -5,7 +5,7 @@
 client and make the first API call.
 
 Use `--input` to select the OpenAPI JSON or YAML file and `--output` to select
-an empty directory for the generated code.
+a new directory for the generated code.
 
 ## 1. Install the CLI
 
@@ -36,7 +36,8 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-The output directory must be empty.
+The output path must not exist on the first run. Add `--incremental` when you
+later regenerate into the same managed directory.
 
 The root document can also come from a `file://` URL, an HTTP(S) development
 server, or stdin. It is a source, not a remote `$ref`:

@@ -26,10 +26,30 @@ openapi-sdkgen generate \
 - `--input <openapi>`: an OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON or YAML file.
   Use a local path, `file://` URL, HTTP(S) URL, or `-` for stdin.
 - `--target typescript`: generates a TypeScript SDK.
-- `--output <directory>`: an empty directory for generated code.
+- `--output <directory>`: the generated-code directory. It must not exist
+  unless `--incremental` is selected.
 
 `--output` always expects a directory path. Unlike `--input -`, `--output -`
 does not mean standard output.
+
+## Update an existing output
+
+Use `--incremental` after an initial successful generation:
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --output ./src/generated/api \
+  --incremental
+```
+
+The initial run creates `.openapi-sdkgen-manifest.json`. Incremental runs keep
+unchanged generated files in place, atomically replace changed files, and
+remove only stale files recorded in that manifest. Unmanaged files remain
+untouched. The command stops without changing the output if the manifest is
+missing or invalid, a generated file was edited, an unmanaged path conflicts
+with a new artifact, or another incremental run holds the output lock.
 
 ## Read an OpenAPI file
 
