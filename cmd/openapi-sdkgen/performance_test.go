@@ -176,8 +176,8 @@ func TestPerformanceProcessMetrics(t *testing.T) {
 	metric := performanceProcessMetric{
 		Workload:       workload.name,
 		InputBytes:     performanceInputBytes(*workload),
-		ArtifactCount:  len(artifacts),
-		ArtifactBytes:  performanceArtifactBytes(artifacts),
+		ArtifactCount:  artifacts.count,
+		ArtifactBytes:  artifacts.bytes,
 		WallNanosecond: wall.Nanoseconds(),
 		CPUNanosecond:  (afterCPU - beforeCPU).Nanoseconds(),
 		PeakHeapBytes:  peakHeap.Load(),
@@ -231,16 +231,34 @@ func emitPerformanceWorkload(tb performanceTesting, target generator.Target, pre
 	return artifacts
 }
 
-func runPerformanceGeneration(tb performanceTesting, root, output string) []generator.Artifact {
+type performanceArtifactStats struct {
+	count int
+	bytes int
+}
+
+func runPerformanceGeneration(tb performanceTesting, root, output string) performanceArtifactStats {
 	tb.Helper()
 	compiled := compilePerformanceWorkload(tb, root, false)
 	target := typescript.Generator{}
 	prepared := preparePerformanceWorkload(tb, target, compiled)
-	artifacts := emitPerformanceWorkload(tb, target, prepared)
-	if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+	publisher, err := newArtifactPublisher(output)
+	if err != nil {
 		tb.Fatal(err)
 	}
-	return artifacts
+	defer publisher.Rollback()
+	stats := performanceArtifactStats{}
+	err = generator.EmitTo(target, prepared.Plan, generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		stats.count++
+		stats.bytes += len(artifact.Data)
+		return publisher.WriteArtifact(artifact)
+	}))
+	if err != nil {
+		tb.Fatal(err)
+	}
+	if err := publisher.Commit(); err != nil {
+		tb.Fatal(err)
+	}
+	return stats
 }
 
 func materializePerformanceWorkload(tb performanceTesting, workload performanceWorkload) string {

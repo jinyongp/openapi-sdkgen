@@ -42,7 +42,16 @@ type generationRuntime struct {
 	prepare func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error)
 	emit    func(generator.Target, generator.Plan) ([]generator.Artifact, error)
 	publish func(string, []generator.Artifact) error
+	stream  func(generator.Target, generator.Plan, string) error
 }
+
+type generationStageError struct {
+	stage string
+	err   error
+}
+
+func (value *generationStageError) Error() string { return value.err.Error() }
+func (value *generationStageError) Unwrap() error { return value.err }
 
 type cliRegistries struct {
 	targets *generator.Registry
@@ -86,6 +95,7 @@ var defaultGenerationRuntime = generationRuntime{
 		return target.Emit(plan)
 	},
 	publish: writeArtifacts,
+	stream:  streamArtifacts,
 }
 
 func main() {
@@ -264,6 +274,16 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases)
 	if diagnostic.HasErrors(prepared.Diagnostics) {
 		return errReportedDiagnostics
+	}
+	if runtime.stream != nil {
+		if err := runtime.stream(target, prepared.Plan, *values.output); err != nil {
+			var staged *generationStageError
+			if errors.As(err, &staged) && staged.stage == "publish" {
+				return internalFailure("internal output publication failure", err)
+			}
+			return internalFailure(fmt.Sprintf("internal %s emission failure", target.Name()), err)
+		}
+		return nil
 	}
 	artifacts, err := runtime.emit(target, prepared.Plan)
 	if err != nil {
@@ -507,41 +527,103 @@ func writeArtifacts(output string, artifacts []generator.Artifact) error {
 		}
 		seen[cleanPath] = true
 	}
-	if info, err := os.Lstat(output); err == nil {
-		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("output path %s must not be a symlink", output)
-		}
-		return fmt.Errorf("output path %s already exists; choose a fresh directory", output)
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("inspect output path %s: %w", output, err)
-	}
-	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
-		return fmt.Errorf("create output parent directory: %w", err)
-	}
-	staging, err := os.MkdirTemp(filepath.Dir(output), ".openapi-sdkgen-output-*")
+	publisher, err := newArtifactPublisher(output)
 	if err != nil {
-		return fmt.Errorf("create output staging directory: %w", err)
+		return err
 	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = os.RemoveAll(staging)
-		}
-	}()
+	defer publisher.Rollback()
 	for _, artifact := range artifacts {
-		path := filepath.Join(staging, filepath.Clean(filepath.FromSlash(artifact.Path)))
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return fmt.Errorf("create artifact directory %s: %w", filepath.Dir(path), err)
-		}
-		if err := writeFile(path, artifact.Data); err != nil {
+		if err := publisher.WriteArtifact(artifact); err != nil {
 			return err
 		}
 	}
-	if err := os.Rename(staging, output); err != nil {
-		return fmt.Errorf("publish generated output %s: %w", output, err)
+	return publisher.Commit()
+}
+
+func streamArtifacts(target generator.Target, plan generator.Plan, output string) error {
+	publisher, err := newArtifactPublisher(output)
+	if err != nil {
+		return &generationStageError{stage: "publish", err: err}
 	}
-	committed = true
+	defer publisher.Rollback()
+	if err := generator.EmitTo(target, plan, publisher); err != nil {
+		stage := "emit"
+		if publisher.failure != nil {
+			stage = "publish"
+			err = publisher.failure
+		}
+		return &generationStageError{stage: stage, err: err}
+	}
+	if err := publisher.Commit(); err != nil {
+		return &generationStageError{stage: "publish", err: err}
+	}
 	return nil
+}
+
+type artifactPublisher struct {
+	output    string
+	staging   string
+	seen      map[string]bool
+	committed bool
+	failure   error
+}
+
+func newArtifactPublisher(output string) (*artifactPublisher, error) {
+	if info, err := os.Lstat(output); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("output path %s must not be a symlink", output)
+		}
+		return nil, fmt.Errorf("output path %s already exists; choose a fresh directory", output)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("inspect output path %s: %w", output, err)
+	}
+	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
+		return nil, fmt.Errorf("create output parent directory: %w", err)
+	}
+	staging, err := os.MkdirTemp(filepath.Dir(output), ".openapi-sdkgen-output-*")
+	if err != nil {
+		return nil, fmt.Errorf("create output staging directory: %w", err)
+	}
+	return &artifactPublisher{output: output, staging: staging, seen: make(map[string]bool)}, nil
+}
+
+func (publisher *artifactPublisher) WriteArtifact(artifact generator.Artifact) error {
+	cleanPath, err := safeArtifactPath(artifact.Path)
+	if err != nil {
+		publisher.failure = err
+		return err
+	}
+	if publisher.seen[cleanPath] {
+		err := fmt.Errorf("duplicate generated artifact %q", cleanPath)
+		publisher.failure = err
+		return err
+	}
+	publisher.seen[cleanPath] = true
+	path := filepath.Join(publisher.staging, cleanPath)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		err = fmt.Errorf("create artifact directory %s: %w", filepath.Dir(path), err)
+		publisher.failure = err
+		return err
+	}
+	if err := writeFile(path, artifact.Data); err != nil {
+		publisher.failure = err
+		return err
+	}
+	return nil
+}
+
+func (publisher *artifactPublisher) Commit() error {
+	if err := os.Rename(publisher.staging, publisher.output); err != nil {
+		return fmt.Errorf("publish generated output %s: %w", publisher.output, err)
+	}
+	publisher.committed = true
+	return nil
+}
+
+func (publisher *artifactPublisher) Rollback() {
+	if publisher != nil && !publisher.committed {
+		_ = os.RemoveAll(publisher.staging)
+	}
 }
 
 func safeArtifactPath(value string) (string, error) {

@@ -99,15 +99,35 @@ func (Generator) Prepare(document *ir.Document, options generator.Options) (gene
 
 // Emit emits a previously validated TypeScript plan.
 func (Generator) Emit(plan generator.Plan) ([]generator.Artifact, error) {
+	artifacts := make([]generator.Artifact, 0)
+	err := (Generator{}).EmitTo(plan, generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		artifacts = append(artifacts, artifact)
+		return nil
+	}))
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(artifacts, func(i, j int) bool {
+		return artifactEmissionOrder(artifacts[i].Path) < artifactEmissionOrder(artifacts[j].Path)
+	})
+	return artifacts, nil
+}
+
+// EmitTo writes each validated source file to the supplied sink as soon as its
+// bytes are ready.
+func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error {
 	value, err := plan.Value("typescript")
 	if err != nil {
-		return nil, fmt.Errorf("internal TypeScript target: %w", err)
+		return fmt.Errorf("internal TypeScript target: %w", err)
 	}
 	prepared, ok := value.(*sourcePlan)
 	if !ok {
-		return nil, fmt.Errorf("internal TypeScript target: unexpected plan type %T", value)
+		return fmt.Errorf("internal TypeScript target: unexpected plan type %T", value)
 	}
-	return emitSourcePlan(prepared)
+	if sink == nil {
+		return fmt.Errorf("internal TypeScript target: artifact sink is nil")
+	}
+	return emitSourcePlanTo(prepared, sink.WriteArtifact)
 }
 
 // Generate is the compatibility convenience for direct target callers.
@@ -271,51 +291,66 @@ func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, li
 }
 
 func emitSourcePlan(plan *sourcePlan) ([]Artifact, error) {
+	artifacts := make([]Artifact, 0)
+	if err := emitSourcePlanTo(plan, func(artifact Artifact) error {
+		artifacts = append(artifacts, artifact)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	sort.Slice(artifacts, func(i, j int) bool {
+		return artifactEmissionOrder(artifacts[i].Path) < artifactEmissionOrder(artifacts[j].Path)
+	})
+	return artifacts, nil
+}
+
+func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	document := plan.document
 	includeServer := plan.includeServer
 	if plan.manifest == nil {
-		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no manifest")
+		return fmt.Errorf("internal TypeScript target: prepared plan has no manifest")
 	}
 	manifest := *plan.manifest
-	schemaArtifacts, typesSource, err := emitSchemaArtifacts(document, plan.modules)
+	write := validatedArtifactWriter(sink)
+	typesSource, err := emitSchemaArtifactsTo(document, plan.modules, write)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	operationArtifacts, err := emitOperationArtifacts(document, manifest, plan.modules, plan.links, plan.streams)
-	if err != nil {
-		return nil, err
+	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write); err != nil {
+		return err
 	}
-	routeArtifacts, err := emitRouteArtifacts(manifest, plan.modules)
-	if err != nil {
-		return nil, err
+	if err := emitRouteArtifactsTo(manifest, plan.modules, write); err != nil {
+		return err
 	}
 	registrySource, err := emitClientRegistry(document, manifest, plan.modules, plan.links, plan.streams)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if err := write(Artifact{Path: plan.modules.fixed["client-registry"], Data: generatedSource(registrySource)}); err != nil {
+		return err
 	}
 	constantsSource, err := readRuntimeTemplate("constants.ts")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	enumsSource, err := emitEnums(document)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	errorsSource, err := emitErrors(document)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	metadataSource, err := emitMetadata(document, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	resourceArtifacts, err := emitResourceArtifacts(document, manifest, plan.modules, plan.links, plan.streams)
-	if err != nil {
-		return nil, err
+	if err := emitResourceArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write); err != nil {
+		return err
 	}
-	clientArtifacts, clientIndexSource, err := emitClientArtifacts(document, manifest, plan.modules, plan.links, plan.streams)
+	clientIndexSource, err := emitClientArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := validateSourceExportSymbols(map[string][]byte{
 		"client":    clientIndexSource,
@@ -325,43 +360,60 @@ func emitSourcePlan(plan *sourcePlan) ([]Artifact, error) {
 		"metadata":  metadataSource,
 		"types":     typesSource,
 	}); err != nil {
-		return nil, err
+		return err
 	}
 	indexSource := generatedIndexSource(enumsSource)
 	runtimeArtifacts, err := emitRuntimeTemplateArtifacts()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	artifacts := []Artifact{
+	for _, artifact := range []Artifact{
 		{Path: "index.ts", Data: generatedSource([]byte("export * from \"./internal/index.js\"\n"))},
 		{Path: "internal/enums.ts", Data: generatedSource(enumsSource)},
 		{Path: "internal/errors.ts", Data: generatedSource(errorsSource)},
 		{Path: "internal/index.ts", Data: generatedSource(indexSource)},
 		{Path: "enums.ts", Data: generatedSource([]byte("export * from \"./internal/enums.js\"\n"))},
 		{Path: "metadata.ts", Data: generatedSource(metadataSource)},
+	} {
+		if err := write(artifact); err != nil {
+			return err
+		}
 	}
-	artifacts = append(artifacts, runtimeArtifacts...)
-	artifacts = append(artifacts, schemaArtifacts...)
-	artifacts = append(artifacts, operationArtifacts...)
-	artifacts = append(artifacts, routeArtifacts...)
-	artifacts = append(artifacts, Artifact{Path: plan.modules.fixed["client-registry"], Data: generatedSource(registrySource)})
-	artifacts = append(artifacts, resourceArtifacts...)
-	artifacts = append(artifacts, clientArtifacts...)
+	for _, artifact := range runtimeArtifacts {
+		if err := write(artifact); err != nil {
+			return err
+		}
+	}
 	if includeServer {
 		serverArtifacts, err := emitPreparedServerArtifacts(document, plan.webhooks, plan.callbacks)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		artifacts = append(artifacts, serverArtifacts...)
+		for _, artifact := range serverArtifacts {
+			if err := write(artifact); err != nil {
+				return err
+			}
+		}
 	}
-	if err := validateGeneratedArtifacts(artifacts); err != nil {
-		return nil, err
+	return nil
+}
+
+func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {
+	seen := make(map[string]string)
+	return func(artifact Artifact) error {
+		if err := validateArtifactPath(artifact.Path); err != nil {
+			return fmt.Errorf("generated artifact %q: %w", artifact.Path, err)
+		}
+		key := portableArtifactPathKey(artifact.Path)
+		if previous, exists := seen[key]; exists {
+			return fmt.Errorf("generated artifact %q collides with %q", artifact.Path, previous)
+		}
+		seen[key] = artifact.Path
+		if !strings.HasPrefix(string(artifact.Data), generatedFileHeader) {
+			return fmt.Errorf("generated artifact %q is missing the standard header", artifact.Path)
+		}
+		return sink(artifact)
 	}
-	sort.Slice(artifacts, func(i, j int) bool {
-		return artifactEmissionOrder(artifacts[i].Path) < artifactEmissionOrder(artifacts[j].Path)
-	})
-	return artifacts, nil
 }
 
 func artifactEmissionOrder(path string) string {

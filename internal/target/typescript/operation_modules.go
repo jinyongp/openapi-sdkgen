@@ -8,9 +8,9 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func emitOperationArtifacts(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]Artifact, error) {
+func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
 	if plan == nil {
-		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	operations := make(map[string]ir.Operation, len(document.Operations))
 	for _, operation := range document.Operations {
@@ -22,28 +22,29 @@ func emitOperationArtifacts(document *ir.Document, manifest Manifest, plan *sema
 	}
 	tree, err := buildResourceTree(document, manifest, resourceCapabilityMembers(links, streams))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	resourceReachable := make(map[string]bool)
 	resourceOperationIDs(tree, resourceReachable)
 
-	artifacts := make([]Artifact, 0, len(plan.operations))
 	for _, module := range plan.operations {
 		operation, exists := operations[module.routeKey]
 		if !exists {
-			return nil, fmt.Errorf("operation module %q has no compiled operation", module.routeKey)
+			return fmt.Errorf("operation module %q has no compiled operation", module.routeKey)
 		}
 		item, exists := items[module.routeKey]
 		if !exists {
-			return nil, fmt.Errorf("operation module %q has no manifest operation", module.routeKey)
+			return fmt.Errorf("operation module %q has no manifest operation", module.routeKey)
 		}
 		source, err := emitOperationLeaf(document, plan, module, operation, item, resourceReachable[module.routeKey], links, streams)
 		if err != nil {
-			return nil, fmt.Errorf("emit operation module %q: %w", module.routeKey, err)
+			return fmt.Errorf("emit operation module %q: %w", module.routeKey, err)
 		}
-		artifacts = append(artifacts, Artifact{Path: module.path, Data: generatedSource(source)})
+		if err := write(Artifact{Path: module.path, Data: generatedSource(source)}); err != nil {
+			return err
+		}
 	}
-	return artifacts, nil
+	return nil
 }
 
 func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, streams []generatedStream) ([]byte, error) {

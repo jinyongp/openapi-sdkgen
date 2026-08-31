@@ -6,27 +6,32 @@ import (
 	"strings"
 )
 
-func emitRouteArtifacts(manifest Manifest, plan *semanticModulePlan) ([]Artifact, error) {
+func emitRouteArtifactsTo(manifest Manifest, plan *semanticModulePlan, write func(Artifact) error) error {
 	if plan == nil {
-		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	index, err := emitRouteIndex(manifest, plan)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	inputs, err := emitRouteInputs(manifest, plan)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	helpers, err := emitRouteHelpers(manifest, plan)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return []Artifact{
+	for _, artifact := range []Artifact{
 		{Path: plan.fixed["route-index"], Data: generatedSource(index)},
 		{Path: plan.fixed["route-inputs"], Data: generatedSource(inputs)},
 		{Path: plan.fixed["route-helpers"], Data: generatedSource(helpers)},
-	}, nil
+	} {
+		if err := write(artifact); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func emitRouteIndex(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {

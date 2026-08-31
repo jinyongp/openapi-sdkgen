@@ -15,13 +15,13 @@ type plannedResourceNode struct {
 	node     *resourceNode
 }
 
-func emitResourceArtifacts(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]Artifact, error) {
+func emitResourceArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
 	if plan == nil {
-		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	tree, err := buildResourceTree(document, manifest, resourceCapabilityMembers(links, streams))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	paths := make(map[string]string, len(plan.resources))
 	for _, module := range plan.resources {
@@ -30,20 +30,20 @@ func emitResourceArtifacts(document *ir.Document, manifest Manifest, plan *seman
 	nodes := make([]plannedResourceNode, 0, len(paths))
 	collectPlannedResourceNodes(tree, "root", nil, nil, paths, &nodes)
 	sort.Slice(nodes, func(left, right int) bool { return nodes[left].path < nodes[right].path })
-	artifacts := make([]Artifact, 0, len(nodes)+1)
 	for _, module := range nodes {
 		source, err := emitResourceNodeModule(document, plan, module, paths)
 		if err != nil {
-			return nil, fmt.Errorf("emit resource module %q: %w", module.identity, err)
+			return fmt.Errorf("emit resource module %q: %w", module.identity, err)
 		}
-		artifacts = append(artifacts, Artifact{Path: module.path, Data: generatedSource(source)})
+		if err := write(Artifact{Path: module.path, Data: generatedSource(source)}); err != nil {
+			return err
+		}
 	}
 	indexSource, err := emitResourceIndex(plan, paths["root"])
 	if err != nil {
-		return nil, err
+		return err
 	}
-	artifacts = append(artifacts, Artifact{Path: plan.fixed["resource-index"], Data: generatedSource(indexSource)})
-	return artifacts, nil
+	return write(Artifact{Path: plan.fixed["resource-index"], Data: generatedSource(indexSource)})
 }
 
 func collectPlannedResourceNodes(node *resourceNode, identity string, artifactParent, identityParent []string, paths map[string]string, result *[]plannedResourceNode) {

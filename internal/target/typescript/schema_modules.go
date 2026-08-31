@@ -15,31 +15,34 @@ type renderedSchemaProjections struct {
 	output  string
 }
 
-func emitSchemaArtifacts(document *ir.Document, plan *semanticModulePlan) ([]Artifact, []byte, error) {
+func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, write func(Artifact) error) ([]byte, error) {
 	if plan == nil {
-		return nil, nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
-	artifacts := make([]Artifact, 0, len(plan.schemas)+2)
 	for _, schema := range plan.schemas {
 		source, err := emitSchemaLeaf(document, plan, schema)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
-		artifacts = append(artifacts, Artifact{Path: schema.path, Data: generatedSource(source)})
+		if err := write(Artifact{Path: schema.path, Data: generatedSource(source)}); err != nil {
+			return nil, err
+		}
 	}
 	indexSource, err := emitSchemaIndex(document, plan)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	wireSource, err := emitSchemaWireRegistry(plan)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	artifacts = append(artifacts,
-		Artifact{Path: plan.fixed["schema-index"], Data: generatedSource(indexSource)},
-		Artifact{Path: plan.fixed["schema-wire"], Data: generatedSource(wireSource)},
-	)
-	return artifacts, indexSource, nil
+	if err := write(Artifact{Path: plan.fixed["schema-index"], Data: generatedSource(indexSource)}); err != nil {
+		return nil, err
+	}
+	if err := write(Artifact{Path: plan.fixed["schema-wire"], Data: generatedSource(wireSource)}); err != nil {
+		return nil, err
+	}
+	return indexSource, nil
 }
 
 func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan) ([]byte, error) {

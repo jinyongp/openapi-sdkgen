@@ -714,6 +714,31 @@ func TestWriteArtifactsRollsBackArtifactPathConflict(t *testing.T) {
 	}
 }
 
+func TestArtifactPublisherWritesIncrementallyAndRollsBack(t *testing.T) {
+	directory := t.TempDir()
+	output := filepath.Join(directory, "output")
+	publisher, err := newArtifactPublisher(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := publisher.WriteArtifact(generator.Artifact{Path: "nested/client.ts", Data: []byte("export {}\n")}); err != nil {
+		t.Fatal(err)
+	}
+	if value, err := os.ReadFile(filepath.Join(publisher.staging, "nested", "client.ts")); err != nil || string(value) != "export {}\n" {
+		t.Fatalf("staged artifact = %q, %v", value, err)
+	}
+	if err := publisher.WriteArtifact(generator.Artifact{Path: "nested/client.ts", Data: []byte("duplicate\n")}); err == nil {
+		t.Fatal("duplicate streamed artifact was accepted")
+	}
+	publisher.Rollback()
+	if _, err := os.Stat(output); !os.IsNotExist(err) {
+		t.Fatalf("partial output stat error = %v", err)
+	}
+	if _, err := os.Stat(publisher.staging); !os.IsNotExist(err) {
+		t.Fatalf("staging rollback stat error = %v", err)
+	}
+}
+
 func TestWriteArtifactsPreservesExistingOutputAndRejectsDuplicatePaths(t *testing.T) {
 	directory := t.TempDir()
 	existing := filepath.Join(directory, "existing")

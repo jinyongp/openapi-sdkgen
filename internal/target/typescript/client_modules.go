@@ -8,27 +8,32 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func emitClientArtifacts(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]Artifact, []byte, error) {
+func emitClientArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream, write func(Artifact) error) ([]byte, error) {
 	if plan == nil {
-		return nil, nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	typesSource, err := emitClientTypes(manifest, plan, links, streams)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	factorySource, err := emitClientFactory(document, plan, links, streams)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	indexSource, err := emitClientIndex(plan)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return []Artifact{
+	for _, artifact := range []Artifact{
 		{Path: plan.fixed["client-types"], Data: generatedSource(typesSource)},
 		{Path: plan.fixed["client-factory"], Data: generatedSource(factorySource)},
 		{Path: plan.fixed["client-index"], Data: generatedSource(indexSource)},
-	}, indexSource, nil
+	} {
+		if err := write(artifact); err != nil {
+			return nil, err
+		}
+	}
+	return indexSource, nil
 }
 
 func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {

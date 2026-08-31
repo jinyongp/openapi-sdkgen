@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -71,5 +72,36 @@ func TestValidateTargetOptionsRequiresExplicitAddonSupport(t *testing.T) {
 	}
 	if err := ValidateTargetOptions(testTarget("typescript"), options); err == nil {
 		t.Fatal("target without add-on declaration accepted server")
+	}
+}
+
+type streamingTestTarget struct{ testTarget }
+
+func (streamingTestTarget) EmitTo(_ Plan, sink ArtifactSink) error {
+	for _, path := range []string{"one.ts", "two.ts", "three.ts"} {
+		if err := sink.WriteArtifact(Artifact{Path: path}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func TestEmitToStopsStreamingAtFirstSinkFailure(t *testing.T) {
+	target := streamingTestTarget{testTarget("stream")}
+	plan, _, err := target.Prepare(&ir.Document{}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sentinel := errors.New("sink failed")
+	var paths []string
+	err = EmitTo(target, plan, ArtifactSinkFunc(func(artifact Artifact) error {
+		paths = append(paths, artifact.Path)
+		if artifact.Path == "two.ts" {
+			return sentinel
+		}
+		return nil
+	}))
+	if !errors.Is(err, sentinel) || strings.Join(paths, ",") != "one.ts,two.ts" {
+		t.Fatalf("stream result = %v, paths = %v", err, paths)
 	}
 }

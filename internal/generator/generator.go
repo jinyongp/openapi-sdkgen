@@ -138,6 +138,43 @@ type Target interface {
 	Emit(Plan) ([]Artifact, error)
 }
 
+// ArtifactSink accepts one validated artifact at a time. Implementations may
+// write directly to a rollback-safe staging area instead of retaining bytes.
+type ArtifactSink interface {
+	WriteArtifact(Artifact) error
+}
+
+// ArtifactSinkFunc adapts a function to ArtifactSink.
+type ArtifactSinkFunc func(Artifact) error
+
+func (write ArtifactSinkFunc) WriteArtifact(artifact Artifact) error { return write(artifact) }
+
+// StreamingTarget emits artifacts incrementally. Target.Emit remains the
+// compatibility collection adapter for direct callers.
+type StreamingTarget interface {
+	EmitTo(Plan, ArtifactSink) error
+}
+
+// EmitTo streams when supported and otherwise adapts the collected target API.
+func EmitTo(target Target, plan Plan, sink ArtifactSink) error {
+	if target == nil || sink == nil {
+		return fmt.Errorf("generation target and artifact sink are required")
+	}
+	if streaming, ok := target.(StreamingTarget); ok {
+		return streaming.EmitTo(plan, sink)
+	}
+	artifacts, err := target.Emit(plan)
+	if err != nil {
+		return err
+	}
+	for _, artifact := range artifacts {
+		if err := sink.WriteArtifact(artifact); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Registry holds the built-in SDK targets available to the CLI.
 type Registry struct {
 	targets map[string]Target
