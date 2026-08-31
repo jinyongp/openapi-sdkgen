@@ -84,11 +84,13 @@ func prepareKnownExtensions(document *ir.Document) (*ir.Document, []diagnostic.D
 func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnostic {
 	byID := make(map[string]ir.Operation)
 	byRoute := make(map[string]ir.Operation)
+	byPathMethod := make(map[string]ir.Operation)
 	for _, operation := range document.Operations {
 		if operation.OperationID != "" {
 			byID[operation.OperationID] = operation
 		}
 		byRoute[operationRouteKey(operation)] = operation
+		byPathMethod[operationPathMethodKey(operation.Path, operation.Method)] = operation
 	}
 	var result []diagnostic.Diagnostic
 	for _, source := range document.Operations {
@@ -109,7 +111,7 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 				if err != nil {
 					continue
 				}
-				target, exists := visibilityLinkTarget(document, byID, byRoute, link)
+				target, exists := visibilityLinkTarget(byID, byRoute, byPathMethod, link)
 				if !exists || target.Visibility != "hidden" {
 					continue
 				}
@@ -128,7 +130,7 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 	return result
 }
 
-func visibilityLinkTarget(document *ir.Document, byID, byRoute map[string]ir.Operation, link map[string]any) (ir.Operation, bool) {
+func visibilityLinkTarget(byID, byRoute, byPathMethod map[string]ir.Operation, link map[string]any) (ir.Operation, bool) {
 	if operationID, _ := link["operationId"].(string); operationID != "" {
 		target, exists := byID[operationID]
 		return target, exists
@@ -137,7 +139,7 @@ func visibilityLinkTarget(document *ir.Document, byID, byRoute map[string]ir.Ope
 	if reference == "" {
 		return ir.Operation{}, false
 	}
-	target, err := linkTargetOperation(document, byID, link)
+	target, err := linkTargetOperation(byID, byPathMethod, link)
 	if err != nil {
 		return ir.Operation{}, false
 	}

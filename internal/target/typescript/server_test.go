@@ -227,6 +227,7 @@ try {
   if (String(error).includes("duplicate callback handlers were accepted")) throw error;
   if (!String(error).includes("both routeCallbacks and callbacks")) throw error;
 }
+
 const sharedHandler = async () => ({ status: 204 });
 const duplicatePathParams = codecs.createCallbackHandlers({
   routeCallbacks: { "POST /orders": { orderStatus: { "{$request.body#/callbackURL}": { POST: sharedHandler } } } },
@@ -257,6 +258,72 @@ if ((await denied.callbacks.createOrder.orderStatus["{$request.body#/callbackURL
 	command := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "callbacks.js"))
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("execute generated callback codecs: %v\n%s", err, output)
+	}
+}
+
+func TestServerCallbackOnlyComponentSchemasRemainDirectionallyPlanned(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.1.1",
+  "info": {"title": "Callback reachability", "version": "1"},
+  "paths": {
+    "/jobs": {"post": {
+      "operationId": "createJob",
+      "responses": {"202": {"description": "Accepted"}},
+      "callbacks": {"completed": {"{$request.body#/callbackURL}": {"post": {
+        "operationId": "jobCompleted",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CallbackInput"}}}
+        },
+        "responses": {"200": {
+          "description": "OK",
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CallbackOutput"}}}
+        }}
+      }}}}
+    }},
+    "/hidden": {"post": {
+      "operationId": "hidden",
+      "x-sdk-visibility": "hidden",
+      "responses": {"204": {"description": "Hidden"}},
+      "callbacks": {"ignored": {"{$request.body#/callbackURL}": {"post": {
+        "requestBody": {"content": {"application/json": {"schema": {"$ref": "#/components/schemas/HiddenOnly"}}}},
+        "responses": {"204": {"description": "Ignored"}}
+      }}}}
+    }}
+  },
+  "components": {"schemas": {
+    "CallbackInput": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "CallbackOutput": {"type": "object", "properties": {"ok": {"type": "boolean"}}},
+    "HiddenOnly": {"type": "string"}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options, err := registry.Resolve([]string{"server"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := (Generator{}).Generate(document, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := string(artifactByPath(t, artifacts, "internal/schemas/callback-input.ts"))
+	if !strings.Contains(input, "export const inputWireSchema") || strings.Contains(input, "export const outputWireSchema") {
+		t.Fatalf("callback input projection was not directionally planned:\n%s", input)
+	}
+	output := string(artifactByPath(t, artifacts, "internal/schemas/callback-output.ts"))
+	if !strings.Contains(output, "export const outputWireSchema") || strings.Contains(output, "export const inputWireSchema") {
+		t.Fatalf("callback output projection was not directionally planned:\n%s", output)
+	}
+	for _, artifact := range artifacts {
+		if artifact.Path == "internal/schemas/hidden-only.ts" {
+			t.Fatalf("hidden callback schema was planned:\n%s", artifact.Data)
+		}
 	}
 }
 

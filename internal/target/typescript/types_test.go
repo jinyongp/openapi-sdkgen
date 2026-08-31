@@ -260,6 +260,63 @@ func TestReachableComponentsCloseOverVisibleRootReferences(t *testing.T) {
 	}
 }
 
+func TestReachabilityIgnoresOpaqueReferencesAndFollowsNormalizedDynamicReferences(t *testing.T) {
+	document := &ir.Document{
+		ComponentSchemas: map[string]map[string]any{
+			"Dynamic":     {"type": "string"},
+			"LiteralOnly": {"type": "boolean"},
+		},
+		Operations: []ir.Operation{{
+			OperationID: "visible", Method: "GET", Path: "/visible",
+			Raw: map[string]any{"responses": map[string]any{"200": map[string]any{"content": map[string]any{"application/json": map[string]any{"schema": map[string]any{
+				"allOf":     []any{map[string]any{"x-sdkgen-dynamic-reference": map[string]any{"anchor": "node", "reference": "#/components/schemas/Dynamic"}}},
+				"example":   map[string]any{"$ref": "#/components/schemas/LiteralOnly"},
+				"default":   map[string]any{"$ref": "#/components/schemas/LiteralOnly"},
+				"x-example": map[string]any{"$ref": "#/components/schemas/LiteralOnly"},
+			}}}}}},
+		}},
+	}
+	_, output := reachableComponentSchemaProjections(document, false)
+	if !output["Dynamic"] || output["LiteralOnly"] {
+		t.Fatalf("output reachability = %#v", output)
+	}
+}
+
+func TestServerCallbackReachabilitySeparatesDirectionsAndSkipsHidden(t *testing.T) {
+	callback := func(input, output string) map[string]any {
+		return map[string]any{"{$request.body#/callbackURL}": map[string]any{"post": map[string]any{
+			"requestBody": map[string]any{"content": map[string]any{"application/json": map[string]any{"schema": map[string]any{"$ref": "#/components/schemas/" + input}}}},
+			"responses":   map[string]any{"200": map[string]any{"content": map[string]any{"application/json": map[string]any{"schema": map[string]any{"$ref": "#/components/schemas/" + output}}}}},
+		}}}
+	}
+	document := &ir.Document{
+		Raw: map[string]any{"components": map[string]any{"callbacks": map[string]any{"Reusable": callback("ComponentInput", "ComponentOutput")}}},
+		ComponentSchemas: map[string]map[string]any{
+			"InlineInput": {}, "InlineOutput": {}, "ComponentInput": {}, "ComponentOutput": {}, "HiddenInput": {}, "HiddenOutput": {},
+		},
+		Operations: []ir.Operation{
+			{OperationID: "visible", Method: "POST", Path: "/visible", Raw: map[string]any{"callbacks": map[string]any{"inline": callback("InlineInput", "InlineOutput")}}},
+			{OperationID: "hidden", Method: "POST", Path: "/hidden", Visibility: "hidden", Raw: map[string]any{"callbacks": map[string]any{"hidden": callback("HiddenInput", "HiddenOutput")}}},
+		},
+	}
+	input, output := reachableComponentSchemaProjections(document, true)
+	for _, name := range []string{"InlineInput", "ComponentInput"} {
+		if !input[name] || output[name] {
+			t.Fatalf("input component %q reachability = input %#v output %#v", name, input, output)
+		}
+	}
+	for _, name := range []string{"InlineOutput", "ComponentOutput"} {
+		if !output[name] || input[name] {
+			t.Fatalf("output component %q reachability = input %#v output %#v", name, input, output)
+		}
+	}
+	for _, name := range []string{"HiddenInput", "HiddenOutput"} {
+		if input[name] || output[name] {
+			t.Fatalf("hidden component %q is reachable: input %#v output %#v", name, input, output)
+		}
+	}
+}
+
 func containsAll(value string, expected ...string) bool {
 	for _, item := range expected {
 		if !strings.Contains(value, item) {

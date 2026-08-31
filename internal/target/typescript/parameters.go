@@ -30,6 +30,78 @@ type operationParameter struct {
 	Sort                  *ir.SortParameterPlan
 }
 
+type preparedOperation struct {
+	parameters                 []operationParameter
+	clientParameters           []operationParameter
+	parametersByLocation       map[string][]operationParameter
+	clientParametersByLocation map[string][]operationParameter
+	pathBindings               map[string]string
+	requiredByLocation         map[string]bool
+	bodyRequired               bool
+	inputRequired              bool
+	resourceInputRequired      bool
+}
+
+func prepareOperation(document *ir.Document, operation ir.Operation) (preparedOperation, error) {
+	parameters, err := operationParameters(document, operation)
+	if err != nil {
+		return preparedOperation{}, err
+	}
+	prepared := preparedOperation{
+		parameters:                 parameters,
+		clientParameters:           make([]operationParameter, len(parameters)),
+		parametersByLocation:       make(map[string][]operationParameter),
+		clientParametersByLocation: make(map[string][]operationParameter),
+		pathBindings:               make(map[string]string),
+		requiredByLocation:         make(map[string]bool),
+	}
+	for index, parameter := range parameters {
+		prepared.parametersByLocation[parameter.Location] = append(prepared.parametersByLocation[parameter.Location], parameter)
+		if parameter.Location == "path" {
+			prepared.pathBindings[parameter.Name] = parameter.Binding
+		}
+		clientParameter := projectClientParameter(parameter)
+		prepared.clientParameters[index] = clientParameter
+		prepared.clientParametersByLocation[clientParameter.Location] = append(prepared.clientParametersByLocation[clientParameter.Location], clientParameter)
+		prepared.requiredByLocation[clientParameter.Location] = prepared.requiredByLocation[clientParameter.Location] || clientParameter.Required
+	}
+	if body, ok := operation.Raw["requestBody"].(map[string]any); ok {
+		resolved, err := resolveComponentObject(document, body, "requestBodies")
+		if err != nil {
+			return preparedOperation{}, err
+		}
+		prepared.bodyRequired = boolValue(resolved, "required")
+	}
+	return prepared, nil
+}
+
+func (prepared preparedOperation) clientInputRequired(document *ir.Document, operation ir.Operation, inputTypes []string, omitPath bool) (bool, error) {
+	operationName := operationTypeName(operationRouteKey(operation))
+	for _, inputType := range inputTypes {
+		field := strings.TrimSuffix(strings.TrimPrefix(inputType, operationName), "Input")
+		if omitPath && field == "Path" {
+			continue
+		}
+		if field == "Body" {
+			if prepared.bodyRequired {
+				return true, nil
+			}
+			continue
+		}
+		if prepared.requiredByLocation[strings.ToLower(field)] {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (prepared preparedOperation) inputFieldRequired(field string) bool {
+	if field == "Body" {
+		return prepared.bodyRequired
+	}
+	return prepared.requiredByLocation[strings.ToLower(field)]
+}
+
 type requestHeaderPolicy uint8
 
 const (

@@ -37,11 +37,11 @@ func emitClientArtifactsTo(document *ir.Document, manifest Manifest, plan *seman
 }
 
 func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {
-	helpers, err := relativeModuleSpecifier(plan.fixed["client-types"], plan.fixed["route-helpers"])
+	helpers, err := plan.relativeModuleSpecifier(plan.fixed["client-types"], plan.fixed["route-helpers"])
 	if err != nil {
 		return nil, err
 	}
-	resources, err := relativeModuleSpecifier(plan.fixed["client-types"], plan.fixed["resource-index"])
+	resources, err := plan.relativeModuleSpecifier(plan.fixed["client-types"], plan.fixed["resource-index"])
 	if err != nil {
 		return nil, err
 	}
@@ -99,27 +99,27 @@ func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []genera
 
 func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {
 	artifact := plan.fixed["client-factory"]
-	configuration, err := relativeModuleSpecifier(artifact, "internal/runtime/configuration.ts")
+	configuration, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/configuration.ts")
 	if err != nil {
 		return nil, err
 	}
-	http, err := relativeModuleSpecifier(artifact, "internal/runtime/http.ts")
+	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http.ts")
 	if err != nil {
 		return nil, err
 	}
-	registry, err := relativeModuleSpecifier(artifact, plan.fixed["client-registry"])
+	registry, err := plan.relativeModuleSpecifier(artifact, plan.fixed["client-registry"])
 	if err != nil {
 		return nil, err
 	}
-	resources, err := relativeModuleSpecifier(artifact, plan.fixed["resource-index"])
+	resources, err := plan.relativeModuleSpecifier(artifact, plan.fixed["resource-index"])
 	if err != nil {
 		return nil, err
 	}
-	types, err := relativeModuleSpecifier(artifact, plan.fixed["client-types"])
+	types, err := plan.relativeModuleSpecifier(artifact, plan.fixed["client-types"])
 	if err != nil {
 		return nil, err
 	}
-	wire, err := relativeModuleSpecifier(artifact, plan.fixed["schema-wire"])
+	wire, err := plan.relativeModuleSpecifier(artifact, plan.fixed["schema-wire"])
 	if err != nil {
 		return nil, err
 	}
@@ -169,11 +169,11 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 
 func emitClientIndex(plan *semanticModulePlan) ([]byte, error) {
 	artifact := plan.fixed["client-index"]
-	types, err := relativeModuleSpecifier(artifact, plan.fixed["client-types"])
+	types, err := plan.relativeModuleSpecifier(artifact, plan.fixed["client-types"])
 	if err != nil {
 		return nil, err
 	}
-	factory, err := relativeModuleSpecifier(artifact, plan.fixed["client-factory"])
+	factory, err := plan.relativeModuleSpecifier(artifact, plan.fixed["client-factory"])
 	if err != nil {
 		return nil, err
 	}

@@ -39,41 +39,31 @@ func requestInputSection(operationName, inputType string) (requestInputSectionDe
 
 func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation ir.Operation, item ManifestOperation) error {
 	operationName := operationTypeName(operationRouteKey(operation))
-	if err := emitOperationOptions(output, document, operationName, operation); err != nil {
+	if err := emitOperationOptions(output, operationName, operation, item); err != nil {
 		return err
 	}
-	if parameters, err := clientParametersIn(document, operation, "path"); err != nil {
-		return err
-	} else if len(parameters) > 0 {
-		if err := emitParameterType(output, document, operation, operationName+"PathInput", "path"); err != nil {
+	if parameters := item.prepared.clientParametersByLocation["path"]; len(parameters) > 0 {
+		if err := emitPreparedParameterType(output, document, operation, operationName+"PathInput", "path", parameters); err != nil {
 			return err
 		}
 	}
-	if parameters, err := clientParametersIn(document, operation, "query"); err != nil {
-		return err
-	} else if len(parameters) > 0 || operation.Pagination != "" || len(operation.SortParameters) > 0 {
+	if parameters := item.prepared.clientParametersByLocation["query"]; len(parameters) > 0 || operation.Pagination != "" || len(operation.SortParameters) > 0 {
 		if err := emitQueryTypes(output, document, operation, operationName, parameters); err != nil {
 			return err
 		}
 	}
-	if parameters, err := clientParametersIn(document, operation, "querystring"); err != nil {
-		return err
-	} else if len(parameters) > 0 {
-		if err := emitParameterType(output, document, operation, operationName+"QuerystringInput", "querystring"); err != nil {
+	if parameters := item.prepared.clientParametersByLocation["querystring"]; len(parameters) > 0 {
+		if err := emitPreparedParameterType(output, document, operation, operationName+"QuerystringInput", "querystring", parameters); err != nil {
 			return err
 		}
 	}
-	if parameters, err := clientParametersIn(document, operation, "header"); err != nil {
-		return err
-	} else if len(parameters) > 0 {
-		if err := emitParameterType(output, document, operation, operationName+"HeaderInput", "header"); err != nil {
+	if parameters := item.prepared.clientParametersByLocation["header"]; len(parameters) > 0 {
+		if err := emitPreparedParameterType(output, document, operation, operationName+"HeaderInput", "header", parameters); err != nil {
 			return err
 		}
 	}
-	if parameters, err := clientParametersIn(document, operation, "cookie"); err != nil {
-		return err
-	} else if len(parameters) > 0 {
-		if err := emitParameterType(output, document, operation, operationName+"CookieInput", "cookie"); err != nil {
+	if parameters := item.prepared.clientParametersByLocation["cookie"]; len(parameters) > 0 {
+		if err := emitPreparedParameterType(output, document, operation, operationName+"CookieInput", "cookie", parameters); err != nil {
 			return err
 		}
 	}
@@ -103,10 +93,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 			if err != nil {
 				return err
 			}
-			required, err := aggregateInputRequired(document, operation, field)
-			if err != nil {
-				return err
-			}
+			required := item.prepared.inputFieldRequired(field)
 			optional := "?"
 			valueType := inputType
 			if required {
@@ -129,10 +116,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 	}
 
 	outputType := item.renderOutput(typeRenderContract)
-	rawResponseType, err := operationRawResponseTypeForScope(document, operation, typeRenderContract)
-	if err != nil {
-		return err
-	}
+	rawResponseType := item.rawResponse.render(typeRenderContract)
 	if err := emitRawResponseJSDoc(output, document, operation); err != nil {
 		return err
 	}
@@ -154,15 +138,12 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 	if len(item.InputTypes) > 0 {
 		inputType = "RouteInput<" + quotedRoute + ">"
 	}
-	inputRequired, err := operationInputRequired(document, operation, item.InputTypes, false)
-	if err != nil {
-		return err
-	}
-	if err := emitOperationRawCallInterface(output, document, operation, operationName+"RawCall", inputType, inputType != "never" && !inputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
+	inputRequired := item.prepared.inputRequired
+	if err := emitOperationRawCallInterface(output, operation, item, operationName+"RawCall", inputType, inputType != "never" && !inputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
 		return err
 	}
 	emitOperationJSDoc(output, "", item)
-	if err := emitOperationCallInterface(output, document, operation, operationName+"Call", inputType, inputType != "never" && !inputRequired, "RouteOutput<"+quotedRoute+">", "OperationRawCall<"+quotedRoute+">", ""); err != nil {
+	if err := emitOperationCallInterface(output, operation, item, operationName+"Call", inputType, inputType != "never" && !inputRequired, "RouteOutput<"+quotedRoute+">", "OperationRawCall<"+quotedRoute+">", ""); err != nil {
 		return err
 	}
 	if item.Visibility == "public" {
@@ -174,30 +155,29 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 				resourceInput = "never"
 			}
 		}
-		resourceInputRequired, err := operationInputRequired(document, operation, item.InputTypes, true)
-		if err != nil {
+		resourceInputRequired := item.prepared.resourceInputRequired
+		if err := emitOperationRawCallInterface(output, operation, item, operationName+"ResourceRawCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
 			return err
 		}
-		if err := emitOperationRawCallInterface(output, document, operation, operationName+"ResourceRawCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
-			return err
-		}
-		if err := emitOperationCallInterface(output, document, operation, operationName+"ResourceCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteOutput<"+quotedRoute+">", "", "ResourceRawCapability<"+quotedRoute+">"); err != nil {
+		if err := emitOperationCallInterface(output, operation, item, operationName+"ResourceCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteOutput<"+quotedRoute+">", "", "ResourceRawCapability<"+quotedRoute+">"); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func emitOperationCallInterface(output *bytes.Buffer, document *ir.Document, operation ir.Operation, callName, inputType string, inputOptional bool, outputType, rawCallType, rawCapabilityType string) error {
+func renderMediaOutputTypes(expressions map[string]typeExpression, scope typeRenderScope) map[string]string {
+	result := make(map[string]string, len(expressions))
+	for mediaType, expression := range expressions {
+		result[mediaType] = expression.render(scope)
+	}
+	return result
+}
+
+func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, outputType, rawCallType, rawCapabilityType string) error {
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
-	optionsRequired, err := operationRequiresSecuritySelection(document, operation)
-	if err != nil {
-		return err
-	}
-	mediaOutputs, err := operationMediaOutputTypesForScope(document, operation, typeRenderContract)
-	if err != nil {
-		return err
-	}
+	optionsRequired := item.optionsRequired
+	mediaOutputs := renderMediaOutputTypes(item.mediaOutputs, typeRenderContract)
 	mediaTypes := make([]string, 0, len(mediaOutputs))
 	for mediaType := range mediaOutputs {
 		mediaTypes = append(mediaTypes, mediaType)
@@ -223,16 +203,10 @@ func emitOperationCallInterface(output *bytes.Buffer, document *ir.Document, ope
 	return nil
 }
 
-func emitOperationRawCallInterface(output *bytes.Buffer, document *ir.Document, operation ir.Operation, callName, inputType string, inputOptional bool, rawType string) error {
+func emitOperationRawCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, rawType string) error {
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
-	optionsRequired, err := operationRequiresSecuritySelection(document, operation)
-	if err != nil {
-		return err
-	}
-	mediaOutputs, err := operationMediaOutputTypesForScope(document, operation, typeRenderContract)
-	if err != nil {
-		return err
-	}
+	optionsRequired := item.optionsRequired
+	mediaOutputs := renderMediaOutputTypes(item.mediaOutputs, typeRenderContract)
 	mediaTypes := make([]string, 0, len(mediaOutputs))
 	for mediaType := range mediaOutputs {
 		mediaTypes = append(mediaTypes, mediaType)
@@ -369,6 +343,10 @@ func emitParameterType(output *bytes.Buffer, document *ir.Document, operation ir
 	if err != nil {
 		return err
 	}
+	return emitPreparedParameterType(output, document, operation, typeName, location, parameters)
+}
+
+func emitPreparedParameterType(output *bytes.Buffer, document *ir.Document, operation ir.Operation, typeName, location string, parameters []operationParameter) error {
 	locationLabel := strings.ToUpper(location[:1]) + location[1:]
 	fmt.Fprintf(output, "/** %s parameters for `%s` (`%s %s`). */\n", locationLabel, operation.OperationID, operation.Method, operation.Path)
 	fmt.Fprintf(output, "interface %s {\n", typeName)
@@ -406,12 +384,13 @@ func emitOperationParameterJSDoc(output *bytes.Buffer, indent string, parameter 
 	emitSchemaValueJSDoc(output, indent, documentation, locationLabel+" parameter `"+sanitizeComment(parameter.Name)+"`.")
 }
 
-func emitOperationOptions(output *bytes.Buffer, document *ir.Document, operationName string, operation ir.Operation) error {
+func emitOperationOptions(output *bytes.Buffer, operationName string, operation ir.Operation, item ManifestOperation) error {
 	parts := []string{`Omit<RequestOptions, "accept">`}
-	mediaTypes, err := operationResponseMediaTypes(document, operation)
-	if err != nil {
-		return err
+	mediaTypes := make([]string, 0, len(item.mediaOutputs))
+	for mediaType := range item.mediaOutputs {
+		mediaTypes = append(mediaTypes, mediaType)
 	}
+	sort.Strings(mediaTypes)
 	if len(mediaTypes) > 1 {
 		quoted := make([]string, 0, len(mediaTypes))
 		for _, mediaType := range mediaTypes {
@@ -419,10 +398,7 @@ func emitOperationOptions(output *bytes.Buffer, document *ir.Document, operation
 		}
 		parts = append(parts, "{\n  /** Requested successful response media type. */\n  readonly accept?: "+strings.Join(quoted, " | ")+" | undefined\n}")
 	}
-	requirements, hasSecurity, err := operationSecurityRequirements(document, operation)
-	if err != nil {
-		return err
-	}
+	requirements, hasSecurity := item.security, item.hasSecurity
 	if hasSecurity && len(requirements) > 1 {
 		ids := make([]string, 0, len(requirements))
 		for _, requirement := range requirements {
@@ -725,14 +701,22 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 		if item.Visibility != "public" {
 			continue
 		}
-		operation := findOperation(document, manifestRouteKey(item))
+		operation := item.compiled
+		prepared := item.prepared
+		if operation.Method == "" {
+			operation = findOperation(document, manifestRouteKey(item))
+		}
+		if prepared.parametersByLocation == nil {
+			var err error
+			prepared, err = prepareOperation(document, operation)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if hasDuplicateStrings(operation.PathParameterOrder) {
 			continue
 		}
-		parameters, err := parametersIn(document, operation, "path")
-		if err != nil {
-			return nil, err
-		}
+		parameters := prepared.parametersByLocation["path"]
 		byName := make(map[string]operationParameter, len(parameters))
 		for _, parameter := range parameters {
 			byName[parameter.Name] = parameter
@@ -1137,10 +1121,7 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 	if operation.OperationID != "" {
 		fields = append(fields, "operationID: "+quoteTS(operation.OperationID))
 	}
-	parameters, err := clientOperationParameters(document, irOperation)
-	if err != nil {
-		return "", err
-	}
+	parameters := operation.prepared.clientParameters
 	usesInputSchemas := false
 	if len(parameters) > 0 {
 		items := make([]string, 0, len(parameters))

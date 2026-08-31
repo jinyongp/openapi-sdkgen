@@ -13,15 +13,15 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	artifact := plan.fixed["client-registry"]
-	callables, err := relativeModuleSpecifier(artifact, "internal/runtime/callables.ts")
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/callables.ts")
 	if err != nil {
 		return nil, err
 	}
-	codecs, err := relativeModuleSpecifier(artifact, "internal/runtime/codecs.ts")
+	codecs, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/codecs.ts")
 	if err != nil {
 		return nil, err
 	}
-	routes, err := relativeModuleSpecifier(artifact, plan.fixed["route-index"])
+	routes, err := plan.relativeModuleSpecifier(artifact, plan.fixed["route-index"])
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		if !exists {
 			return nil, fmt.Errorf("route %q has no operation module", route)
 		}
-		specifier, err := relativeModuleSpecifier(artifact, path)
+		specifier, err := plan.relativeModuleSpecifier(artifact, path)
 		if err != nil {
 			return nil, err
 		}

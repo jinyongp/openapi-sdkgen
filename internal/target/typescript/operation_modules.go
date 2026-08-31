@@ -8,34 +8,24 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
+func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, tree *resourceNode, resourceReachable map[string]bool, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
-	}
-	operations := make(map[string]ir.Operation, len(document.Operations))
-	for _, operation := range document.Operations {
-		operations[operationRouteKey(operation)] = operation
 	}
 	items := make(map[string]ManifestOperation, len(manifest.Operations))
 	for _, item := range manifest.Operations {
 		items[manifestRouteKey(item)] = item
 	}
-	tree, err := buildResourceTree(document, manifest, resourceCapabilityMembers(links, streams))
-	if err != nil {
-		return err
+	if tree == nil {
+		return fmt.Errorf("internal TypeScript target: prepared resource tree is nil")
 	}
-	resourceReachable := make(map[string]bool)
-	resourceOperationIDs(tree, resourceReachable)
 
 	for _, module := range plan.operations {
-		operation, exists := operations[module.routeKey]
-		if !exists {
-			return fmt.Errorf("operation module %q has no compiled operation", module.routeKey)
-		}
 		item, exists := items[module.routeKey]
 		if !exists {
 			return fmt.Errorf("operation module %q has no manifest operation", module.routeKey)
 		}
+		operation := item.compiled
 		source, err := emitOperationLeaf(document, plan, module, operation, item, resourceReachable[module.routeKey], links, streams)
 		if err != nil {
 			return fmt.Errorf("emit operation module %q: %w", module.routeKey, err)
@@ -48,35 +38,35 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 }
 
 func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, streams []generatedStream) ([]byte, error) {
-	runtimeCallables, err := relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
+	runtimeCallables, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeCodecs, err := relativeModuleSpecifier(module.path, "internal/runtime/codecs.ts")
+	runtimeCodecs, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/codecs.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeErrors, err := relativeModuleSpecifier(module.path, "internal/runtime/errors.ts")
+	runtimeErrors, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/errors.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeRequest, err := relativeModuleSpecifier(module.path, "internal/runtime/request.ts")
+	runtimeRequest, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/request.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeIdentity, err := relativeModuleSpecifier(module.path, "internal/runtime/identity.ts")
+	runtimeIdentity, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/identity.ts")
 	if err != nil {
 		return nil, err
 	}
-	schemaIndex, err := relativeModuleSpecifier(module.path, plan.fixed["schema-index"])
+	schemaIndex, err := plan.relativeModuleSpecifier(module.path, plan.fixed["schema-index"])
 	if err != nil {
 		return nil, err
 	}
-	errorCatalog, err := relativeModuleSpecifier(module.path, "internal/errors.ts")
+	errorCatalog, err := plan.relativeModuleSpecifier(module.path, "internal/errors.ts")
 	if err != nil {
 		return nil, err
 	}
-	routeHelpers, err := relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
+	routeHelpers, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
 	if err != nil {
 		return nil, err
 	}
@@ -109,11 +99,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		if err != nil {
 			return nil, err
 		}
-		optionsRequired, err := operationRequiresOptions(document, operation)
-		if err != nil {
-			return nil, err
-		}
-		paginationType = paginationFunctionType(item, itemType, optionsRequired)
+		paginationType = paginationFunctionType(item, itemType, item.optionsRequired)
 	}
 	linksType, err := routeLinksType(document, links, module.routeKey)
 	if err != nil {
@@ -172,14 +158,14 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "import type * as ContractSchemas from %s\n", quoteTS(schemaIndex))
 	fmt.Fprintf(&output, "import type * as Errors from %s\n", quoteTS(errorCatalog))
 	if operation.PaginationPlan != nil {
-		runtimePagination, err := relativeModuleSpecifier(module.path, "internal/runtime/pagination.ts")
+		runtimePagination, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/pagination.ts")
 		if err != nil {
 			return nil, err
 		}
 		fmt.Fprintf(&output, "import { createPaginator, type PaginateInput } from %s\n", quoteTS(runtimePagination))
 	}
 	if linksType != "never" {
-		runtimeLinks, err := relativeModuleSpecifier(module.path, "internal/runtime/links.ts")
+		runtimeLinks, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/links.ts")
 		if err != nil {
 			return nil, err
 		}
@@ -301,7 +287,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 		if !exists {
 			return nil, fmt.Errorf("link target %q has no operation module", route)
 		}
-		specifier, err := relativeModuleSpecifier(module.path, path)
+		specifier, err := plan.relativeModuleSpecifier(module.path, path)
 		if err != nil {
 			return nil, err
 		}

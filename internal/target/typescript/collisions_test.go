@@ -587,7 +587,7 @@ func TestBuildResourceTreePreservesLinkAndStreamCapabilities(t *testing.T) {
 	}
 	links := []generatedLink{{SourceOperation: source}}
 	streams := []generatedStream{{Operation: source}}
-	if err := reconcileResourceCapabilities(document, &manifest, links, streams); err != nil {
+	if _, _, err := reconcileResourceCapabilities(document, &manifest, links, streams); err != nil {
 		t.Fatal(err)
 	}
 	calls := manifestCalls(manifest)

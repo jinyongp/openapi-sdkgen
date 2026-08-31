@@ -12,6 +12,7 @@ import (
 type generatedStream struct {
 	Operation ir.Operation
 	ItemType  string
+	Plan      ManifestOperation
 }
 
 func generatedStreams(document *ir.Document, manifest Manifest) ([]generatedStream, error) {
@@ -23,16 +24,17 @@ func generatedStreams(document *ir.Document, manifest Manifest) ([]generatedStre
 }
 
 func generatedStreamsDiagnostics(document *ir.Document, manifest Manifest) ([]generatedStream, []error) {
-	visible := map[string]bool{}
+	visible := map[string]ManifestOperation{}
 	for _, operation := range manifest.Operations {
 		if operation.Visibility != "hidden" {
-			visible[manifestRouteKey(operation)] = true
+			visible[manifestRouteKey(operation)] = operation
 		}
 	}
 	var result []generatedStream
 	var failures []error
 	for _, operation := range document.Operations {
-		if !visible[operationRouteKey(operation)] {
+		operationPlan, operationVisible := visible[operationRouteKey(operation)]
+		if !operationVisible {
 			continue
 		}
 		responses, _ := operation.Raw["responses"].(map[string]any)
@@ -72,7 +74,7 @@ func generatedStreamsDiagnostics(document *ir.Document, manifest Manifest) ([]ge
 			}
 		}
 		if len(types) != 0 {
-			result = append(result, generatedStream{Operation: operation, ItemType: stringsJoinUnique(types, " | ")})
+			result = append(result, generatedStream{Operation: operation, ItemType: stringsJoinUnique(types, " | "), Plan: operationPlan})
 		}
 	}
 	sort.Slice(result, func(left, right int) bool {
@@ -99,18 +101,12 @@ func emitStreamInterface(output *bytes.Buffer, document *ir.Document, streams []
 
 func emitStreamValues(output *bytes.Buffer, document *ir.Document, streams []generatedStream) error {
 	for _, stream := range streams {
-		definition, err := operationDefinition(document, stream.Operation, ManifestOperation{RouteKey: operationRouteKey(stream.Operation), OperationID: stream.Operation.OperationID, Method: stream.Operation.Method, Path: stream.Operation.Path, Envelope: stream.Operation.Envelope})
+		definition, err := operationDefinition(document, stream.Operation, stream.Plan)
 		if err != nil {
 			return err
 		}
-		inputs, err := operationInputTypes(document, stream.Operation)
-		if err != nil {
-			return err
-		}
-		inputRequired, err := operationInputRequired(document, stream.Operation, inputs, false)
-		if err != nil {
-			return err
-		}
+		inputs := stream.Plan.InputTypes
+		inputRequired := stream.Plan.prepared.inputRequired
 		inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
 		optionsType := operationSlotType(operationRouteKey(stream.Operation), "options")
 		variable := stablePrivateIdentifier("stream-value", operationRouteKey(stream.Operation))
@@ -153,20 +149,12 @@ func streamForRoute(streams []generatedStream, routeKey string) (generatedStream
 }
 
 func streamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
-	inputs, err := operationInputTypes(document, stream.Operation)
-	if err != nil {
-		return "", err
-	}
-	inputRequired, err := operationInputRequired(document, stream.Operation, inputs, false)
-	if err != nil {
-		return "", err
-	}
+	_ = document
+	inputs := stream.Plan.InputTypes
+	inputRequired := stream.Plan.prepared.inputRequired
 	optionsType := operationSlotType(operationRouteKey(stream.Operation), "options")
 	optionMarker := "?"
-	optionsRequired, err := operationRequiresOptions(document, stream.Operation)
-	if err != nil {
-		return "", err
-	}
+	optionsRequired := stream.Plan.optionsRequired
 	if optionsRequired {
 		optionMarker = ""
 	}

@@ -141,7 +141,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 	if referenceErr != nil {
 		return renderedSchemaProjections{}, referenceErr
 	}
-	planned, err := planTypeReferences(schema.path, uses)
+	planned, err := planTypeReferences(plan, schema.path, uses)
 	if err != nil {
 		return renderedSchemaProjections{}, err
 	}
@@ -222,7 +222,7 @@ func emitSchemaIndex(document *ir.Document, plan *semanticModulePlan) ([]byte, e
 		} else {
 			fmt.Fprintf(&output, "  /** OpenAPI component `%s`. */\n", sanitizeComment(schema.name))
 		}
-		specifier, err := relativeModuleSpecifier(plan.fixed["schema-index"], schema.path)
+		specifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-index"], schema.path)
 		if err != nil {
 			return nil, fmt.Errorf("component %s registry reference: %w", schema.name, err)
 		}
@@ -250,7 +250,7 @@ func emitSchemaWireRegistry(plan *semanticModulePlan) ([]byte, error) {
 		if !schema.inputWire && !schema.outputWire {
 			continue
 		}
-		specifier, err := relativeModuleSpecifier(plan.fixed["schema-wire"], schema.path)
+		specifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-wire"], schema.path)
 		if err != nil {
 			return nil, fmt.Errorf("component %s wire registry reference: %w", schema.name, err)
 		}

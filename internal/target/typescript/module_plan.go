@@ -20,6 +20,7 @@ type semanticModulePlan struct {
 	operationByQuotedRoute    map[string]string
 	relativeSpecifiers        map[string]string
 	relativeSpecifierComputes int
+	resourceParameterTypes    map[string]string
 }
 
 type schemaModulePlan struct {
@@ -40,7 +41,7 @@ type resourceModulePlan struct {
 	path     string
 }
 
-func buildSemanticModulePlan(document *ir.Document, manifest Manifest, links []generatedLink, streams []generatedStream) (*semanticModulePlan, error) {
+func buildSemanticModulePlan(document *ir.Document, manifest Manifest, resourceTree *resourceNode, includeServer bool) (*semanticModulePlan, error) {
 	result := &semanticModulePlan{
 		fixed: map[string]string{
 			"internal-index":  "internal/index.ts",
@@ -60,14 +61,15 @@ func buildSemanticModulePlan(document *ir.Document, manifest Manifest, links []g
 		operationByRoute:       make(map[string]string),
 		operationByQuotedRoute: make(map[string]string),
 		relativeSpecifiers:     make(map[string]string),
+		resourceParameterTypes: make(map[string]string),
 	}
-	if err := result.planSchemas(document); err != nil {
+	if err := result.planSchemas(document, includeServer); err != nil {
 		return nil, err
 	}
 	if err := result.planOperations(manifest); err != nil {
 		return nil, err
 	}
-	if err := result.planResources(document, manifest, links, streams); err != nil {
+	if err := result.planResources(resourceTree); err != nil {
 		return nil, err
 	}
 	if err := result.validate(); err != nil {
@@ -76,14 +78,14 @@ func buildSemanticModulePlan(document *ir.Document, manifest Manifest, links []g
 	return result, nil
 }
 
-func (plan *semanticModulePlan) planSchemas(document *ir.Document) error {
+func (plan *semanticModulePlan) planSchemas(document *ir.Document, includeServer bool) error {
 	if plan.schemaByName == nil {
 		plan.schemaByName = make(map[string]string)
 	}
 	if plan.schemaByQuotedName == nil {
 		plan.schemaByQuotedName = make(map[string]string)
 	}
-	inputReachable, outputReachable := reachableComponentSchemaProjections(document)
+	inputReachable, outputReachable := reachableComponentSchemaProjections(document, includeServer)
 	reachable := publicReachableComponentSchemas(document, inputReachable, outputReachable)
 	all := make(map[string]bool, len(document.ComponentSchemas)+len(document.Schemas))
 	for name := range document.ComponentSchemas {
@@ -164,10 +166,9 @@ func (plan *semanticModulePlan) relativeModuleSpecifier(fromArtifact, toArtifact
 	return value, nil
 }
 
-func (plan *semanticModulePlan) planResources(document *ir.Document, manifest Manifest, links []generatedLink, streams []generatedStream) error {
-	tree, err := buildResourceTree(document, manifest, resourceCapabilityMembers(links, streams))
-	if err != nil {
-		return fmt.Errorf("build resource tree for module plan: %w", err)
+func (plan *semanticModulePlan) planResources(tree *resourceNode) error {
+	if tree == nil {
+		return fmt.Errorf("build resource tree for module plan: prepared resource tree is nil")
 	}
 	candidates := []artifactPathCandidate{{identity: "root", base: "internal/resources/root.ts"}}
 	collectResourceModuleCandidates(tree, nil, nil, &candidates)
@@ -279,7 +280,7 @@ type plannedTypeReference struct {
 	inline     bool
 }
 
-func planTypeReferences(currentArtifact string, uses []typeReferenceUse) ([]plannedTypeReference, error) {
+func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses []typeReferenceUse) ([]plannedTypeReference, error) {
 	counts := make(map[string]int)
 	seenKeys := make(map[string]bool, len(uses))
 	for _, use := range uses {
@@ -294,7 +295,7 @@ func planTypeReferences(currentArtifact string, uses []typeReferenceUse) ([]plan
 	}
 	result := make([]plannedTypeReference, 0, len(uses))
 	for _, use := range uses {
-		specifier, err := relativeModuleSpecifier(currentArtifact, use.modulePath)
+		specifier, err := plan.relativeModuleSpecifier(currentArtifact, use.modulePath)
 		if err != nil {
 			return nil, fmt.Errorf("type reference %q: %w", use.key, err)
 		}

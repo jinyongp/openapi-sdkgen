@@ -76,14 +76,16 @@ func (Generator) SupportsAddon(addon generator.Addon) bool {
 }
 
 type sourcePlan struct {
-	document      *ir.Document
-	includeServer bool
-	manifest      *Manifest
-	modules       *semanticModulePlan
-	links         []generatedLink
-	streams       []generatedStream
-	webhooks      []webhookDefinition
-	callbacks     []callbackDefinition
+	document          *ir.Document
+	includeServer     bool
+	manifest          *Manifest
+	modules           *semanticModulePlan
+	links             []generatedLink
+	streams           []generatedStream
+	webhooks          []webhookDefinition
+	callbacks         []callbackDefinition
+	resourceTree      *resourceNode
+	resourceReachable map[string]bool
 }
 
 // Prepare validates author input for the TypeScript target.
@@ -167,7 +169,14 @@ type ManifestOperation struct {
 	Deprecated         bool     `json:"deprecated"`
 	outputExpression   typeExpression
 	errorExpression    typeExpression
+	rawResponse        typeExpression
+	mediaOutputs       map[string]typeExpression
+	security           []operationSecurityRequirement
+	hasSecurity        bool
+	optionsRequired    bool
 	paginationRequest  ir.PaginationRequestPlan
+	compiled           ir.Operation
+	prepared           preparedOperation
 }
 
 const generatedFileHeader = `// cspell:disable
@@ -240,8 +249,12 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	}
 	if len(manifestErrors) == 0 && len(linkErrors) == 0 && len(streamErrors) == 0 {
 		if plan.manifest != nil {
-			if reconcileErr := reconcileResourceCapabilities(prepared, &manifest, links, streams); reconcileErr != nil {
+			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, &manifest, links, streams)
+			if reconcileErr != nil {
 				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, reconcileErr))
+			} else {
+				plan.resourceTree = tree
+				plan.resourceReachable = reachable
 			}
 			plan.manifest = &manifest
 		}
@@ -263,7 +276,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		}
 	}
 	if plan.manifest != nil && !diagnostic.HasErrors(diagnostics) {
-		modules, moduleErr := buildSemanticModulePlan(prepared, *plan.manifest, plan.links, plan.streams)
+		modules, moduleErr := buildSemanticModulePlan(prepared, *plan.manifest, plan.resourceTree, includeServer)
 		if moduleErr != nil {
 			return nil, diagnostic.Sort(diagnostics), fmt.Errorf("build TypeScript semantic module plan: %w", moduleErr)
 		}
@@ -272,10 +285,10 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	return plan, diagnostic.Sort(diagnostics), nil
 }
 
-func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, links []generatedLink, streams []generatedStream) error {
+func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, links []generatedLink, streams []generatedStream) (*resourceNode, map[string]bool, error) {
 	tree, err := buildResourceTree(document, *manifest, resourceCapabilityMembers(links, streams))
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	reachable := make(map[string]bool)
 	resourceOperationIDs(tree, reachable)
@@ -284,11 +297,11 @@ func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, li
 		if item.Visibility != "public" || reachable[item.RouteKey] {
 			continue
 		}
-		operation := findOperation(document, item.RouteKey)
+		operation := item.compiled
 		item.CallExpression = exactOperationCall(document, operation, item.InputTypes)
 		item.ResourceSegments = nil
 	}
-	return nil
+	return tree, reachable, nil
 }
 
 func emitSourcePlan(plan *sourcePlan) ([]Artifact, error) {
@@ -317,7 +330,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err != nil {
 		return err
 	}
-	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write); err != nil {
+	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.resourceTree, plan.resourceReachable, plan.links, plan.streams, write); err != nil {
 		return err
 	}
 	if err := emitRouteArtifactsTo(manifest, plan.modules, write); err != nil {
@@ -346,7 +359,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err != nil {
 		return err
 	}
-	if err := emitResourceArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write); err != nil {
+	if err := emitResourceArtifactsTo(document, plan.modules, plan.resourceTree, write); err != nil {
 		return err
 	}
 	clientIndexSource, err := emitClientArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write)
@@ -551,12 +564,17 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 	_, errorsBySchema, failures := errorContractsDiagnostics(document)
 	for _, operation := range document.Operations {
 		operationFailed := false
+		prepared, prepareErr := prepareOperation(document, operation)
+		if prepareErr != nil {
+			failures = append(failures, fmt.Errorf("operation %s parameters: %w", operationLabel(operation), prepareErr))
+			operationFailed = true
+		}
 		outputExpression, err := operationOutputTypeExpression(document, operation)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("operation %s output: %w", operationLabel(operation), err))
 			operationFailed = true
 		}
-		inputTypes, inputErr := operationInputTypes(document, operation)
+		inputTypes, inputErr := operationInputTypesFromPrepared(document, operation, prepared)
 		if inputErr != nil {
 			failures = append(failures, fmt.Errorf("operation %s input: %w", operationLabel(operation), inputErr))
 			operationFailed = true
@@ -566,17 +584,42 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			failures = append(failures, fmt.Errorf("operation %s error: %w", operationLabel(operation), err))
 			operationFailed = true
 		}
+		rawResponse, err := operationRawResponseTypeExpression(document, operation)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s raw response: %w", operationLabel(operation), err))
+			operationFailed = true
+		}
+		mediaOutputs, err := operationMediaOutputTypeExpressions(document, operation)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s media outputs: %w", operationLabel(operation), err))
+			operationFailed = true
+		}
+		security, hasSecurity, err := operationSecurityRequirements(document, operation)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s security: %w", operationLabel(operation), err))
+			operationFailed = true
+		}
 		callExpression := ""
 		var segments []string
 		if inputErr == nil {
 			var callErr error
-			callExpression, segments, callErr = operationCall(document, operation, inputTypes)
+			callExpression, segments, callErr = operationCallFromPrepared(document, operation, inputTypes, prepared)
 			if callErr != nil {
 				failures = append(failures, fmt.Errorf("operation %s call expression: %w", operationLabel(operation), callErr))
 				operationFailed = true
 			}
 		}
 		if operationFailed {
+			continue
+		}
+		prepared.inputRequired, err = prepared.clientInputRequired(document, operation, inputTypes, false)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s input requirement: %w", operationLabel(operation), err))
+			continue
+		}
+		prepared.resourceInputRequired, err = prepared.clientInputRequired(document, operation, inputTypes, true)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s resource input requirement: %w", operationLabel(operation), err))
 			continue
 		}
 		visibility := operation.Visibility
@@ -603,12 +646,19 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			Deprecated:         boolValue(operation.Raw, "deprecated"),
 			outputExpression:   outputExpression,
 			errorExpression:    errorExpression,
+			rawResponse:        rawResponse,
+			mediaOutputs:       mediaOutputs,
+			security:           security,
+			hasSecurity:        hasSecurity,
+			optionsRequired:    len(security) > 1,
 			paginationRequest: func() ir.PaginationRequestPlan {
 				if operation.PaginationPlan == nil {
 					return ir.PaginationRequestPlan{}
 				}
 				return operation.PaginationPlan.Request
 			}(),
+			compiled: operation,
+			prepared: prepared,
 		})
 	}
 	if len(failures) != 0 {
@@ -623,7 +673,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 	for index := range manifest.Operations {
 		item := &manifest.Operations[index]
 		if item.Visibility == "public" && !reachable[item.RouteKey] {
-			operation := findOperation(document, item.RouteKey)
+			operation := item.compiled
 			item.CallExpression = exactOperationCall(document, operation, item.InputTypes)
 			item.ResourceSegments = nil
 		}
@@ -644,6 +694,7 @@ func visibilityManifest(document *ir.Document) Manifest {
 			Method:      operation.Method,
 			Path:        operation.Path,
 			Visibility:  visibility,
+			compiled:    operation,
 		})
 	}
 	return result
@@ -664,13 +715,18 @@ func (operation ManifestOperation) renderError(scope typeRenderScope) string {
 }
 
 func operationCall(document *ir.Document, operation ir.Operation, inputTypes []string) (string, []string, error) {
-	if hasDuplicateStrings(operation.PathParameterOrder) {
-		return exactOperationCall(document, operation, inputTypes), nil, nil
-	}
-	pathBindings, err := operationPathBindings(document, operation)
+	prepared, err := prepareOperation(document, operation)
 	if err != nil {
 		return "", nil, err
 	}
+	return operationCallFromPrepared(document, operation, inputTypes, prepared)
+}
+
+func operationCallFromPrepared(document *ir.Document, operation ir.Operation, inputTypes []string, prepared preparedOperation) (string, []string, error) {
+	if hasDuplicateStrings(operation.PathParameterOrder) {
+		return exactOperationCall(document, operation, inputTypes), nil, nil
+	}
+	pathBindings := prepared.pathBindings
 	parts := resourcePathParts(operation.Path)
 	segments := make([]string, 0, len(parts))
 	chain := "api"

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
@@ -108,5 +109,46 @@ func TestSchemaModulesKeepWireOnlyComponentsOutOfPublicRegistry(t *testing.T) {
 	wire := string(artifactByPath(t, artifacts, "internal/schemas/wire.ts"))
 	if strings.Contains(wire, `outputWireSchema as `) || strings.Contains(wire, `from "./wire-only.js"`) {
 		t.Fatalf("hidden-only component leaked into the wire registry:\n%s", wire)
+	}
+}
+
+func TestSchemaModulesPlanNormalizedDynamicReferencesWithoutOpaqueLiteralReferences(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.1.0",
+  "info": {"title": "Dynamic reachability", "version": "1"},
+  "paths": {
+    "/node": {"get": {
+      "operationId": "getNode",
+      "responses": {"200": {
+        "description": "OK",
+        "content": {"application/json": {"schema": {
+          "$dynamicRef": "https://schemas.example.test/node#node",
+          "example": {"$ref": "#/components/schemas/LiteralOnly"}
+        }}}
+      }}
+    }}
+  },
+  "components": {"schemas": {
+    "Node": {
+      "$id": "https://schemas.example.test/node",
+      "$dynamicAnchor": "node",
+      "type": "object",
+      "properties": {"id": {"type": "string"}}
+    },
+    "LiteralOnly": {"type": "boolean"}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := SourceArtifacts(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = artifactByPath(t, artifacts, "internal/schemas/node.ts")
+	for _, artifact := range artifacts {
+		if artifact.Path == "internal/schemas/literal-only.ts" {
+			t.Fatalf("opaque literal reference emitted a schema module:\n%s", artifact.Data)
+		}
 	}
 }

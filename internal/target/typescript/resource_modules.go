@@ -15,13 +15,12 @@ type plannedResourceNode struct {
 	node     *resourceNode
 }
 
-func emitResourceArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
+func emitResourceArtifactsTo(document *ir.Document, plan *semanticModulePlan, tree *resourceNode, write func(Artifact) error) error {
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
-	tree, err := buildResourceTree(document, manifest, resourceCapabilityMembers(links, streams))
-	if err != nil {
-		return err
+	if tree == nil {
+		return fmt.Errorf("internal TypeScript target: prepared resource tree is nil")
 	}
 	paths := make(map[string]string, len(plan.resources))
 	for _, module := range plan.resources {
@@ -67,15 +66,15 @@ func collectPlannedResourceNodes(node *resourceNode, identity string, artifactPa
 }
 
 func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string) ([]byte, error) {
-	registrySpecifier, err := relativeModuleSpecifier(module.path, plan.fixed["client-registry"])
+	registrySpecifier, err := plan.relativeModuleSpecifier(module.path, plan.fixed["client-registry"])
 	if err != nil {
 		return nil, err
 	}
-	helperSpecifier, err := relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
+	helperSpecifier, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
 	if err != nil {
 		return nil, err
 	}
-	callablesSpecifier, err := relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
+	callablesSpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	}
 	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
 		path := paths[identity]
-		specifier, err := relativeModuleSpecifier(module.path, path)
+		specifier, err := plan.relativeModuleSpecifier(module.path, path)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +150,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		}
 		identity := childIdentities["parameter"]
 		path := paths[identity]
-		specifier, err := relativeModuleSpecifier(module.path, path)
+		specifier, err := plan.relativeModuleSpecifier(module.path, path)
 		if err != nil {
 			return nil, err
 		}
@@ -190,7 +189,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 }
 
 func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, artifact, identity string, child *resourceNode, paths map[string]string) (string, error) {
-	childSpecifier, err := relativeModuleSpecifier(artifact, paths[identity])
+	childSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[identity])
 	if err != nil {
 		return "", err
 	}
@@ -204,7 +203,7 @@ func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, a
 		return "", err
 	}
 	parameterIdentity := resourceChildIdentities(identity, child)["parameter"]
-	parameterSpecifier, err := relativeModuleSpecifier(artifact, paths[parameterIdentity])
+	parameterSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[parameterIdentity])
 	if err != nil {
 		return "", err
 	}
@@ -213,6 +212,13 @@ func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, a
 }
 
 func resourceParameterType(document *ir.Document, plan *semanticModulePlan, artifact string, parameter *operationParameter) (string, error) {
+	if plan.resourceParameterTypes == nil {
+		plan.resourceParameterTypes = make(map[string]string)
+	}
+	key := artifact + "\x00" + fmt.Sprintf("%p", parameter)
+	if value, exists := plan.resourceParameterTypes[key]; exists {
+		return value, nil
+	}
 	typeName, err := schemaTypeForScope(document, parameter.Schema, projectionInput, typeRenderContract)
 	if err != nil {
 		return "", err
@@ -224,6 +230,7 @@ func resourceParameterType(document *ir.Document, plan *semanticModulePlan, arti
 	if strings.Contains(typeName, "Contract.") {
 		return "", fmt.Errorf("resource parameter %q retains an unplanned schema registry reference", parameter.Name)
 	}
+	plan.resourceParameterTypes[key] = typeName
 	return typeName, nil
 }
 
@@ -256,7 +263,7 @@ func localizeResourceParameterSchemaReferences(source string, plan *semanticModu
 		if !exists {
 			return "", lookups, fmt.Errorf("component reference %q has no schema owner", name)
 		}
-		specifier, err := relativeModuleSpecifier(artifact, path)
+		specifier, err := plan.relativeModuleSpecifier(artifact, path)
 		if err != nil {
 			return "", lookups, err
 		}
@@ -302,7 +309,7 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	if !exists {
 		return fmt.Errorf("resource operation %q has no operation module", route)
 	}
-	specifier, err := relativeModuleSpecifier(artifact, path)
+	specifier, err := plan.relativeModuleSpecifier(artifact, path)
 	if err != nil {
 		return err
 	}
@@ -313,11 +320,7 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	hasInput := len(operation.InputTypes) > 1
 	inputOptional := false
 	if hasInput {
-		required, err := operationInputRequired(document, findOperation(document, route), operation.InputTypes, true)
-		if err != nil {
-			return err
-		}
-		inputOptional = !required
+		inputOptional = !operation.prepared.resourceInputRequired
 	}
 	fmt.Fprintf(output, "bindPathOperation<import(%s).Input, import(%s).ResourceInput, import(%s).Output, import(%s).Options, import(%s).RawResponse>(%s, { %s }, %t, %t)", quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), call, strings.Join(values, ", "), hasInput, inputOptional)
 	return nil
@@ -373,7 +376,7 @@ func emitResourceEntryJSDoc(output *bytes.Buffer, indent, name string, operation
 }
 
 func emitResourceIndex(plan *semanticModulePlan, rootPath string) ([]byte, error) {
-	specifier, err := relativeModuleSpecifier(plan.fixed["resource-index"], rootPath)
+	specifier, err := plan.relativeModuleSpecifier(plan.fixed["resource-index"], rootPath)
 	if err != nil {
 		return nil, err
 	}

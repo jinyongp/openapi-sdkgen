@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/openapiwalk"
 )
 
 type projection string
@@ -18,7 +19,7 @@ const (
 )
 
 func reachableComponentSchemas(document *ir.Document) map[string]bool {
-	input, output := reachableComponentSchemaProjections(document)
+	input, output := reachableComponentSchemaProjections(document, false)
 	return publicReachableComponentSchemas(document, input, output)
 }
 
@@ -41,66 +42,155 @@ func publicReachableComponentSchemas(document *ir.Document, input, output map[st
 	return result
 }
 
-func reachableComponentSchemaProjections(document *ir.Document) (map[string]bool, map[string]bool) {
+type componentSchemaReachabilityRoot struct {
+	value any
+	path  []string
+}
+
+func reachableComponentSchemaProjections(document *ir.Document, includeServer bool) (map[string]bool, map[string]bool) {
 	input := make(map[string]bool)
 	output := make(map[string]bool)
-	inputRoots := make([]any, 0, len(document.Operations)*3+2)
-	outputRoots := make([]any, 0, len(document.Operations)+2)
+	inputRoots := make([]componentSchemaReachabilityRoot, 0, len(document.Operations)*3)
+	outputRoots := make([]componentSchemaReachabilityRoot, 0, len(document.Operations))
 	for _, operation := range document.Operations {
 		if operation.Visibility == "hidden" {
 			continue
 		}
-		inputRoots = append(inputRoots, operation.PathItemRaw["parameters"], operation.Raw["parameters"], operation.Raw["requestBody"])
-		outputRoots = append(outputRoots, operation.Raw["responses"])
+		base := []string{"paths", operation.Path, strings.ToLower(operation.Method)}
+		inputRoots = append(inputRoots,
+			componentSchemaReachabilityRoot{value: operation.PathItemRaw["parameters"], path: []string{"paths", operation.Path, "parameters"}},
+			componentSchemaReachabilityRoot{value: operation.Raw["parameters"], path: appendPath(base, "parameters")},
+			componentSchemaReachabilityRoot{value: operation.Raw["requestBody"], path: appendPath(base, "requestBody")},
+		)
+		outputRoots = append(outputRoots, componentSchemaReachabilityRoot{value: operation.Raw["responses"], path: appendPath(base, "responses")})
+		if includeServer {
+			callbacks, _ := operation.Raw["callbacks"].(map[string]any)
+			appendCallbackSchemaReachabilityRoots(document, callbacks, appendPath(base, "callbacks"), &inputRoots, &outputRoots)
+		}
 	}
-	components, _ := document.Raw["components"].(map[string]any)
-	inputRoots = append(inputRoots, document.Raw["webhooks"], components["callbacks"])
-	outputRoots = append(outputRoots, document.Raw["webhooks"], components["callbacks"])
+	if includeServer {
+		webhooks, _ := document.Raw["webhooks"].(map[string]any)
+		for name, value := range webhooks {
+			if openapiwalk.IsExtensionKey([]string{"webhooks"}, name) {
+				continue
+			}
+			pathItem, _ := value.(map[string]any)
+			appendServerPathItemSchemaReachabilityRoots(document, pathItem, []string{"webhooks", name}, &inputRoots, &outputRoots)
+		}
+		components, _ := document.Raw["components"].(map[string]any)
+		callbacks, _ := components["callbacks"].(map[string]any)
+		appendCallbackSchemaReachabilityRoots(document, callbacks, []string{"components", "callbacks"}, &inputRoots, &outputRoots)
+	}
 	visitComponentSchemaReferences(document, input, inputRoots...)
 	visitComponentSchemaReferences(document, output, outputRoots...)
 	return input, output
 }
 
-func visitComponentSchemaReferences(document *ir.Document, found map[string]bool, roots ...any) {
+func appendCallbackSchemaReachabilityRoots(document *ir.Document, callbacks map[string]any, path []string, input, output *[]componentSchemaReachabilityRoot) {
+	for name, value := range callbacks {
+		if openapiwalk.IsExtensionKey(path, name) {
+			continue
+		}
+		callback, _ := value.(map[string]any)
+		resolved, err := resolveComponentObject(document, callback, "callbacks")
+		if err != nil {
+			continue
+		}
+		callbackPath := appendPath(path, name)
+		for expression, item := range resolved {
+			if openapiwalk.IsExtensionKey(callbackPath, expression) {
+				continue
+			}
+			pathItem, _ := item.(map[string]any)
+			appendServerPathItemSchemaReachabilityRoots(document, pathItem, appendPath(callbackPath, expression), input, output)
+		}
+	}
+}
+
+func appendServerPathItemSchemaReachabilityRoots(document *ir.Document, pathItem map[string]any, path []string, input, output *[]componentSchemaReachabilityRoot) {
+	resolved, err := ir.ResolvePathItem(document.Raw, pathItem)
+	if err != nil {
+		return
+	}
+	*input = append(*input, componentSchemaReachabilityRoot{value: resolved["parameters"], path: appendPath(path, "parameters")})
+	for _, method := range serverHTTPMethods {
+		operation, _ := resolved[method].(map[string]any)
+		appendServerOperationSchemaReachabilityRoots(operation, appendPath(path, method), input, output)
+	}
+	additional, _ := resolved["additionalOperations"].(map[string]any)
+	for method, value := range additional {
+		operation, _ := value.(map[string]any)
+		appendServerOperationSchemaReachabilityRoots(operation, appendPath(appendPath(path, "additionalOperations"), method), input, output)
+	}
+}
+
+func appendServerOperationSchemaReachabilityRoots(operation map[string]any, path []string, input, output *[]componentSchemaReachabilityRoot) {
+	if operation == nil {
+		return
+	}
+	*input = append(*input,
+		componentSchemaReachabilityRoot{value: operation["parameters"], path: appendPath(path, "parameters")},
+		componentSchemaReachabilityRoot{value: operation["requestBody"], path: appendPath(path, "requestBody")},
+	)
+	*output = append(*output, componentSchemaReachabilityRoot{value: operation["responses"], path: appendPath(path, "responses")})
+}
+
+func appendPath(path []string, values ...string) []string {
+	result := make([]string, 0, len(path)+len(values))
+	result = append(result, path...)
+	return append(result, values...)
+}
+
+func visitComponentSchemaReferences(document *ir.Document, found map[string]bool, roots ...componentSchemaReachabilityRoot) {
 	seenReferences := make(map[string]bool)
-	var visit func(any)
-	visit = func(value any) {
+	var visit func(any, []string)
+	visitReference := func(reference string) {
+		if reference == "" || seenReferences[reference] {
+			return
+		}
+		seenReferences[reference] = true
+		if name, err := componentSchemaReferenceName(reference); err == nil {
+			found[name] = true
+			visit(componentSchemaValue(document, name), []string{"components", "schemas", name})
+			return
+		}
+		components, _ := document.Raw["components"].(map[string]any)
+		for component, values := range components {
+			objects, _ := values.(map[string]any)
+			name, err := componentReferenceName(reference, component)
+			if err == nil {
+				visit(objects[name], []string{"components", component, name})
+				return
+			}
+		}
+	}
+	visit = func(value any, path []string) {
 		switch typed := value.(type) {
 		case map[string]any:
 			for _, keyword := range []string{"$ref", "$dynamicRef"} {
 				reference, _ := typed[keyword].(string)
-				if reference == "" || seenReferences[reference] {
-					continue
-				}
-				seenReferences[reference] = true
-				if name, err := componentSchemaReferenceName(reference); err == nil {
-					found[name] = true
-					visit(componentSchemaValue(document, name))
-					continue
-				}
-				components, _ := document.Raw["components"].(map[string]any)
-				for component, values := range components {
-					objects, _ := values.(map[string]any)
-					name, err := componentReferenceName(reference, component)
-					if err == nil {
-						visit(objects[name])
-						break
-					}
-				}
+				visitReference(reference)
+			}
+			if dynamic, _ := typed["x-sdkgen-dynamic-reference"].(map[string]any); dynamic != nil {
+				reference, _ := dynamic["reference"].(string)
+				visitReference(reference)
 			}
 			for key, item := range typed {
-				if key != "$ref" && key != "$dynamicRef" {
-					visit(item)
+				if key == "$ref" || key == "$dynamicRef" || key == "x-sdkgen-dynamic-reference" ||
+					openapiwalk.IsExtensionKey(path, key) ||
+					(!openapiwalk.IsNamedMap(path) && openapiwalk.IsOpaqueDataField(key, item)) {
+					continue
 				}
+				visit(item, appendPath(path, key))
 			}
 		case []any:
-			for _, item := range typed {
-				visit(item)
+			for index, item := range typed {
+				visit(item, appendPath(path, fmt.Sprint(index)))
 			}
 		}
 	}
 	for _, root := range roots {
-		visit(root)
+		visit(root.value, root.path)
 	}
 }
 
@@ -555,6 +645,18 @@ func operationRawResponseType(document *ir.Document, operation ir.Operation) (st
 	return operationRawResponseTypeForScope(document, operation, typeRenderLocal)
 }
 
+func operationRawResponseTypeExpression(document *ir.Document, operation ir.Operation) (typeExpression, error) {
+	local, err := operationRawResponseTypeForScope(document, operation, typeRenderLocal)
+	if err != nil {
+		return typeExpression{}, err
+	}
+	contract, err := operationRawResponseTypeForScope(document, operation, typeRenderContract)
+	if err != nil {
+		return typeExpression{}, err
+	}
+	return scopedTypeExpression(local, contract), nil
+}
+
 func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (string, error) {
 	responses, _ := operation.Raw["responses"].(map[string]any)
 	statusCodes := make([]string, 0, len(responses))
@@ -670,6 +772,22 @@ func responseHeaderSchema(document *ir.Document, header map[string]any) (any, st
 
 func operationMediaOutputTypes(document *ir.Document, operation ir.Operation) (map[string]string, error) {
 	return operationMediaOutputTypesForScope(document, operation, typeRenderLocal)
+}
+
+func operationMediaOutputTypeExpressions(document *ir.Document, operation ir.Operation) (map[string]typeExpression, error) {
+	local, err := operationMediaOutputTypesForScope(document, operation, typeRenderLocal)
+	if err != nil {
+		return nil, err
+	}
+	contract, err := operationMediaOutputTypesForScope(document, operation, typeRenderContract)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]typeExpression, len(local))
+	for mediaType, localType := range local {
+		result[mediaType] = scopedTypeExpression(localType, contract[mediaType])
+	}
+	return result, nil
 }
 
 func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (map[string]string, error) {
@@ -888,31 +1006,29 @@ func findItemsSchema(document *ir.Document, schema map[string]any, seen map[stri
 }
 
 func operationInputTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
+	prepared, err := prepareOperation(document, operation)
+	if err != nil {
+		return nil, err
+	}
+	return operationInputTypesFromPrepared(document, operation, prepared)
+}
+
+func operationInputTypesFromPrepared(document *ir.Document, operation ir.Operation, prepared preparedOperation) ([]string, error) {
 	var result []string
 	name := operationTypeName(operationRouteKey(operation))
-	if parameters, err := clientParametersIn(document, operation, "path"); err != nil {
-		return nil, err
-	} else if len(parameters) > 0 {
+	if len(prepared.clientParametersByLocation["path"]) > 0 {
 		result = append(result, name+"PathInput")
 	}
-	if parameters, err := clientParametersIn(document, operation, "query"); err != nil {
-		return nil, err
-	} else if len(parameters) > 0 || operation.Pagination != "" || len(operation.SortParameters) > 0 {
+	if len(prepared.clientParametersByLocation["query"]) > 0 || operation.Pagination != "" || len(operation.SortParameters) > 0 {
 		result = append(result, name+"QueryInput")
 	}
-	if parameters, err := clientParametersIn(document, operation, "querystring"); err != nil {
-		return nil, err
-	} else if len(parameters) > 0 {
+	if len(prepared.clientParametersByLocation["querystring"]) > 0 {
 		result = append(result, name+"QuerystringInput")
 	}
-	if parameters, err := clientParametersIn(document, operation, "header"); err != nil {
-		return nil, err
-	} else if len(parameters) > 0 {
+	if len(prepared.clientParametersByLocation["header"]) > 0 {
 		result = append(result, name+"HeaderInput")
 	}
-	if parameters, err := clientParametersIn(document, operation, "cookie"); err != nil {
-		return nil, err
-	} else if len(parameters) > 0 {
+	if len(prepared.clientParametersByLocation["cookie"]) > 0 {
 		result = append(result, name+"CookieInput")
 	}
 	if body, ok := operation.Raw["requestBody"].(map[string]any); ok {

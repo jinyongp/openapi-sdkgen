@@ -12,15 +12,23 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-var serverVariablePattern = regexp.MustCompile(`\{[^{}]+\}`)
+var (
+	serverVariablePattern       = regexp.MustCompile(`\{[^{}]+\}`)
+	linkRequestParameterPattern = regexp.MustCompile(`^\$request\.(path|query|header|cookie)\.([^#]+)(#.*)?$`)
+	exactResponseStatusPattern  = regexp.MustCompile(`^[1-5][0-9][0-9]$`)
+	rangeResponseStatusPattern  = regexp.MustCompile(`^[1-5][Xx][Xx]$`)
+)
 
 type generatedLink struct {
-	SourceOperation ir.Operation
-	Status          string
-	Name            string
-	TargetOperation ir.Operation
-	Definition      string
-	ServerURL       string
+	SourceOperation       ir.Operation
+	Status                string
+	Name                  string
+	TargetOperation       ir.Operation
+	Definition            string
+	ServerURL             string
+	SourceHasInput        bool
+	TargetHasInput        bool
+	TargetOptionsRequired bool
 }
 
 func generatedLinks(document *ir.Document, manifest Manifest) ([]generatedLink, error) {
@@ -32,22 +40,25 @@ func generatedLinks(document *ir.Document, manifest Manifest) ([]generatedLink, 
 }
 
 func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]generatedLink, []error) {
-	visible := map[string]bool{}
+	visible := map[string]ManifestOperation{}
 	for _, operation := range manifest.Operations {
 		if operation.Visibility != "hidden" {
-			visible[manifestRouteKey(operation)] = true
+			visible[manifestRouteKey(operation)] = operation
 		}
 	}
 	byID := make(map[string]ir.Operation, len(document.Operations))
+	byPathMethod := make(map[string]ir.Operation, len(document.Operations))
 	for _, operation := range document.Operations {
 		if operation.OperationID != "" {
 			byID[operation.OperationID] = operation
 		}
+		byPathMethod[operationPathMethodKey(operation.Path, operation.Method)] = operation
 	}
 	var result []generatedLink
 	var failures []error
 	for _, source := range document.Operations {
-		if !visible[operationRouteKey(source)] {
+		sourcePlan, sourceVisible := visible[operationRouteKey(source)]
+		if !sourceVisible {
 			continue
 		}
 		responses, _ := source.Raw["responses"].(map[string]any)
@@ -83,16 +94,17 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
 					continue
 				}
-				target, err := linkTargetOperation(document, byID, link)
+				target, err := linkTargetOperation(byID, byPathMethod, link)
 				if err != nil {
 					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
 					continue
 				}
-				if !visible[operationRouteKey(target)] {
+				targetPlan, targetVisible := visible[operationRouteKey(target)]
+				if !targetVisible {
 					failures = append(failures, fmt.Errorf("response link %s %s targets hidden operation %q", operationLabel(source), name, operationLabel(target)))
 					continue
 				}
-				definition, err := linkDefinition(document, source, target, link, linkDefinitionPointers{
+				definition, err := linkDefinition(sourcePlan.prepared.parameters, targetPlan.prepared.parameters, link, linkDefinitionPointers{
 					parameters:  parametersPointer,
 					requestBody: requestBodyPointer,
 				})
@@ -109,7 +121,11 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
 					continue
 				}
-				result = append(result, generatedLink{SourceOperation: source, Status: status, Name: name, TargetOperation: target, Definition: definition, ServerURL: serverURL})
+				result = append(result, generatedLink{
+					SourceOperation: source, Status: status, Name: name, TargetOperation: target, Definition: definition, ServerURL: serverURL,
+					SourceHasInput: len(sourcePlan.InputTypes) != 0, TargetHasInput: len(targetPlan.InputTypes) != 0,
+					TargetOptionsRequired: targetPlan.optionsRequired,
+				})
 			}
 		}
 	}
@@ -131,6 +147,10 @@ func responsePointer(source ir.Operation, status string) string {
 		pointer = "#/paths/" + escapePointerToken(source.Path) + "/" + strings.ToLower(source.Method)
 	}
 	return pointer + "/responses/" + escapePointerToken(status)
+}
+
+func operationPathMethodKey(path, method string) string {
+	return path + "\x00" + strings.ToUpper(method)
 }
 
 func linkServerURL(link map[string]any) (string, error) {
@@ -160,7 +180,7 @@ func linkServerURL(link map[string]any) (string, error) {
 	return serverURL, nil
 }
 
-func linkTargetOperation(document *ir.Document, byID map[string]ir.Operation, link map[string]any) (ir.Operation, error) {
+func linkTargetOperation(byID, byPathMethod map[string]ir.Operation, link map[string]any) (ir.Operation, error) {
 	if operationID, _ := link["operationId"].(string); operationID != "" {
 		operation, ok := byID[operationID]
 		if !ok {
@@ -184,10 +204,8 @@ func linkTargetOperation(document *ir.Document, byID map[string]ir.Operation, li
 	if err != nil {
 		return ir.Operation{}, err
 	}
-	for _, operation := range document.Operations {
-		if operation.Path == path && strings.EqualFold(operation.Method, method) {
-			return operation, nil
-		}
+	if operation, exists := byPathMethod[operationPathMethodKey(path, method)]; exists {
+		return operation, nil
 	}
 	return ir.Operation{}, fmt.Errorf("operationRef %q does not name a generated operation", operationRef)
 }
@@ -197,15 +215,7 @@ type linkDefinitionPointers struct {
 	requestBody string
 }
 
-func linkDefinition(document *ir.Document, source, target ir.Operation, link map[string]any, pointers linkDefinitionPointers) (string, error) {
-	parameters, err := operationParameters(document, target)
-	if err != nil {
-		return "", err
-	}
-	sourceParameters, err := operationParameters(document, source)
-	if err != nil {
-		return "", err
-	}
+func linkDefinition(sourceParameters, parameters []operationParameter, link map[string]any, pointers linkDefinitionPointers) (string, error) {
 	byName := map[string][]operationParameter{}
 	for _, parameter := range parameters {
 		byName[parameter.Name] = append(byName[parameter.Name], parameter)
@@ -263,7 +273,7 @@ func linkValueLiteral(value any, sourceParameters []operationParameter) (string,
 }
 
 func linkRequestParameterExpression(expression string, sourceParameters []operationParameter) (any, error) {
-	matches := regexp.MustCompile(`^\$request\.(path|query|header|cookie)\.([^#]+)(#.*)?$`).FindStringSubmatch(expression)
+	matches := linkRequestParameterPattern.FindStringSubmatch(expression)
 	if matches == nil {
 		return expression, nil
 	}
@@ -362,28 +372,20 @@ func mapStringAny[T any](values map[string]T) map[string]any {
 }
 
 func linkGroupContract(document *ir.Document, group generatedLinkGroup) (string, error) {
-	sourceInput, err := linkSourceInputType(document, group.SourceOperation)
-	if err != nil {
-		return "", err
-	}
+	_ = document
+	sourceInput := linkPreparedInputType(operationRouteKey(group.SourceOperation), len(group.Links) != 0 && group.Links[0].SourceHasInput)
 	targetInputs := map[string]bool{}
 	targetOptions := map[string]bool{}
 	targetOutputs := map[string]bool{}
 	requiresOptions := false
 	statusMembers := make([]string, 0, len(group.Links))
 	for _, link := range group.Links {
-		input, err := linkTargetInputType(document, link.TargetOperation)
-		if err != nil {
-			return "", err
-		}
+		input := linkPreparedInputType(operationRouteKey(link.TargetOperation), link.TargetHasInput)
 		output := operationSlotType(operationRouteKey(link.TargetOperation), "output")
 		targetInputs[input] = true
 		targetOptions[operationSlotType(operationRouteKey(link.TargetOperation), "options")] = true
 		targetOutputs[output] = true
-		targetRequiresOptions, err := operationRequiresOptions(document, link.TargetOperation)
-		if err != nil {
-			return "", err
-		}
+		targetRequiresOptions := link.TargetOptionsRequired
 		if targetRequiresOptions {
 			requiresOptions = true
 		}
@@ -403,19 +405,11 @@ func linkInvocationParameter(input, options, sourceInput string, required bool) 
 	return "invocation?: LinkInvocation<" + input + ", " + options + ", " + sourceInput + ">"
 }
 
-func linkSourceInputType(document *ir.Document, operation ir.Operation) (string, error) {
-	inputs, err := operationInputTypes(document, operation)
-	if err != nil {
-		return "", err
+func linkPreparedInputType(route string, hasInput bool) string {
+	if !hasInput {
+		return "never"
 	}
-	if len(inputs) == 0 {
-		return "never", nil
-	}
-	return operationSlotType(operationRouteKey(operation), "input"), nil
-}
-
-func linkTargetInputType(document *ir.Document, operation ir.Operation) (string, error) {
-	return linkSourceInputType(document, operation)
+	return operationSlotType(route, "input")
 }
 
 func sortedStringSet(values map[string]bool) string {
@@ -440,10 +434,10 @@ func linkStatusProperty(status string) (string, error) {
 	if status == "default" {
 		return "statusDefault", nil
 	}
-	if regexp.MustCompile(`^[1-5][0-9][0-9]$`).MatchString(status) {
+	if exactResponseStatusPattern.MatchString(status) {
 		return "status" + status, nil
 	}
-	if regexp.MustCompile(`^[1-5][Xx][Xx]$`).MatchString(status) {
+	if rangeResponseStatusPattern.MatchString(status) {
 		return "status" + string(status[0]) + "XX", nil
 	}
 	return "", fmt.Errorf("unsupported Link response status %q", status)
@@ -459,28 +453,15 @@ func emitLinkValues(output *bytes.Buffer, document *ir.Document, links []generat
 			return err
 		}
 		targetProperty := operationValueName(operationRouteKey(link.TargetOperation))
-		targetInputs, err := operationInputTypes(document, link.TargetOperation)
-		if err != nil {
-			return err
-		}
+		targetHasInput := link.TargetHasInput
 		targetInput := operationSlotType(operationRouteKey(link.TargetOperation), "input")
 		targetOptions := operationSlotType(operationRouteKey(link.TargetOperation), "options")
 		sourceRawResponse := operationSlotType(operationRouteKey(link.SourceOperation), "rawResponse")
-		sourceInputs, err := operationInputTypes(document, link.SourceOperation)
-		if err != nil {
-			return err
-		}
-		sourceInput := "never"
-		if len(sourceInputs) != 0 {
-			sourceInput = operationSlotType(operationRouteKey(link.SourceOperation), "input")
-		}
+		sourceInput := linkPreparedInputType(operationRouteKey(link.SourceOperation), link.SourceHasInput)
 		targetOutput := operationSlotType(operationRouteKey(link.TargetOperation), "output")
 		invocationType := "LinkInvocation"
 		invocationDefault := " = {}"
-		targetRequiresOptions, err := operationRequiresOptions(document, link.TargetOperation)
-		if err != nil {
-			return err
-		}
+		targetRequiresOptions := link.TargetOptionsRequired
 		if targetRequiresOptions {
 			invocationType = "RequiredLinkInvocation"
 			invocationDefault = ""
@@ -489,7 +470,7 @@ func emitLinkValues(output *bytes.Buffer, document *ir.Document, links []generat
 		if link.ServerURL != "" {
 			options = "{ ...(invocation.options ?? {}), baseURL: new URL(" + quoteTS(link.ServerURL) + ", response.response.url).href }"
 		}
-		if len(targetInputs) == 0 {
+		if !targetHasInput {
 			fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<never, %s, %s>%s): Promise<%s> => { resolveLinkInput<never>(response, %s, invocation.sourceInput); return %s(%s) }\n", name, sourceRawResponse, invocationType, targetOptions, sourceInput, invocationDefault, targetOutput, link.Definition, targetProperty, options)
 			continue
 		}
@@ -514,27 +495,18 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 	if err != nil {
 		return err
 	}
-	sourceInput, err := linkSourceInputType(document, group.SourceOperation)
-	if err != nil {
-		return err
-	}
+	sourceInput := linkPreparedInputType(operationRouteKey(group.SourceOperation), len(group.Links) != 0 && group.Links[0].SourceHasInput)
 	targetInputs := map[string]bool{}
 	targetOptions := map[string]bool{}
 	targetOutputs := map[string]bool{}
 	requiresOptions := false
 	for _, link := range group.Links {
-		input, err := linkTargetInputType(document, link.TargetOperation)
-		if err != nil {
-			return err
-		}
+		input := linkPreparedInputType(operationRouteKey(link.TargetOperation), link.TargetHasInput)
 		output := operationSlotType(operationRouteKey(link.TargetOperation), "output")
 		targetInputs[input] = true
 		targetOptions[operationSlotType(operationRouteKey(link.TargetOperation), "options")] = true
 		targetOutputs[output] = true
-		targetRequiresOptions, err := operationRequiresOptions(document, link.TargetOperation)
-		if err != nil {
-			return err
-		}
+		targetRequiresOptions := link.TargetOptionsRequired
 		if targetRequiresOptions {
 			requiresOptions = true
 		}
@@ -587,10 +559,10 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 }
 
 func linkStatusCondition(status string) (string, error) {
-	if regexp.MustCompile(`^[1-5][0-9][0-9]$`).MatchString(status) {
+	if exactResponseStatusPattern.MatchString(status) {
 		return "response.status === " + status, nil
 	}
-	if regexp.MustCompile(`^[1-5][Xx][Xx]$`).MatchString(status) {
+	if rangeResponseStatusPattern.MatchString(status) {
 		return "Math.floor(response.status / 100) === " + string(status[0]), nil
 	}
 	return "", fmt.Errorf("unsupported Link response status %q", status)

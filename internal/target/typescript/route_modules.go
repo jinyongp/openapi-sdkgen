@@ -94,19 +94,19 @@ func emitRouteInputs(manifest Manifest, plan *semanticModulePlan) ([]byte, error
 }
 
 func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
-	request, err := relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/request.ts")
+	request, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/request.ts")
 	if err != nil {
 		return nil, err
 	}
-	identity, err := relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/identity.ts")
+	identity, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/identity.ts")
 	if err != nil {
 		return nil, err
 	}
-	index, err := relativeModuleSpecifier(plan.fixed["route-helpers"], plan.fixed["route-index"])
+	index, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], plan.fixed["route-index"])
 	if err != nil {
 		return nil, err
 	}
-	inputs, err := relativeModuleSpecifier(plan.fixed["route-helpers"], plan.fixed["route-inputs"])
+	inputs, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], plan.fixed["route-inputs"])
 	if err != nil {
 		return nil, err
 	}
@@ -298,5 +298,5 @@ func operationModuleSpecifier(from, route string, plan *semanticModulePlan) (str
 	if !exists {
 		return "", fmt.Errorf("route %q has no operation module", route)
 	}
-	return relativeModuleSpecifier(from, path)
+	return plan.relativeModuleSpecifier(from, path)
 }

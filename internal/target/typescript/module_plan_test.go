@@ -29,7 +29,11 @@ func TestSemanticModulePlanSeparatesSchemaOperationAndResourceOwners(t *testing.
 		{RouteKey: "POST /users", OperationID: "createUser", Method: "POST", Path: "/users", Visibility: "internal"},
 		{RouteKey: "DELETE /users/{userId}", OperationID: "deleteUser", Method: "DELETE", Path: "/users/{userId}", Visibility: "hidden"},
 	}}
-	plan, err := buildSemanticModulePlan(document, manifest, nil, nil)
+	tree, err := buildResourceTree(document, manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := buildSemanticModulePlan(document, manifest, tree, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +88,7 @@ func TestPlanTypeReferencesUsesInlineThenSharedAlias(t *testing.T) {
 		{key: "repeat-b", modulePath: "internal/schemas/problem.ts", exportName: "Output"},
 		{key: "bound", modulePath: "internal/schemas/input.ts", exportName: "Input", requiresBinding: true},
 	}
-	planned, err := planTypeReferences("internal/operations/users/get.ts", uses)
+	planned, err := planTypeReferences(&semanticModulePlan{}, "internal/operations/users/get.ts", uses)
 	if err != nil {
 		t.Fatal(err)
 	}
