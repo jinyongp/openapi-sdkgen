@@ -1,6 +1,6 @@
 module openapi-sdkgen
 
-go 1.26.5
+go 1.27.0
 
 require (
 	github.com/pb33f/libopenapi v0.38.6

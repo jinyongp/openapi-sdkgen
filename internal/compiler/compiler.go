@@ -1,13 +1,17 @@
 package sdkgen
 
 import (
+	"bytes"
 	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pb33f/libopenapi/bundler"
@@ -142,11 +146,16 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	}
 	hasExternalReferences := externalReferenceCount(value) != 0
 	if !hasExternalReferences {
-		document, err := compileValue(value, false, true, options, lock)
+		// The structured result path already validates reserved keywords,
+		// references, version features, and every generator-consumed shape. Avoid
+		// duplicating its document tree solely for a libopenapi model build. Legacy
+		// direct compiler APIs retain full model validation for compatibility.
+		validateModel := options.diagnostics == nil
+		document, err := compileValue(value, false, validateModel, options, lock)
 		if err != nil {
 			return nil, err
 		}
-		attachDocumentProvenanceValue(document, source, value, nil)
+		attachDocumentProvenanceValue(document, source, document.Raw, nil)
 		if lock != nil && options.UpdateRefLock {
 			if err := writeReferenceLock(lockPath, lock); err != nil {
 				return nil, phaseError(diagnostic.PhaseReferences, err)
@@ -532,7 +541,7 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	}
 	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
 	if err == nil && source {
-		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, raw, nil)
+		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, model.Raw, nil)
 	}
 	return model, err
 }
@@ -541,11 +550,77 @@ func decodeInputValue(data []byte, metrics *compilationMetrics) (any, error) {
 	if metrics != nil {
 		metrics.SourceDecodes++
 	}
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) != 0 && (trimmed[0] == '{' || trimmed[0] == '[') {
+		value, err := decodeJSONInputValue(data)
+		if err == nil {
+			return value, nil
+		}
+		if errors.Is(err, jsontext.ErrDuplicateName) {
+			return nil, err
+		}
+		// YAML flow mappings can start with a brace. Fall through to the YAML
+		// decoder when strict JSON decoding does not accept the input.
+	}
 	var value any
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil, err
 	}
 	return value, nil
+}
+
+func decodeJSONInputValue(data []byte) (any, error) {
+	var value any
+	err := jsonv2.Unmarshal(data, &value, jsonv2.WithUnmarshalers(
+		jsonv2.UnmarshalFromFunc(func(decoder *jsontext.Decoder, target *any) error {
+			if decoder.PeekKind() == '0' {
+				*target = jsontext.Value(nil)
+			}
+			return errors.ErrUnsupported
+		}),
+	))
+	if err != nil {
+		return nil, err
+	}
+	normalizeJSONNumbers(value)
+	return value, nil
+}
+
+func normalizeJSONNumbers(value any) {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if number, ok := child.(jsontext.Value); ok {
+				typed[key] = compatibleJSONNumber(string(number))
+				continue
+			}
+			normalizeJSONNumbers(child)
+		}
+	case []any:
+		for index, child := range typed {
+			if number, ok := child.(jsontext.Value); ok {
+				typed[index] = compatibleJSONNumber(string(number))
+				continue
+			}
+			normalizeJSONNumbers(child)
+		}
+	}
+}
+
+func compatibleJSONNumber(value string) any {
+	if integer, err := strconv.ParseInt(value, 10, 64); err == nil {
+		if int64(int(integer)) == integer {
+			return int(integer)
+		}
+		return integer
+	}
+	if unsigned, err := strconv.ParseUint(value, 10, 64); err == nil {
+		return unsigned
+	}
+	if decimal, err := strconv.ParseFloat(value, 64); err == nil {
+		return decimal
+	}
+	return value
 }
 
 func compileValue(raw any, source, validateModel bool, options CompileOptions, lock *referenceLock) (*ir.Document, error) {
@@ -580,8 +655,6 @@ func compileValue(raw any, source, validateModel bool, options CompileOptions, l
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseOpenAPI, err)
 	}
-	// Retain normalization metadata not modeled by libopenapi.
-	document.Raw = normalizedDocument
 	model, err := ir.Build(document)
 	if err != nil {
 		if ir.IsReferenceError(err) {

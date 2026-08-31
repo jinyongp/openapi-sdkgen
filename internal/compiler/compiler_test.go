@@ -443,6 +443,24 @@ func TestSelfContainedCompileUsesSingleDecodeWithoutBundler(t *testing.T) {
 	}
 }
 
+func TestJSONInputDecodePreservesScalarTypesAndRejectsDuplicateKeys(t *testing.T) {
+	value, err := decodeInputValue([]byte(`{"integer":3,"decimal":1.5,"unsigned":9223372036854775808,"array":[true,null]}`), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	object := value.(map[string]any)
+	if object["integer"] != 3 || object["decimal"] != 1.5 || object["unsigned"] != uint64(9223372036854775808) {
+		t.Fatalf("decoded scalars = %#v", object)
+	}
+	if _, err := decodeInputValue([]byte(`{"openapi":"3.1.0","openapi":"3.2.0"}`), nil); err == nil || !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("duplicate JSON key error = %v", err)
+	}
+	flow, err := decodeInputValue([]byte(`{openapi: "3.1.0", info: {title: Flow, version: "1"}, paths: {}}`), nil)
+	if err != nil || flow.(map[string]any)["openapi"] != "3.1.0" {
+		t.Fatalf("YAML flow fallback = %#v, %v", flow, err)
+	}
+}
+
 func TestExternalCompileUsesExactReferenceClosureAndSingleModelBuild(t *testing.T) {
 	directory := t.TempDir()
 	schemas := filepath.Join(directory, "schemas")

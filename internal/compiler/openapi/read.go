@@ -67,8 +67,8 @@ decoded:
 }
 
 // ReadParsed validates an application-owned decoded document without decoding
-// it again. validateModel is false only when a preceding bundler build already
-// validated the same logical document and resolved all external references.
+// it again. Callers with their own structured surface validation may disable
+// the optional full libopenapi model build.
 func ReadParsed(raw map[string]any, validateModel bool) (*Document, error) {
 	version, _ := raw["openapi"].(string)
 	versionLine, err := DetectVersionLine(version)
@@ -79,21 +79,32 @@ func ReadParsed(raw map[string]any, validateModel bool) (*Document, error) {
 		return nil, err
 	}
 
-	parseData, err := json.Marshal(maskOpaqueReferenceKeywords(raw, false))
-	if err != nil {
-		return nil, fmt.Errorf("normalize OpenAPI input: %w", err)
-	}
 	if validateModel {
-		configuration := &datamodel.DocumentConfiguration{SkipMetadataCollection: true}
-		document, err := libopenapi.NewDocumentWithConfiguration(parseData, configuration)
+		parseData, err := json.Marshal(maskOpaqueReferenceKeywords(raw, false))
 		if err != nil {
-			return nil, fmt.Errorf("parse OpenAPI document: %w", err)
+			return nil, fmt.Errorf("normalize OpenAPI input: %w", err)
 		}
-		if _, err := document.BuildV3Model(); err != nil {
-			return nil, fmt.Errorf("build OpenAPI 3 model: %w", err)
+		if err := ValidateModel(parseData); err != nil {
+			return nil, err
 		}
 	}
 	return &Document{Raw: raw, Version: versionLine}, nil
+}
+
+// ValidateModel performs libopenapi's model validation without retaining it.
+func ValidateModel(data []byte) error {
+	configuration := &datamodel.DocumentConfiguration{SkipMetadataCollection: true}
+	document, err := libopenapi.NewDocumentWithConfiguration(data, configuration)
+	if err != nil {
+		return fmt.Errorf("parse OpenAPI document: %w", err)
+	}
+	_, err = document.BuildV3Model()
+	if err != nil {
+		document.Release()
+		return fmt.Errorf("build OpenAPI 3 model: %w", err)
+	}
+	document.Release()
+	return nil
 }
 
 func maskOpaqueReferenceKeywords(value any, opaque bool) any {

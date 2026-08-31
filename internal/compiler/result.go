@@ -44,7 +44,7 @@ func CompileResult(data []byte) (Result, error) {
 	if decodeErr != nil {
 		err = phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", decodeErr))
 	} else {
-		document, err = compileValue(decoded, false, true, CompileOptions{}, nil)
+		document, err = compileValue(decoded, false, false, CompileOptions{}, nil)
 	}
 	return resultFromCompile(document, err, "in-memory OpenAPI document", collector), nil
 }
