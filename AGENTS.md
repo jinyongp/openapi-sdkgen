@@ -26,6 +26,8 @@ just agent generate INPUT OUTPUT [TARGET]
 just agent generate-check INPUT [TARGET] [-- GENERATOR_OPTIONS...]
 just agent generate-check-test
 just agent conformance
+just agent perf
+just agent perf-profile
 just agent ts-lock
 just agent ts-install
 just agent ts-fmt

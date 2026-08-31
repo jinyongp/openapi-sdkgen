@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+cd "$ROOT"
+
+perf_dir="$ROOT/.tmp/perf"
+binary="$perf_dir/openapi-sdkgen.test"
+shape_log="$perf_dir/workloads.log"
+bench_log="$perf_dir/bench.log"
+metric_log="$perf_dir/process.log"
+mkdir -p "$perf_dir"
+
+agent_run "build performance test binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
+
+if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceWorkloadsDeterministic$' >"$shape_log" 2>&1; then
+  echo "failed performance workload verification"
+  tail -n "$TAIL_LINES" "$shape_log" || true
+  exit 1
+fi
+
+if ! "$binary" -test.run '^$' -test.bench '^BenchmarkGeneration/' -test.benchmem -test.benchtime "${PERF_BENCHTIME:-1x}" -test.count "${PERF_COUNT:-1}" >"$bench_log" 2>&1; then
+  echo "failed performance benchmarks"
+  tail -n "$TAIL_LINES" "$bench_log" || true
+  exit 1
+fi
+
+if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceProcessMetrics$' >"$metric_log" 2>&1; then
+  echo "failed performance process metrics"
+  tail -n "$TAIL_LINES" "$metric_log" || true
+  exit 1
+fi
+
+rg 'PERF_WORKLOAD' "$shape_log"
+rg '^BenchmarkGeneration/' "$bench_log"
+rg 'PERF_METRIC' "$metric_log"
+agent_note "ok performance baseline"

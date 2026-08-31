@@ -48,6 +48,12 @@ conformance:
 coverage:
     ./scripts/agent/coverage
 
+perf:
+    ./scripts/agent/perf
+
+perf-profile:
+    ./scripts/agent/perf-profile
+
 ts-lock:
     ./scripts/agent/ts-lock
 
