@@ -77,6 +77,7 @@ type CompileOptions struct {
 	// those hooks through the CLI contract.
 	remoteReferenceClient *http.Client
 	remoteReferenceLookup hostLookup
+	metrics               *compilationMetrics
 }
 
 type referenceLock struct {

@@ -20,6 +20,13 @@ import (
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
+type compilationMetrics struct {
+	SourceDecodes int
+	Bundles       int
+	ModelBuilds   int
+	FileFilter    []string
+}
+
 func Compile(data []byte) (*ir.Document, error) {
 	return compile(data, true)
 }
@@ -64,29 +71,39 @@ func CompileProjectFile(path string) (*ir.Document, error) {
 }
 
 func compileInput(source inputSource, project bool, options CompileOptions) (*ir.Document, error) {
+	value, err := decodeInputValue(source.data, options.metrics)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err))
+	}
+	return compileInputValue(source, value, project, options)
+}
+
+func compileInputValue(source inputSource, value any, project bool, options CompileOptions) (*ir.Document, error) {
 	data := source.data
-	if findings, err := reservedExtensionDiagnostics(data, source.display); err != nil {
-		return nil, phaseError(diagnostic.PhaseDecode, err)
-	} else if len(findings) != 0 {
+	if findings := reservedExtensionDiagnosticsValue(value, source.display); len(findings) != 0 {
 		location := diagnostic.NewSourceRegistry([]string{findings[0].Location.Source}).Display(findings[0].Location.Source)
 		return nil, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", findings[0].Message, location, findings[0].Location.Pointer))
 	}
 	if source.remoteBase != nil {
 		var err error
-		data, err = absolutizeRelativeRemoteReferences(data, source.remoteBase)
+		value, err = absolutizeRelativeRemoteReferencesValue(value, source.remoteBase)
 		if err != nil {
 			return nil, phaseError(diagnostic.PhaseNormalize, err)
+		}
+		data, err = json.Marshal(value)
+		if err != nil {
+			return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("normalize OpenAPI remote references: %w", err))
 		}
 	}
 	if project && (len(options.RemoteRefAllowlist) != 0 || len(options.SchemaExtensionManifests) != 0 || options.UpdateRefLock || options.Offline || options.RefLockPath != "") {
 		return nil, phaseError(diagnostic.PhaseInput, errors.New("project compilation does not support remote references or schema extensions"))
 	}
 	if project {
-		if err := rejectProjectExternalReferences(data); err != nil {
+		if err := rejectProjectExternalReferencesValue(value); err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
 	}
-	if source.stdin && source.fileBase == "" && source.remoteBase == nil && hasRelativeExternalReference(data) {
+	if source.stdin && source.fileBase == "" && source.remoteBase == nil && hasRelativeExternalReferenceValue(value) {
 		return nil, phaseError(diagnostic.PhaseReferences, errors.New("standard input contains a relative $ref; pass --input-base with the source document location"))
 	}
 	lockPath := options.RefLockPath
@@ -123,23 +140,45 @@ func compileInput(source inputSource, project bool, options CompileOptions) (*ir
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
 	}
-	if !project && source.filePath != "" {
-		if err := rejectEscapingFileReferencesWithRemote(source.filePath, source.fileBase, remoteResolver != nil); err != nil {
+	hasExternalReferences := externalReferenceCount(value) != 0
+	if !hasExternalReferences {
+		document, err := compileValue(value, false, true, options, lock)
+		if err != nil {
+			return nil, err
+		}
+		attachDocumentProvenanceWithSources(document, source, nil)
+		if lock != nil && options.UpdateRefLock {
+			if err := writeReferenceLock(lockPath, lock); err != nil {
+				return nil, phaseError(diagnostic.PhaseReferences, err)
+			}
+		}
+		return document, nil
+	}
+	var fileFilter []string
+	if !project && source.fileBase != "" {
+		var err error
+		fileFilter, err = validatedReferenceFileFilter(source, value, remoteResolver != nil)
+		if err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
-	} else if !project && source.fileBase != "" {
-		if err := rejectEscapingFileReferenceData(data, source.fileBase, remoteResolver != nil); err != nil {
-			return nil, phaseError(diagnostic.PhaseReferences, err)
+		if options.metrics != nil {
+			options.metrics.FileFilter = append([]string(nil), fileFilter...)
 		}
 	}
 	bundlerConfiguration := &datamodel.DocumentConfiguration{
-		BasePath:              source.fileBase,
-		SpecFilePath:          source.filePath,
-		AllowFileReferences:   source.fileBase != "",
-		AllowRemoteReferences: remoteResolver != nil,
+		BasePath:               source.fileBase,
+		SpecFilePath:           source.filePath,
+		AllowFileReferences:    source.fileBase != "",
+		AllowRemoteReferences:  remoteResolver != nil,
+		FileFilter:             fileFilter,
+		SkipMetadataCollection: true,
 	}
 	if remoteResolver != nil {
 		bundlerConfiguration.RemoteURLHandler = remoteResolver.handle
+	}
+	if options.metrics != nil {
+		options.metrics.Bundles++
+		options.metrics.ModelBuilds++
 	}
 	bundled, err := bundler.BundleBytesComposed(data, bundlerConfiguration, nil)
 	if remoteResolver != nil {
@@ -150,28 +189,12 @@ func compileInput(source inputSource, project bool, options CompileOptions) (*ir
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseReferences, fmt.Errorf("resolve OpenAPI references: %w", err))
 	}
-	var value any
-	if err := yaml.Unmarshal(bundled, &value); err != nil {
+	var bundledValue any
+	if err := yaml.Unmarshal(bundled, &bundledValue); err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("decode bundled OpenAPI document: %w", err))
 	}
-	var sourceDocument any
-	if err := yaml.Unmarshal(data, &sourceDocument); err != nil {
-		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("decode source OpenAPI document: %w", err))
-	}
-	merged := mergeBundledDocument(sourceDocument, value)
-	merged, err = normalizeNestedSchemaReferences(merged)
-	if err != nil {
-		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("normalize nested OpenAPI schema references: %w", err))
-	}
-	normalized, err := json.Marshal(merged)
-	if err != nil {
-		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("normalize bundled OpenAPI document: %w", err))
-	}
-	normalized, err = lowerSchemaExtensions(normalized, options, lock)
-	if err != nil {
-		return nil, phaseError(diagnostic.PhaseNormalize, err)
-	}
-	document, err := compile(normalized, project)
+	merged := mergeBundledDocument(value, bundledValue)
+	document, err := compileValue(merged, false, false, options, lock)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +216,18 @@ func absolutizeRelativeRemoteReferences(data []byte, base *url.URL) ([]byte, err
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return nil, fmt.Errorf("decode OpenAPI input for remote reference resolution: %w", err)
 	}
+	document, err := absolutizeRelativeRemoteReferencesValue(document, base)
+	if err != nil {
+		return nil, err
+	}
+	normalized, err := yaml.Marshal(document)
+	if err != nil {
+		return nil, fmt.Errorf("normalize OpenAPI remote references: %w", err)
+	}
+	return normalized, nil
+}
+
+func absolutizeRelativeRemoteReferencesValue(document any, base *url.URL) (any, error) {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
@@ -226,11 +261,7 @@ func absolutizeRelativeRemoteReferences(data []byte, base *url.URL) ([]byte, err
 	if err := visit(document, nil); err != nil {
 		return nil, err
 	}
-	normalized, err := yaml.Marshal(document)
-	if err != nil {
-		return nil, fmt.Errorf("normalize OpenAPI remote references: %w", err)
-	}
-	return normalized, nil
+	return document, nil
 }
 
 // mergeBundledDocument keeps extensions and newly standardized OpenAPI fields
@@ -282,6 +313,44 @@ func rejectEscapingFileReferenceData(data []byte, root string, allowRemote bool)
 	return inspectReferenceData(data, resolvedRoot, resolvedRoot, make(map[string]bool), allowRemote)
 }
 
+func validatedReferenceFileFilter(source inputSource, document any, allowRemote bool) ([]string, error) {
+	root, err := filepath.EvalSymlinks(source.fileBase)
+	if err != nil {
+		return nil, fmt.Errorf("resolve OpenAPI input directory: %w", err)
+	}
+	directory := root
+	visited := make(map[string]bool)
+	if source.filePath != "" {
+		resolved, err := filepath.EvalSymlinks(source.filePath)
+		if err != nil {
+			return nil, fmt.Errorf("resolve OpenAPI reference file %s: %w", source.filePath, err)
+		}
+		if err := requireContainedPath(resolved, root); err != nil {
+			return nil, err
+		}
+		visited[resolved] = true
+		directory = filepath.Dir(resolved)
+	}
+	if err := inspectReferenceValue(document, directory, root, visited, allowRemote); err != nil {
+		return nil, err
+	}
+	filters := make([]string, 0, len(visited))
+	for path := range visited {
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return nil, fmt.Errorf("make OpenAPI reference path relative: %w", err)
+		}
+		filters = append(filters, filepath.ToSlash(relative))
+	}
+	if len(filters) == 0 {
+		// A non-empty impossible filter prevents libopenapi from recursively
+		// indexing unrelated siblings when the document has remote refs only.
+		filters = append(filters, ".openapi-sdkgen-no-local-references")
+	}
+	sort.Strings(filters)
+	return filters, nil
+}
+
 func inspectReferenceFile(path, root string, visited map[string]bool, allowRemote bool) error {
 	resolvedPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
@@ -306,6 +375,10 @@ func inspectReferenceData(data []byte, directory, root string, visited map[strin
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return fmt.Errorf("inspect OpenAPI references: %w", err)
 	}
+	return inspectReferenceValue(document, directory, root, visited, allowRemote)
+}
+
+func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool) error {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
@@ -346,6 +419,10 @@ func hasRelativeExternalReference(data []byte) bool {
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return false
 	}
+	return hasRelativeExternalReferenceValue(document)
+}
+
+func hasRelativeExternalReferenceValue(document any) bool {
 	var visit func(any, []string) bool
 	visit = func(value any, path []string) bool {
 		switch typed := value.(type) {
@@ -374,6 +451,12 @@ func hasRelativeExternalReference(data []byte) bool {
 		return false
 	}
 	return visit(document, nil)
+}
+
+func externalReferenceCount(document any) int {
+	var references []string
+	collectExternalReferences(document, nil, &references)
+	return len(references)
 }
 
 func resolveContainedReference(reference, directory, root string, allowRemote bool) (string, error) {
@@ -411,6 +494,10 @@ func rejectProjectExternalReferences(data []byte) error {
 	if err := yaml.Unmarshal(data, &root); err != nil {
 		return fmt.Errorf("inspect project references: %w", err)
 	}
+	return rejectProjectExternalReferencesValue(root)
+}
+
+func rejectProjectExternalReferencesValue(root any) error {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
@@ -439,10 +526,31 @@ func rejectProjectExternalReferences(data []byte) error {
 }
 
 func compile(data []byte, source bool) (*ir.Document, error) {
+	raw, err := decodeInputValue(data, nil)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", err))
+	}
+	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
+	if err == nil && source {
+		attachDocumentProvenance(model, inputSource{data: data, display: "in-memory OpenAPI document"})
+	}
+	return model, err
+}
+
+func decodeInputValue(data []byte, metrics *compilationMetrics) (any, error) {
+	if metrics != nil {
+		metrics.SourceDecodes++
+	}
+	var value any
+	if err := yaml.Unmarshal(data, &value); err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func compileValue(raw any, source, validateModel bool, options CompileOptions, lock *referenceLock) (*ir.Document, error) {
 	if source {
-		if findings, err := reservedExtensionDiagnostics(data, "in-memory OpenAPI document"); err != nil {
-			return nil, phaseError(diagnostic.PhaseDecode, err)
-		} else if len(findings) != 0 {
+		if findings := reservedExtensionDiagnosticsValue(raw, "in-memory OpenAPI document"); len(findings) != 0 {
 			location := diagnostic.NewSourceRegistry([]string{findings[0].Location.Source}).Display(findings[0].Location.Source)
 			return nil, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", findings[0].Message, location, findings[0].Location.Pointer))
 		}
@@ -450,13 +558,13 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	// libopenapi resolves `$ref` while it reads. JSON Schema anchors are valid
 	// in OpenAPI 3.1/3.2 but are not component pointers, so normalize them
 	// before the library's OpenAPI reference resolver sees the document.
-	var raw any
-	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", err))
-	}
 	normalized, err := normalizeNestedSchemaReferences(raw)
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("normalize nested OpenAPI schema references: %w", err))
+	}
+	normalized, err = lowerSchemaExtensionsValue(normalized, options, lock)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, err)
 	}
 	normalizedDocument, ok := normalized.(map[string]any)
 	if !ok {
@@ -465,11 +573,10 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	if err := validatePathItemReferences(normalizedDocument); err != nil {
 		return nil, phaseError(diagnostic.PhaseReferences, err)
 	}
-	normalizedData, err := json.Marshal(normalizedDocument)
-	if err != nil {
-		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("encode normalized OpenAPI document: %w", err))
+	if validateModel && options.metrics != nil {
+		options.metrics.ModelBuilds++
 	}
-	document, err := openapidoc.Read(normalizedData)
+	document, err := openapidoc.ReadParsed(normalizedDocument, validateModel)
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseOpenAPI, err)
 	}
@@ -481,9 +588,6 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
 		return nil, phaseError(diagnostic.PhaseIR, err)
-	}
-	if source {
-		attachDocumentProvenance(model, inputSource{data: data, display: "in-memory OpenAPI document"})
 	}
 	return model, nil
 }

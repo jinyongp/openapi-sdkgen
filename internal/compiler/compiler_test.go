@@ -426,6 +426,67 @@ func TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine(t *
 	}
 }
 
+func TestSelfContainedCompileUsesSingleDecodeWithoutBundler(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "openapi.json")
+	contents := `{"openapi":"3.1.0","info":{"title":"Fast path","version":"1"},"paths":{},"components":{"schemas":{"Thing":{"type":"object"}}}}`
+	if err := os.WriteFile(input, []byte(contents), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	metrics := &compilationMetrics{}
+	if _, err := CompileFileWithOptions(input, CompileOptions{metrics: metrics}); err != nil {
+		t.Fatal(err)
+	}
+	if metrics.SourceDecodes != 1 || metrics.Bundles != 0 || metrics.ModelBuilds != 1 {
+		t.Fatalf("structural metrics = %#v, want decode=1 bundle=0 model=1", metrics)
+	}
+}
+
+func TestExternalCompileUsesExactReferenceClosureAndSingleModelBuild(t *testing.T) {
+	directory := t.TempDir()
+	schemas := filepath.Join(directory, "schemas")
+	if err := os.Mkdir(schemas, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	input := filepath.Join(directory, "openapi.yaml")
+	contents := `openapi: 3.1.0
+info: {title: Bounded references, version: "1"}
+paths:
+  /things:
+    get:
+      operationId: listThings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: schemas/thing.yaml#/Thing}
+`
+	files := map[string]string{
+		input:                                   contents,
+		filepath.Join(schemas, "thing.yaml"):    "Thing:\n  type: object\n  properties:\n    name: {$ref: common.yaml#/Name}\n",
+		filepath.Join(schemas, "common.yaml"):   "Name: {type: string}\n",
+		filepath.Join(directory, "unused.yaml"): "this: [is: not: valid",
+	}
+	for path, contents := range files {
+		if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	metrics := &compilationMetrics{}
+	document, err := CompileFileWithOptions(input, CompileOptions{metrics: metrics})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Operations) != 1 || document.Operations[0].OperationID != "listThings" {
+		t.Fatalf("operations = %#v", document.Operations)
+	}
+	wantFilter := []string{"openapi.yaml", "schemas/common.yaml", "schemas/thing.yaml"}
+	if metrics.SourceDecodes != 1 || metrics.Bundles != 1 || metrics.ModelBuilds != 1 || !reflect.DeepEqual(metrics.FileFilter, wantFilter) {
+		t.Fatalf("structural metrics = %#v, want decode=1 bundle=1 model=1 filter=%v", metrics, wantFilter)
+	}
+}
+
 func TestCompileProjectFileResolvesExternalReferences(t *testing.T) {
 	directory := t.TempDir()
 	main := `{"openapi":"3.2.0","info":{"title":"External","version":"1"},"servers":[{"url":"/v1"}],"paths":{"/things":{"get":{"operationId":"listThings","security":[],"responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"schemas.json#/Thing"}}}}},"x-envelope":"none","x-concurrency":"none","x-idempotency":"unsupported","x-sdk-visibility":"public"}}}}`

@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi/datamodel"
 	"go.yaml.in/yaml/v4"
 )
 
@@ -62,6 +63,13 @@ func Read(data []byte) (*Document, error) {
 	}
 
 decoded:
+	return ReadParsed(raw, true)
+}
+
+// ReadParsed validates an application-owned decoded document without decoding
+// it again. validateModel is false only when a preceding bundler build already
+// validated the same logical document and resolved all external references.
+func ReadParsed(raw map[string]any, validateModel bool) (*Document, error) {
 	version, _ := raw["openapi"].(string)
 	versionLine, err := DetectVersionLine(version)
 	if err != nil {
@@ -75,12 +83,15 @@ decoded:
 	if err != nil {
 		return nil, fmt.Errorf("normalize OpenAPI input: %w", err)
 	}
-	document, err := libopenapi.NewDocument(parseData)
-	if err != nil {
-		return nil, fmt.Errorf("parse OpenAPI document: %w", err)
-	}
-	if _, err := document.BuildV3Model(); err != nil {
-		return nil, fmt.Errorf("build OpenAPI 3 model: %w", err)
+	if validateModel {
+		configuration := &datamodel.DocumentConfiguration{SkipMetadataCollection: true}
+		document, err := libopenapi.NewDocumentWithConfiguration(parseData, configuration)
+		if err != nil {
+			return nil, fmt.Errorf("parse OpenAPI document: %w", err)
+		}
+		if _, err := document.BuildV3Model(); err != nil {
+			return nil, fmt.Errorf("build OpenAPI 3 model: %w", err)
+		}
 	}
 	return &Document{Raw: raw, Version: versionLine}, nil
 }

@@ -19,9 +19,13 @@ func reservedExtensionDiagnostics(data []byte, source string) ([]diagnostic.Diag
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil, fmt.Errorf("decode source document for extension scan: %w", err)
 	}
+	return reservedExtensionDiagnosticsValue(value, source), nil
+}
+
+func reservedExtensionDiagnosticsValue(value any, source string) []diagnostic.Diagnostic {
 	var result []diagnostic.Diagnostic
 	scanExtensionKeywords(value, nil, source, &result)
-	return diagnostic.Sort(result), nil
+	return diagnostic.Sort(result)
 }
 
 func scanExtensionKeywords(value any, path []string, source string, result *[]diagnostic.Diagnostic) {
@@ -72,6 +76,14 @@ func sourceJSONPointer(path []string) string {
 }
 
 func scanLocalReferenceDocuments(source inputSource, collector *diagnostic.Collector) error {
+	var value any
+	if err := yaml.Unmarshal(source.data, &value); err != nil {
+		return nil
+	}
+	return scanLocalReferenceDocumentsValue(source, value, collector)
+}
+
+func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *diagnostic.Collector) error {
 	if source.fileBase == "" {
 		return nil
 	}
@@ -85,7 +97,7 @@ func scanLocalReferenceDocuments(source inputSource, collector *diagnostic.Colle
 			visited[resolved] = true
 		}
 	}
-	return scanLocalReferences(source.data, source.fileBase, root, visited, collector)
+	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector)
 }
 
 func scanLocalReferences(data []byte, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
@@ -93,6 +105,10 @@ func scanLocalReferences(data []byte, directory, root string, visited map[string
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil
 	}
+	return scanLocalReferenceValue(value, directory, root, visited, collector)
+}
+
+func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
 	var references []string
 	collectExternalReferences(value, nil, &references)
 	sort.Strings(references)
@@ -110,12 +126,12 @@ func scanLocalReferences(data []byte, directory, root string, visited map[string
 		if err != nil {
 			continue
 		}
-		findings, err := reservedExtensionDiagnostics(referenced, target)
-		if err != nil {
+		var referencedValue any
+		if err := yaml.Unmarshal(referenced, &referencedValue); err != nil {
 			continue
 		}
-		collector.Extend(findings)
-		if err := scanLocalReferences(referenced, filepath.Dir(target), root, visited, collector); err != nil {
+		collector.Extend(reservedExtensionDiagnosticsValue(referencedValue, target))
+		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector); err != nil {
 			return err
 		}
 	}

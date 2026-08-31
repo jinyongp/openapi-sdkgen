@@ -48,9 +48,24 @@ func lowerSchemaExtensions(data []byte, options CompileOptions, lock *referenceL
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return nil, fmt.Errorf("inspect schema vocabularies: %w", err)
 	}
+	lowered, err := lowerSchemaExtensionsValue(document, options, lock)
+	if err != nil {
+		return nil, err
+	}
+	if len(requiredCustomVocabularies(document)) == 0 {
+		return data, nil
+	}
+	encoded, err := json.Marshal(lowered)
+	if err != nil {
+		return nil, fmt.Errorf("encode lowered schema extensions: %w", err)
+	}
+	return encoded, nil
+}
+
+func lowerSchemaExtensionsValue(document any, options CompileOptions, lock *referenceLock) (any, error) {
 	required := requiredCustomVocabularies(document)
 	if len(required) == 0 {
-		return data, nil
+		return document, nil
 	}
 	if lock == nil {
 		return nil, errors.New("required custom JSON Schema vocabulary needs --schema-extension and --update-ref-lock")
@@ -76,11 +91,17 @@ func lowerSchemaExtensions(data []byte, options CompileOptions, lock *referenceL
 	if remaining := requiredCustomVocabularies(lowered); len(remaining) != 0 {
 		return nil, fmt.Errorf("schema extension output still requires custom JSON Schema vocabulary %q", sortedVocabularyURIs(remaining)[0])
 	}
+	// Preserve the compiler's historical YAML scalar representation after the
+	// extension protocol's JSON decode (for example integral minimum lengths).
 	encoded, err := json.Marshal(lowered)
 	if err != nil {
 		return nil, fmt.Errorf("encode lowered schema extensions: %w", err)
 	}
-	return encoded, nil
+	var normalized any
+	if err := yaml.Unmarshal(encoded, &normalized); err != nil {
+		return nil, fmt.Errorf("normalize lowered schema extensions: %w", err)
+	}
+	return normalized, nil
 }
 
 // validateSchemaExtensions remains the narrow integrity check used by callers

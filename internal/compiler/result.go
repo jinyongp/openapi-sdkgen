@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 
-	"go.yaml.in/yaml/v4"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/openapiwalk"
@@ -26,22 +25,27 @@ type Result struct {
 // diagnostics for expected author errors.
 func CompileResult(data []byte) (Result, error) {
 	collector := &diagnostic.Collector{}
-	findings, err := reservedExtensionDiagnostics(data, "in-memory OpenAPI document")
-	if err == nil {
-		collector.Extend(findings)
+	decoded, decodeErr := decodeInputValue(data, nil)
+	if decodeErr == nil {
+		collector.Extend(reservedExtensionDiagnosticsValue(decoded, "in-memory OpenAPI document"))
 	}
 	if collector.HasErrors() {
 		return reservedSourceScanResult(collector), nil
 	}
-	var decoded any
-	if err := yaml.Unmarshal(data, &decoded); err == nil {
+	if decodeErr == nil {
 		collector.Extend(pathItemReferenceDiagnostics(decoded, "in-memory OpenAPI document", false))
 		collector.Extend(unresolvedLocalReferenceDiagnostics(decoded, "in-memory OpenAPI document"))
 	}
 	if collector.HasErrors() {
 		return referenceSourceScanResult(collector), nil
 	}
-	document, err := compile(data, false)
+	var document *ir.Document
+	var err error
+	if decodeErr != nil {
+		err = phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", decodeErr))
+	} else {
+		document, err = compileValue(decoded, false, true, CompileOptions{}, nil)
+	}
 	return resultFromCompile(document, err, "in-memory OpenAPI document", collector), nil
 }
 
@@ -62,16 +66,12 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if err != nil {
 		return resultFromCompile(nil, phaseError(diagnostic.PhaseInput, err), safeInputDisplay(input), collector), nil
 	}
-	var decoded any
-	if err := yaml.Unmarshal(source.data, &decoded); err != nil {
+	decoded, err := decodeInputValue(source.data, options.metrics)
+	if err != nil {
 		return resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err)), source.display, collector), nil
 	}
-	findings, err := reservedExtensionDiagnostics(source.data, source.display)
-	if err != nil {
-		return resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, err), source.display, collector), nil
-	}
-	collector.Extend(findings)
-	if err := scanLocalReferenceDocuments(source, collector); err != nil {
+	collector.Extend(reservedExtensionDiagnosticsValue(decoded, source.display))
+	if err := scanLocalReferenceDocumentsValue(source, decoded, collector); err != nil {
 		return Result{}, fmt.Errorf("internal source registry failure: %w", err)
 	}
 	if collector.HasErrors() {
@@ -82,7 +82,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if collector.HasErrors() {
 		return referenceSourceScanResult(collector), nil
 	}
-	document, err := compileInput(source, false, options)
+	document, err := compileInputValue(source, decoded, false, options)
 	return resultFromCompile(document, err, source.display, collector), nil
 }
 
