@@ -1,11 +1,40 @@
 package typescript
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
 )
+
+func TestResourceParameterSchemaLocalizationUsesReferencedSchemaLookups(t *testing.T) {
+	const referenced = `Quoted "schema"`
+	plan := &semanticModulePlan{
+		schemaByName:       make(map[string]string),
+		schemaByQuotedName: make(map[string]string),
+	}
+	for index := 0; index < 1_000; index++ {
+		name := fmt.Sprintf("Unused%04d", index)
+		plan.schemaByName[name] = "internal/schemas/unused.ts"
+		plan.schemaByQuotedName[quoteTS(name)] = name
+	}
+	plan.schemaByName[referenced] = "internal/schemas/quoted-schema.ts"
+	plan.schemaByQuotedName[quoteTS(referenced)] = referenced
+
+	source := "ReadonlyArray<Contract.ComponentInput<" + quoteTS(referenced) + ">>"
+	got, lookups, err := localizeResourceParameterSchemaReferences(source, plan, "internal/resources/items.ts")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `ReadonlyArray<import("../schemas/quoted-schema.js").Input>`
+	if got != want {
+		t.Fatalf("localized type = %q, want %q", got, want)
+	}
+	if lookups != 1 {
+		t.Fatalf("resource schema lookups = %d, want 1 referenced schema", lookups)
+	}
+}
 
 func TestResourceArtifactsComposeCompletedCallsWithoutRebindingCapabilities(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{

@@ -225,24 +225,34 @@ func TestSourceArtifactsGenerateRecursiveComponentSchemas(t *testing.T) {
 	}
 }
 
-func TestReachableComponentsCloseOverPublicRootReferences(t *testing.T) {
+func TestReachableComponentsCloseOverVisibleRootReferences(t *testing.T) {
 	document := &ir.Document{
 		ComponentSchemas: map[string]map[string]any{
 			"PublicRoot": {"$ref": "#/components/schemas/Shared"},
 			"Shared":     {"type": "string"},
 			"HiddenOnly": {"type": "boolean"},
 		},
-		Operations: []ir.Operation{{
-			OperationID: "hidden", Method: "GET", Path: "/hidden", Visibility: "hidden",
-			Raw: map[string]any{"responses": map[string]any{
-				"200": map[string]any{"content": map[string]any{"application/json": map[string]any{
-					"schema": map[string]any{"oneOf": []any{
-						map[string]any{"$ref": "#/components/schemas/Shared"},
-						map[string]any{"$ref": "#/components/schemas/HiddenOnly"},
-					}},
-				}}},
-			}},
-		}},
+		Operations: []ir.Operation{
+			{
+				OperationID: "visible", Method: "GET", Path: "/visible",
+				Raw: map[string]any{"responses": map[string]any{
+					"200": map[string]any{"content": map[string]any{"application/json": map[string]any{
+						"schema": map[string]any{"$ref": "#/components/schemas/PublicRoot"},
+					}}},
+				}},
+			},
+			{
+				OperationID: "hidden", Method: "GET", Path: "/hidden", Visibility: "hidden",
+				Raw: map[string]any{"responses": map[string]any{
+					"200": map[string]any{"content": map[string]any{"application/json": map[string]any{
+						"schema": map[string]any{"oneOf": []any{
+							map[string]any{"$ref": "#/components/schemas/Shared"},
+							map[string]any{"$ref": "#/components/schemas/HiddenOnly"},
+						}},
+					}}},
+				}},
+			},
+		},
 	}
 	reachable := reachableComponentSchemas(document)
 	if !reachable["PublicRoot"] || !reachable["Shared"] || reachable["HiddenOnly"] {

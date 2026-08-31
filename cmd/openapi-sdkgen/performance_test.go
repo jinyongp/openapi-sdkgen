@@ -279,10 +279,61 @@ func materializePerformanceWorkload(tb performanceTesting, workload performanceW
 func performanceWorkloads() []performanceWorkload {
 	return []performanceWorkload{
 		selfContainedPerformanceWorkload("self-contained", 384, 384),
+		templatedResourcePerformanceWorkload(1_024, 256),
+		parameterHeavyPerformanceWorkload(128, 40),
 		externalPerformanceWorkload(96, 192),
 		diagnosticPerformanceWorkload(),
 		selfContainedPerformanceWorkload("high-artifact", 48, 768),
 	}
+}
+
+func templatedResourcePerformanceWorkload(schemaCount, operationCount int) performanceWorkload {
+	schemas := make(map[string]any, schemaCount)
+	for index := 0; index < schemaCount; index++ {
+		name := fmt.Sprintf("Selector%04d", index)
+		schemas[name] = map[string]any{"type": "string"}
+	}
+	paths := make(map[string]any, operationCount)
+	for index := 0; index < operationCount; index++ {
+		name := fmt.Sprintf("Selector%04d", index%schemaCount)
+		path := fmt.Sprintf("/templated/%04d/{selector}", index)
+		paths[path] = map[string]any{
+			"parameters": []any{map[string]any{
+				"name": "selector", "in": "path", "required": true,
+				"schema": map[string]any{"$ref": "#/components/schemas/" + name},
+			}},
+			"get": map[string]any{
+				"operationId": fmt.Sprintf("getTemplatedResource%04d", index),
+				"responses":   map[string]any{"204": map[string]any{"description": "OK"}},
+			},
+		}
+	}
+	document := performanceDocument("templated-resource", paths, schemas)
+	return performanceWorkload{name: "templated-resource", root: "openapi.json", files: map[string][]byte{"openapi.json": mustMarshalPerformance(document)}}
+}
+
+func parameterHeavyPerformanceWorkload(operationCount, parameterCount int) performanceWorkload {
+	paths := make(map[string]any, operationCount)
+	for operationIndex := 0; operationIndex < operationCount; operationIndex++ {
+		parameters := []any{map[string]any{
+			"name": "id", "in": "path", "required": true, "schema": map[string]any{"type": "string"},
+		}}
+		for parameterIndex := 1; parameterIndex < parameterCount; parameterIndex++ {
+			location := []string{"query", "header", "cookie"}[(parameterIndex-1)%3]
+			parameters = append(parameters, map[string]any{
+				"name": fmt.Sprintf("value-%02d", parameterIndex), "in": location,
+				"schema": map[string]any{"type": "string"},
+			})
+		}
+		path := fmt.Sprintf("/parameter-heavy/%04d/{id}", operationIndex)
+		paths[path] = map[string]any{"get": map[string]any{
+			"operationId": fmt.Sprintf("getParameterHeavy%04d", operationIndex),
+			"parameters":  parameters,
+			"responses":   map[string]any{"204": map[string]any{"description": "OK"}},
+		}}
+	}
+	document := performanceDocument("parameter-heavy", paths, nil)
+	return performanceWorkload{name: "parameter-heavy", root: "openapi.json", files: map[string][]byte{"openapi.json": mustMarshalPerformance(document)}}
 }
 
 func selfContainedPerformanceWorkload(name string, schemaCount, operationCount int) performanceWorkload {

@@ -9,7 +9,27 @@
       "get": {
         "operationId": "root-index",
         "security": [],
-        "responses": { "204": { "description": "OK" } }
+        "responses": {
+          "200": {
+            "description": "Component collision roots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/Money" },
+                    { "$ref": "#/components/schemas/MoneyInput" },
+                    { "$ref": "#/components/schemas/MoneyOutput" },
+                    { "$ref": "#/components/schemas/ProjectionInput" },
+                    { "$ref": "#/components/schemas/foo-bar" },
+                    { "$ref": "#/components/schemas/foo_bar" },
+                    { "$ref": "#/components/schemas/TodoStatus" },
+                    { "$ref": "#/components/schemas/Status" }
+                  ]
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/pets/modern/{foo-bar}": {

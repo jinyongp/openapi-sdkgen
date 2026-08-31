@@ -79,9 +79,6 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 		"readonly input:",
 		"readonly output:",
 		`readonly "note"?: string | undefined`,
-		`export type Input = "ready" | 2 | null`,
-		"export type Input = readonly [number, number, ...unknown[]]",
-		"export type Output = readonly [number, number, ...unknown[]]",
 		`export type ComponentInput<Name extends keyof Components> = Components[Name]["input"]`,
 		`export type ComponentOutput<Name extends keyof Components> = Components[Name]["output"]`,
 	} {
@@ -157,7 +154,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 		`export type * from "./errors.js"`,
 		`export type * from "./client/index.js"`,
 		`export { SortDirection } from "./runtime/constants.js"`,
-		`export { Enums, isEnumValue } from "./enums.js"`,
+		`export { Enums } from "./enums.js"`,
 		`export { isErrorCategory } from "./errors.js"`,
 		`export { createClient } from "./client/index.js"`,
 		`from "./runtime/errors.js"`,

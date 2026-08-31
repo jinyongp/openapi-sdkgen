@@ -1,6 +1,7 @@
 package typescript
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"sort"
@@ -409,7 +410,7 @@ func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {
 			return fmt.Errorf("generated artifact %q collides with %q", artifact.Path, previous)
 		}
 		seen[key] = artifact.Path
-		if !strings.HasPrefix(string(artifact.Data), generatedFileHeader) {
+		if !bytes.HasPrefix(artifact.Data, []byte(generatedFileHeader)) {
 			return fmt.Errorf("generated artifact %q is missing the standard header", artifact.Path)
 		}
 		return sink(artifact)

@@ -18,67 +18,90 @@ const (
 )
 
 func reachableComponentSchemas(document *ir.Document) map[string]bool {
-	visible := make(map[string]bool)
-	hidden := make(map[string]bool)
-	var visit func(any, map[string]bool)
-	visit = func(value any, found map[string]bool) {
+	input, output := reachableComponentSchemaProjections(document)
+	return publicReachableComponentSchemas(document, input, output)
+}
+
+func publicReachableComponentSchemas(document *ir.Document, input, output map[string]bool) map[string]bool {
+	result := make(map[string]bool, len(input)+len(output))
+	for name := range input {
+		result[name] = true
+	}
+	for name := range output {
+		result[name] = true
+	}
+	if len(result) == 0 && len(document.Operations) == 0 {
+		for name := range document.ComponentSchemas {
+			result[name] = true
+		}
+		for name := range document.Schemas {
+			result[name] = true
+		}
+	}
+	return result
+}
+
+func reachableComponentSchemaProjections(document *ir.Document) (map[string]bool, map[string]bool) {
+	input := make(map[string]bool)
+	output := make(map[string]bool)
+	inputRoots := make([]any, 0, len(document.Operations)*3+2)
+	outputRoots := make([]any, 0, len(document.Operations)+2)
+	for _, operation := range document.Operations {
+		if operation.Visibility == "hidden" {
+			continue
+		}
+		inputRoots = append(inputRoots, operation.PathItemRaw["parameters"], operation.Raw["parameters"], operation.Raw["requestBody"])
+		outputRoots = append(outputRoots, operation.Raw["responses"])
+	}
+	components, _ := document.Raw["components"].(map[string]any)
+	inputRoots = append(inputRoots, document.Raw["webhooks"], components["callbacks"])
+	outputRoots = append(outputRoots, document.Raw["webhooks"], components["callbacks"])
+	visitComponentSchemaReferences(document, input, inputRoots...)
+	visitComponentSchemaReferences(document, output, outputRoots...)
+	return input, output
+}
+
+func visitComponentSchemaReferences(document *ir.Document, found map[string]bool, roots ...any) {
+	seenReferences := make(map[string]bool)
+	var visit func(any)
+	visit = func(value any) {
 		switch typed := value.(type) {
 		case map[string]any:
-			if reference, _ := typed["$ref"].(string); reference != "" {
-				name, err := componentSchemaReferenceName(reference)
-				if err != nil {
-					break
+			for _, keyword := range []string{"$ref", "$dynamicRef"} {
+				reference, _ := typed[keyword].(string)
+				if reference == "" || seenReferences[reference] {
+					continue
 				}
-				if !found[name] {
+				seenReferences[reference] = true
+				if name, err := componentSchemaReferenceName(reference); err == nil {
 					found[name] = true
-					visit(componentSchemaValue(document, name), found)
+					visit(componentSchemaValue(document, name))
+					continue
+				}
+				components, _ := document.Raw["components"].(map[string]any)
+				for component, values := range components {
+					objects, _ := values.(map[string]any)
+					name, err := componentReferenceName(reference, component)
+					if err == nil {
+						visit(objects[name])
+						break
+					}
 				}
 			}
 			for key, item := range typed {
-				if key != "$ref" {
-					visit(item, found)
+				if key != "$ref" && key != "$dynamicRef" {
+					visit(item)
 				}
 			}
 		case []any:
 			for _, item := range typed {
-				visit(item, found)
+				visit(item)
 			}
 		}
 	}
-	for _, operation := range document.Operations {
-		found := visible
-		if operation.Visibility == "hidden" {
-			found = hidden
-		}
-		visit(operation.Raw, found)
-		visit(operation.PathItemRaw["parameters"], found)
+	for _, root := range roots {
+		visit(root)
 	}
-	visit(document.Raw["webhooks"], visible)
-	components, _ := document.Raw["components"].(map[string]any)
-	visit(components["callbacks"], visible)
-	all := make(map[string]bool, len(document.ComponentSchemas)+len(document.Schemas))
-	for name := range document.ComponentSchemas {
-		all[name] = true
-	}
-	for name := range document.Schemas {
-		all[name] = true
-	}
-	result := make(map[string]bool, len(all))
-	for name := range all {
-		if !hidden[name] || visible[name] {
-			result[name] = true
-		}
-	}
-	// Public roots include otherwise-unreferenced components. Close over their
-	// references so an included schema never points at an omitted dependency.
-	roots := make([]string, 0, len(result))
-	for name := range result {
-		roots = append(roots, name)
-	}
-	for _, name := range roots {
-		visit(componentSchemaValue(document, name), result)
-	}
-	return result
 }
 
 func componentSchemaValue(document *ir.Document, name string) any {

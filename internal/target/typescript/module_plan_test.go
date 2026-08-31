@@ -9,7 +9,7 @@ import (
 
 func TestSemanticModulePlanSeparatesSchemaOperationAndResourceOwners(t *testing.T) {
 	t.Parallel()
-	getUser := pathOperation("getUser", "GET", "/users/{userId}", "userId", map[string]any{"type": "string"})
+	getUser := pathOperation("getUser", "GET", "/users/{userId}", "userId", map[string]any{"$ref": "#/components/schemas/User"})
 	getUser.RouteKey = "GET /users/{userId}"
 	getUser.Visibility = "public"
 	document := &ir.Document{
@@ -33,11 +33,11 @@ func TestSemanticModulePlanSeparatesSchemaOperationAndResourceOwners(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(plan.schemas) != 2 || plan.schemaByName["User"] != "internal/schemas/user.ts" {
+	if len(plan.schemas) != 1 || plan.schemaByName["User"] != "internal/schemas/user.ts" {
 		t.Fatalf("schema plan = %#v", plan.schemas)
 	}
-	if plan.schemaByName["index"] == "internal/schemas/index.ts" {
-		t.Fatalf("schema leaf replaced the schema registry: %#v", plan.schemaByName)
+	if _, exists := plan.schemaByName["index"]; exists {
+		t.Fatalf("unused schema received a module: %#v", plan.schemaByName)
 	}
 	if len(plan.operations) != 2 {
 		t.Fatalf("operation plan = %#v, want public and internal only", plan.operations)

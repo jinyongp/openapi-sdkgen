@@ -83,17 +83,16 @@ func (plan *semanticModulePlan) planSchemas(document *ir.Document) error {
 	if plan.schemaByQuotedName == nil {
 		plan.schemaByQuotedName = make(map[string]string)
 	}
-	reachable := reachableComponentSchemas(document)
-	inputWire := hasVisibleInputSchemas(document)
-	outputWire := hasVisibleResponseBodies(document)
+	inputReachable, outputReachable := reachableComponentSchemaProjections(document)
+	reachable := publicReachableComponentSchemas(document, inputReachable, outputReachable)
 	all := make(map[string]bool, len(document.ComponentSchemas)+len(document.Schemas))
 	for name := range document.ComponentSchemas {
-		if reachable[name] || inputWire || outputWire {
+		if reachable[name] {
 			all[name] = true
 		}
 	}
 	for name := range document.Schemas {
-		if reachable[name] || inputWire || outputWire {
+		if reachable[name] {
 			all[name] = true
 		}
 	}
@@ -107,7 +106,7 @@ func (plan *semanticModulePlan) planSchemas(document *ir.Document) error {
 		return fmt.Errorf("plan schema artifacts: %w", err)
 	}
 	for _, name := range names {
-		item := schemaModulePlan{name: name, path: paths[name], publicProjection: reachable[name], inputWire: inputWire, outputWire: outputWire}
+		item := schemaModulePlan{name: name, path: paths[name], publicProjection: true, inputWire: inputReachable[name], outputWire: outputReachable[name]}
 		plan.schemas = append(plan.schemas, item)
 		plan.schemaByName[name] = item.path
 		plan.schemaByQuotedName[quoteTS(name)] = name

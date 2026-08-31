@@ -96,16 +96,17 @@ func TestSchemaModulesKeepWireOnlyComponentsOutOfPublicRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	leaf := string(artifactByPath(t, artifacts, "internal/schemas/wire-only.ts"))
-	if strings.Contains(leaf, "export type Input") || strings.Contains(leaf, "export type Output") || !strings.Contains(leaf, "export const outputWireSchema") {
-		t.Fatalf("wire-only schema leaf has the wrong ownership:\n%s", leaf)
+	for _, artifact := range artifacts {
+		if artifact.Path == "internal/schemas/wire-only.ts" {
+			t.Fatalf("hidden-only schema leaf was emitted:\n%s", artifact.Data)
+		}
 	}
 	index := string(artifactByPath(t, artifacts, "internal/schemas/index.ts"))
 	if strings.Contains(index, `readonly "WireOnly":`) {
 		t.Fatalf("wire-only component leaked into public Components:\n%s", index)
 	}
 	wire := string(artifactByPath(t, artifacts, "internal/schemas/wire.ts"))
-	if !strings.Contains(wire, `outputWireSchema as `) || !strings.Contains(wire, `from "./wire-only.js"`) {
-		t.Fatalf("wire-only component is absent from the wire registry:\n%s", wire)
+	if strings.Contains(wire, `outputWireSchema as `) || strings.Contains(wire, `from "./wire-only.js"`) {
+		t.Fatalf("hidden-only component leaked into the wire registry:\n%s", wire)
 	}
 }

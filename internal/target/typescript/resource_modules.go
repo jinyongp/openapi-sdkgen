@@ -217,24 +217,60 @@ func resourceParameterType(document *ir.Document, plan *semanticModulePlan, arti
 	if err != nil {
 		return "", err
 	}
-	for _, schema := range plan.schemas {
-		if !schema.publicProjection {
-			continue
-		}
-		needle := "Contract.ComponentInput<" + quoteTS(schema.name) + ">"
-		if !strings.Contains(typeName, needle) {
-			continue
-		}
-		specifier, err := relativeModuleSpecifier(artifact, schema.path)
-		if err != nil {
-			return "", err
-		}
-		typeName = strings.ReplaceAll(typeName, needle, "import("+quoteTS(specifier)+").Input")
+	typeName, _, err = localizeResourceParameterSchemaReferences(typeName, plan, artifact)
+	if err != nil {
+		return "", err
 	}
 	if strings.Contains(typeName, "Contract.") {
 		return "", fmt.Errorf("resource parameter %q retains an unplanned schema registry reference", parameter.Name)
 	}
 	return typeName, nil
+}
+
+func localizeResourceParameterSchemaReferences(source string, plan *semanticModulePlan, artifact string) (string, int, error) {
+	const prefix = "Contract.ComponentInput<"
+	var output strings.Builder
+	search := 0
+	cursor := 0
+	replaced := false
+	lookups := 0
+	for search < len(source) {
+		relative := strings.Index(source[search:], prefix)
+		if relative < 0 {
+			break
+		}
+		start := search + relative
+		nameStart := start + len(prefix)
+		nameEnd, ok := quotedTokenEnd(source, nameStart)
+		if !ok || nameEnd >= len(source) || source[nameEnd] != '>' {
+			search = nameStart
+			continue
+		}
+		lookups++
+		name, exists := plan.schemaByQuotedName[source[nameStart:nameEnd]]
+		if !exists {
+			search = nameEnd + 1
+			continue
+		}
+		path, exists := plan.schemaByName[name]
+		if !exists {
+			return "", lookups, fmt.Errorf("component reference %q has no schema owner", name)
+		}
+		specifier, err := relativeModuleSpecifier(artifact, path)
+		if err != nil {
+			return "", lookups, err
+		}
+		output.WriteString(source[cursor:start])
+		output.WriteString("import(" + quoteTS(specifier) + ").Input")
+		search = nameEnd + 1
+		cursor = search
+		replaced = true
+	}
+	if !replaced {
+		return source, lookups, nil
+	}
+	output.WriteString(source[cursor:])
+	return output.String(), lookups, nil
 }
 
 func emitResourceModuleMemberValue(output *bytes.Buffer, document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string, childIdentities map[string]string, name string) error {

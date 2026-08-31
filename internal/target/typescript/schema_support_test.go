@@ -90,13 +90,23 @@ func TestSourceArtifactsIncludeNamedBooleanSchemas(t *testing.T) {
 	for _, expected := range []string{
 		`readonly "Always": {`,
 		`readonly "Never": {`,
-		`readonly "Unused": {`,
 		`export type Input = unknown`,
 		`export type Output = never`,
 	} {
 		if !strings.Contains(source, expected) {
 			t.Fatalf("named boolean component type missing %q:\n%s", expected, source)
 		}
+	}
+	if strings.Contains(source, `readonly "Unused": {`) {
+		t.Fatalf("unused component was emitted:\n%s", source)
+	}
+	always := string(artifactByPath(t, artifacts, "internal/schemas/always.ts"))
+	if !strings.Contains(always, "export const inputWireSchema") || strings.Contains(always, "export const outputWireSchema") {
+		t.Fatalf("input-only component has the wrong wire projections:\n%s", always)
+	}
+	never := string(artifactByPath(t, artifacts, "internal/schemas/never.ts"))
+	if strings.Contains(never, "export const inputWireSchema") || !strings.Contains(never, "export const outputWireSchema") {
+		t.Fatalf("output-only component has the wrong wire projections:\n%s", never)
 	}
 	client := clientSemanticSource(artifacts)
 	for _, expected := range []string{`schemas/always.js`, `schemas/never.js`} {
