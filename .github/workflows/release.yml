@@ -159,6 +159,7 @@ jobs:
           FORMULA: openapi-sdkgen
         run: |
           set -euo pipefail
+          brew update
           validation_root="$(mktemp -d)"
           validation_tap="$validation_root/homebrew-validation"
           cp -R tap "$validation_tap"
