@@ -103,6 +103,64 @@ func TestPlanTypeReferencesUsesInlineThenSharedAlias(t *testing.T) {
 	}
 }
 
+func TestOperationLocalizationScansOnlyReferencedStableKeys(t *testing.T) {
+	plan := &semanticModulePlan{
+		operationByRoute: map[string]string{
+			"GET /self":   "internal/operations/self/get.ts",
+			"POST /other": "internal/operations/other/post.ts",
+		},
+		operationByQuotedRoute: map[string]string{
+			quoteTS("GET /self"):   "GET /self",
+			quoteTS("POST /other"): "POST /other",
+		},
+		relativeSpecifiers: make(map[string]string),
+	}
+	module := operationModulePlan{routeKey: "GET /self", path: plan.operationByRoute["GET /self"]}
+	source := "Routes[" + quoteTS("GET /self") + "][\"input\"] & Routes[" + quoteTS("POST /other") + "][\"output\"]"
+	want := `Input & import("../other/post.js").Contract["output"]`
+	for iteration := 0; iteration < 2; iteration++ {
+		got, err := localizeOperationTypeSource(source, module, plan)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Fatalf("localized source = %q, want %q", got, want)
+		}
+	}
+	if plan.relativeSpecifierComputes != 1 {
+		t.Fatalf("relative specifier computations = %d, want 1 stable pair", plan.relativeSpecifierComputes)
+	}
+}
+
+func TestOperationSchemaLocalizationKeepsProjectionContextIsolated(t *testing.T) {
+	name := `Quoted "schema"`
+	path := "internal/schemas/quoted-schema.ts"
+	plan := &semanticModulePlan{
+		schemas:            []schemaModulePlan{{name: name, path: path, publicProjection: true}},
+		schemaByQuotedName: map[string]string{quoteTS(name): name},
+		relativeSpecifiers: make(map[string]string),
+	}
+	module := operationModulePlan{routeKey: "GET /quoted", path: "internal/operations/quoted/get.ts"}
+	source := "import type * as ContractSchemas from \"../../schemas/index.js\"\n" +
+		"/**\n * ContractSchemas.ComponentInput<" + quoteTS(name) + ">\n */\n" +
+		"type Input = ContractSchemas.ComponentInput<" + quoteTS(name) + ">\n" +
+		"type Output = ContractSchemas.ComponentOutput<" + quoteTS(name) + ">\n"
+	got, err := localizeOperationSchemaReferences(source, module, plan, "../../schemas/index.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "Contract.ComponentInput<"+quoteTS(name)+">") {
+		t.Fatalf("documentation context was not preserved: %s", got)
+	}
+	if !strings.Contains(got, `type Input = import("../../schemas/quoted-schema.js").Input`) ||
+		!strings.Contains(got, `type Output = import("../../schemas/quoted-schema.js").Output`) {
+		t.Fatalf("projection contexts were not isolated: %s", got)
+	}
+	if plan.relativeSpecifierComputes != 1 {
+		t.Fatalf("relative specifier computations = %d, want 1 shared module pair", plan.relativeSpecifierComputes)
+	}
+}
+
 func TestValidateSemanticImportDirectionRejectsRuntimeAndOperationBackEdges(t *testing.T) {
 	t.Parallel()
 	for _, edge := range []moduleImportEdge{

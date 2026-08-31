@@ -344,79 +344,167 @@ func publicCapabilityType(field string) string {
 	}
 }
 
+var operationLocalSlots = map[string]string{
+	`"input"`:         "Input",
+	`"resourceInput"`: "ResourceInput",
+	`"options"`:       "Options",
+	`"output"`:        "Output",
+	`"error"`:         "Error",
+	`"rawResponse"`:   "RawResponse",
+	`"call"`:          "ExactCall",
+	`"resourceCall"`:  "ResourceCall",
+	`"pagination"`:    "Pagination",
+	`"links"`:         "Links",
+	`"stream"`:        "Stream",
+}
+
 func localizeOperationTypeSource(source string, module operationModulePlan, plan *semanticModulePlan) (string, error) {
-	localSlots := map[string]string{
-		"input":         "Input",
-		"resourceInput": "ResourceInput",
-		"options":       "Options",
-		"output":        "Output",
-		"error":         "Error",
-		"rawResponse":   "RawResponse",
-		"call":          "ExactCall",
-		"resourceCall":  "ResourceCall",
-		"pagination":    "Pagination",
-		"links":         "Links",
-		"stream":        "Stream",
-	}
-	for route, path := range plan.operationByRoute {
-		for slot, local := range localSlots {
-			needle := "Routes[" + quoteTS(route) + "][" + quoteTS(slot) + "]"
-			replacement := local
-			if route != module.routeKey {
-				specifier, err := relativeModuleSpecifier(module.path, path)
-				if err != nil {
-					return "", err
-				}
-				replacement = "import(" + quoteTS(specifier) + ").Contract[" + quoteTS(slot) + "]"
-			}
-			source = strings.ReplaceAll(source, needle, replacement)
+	const prefix = "Routes["
+	cursor := 0
+	search := 0
+	var output strings.Builder
+	for search < len(source) {
+		relative := strings.Index(source[search:], prefix)
+		if relative < 0 {
+			break
 		}
+		start := search + relative
+		nextSearch := start + len(prefix)
+		routeEnd, ok := quotedTokenEnd(source, nextSearch)
+		if !ok || !strings.HasPrefix(source[routeEnd:], "][") {
+			search = nextSearch
+			continue
+		}
+		slotStart := routeEnd + 2
+		slotEnd, ok := quotedTokenEnd(source, slotStart)
+		if !ok || slotEnd >= len(source) || source[slotEnd] != ']' {
+			search = nextSearch
+			continue
+		}
+		route, routeExists := plan.operationByQuotedRoute[source[nextSearch:routeEnd]]
+		local, slotExists := operationLocalSlots[source[slotStart:slotEnd]]
+		if !routeExists || !slotExists {
+			search = slotEnd + 1
+			continue
+		}
+		replacement := local
+		if route != module.routeKey {
+			specifier, err := plan.relativeModuleSpecifier(module.path, plan.operationByRoute[route])
+			if err != nil {
+				return "", err
+			}
+			replacement = "import(" + quoteTS(specifier) + ").Contract[" + source[slotStart:slotEnd] + "]"
+		}
+		if output.Len() == 0 {
+			output.Grow(len(source))
+		}
+		output.WriteString(source[cursor:start])
+		output.WriteString(replacement)
+		cursor = slotEnd + 1
+		search = cursor
 	}
-	return source, nil
+	if output.Len() == 0 {
+		return source, nil
+	}
+	output.WriteString(source[cursor:])
+	return output.String(), nil
+}
+
+type operationSchemaReference struct {
+	start       int
+	end         int
+	name        string
+	export      string
+	replacement string
 }
 
 func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string) (string, error) {
-	protectedDocs := make(map[string]string)
-	lines := strings.Split(source, "\n")
-	for index, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "*") && strings.Contains(line, "ContractSchemas.Component") {
-			placeholder := fmt.Sprintf("__SDKGEN_SCHEMA_DOC_%d__", index)
-			protectedDocs[placeholder] = strings.ReplaceAll(line, "ContractSchemas.", "Contract.")
-			lines[index] = placeholder
+	const namespace = "ContractSchemas"
+	const referencePrefix = namespace + ".Component"
+	var occurrences []operationSchemaReference
+	counts := make(map[string]int)
+	search := 0
+	for search < len(source) {
+		relative := strings.Index(source[search:], referencePrefix)
+		if relative < 0 {
+			break
 		}
+		start := search + relative
+		if operationReferenceInDoc(source, start) {
+			occurrences = append(occurrences, operationSchemaReference{start: start, end: start + len(namespace), replacement: "Contract"})
+			search = start + len(referencePrefix)
+			continue
+		}
+		remainder := source[start+len(referencePrefix):]
+		export := ""
+		prefixBytes := 0
+		switch {
+		case strings.HasPrefix(remainder, "Input<"):
+			export = "Input"
+			prefixBytes = len("Input<")
+		case strings.HasPrefix(remainder, "Output<"):
+			export = "Output"
+			prefixBytes = len("Output<")
+		default:
+			search = start + len(referencePrefix)
+			continue
+		}
+		nameStart := start + len(referencePrefix) + prefixBytes
+		nameEnd, ok := quotedTokenEnd(source, nameStart)
+		if !ok || nameEnd >= len(source) || source[nameEnd] != '>' {
+			search = nameStart
+			continue
+		}
+		name, exists := plan.schemaByQuotedName[source[nameStart:nameEnd]]
+		if !exists {
+			search = nameEnd + 1
+			continue
+		}
+		key := name + "\x00" + export
+		counts[key]++
+		occurrences = append(occurrences, operationSchemaReference{start: start, end: nameEnd + 1, name: name, export: export})
+		search = nameEnd + 1
 	}
-	source = strings.Join(lines, "\n")
+
 	imports := make([]string, 0)
+	replacements := make(map[string]string, len(counts))
 	for _, schema := range plan.schemas {
 		if !schema.publicProjection {
 			continue
 		}
-		specifier, err := relativeModuleSpecifier(module.path, schema.path)
-		if err != nil {
-			return "", err
-		}
-		for _, reference := range []struct {
-			contract string
-			export   string
-		}{
-			{contract: "ComponentInput", export: "Input"},
-			{contract: "ComponentOutput", export: "Output"},
-		} {
-			needle := "ContractSchemas." + reference.contract + "<" + quoteTS(schema.name) + ">"
-			count := strings.Count(source, needle)
+		for _, export := range []string{"Input", "Output"} {
+			key := schema.name + "\x00" + export
+			count := counts[key]
 			if count == 0 {
 				continue
 			}
-			replacement := "import(" + quoteTS(specifier) + ")." + reference.export
+			specifier, err := plan.relativeModuleSpecifier(module.path, schema.path)
+			if err != nil {
+				return "", err
+			}
+			replacement := "import(" + quoteTS(specifier) + ")." + export
 			if count > 1 {
-				alias := stablePrivateIdentifier("schema-type", schema.name+"\x00"+reference.export)
-				imports = append(imports, "import type { "+reference.export+" as "+alias+" } from "+quoteTS(specifier))
+				alias := stablePrivateIdentifier("schema-type", schema.name+"\x00"+export)
+				imports = append(imports, "import type { "+export+" as "+alias+" } from "+quoteTS(specifier))
 				replacement = alias
 			}
-			source = strings.ReplaceAll(source, needle, replacement)
+			replacements[key] = replacement
 		}
 	}
+	var output strings.Builder
+	output.Grow(len(source))
+	cursor := 0
+	for _, occurrence := range occurrences {
+		output.WriteString(source[cursor:occurrence.start])
+		replacement := occurrence.replacement
+		if replacement == "" {
+			replacement = replacements[occurrence.name+"\x00"+occurrence.export]
+		}
+		output.WriteString(replacement)
+		cursor = occurrence.end
+	}
+	output.WriteString(source[cursor:])
+	source = output.String()
 	namespaceImport := "import type * as ContractSchemas from " + quoteTS(schemaIndexSpecifier) + "\n"
 	replacement := ""
 	if len(imports) > 0 {
@@ -426,8 +514,25 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 	if strings.Contains(source, "ContractSchemas.") {
 		return "", fmt.Errorf("operation %q retains an unplanned schema registry reference", module.routeKey)
 	}
-	for placeholder, line := range protectedDocs {
-		source = strings.Replace(source, placeholder, line, 1)
-	}
 	return source, nil
+}
+
+func quotedTokenEnd(source string, start int) (int, bool) {
+	if start >= len(source) || source[start] != '"' {
+		return 0, false
+	}
+	for index := start + 1; index < len(source); index++ {
+		switch source[index] {
+		case '\\':
+			index++
+		case '"':
+			return index + 1, true
+		}
+	}
+	return 0, false
+}
+
+func operationReferenceInDoc(source string, offset int) bool {
+	lineStart := strings.LastIndex(source[:offset], "\n") + 1
+	return strings.HasPrefix(strings.TrimSpace(source[lineStart:offset]), "*")
 }

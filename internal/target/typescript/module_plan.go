@@ -10,12 +10,16 @@ import (
 )
 
 type semanticModulePlan struct {
-	schemas          []schemaModulePlan
-	operations       []operationModulePlan
-	resources        []resourceModulePlan
-	fixed            map[string]string
-	schemaByName     map[string]string
-	operationByRoute map[string]string
+	schemas                   []schemaModulePlan
+	operations                []operationModulePlan
+	resources                 []resourceModulePlan
+	fixed                     map[string]string
+	schemaByName              map[string]string
+	schemaByQuotedName        map[string]string
+	operationByRoute          map[string]string
+	operationByQuotedRoute    map[string]string
+	relativeSpecifiers        map[string]string
+	relativeSpecifierComputes int
 }
 
 type schemaModulePlan struct {
@@ -51,8 +55,11 @@ func buildSemanticModulePlan(document *ir.Document, manifest Manifest, links []g
 			"client-registry": "internal/client/registry.ts",
 			"client-factory":  "internal/client/factory.ts",
 		},
-		schemaByName:     make(map[string]string),
-		operationByRoute: make(map[string]string),
+		schemaByName:           make(map[string]string),
+		schemaByQuotedName:     make(map[string]string),
+		operationByRoute:       make(map[string]string),
+		operationByQuotedRoute: make(map[string]string),
+		relativeSpecifiers:     make(map[string]string),
 	}
 	if err := result.planSchemas(document); err != nil {
 		return nil, err
@@ -70,6 +77,12 @@ func buildSemanticModulePlan(document *ir.Document, manifest Manifest, links []g
 }
 
 func (plan *semanticModulePlan) planSchemas(document *ir.Document) error {
+	if plan.schemaByName == nil {
+		plan.schemaByName = make(map[string]string)
+	}
+	if plan.schemaByQuotedName == nil {
+		plan.schemaByQuotedName = make(map[string]string)
+	}
 	reachable := reachableComponentSchemas(document)
 	inputWire := hasVisibleInputSchemas(document)
 	outputWire := hasVisibleResponseBodies(document)
@@ -97,11 +110,18 @@ func (plan *semanticModulePlan) planSchemas(document *ir.Document) error {
 		item := schemaModulePlan{name: name, path: paths[name], publicProjection: reachable[name], inputWire: inputWire, outputWire: outputWire}
 		plan.schemas = append(plan.schemas, item)
 		plan.schemaByName[name] = item.path
+		plan.schemaByQuotedName[quoteTS(name)] = name
 	}
 	return nil
 }
 
 func (plan *semanticModulePlan) planOperations(manifest Manifest) error {
+	if plan.operationByRoute == nil {
+		plan.operationByRoute = make(map[string]string)
+	}
+	if plan.operationByQuotedRoute == nil {
+		plan.operationByQuotedRoute = make(map[string]string)
+	}
 	candidates := make([]artifactPathCandidate, 0, len(manifest.Operations))
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
@@ -123,8 +143,26 @@ func (plan *semanticModulePlan) planOperations(manifest Manifest) error {
 		item := operationModulePlan{routeKey: route, path: paths[route]}
 		plan.operations = append(plan.operations, item)
 		plan.operationByRoute[route] = item.path
+		plan.operationByQuotedRoute[quoteTS(route)] = route
 	}
 	return nil
+}
+
+func (plan *semanticModulePlan) relativeModuleSpecifier(fromArtifact, toArtifact string) (string, error) {
+	if plan.relativeSpecifiers == nil {
+		plan.relativeSpecifiers = make(map[string]string)
+	}
+	key := fromArtifact + "\x00" + toArtifact
+	if value, exists := plan.relativeSpecifiers[key]; exists {
+		return value, nil
+	}
+	value, err := relativeModuleSpecifier(fromArtifact, toArtifact)
+	if err != nil {
+		return "", err
+	}
+	plan.relativeSpecifiers[key] = value
+	plan.relativeSpecifierComputes++
+	return value, nil
 }
 
 func (plan *semanticModulePlan) planResources(document *ir.Document, manifest Manifest, links []generatedLink, streams []generatedStream) error {
