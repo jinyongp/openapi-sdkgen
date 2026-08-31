@@ -11,42 +11,14 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func attachDocumentProvenance(document *ir.Document, source inputSource) {
-	attachDocumentProvenanceWithSources(document, source, nil)
-}
-
-func attachDocumentProvenanceWithSources(document *ir.Document, source inputSource, remoteSources map[string][]byte) {
+func attachDocumentProvenanceValue(document *ir.Document, source inputSource, value any, remoteSources map[string][]byte) {
 	if document == nil {
 		return
 	}
 	display := safeInputDisplay(source.display)
 	document.Provenance = make(map[string]ir.Provenance)
-	visitProvenanceNodes(document.Raw, nil, display, document.Provenance)
-	references := referenceProvenance(source.data, display, source.effective, source.fileBase, remoteSources)
-	for pointer, provenance := range references {
-		document.Provenance[pointer] = provenance
-	}
-	propagateReferenceProvenance(document.Raw, references, document.Provenance)
-}
-
-func visitProvenanceNodes(value any, path []string, source string, result map[string]ir.Provenance) {
-	pointer := sourceJSONPointer(path)
-	result[pointer] = ir.Provenance{Primary: ir.SourceLocation{Source: source, Pointer: pointer}}
-	switch typed := value.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(typed))
-		for key := range typed {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			visitProvenanceNodes(typed[key], append(path, key), source, result)
-		}
-	case []any:
-		for index, child := range typed {
-			visitProvenanceNodes(child, append(path, itoa(index)), source, result)
-		}
-	}
+	references := referenceProvenanceValue(value, display, source.effective, source.fileBase, remoteSources)
+	document.ProvenanceIndex = newProvenanceIndex(document.Raw, display, references)
 }
 
 func referenceProvenance(data []byte, displaySource, resolutionSource, directory string, remoteSources map[string][]byte) map[string]ir.Provenance {
@@ -54,6 +26,10 @@ func referenceProvenance(data []byte, displaySource, resolutionSource, directory
 	if yaml.Unmarshal(data, &value) != nil {
 		return nil
 	}
+	return referenceProvenanceValue(value, displaySource, resolutionSource, directory, remoteSources)
+}
+
+func referenceProvenanceValue(value any, displaySource, resolutionSource, directory string, remoteSources map[string][]byte) map[string]ir.Provenance {
 	if resolutionSource == "" {
 		resolutionSource = displaySource
 	}
@@ -132,7 +108,20 @@ func referenceProvenance(data []byte, displaySource, resolutionSource, directory
 	return result
 }
 
-func propagateReferenceProvenance(raw map[string]any, references, result map[string]ir.Provenance) {
+type provenanceRange struct {
+	bundledPrefix string
+	sourcePrefix  string
+	provenance    ir.Provenance
+}
+
+type provenanceIndex struct {
+	rootSource string
+	exact      map[string]ir.Provenance
+	ranges     []provenanceRange
+}
+
+func newProvenanceIndex(raw map[string]any, rootSource string, references map[string]ir.Provenance) *provenanceIndex {
+	index := &provenanceIndex{rootSource: rootSource, exact: references}
 	pointers := make([]string, 0, len(references))
 	for pointer := range references {
 		pointers = append(pointers, pointer)
@@ -169,39 +158,45 @@ func propagateReferenceProvenance(raw map[string]any, references, result map[str
 		provenance := references[pointer]
 		if object, ok := value.(map[string]any); ok {
 			if local, _ := object["$ref"].(string); strings.HasPrefix(local, "#/") {
-				if target, targetFound := resolveLocalReference(raw, local); targetFound {
+				if _, targetFound := resolveLocalReference(raw, local); targetFound {
 					redirects = append(redirects, redirect{from: pointer, to: local})
-					visitReferencedProvenance(target, local, provenance.Primary.Pointer, provenance, result)
+					index.ranges = append(index.ranges, provenanceRange{bundledPrefix: local, sourcePrefix: provenance.Primary.Pointer, provenance: provenance})
 					continue
 				}
 			}
 		}
-		visitReferencedProvenance(value, resolvedPointer, provenance.Primary.Pointer, provenance, result)
+		index.ranges = append(index.ranges, provenanceRange{bundledPrefix: resolvedPointer, sourcePrefix: provenance.Primary.Pointer, provenance: provenance})
 	}
+	sort.Slice(index.ranges, func(left, right int) bool {
+		if len(index.ranges[left].bundledPrefix) == len(index.ranges[right].bundledPrefix) {
+			return index.ranges[left].bundledPrefix < index.ranges[right].bundledPrefix
+		}
+		return len(index.ranges[left].bundledPrefix) > len(index.ranges[right].bundledPrefix)
+	})
+	return index
 }
 
-func visitReferencedProvenance(value any, bundledPointer, sourcePointer string, provenance ir.Provenance, result map[string]ir.Provenance) {
-	result[bundledPointer] = ir.Provenance{
-		Primary: ir.SourceLocation{Source: provenance.Primary.Source, Pointer: sourcePointer},
-		Related: append([]ir.SourceLocation(nil), provenance.Related...),
+func (index *provenanceIndex) LookupProvenance(pointer string) (ir.Provenance, bool) {
+	if index == nil {
+		return ir.Provenance{}, false
 	}
-	switch typed := value.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(typed))
-		for key := range typed {
-			keys = append(keys, key)
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			token := strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")
-			visitReferencedProvenance(typed[key], bundledPointer+"/"+token, sourcePointer+"/"+token, provenance, result)
-		}
-	case []any:
-		for index, child := range typed {
-			token := itoa(index)
-			visitReferencedProvenance(child, bundledPointer+"/"+token, sourcePointer+"/"+token, provenance, result)
-		}
+	if value, exists := index.exact[pointer]; exists {
+		return cloneProvenance(value), true
 	}
+	for _, candidate := range index.ranges {
+		if pointer != candidate.bundledPrefix && !strings.HasPrefix(pointer, candidate.bundledPrefix+"/") {
+			continue
+		}
+		value := cloneProvenance(candidate.provenance)
+		value.Primary.Pointer = candidate.sourcePrefix + strings.TrimPrefix(pointer, candidate.bundledPrefix)
+		return value, true
+	}
+	return ir.Provenance{Primary: ir.SourceLocation{Source: index.rootSource, Pointer: pointer}}, true
+}
+
+func cloneProvenance(value ir.Provenance) ir.Provenance {
+	value.Related = append([]ir.SourceLocation(nil), value.Related...)
+	return value
 }
 
 func itoa(value int) string {

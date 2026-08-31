@@ -4,10 +4,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
-
-	"openapi-sdkgen/internal/compiler/ir"
 )
 
 func TestCompileFileCarriesRootAndReferenceProvenance(t *testing.T) {
@@ -35,11 +32,17 @@ paths:
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootLocation := document.Provenance["#/paths/~1things/get"]
+	rootLocation, found := document.LookupProvenance("#/paths/~1things/get")
+	if !found {
+		t.Fatal("root provenance not found")
+	}
 	if rootLocation.Primary.Source != root {
 		t.Fatalf("root provenance = %#v", rootLocation)
 	}
-	reference := document.Provenance["#/paths/~1things/get/responses/200/content/application~1json/schema"]
+	reference, found := document.LookupProvenance("#/paths/~1things/get/responses/200/content/application~1json/schema")
+	if !found {
+		t.Fatal("reference provenance not found")
+	}
 	resolvedSchema, err := filepath.EvalSymlinks(schema)
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +84,10 @@ paths:
 		t.Fatal(err)
 	}
 	pointer := "#/components/schemas/Thing/properties/value/x-envelope"
-	value := document.Provenance[pointer]
+	value, found := document.LookupProvenance(pointer)
+	if !found {
+		t.Fatalf("descendant provenance %s not found", pointer)
+	}
 	resolvedSchema, err := filepath.EvalSymlinks(schema)
 	if err != nil {
 		t.Fatal(err)
@@ -134,22 +140,34 @@ paths:
 	if err != nil {
 		t.Fatal(err)
 	}
-	var found ir.Provenance
-	for pointer, value := range document.Provenance {
-		if strings.HasSuffix(pointer, "/x-envelope") && value.Primary.Source == resolvedSecond {
-			found = value
-			break
-		}
+	pointer := "#/components/schemas/Detail/x-envelope"
+	provenance, found := document.LookupProvenance(pointer)
+	if !found {
+		t.Fatalf("nested provenance %s not found", pointer)
 	}
-	if found.Primary.Source != resolvedSecond || found.Primary.Pointer != "#/Detail/x-envelope" {
-		t.Fatalf("nested provenance = %#v", found)
+	if provenance.Primary.Source != resolvedSecond || provenance.Primary.Pointer != "#/Detail/x-envelope" {
+		t.Fatalf("nested provenance = %#v", provenance)
 	}
 	resolvedFirst, err := filepath.EvalSymlinks(first)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(found.Related) != 1 || found.Related[0].Source != resolvedFirst || found.Related[0].Pointer != "#/Thing/properties/detail/$ref" {
-		t.Fatalf("nested related provenance = %#v", found.Related)
+	if len(provenance.Related) != 1 || provenance.Related[0].Source != resolvedFirst || provenance.Related[0].Pointer != "#/Thing/properties/detail/$ref" {
+		t.Fatalf("nested related provenance = %#v", provenance.Related)
+	}
+}
+
+func TestSuccessfulCompilationDoesNotMaterializeProvenanceNodes(t *testing.T) {
+	document, err := Compile([]byte(`{"openapi":"3.1.0","info":{"title":"Compact provenance","version":"1"},"paths":{},"components":{"schemas":{"Thing":{"type":"object","properties":{"value":{"type":"string"}}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Provenance) != 0 {
+		t.Fatalf("materialized provenance entries = %d, want 0", len(document.Provenance))
+	}
+	value, found := document.LookupProvenance("#/components/schemas/Thing/properties/value")
+	if !found || value.Primary.Source != "in-memory OpenAPI document" || value.Primary.Pointer != "#/components/schemas/Thing/properties/value" {
+		t.Fatalf("on-demand root provenance = %#v, %v", value, found)
 	}
 }
 

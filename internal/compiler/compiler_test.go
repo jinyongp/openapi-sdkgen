@@ -56,6 +56,7 @@ paths: {}
 				t.Fatalf("version = %q", document.OpenAPIVersion)
 			}
 			document.Provenance = nil
+			document.ProvenanceIndex = nil
 			if expected == nil {
 				expected = document
 				return

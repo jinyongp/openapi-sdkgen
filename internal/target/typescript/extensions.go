@@ -779,7 +779,7 @@ func escapePointerToken(value string) string {
 }
 
 func extensionDiagnosticLocation(document *ir.Document, pointer string) (diagnostic.Location, []diagnostic.Location) {
-	if provenance, exists := document.Provenance[pointer]; exists {
+	if provenance, exists := document.LookupProvenance(pointer); exists {
 		related := make([]diagnostic.Location, 0, len(provenance.Related))
 		for _, value := range provenance.Related {
 			related = append(related, diagnostic.Location{Source: value.Source, Pointer: value.Pointer})
@@ -790,7 +790,7 @@ func extensionDiagnosticLocation(document *ir.Document, pointer string) (diagnos
 }
 
 func extensionRootSource(document *ir.Document) string {
-	if provenance, exists := document.Provenance["#"]; exists && provenance.Primary.Source != "" {
+	if provenance, exists := document.LookupProvenance("#"); exists && provenance.Primary.Source != "" {
 		return provenance.Primary.Source
 	}
 	return "OpenAPI document"

@@ -13,9 +13,12 @@ type Document struct {
 	// for JSON Schema reference resolution.
 	Schemas map[string]Schema
 	Raw     map[string]any
-	// Provenance maps normalized document pointers to their originating source
-	// location. Related locations retain reference/composition sites.
+	// Provenance contains explicit caller overrides. Production compilation
+	// keeps this map empty and resolves source locations through ProvenanceIndex.
 	Provenance map[string]Provenance
+	// ProvenanceIndex resolves normalized pointers without materializing one map
+	// entry per document node.
+	ProvenanceIndex ProvenanceResolver
 	// ErrorCategories is populated only by a target preparation plan after
 	// validating recognized error-envelope schemas.
 	ErrorCategories    map[string]string
@@ -30,6 +33,23 @@ type SourceLocation struct {
 type Provenance struct {
 	Primary SourceLocation
 	Related []SourceLocation
+}
+
+type ProvenanceResolver interface {
+	LookupProvenance(pointer string) (Provenance, bool)
+}
+
+func (document *Document) LookupProvenance(pointer string) (Provenance, bool) {
+	if document == nil {
+		return Provenance{}, false
+	}
+	if value, exists := document.Provenance[pointer]; exists {
+		return value, true
+	}
+	if document.ProvenanceIndex == nil {
+		return Provenance{}, false
+	}
+	return document.ProvenanceIndex.LookupProvenance(pointer)
 }
 
 // Schema is a normalized schema resource. Value remains lossless so target

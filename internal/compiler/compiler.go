@@ -146,7 +146,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 		if err != nil {
 			return nil, err
 		}
-		attachDocumentProvenanceWithSources(document, source, nil)
+		attachDocumentProvenanceValue(document, source, value, nil)
 		if lock != nil && options.UpdateRefLock {
 			if err := writeReferenceLock(lockPath, lock); err != nil {
 				return nil, phaseError(diagnostic.PhaseReferences, err)
@@ -202,7 +202,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	if remoteResolver != nil {
 		remoteSources = remoteResolver.sourceSnapshot()
 	}
-	attachDocumentProvenanceWithSources(document, source, remoteSources)
+	attachDocumentProvenanceValue(document, source, value, remoteSources)
 	if lock != nil && options.UpdateRefLock {
 		if err := writeReferenceLock(lockPath, lock); err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
@@ -532,7 +532,7 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	}
 	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
 	if err == nil && source {
-		attachDocumentProvenance(model, inputSource{data: data, display: "in-memory OpenAPI document"})
+		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, raw, nil)
 	}
 	return model, err
 }
