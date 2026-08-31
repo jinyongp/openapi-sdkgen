@@ -28,6 +28,7 @@ just agent generate-check-test
 just agent conformance
 just agent perf
 just agent perf-profile
+just agent perf-acceptance
 just agent ts-lock
 just agent ts-install
 just agent ts-fmt

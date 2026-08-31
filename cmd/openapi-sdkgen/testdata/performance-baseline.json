@@ -1,0 +1,17 @@
+{
+  "workload": "self-contained",
+  "benchmarkWallNanoseconds": 7247634500,
+  "processWallNanoseconds": 8064000000,
+  "processCpuNanoseconds": 9432000000,
+  "bytesPerOperation": 3411815336,
+  "peakHeapBytes": 60991728,
+  "maxRssBytes": 106020864,
+  "requiredReductionPercent": {
+    "benchmarkWallNanoseconds": 60,
+    "processWallNanoseconds": 60,
+    "processCpuNanoseconds": 60,
+    "bytesPerOperation": 60,
+    "peakHeapBytes": 50,
+    "maxRssBytes": 50
+  }
+}

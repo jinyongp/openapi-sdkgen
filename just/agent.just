@@ -54,6 +54,9 @@ perf:
 perf-profile:
     ./scripts/agent/perf-profile
 
+perf-acceptance:
+    ./scripts/agent/perf-acceptance
+
 ts-lock:
     ./scripts/agent/ts-lock
 

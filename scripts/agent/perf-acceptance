@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+cd "$ROOT"
+
+gate_dir="$ROOT/.tmp/perf-acceptance"
+binary="$gate_dir/openapi-sdkgen.test"
+mkdir -p "$gate_dir"
+
+agent_run "build performance acceptance binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
+
+OPENAPI_SDKGEN_PERF=1 "$binary" -test.run '^TestPerformanceProcessMetrics$' >/dev/null 2>&1
+"$binary" -test.run '^$' -test.bench '^BenchmarkGeneration/self-contained/full$' -test.benchtime 1x -test.count 1 >/dev/null 2>&1
+
+for index in 01 02 03 04 05; do
+  "$binary" -test.run '^$' -test.bench '^BenchmarkGeneration/self-contained/full$' -test.benchtime 1x -test.count 1 >"$gate_dir/run-$index-bench.log" 2>&1
+  OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceProcessMetrics$' >"$gate_dir/run-$index-process.log" 2>&1
+done
+
+OPENAPI_SDKGEN_PERF_GATE=1 \
+OPENAPI_SDKGEN_PERF_GATE_LOG_DIR="$gate_dir" \
+OPENAPI_SDKGEN_PERF_GATE_BASELINE="$ROOT/cmd/openapi-sdkgen/testdata/performance-baseline.json" \
+"$binary" -test.v -test.run '^TestPerformanceAcceptanceGate$'
