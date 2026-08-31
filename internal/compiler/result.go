@@ -62,6 +62,7 @@ func CompileFileResultWithOptions(path string, options CompileOptions) (Result, 
 func CompileInputResultWithOptions(input string, options CompileOptions) (Result, error) {
 	collector := &diagnostic.Collector{}
 	options.diagnostics = collector
+	options.sourceCache = newDecodedSourceCache()
 	source, err := loadInputSource(input, options)
 	if err != nil {
 		return resultFromCompile(nil, phaseError(diagnostic.PhaseInput, err), safeInputDisplay(input), collector), nil
@@ -71,7 +72,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		return resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err)), source.display, collector), nil
 	}
 	collector.Extend(reservedExtensionDiagnosticsValue(decoded, source.display))
-	if err := scanLocalReferenceDocumentsValue(source, decoded, collector); err != nil {
+	if err := scanLocalReferenceDocumentsValue(source, decoded, collector, options.sourceCache); err != nil {
 		return Result{}, fmt.Errorf("internal source registry failure: %w", err)
 	}
 	if collector.HasErrors() {

@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -75,6 +74,9 @@ func CompileProjectFile(path string) (*ir.Document, error) {
 }
 
 func compileInput(source inputSource, project bool, options CompileOptions) (*ir.Document, error) {
+	if options.sourceCache == nil {
+		options.sourceCache = newDecodedSourceCache()
+	}
 	value, err := decodeInputValue(source.data, options.metrics)
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err))
@@ -155,7 +157,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 		if err != nil {
 			return nil, err
 		}
-		attachDocumentProvenanceValue(document, source, document.Raw, nil)
+		attachDocumentProvenanceValue(document, source, document.Raw, nil, options.sourceCache)
 		if lock != nil && options.UpdateRefLock {
 			if err := writeReferenceLock(lockPath, lock); err != nil {
 				return nil, phaseError(diagnostic.PhaseReferences, err)
@@ -166,7 +168,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	var fileFilter []string
 	if !project && source.fileBase != "" {
 		var err error
-		fileFilter, err = validatedReferenceFileFilter(source, value, remoteResolver != nil)
+		fileFilter, err = validatedReferenceFileFilter(source, value, remoteResolver != nil, options.sourceCache)
 		if err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
@@ -211,7 +213,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	if remoteResolver != nil {
 		remoteSources = remoteResolver.sourceSnapshot()
 	}
-	attachDocumentProvenanceValue(document, source, value, remoteSources)
+	attachDocumentProvenanceValue(document, source, value, remoteSources, options.sourceCache)
 	if lock != nil && options.UpdateRefLock {
 		if err := writeReferenceLock(lockPath, lock); err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
@@ -311,7 +313,7 @@ func rejectEscapingFileReferencesWithRemote(path, root string, allowRemote bool)
 	if err != nil {
 		return fmt.Errorf("resolve OpenAPI input directory: %w", err)
 	}
-	return inspectReferenceFile(path, resolvedRoot, make(map[string]bool), allowRemote)
+	return inspectReferenceFile(path, resolvedRoot, make(map[string]bool), allowRemote, nil)
 }
 
 func rejectEscapingFileReferenceData(data []byte, root string, allowRemote bool) error {
@@ -322,7 +324,7 @@ func rejectEscapingFileReferenceData(data []byte, root string, allowRemote bool)
 	return inspectReferenceData(data, resolvedRoot, resolvedRoot, make(map[string]bool), allowRemote)
 }
 
-func validatedReferenceFileFilter(source inputSource, document any, allowRemote bool) ([]string, error) {
+func validatedReferenceFileFilter(source inputSource, document any, allowRemote bool, cache *decodedSourceCache) ([]string, error) {
 	root, err := filepath.EvalSymlinks(source.fileBase)
 	if err != nil {
 		return nil, fmt.Errorf("resolve OpenAPI input directory: %w", err)
@@ -340,7 +342,7 @@ func validatedReferenceFileFilter(source inputSource, document any, allowRemote 
 		visited[resolved] = true
 		directory = filepath.Dir(resolved)
 	}
-	if err := inspectReferenceValue(document, directory, root, visited, allowRemote); err != nil {
+	if err := inspectReferenceValue(document, directory, root, visited, allowRemote, cache); err != nil {
 		return nil, err
 	}
 	filters := make([]string, 0, len(visited))
@@ -360,7 +362,7 @@ func validatedReferenceFileFilter(source inputSource, document any, allowRemote 
 	return filters, nil
 }
 
-func inspectReferenceFile(path, root string, visited map[string]bool, allowRemote bool) error {
+func inspectReferenceFile(path, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache) error {
 	resolvedPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		return fmt.Errorf("resolve OpenAPI reference file %s: %w", path, err)
@@ -372,11 +374,11 @@ func inspectReferenceFile(path, root string, visited map[string]bool, allowRemot
 		return nil
 	}
 	visited[resolvedPath] = true
-	data, err := os.ReadFile(resolvedPath)
+	source, err := cache.load(resolvedPath)
 	if err != nil {
 		return fmt.Errorf("read OpenAPI reference file %s: %w", resolvedPath, err)
 	}
-	return inspectReferenceData(data, filepath.Dir(resolvedPath), root, visited, allowRemote)
+	return inspectReferenceValue(source.value, filepath.Dir(resolvedPath), root, visited, allowRemote, cache)
 }
 
 func inspectReferenceData(data []byte, directory, root string, visited map[string]bool, allowRemote bool) error {
@@ -384,10 +386,10 @@ func inspectReferenceData(data []byte, directory, root string, visited map[strin
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return fmt.Errorf("inspect OpenAPI references: %w", err)
 	}
-	return inspectReferenceValue(document, directory, root, visited, allowRemote)
+	return inspectReferenceValue(document, directory, root, visited, allowRemote, nil)
 }
 
-func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool) error {
+func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache) error {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
@@ -398,7 +400,7 @@ func inspectReferenceValue(document any, directory, root string, visited map[str
 					return err
 				}
 				if target != "" {
-					if err := inspectReferenceFile(target, root, visited, allowRemote); err != nil {
+					if err := inspectReferenceFile(target, root, visited, allowRemote, cache); err != nil {
 						return err
 					}
 				}
@@ -541,7 +543,7 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	}
 	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
 	if err == nil && source {
-		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, model.Raw, nil)
+		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, model.Raw, nil, nil)
 	}
 	return model, err
 }

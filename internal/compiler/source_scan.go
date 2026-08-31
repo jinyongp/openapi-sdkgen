@@ -2,7 +2,6 @@ package sdkgen
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -80,10 +79,10 @@ func scanLocalReferenceDocuments(source inputSource, collector *diagnostic.Colle
 	if err := yaml.Unmarshal(source.data, &value); err != nil {
 		return nil
 	}
-	return scanLocalReferenceDocumentsValue(source, value, collector)
+	return scanLocalReferenceDocumentsValue(source, value, collector, nil)
 }
 
-func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *diagnostic.Collector) error {
+func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *diagnostic.Collector, cache *decodedSourceCache) error {
 	if source.fileBase == "" {
 		return nil
 	}
@@ -97,7 +96,7 @@ func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *
 			visited[resolved] = true
 		}
 	}
-	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector)
+	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector, cache)
 }
 
 func scanLocalReferences(data []byte, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
@@ -105,10 +104,10 @@ func scanLocalReferences(data []byte, directory, root string, visited map[string
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil
 	}
-	return scanLocalReferenceValue(value, directory, root, visited, collector)
+	return scanLocalReferenceValue(value, directory, root, visited, collector, nil)
 }
 
-func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
+func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector, cache *decodedSourceCache) error {
 	var references []string
 	collectExternalReferences(value, nil, &references)
 	sort.Strings(references)
@@ -122,16 +121,13 @@ func scanLocalReferenceValue(value any, directory, root string, visited map[stri
 			continue
 		}
 		visited[target] = true
-		referenced, err := os.ReadFile(target)
+		source, err := cache.load(target)
 		if err != nil {
 			continue
 		}
-		var referencedValue any
-		if err := yaml.Unmarshal(referenced, &referencedValue); err != nil {
-			continue
-		}
+		referencedValue := source.value
 		collector.Extend(reservedExtensionDiagnosticsValue(referencedValue, target))
-		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector); err != nil {
+		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector, cache); err != nil {
 			return err
 		}
 	}

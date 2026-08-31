@@ -72,6 +72,7 @@ type CompileOptions struct {
 	HTTPWarningWriter io.Writer
 
 	diagnostics *diagnostic.Collector
+	sourceCache *decodedSourceCache
 
 	// Tests may replace the remote transport and DNS resolver without exposing
 	// those hooks through the CLI contract.

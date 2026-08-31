@@ -2,7 +2,6 @@ package sdkgen
 
 import (
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -11,13 +10,13 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func attachDocumentProvenanceValue(document *ir.Document, source inputSource, value any, remoteSources map[string][]byte) {
+func attachDocumentProvenanceValue(document *ir.Document, source inputSource, value any, remoteSources map[string][]byte, localSources *decodedSourceCache) {
 	if document == nil {
 		return
 	}
 	display := safeInputDisplay(source.display)
 	document.Provenance = make(map[string]ir.Provenance)
-	references := referenceProvenanceValue(value, display, source.effective, source.fileBase, remoteSources)
+	references := referenceProvenanceValue(value, display, source.effective, source.fileBase, remoteSources, localSources)
 	document.ProvenanceIndex = newProvenanceIndex(document.Raw, display, references)
 }
 
@@ -26,10 +25,10 @@ func referenceProvenance(data []byte, displaySource, resolutionSource, directory
 	if yaml.Unmarshal(data, &value) != nil {
 		return nil
 	}
-	return referenceProvenanceValue(value, displaySource, resolutionSource, directory, remoteSources)
+	return referenceProvenanceValue(value, displaySource, resolutionSource, directory, remoteSources, nil)
 }
 
-func referenceProvenanceValue(value any, displaySource, resolutionSource, directory string, remoteSources map[string][]byte) map[string]ir.Provenance {
+func referenceProvenanceValue(value any, displaySource, resolutionSource, directory string, remoteSources map[string][]byte, localSources *decodedSourceCache) map[string]ir.Provenance {
 	if resolutionSource == "" {
 		resolutionSource = displaySource
 	}
@@ -71,12 +70,15 @@ func referenceProvenanceValue(value any, displaySource, resolutionSource, direct
 				if !visiting[identity] {
 					visiting[identity] = true
 					referenced := remoteSources[targetSource]
+					var referencedValue any
 					if targetDirectory != "" {
-						referenced, _ = os.ReadFile(targetSource)
+						if source, err := localSources.load(targetSource); err == nil {
+							referenced = source.data
+							referencedValue = source.value
+						}
 					}
 					if len(referenced) != 0 {
-						var referencedValue any
-						if yaml.Unmarshal(referenced, &referencedValue) == nil {
+						if referencedValue != nil || yaml.Unmarshal(referenced, &referencedValue) == nil {
 							targetValue := referencedValue
 							found := targetPointer == "#"
 							if !found {
