@@ -27,6 +27,7 @@ type performanceWorkload struct {
 	root        string
 	files       map[string][]byte
 	expectError bool
+	addons      []string
 }
 
 type performanceProcessMetric struct {
@@ -70,14 +71,14 @@ func BenchmarkGeneration(b *testing.B) {
 
 			compiled := compilePerformanceWorkload(b, root, false)
 			target := typescript.Generator{}
-			prepared := preparePerformanceWorkload(b, target, compiled)
+			prepared := preparePerformanceWorkload(b, target, compiled, workload)
 			artifacts := emitPerformanceWorkload(b, target, prepared)
 			artifactBytes := performanceArtifactBytes(artifacts)
 
 			b.Run("prepare", func(b *testing.B) {
 				b.ReportAllocs()
 				for index := 0; index < b.N; index++ {
-					_ = preparePerformanceWorkload(b, target, compiled)
+					_ = preparePerformanceWorkload(b, target, compiled, workload)
 				}
 			})
 			b.Run("emit", func(b *testing.B) {
@@ -110,7 +111,7 @@ func BenchmarkGeneration(b *testing.B) {
 				b.ResetTimer()
 				for index := 0; index < b.N; index++ {
 					output := filepath.Join(outputRoot, fmt.Sprintf("output-%06d", index))
-					runPerformanceGeneration(b, root, output)
+					runPerformanceGeneration(b, workload, root, output)
 					b.StopTimer()
 					if err := os.RemoveAll(output); err != nil {
 						b.Fatal(err)
@@ -168,7 +169,7 @@ func TestPerformanceProcessMetrics(t *testing.T) {
 	peakHeap, stopSampling := samplePeakHeap()
 	beforeCPU := processCPUTime(t)
 	started := time.Now()
-	artifacts := runPerformanceGeneration(t, root, output)
+	artifacts := runPerformanceGeneration(t, *workload, root, output)
 	wall := time.Since(started)
 	afterCPU := processCPUTime(t)
 	stopSampling()
@@ -210,9 +211,17 @@ func compilePerformanceWorkload(tb performanceTesting, root string, expectError 
 	return compiled
 }
 
-func preparePerformanceWorkload(tb performanceTesting, target generator.Target, compiled compiler.Result) generator.Preparation {
+func preparePerformanceWorkload(tb performanceTesting, target generator.Target, compiled compiler.Result, workload performanceWorkload) generator.Preparation {
 	tb.Helper()
-	prepared, err := generator.PrepareCompilation(target, compiled, generator.Options{})
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	options, err := registry.Resolve(workload.addons)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	prepared, err := generator.PrepareCompilation(target, compiled, options)
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -236,11 +245,11 @@ type performanceArtifactStats struct {
 	bytes int
 }
 
-func runPerformanceGeneration(tb performanceTesting, root, output string) performanceArtifactStats {
+func runPerformanceGeneration(tb performanceTesting, workload performanceWorkload, root, output string) performanceArtifactStats {
 	tb.Helper()
 	compiled := compilePerformanceWorkload(tb, root, false)
 	target := typescript.Generator{}
-	prepared := preparePerformanceWorkload(tb, target, compiled)
+	prepared := preparePerformanceWorkload(tb, target, compiled, workload)
 	publisher, err := newArtifactPublisher(output)
 	if err != nil {
 		tb.Fatal(err)
@@ -284,7 +293,42 @@ func performanceWorkloads() []performanceWorkload {
 		externalPerformanceWorkload(96, 192),
 		diagnosticPerformanceWorkload(),
 		selfContainedPerformanceWorkload("high-artifact", 48, 768),
+		serverAddonPerformanceWorkload(128, 192),
+		linksHeavyPerformanceWorkload(96, 8),
 	}
+}
+
+func serverAddonPerformanceWorkload(schemaCount, operationCount int) performanceWorkload {
+	workload := selfContainedPerformanceWorkload("server-addon", schemaCount, operationCount)
+	workload.addons = []string{"server"}
+	return workload
+}
+
+func linksHeavyPerformanceWorkload(operationCount, linksPerOperation int) performanceWorkload {
+	paths := make(map[string]any, operationCount)
+	for index := 0; index < operationCount; index++ {
+		next := (index + 1) % operationCount
+		links := make(map[string]any, linksPerOperation)
+		for linkIndex := 0; linkIndex < linksPerOperation; linkIndex++ {
+			links[fmt.Sprintf("next%02d", linkIndex)] = map[string]any{
+				"operationId": fmt.Sprintf("getLinkedResource%04d", next),
+				"parameters":  map[string]any{"id": "$request.path.id"},
+			}
+		}
+		paths[fmt.Sprintf("/linked/%04d/{id}", index)] = map[string]any{"get": map[string]any{
+			"operationId": fmt.Sprintf("getLinkedResource%04d", index),
+			"parameters": []any{map[string]any{
+				"name": "id", "in": "path", "required": true, "schema": map[string]any{"type": "string"},
+			}},
+			"responses": map[string]any{"200": map[string]any{
+				"description": "OK",
+				"content":     map[string]any{"application/json": map[string]any{"schema": map[string]any{"type": "string"}}},
+				"links":       links,
+			}},
+		}}
+	}
+	document := performanceDocument("links-heavy", paths, nil)
+	return performanceWorkload{name: "links-heavy", root: "openapi.json", files: map[string][]byte{"openapi.json": mustMarshalPerformance(document)}}
 }
 
 func templatedResourcePerformanceWorkload(schemaCount, operationCount int) performanceWorkload {

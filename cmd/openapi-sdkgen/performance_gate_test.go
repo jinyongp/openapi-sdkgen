@@ -14,8 +14,25 @@ import (
 
 const performanceGateEnv = "OPENAPI_SDKGEN_PERF_GATE"
 
+var performanceGateWorkloads = []string{
+	"self-contained",
+	"templated-resource",
+	"parameter-heavy",
+	"external-reference",
+	"high-artifact",
+	"server-addon",
+	"links-heavy",
+}
+
+var performanceGatePhases = []string{"compile", "prepare", "emit", "publish", "full"}
+
 type performanceBaseline struct {
-	Workload                    string         `json:"workload"`
+	Historical performanceHistoricalBaseline        `json:"historical"`
+	Current    map[string]performanceWorkloadBudget `json:"current"`
+	Thresholds performanceRegressionThresholds      `json:"regressionThresholdPercent"`
+}
+
+type performanceHistoricalBaseline struct {
 	BenchmarkWallNanoseconds    uint64         `json:"benchmarkWallNanoseconds"`
 	ProcessWallNanoseconds      uint64         `json:"processWallNanoseconds"`
 	ProcessCPUNanoseconds       uint64         `json:"processCpuNanoseconds"`
@@ -25,16 +42,61 @@ type performanceBaseline struct {
 	RequiredReductionPercentage map[string]int `json:"requiredReductionPercent"`
 }
 
-type performanceGateRun struct {
-	benchmarkWall uint64
-	processWall   uint64
-	processCPU    uint64
-	bytesPerOp    uint64
-	peakHeap      uint64
-	maxRSS        uint64
+type performanceWorkloadBudget struct {
+	Phases  map[string]performancePhaseBudget `json:"phases"`
+	Process performanceProcessBudget          `json:"process"`
 }
 
-var fullBenchmarkPattern = regexp.MustCompile(`(?m)^BenchmarkGeneration/self-contained/full-\d+\s+\d+\s+(\d+) ns/op\s+(\d+) B/op`)
+type performancePhaseBudget struct {
+	WallNanoseconds   uint64 `json:"wallNanoseconds"`
+	BytesPerOperation uint64 `json:"bytesPerOperation"`
+}
+
+type performanceProcessBudget struct {
+	WallNanoseconds uint64 `json:"wallNanoseconds"`
+	CPUNanoseconds  uint64 `json:"cpuNanoseconds"`
+	PeakHeapBytes   uint64 `json:"peakHeapBytes"`
+	MaxRSSBytes     uint64 `json:"maxRssBytes"`
+}
+
+type performanceRegressionThresholds struct {
+	BenchmarkWall int `json:"benchmarkWall"`
+	Allocation    int `json:"allocation"`
+	Process       int `json:"process"`
+	Memory        int `json:"memory"`
+}
+
+type performancePhaseRun struct {
+	wall       uint64
+	bytesPerOp uint64
+}
+
+type performanceGateRun struct {
+	phases  map[string]map[string]performancePhaseRun
+	process map[string]performanceProcessMetric
+}
+
+var benchmarkMetricPattern = regexp.MustCompile(`(?m)^BenchmarkGeneration/([^/]+)/([^\s-]+)-\d+\s+\d+\s+(\d+) ns/op.*?\s+(\d+) B/op`)
+
+func TestPerformanceBaselineCoversRegressionWorkloads(t *testing.T) {
+	baseline := readPerformanceBaseline(t)
+	for _, workload := range performanceGateWorkloads {
+		budget, exists := baseline.Current[workload]
+		if !exists {
+			t.Errorf("performance baseline missing workload %q", workload)
+			continue
+		}
+		for _, phase := range performanceGatePhases {
+			value, exists := budget.Phases[phase]
+			if !exists || value.WallNanoseconds == 0 || value.BytesPerOperation == 0 {
+				t.Errorf("performance baseline missing %s/%s phase budget", workload, phase)
+			}
+		}
+		if budget.Process.WallNanoseconds == 0 || budget.Process.CPUNanoseconds == 0 || budget.Process.PeakHeapBytes == 0 || budget.Process.MaxRSSBytes == 0 {
+			t.Errorf("performance baseline missing %s process budget", workload)
+		}
+	}
+}
 
 func TestPerformanceAcceptanceGate(t *testing.T) {
 	if os.Getenv(performanceGateEnv) != "1" {
@@ -49,25 +111,64 @@ func TestPerformanceAcceptanceGate(t *testing.T) {
 	for index := 1; index <= 5; index++ {
 		runs = append(runs, readPerformanceGateRun(t, logDirectory, index))
 	}
-	medians := performanceGateRun{
-		benchmarkWall: medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.benchmarkWall }),
-		processWall:   medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.processWall }),
-		processCPU:    medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.processCPU }),
-		bytesPerOp:    medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.bytesPerOp }),
-		peakHeap:      medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.peakHeap }),
-		maxRSS:        medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.maxRSS }),
+
+	var failed []string
+	for _, workload := range performanceGateWorkloads {
+		budget := baseline.Current[workload]
+		for _, phase := range performanceGatePhases {
+			phaseBudget := budget.Phases[phase]
+			wall := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.phases[workload][phase].wall })
+			allocation := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.phases[workload][phase].bytesPerOp })
+			failed = appendRegressionCheck(t, failed, workload+"/"+phase+"/wall", phaseBudget.WallNanoseconds, wall, baseline.Thresholds.BenchmarkWall)
+			failed = appendRegressionCheck(t, failed, workload+"/"+phase+"/allocation", phaseBudget.BytesPerOperation, allocation, baseline.Thresholds.Allocation)
+		}
+		process := performanceProcessBudget{
+			WallNanoseconds: medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return uint64(run.process[workload].WallNanosecond) }),
+			CPUNanoseconds:  medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return uint64(run.process[workload].CPUNanosecond) }),
+			PeakHeapBytes:   medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.process[workload].PeakHeapBytes }),
+			MaxRSSBytes:     medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.process[workload].MaxRSSBytes }),
+		}
+		failed = appendRegressionCheck(t, failed, workload+"/process/wall", budget.Process.WallNanoseconds, process.WallNanoseconds, baseline.Thresholds.Process)
+		failed = appendRegressionCheck(t, failed, workload+"/process/cpu", budget.Process.CPUNanoseconds, process.CPUNanoseconds, baseline.Thresholds.Process)
+		failed = appendRegressionCheck(t, failed, workload+"/process/heap", budget.Process.PeakHeapBytes, process.PeakHeapBytes, baseline.Thresholds.Memory)
+		failed = appendRegressionCheck(t, failed, workload+"/process/rss", budget.Process.MaxRSSBytes, process.MaxRSSBytes, baseline.Thresholds.Memory)
 	}
+	failed = append(failed, historicalPerformanceFailures(t, baseline.Historical, runs)...)
+	if len(failed) != 0 {
+		t.Fatalf("performance acceptance failed: %s", strings.Join(failed, ", "))
+	}
+}
+
+func appendRegressionCheck(t *testing.T, failed []string, name string, baseline, current uint64, threshold int) []string {
+	t.Helper()
+	limit := baseline + baseline*uint64(threshold)/100
+	status := "pass"
+	if current > limit {
+		status = "fail"
+		failed = append(failed, name)
+	}
+	t.Logf("PERF_REGRESSION field=%s baseline=%d median=%d limit=%d status=%s", name, baseline, current, limit, status)
+	return failed
+}
+
+func historicalPerformanceFailures(t *testing.T, baseline performanceHistoricalBaseline, runs []performanceGateRun) []string {
+	benchmark := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.phases["self-contained"]["full"].wall })
+	allocation := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.phases["self-contained"]["full"].bytesPerOp })
+	processWall := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return uint64(run.process["self-contained"].WallNanosecond) })
+	processCPU := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return uint64(run.process["self-contained"].CPUNanosecond) })
+	peakHeap := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.process["self-contained"].PeakHeapBytes })
+	maxRSS := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.process["self-contained"].MaxRSSBytes })
 	checks := []struct {
 		name     string
 		baseline uint64
 		current  uint64
 	}{
-		{"benchmarkWallNanoseconds", baseline.BenchmarkWallNanoseconds, medians.benchmarkWall},
-		{"processWallNanoseconds", baseline.ProcessWallNanoseconds, medians.processWall},
-		{"processCpuNanoseconds", baseline.ProcessCPUNanoseconds, medians.processCPU},
-		{"bytesPerOperation", baseline.BytesPerOperation, medians.bytesPerOp},
-		{"peakHeapBytes", baseline.PeakHeapBytes, medians.peakHeap},
-		{"maxRssBytes", baseline.MaxRSSBytes, medians.maxRSS},
+		{"benchmarkWallNanoseconds", baseline.BenchmarkWallNanoseconds, benchmark},
+		{"processWallNanoseconds", baseline.ProcessWallNanoseconds, processWall},
+		{"processCpuNanoseconds", baseline.ProcessCPUNanoseconds, processCPU},
+		{"bytesPerOperation", baseline.BytesPerOperation, allocation},
+		{"peakHeapBytes", baseline.PeakHeapBytes, peakHeap},
+		{"maxRssBytes", baseline.MaxRSSBytes, maxRSS},
 	}
 	var failed []string
 	for _, check := range checks {
@@ -76,13 +177,11 @@ func TestPerformanceAcceptanceGate(t *testing.T) {
 		status := "pass"
 		if reduction < required {
 			status = "fail"
-			failed = append(failed, check.name)
+			failed = append(failed, "historical/"+check.name)
 		}
-		t.Logf("PERF_ACCEPTANCE field=%s baseline=%d median=%d reduction=%.1f%% required=%.1f%% status=%s", check.name, check.baseline, check.current, reduction, required, status)
+		t.Logf("PERF_HISTORICAL field=%s baseline=%d median=%d reduction=%.1f%% required=%.1f%% status=%s", check.name, check.baseline, check.current, reduction, required, status)
 	}
-	if len(failed) != 0 {
-		t.Fatalf("performance acceptance failed: %s", strings.Join(failed, ", "))
-	}
+	return failed
 }
 
 func readPerformanceBaseline(t *testing.T) performanceBaseline {
@@ -105,30 +204,35 @@ func readPerformanceBaseline(t *testing.T) performanceBaseline {
 func readPerformanceGateRun(t *testing.T, directory string, index int) performanceGateRun {
 	t.Helper()
 	bench := readPerformanceLog(t, filepath.Join(directory, fmt.Sprintf("run-%02d-bench.log", index)))
-	matches := fullBenchmarkPattern.FindSubmatch(bench)
-	if len(matches) != 3 {
-		t.Fatalf("run %d benchmark metric not found", index)
+	result := performanceGateRun{phases: make(map[string]map[string]performancePhaseRun), process: make(map[string]performanceProcessMetric)}
+	for _, match := range benchmarkMetricPattern.FindAllSubmatch(bench, -1) {
+		workload, phase := string(match[1]), string(match[2])
+		if result.phases[workload] == nil {
+			result.phases[workload] = make(map[string]performancePhaseRun)
+		}
+		result.phases[workload][phase] = performancePhaseRun{wall: parsePerformanceUint(t, match[3]), bytesPerOp: parsePerformanceUint(t, match[4])}
 	}
-	process := readPerformanceLog(t, filepath.Join(directory, fmt.Sprintf("run-%02d-process.log", index)))
-	marker := []byte("PERF_METRIC ")
-	start := strings.Index(string(process), string(marker))
-	if start < 0 {
-		t.Fatalf("run %d process metric not found", index)
+	for _, workload := range performanceGateWorkloads {
+		for _, phase := range performanceGatePhases {
+			if result.phases[workload][phase].wall == 0 {
+				t.Fatalf("run %d benchmark metric not found for %s/%s", index, workload, phase)
+			}
+		}
+		process := readPerformanceLog(t, filepath.Join(directory, fmt.Sprintf("run-%02d-%s-process.log", index, workload)))
+		marker := []byte("PERF_METRIC ")
+		start := strings.Index(string(process), string(marker))
+		if start < 0 {
+			t.Fatalf("run %d process metric not found for %s", index, workload)
+		}
+		line := string(process[start+len(marker):])
+		line, _, _ = strings.Cut(line, "\n")
+		var metric performanceProcessMetric
+		if err := json.Unmarshal([]byte(strings.TrimSpace(line)), &metric); err != nil {
+			t.Fatalf("run %d process metric for %s: %v", index, workload, err)
+		}
+		result.process[workload] = metric
 	}
-	line := string(process[start+len(marker):])
-	line, _, _ = strings.Cut(line, "\n")
-	var metric performanceProcessMetric
-	if err := json.Unmarshal([]byte(strings.TrimSpace(line)), &metric); err != nil {
-		t.Fatalf("run %d process metric: %v", index, err)
-	}
-	return performanceGateRun{
-		benchmarkWall: parsePerformanceUint(t, matches[1]),
-		bytesPerOp:    parsePerformanceUint(t, matches[2]),
-		processWall:   uint64(metric.WallNanosecond),
-		processCPU:    uint64(metric.CPUNanosecond),
-		peakHeap:      metric.PeakHeapBytes,
-		maxRSS:        metric.MaxRSSBytes,
-	}
+	return result
 }
 
 func readPerformanceLog(t *testing.T, path string) []byte {
@@ -149,7 +253,7 @@ func parsePerformanceUint(t *testing.T, value []byte) uint64 {
 	return parsed
 }
 
-func medianPerformanceValue(runs []performanceGateRun, value func(performanceGateRun) uint64) uint64 {
+func medianPerformanceValue[T any](runs []T, value func(T) uint64) uint64 {
 	values := make([]uint64, 0, len(runs))
 	for _, run := range runs {
 		values = append(values, value(run))

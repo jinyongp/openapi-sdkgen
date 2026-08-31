@@ -9,10 +9,12 @@ binary="$profile_dir/openapi-sdkgen.test"
 cpu_profile="$profile_dir/cpu.pprof"
 heap_profile="$profile_dir/heap.pprof"
 profile_log="$profile_dir/profile.log"
+workload="${PERF_PROFILE_WORKLOAD:-self-contained}"
+phase="${PERF_PROFILE_PHASE:-emit}"
 mkdir -p "$profile_dir"
 
 agent_run "build performance profile binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
-if ! "$binary" -test.run '^$' -test.bench '^BenchmarkGeneration/self-contained/full$' -test.benchtime 1x -test.count 1 -test.cpuprofile "$cpu_profile" -test.memprofile "$heap_profile" >"$profile_log" 2>&1; then
+if ! "$binary" -test.run '^$' -test.bench "^BenchmarkGeneration/$workload/$phase$" -test.benchtime 1x -test.count 1 -test.cpuprofile "$cpu_profile" -test.memprofile "$heap_profile" >"$profile_log" 2>&1; then
   echo "failed performance profile"
   tail -n "$TAIL_LINES" "$profile_log" || true
   exit 1
@@ -20,6 +22,7 @@ fi
 
 rg '^BenchmarkGeneration/' "$profile_log"
 go tool pprof -top -nodecount=12 "$cpu_profile" | sed -n '1,24p'
+go tool pprof -top -alloc_space -nodecount=12 "$heap_profile" | sed -n '1,24p'
 printf 'cpu profile: %s\n' "$cpu_profile"
 printf 'heap profile: %s\n' "$heap_profile"
 agent_note "ok performance profiles"
