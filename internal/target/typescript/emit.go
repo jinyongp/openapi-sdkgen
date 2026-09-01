@@ -171,6 +171,8 @@ type ManifestOperation struct {
 	errorExpression    typeExpression
 	rawResponse        typeExpression
 	mediaOutputs       map[string]typeExpression
+	renderedMedia      map[string]string
+	mediaTypes         []string
 	security           []operationSecurityRequirement
 	hasSecurity        bool
 	optionsRequired    bool
@@ -594,6 +596,12 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			failures = append(failures, fmt.Errorf("operation %s media outputs: %w", operationLabel(operation), err))
 			operationFailed = true
 		}
+		renderedMedia := renderMediaOutputTypes(mediaOutputs, typeRenderContract)
+		mediaTypes := make([]string, 0, len(renderedMedia))
+		for mediaType := range renderedMedia {
+			mediaTypes = append(mediaTypes, mediaType)
+		}
+		sort.Strings(mediaTypes)
 		security, hasSecurity, err := operationSecurityRequirements(document, operation)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("operation %s security: %w", operationLabel(operation), err))
@@ -648,6 +656,8 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			errorExpression:    errorExpression,
 			rawResponse:        rawResponse,
 			mediaOutputs:       mediaOutputs,
+			renderedMedia:      renderedMedia,
+			mediaTypes:         mediaTypes,
 			security:           security,
 			hasSecurity:        hasSecurity,
 			optionsRequired:    len(security) > 1,

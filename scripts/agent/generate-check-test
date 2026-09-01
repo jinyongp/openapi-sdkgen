@@ -43,8 +43,42 @@ cat >"$input" <<'EOF'
 {
   "openapi": "3.2.0",
   "info": {"title": "Generate Check", "version": "1.0.0"},
-  "paths": {"/items": {"get": {"operationId": "list-items", "responses": {"204": {"description": "OK"}}}}},
-  "components": {"schemas": {"Item": {"type": "object", "properties": {"id": {"type": "string"}}}}}
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "list-items",
+        "security": [{}, {"Session": []}],
+        "parameters": [
+          {"name": "cursor", "in": "query", "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1}}
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {"type": "array", "items": {"$ref": "#/components/schemas/Item"}},
+                    "pagination": {
+                      "type": "object",
+                      "properties": {"nextCursor": {"type": ["string", "null"]}}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-pagination": "cursor"
+      }
+    }
+  },
+  "components": {
+    "schemas": {"Item": {"type": "string", "enum": ["one", "two"]}},
+    "securitySchemes": {"Session": {"type": "http", "scheme": "bearer"}}
+  }
 }
 EOF
 

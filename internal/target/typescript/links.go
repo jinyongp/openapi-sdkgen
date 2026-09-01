@@ -447,6 +447,14 @@ func emitLinkValues(output *bytes.Buffer, document *ir.Document, links []generat
 	if len(links) == 0 {
 		return nil
 	}
+	groups := make([]generatedLinkGroup, 0)
+	for _, source := range linkSourceOperations(links) {
+		groups = append(groups, linkGroupsForSource(links, operationRouteKey(source))...)
+	}
+	return emitLinkValuesForGroups(output, document, links, groups)
+}
+
+func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links []generatedLink, groups []generatedLinkGroup) error {
 	for _, link := range links {
 		name, err := generatedLinkVariableName(link)
 		if err != nil {
@@ -476,11 +484,9 @@ func emitLinkValues(output *bytes.Buffer, document *ir.Document, links []generat
 		}
 		fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => %s(mergeLinkInput(resolveLinkInput<%s>(response, %s, invocation.sourceInput), invocation.input), %s)\n", name, sourceRawResponse, invocationType, targetInput, targetOptions, sourceInput, invocationDefault, targetOutput, targetProperty, targetInput, link.Definition, options)
 	}
-	for _, source := range linkSourceOperations(links) {
-		for _, group := range linkGroupsForSource(links, operationRouteKey(source)) {
-			if err := emitLinkGroupValue(output, document, group); err != nil {
-				return err
-			}
+	for _, group := range groups {
+		if err := emitLinkGroupValue(output, document, group); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -615,7 +621,10 @@ func linksForSource(links []generatedLink, routeKey string) []generatedLink {
 }
 
 func routeLinksType(document *ir.Document, links []generatedLink, routeKey string) (string, error) {
-	groups := linkGroupsForSource(links, routeKey)
+	return routeLinkGroupsType(document, linkGroupsForSource(links, routeKey))
+}
+
+func routeLinkGroupsType(document *ir.Document, groups []generatedLinkGroup) (string, error) {
 	if len(groups) == 0 {
 		return "never", nil
 	}
@@ -631,7 +640,10 @@ func routeLinksType(document *ir.Document, links []generatedLink, routeKey strin
 }
 
 func routeLinksValue(links []generatedLink, routeKey string) (string, error) {
-	groups := linkGroupsForSource(links, routeKey)
+	return routeLinkGroupsValue(linkGroupsForSource(links, routeKey))
+}
+
+func routeLinkGroupsValue(groups []generatedLinkGroup) (string, error) {
 	if len(groups) == 0 {
 		return "", nil
 	}

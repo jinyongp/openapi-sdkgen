@@ -19,6 +19,15 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 	if tree == nil {
 		return fmt.Errorf("internal TypeScript target: prepared resource tree is nil")
 	}
+	linksBySource := make(map[string][]generatedLink)
+	for _, link := range links {
+		route := operationRouteKey(link.SourceOperation)
+		linksBySource[route] = append(linksBySource[route], link)
+	}
+	streamsByRoute := make(map[string]generatedStream, len(streams))
+	for _, stream := range streams {
+		streamsByRoute[operationRouteKey(stream.Operation)] = stream
+	}
 
 	for _, module := range plan.operations {
 		item, exists := items[module.routeKey]
@@ -26,7 +35,8 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 			return fmt.Errorf("operation module %q has no manifest operation", module.routeKey)
 		}
 		operation := item.compiled
-		source, err := emitOperationLeaf(document, plan, module, operation, item, resourceReachable[module.routeKey], links, streams)
+		stream, hasStream := streamsByRoute[module.routeKey]
+		source, err := emitOperationLeaf(document, plan, module, operation, item, resourceReachable[module.routeKey], linksBySource[module.routeKey], stream, hasStream)
 		if err != nil {
 			return fmt.Errorf("emit operation module %q: %w", module.routeKey, err)
 		}
@@ -37,7 +47,7 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 	return nil
 }
 
-func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, streams []generatedStream) ([]byte, error) {
+func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, stream generatedStream, hasStream bool) ([]byte, error) {
 	runtimeCallables, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
 	if err != nil {
 		return nil, err
@@ -101,12 +111,12 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 		paginationType = paginationFunctionType(item, itemType, item.optionsRequired)
 	}
-	linksType, err := routeLinksType(document, links, module.routeKey)
+	linkGroups := linkGroupsForSource(links, module.routeKey)
+	linksType, err := routeLinkGroupsType(document, linkGroups)
 	if err != nil {
 		return nil, err
 	}
 	streamType := "never"
-	stream, hasStream := streamForRoute(streams, module.routeKey)
 	if hasStream {
 		streamType, err = streamFunctionType(document, stream)
 		if err != nil {
@@ -224,14 +234,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		return nil, err
 	}
 	hasInput := len(item.InputTypes) > 0
-	inputOptional := false
-	if hasInput {
-		required, err := operationInputRequired(document, operation, item.InputTypes, false)
-		if err != nil {
-			return nil, err
-		}
-		inputOptional = !required
-	}
+	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")
 	output.WriteString("export function bindBase(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): BaseCall {\n")
 	fmt.Fprintf(&output, "  return bindOperation<Input, Output, Options, RawResponse>(request, %s, %t, %t) as BaseCall\n", definition, hasInput, inputOptional)
@@ -248,11 +251,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 		output.WriteString("\n/** Creates this operation's paginator from its single base call. */\n")
 		output.WriteString("export function bindPagination(base: BaseCall): Pagination {\n")
-		fmt.Fprintf(&output, "  return createPaginator<%s, Input, unknown, %s, %s, %s, Options>((input, requestOptions) => base.raw(input, requestOptions).then((response) => response.data), %s)\n", itemType, quoteTS(operation.PaginationPlan.Mode), quoteTS(operation.PaginationPlan.Request.Cursor), quoteTS(operation.PaginationPlan.Request.Offset), runtimePlan)
+		fmt.Fprintf(&output, "  return createPaginator<%s, Input, unknown, %s, %s, %s, Options, %t>((input, requestOptions) => base.raw(input, requestOptions).then((response) => response.data), %s)\n", itemType, quoteTS(operation.PaginationPlan.Mode), quoteTS(operation.PaginationPlan.Request.Cursor), quoteTS(operation.PaginationPlan.Request.Offset), item.optionsRequired, runtimePlan)
 		output.WriteString("}\n")
 	}
 	if linksType != "never" {
-		factory, err := emitOperationLinkFactory(document, plan, module, linksForSource(links, module.routeKey))
+		factory, err := emitOperationLinkFactory(document, plan, module, links, linkGroups)
 		if err != nil {
 			return nil, err
 		}
@@ -274,7 +277,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	return []byte(localized), nil
 }
 
-func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink) ([]byte, error) {
+func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink, groups []generatedLinkGroup) ([]byte, error) {
 	var output bytes.Buffer
 	output.WriteString("\n/** Completed exact callables required by this operation's response links. */\n")
 	output.WriteString("export interface LinkTargets {\n")
@@ -297,7 +300,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	output.WriteString("/** Creates this operation's response-link container. */\n")
 	output.WriteString("export function bindLinks(targets: LinkTargets): Links {\n")
 	var body bytes.Buffer
-	if err := emitLinkValues(&body, document, links); err != nil {
+	if err := emitLinkValuesForGroups(&body, document, links, groups); err != nil {
 		return nil, err
 	}
 	bodySource := body.String()
@@ -309,7 +312,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 		return nil, err
 	}
 	output.WriteString(strings.ReplaceAll(bodySource, "Contract.", "ContractSchemas."))
-	value, err := routeLinksValue(links, module.routeKey)
+	value, err := routeLinkGroupsValue(groups)
 	if err != nil {
 		return nil, err
 	}

@@ -76,11 +76,17 @@ export type PaginateInput<
         })
   : Input & { readonly mode?: never };
 
+type PaginationOptions<Options, Required extends boolean> = Required extends true
+  ? [options: Options]
+  : [options?: Options];
+
 /** Function that fetches one typed page for a generated pagination helper. */
-export type PageRequest<Input, Page, Options extends RequestOptions = RequestOptions> = (
-  input: Input,
-  options?: Options,
-) => Promise<Page>;
+export type PageRequest<
+  Input,
+  Page,
+  Options extends RequestOptions = RequestOptions,
+  OptionsRequired extends boolean = false,
+> = (input: Input, ...options: PaginationOptions<Options, OptionsRequired>) => Promise<Page>;
 
 /**
  * Creates a lazy async iterator over all items returned by a paginated operation.
@@ -101,14 +107,15 @@ export function createPaginator<
   CursorName extends string = string,
   OffsetName extends string = string,
   Options extends RequestOptions = RequestOptions,
+  OptionsRequired extends boolean = false,
 >(
-  requestPage: PageRequest<Input, Page, Options>,
+  requestPage: PageRequest<Input, Page, Options, OptionsRequired>,
   plan: PaginationPlan<Profile, CursorName, OffsetName>,
 ): (
   input: PaginateInput<Input, Profile, CursorName, OffsetName>,
-  options?: Options,
+  ...options: PaginationOptions<Options, OptionsRequired>
 ) => AsyncIterable<Item> {
-  return (input, options) => ({
+  return (input, ...options) => ({
     async *[Symbol.asyncIterator]() {
       const root: Record<string, unknown> = isRecord(input) ? { ...input } : {};
       const requestedMode = root.mode;
@@ -134,7 +141,7 @@ export function createPaginator<
         seenOffsets.add(query[offsetName]);
       }
       for (;;) {
-        const page = await requestPage({ ...root, query: { ...query } } as Input, options);
+        const page = await requestPage({ ...root, query: { ...query } } as Input, ...options);
         const items = pageItems(page, plan.response.items);
         for (const item of items) yield item as Item;
         if (mode === "cursor") {

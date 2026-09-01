@@ -177,12 +177,8 @@ func renderMediaOutputTypes(expressions map[string]typeExpression, scope typeRen
 func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, outputType, rawCallType, rawCapabilityType string) error {
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
 	optionsRequired := item.optionsRequired
-	mediaOutputs := renderMediaOutputTypes(item.mediaOutputs, typeRenderContract)
-	mediaTypes := make([]string, 0, len(mediaOutputs))
-	for mediaType := range mediaOutputs {
-		mediaTypes = append(mediaTypes, mediaType)
-	}
-	sort.Strings(mediaTypes)
+	mediaOutputs := item.renderedMedia
+	mediaTypes := item.mediaTypes
 	extends := ""
 	if rawCapabilityType != "" {
 		extends = " extends " + rawCapabilityType
@@ -206,12 +202,7 @@ func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, it
 func emitOperationRawCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, rawType string) error {
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
 	optionsRequired := item.optionsRequired
-	mediaOutputs := renderMediaOutputTypes(item.mediaOutputs, typeRenderContract)
-	mediaTypes := make([]string, 0, len(mediaOutputs))
-	for mediaType := range mediaOutputs {
-		mediaTypes = append(mediaTypes, mediaType)
-	}
-	sort.Strings(mediaTypes)
+	mediaTypes := item.mediaTypes
 	fmt.Fprintf(output, "interface %s {\n", callName)
 	if len(mediaTypes) > 1 {
 		for _, mediaType := range mediaTypes {
@@ -386,11 +377,7 @@ func emitOperationParameterJSDoc(output *bytes.Buffer, indent string, parameter 
 
 func emitOperationOptions(output *bytes.Buffer, operationName string, operation ir.Operation, item ManifestOperation) error {
 	parts := []string{`Omit<RequestOptions, "accept">`}
-	mediaTypes := make([]string, 0, len(item.mediaOutputs))
-	for mediaType := range item.mediaOutputs {
-		mediaTypes = append(mediaTypes, mediaType)
-	}
-	sort.Strings(mediaTypes)
+	mediaTypes := item.mediaTypes
 	if len(mediaTypes) > 1 {
 		quoted := make([]string, 0, len(mediaTypes))
 		for _, mediaType := range mediaTypes {

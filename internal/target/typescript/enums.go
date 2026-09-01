@@ -80,10 +80,11 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
   const rightKeys = Object.keys(right).sort()
   if (leftKeys.length !== rightKeys.length) return false
   for (let index = 0; index < leftKeys.length; index++) {
-    const key = leftKeys[index]
-    if (key !== rightKeys[index]) return false
+    const key = leftKeys[index]!
+    const rightKey = rightKeys[index]!
+    if (key !== rightKey) return false
     const leftItem = Object.getOwnPropertyDescriptor(left, key)
-    const rightItem = Object.getOwnPropertyDescriptor(right, key)
+    const rightItem = Object.getOwnPropertyDescriptor(right, rightKey)
     if (leftItem === undefined || rightItem === undefined || !("value" in leftItem) || !("value" in rightItem) || !__sdkgen_enumValueEquals(leftItem.value, rightItem.value, seen)) return false
   }
   return true

@@ -42,6 +42,14 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	for _, operation := range document.Operations {
 		operationsByRoute[operationRouteKey(operation)] = operation
 	}
+	linksBySource := make(map[string]bool)
+	for _, link := range links {
+		linksBySource[operationRouteKey(link.SourceOperation)] = true
+	}
+	streamsByRoute := make(map[string]bool, len(streams))
+	for _, stream := range streams {
+		streamsByRoute[operationRouteKey(stream.Operation)] = true
+	}
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
@@ -61,11 +69,11 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			names.pagination = stablePrivateIdentifier("pagination-factory", route)
 			imports = append(imports, "bindPagination as "+names.pagination)
 		}
-		if len(linksForSource(links, route)) > 0 {
+		if linksBySource[route] {
 			names.links = stablePrivateIdentifier("links-factory", route)
 			imports = append(imports, "bindLinks as "+names.links)
 		}
-		if _, exists := streamForRoute(streams, route); exists {
+		if streamsByRoute[route] {
 			names.stream = stablePrivateIdentifier("stream-factory", route)
 			imports = append(imports, "bindStream as "+names.stream)
 		}
