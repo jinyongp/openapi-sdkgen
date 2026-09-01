@@ -37,6 +37,10 @@ openapi-sdkgen generate \
 ```
 
 생성이 끝나면 `./src/generated/api` 아래에 클라이언트와 타입이 만들어집니다.
+자체 완결된 로컬 OpenAPI 파일과 생성 옵션이 이전 실행과 같으면
+`--incremental`은 기존 생성 파일을 검증한 뒤 컴파일과 소스 생성을 생략합니다.
+stdin, HTTP(S), 외부 `$ref`, 스키마 확장을 사용하는 입력은 전체 생성 과정을
+계속 실행합니다.
 
 URL에 있는 OpenAPI 파일을 바로 사용할 수도 있습니다.
 

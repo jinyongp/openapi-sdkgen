@@ -1,6 +1,7 @@
 package sdkgen
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -8,6 +9,38 @@ import (
 	"go.yaml.in/yaml/v4"
 	"openapi-sdkgen/internal/diagnostic"
 )
+
+func TestCompileInputResultMarksOnlySelfContainedLocalInputReusable(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.json")
+	selfContained := []byte(`{"openapi":"3.1.0","info":{"title":"Reusable","version":"1"},"paths":{}}`)
+	if err := os.WriteFile(root, selfContained, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileInputResultWithOptions(root, CompileOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ReusableInput == nil || len(result.ReusableInput.SHA256) != 64 {
+		t.Fatalf("reusable input = %#v", result.ReusableInput)
+	}
+
+	external := filepath.Join(directory, "schema.json")
+	if err := os.WriteFile(external, []byte(`{"Thing":{"type":"string"}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	withReference := []byte(`{"openapi":"3.1.0","info":{"title":"Referenced","version":"1"},"paths":{},"components":{"schemas":{"Thing":{"$ref":"schema.json#/Thing"}}}}`)
+	if err := os.WriteFile(root, withReference, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err = CompileInputResultWithOptions(root, CompileOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ReusableInput != nil {
+		t.Fatalf("external-reference input was marked reusable: %#v", result.ReusableInput)
+	}
+}
 
 func TestCompileResultSeparatesExpectedDiagnosticsFromInternalErrors(t *testing.T) {
 	result, err := CompileResult([]byte(`{"openapi":"3.1.0","info":{"title":"Broken","version":"1"},"paths":[]}`))

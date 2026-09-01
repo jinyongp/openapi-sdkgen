@@ -11,7 +11,7 @@ agent_run "build performance acceptance binary" go test -c -o "$binary" ./cmd/op
 
 OPENAPI_SDKGEN_PERF=1 "$binary" -test.run '^TestPerformanceProcessMetrics$' >/dev/null 2>&1
 workloads=(self-contained templated-resource parameter-heavy external-reference high-artifact server-addon links-heavy)
-benchmark_pattern='^BenchmarkGeneration/(self-contained|templated-resource|parameter-heavy|external-reference|high-artifact|server-addon|links-heavy)/(compile|prepare|emit|publish|full)$'
+benchmark_pattern='^Benchmark(Generation|ArtifactPublication|IncrementalGeneration)/'
 "$binary" -test.run '^$' -test.bench "$benchmark_pattern" -test.benchtime 1x -test.count 1 >/dev/null 2>&1
 
 for index in 01 02 03 04 05; do

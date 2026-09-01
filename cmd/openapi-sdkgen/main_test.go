@@ -303,7 +303,7 @@ func TestGenerateReportsPreflightOnceAndClassifiesInternalFailures(t *testing.T)
 				emit: func(generator.Target, generator.Plan) ([]generator.Artifact, error) {
 					return []generator.Artifact{{Path: "index.ts", Data: []byte("export {}\n")}}, test.emitErr
 				},
-				publish: func(string, []generator.Artifact) error {
+				publish: func(string, []generator.Artifact, *artifactGeneration) error {
 					published = true
 					return test.publishErr
 				},
@@ -961,6 +961,36 @@ func TestIncrementalNoopPreservesArtifactsAndManifest(t *testing.T) {
 	}
 }
 
+func TestIncrementalNoopUpdatesOnlyManifestGeneration(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	artifacts := []generator.Artifact{{Path: "index.ts", Data: []byte("export {}\n")}}
+	if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+		t.Fatal(err)
+	}
+	artifactBefore, err := os.Stat(filepath.Join(output, "index.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	generation := &artifactGeneration{Generator: "release:7.2.0", Target: "typescript", InputSHA256: strings.Repeat("a", 64)}
+	if err := writeArtifactsIncrementalForGeneration(output, append([]generator.Artifact(nil), artifacts...), generation); err != nil {
+		t.Fatal(err)
+	}
+	artifactAfter, err := os.Stat(filepath.Join(output, "index.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(artifactBefore, artifactAfter) || !artifactBefore.ModTime().Equal(artifactAfter.ModTime()) {
+		t.Fatal("manifest migration replaced an unchanged artifact")
+	}
+	manifest, err := readArtifactManifestRecord(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Version != 2 || !artifactGenerationEqual(manifest.Generation, generation) {
+		t.Fatalf("updated manifest = %#v", manifest)
+	}
+}
+
 func TestIncrementalArtifactsRejectEditedOwnedFileAndUnmanagedOutput(t *testing.T) {
 	directory := t.TempDir()
 	output := filepath.Join(directory, "generated")
@@ -1047,6 +1077,132 @@ func TestGenerateIncrementalFlagReusesManagedOutput(t *testing.T) {
 	standardInput = strings.NewReader(minimalDocument)
 	if err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output, "--incremental"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGenerateIncrementalSkipsCompilationForMatchingReusableInput(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "openapi.json")
+	output := filepath.Join(directory, "generated")
+	if err := os.WriteFile(input, []byte(minimalDocument), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previousVersion := version
+	version = "7.2.0-test"
+	t.Cleanup(func() { version = previousVersion })
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := readArtifactManifestRecord(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Version != 2 || manifest.Generation == nil {
+		t.Fatalf("generation manifest = %#v", manifest)
+	}
+	manifestInfo, err := os.Stat(filepath.Join(output, artifactManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled := false
+	runtime := generationRuntime{compile: func(string, compiler.CompileOptions) (compiler.Result, error) {
+		compiled = true
+		return compiler.Result{}, errors.New("compile should be skipped")
+	}}
+	if err := generateWithRuntime([]string{"--input", input, "--target", "typescript", "--output", output, "--incremental"}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	if compiled {
+		t.Fatal("matching incremental generation invoked the compiler")
+	}
+	after, err := os.Stat(filepath.Join(output, artifactManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(manifestInfo, after) || !manifestInfo.ModTime().Equal(after.ModTime()) {
+		t.Fatal("matching incremental generation replaced the manifest")
+	}
+	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("incremental lock remains: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(output, "index.ts"), []byte("edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = generateWithRuntime([]string{"--input", input, "--target", "typescript", "--output", output, "--incremental"}, runtime)
+	if err == nil || !strings.Contains(err.Error(), "was edited") || compiled {
+		t.Fatalf("edited fast-path output error = %v, compiled = %v", err, compiled)
+	}
+}
+
+func TestGenerateIncrementalInvalidatesReusableInputFingerprint(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "openapi.json")
+	output := filepath.Join(directory, "generated")
+	if err := os.WriteFile(input, []byte(minimalDocument), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previousVersion := version
+	version = "7.2.0-test"
+	t.Cleanup(func() { version = previousVersion })
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+
+	compileFailure := errors.New("fingerprint invalidated")
+	compiled := false
+	runtime := generationRuntime{compile: func(string, compiler.CompileOptions) (compiler.Result, error) {
+		compiled = true
+		return compiler.Result{}, compileFailure
+	}}
+	changed := strings.Replace(minimalDocument, "Example API", "Changed API", 1)
+	if err := os.WriteFile(input, []byte(changed), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := generateWithRuntime([]string{"--input", input, "--target", "typescript", "--output", output, "--incremental"}, runtime)
+	if !compiled || !errors.Is(err, compileFailure) {
+		t.Fatalf("changed input error = %v, compiled = %v", err, compiled)
+	}
+
+	if err := os.WriteFile(input, []byte(minimalDocument), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	compiled = false
+	version = "7.2.1-test"
+	err = generateWithRuntime([]string{"--input", input, "--target", "typescript", "--output", output, "--incremental"}, runtime)
+	if !compiled || !errors.Is(err, compileFailure) {
+		t.Fatalf("changed generator error = %v, compiled = %v", err, compiled)
+	}
+
+	version = "7.2.0-test"
+	compiled = false
+	err = generateWithRuntime([]string{"--input", input, "--target", "typescript", "--output", output, "--incremental", "--with", "server"}, runtime)
+	if !compiled || !errors.Is(err, compileFailure) {
+		t.Fatalf("changed add-on error = %v, compiled = %v", err, compiled)
+	}
+}
+
+func TestGenerateIncrementalMigratesVersionOneManifest(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "openapi.json")
+	output := filepath.Join(directory, "generated")
+	if err := os.WriteFile(input, []byte(minimalDocument), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeArtifacts(output, []generator.Artifact{{Path: "old.ts", Data: []byte("export {}\n")}}); err != nil {
+		t.Fatal(err)
+	}
+	previousVersion := version
+	version = "7.2.0-test"
+	t.Cleanup(func() { version = previousVersion })
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", output, "--incremental"}); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err := readArtifactManifestRecord(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if manifest.Version != 2 || manifest.Generation == nil {
+		t.Fatalf("migrated manifest = %#v", manifest)
 	}
 }
 

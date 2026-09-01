@@ -1,6 +1,8 @@
 package sdkgen
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
@@ -19,6 +21,14 @@ type Result struct {
 	Document      *ir.Document
 	Diagnostics   []diagnostic.Diagnostic
 	SkippedPhases []diagnostic.SkippedPhase
+	ReusableInput *ReusableInput
+}
+
+// ReusableInput identifies the exact self-contained local input bytes used by
+// a successful compilation. Callers may use the digest to bypass repeated
+// compilation when every generation setting and managed output also match.
+type ReusableInput struct {
+	SHA256 string
 }
 
 // CompileResult compiles in-memory OpenAPI input and returns structured
@@ -84,7 +94,12 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		return referenceSourceScanResult(collector), nil
 	}
 	document, err := compileInputValue(source, decoded, false, options)
-	return resultFromCompile(document, err, source.display, collector), nil
+	result := resultFromCompile(document, err, source.display, collector)
+	if result.Document != nil && source.filePath != "" && externalReferenceCount(decoded) == 0 && len(options.SchemaExtensionManifests) == 0 {
+		digest := sha256.Sum256(source.data)
+		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
+	}
+	return result, nil
 }
 
 func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) []diagnostic.Diagnostic {

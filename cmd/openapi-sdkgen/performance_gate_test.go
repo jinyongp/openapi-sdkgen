@@ -27,9 +27,11 @@ var performanceGateWorkloads = []string{
 var performanceGatePhases = []string{"compile", "prepare", "emit", "publish", "full"}
 
 type performanceBaseline struct {
-	Historical performanceHistoricalBaseline        `json:"historical"`
-	Current    map[string]performanceWorkloadBudget `json:"current"`
-	Thresholds performanceRegressionThresholds      `json:"regressionThresholdPercent"`
+	Historical  performanceHistoricalBaseline        `json:"historical"`
+	Current     map[string]performanceWorkloadBudget `json:"current"`
+	Publication map[string]performancePhaseBudget    `json:"publication"`
+	Incremental map[string]performancePhaseBudget    `json:"incremental"`
+	Thresholds  performanceRegressionThresholds      `json:"regressionThresholdPercent"`
 }
 
 type performanceHistoricalBaseline struct {
@@ -72,11 +74,26 @@ type performancePhaseRun struct {
 }
 
 type performanceGateRun struct {
-	phases  map[string]map[string]performancePhaseRun
-	process map[string]performanceProcessMetric
+	phases      map[string]map[string]performancePhaseRun
+	publication map[string]performancePhaseRun
+	incremental map[string]performancePhaseRun
+	process     map[string]performanceProcessMetric
 }
 
 var benchmarkMetricPattern = regexp.MustCompile(`(?m)^BenchmarkGeneration/([^/]+)/([^\s-]+)-\d+\s+\d+\s+(\d+) ns/op.*?\s+(\d+) B/op`)
+var publicationMetricPattern = regexp.MustCompile(`(?m)^BenchmarkArtifactPublication/([^\s]+)-\d+\s+\d+\s+(\d+) ns/op.*?\s+(\d+) B/op`)
+var incrementalMetricPattern = regexp.MustCompile(`(?m)^BenchmarkIncrementalGeneration/([^\s]+)-\d+\s+\d+\s+(\d+) ns/op.*?\s+(\d+) B/op`)
+
+var performancePublicationCases = []string{
+	"fresh-1x",
+	"incremental-noop-1x",
+	"incremental-noop-2x",
+	"incremental-noop-4x",
+	"incremental-one-change-1x",
+	"incremental-stale-1x",
+}
+
+var performanceIncrementalCases = []string{"full-noop", "one-operation-change"}
 
 func TestPerformanceBaselineCoversRegressionWorkloads(t *testing.T) {
 	baseline := readPerformanceBaseline(t)
@@ -94,6 +111,18 @@ func TestPerformanceBaselineCoversRegressionWorkloads(t *testing.T) {
 		}
 		if budget.Process.WallNanoseconds == 0 || budget.Process.CPUNanoseconds == 0 || budget.Process.PeakHeapBytes == 0 || budget.Process.MaxRSSBytes == 0 {
 			t.Errorf("performance baseline missing %s process budget", workload)
+		}
+	}
+	for _, name := range performancePublicationCases {
+		value, exists := baseline.Publication[name]
+		if !exists || value.WallNanoseconds == 0 || value.BytesPerOperation == 0 {
+			t.Errorf("performance baseline missing publication/%s budget", name)
+		}
+	}
+	for _, name := range performanceIncrementalCases {
+		value, exists := baseline.Incremental[name]
+		if !exists || value.WallNanoseconds == 0 || value.BytesPerOperation == 0 {
+			t.Errorf("performance baseline missing incremental/%s budget", name)
 		}
 	}
 }
@@ -132,6 +161,20 @@ func TestPerformanceAcceptanceGate(t *testing.T) {
 		failed = appendRegressionCheck(t, failed, workload+"/process/cpu", budget.Process.CPUNanoseconds, process.CPUNanoseconds, baseline.Thresholds.Process)
 		failed = appendRegressionCheck(t, failed, workload+"/process/heap", budget.Process.PeakHeapBytes, process.PeakHeapBytes, baseline.Thresholds.Memory)
 		failed = appendRegressionCheck(t, failed, workload+"/process/rss", budget.Process.MaxRSSBytes, process.MaxRSSBytes, baseline.Thresholds.Memory)
+	}
+	for _, name := range performancePublicationCases {
+		budget := baseline.Publication[name]
+		wall := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.publication[name].wall })
+		allocation := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.publication[name].bytesPerOp })
+		failed = appendRegressionCheck(t, failed, "publication/"+name+"/wall", budget.WallNanoseconds, wall, baseline.Thresholds.BenchmarkWall)
+		failed = appendRegressionCheck(t, failed, "publication/"+name+"/allocation", budget.BytesPerOperation, allocation, baseline.Thresholds.Allocation)
+	}
+	for _, name := range performanceIncrementalCases {
+		budget := baseline.Incremental[name]
+		wall := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.incremental[name].wall })
+		allocation := medianPerformanceValue(runs, func(run performanceGateRun) uint64 { return run.incremental[name].bytesPerOp })
+		failed = appendRegressionCheck(t, failed, "incremental/"+name+"/wall", budget.WallNanoseconds, wall, baseline.Thresholds.BenchmarkWall)
+		failed = appendRegressionCheck(t, failed, "incremental/"+name+"/allocation", budget.BytesPerOperation, allocation, baseline.Thresholds.Allocation)
 	}
 	failed = append(failed, historicalPerformanceFailures(t, baseline.Historical, runs)...)
 	if len(failed) != 0 {
@@ -204,13 +247,21 @@ func readPerformanceBaseline(t *testing.T) performanceBaseline {
 func readPerformanceGateRun(t *testing.T, directory string, index int) performanceGateRun {
 	t.Helper()
 	bench := readPerformanceLog(t, filepath.Join(directory, fmt.Sprintf("run-%02d-bench.log", index)))
-	result := performanceGateRun{phases: make(map[string]map[string]performancePhaseRun), process: make(map[string]performanceProcessMetric)}
+	result := performanceGateRun{
+		phases: make(map[string]map[string]performancePhaseRun), publication: make(map[string]performancePhaseRun), incremental: make(map[string]performancePhaseRun), process: make(map[string]performanceProcessMetric),
+	}
 	for _, match := range benchmarkMetricPattern.FindAllSubmatch(bench, -1) {
 		workload, phase := string(match[1]), string(match[2])
 		if result.phases[workload] == nil {
 			result.phases[workload] = make(map[string]performancePhaseRun)
 		}
 		result.phases[workload][phase] = performancePhaseRun{wall: parsePerformanceUint(t, match[3]), bytesPerOp: parsePerformanceUint(t, match[4])}
+	}
+	for _, match := range publicationMetricPattern.FindAllSubmatch(bench, -1) {
+		result.publication[string(match[1])] = performancePhaseRun{wall: parsePerformanceUint(t, match[2]), bytesPerOp: parsePerformanceUint(t, match[3])}
+	}
+	for _, match := range incrementalMetricPattern.FindAllSubmatch(bench, -1) {
+		result.incremental[string(match[1])] = performancePhaseRun{wall: parsePerformanceUint(t, match[2]), bytesPerOp: parsePerformanceUint(t, match[3])}
 	}
 	for _, workload := range performanceGateWorkloads {
 		for _, phase := range performanceGatePhases {
@@ -231,6 +282,16 @@ func readPerformanceGateRun(t *testing.T, directory string, index int) performan
 			t.Fatalf("run %d process metric for %s: %v", index, workload, err)
 		}
 		result.process[workload] = metric
+	}
+	for _, name := range performancePublicationCases {
+		if result.publication[name].wall == 0 {
+			t.Fatalf("run %d benchmark metric not found for publication/%s", index, name)
+		}
+	}
+	for _, name := range performanceIncrementalCases {
+		if result.incremental[name].wall == 0 {
+			t.Fatalf("run %d benchmark metric not found for incremental/%s", index, name)
+		}
 	}
 	return result
 }

@@ -52,7 +52,10 @@ pnpm dlx openapi-sdkgen generate \
 
 Incremental generation uses the manifest created on the first run. It refuses
 to overwrite edited generated files and leaves files outside that manifest
-untouched.
+untouched. When a self-contained local OpenAPI file and the generation settings
+are unchanged, it also skips compilation and source emission. Inputs from
+stdin, HTTP(S), external `$ref` files, and schema extensions continue through
+the full validation and generation path.
 
 ## Install
 

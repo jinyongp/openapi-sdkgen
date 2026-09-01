@@ -225,6 +225,61 @@ func BenchmarkArtifactPublication(b *testing.B) {
 	})
 }
 
+func BenchmarkIncrementalGeneration(b *testing.B) {
+	workload := selfContainedPerformanceWorkload("incremental", 384, 384)
+	root := materializePerformanceWorkload(b, workload)
+	output := filepath.Join(b.TempDir(), "output")
+	previousVersion := version
+	version = "performance-benchmark"
+	b.Cleanup(func() { version = previousVersion })
+	args := []string{"generate", "--input", root, "--target", "typescript", "--output", output}
+	if err := run(args); err != nil {
+		b.Fatal(err)
+	}
+	incrementalArgs := append(append([]string(nil), args...), "--incremental")
+
+	b.Run("full-noop", func(b *testing.B) {
+		b.ReportAllocs()
+		for index := 0; index < b.N; index++ {
+			if err := run(incrementalArgs); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	variants := incrementalOperationVariants(b, workload.files[workload.root])
+	b.Run("one-operation-change", func(b *testing.B) {
+		b.ReportAllocs()
+		for index := 0; index < b.N; index++ {
+			b.StopTimer()
+			if err := os.WriteFile(root, variants[index%len(variants)], 0o600); err != nil {
+				b.Fatal(err)
+			}
+			b.StartTimer()
+			if err := run(incrementalArgs); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
+
+func incrementalOperationVariants(tb performanceTesting, source []byte) [2][]byte {
+	tb.Helper()
+	var document map[string]any
+	if err := json.Unmarshal(source, &document); err != nil {
+		tb.Fatal(err)
+	}
+	paths, _ := document["paths"].(map[string]any)
+	pathItem, _ := paths["/resources/0000"].(map[string]any)
+	operation, _ := pathItem["get"].(map[string]any)
+	result := [2][]byte{}
+	for index := range result {
+		operation["summary"] = fmt.Sprintf("Incremental variant %d", index)
+		result[index] = mustMarshalPerformance(document)
+	}
+	return result
+}
+
 func TestPerformanceWorkloadsDeterministic(t *testing.T) {
 	if os.Getenv(performanceEnabledEnv) != "1" {
 		t.Skip("performance workload verification is opt-in")

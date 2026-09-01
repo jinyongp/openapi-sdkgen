@@ -28,6 +28,11 @@ Do not edit generated files in place. Incremental generation verifies their
 manifest hashes and stops if an owned file differs from the previous output.
 Files you add outside the manifest are preserved.
 
+With a self-contained local OpenAPI file, an unchanged input and option set also
+skips compilation and source emission. Stdin, HTTP(S), external `$ref`, and
+schema-extension inputs still run the complete pipeline while retaining the
+same managed-output safety.
+
 ## Generate Webhook and Callback code
 
 When the OpenAPI file defines a Webhook or Callback that your application

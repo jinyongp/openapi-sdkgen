@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -64,10 +65,10 @@ type generationRuntime struct {
 	compile            func(string, compiler.CompileOptions) (compiler.Result, error)
 	prepare            func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error)
 	emit               func(generator.Target, generator.Plan) ([]generator.Artifact, error)
-	publish            func(string, []generator.Artifact) error
-	publishIncremental func(string, []generator.Artifact) error
-	stream             func(generator.Target, generator.Plan, string) error
-	streamIncremental  func(generator.Target, generator.Plan, string) error
+	publish            func(string, []generator.Artifact, *artifactGeneration) error
+	publishIncremental func(string, []generator.Artifact, *artifactGeneration) error
+	stream             func(generator.Target, generator.Plan, string, *artifactGeneration) error
+	streamIncremental  func(generator.Target, generator.Plan, string, *artifactGeneration) error
 }
 
 type generationStageError struct {
@@ -120,10 +121,10 @@ var defaultGenerationRuntime = generationRuntime{
 	emit: func(target generator.Target, plan generator.Plan) ([]generator.Artifact, error) {
 		return target.Emit(plan)
 	},
-	publish:            writeArtifacts,
-	publishIncremental: writeArtifactsIncremental,
-	stream:             streamArtifacts,
-	streamIncremental:  streamArtifactsIncremental,
+	publish:            writeArtifactsForGeneration,
+	publishIncremental: writeArtifactsIncrementalForGeneration,
+	stream:             streamArtifactsForGeneration,
+	streamIncremental:  streamArtifactsIncrementalForGeneration,
 }
 
 func main() {
@@ -280,7 +281,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if err := preflightOutput(*values.output, *values.incremental); err != nil {
 		return err
 	}
-	compiled, err := runtime.compile(*values.input, compiler.CompileOptions{
+	compileOptions := compiler.CompileOptions{
 		InputBase:                *values.inputBase,
 		InputReader:              standardInput,
 		RemoteRefAllowlist:       values.remoteRefs,
@@ -292,7 +293,18 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		TLSClientCert:            *values.tlsClientCert,
 		TLSClientKey:             *values.tlsClientKey,
 		TLSCAFile:                *values.tlsCAFile,
-	})
+	}
+	requestedGeneration := reusableGenerationRequest(*values.input, target.Name(), options, compileOptions)
+	if *values.incremental && requestedGeneration != nil {
+		noop, err := incrementalGenerationMatches(*values.output, requestedGeneration)
+		if err != nil {
+			return err
+		}
+		if noop {
+			return nil
+		}
+	}
+	compiled, err := runtime.compile(*values.input, compileOptions)
 	if err != nil {
 		writeDiagnostics(compiled.Diagnostics, compiled.SkippedPhases)
 		return internalFailure("internal compiler failure", err)
@@ -306,12 +318,13 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if diagnostic.HasErrors(prepared.Diagnostics) {
 		return errReportedDiagnostics
 	}
+	generation := reusableGenerationResult(compiled, target.Name(), options, compileOptions)
 	stream := runtime.stream
 	if *values.incremental {
 		stream = runtime.streamIncremental
 	}
 	if stream != nil {
-		if err := stream(target, prepared.Plan, *values.output); err != nil {
+		if err := stream(target, prepared.Plan, *values.output, generation); err != nil {
 			var staged *generationStageError
 			if errors.As(err, &staged) && staged.stage == "publish" {
 				if isOutputFailure(err) {
@@ -334,7 +347,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 			return internalFailure("internal output publication failure", errors.New("incremental publisher is not configured"))
 		}
 	}
-	if err := publish(*values.output, artifacts); err != nil {
+	if err := publish(*values.output, artifacts, generation); err != nil {
 		if isOutputFailure(err) {
 			return err
 		}
@@ -533,6 +546,78 @@ func normalizeVersion(value string) string {
 	return strings.TrimPrefix(value, "v")
 }
 
+func reusableGeneratorIdentity() string {
+	if value := normalizeVersion(version); value != "" {
+		return "release:" + value
+	}
+	build, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	if value := versionFromBuildInfo(build); value != "" {
+		return "module:" + value
+	}
+	settings := make(map[string]string, len(build.Settings))
+	for _, setting := range build.Settings {
+		settings[setting.Key] = setting.Value
+	}
+	if settings["vcs.revision"] != "" && settings["vcs.modified"] == "false" {
+		return "vcs:" + settings["vcs.revision"]
+	}
+	return ""
+}
+
+func reusableGenerationRequest(input, target string, options generator.Options, compileOptions compiler.CompileOptions) *artifactGeneration {
+	identity := reusableGeneratorIdentity()
+	path, ok := localGenerationInputPath(input)
+	if identity == "" || !ok || !reusableCompileOptions(compileOptions) {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) == 0 {
+		return nil
+	}
+	digest := sha256.Sum256(data)
+	return newArtifactGeneration(identity, target, options, hex.EncodeToString(digest[:]))
+}
+
+func reusableGenerationResult(result compiler.Result, target string, options generator.Options, compileOptions compiler.CompileOptions) *artifactGeneration {
+	identity := reusableGeneratorIdentity()
+	if identity == "" || result.ReusableInput == nil || !reusableCompileOptions(compileOptions) {
+		return nil
+	}
+	return newArtifactGeneration(identity, target, options, result.ReusableInput.SHA256)
+}
+
+func reusableCompileOptions(options compiler.CompileOptions) bool {
+	return options.InputBase == "" && len(options.RemoteRefAllowlist) == 0 && options.RefLockPath == "" && !options.UpdateRefLock && !options.Offline &&
+		len(options.SchemaExtensionManifests) == 0 && len(options.HTTPHeaderEnv) == 0 && options.TLSClientCert == "" && options.TLSClientKey == "" && options.TLSCAFile == ""
+}
+
+func newArtifactGeneration(identity, target string, options generator.Options, inputDigest string) *artifactGeneration {
+	addons := options.Addons()
+	addonNames := make([]string, len(addons))
+	for index, addon := range addons {
+		addonNames[index] = string(addon)
+	}
+	return &artifactGeneration{Generator: identity, Target: target, Addons: addonNames, InputSHA256: inputDigest}
+}
+
+func localGenerationInputPath(input string) (string, bool) {
+	if input == "" || input == "-" {
+		return "", false
+	}
+	if strings.Contains(input, "://") || (len(input) >= len("file:") && strings.EqualFold(input[:len("file:")], "file:")) {
+		parsed, err := url.Parse(input)
+		if err != nil || !strings.EqualFold(parsed.Scheme, "file") || (parsed.Host != "" && !strings.EqualFold(parsed.Host, "localhost")) || parsed.RawQuery != "" || parsed.Fragment != "" {
+			return "", false
+		}
+		input = filepath.FromSlash(parsed.Path)
+	}
+	path, err := filepath.Abs(input)
+	return path, err == nil
+}
+
 func writeDiagnostics(values []diagnostic.Diagnostic, skipped []diagnostic.SkippedPhase) {
 	if len(values) == 0 && len(skipped) == 0 {
 		return
@@ -566,14 +651,22 @@ func (values *repeatedStrings) Set(value string) error {
 }
 
 func writeArtifacts(output string, artifacts []generator.Artifact) error {
-	return writeArtifactsWithMode(output, artifacts, false)
+	return writeArtifactsWithMode(output, artifacts, false, nil)
+}
+
+func writeArtifactsForGeneration(output string, artifacts []generator.Artifact, generation *artifactGeneration) error {
+	return writeArtifactsWithMode(output, artifacts, false, generation)
 }
 
 func writeArtifactsIncremental(output string, artifacts []generator.Artifact) error {
-	return writeArtifactsWithMode(output, artifacts, true)
+	return writeArtifactsWithMode(output, artifacts, true, nil)
 }
 
-func writeArtifactsWithMode(output string, artifacts []generator.Artifact, incremental bool) error {
+func writeArtifactsIncrementalForGeneration(output string, artifacts []generator.Artifact, generation *artifactGeneration) error {
+	return writeArtifactsWithMode(output, artifacts, true, generation)
+}
+
+func writeArtifactsWithMode(output string, artifacts []generator.Artifact, incremental bool, generation *artifactGeneration) error {
 	sort.Slice(artifacts, func(i, j int) bool { return artifacts[i].Path < artifacts[j].Path })
 	seen := make(map[string]bool, len(artifacts))
 	for _, artifact := range artifacts {
@@ -591,6 +684,7 @@ func writeArtifactsWithMode(output string, artifacts []generator.Artifact, incre
 		return err
 	}
 	defer publisher.Rollback()
+	publisher.generation = generation
 	for _, artifact := range artifacts {
 		if err := publisher.WriteArtifact(artifact); err != nil {
 			return err
@@ -600,19 +694,28 @@ func writeArtifactsWithMode(output string, artifacts []generator.Artifact, incre
 }
 
 func streamArtifacts(target generator.Target, plan generator.Plan, output string) error {
-	return streamArtifactsWithMode(target, plan, output, false)
+	return streamArtifactsWithMode(target, plan, output, false, nil)
+}
+
+func streamArtifactsForGeneration(target generator.Target, plan generator.Plan, output string, generation *artifactGeneration) error {
+	return streamArtifactsWithMode(target, plan, output, false, generation)
 }
 
 func streamArtifactsIncremental(target generator.Target, plan generator.Plan, output string) error {
-	return streamArtifactsWithMode(target, plan, output, true)
+	return streamArtifactsWithMode(target, plan, output, true, nil)
 }
 
-func streamArtifactsWithMode(target generator.Target, plan generator.Plan, output string, incremental bool) error {
+func streamArtifactsIncrementalForGeneration(target generator.Target, plan generator.Plan, output string, generation *artifactGeneration) error {
+	return streamArtifactsWithMode(target, plan, output, true, generation)
+}
+
+func streamArtifactsWithMode(target generator.Target, plan generator.Plan, output string, incremental bool, generation *artifactGeneration) error {
 	publisher, err := newArtifactPublisherWithMode(output, incremental)
 	if err != nil {
 		return &generationStageError{stage: "publish", err: err}
 	}
 	defer publisher.Rollback()
+	publisher.generation = generation
 	if err := generator.EmitTo(target, plan, publisher); err != nil {
 		stage := "emit"
 		if publisher.failure != nil {
@@ -628,23 +731,72 @@ func streamArtifactsWithMode(target generator.Target, plan generator.Plan, outpu
 }
 
 type artifactPublisher struct {
-	output      string
-	staging     string
-	seen        map[string]bool
-	directories map[string]bool
-	hashes      map[string]string
-	previous    map[string]string
-	incremental bool
-	lockPath    string
-	committed   bool
-	failure     error
+	output             string
+	staging            string
+	seen               map[string]bool
+	directories        map[string]bool
+	hashes             map[string]string
+	previous           map[string]string
+	generation         *artifactGeneration
+	previousGeneration *artifactGeneration
+	incremental        bool
+	lockPath           string
+	committed          bool
+	failure            error
 }
 
 const artifactManifestName = ".openapi-sdkgen-manifest.json"
 
+type artifactGeneration struct {
+	Generator   string   `json:"generator"`
+	Target      string   `json:"target"`
+	Addons      []string `json:"addons,omitempty"`
+	InputSHA256 string   `json:"inputSha256"`
+}
+
 type artifactManifest struct {
-	Version int               `json:"version"`
-	Files   map[string]string `json:"files"`
+	Version    int                 `json:"version"`
+	Files      map[string]string   `json:"files"`
+	Generation *artifactGeneration `json:"generation,omitempty"`
+}
+
+func incrementalGenerationMatches(output string, expected *artifactGeneration) (bool, error) {
+	publisher, err := newIncrementalArtifactPublisher(output)
+	if err != nil {
+		return false, err
+	}
+	defer publisher.Rollback()
+	return artifactGenerationEqual(publisher.previousGeneration, expected), nil
+}
+
+func artifactGenerationEqual(left, right *artifactGeneration) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) {
+		return false
+	}
+	for index := range left.Addons {
+		if left.Addons[index] != right.Addons[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func validateArtifactGeneration(generation artifactGeneration) error {
+	if generation.Generator == "" || generation.Target == "" || len(generation.InputSHA256) != sha256.Size*2 {
+		return errors.New("required fields are missing")
+	}
+	if _, err := hex.DecodeString(generation.InputSHA256); err != nil {
+		return errors.New("input digest is not SHA-256")
+	}
+	for index, addon := range generation.Addons {
+		if addon == "" || (index > 0 && generation.Addons[index-1] >= addon) {
+			return errors.New("add-ons are not unique stable names")
+		}
+	}
+	return nil
 }
 
 func preflightOutput(output string, incremental bool) error {
@@ -758,7 +910,7 @@ func (publisher *artifactPublisher) Commit() error {
 	if publisher.incremental {
 		return publisher.commitIncremental()
 	}
-	if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes); err != nil {
+	if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes, publisher.generation); err != nil {
 		return err
 	}
 	if err := os.Rename(publisher.staging, publisher.output); err != nil {
@@ -797,6 +949,7 @@ func newIncrementalArtifactPublisher(output string) (*artifactPublisher, error) 
 	}
 
 	previous := map[string]string{}
+	var previousGeneration *artifactGeneration
 	if info, statErr := os.Lstat(output); statErr == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
 			return fail(outputFailure(fmt.Errorf("output path %s must not be a symlink", output)))
@@ -804,10 +957,13 @@ func newIncrementalArtifactPublisher(output string) (*artifactPublisher, error) 
 		if !info.IsDir() {
 			return fail(outputFailure(fmt.Errorf("incremental output path %s must be a directory", output)))
 		}
-		previous, err = readArtifactManifest(output)
+		manifest, manifestErr := readArtifactManifestRecord(output)
+		err = manifestErr
 		if err != nil {
 			return fail(outputFailure(err))
 		}
+		previous = manifest.Files
+		previousGeneration = manifest.Generation
 		if err := validateManifestOwnedFiles(output, previous); err != nil {
 			return fail(outputFailure(err))
 		}
@@ -820,7 +976,7 @@ func newIncrementalArtifactPublisher(output string) (*artifactPublisher, error) 
 	}
 	return &artifactPublisher{
 		output: output, staging: staging, seen: make(map[string]bool), directories: make(map[string]bool), hashes: make(map[string]string),
-		previous: previous, incremental: true, lockPath: lockPath,
+		previous: previous, previousGeneration: previousGeneration, incremental: true, lockPath: lockPath,
 	}, nil
 }
 
@@ -829,16 +985,24 @@ func artifactContentHash(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func artifactManifestData(hashes map[string]string) ([]byte, error) {
-	data, err := json.MarshalIndent(artifactManifest{Version: 1, Files: hashes}, "", "  ")
+func artifactManifestData(hashes map[string]string, generation *artifactGeneration) ([]byte, error) {
+	manifest := artifactManifest{Version: 1, Files: hashes}
+	if generation != nil {
+		if err := validateArtifactGeneration(*generation); err != nil {
+			return nil, fmt.Errorf("encode generated artifact manifest fingerprint: %w", err)
+		}
+		manifest.Version = 2
+		manifest.Generation = generation
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("encode generated artifact manifest: %w", err)
 	}
 	return append(data, '\n'), nil
 }
 
-func writeStagedArtifactManifest(directory string, hashes map[string]string) error {
-	data, err := artifactManifestData(hashes)
+func writeStagedArtifactManifest(directory string, hashes map[string]string, generation *artifactGeneration) error {
+	data, err := artifactManifestData(hashes, generation)
 	if err != nil {
 		return err
 	}
@@ -848,8 +1012,8 @@ func writeStagedArtifactManifest(directory string, hashes map[string]string) err
 	return nil
 }
 
-func writeArtifactManifest(directory string, hashes map[string]string) error {
-	data, err := artifactManifestData(hashes)
+func writeArtifactManifest(directory string, hashes map[string]string, generation *artifactGeneration) error {
+	data, err := artifactManifestData(hashes, generation)
 	if err != nil {
 		return err
 	}
@@ -860,35 +1024,45 @@ func writeArtifactManifest(directory string, hashes map[string]string) error {
 }
 
 func readArtifactManifest(output string) (map[string]string, error) {
+	manifest, err := readArtifactManifestRecord(output)
+	return manifest.Files, err
+}
+
+func readArtifactManifestRecord(output string) (artifactManifest, error) {
 	path := filepath.Join(output, artifactManifestName)
 	info, err := os.Lstat(path)
 	if err != nil {
-		return nil, fmt.Errorf("incremental output %s requires a valid %s: %w", output, artifactManifestName, err)
+		return artifactManifest{}, fmt.Errorf("incremental output %s requires a valid %s: %w", output, artifactManifestName, err)
 	}
 	if !info.Mode().IsRegular() {
-		return nil, fmt.Errorf("incremental output manifest %s must be a regular file", path)
+		return artifactManifest{}, fmt.Errorf("incremental output manifest %s must be a regular file", path)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read incremental output manifest %s: %w", path, err)
+		return artifactManifest{}, fmt.Errorf("read incremental output manifest %s: %w", path, err)
 	}
 	var manifest artifactManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return nil, fmt.Errorf("decode incremental output manifest %s: %w", path, err)
+		return artifactManifest{}, fmt.Errorf("decode incremental output manifest %s: %w", path, err)
 	}
-	if manifest.Version != 1 || manifest.Files == nil {
-		return nil, fmt.Errorf("incremental output manifest %s has unsupported or incomplete content", path)
+	if (manifest.Version != 1 && manifest.Version != 2) || manifest.Files == nil || (manifest.Version == 2) != (manifest.Generation != nil) {
+		return artifactManifest{}, fmt.Errorf("incremental output manifest %s has unsupported or incomplete content", path)
+	}
+	if manifest.Generation != nil {
+		if err := validateArtifactGeneration(*manifest.Generation); err != nil {
+			return artifactManifest{}, fmt.Errorf("incremental output manifest %s has invalid generation fingerprint: %w", path, err)
+		}
 	}
 	for path, hash := range manifest.Files {
 		clean, err := safeArtifactPath(path)
 		if err != nil || clean != path || path == artifactManifestName || len(hash) != sha256.Size*2 {
-			return nil, fmt.Errorf("incremental output manifest contains invalid artifact %q", path)
+			return artifactManifest{}, fmt.Errorf("incremental output manifest contains invalid artifact %q", path)
 		}
 		if _, err := hex.DecodeString(hash); err != nil {
-			return nil, fmt.Errorf("incremental output manifest contains invalid hash for %q", path)
+			return artifactManifest{}, fmt.Errorf("incremental output manifest contains invalid hash for %q", path)
 		}
 	}
-	return manifest.Files, nil
+	return manifest, nil
 }
 
 func validateManifestOwnedFiles(output string, files map[string]string) error {
@@ -937,7 +1111,7 @@ func (publisher *artifactPublisher) commitIncremental() error {
 		return outputFailure(err)
 	}
 	if _, err := os.Stat(publisher.output); errors.Is(err, os.ErrNotExist) {
-		if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes); err != nil {
+		if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes, publisher.generation); err != nil {
 			return err
 		}
 		if err := os.Rename(publisher.staging, publisher.output); err != nil {
@@ -962,7 +1136,7 @@ func (publisher *artifactPublisher) commitIncremental() error {
 	}
 	sort.Strings(changed)
 	sort.Strings(stale)
-	if len(changed) == 0 && len(stale) == 0 {
+	if len(changed) == 0 && len(stale) == 0 && artifactGenerationEqual(publisher.previousGeneration, publisher.generation) {
 		publisher.committed = true
 		_ = os.RemoveAll(publisher.staging)
 		publisher.releaseLock()
@@ -1031,7 +1205,7 @@ func (publisher *artifactPublisher) commitIncremental() error {
 		}
 		installed = append(installed, path)
 	}
-	if err := writeArtifactManifest(publisher.output, publisher.hashes); err != nil {
+	if err := writeArtifactManifest(publisher.output, publisher.hashes, publisher.generation); err != nil {
 		return rollback(err)
 	}
 	installed = append(installed, artifactManifestName)
