@@ -350,7 +350,7 @@ func TestGenerateReportsPreflightOnceAndClassifiesInternalFailures(t *testing.T)
 	}
 }
 
-func TestGeneratePreflightFailurePreservesExistingOutput(t *testing.T) {
+func TestGenerateOutputPreflightPreservesExistingOutput(t *testing.T) {
 	directory := t.TempDir()
 	output := filepath.Join(directory, "generated")
 	if err := os.MkdirAll(output, 0o755); err != nil {
@@ -370,11 +370,106 @@ func TestGeneratePreflightFailurePreservesExistingOutput(t *testing.T) {
 		standardError = previousError
 	})
 	err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output})
-	if !errors.Is(err, errReportedDiagnostics) {
+	if err == nil || !strings.Contains(err.Error(), "already exists; choose a fresh directory or use --incremental") {
 		t.Fatalf("error = %v", err)
+	}
+	if report.Len() != 0 {
+		t.Fatalf("input was compiled before output preflight:\n%s", report.String())
 	}
 	if value, err := os.ReadFile(sentinel); err != nil || string(value) != "keep" {
 		t.Fatalf("sentinel = %q, %v", value, err)
+	}
+}
+
+func TestGenerateRejectsActionableOutputStateBeforeCompilation(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		incremental bool
+		prepare     func(*testing.T, string)
+		want        string
+	}{
+		{
+			name: "fresh output exists",
+			prepare: func(t *testing.T, output string) {
+				t.Helper()
+				if err := os.Mkdir(output, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "already exists; choose a fresh directory or use --incremental",
+		},
+		{
+			name:        "incremental output locked",
+			incremental: true,
+			prepare: func(t *testing.T, output string) {
+				t.Helper()
+				if err := os.WriteFile(output+".openapi-sdkgen.lock", nil, 0o600); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "locked by another generation",
+		},
+		{
+			name:        "incremental manifest invalid",
+			incremental: true,
+			prepare: func(t *testing.T, output string) {
+				t.Helper()
+				if err := os.Mkdir(output, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(output, artifactManifestName), []byte("not json\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: "decode incremental output manifest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := filepath.Join(t.TempDir(), "generated")
+			test.prepare(t, output)
+			compiled := false
+			runtime := generationRuntime{
+				compile: func(string, compiler.CompileOptions) (compiler.Result, error) {
+					compiled = true
+					return compiler.Result{}, errors.New("compile should not run")
+				},
+			}
+			args := []string{"--input", "unused.json", "--target", "typescript", "--output", output}
+			if test.incremental {
+				args = append(args, "--incremental")
+			}
+			err := generateWithRuntime(args, runtime)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v", err)
+			}
+			if compiled {
+				t.Fatal("compiler ran before output preflight")
+			}
+			if !isOutputFailure(err) || strings.Contains(err.Error(), "internal output publication failure") {
+				t.Fatalf("output error classification = %T: %v", err, err)
+			}
+		})
+	}
+}
+
+func TestGenerateReportsEditedIncrementalArtifact(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	previousInput := standardInput
+	t.Cleanup(func() { standardInput = previousInput })
+	standardInput = strings.NewReader(minimalDocument)
+	if err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(output, "index.ts"), []byte("edited\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	standardInput = strings.NewReader(minimalDocument)
+	err := run([]string{"generate", "--input", "-", "--target", "typescript", "--output", output, "--incremental"})
+	if err == nil || !strings.Contains(err.Error(), "was edited; refusing incremental overwrite") {
+		t.Fatalf("error = %v", err)
+	}
+	if !isOutputFailure(err) || strings.Contains(err.Error(), "internal output publication failure") {
+		t.Fatalf("output error classification = %T: %v", err, err)
 	}
 }
 
@@ -828,6 +923,41 @@ func TestIncrementalArtifactsPreserveUnchangedFilesAndOwnedBoundaries(t *testing
 	}
 	if len(manifest) != 3 || manifest["stale.ts"] != "" || manifest["new.ts"] == "" {
 		t.Fatalf("incremental manifest = %#v", manifest)
+	}
+}
+
+func TestIncrementalNoopPreservesArtifactsAndManifest(t *testing.T) {
+	output := filepath.Join(t.TempDir(), "generated")
+	artifacts := []generator.Artifact{
+		{Path: "index.ts", Data: []byte("export {}\n")},
+		{Path: "nested/client.ts", Data: []byte("export const client = true\n")},
+	}
+	if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+		t.Fatal(err)
+	}
+	paths := []string{"index.ts", "nested/client.ts", artifactManifestName}
+	before := make(map[string]os.FileInfo, len(paths))
+	for _, path := range paths {
+		info, err := os.Stat(filepath.Join(output, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		before[path] = info
+	}
+	if err := writeArtifactsIncremental(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range paths {
+		after, err := os.Stat(filepath.Join(output, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !os.SameFile(before[path], after) || !before[path].ModTime().Equal(after.ModTime()) {
+			t.Fatalf("no-op incremental generation replaced %s", path)
+		}
+	}
+	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("incremental lock remains: %v", err)
 	}
 }
 

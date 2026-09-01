@@ -22,6 +22,12 @@ import (
 
 const performanceEnabledEnv = "OPENAPI_SDKGEN_PERF"
 
+const (
+	productionShapedArtifactCount = 716
+	productionShapedArtifactBytes = 11_929_900
+	productionShapedLargestBytes  = 4_759_076
+)
+
 type performanceWorkload struct {
 	name        string
 	root        string
@@ -123,6 +129,102 @@ func BenchmarkGeneration(b *testing.B) {
 	}
 }
 
+func BenchmarkArtifactPublication(b *testing.B) {
+	for _, scale := range []int{1, 2, 4} {
+		artifacts := productionShapedArtifacts(scale)
+		name := fmt.Sprintf("incremental-noop-%dx", scale)
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ReportMetric(float64(len(artifacts)), "artifacts/op")
+			b.ReportMetric(float64(performanceArtifactBytes(artifacts)), "artifact-B/op")
+			output := filepath.Join(b.TempDir(), "output")
+			if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+				b.Fatal(err)
+			}
+			b.ResetTimer()
+			for index := 0; index < b.N; index++ {
+				if err := writeArtifactsIncremental(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+
+	artifacts := productionShapedArtifacts(1)
+	b.Run("fresh-1x", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ReportMetric(float64(len(artifacts)), "artifacts/op")
+		b.ReportMetric(float64(performanceArtifactBytes(artifacts)), "artifact-B/op")
+		root := b.TempDir()
+		b.ResetTimer()
+		for index := 0; index < b.N; index++ {
+			output := filepath.Join(root, fmt.Sprintf("output-%06d", index))
+			if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+				b.Fatal(err)
+			}
+			b.StopTimer()
+			if err := os.RemoveAll(output); err != nil {
+				b.Fatal(err)
+			}
+			b.StartTimer()
+		}
+	})
+	b.Run("incremental-one-change-1x", func(b *testing.B) {
+		b.ReportAllocs()
+		output := filepath.Join(b.TempDir(), "output")
+		if err := writeArtifacts(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+			b.Fatal(err)
+		}
+		variants := [2][]generator.Artifact{
+			publicationArtifactVariant(artifacts, 1),
+			publicationArtifactVariant(artifacts, 2),
+		}
+		b.ResetTimer()
+		for index := 0; index < b.N; index++ {
+			if err := writeArtifactsIncremental(output, append([]generator.Artifact(nil), variants[index%len(variants)]...)); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("incremental-stale-1x", func(b *testing.B) {
+		b.ReportAllocs()
+		output := filepath.Join(b.TempDir(), "output")
+		full := append([]generator.Artifact(nil), artifacts...)
+		withoutLast := append([]generator.Artifact(nil), artifacts[:len(artifacts)-1]...)
+		if err := writeArtifacts(output, full); err != nil {
+			b.Fatal(err)
+		}
+		b.ResetTimer()
+		for index := 0; index < b.N; index++ {
+			if err := writeArtifactsIncremental(output, append([]generator.Artifact(nil), withoutLast...)); err != nil {
+				b.Fatal(err)
+			}
+			b.StopTimer()
+			if err := writeArtifactsIncremental(output, append([]generator.Artifact(nil), artifacts...)); err != nil {
+				b.Fatal(err)
+			}
+			b.StartTimer()
+		}
+	})
+	b.Run("incremental-invalid-manifest", func(b *testing.B) {
+		b.ReportAllocs()
+		output := filepath.Join(b.TempDir(), "output")
+		if err := os.Mkdir(output, 0o755); err != nil {
+			b.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(output, artifactManifestName), []byte("not json\n"), 0o644); err != nil {
+			b.Fatal(err)
+		}
+		b.ResetTimer()
+		for index := 0; index < b.N; index++ {
+			if publisher, err := newIncrementalArtifactPublisher(output); err == nil {
+				publisher.Rollback()
+				b.Fatal("invalid incremental manifest was accepted")
+			}
+		}
+	})
+}
+
 func TestPerformanceWorkloadsDeterministic(t *testing.T) {
 	if os.Getenv(performanceEnabledEnv) != "1" {
 		t.Skip("performance workload verification is opt-in")
@@ -141,6 +243,32 @@ func TestPerformanceWorkloadsDeterministic(t *testing.T) {
 		}
 		t.Logf("PERF_WORKLOAD name=%s files=%d bytes=%d sha256=%s", left.name, len(left.files), performanceInputBytes(left), leftHash)
 	}
+}
+
+func TestPerformancePublicationWorkloadDeterministic(t *testing.T) {
+	if os.Getenv(performanceEnabledEnv) != "1" {
+		t.Skip("performance workload verification is opt-in")
+	}
+	first := productionShapedArtifacts(1)
+	second := productionShapedArtifacts(1)
+	if len(first) != productionShapedArtifactCount || performanceArtifactBytes(first) != productionShapedArtifactBytes {
+		t.Fatalf("production-shaped artifacts = %d/%d bytes", len(first), performanceArtifactBytes(first))
+	}
+	largest := 0
+	for _, artifact := range first {
+		if len(artifact.Data) > largest {
+			largest = len(artifact.Data)
+		}
+	}
+	if largest != productionShapedLargestBytes {
+		t.Fatalf("largest production-shaped artifact = %d bytes", largest)
+	}
+	leftHash := performanceArtifactHash(first)
+	rightHash := performanceArtifactHash(second)
+	if leftHash != rightHash {
+		t.Fatalf("production-shaped artifacts are not deterministic: %s != %s", leftHash, rightHash)
+	}
+	t.Logf("PERF_PUBLICATION artifacts=%d bytes=%d largest=%d sha256=%s", len(first), performanceArtifactBytes(first), largest, leftHash)
 }
 
 func TestPerformanceProcessMetrics(t *testing.T) {
@@ -494,6 +622,62 @@ func performanceArtifactBytes(artifacts []generator.Artifact) int {
 		total += len(artifact.Data)
 	}
 	return total
+}
+
+func productionShapedArtifacts(scale int) []generator.Artifact {
+	count := productionShapedArtifactCount * scale
+	totalBytes := productionShapedArtifactBytes * scale
+	largeCount := scale
+	remainingCount := count - largeCount
+	remainingBytes := totalBytes - productionShapedLargestBytes*largeCount
+	baseSize := remainingBytes / remainingCount
+	extra := remainingBytes % remainingCount
+	artifacts := make([]generator.Artifact, 0, count)
+	for copyIndex := 0; copyIndex < scale; copyIndex++ {
+		artifacts = append(artifacts, generator.Artifact{
+			Path: fmt.Sprintf("copy-%02d/internal/metadata.ts", copyIndex),
+			Data: performanceArtifactData(productionShapedLargestBytes, copyIndex),
+		})
+	}
+	for index := 0; index < remainingCount; index++ {
+		size := baseSize
+		if index < extra {
+			size++
+		}
+		artifacts = append(artifacts, generator.Artifact{
+			Path: fmt.Sprintf("copy-%02d/operations/group-%02d/operation-%04d.ts", index%scale, index%24, index),
+			Data: performanceArtifactData(size, index+largeCount),
+		})
+	}
+	return artifacts
+}
+
+func performanceArtifactData(size, seed int) []byte {
+	data := make([]byte, size)
+	for index := range data {
+		data[index] = byte((seed + index) % 251)
+	}
+	return data
+}
+
+func publicationArtifactVariant(artifacts []generator.Artifact, marker byte) []generator.Artifact {
+	variant := append([]generator.Artifact(nil), artifacts...)
+	last := len(variant) - 1
+	data := append([]byte(nil), variant[last].Data...)
+	data[len(data)-1] = marker
+	variant[last].Data = data
+	return variant
+}
+
+func performanceArtifactHash(artifacts []generator.Artifact) string {
+	hash := sha256.New()
+	for _, artifact := range artifacts {
+		hash.Write([]byte(artifact.Path))
+		hash.Write([]byte{0})
+		hash.Write(artifact.Data)
+		hash.Write([]byte{0})
+	}
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 func performanceWorkloadHash(workload performanceWorkload) string {

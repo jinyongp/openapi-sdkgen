@@ -40,6 +40,26 @@ func internalFailure(label string, cause error) error {
 	return &internalGenerationError{label: label, cause: cause}
 }
 
+type outputPublicationError struct {
+	cause error
+}
+
+func (value *outputPublicationError) Error() string { return value.cause.Error() }
+func (value *outputPublicationError) Unwrap() error { return value.cause }
+
+func outputFailure(cause error) error {
+	var existing *outputPublicationError
+	if errors.As(cause, &existing) {
+		return cause
+	}
+	return &outputPublicationError{cause: cause}
+}
+
+func isOutputFailure(err error) bool {
+	var failure *outputPublicationError
+	return errors.As(err, &failure)
+}
+
 type generationRuntime struct {
 	compile            func(string, compiler.CompileOptions) (compiler.Result, error)
 	prepare            func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error)
@@ -257,6 +277,9 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if err := generator.ValidateTargetOptions(target, options); err != nil {
 		return err
 	}
+	if err := preflightOutput(*values.output, *values.incremental); err != nil {
+		return err
+	}
 	compiled, err := runtime.compile(*values.input, compiler.CompileOptions{
 		InputBase:                *values.inputBase,
 		InputReader:              standardInput,
@@ -291,6 +314,9 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		if err := stream(target, prepared.Plan, *values.output); err != nil {
 			var staged *generationStageError
 			if errors.As(err, &staged) && staged.stage == "publish" {
+				if isOutputFailure(err) {
+					return err
+				}
 				return internalFailure("internal output publication failure", err)
 			}
 			return internalFailure(fmt.Sprintf("internal %s emission failure", target.Name()), err)
@@ -309,6 +335,9 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		}
 	}
 	if err := publish(*values.output, artifacts); err != nil {
+		if isOutputFailure(err) {
+			return err
+		}
 		return internalFailure("internal output publication failure", err)
 	}
 	return nil
@@ -602,6 +631,7 @@ type artifactPublisher struct {
 	output      string
 	staging     string
 	seen        map[string]bool
+	directories map[string]bool
 	hashes      map[string]string
 	previous    map[string]string
 	incremental bool
@@ -617,6 +647,45 @@ type artifactManifest struct {
 	Files   map[string]string `json:"files"`
 }
 
+func preflightOutput(output string, incremental bool) error {
+	info, err := os.Lstat(output)
+	if !incremental {
+		if err == nil {
+			if info.Mode()&os.ModeSymlink != 0 {
+				return outputFailure(fmt.Errorf("output path %s must not be a symlink", output))
+			}
+			return outputFailure(fmt.Errorf("output path %s already exists; choose a fresh directory or use --incremental for managed output", output))
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return outputFailure(fmt.Errorf("inspect output path %s: %w", output, err))
+		}
+		return nil
+	}
+
+	lockPath := output + ".openapi-sdkgen.lock"
+	if _, lockErr := os.Lstat(lockPath); lockErr == nil {
+		return outputFailure(fmt.Errorf("incremental output %s is locked by another generation", output))
+	} else if !errors.Is(lockErr, os.ErrNotExist) {
+		return outputFailure(fmt.Errorf("inspect incremental output lock %s: %w", lockPath, lockErr))
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return outputFailure(fmt.Errorf("inspect output path %s: %w", output, err))
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return outputFailure(fmt.Errorf("output path %s must not be a symlink", output))
+	}
+	if !info.IsDir() {
+		return outputFailure(fmt.Errorf("incremental output path %s must be a directory", output))
+	}
+	if _, err := readArtifactManifest(output); err != nil {
+		return outputFailure(err)
+	}
+	return nil
+}
+
 func newArtifactPublisher(output string) (*artifactPublisher, error) {
 	return newArtifactPublisherWithMode(output, false)
 }
@@ -627,20 +696,22 @@ func newArtifactPublisherWithMode(output string, incremental bool) (*artifactPub
 	}
 	if info, err := os.Lstat(output); err == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("output path %s must not be a symlink", output)
+			return nil, outputFailure(fmt.Errorf("output path %s must not be a symlink", output))
 		}
-		return nil, fmt.Errorf("output path %s already exists; choose a fresh directory", output)
+		return nil, outputFailure(fmt.Errorf("output path %s already exists; choose a fresh directory or use --incremental for managed output", output))
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("inspect output path %s: %w", output, err)
+		return nil, outputFailure(fmt.Errorf("inspect output path %s: %w", output, err))
 	}
 	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
-		return nil, fmt.Errorf("create output parent directory: %w", err)
+		return nil, outputFailure(fmt.Errorf("create output parent directory: %w", err))
 	}
 	staging, err := os.MkdirTemp(filepath.Dir(output), ".openapi-sdkgen-output-*")
 	if err != nil {
-		return nil, fmt.Errorf("create output staging directory: %w", err)
+		return nil, outputFailure(fmt.Errorf("create output staging directory: %w", err))
 	}
-	return &artifactPublisher{output: output, staging: staging, seen: make(map[string]bool), hashes: make(map[string]string)}, nil
+	return &artifactPublisher{
+		output: output, staging: staging, seen: make(map[string]bool), directories: make(map[string]bool), hashes: make(map[string]string),
+	}, nil
 }
 
 func (publisher *artifactPublisher) WriteArtifact(artifact generator.Artifact) error {
@@ -666,12 +737,17 @@ func (publisher *artifactPublisher) WriteArtifact(artifact generator.Artifact) e
 		return nil
 	}
 	path := filepath.Join(publisher.staging, cleanPath)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		err = fmt.Errorf("create artifact directory %s: %w", filepath.Dir(path), err)
-		publisher.failure = err
-		return err
+	directory := filepath.Dir(path)
+	if !publisher.directories[directory] {
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			err = outputFailure(fmt.Errorf("create artifact directory %s: %w", directory, err))
+			publisher.failure = err
+			return err
+		}
+		publisher.directories[directory] = true
 	}
-	if err := writeFile(path, artifact.Data); err != nil {
+	if err := writeStagedFile(path, artifact.Data); err != nil {
+		err = outputFailure(err)
 		publisher.failure = err
 		return err
 	}
@@ -682,11 +758,11 @@ func (publisher *artifactPublisher) Commit() error {
 	if publisher.incremental {
 		return publisher.commitIncremental()
 	}
-	if err := writeArtifactManifest(publisher.staging, publisher.hashes); err != nil {
+	if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes); err != nil {
 		return err
 	}
 	if err := os.Rename(publisher.staging, publisher.output); err != nil {
-		return fmt.Errorf("publish generated output %s: %w", publisher.output, err)
+		return outputFailure(fmt.Errorf("publish generated output %s: %w", publisher.output, err))
 	}
 	publisher.committed = true
 	return nil
@@ -701,19 +777,19 @@ func (publisher *artifactPublisher) Rollback() {
 
 func newIncrementalArtifactPublisher(output string) (*artifactPublisher, error) {
 	if err := os.MkdirAll(filepath.Dir(output), 0o755); err != nil {
-		return nil, fmt.Errorf("create output parent directory: %w", err)
+		return nil, outputFailure(fmt.Errorf("create output parent directory: %w", err))
 	}
 	lockPath := output + ".openapi-sdkgen.lock"
 	lock, err := os.OpenFile(lockPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return nil, fmt.Errorf("incremental output %s is locked by another generation", output)
+			return nil, outputFailure(fmt.Errorf("incremental output %s is locked by another generation", output))
 		}
-		return nil, fmt.Errorf("lock incremental output %s: %w", output, err)
+		return nil, outputFailure(fmt.Errorf("lock incremental output %s: %w", output, err))
 	}
 	if closeErr := lock.Close(); closeErr != nil {
 		_ = os.Remove(lockPath)
-		return nil, fmt.Errorf("close incremental output lock %s: %w", lockPath, closeErr)
+		return nil, outputFailure(fmt.Errorf("close incremental output lock %s: %w", lockPath, closeErr))
 	}
 	fail := func(err error) (*artifactPublisher, error) {
 		_ = os.Remove(lockPath)
@@ -723,27 +799,27 @@ func newIncrementalArtifactPublisher(output string) (*artifactPublisher, error) 
 	previous := map[string]string{}
 	if info, statErr := os.Lstat(output); statErr == nil {
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fail(fmt.Errorf("output path %s must not be a symlink", output))
+			return fail(outputFailure(fmt.Errorf("output path %s must not be a symlink", output)))
 		}
 		if !info.IsDir() {
-			return fail(fmt.Errorf("incremental output path %s must be a directory", output))
+			return fail(outputFailure(fmt.Errorf("incremental output path %s must be a directory", output)))
 		}
 		previous, err = readArtifactManifest(output)
 		if err != nil {
-			return fail(err)
+			return fail(outputFailure(err))
 		}
 		if err := validateManifestOwnedFiles(output, previous); err != nil {
-			return fail(err)
+			return fail(outputFailure(err))
 		}
 	} else if !errors.Is(statErr, os.ErrNotExist) {
-		return fail(fmt.Errorf("inspect output path %s: %w", output, statErr))
+		return fail(outputFailure(fmt.Errorf("inspect output path %s: %w", output, statErr)))
 	}
 	staging, err := os.MkdirTemp(filepath.Dir(output), ".openapi-sdkgen-output-*")
 	if err != nil {
-		return fail(fmt.Errorf("create output staging directory: %w", err))
+		return fail(outputFailure(fmt.Errorf("create output staging directory: %w", err)))
 	}
 	return &artifactPublisher{
-		output: output, staging: staging, seen: make(map[string]bool), hashes: make(map[string]string),
+		output: output, staging: staging, seen: make(map[string]bool), directories: make(map[string]bool), hashes: make(map[string]string),
 		previous: previous, incremental: true, lockPath: lockPath,
 	}, nil
 }
@@ -753,14 +829,32 @@ func artifactContentHash(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func writeArtifactManifest(directory string, hashes map[string]string) error {
+func artifactManifestData(hashes map[string]string) ([]byte, error) {
 	data, err := json.MarshalIndent(artifactManifest{Version: 1, Files: hashes}, "", "  ")
 	if err != nil {
-		return fmt.Errorf("encode generated artifact manifest: %w", err)
+		return nil, fmt.Errorf("encode generated artifact manifest: %w", err)
 	}
-	data = append(data, '\n')
-	if err := writeFile(filepath.Join(directory, artifactManifestName), data); err != nil {
-		return fmt.Errorf("write generated artifact manifest: %w", err)
+	return append(data, '\n'), nil
+}
+
+func writeStagedArtifactManifest(directory string, hashes map[string]string) error {
+	data, err := artifactManifestData(hashes)
+	if err != nil {
+		return err
+	}
+	if err := writeStagedFile(filepath.Join(directory, artifactManifestName), data); err != nil {
+		return outputFailure(fmt.Errorf("write generated artifact manifest: %w", err))
+	}
+	return nil
+}
+
+func writeArtifactManifest(directory string, hashes map[string]string) error {
+	data, err := artifactManifestData(hashes)
+	if err != nil {
+		return err
+	}
+	if err := writeAtomicFile(filepath.Join(directory, artifactManifestName), data); err != nil {
+		return outputFailure(fmt.Errorf("write generated artifact manifest: %w", err))
 	}
 	return nil
 }
@@ -798,6 +892,7 @@ func readArtifactManifest(output string) (map[string]string, error) {
 }
 
 func validateManifestOwnedFiles(output string, files map[string]string) error {
+	buffer := make([]byte, 32*1024)
 	for path, expected := range files {
 		fullPath := filepath.Join(output, path)
 		if err := validateSafeArtifactParents(output, filepath.Dir(fullPath)); err != nil {
@@ -810,27 +905,43 @@ func validateManifestOwnedFiles(output string, files map[string]string) error {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("manifest-owned generated artifact %s must be a regular file", fullPath)
 		}
-		data, err := os.ReadFile(fullPath)
+		actual, err := artifactFileHash(fullPath, buffer)
 		if err != nil {
 			return fmt.Errorf("read manifest-owned generated artifact %s: %w", fullPath, err)
 		}
-		if actual := artifactContentHash(data); actual != expected {
+		if actual != expected {
 			return fmt.Errorf("manifest-owned generated artifact %s was edited; refusing incremental overwrite", fullPath)
 		}
 	}
 	return nil
 }
 
+func artifactFileHash(path string, buffer []byte) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	hash := sha256.New()
+	if _, err := io.CopyBuffer(hash, struct{ io.Reader }{file}, buffer); err != nil {
+		_ = file.Close()
+		return "", err
+	}
+	if err := file.Close(); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 func (publisher *artifactPublisher) commitIncremental() error {
 	if err := validateManifestOwnedFiles(publisher.output, publisher.previous); err != nil && len(publisher.previous) != 0 {
-		return err
+		return outputFailure(err)
 	}
 	if _, err := os.Stat(publisher.output); errors.Is(err, os.ErrNotExist) {
-		if err := writeArtifactManifest(publisher.staging, publisher.hashes); err != nil {
+		if err := writeStagedArtifactManifest(publisher.staging, publisher.hashes); err != nil {
 			return err
 		}
 		if err := os.Rename(publisher.staging, publisher.output); err != nil {
-			return fmt.Errorf("publish generated output %s: %w", publisher.output, err)
+			return outputFailure(fmt.Errorf("publish generated output %s: %w", publisher.output, err))
 		}
 		publisher.committed = true
 		publisher.releaseLock()
@@ -851,21 +962,27 @@ func (publisher *artifactPublisher) commitIncremental() error {
 	}
 	sort.Strings(changed)
 	sort.Strings(stale)
+	if len(changed) == 0 && len(stale) == 0 {
+		publisher.committed = true
+		_ = os.RemoveAll(publisher.staging)
+		publisher.releaseLock()
+		return nil
+	}
 	for _, path := range changed {
 		if _, owned := publisher.previous[path]; owned {
 			continue
 		}
 		fullPath := filepath.Join(publisher.output, path)
 		if _, err := os.Lstat(fullPath); err == nil {
-			return fmt.Errorf("generated artifact %s conflicts with an unowned existing path", fullPath)
+			return outputFailure(fmt.Errorf("generated artifact %s conflicts with an unowned existing path", fullPath))
 		} else if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("inspect generated artifact path %s: %w", fullPath, err)
+			return outputFailure(fmt.Errorf("inspect generated artifact path %s: %w", fullPath, err))
 		}
 	}
 
 	backup, err := os.MkdirTemp(filepath.Dir(publisher.output), ".openapi-sdkgen-backup-*")
 	if err != nil {
-		return fmt.Errorf("create incremental backup: %w", err)
+		return outputFailure(fmt.Errorf("create incremental backup: %w", err))
 	}
 	defer os.RemoveAll(backup)
 	backed := make([]string, 0, len(changed)+len(stale)+1)
@@ -894,23 +1011,23 @@ func (publisher *artifactPublisher) commitIncremental() error {
 		return nil
 	}
 	if err := backupPath(artifactManifestName); err != nil {
-		return rollback(fmt.Errorf("backup incremental manifest: %w", err))
+		return rollback(outputFailure(fmt.Errorf("backup incremental manifest: %w", err)))
 	}
 	for _, path := range append(append([]string(nil), changed...), stale...) {
 		if _, owned := publisher.previous[path]; !owned {
 			continue
 		}
 		if err := backupPath(path); err != nil {
-			return rollback(fmt.Errorf("backup generated artifact %s: %w", path, err))
+			return rollback(outputFailure(fmt.Errorf("backup generated artifact %s: %w", path, err)))
 		}
 	}
 	for _, path := range changed {
 		target := filepath.Join(publisher.output, path)
 		if err := ensureSafeArtifactParents(publisher.output, filepath.Dir(target)); err != nil {
-			return rollback(err)
+			return rollback(outputFailure(err))
 		}
 		if err := os.Rename(filepath.Join(publisher.staging, path), target); err != nil {
-			return rollback(fmt.Errorf("replace generated artifact %s: %w", target, err))
+			return rollback(outputFailure(fmt.Errorf("replace generated artifact %s: %w", target, err)))
 		}
 		installed = append(installed, path)
 	}
@@ -987,7 +1104,29 @@ func safeArtifactPath(value string) (string, error) {
 	return cleanPath, nil
 }
 
-func writeFile(path string, data []byte) error {
+func writeStagedFile(path string, data []byte) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return fmt.Errorf("create generated artifact %s: %w", path, err)
+	}
+	failed := true
+	defer func() {
+		if failed {
+			_ = os.Remove(path)
+		}
+	}()
+	if _, err := file.Write(data); err != nil {
+		_ = file.Close()
+		return fmt.Errorf("write generated artifact %s: %w", path, err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close generated artifact %s: %w", path, err)
+	}
+	failed = false
+	return nil
+}
+
+func writeAtomicFile(path string, data []byte) error {
 	temporary, err := os.CreateTemp(filepath.Dir(path), ".openapi-sdkgen-*.tmp")
 	if err != nil {
 		return fmt.Errorf("create temporary artifact %s: %w", path, err)

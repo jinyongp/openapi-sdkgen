@@ -12,13 +12,13 @@ mkdir -p "$perf_dir"
 
 agent_run "build performance test binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
 
-if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceWorkloadsDeterministic$' >"$shape_log" 2>&1; then
+if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformance(Workloads|PublicationWorkload)Deterministic$' >"$shape_log" 2>&1; then
   echo "failed performance workload verification"
   tail -n "$TAIL_LINES" "$shape_log" || true
   exit 1
 fi
 
-if ! "$binary" -test.run '^$' -test.bench '^BenchmarkGeneration/' -test.benchmem -test.benchtime "${PERF_BENCHTIME:-1x}" -test.count "${PERF_COUNT:-1}" >"$bench_log" 2>&1; then
+if ! "$binary" -test.run '^$' -test.bench '^Benchmark(Generation|ArtifactPublication)/' -test.benchmem -test.benchtime "${PERF_BENCHTIME:-1x}" -test.count "${PERF_COUNT:-1}" >"$bench_log" 2>&1; then
   echo "failed performance benchmarks"
   tail -n "$TAIL_LINES" "$bench_log" || true
   exit 1
@@ -31,6 +31,7 @@ if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceProcessM
 fi
 
 rg 'PERF_WORKLOAD' "$shape_log"
-rg '^BenchmarkGeneration/' "$bench_log"
+rg 'PERF_PUBLICATION' "$shape_log"
+rg '^Benchmark(Generation|ArtifactPublication)/' "$bench_log"
 rg 'PERF_METRIC' "$metric_log"
 agent_note "ok performance baseline"
