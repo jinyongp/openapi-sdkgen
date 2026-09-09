@@ -21,7 +21,10 @@ func TestSchemaTypeMapsCompositeOpenAPISchemas(t *testing.T) {
 		{name: "map", schema: map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "integer"}}, want: "Readonly<Record<string, number>>"},
 		{name: "tuple", schema: map[string]any{"type": "array", "prefixItems": []any{map[string]any{"type": "string"}, map[string]any{"type": "integer"}}, "items": map[string]any{"type": "boolean"}}, want: "readonly [string, number, ...(boolean)[]]"},
 		{name: "union", schema: map[string]any{"oneOf": []any{map[string]any{"type": "string"}, map[string]any{"type": "integer"}, map[string]any{"type": "string"}}}, want: "string | number"},
-		{name: "intersection", schema: map[string]any{"allOf": []any{map[string]any{"type": "string"}, map[string]any{"type": "null"}}}, want: "string & null"},
+		{name: "intersection", schema: map[string]any{"allOf": []any{map[string]any{"type": "string"}, map[string]any{"type": "null"}}}, want: "(string) & (null)"},
+		{name: "intersection of union", schema: map[string]any{"allOf": []any{map[string]any{"type": []any{"string", "null"}}, map[string]any{"type": "null"}}}, want: "(string | null) & (null)"},
+		{name: "sibling anyOf", schema: map[string]any{"type": "string", "anyOf": []any{map[string]any{"enum": []any{"a", "b"}}}}, want: `(string) & ("a" | "b")`},
+		{name: "boolean composition", schema: map[string]any{"oneOf": []any{false, map[string]any{"type": "string"}}}, want: "never | string"},
 		{name: "reference sibling", schema: map[string]any{"$ref": "#/components/schemas/Widget", "type": "object", "additionalProperties": map[string]any{"type": "string"}}, want: `(ComponentInput<"Widget">) & (Readonly<Record<string, string>>)`},
 		{name: "pattern properties", schema: map[string]any{"type": "object", "properties": map[string]any{"fixed": map[string]any{"type": "string"}}, "patternProperties": map[string]any{"^x-": map[string]any{"type": "integer"}}}, want: "({\n  /**\n   * OpenAPI property `fixed`.\n   */\n  readonly \"fixed\"?: string | undefined\n}) & (Readonly<Record<string, number>>)"},
 	} {

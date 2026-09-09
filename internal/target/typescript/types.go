@@ -333,6 +333,38 @@ func schemaTypeForScope(document *ir.Document, value any, direction projection, 
 		}
 		return "(" + referenced + ") & (" + siblingType + ")", nil
 	}
+	// Apply composition and sibling constraints together.
+	own := make(map[string]any, len(schema))
+	for key, value := range schema {
+		own[key] = value
+	}
+	var composed []string
+	for _, keyword := range []string{"oneOf", "anyOf", "allOf"} {
+		if variants, ok := schema[keyword].([]any); ok {
+			delete(own, keyword)
+			parts, err := schemaListTypes(document, variants, direction, scope)
+			if err != nil {
+				return "", err
+			}
+			part := strings.Join(uniqueStrings(parts), " | ")
+			if keyword == "allOf" {
+				part = intersectionType(parts)
+			} else if len(parts) == 0 {
+				part = "never"
+			}
+			composed = append(composed, part)
+		}
+	}
+	if len(composed) > 0 {
+		base, err := schemaTypeForScope(document, own, direction, scope)
+		if err != nil {
+			return "", err
+		}
+		if base != "unknown" {
+			composed = append([]string{base}, composed...)
+		}
+		return intersectionType(composed), nil
+	}
 	if value, exists := schema["const"]; exists {
 		return literalTS(value), nil
 	}
@@ -342,19 +374,6 @@ func schemaTypeForScope(document *ir.Document, value any, direction projection, 
 			quoted = append(quoted, literalTS(value))
 		}
 		return strings.Join(quoted, " | "), nil
-	}
-	if variants, ok := schema["oneOf"].([]any); ok {
-		return unionType(document, variants, direction, scope)
-	}
-	if variants, ok := schema["anyOf"].([]any); ok {
-		return unionType(document, variants, direction, scope)
-	}
-	if variants, ok := schema["allOf"].([]any); ok {
-		parts, err := schemaListTypes(document, variants, direction, scope)
-		if err != nil {
-			return "", err
-		}
-		return strings.Join(parts, " & "), nil
 	}
 
 	types := schemaTypes(schema["type"])
@@ -370,6 +389,9 @@ func schemaTypeForScope(document *ir.Document, value any, direction projection, 
 		return strings.Join(uniqueStrings(parts), " | "), nil
 	}
 	if len(types) == 0 {
+		if required, _ := schema["required"].([]any); len(required) > 0 {
+			return objectTypeForScope(document, schema, direction, scope)
+		}
 		if _, exists := schema["properties"]; exists {
 			return objectTypeForScope(document, schema, direction, scope)
 		}
@@ -447,7 +469,20 @@ func objectType(document *ir.Document, schema map[string]any, direction projecti
 }
 
 func objectTypeForScope(document *ir.Document, schema map[string]any, direction projection, scope typeRenderScope) (string, error) {
-	properties, _ := schema["properties"].(map[string]any)
+	declared, _ := schema["properties"].(map[string]any)
+	properties := make(map[string]any, len(declared))
+	for name, value := range declared {
+		properties[name] = value
+	}
+	if values, ok := schema["required"].([]any); ok {
+		for _, value := range values {
+			if name, ok := value.(string); ok {
+				if _, exists := properties[name]; !exists {
+					properties[name] = true
+				}
+			}
+		}
+	}
 	if len(properties) == 0 {
 		if additional, exists := schema["additionalProperties"]; exists {
 			valueType, err := schemaTypeForScope(document, additional, direction, scope)
@@ -488,6 +523,11 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		propertyType, err := schemaTypeForScope(document, propertyValue, direction, scope)
 		if err != nil {
 			return "", err
+		}
+		// A required-only constraint must also remove undefined contributed by
+		// an optional input property in another intersection operand.
+		if _, declaredHere := declared[wireName]; !declaredHere {
+			propertyType = "{} | null"
 		}
 		propertyName := quoteTS(wireName)
 		optional := ""
@@ -1077,19 +1117,24 @@ func schemaEnum(schema map[string]any) []string {
 	return result
 }
 
-func unionType(document *ir.Document, variants []any, direction projection, scope typeRenderScope) (string, error) {
-	parts, err := schemaListTypes(document, variants, direction, scope)
-	if err != nil {
-		return "", err
+func intersectionType(parts []string) string {
+	if len(parts) == 0 {
+		return "unknown"
 	}
-	return strings.Join(uniqueStrings(parts), " | "), nil
+	if len(parts) == 1 {
+		return parts[0]
+	}
+	wrapped := make([]string, len(parts))
+	for index, part := range parts {
+		wrapped[index] = "(" + part + ")"
+	}
+	return strings.Join(wrapped, " & ")
 }
 
 func schemaListTypes(document *ir.Document, variants []any, direction projection, scope typeRenderScope) ([]string, error) {
 	parts := make([]string, 0, len(variants))
 	for _, variant := range variants {
-		schema, _ := variant.(map[string]any)
-		part, err := schemaTypeForScope(document, schema, direction, scope)
+		part, err := schemaTypeForScope(document, variant, direction, scope)
 		if err != nil {
 			return nil, err
 		}
