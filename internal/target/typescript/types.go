@@ -534,12 +534,12 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		}
 	}
 	if len(properties) == 0 {
-		if additional, exists := schema["additionalProperties"]; exists {
-			valueType, err := schemaTypeForScope(document, additional, direction, scope)
-			if err != nil {
-				return "", err
-			}
-			return "Readonly<Record<string, " + valueType + ">>", nil
+		dynamic, err := objectAdditionalType(document, schema, direction, scope)
+		if err != nil {
+			return "", err
+		}
+		if dynamic != "" {
+			return "Readonly<Record<string, " + dynamic + ">>", nil
 		}
 		if additional, ok := schema["additionalProperties"].(bool); ok && !additional {
 			return "Readonly<Record<string, never>>", nil
@@ -560,6 +560,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 	}
 	sort.Strings(keys)
 	var output bytes.Buffer
+	propertyIndexTypes := make([]string, 0, len(keys))
 	output.WriteString("{\n")
 	for _, wireName := range keys {
 		propertyValue := properties[wireName]
@@ -587,6 +588,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 				propertyType += " | undefined"
 			}
 		}
+		propertyIndexTypes = append(propertyIndexTypes, propertyType)
 		emitSchemaValueJSDoc(&output, document, "  ", propertySchema, "OpenAPI property `"+sanitizeComment(wireName)+"`.")
 		fmt.Fprintf(&output, "  readonly %s%s: %s\n", propertyName, optional, propertyType)
 	}
@@ -598,7 +600,8 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 	if additional == "" {
 		return output.String(), nil
 	}
-	return "(" + output.String() + ") & (Readonly<Record<string, " + additional + ">>)", nil
+	indexType := typeUnion(append([]string{additional}, propertyIndexTypes...))
+	return "(" + output.String() + ") & (Readonly<Record<string, " + indexType + ">>)", nil
 }
 
 // objectAdditionalType is intentionally conservative for patternProperties:
@@ -607,17 +610,23 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 // generated documentation/contract metadata.
 func objectAdditionalType(document *ir.Document, schema map[string]any, direction projection, scope typeRenderScope) (string, error) {
 	var values []string
-	if additional, exists := schema["additionalProperties"]; exists {
-		if boolean, ok := additional.(bool); ok && !boolean {
-			return "", nil
+	additional, hasAdditional := schema["additionalProperties"]
+	if hasAdditional {
+		if boolean, ok := additional.(bool); !ok || boolean {
+			value, err := schemaTypeForScope(document, additional, direction, scope)
+			if err != nil {
+				return "", err
+			}
+			values = append(values, value)
 		}
-		value, err := schemaTypeForScope(document, additional, direction, scope)
-		if err != nil {
-			return "", err
-		}
-		values = append(values, value)
 	}
 	patterns, _ := schema["patternProperties"].(map[string]any)
+	if len(patterns) > 0 && !hasAdditional {
+		// JSON Schema permits keys that match no pattern when additionalProperties
+		// is omitted. TypeScript cannot express regex-key constraints, so unknown
+		// is the only non-rejecting index approximation for that open key space.
+		return "unknown", nil
+	}
 	patternNames := make([]string, 0, len(patterns))
 	for pattern := range patterns {
 		patternNames = append(patternNames, pattern)
@@ -630,7 +639,7 @@ func objectAdditionalType(document *ir.Document, schema map[string]any, directio
 		}
 		values = append(values, typeValue)
 	}
-	return strings.Join(uniqueStrings(values), " | "), nil
+	return typeUnion(values), nil
 }
 
 func referencedType(document *ir.Document, name string, direction projection, scope typeRenderScope) (string, error) {
@@ -1207,6 +1216,16 @@ func uniqueStrings(values []string) []string {
 		}
 	}
 	return result
+}
+
+func typeUnion(values []string) string {
+	values = uniqueStrings(values)
+	for _, value := range values {
+		if value == "unknown" {
+			return "unknown"
+		}
+	}
+	return strings.Join(values, " | ")
 }
 
 func literalTS(value any) string {

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
@@ -26,7 +27,9 @@ func TestSchemaTypeMapsCompositeOpenAPISchemas(t *testing.T) {
 		{name: "sibling anyOf", schema: map[string]any{"type": "string", "anyOf": []any{map[string]any{"enum": []any{"a", "b"}}}}, want: `(string) & ("a" | "b")`},
 		{name: "boolean composition", schema: map[string]any{"oneOf": []any{false, map[string]any{"type": "string"}}}, want: "never | string"},
 		{name: "reference sibling", schema: map[string]any{"$ref": "#/components/schemas/Widget", "type": "object", "additionalProperties": map[string]any{"type": "string"}}, want: `(ComponentInput<"Widget">) & (Readonly<Record<string, string>>)`},
-		{name: "pattern properties", schema: map[string]any{"type": "object", "properties": map[string]any{"fixed": map[string]any{"type": "string"}}, "patternProperties": map[string]any{"^x-": map[string]any{"type": "integer"}}}, want: "({\n  /**\n   * OpenAPI property `fixed`.\n   */\n  readonly \"fixed\"?: string | undefined\n}) & (Readonly<Record<string, number>>)"},
+		{name: "fixed additional properties", schema: map[string]any{"type": "object", "required": []any{"fixed"}, "properties": map[string]any{"fixed": map[string]any{"type": "string"}}, "additionalProperties": map[string]any{"type": "integer"}}, want: "({\n  /**\n   * OpenAPI property `fixed`.\n   */\n  readonly \"fixed\": string\n}) & (Readonly<Record<string, number | string>>)"},
+		{name: "closed pattern properties", schema: map[string]any{"type": "object", "properties": map[string]any{"fixed": map[string]any{"type": "string"}}, "patternProperties": map[string]any{"^x-": map[string]any{"type": "integer"}}, "additionalProperties": false}, want: "({\n  /**\n   * OpenAPI property `fixed`.\n   */\n  readonly \"fixed\"?: string | undefined\n}) & (Readonly<Record<string, number | string | undefined>>)"},
+		{name: "open pattern properties", schema: map[string]any{"type": "object", "properties": map[string]any{"fixed": map[string]any{"type": "string"}}, "patternProperties": map[string]any{"^x-": map[string]any{"type": "integer"}}}, want: "({\n  /**\n   * OpenAPI property `fixed`.\n   */\n  readonly \"fixed\"?: string | undefined\n}) & (Readonly<Record<string, unknown>>)"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			value, err := schemaType(document, test.schema, projectionInput)
@@ -35,6 +38,38 @@ func TestSchemaTypeMapsCompositeOpenAPISchemas(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGeneratedObjectTypesAcceptFixedAndDynamicProperties(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.0",
+  "info":{"title":"Dynamic object types","version":"1"},
+  "paths":{
+    "/fixed":{"post":{"operationId":"submitFixed","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/FixedAdditional"}}}},"responses":{"204":{"description":"OK"}}}},
+    "/pattern":{"post":{"operationId":"submitPattern","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/PatternObject"}}}},"responses":{"204":{"description":"OK"}}}}
+  },
+  "components":{"schemas":{
+    "FixedAdditional":{"type":"object","required":["fixed"],"properties":{"fixed":{"type":"string"}},"additionalProperties":{"type":"integer"}},
+    "PatternObject":{"type":"object","properties":{"fixed":{"type":"string"}},"patternProperties":{"^x-":{"type":"integer"}},"additionalProperties":false}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient } from "./index.js";
+declare const api: ReturnType<typeof createClient>;
+type FixedBody = Parameters<typeof api.$operations.submitFixed>[0]["body"];
+type PatternBody = Parameters<typeof api.$operations.submitPattern>[0]["body"];
+const fixed: FixedBody = { fixed: "ok", count: 1 };
+const pattern: PatternBody = { fixed: "ok", "x-count": 1 };
+const patternOnly: PatternBody = { "x-count": 1 };
+// @ts-expect-error the declared fixed property remains a string
+const wrongFixed: FixedBody = { fixed: 1, count: 1 };
+// @ts-expect-error the declared fixed property remains a string
+const wrongPatternFixed: PatternBody = { fixed: 1, "x-count": 1 };
+void [fixed, pattern, patternOnly, wrongFixed, wrongPatternFixed];
+`
+	compileTypeScriptArtifactsWithProbe(t, document, "dynamic-object-types.probe.ts", probe)
 }
 
 func TestSourceArtifactsEmitsClosedObjectRuntimeValidation(t *testing.T) {
