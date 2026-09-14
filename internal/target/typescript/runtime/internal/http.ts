@@ -3195,15 +3195,22 @@ function resolveOperationBaseURL(
         `Server variable ${name} must be one of ${definition.enumValues.join(", ")}`,
       );
     }
-    return encodeURIComponent(value);
+    return value;
   });
   try {
-    return normalizeBaseURL(expanded);
-  } catch {
-    if (origin === undefined)
-      throw new TypeError(`Server ${server.id} is relative; pass ClientOptions.origin or baseURL`);
-    const absoluteOrigin = normalizeOrigin(origin);
-    return normalizeBaseURL(new URL(expanded, absoluteOrigin).href);
+    return normalizeBaseURL(new URL(expanded).href);
+  } catch (cause) {
+    try {
+      new URL(expanded);
+    } catch {
+      if (origin === undefined)
+        throw new TypeError(
+          `Server ${server.id} is relative; pass ClientOptions.origin or baseURL`,
+        );
+      const absoluteOrigin = normalizeOrigin(origin);
+      return normalizeBaseURL(new URL(expanded, absoluteOrigin).href);
+    }
+    throw cause;
   }
 }
 

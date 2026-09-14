@@ -1795,6 +1795,34 @@ if (url !== "https://gateway.example.test/api/us/status") throw new Error("serve
 	}
 }
 
+func TestRuntimePreservesOpenAPIServerVariablePathSegments(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{"openapi":"3.1.0","info":{"title":"Server paths","version":"1"},"servers":[{"url":"https://api.example.test/{basePath}","variables":{"basePath":{"default":"v1/resources"}}}],"paths":{"/items":{"get":{"operationId":"getItems","responses":{"204":{"description":"OK"}}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const urls = [];
+const fetch = async (requestURL) => { urls.push(String(requestURL)); return new Response(null, { status: 204 }); };
+await createClient({ fetch }).$operations.getItems();
+await createClient({ server: { id: "#/servers/0", variables: { basePath: "v2/custom" } }, fetch }).$operations.getItems();
+if (JSON.stringify(urls) !== JSON.stringify([
+  "https://api.example.test/v1/resources/items",
+  "https://api.example.test/v2/custom/items",
+])) throw new Error("server path variable expansion mismatch: " + JSON.stringify(urls));
+const invalid = createClient({ server: { id: "#/servers/0", variables: { basePath: "v1/resources?leak=1" } }, fetch: async () => { throw new Error("invalid server URL reached fetch"); } });
+await invalid.$operations.getItems().then(
+  () => { throw new Error("invalid expanded server URL was accepted"); },
+  (error) => { if (!String(error.cause).includes("without query or fragment")) throw error; },
+);
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript server path-variable runtime test: %v\n%s", err, output)
+	}
+}
+
 func TestRuntimeSelectsOperationScopedServerAlternatives(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{"openapi":"3.1.0","info":{"title":"Scoped servers","version":"1"},"paths":{"/status":{"get":{"operationId":"getStatus","servers":[{"url":"https://one.example.test/v1"},{"url":"https://two.example.test/v2"}],"responses":{"204":{"description":"OK"}}}}}}`))
 	if err != nil {
