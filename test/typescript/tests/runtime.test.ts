@@ -1410,6 +1410,89 @@ describe("generated runtime", () => {
     }
   });
 
+  it("enforces generated stream item limits independently of chunk boundaries", async () => {
+    const itemSchema = { types: ["object"] } as const;
+    const streamOperation = (contentType: string): OperationDefinition =>
+      operation({
+        method: "GET",
+        path: "/bounded-stream",
+        responses: [{ status: "200", contentType, schema: {}, itemSchema }],
+        outputSchemas: {},
+      });
+    const payload = JSON.stringify({ value: "x".repeat(64) });
+    const cases = [
+      { contentType: "application/x-ndjson", wire: `${payload}\n` },
+      { contentType: "application/json-seq", wire: `\u001e${payload}\n\u001e` },
+      { contentType: "text/event-stream", wire: `data: ${payload}\r\r` },
+      {
+        contentType: "multipart/mixed; boundary=frame",
+        declaredContentType: "multipart/mixed",
+        wire: `--frame\r\nContent-Type: application/json\r\n\r\n${payload}\r\n--frame--\r\n`,
+      },
+    ];
+    for (const item of cases) {
+      for (const chunks of [
+        [item.wire],
+        [
+          item.wire.slice(0, Math.floor(item.wire.length / 2)),
+          item.wire.slice(Math.floor(item.wire.length / 2)),
+        ],
+      ]) {
+        const request = createRequest({
+          baseURL: "https://api.example.test",
+          maxStreamItemBytes: 32,
+          fetch: async () =>
+            new Response(
+              new ReadableStream({
+                start(controller) {
+                  const encoder = new TextEncoder();
+                  for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+                  controller.close();
+                },
+              }),
+              { headers: { "content-type": item.contentType } },
+            ),
+        });
+        const error = await collect(
+          request.stream(
+            streamOperation(item.declaredContentType ?? item.contentType.split(";", 1)[0]!),
+          ),
+        ).catch((cause: unknown) => cause);
+        expect(isErrorCode(error, TransportErrorCode.RESPONSE_DECODE_FAILED)).toBe(true);
+        expect(String((error as { cause?: unknown }).cause)).toContain("exceeds 32 bytes");
+      }
+    }
+  });
+
+  it("accepts CR-only SSE framing and discards an incomplete event at EOF", async () => {
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        new Response('data: {"value":1}\r\rdata: {"value":2}', {
+          headers: { "content-type": "text/event-stream" },
+        }),
+    });
+    await expect(
+      collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/events",
+            responses: [
+              {
+                status: "200",
+                contentType: "text/event-stream",
+                schema: {},
+                itemSchema: { types: ["object"] },
+              },
+            ],
+            outputSchemas: {},
+          }),
+        ),
+      ),
+    ).resolves.toEqual([{ value: 1 }]);
+  });
+
   it("preserves unknown properties in generated and custom stream items", async () => {
     const itemSchema = {
       types: ["object"],

@@ -440,11 +440,23 @@ async function* decodeStreamItems(
 ): AsyncIterable<unknown> {
   const mediaType = contentType.toLowerCase();
   if (normalizeMediaType(mediaType).startsWith("multipart/")) {
-    yield* decodeMultipartStreamItems(body, contentType, itemSchema, schemas, codecs, itemEncoding);
+    yield* decodeMultipartStreamItems(
+      body,
+      contentType,
+      itemSchema,
+      schemas,
+      codecs,
+      itemEncoding,
+      maxFrameBytes,
+    );
     return;
   }
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
+  const assertFrameBytes = (source: string): void => {
+    if (encoder.encode(source).byteLength > maxFrameBytes)
+      throw new TypeError(`stream item exceeds ${maxFrameBytes} bytes`);
+  };
   let pending = "";
   const reader = body.getReader();
   try {
@@ -452,12 +464,14 @@ async function* decodeStreamItems(
       const { done, value } = await reader.read();
       pending += decoder.decode(value, { stream: !done });
       if (mediaType.includes("event-stream")) {
-        let boundary: number;
-        while ((boundary = pending.search(/\r?\n\r?\n/)) >= 0) {
+        let match: RegExpMatchArray | null;
+        while ((match = pending.match(/(?:\r\n|\r|\n){2}/)) !== null) {
+          const boundary = match.index ?? 0;
           const event = pending.slice(0, boundary);
-          pending = pending.slice(boundary).replace(/^\r?\n\r?\n/, "");
+          pending = pending.slice(boundary + match[0].length);
+          assertFrameBytes(event);
           const data = event
-            .split(/\r?\n/)
+            .split(/\r\n|\r|\n/)
             .filter((line) => line.startsWith("data:"))
             .map((line) => line.slice(5).trimStart())
             .join("\n");
@@ -466,29 +480,26 @@ async function* decodeStreamItems(
       } else if (mediaType.includes("json-seq")) {
         const records = pending.split("\u001e");
         pending = records.pop() ?? "";
-        for (const record of records)
+        for (const record of records) {
+          assertFrameBytes(record);
           if (record.trim() !== "") yield parseStreamJSON(record.trim());
+        }
       } else {
         let newline: number;
         while ((newline = pending.indexOf("\n")) >= 0) {
-          const line = pending.slice(0, newline).replace(/\r$/, "");
+          const rawLine = pending.slice(0, newline);
           pending = pending.slice(newline + 1);
+          assertFrameBytes(rawLine);
+          const line = rawLine.replace(/\r$/, "");
           if (line.trim() !== "") yield parseStreamJSON(line);
         }
       }
-      if (encoder.encode(pending).byteLength > maxFrameBytes)
-        throw new TypeError(`stream item exceeds ${maxFrameBytes} bytes`);
+      assertFrameBytes(pending);
       if (done) break;
     }
-    if (pending.trim() !== "") {
-      if (mediaType.includes("event-stream")) {
-        const data = pending
-          .split(/\r?\n/)
-          .filter((line) => line.startsWith("data:"))
-          .map((line) => line.slice(5).trimStart())
-          .join("\n");
-        if (data !== "") yield parseStreamJSON(data);
-      } else yield parseStreamJSON(pending.trim().replace(/^\u001e/, ""));
+    if (!mediaType.includes("event-stream") && pending.trim() !== "") {
+      assertFrameBytes(pending);
+      yield parseStreamJSON(pending.trim().replace(/^\u001e/, ""));
     }
   } finally {
     try {
@@ -506,8 +517,9 @@ async function* decodeMultipartStreamItems(
   schemas: WireSchemas,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   itemEncoding: WireEncodingDefinition | undefined,
+  maxFrameBytes: number,
 ): AsyncIterable<unknown> {
-  for await (const part of decodeMultipartStreamParts(body, contentType)) {
+  for await (const part of decodeMultipartStreamParts(body, contentType, maxFrameBytes)) {
     yield decodeMultipartStreamPart(part, itemSchema, schemas, codecs, itemEncoding);
   }
 }
@@ -517,9 +529,12 @@ interface MultipartStreamPart {
   readonly bytes: Uint8Array;
 }
 
+const maxMultipartStreamHeaderBytes = 8192;
+
 async function* decodeMultipartStreamParts(
   body: ReadableStream<Uint8Array>,
   contentType: string,
+  maxFrameBytes?: number,
 ): AsyncIterable<MultipartStreamPart> {
   const boundary =
     /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType)?.[1] ??
@@ -563,8 +578,15 @@ async function* decodeMultipartStreamParts(
           throw new TypeError("multipart boundary is malformed");
         const part = pending.slice(0, index);
         pending = pending.slice(after + 2);
-        yield parseMultipartStreamPart(part);
+        yield parseMultipartStreamPart(part, maxFrameBytes);
         if (closing) closed = true;
+      }
+      if (maxFrameBytes !== undefined && !closed) {
+        const maximumBuffered = started
+          ? maxFrameBytes + maxMultipartStreamHeaderBytes + separator.length + 4
+          : maxMultipartStreamHeaderBytes + opening.length + 2;
+        if (pending.byteLength > maximumBuffered)
+          throw new TypeError(`multipart stream item exceeds ${maxFrameBytes} bytes`);
       }
       if (done) break;
     }
@@ -647,11 +669,16 @@ function ownedArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
-function parseMultipartStreamPart(part: Uint8Array): MultipartStreamPart {
+function parseMultipartStreamPart(part: Uint8Array, maxFrameBytes?: number): MultipartStreamPart {
   const split = findStreamBytes(part, new Uint8Array([13, 10, 13, 10]));
   if (split < 0) throw new TypeError("multipart part has no header terminator");
+  if (maxFrameBytes !== undefined && split > maxMultipartStreamHeaderBytes)
+    throw new TypeError("multipart stream headers exceed 8192 bytes");
+  const bytes = part.slice(split + 4);
+  if (maxFrameBytes !== undefined && bytes.byteLength > maxFrameBytes)
+    throw new TypeError(`multipart stream item exceeds ${maxFrameBytes} bytes`);
   const headers = parseMultipartStreamHeaders(new TextDecoder().decode(part.slice(0, split)));
-  return { headers, bytes: part.slice(split + 4) };
+  return { headers, bytes };
 }
 
 function appendStreamBytes(left: Uint8Array, right: Uint8Array): Uint8Array {

@@ -1719,9 +1719,17 @@ async function* decodeInboundStream(
   }
   const reader = body.getReader();
   const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
   let pending = "";
   let count = 0;
-  const emit = (source: string): unknown => {
+  const assertFrameBytes = (source: string): void => {
+    if (encoder.encode(source).byteLength > maxFrameBytes)
+      throw new InboundRequestError(
+        new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
+      );
+  };
+  const emit = (source: string, frameSource = source): unknown => {
+    assertFrameBytes(frameSource);
     let value: unknown;
     try {
       value = JSON.parse(source);
@@ -1737,45 +1745,41 @@ async function* decodeInboundStream(
       const next = await reader.read();
       pending += decoder.decode(next.value, { stream: !next.done });
       if (contentType.includes("event-stream")) {
-        let boundary: number;
-        while ((boundary = pending.search(/\r?\n\r?\n/)) >= 0) {
+        let match: RegExpMatchArray | null;
+        while ((match = pending.match(/(?:\r\n|\r|\n){2}/)) !== null) {
+          const boundary = match.index ?? 0;
           const event = pending.slice(0, boundary);
-          pending = pending.slice(boundary).replace(/^\r?\n\r?\n/, "");
+          pending = pending.slice(boundary + match[0].length);
+          assertFrameBytes(event);
           const data = event
-            .split(/\r?\n/)
+            .split(/\r\n|\r|\n/)
             .filter((line) => line.startsWith("data:"))
             .map((line) => line.slice(5).trimStart())
             .join("\n");
-          if (data !== "") yield emit(data);
+          if (data !== "") yield emit(data, event);
         }
       } else if (contentType.includes("json-seq")) {
         const records = pending.split("\u001e");
         pending = records.pop() ?? "";
-        for (const record of records) if (record.trim() !== "") yield emit(record.trim());
+        for (const record of records) {
+          assertFrameBytes(record);
+          if (record.trim() !== "") yield emit(record.trim(), record);
+        }
       } else {
         let newline: number;
         while ((newline = pending.indexOf("\n")) >= 0) {
-          const line = pending.slice(0, newline).replace(/\r$/, "");
+          const rawLine = pending.slice(0, newline);
           pending = pending.slice(newline + 1);
-          if (line.trim() !== "") yield emit(line);
+          assertFrameBytes(rawLine);
+          const line = rawLine.replace(/\r$/, "");
+          if (line.trim() !== "") yield emit(line, rawLine);
         }
       }
-      if (new TextEncoder().encode(pending).byteLength > maxFrameBytes)
-        throw new InboundRequestError(
-          new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
-        );
+      assertFrameBytes(pending);
       if (next.done) break;
     }
-    if (pending.trim() !== "") {
-      if (contentType.includes("event-stream")) {
-        const data = pending
-          .split(/\r?\n/)
-          .filter((line) => line.startsWith("data:"))
-          .map((line) => line.slice(5).trimStart())
-          .join("\n");
-        if (data !== "") yield emit(data);
-      } else yield emit(pending.trim().replace(/^\u001e/, ""));
-    }
+    if (!contentType.includes("event-stream") && pending.trim() !== "")
+      yield emit(pending.trim().replace(/^\u001e/, ""), pending);
     if (required && count === 0)
       throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
   } finally {
@@ -1851,14 +1855,20 @@ async function* decodeInboundMultipartStream(
           itemContentType,
           wireSchema,
           wireSchemas,
+          maxFrameBytes,
         );
         count++;
         if (closing) closed = true;
       }
-      if (pending.byteLength > maxFrameBytes + 8192)
-        throw new InboundRequestError(
-          new Response("Multipart item exceeds maxStreamItemBytes", { status: 400 }),
-        );
+      if (!closed) {
+        const maximumBuffered = started
+          ? maxFrameBytes + 8192 + separator.length + 4
+          : 8192 + opening.length + 2;
+        if (pending.byteLength > maximumBuffered)
+          throw new InboundRequestError(
+            new Response("Multipart item exceeds maxStreamItemBytes", { status: 400 }),
+          );
+      }
       if (next.done) break;
     }
     if (!closed)
@@ -1881,12 +1891,21 @@ function decodeInboundMultipartPart(
   itemContentType: string | undefined,
   wireSchema: WireSchema | undefined,
   wireSchemas: WireSchemas | undefined,
+  maxFrameBytes: number,
 ): unknown {
   const split = findInboundBytes(part, new Uint8Array([13, 10, 13, 10]));
   if (split < 0)
     throw new InboundRequestError(new Response("Invalid multipart part", { status: 400 }));
+  if (split > 8192)
+    throw new InboundRequestError(
+      new Response("Multipart headers exceed stream limit", { status: 400 }),
+    );
   const headers = parseInboundMultipartHeaders(new TextDecoder().decode(part.slice(0, split)));
   const bytes = part.slice(split + 4);
+  if (bytes.byteLength > maxFrameBytes)
+    throw new InboundRequestError(
+      new Response("Multipart item exceeds maxStreamItemBytes", { status: 400 }),
+    );
   const rawContentType =
     headers.get("content-type") ?? itemContentType?.split(",", 1)[0]?.trim() ?? "text/plain";
   const normalized = rawContentType.split(";", 1)[0]!.trim().toLowerCase();

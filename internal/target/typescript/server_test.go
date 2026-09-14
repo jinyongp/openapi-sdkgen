@@ -621,8 +621,19 @@ if (validResponse.status !== 204 || seen.join(",") !== "one,two") throw new Erro
 const invalid = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode('{"wrong":true}\n')); controller.close(); } });
 const invalidResponse = await router.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: invalid, duplex: "half" }));
 if (invalidResponse.status !== 400) throw new Error("invalid inbound stream item was accepted");
-const bounded = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const _ of body) { } return { status: 204 }; } } }, { routes: { events: "/events" }, maxStreamItemBytes: 4 });
-if ((await bounded.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: '{"event_id":"too-long"}' }))).status !== 400) throw new Error("oversized inbound stream item was accepted");
+const bounded = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const _ of body) { } return { status: 204 }; } }, frames: { POST: async ({ body }) => { for await (const _ of body) { } return { status: 204 }; } } }, { routes: { events: "/events", frames: "/frames" }, maxStreamItemBytes: 4 });
+if ((await bounded.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: '{"event_id":"too-long"}' }))).status !== 400) throw new Error("oversized unfinished inbound stream item was accepted");
+const chunkedBody = (chunks) => new ReadableStream({ start(controller) { for (const chunk of chunks) controller.enqueue(encoder.encode(chunk)); controller.close(); } });
+const boundedNDJSONBody = '{"event_id":"too-long"}\n';
+for (const chunks of [[boundedNDJSONBody], [boundedNDJSONBody.slice(0, 10), boundedNDJSONBody.slice(10)]]) {
+  const response = await bounded.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: chunkedBody(chunks), duplex: "half" }));
+  if (response.status !== 400) throw new Error("oversized completed inbound stream item was accepted for chunk partition");
+}
+const boundedMultipartBody = "--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"too-long\"}\r\n--frames--\r\n";
+for (const chunks of [[boundedMultipartBody], [boundedMultipartBody.slice(0, 50), boundedMultipartBody.slice(50)]]) {
+  const response = await bounded.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: chunkedBody(chunks), duplex: "half" }));
+  if (response.status !== 400) throw new Error("oversized completed inbound multipart item was accepted for chunk partition");
+}
 const multipartBody = "--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"one\"}\r\n--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"two\"}\r\n--frames--\r\n";
 const multipartResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: multipartBody }));
 if (multipartResponse.status !== 204 || seen.join(",") !== "one,two,one,two") throw new Error("inbound multipart stream was not decoded");
