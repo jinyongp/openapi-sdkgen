@@ -111,6 +111,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
       const init: RequestInit = {
         method: operation.method,
         headers: encoded.headers,
+        ...(encoded.redirect === undefined ? {} : { redirect: encoded.redirect }),
       };
       if (encoded.body !== undefined) {
         init.body = encoded.body as BodyInit;
@@ -279,6 +280,7 @@ async function* streamOperation<Item>(
       method: operation.method,
       headers: encoded.headers,
       ...(abort.signal === undefined ? {} : { signal: abort.signal }),
+      ...(encoded.redirect === undefined ? {} : { redirect: encoded.redirect }),
     };
     if (encoded.body !== undefined) {
       init.body = encoded.body as BodyInit;
@@ -970,7 +972,11 @@ function applySelectedSecurityRequirement(
     }
     applySecurityCredential(options.transport, scheme, credential, encoded.headers, url);
   }
-  return { ...encoded, url: url.href };
+  return {
+    ...encoded,
+    url: url.href,
+    ...(requirement.schemes.length === 0 ? {} : { redirect: "error" as const }),
+  };
 }
 
 function applySecurityCredential(
@@ -1293,6 +1299,7 @@ interface EncodedRequest {
   readonly url: string;
   readonly headers: Headers;
   readonly body?: BodyInit | ReadableStream<Uint8Array>;
+  readonly redirect?: RequestRedirect;
 }
 
 function encodeRequest(
@@ -1303,9 +1310,16 @@ function encodeRequest(
   input: unknown,
   options: RequestOptions,
 ): EncodedRequest | Promise<EncodedRequest> {
-  return hasCustomParameterInput(operation, input)
+  const pending = hasCustomParameterInput(operation, input)
     ? encodeRequestAsync(baseURL, client, codecs, operation, input, options)
     : encodeRequestSynchronous(baseURL, client, codecs, operation, input, options);
+  const finish = (encoded: EncodedRequest): EncodedRequest =>
+    options.authorization !== undefined ||
+    client.authorization !== undefined ||
+    options.csrfToken !== undefined
+      ? { ...encoded, redirect: "error" }
+      : encoded;
+  return isPromise(pending) ? pending.then(finish) : finish(pending);
 }
 
 function hasCustomParameterInput(operation: OperationDefinition, input: unknown): boolean {

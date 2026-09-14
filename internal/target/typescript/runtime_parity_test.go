@@ -2285,6 +2285,7 @@ const securityProvider = ({ requirement, origin }) => {
 const api = createClient({ baseURL: "https://api.example.test", securityProvider, fetch: async (_url, init) => {
   calls++;
   if (new Headers(init.headers).get("x-api-key") !== "secret") throw new Error("API key not applied");
+  if (init.redirect !== "error") throw new Error("credential-bearing request did not fail closed on redirects");
   return new Response(null, { status: 204 });
 } });
 await api.$operations.readSecure({ securityRequirement: "ApiKey" });
@@ -2293,6 +2294,7 @@ let publicCalls = 0;
 const publicAPI = createClient({ baseURL: "https://api.example.test", securityProvider, fetch: async (_url, init) => {
   publicCalls++;
   if (new Headers(init.headers).has("x-api-key")) throw new Error("operation security override was ignored");
+  if (init.redirect !== undefined) throw new Error("public request unexpectedly disabled redirects");
   return new Response(null, { status: 204 });
 } });
 await publicAPI.$operations.getPublic();
@@ -2303,6 +2305,59 @@ await createClient({ baseURL: "https://api.example.test", securityProvider, head
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute TypeScript security runtime test: %v\n%s", err, output)
+	}
+}
+
+func TestRuntimeBlocksRedirectsBeforeForwardingGeneratedHeaderAPIKeys(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{"openapi":"3.2.0","info":{"title":"Redirect security","version":"1"},"components":{"securitySchemes":{"ApiKey":{"type":"apiKey","in":"header","name":"X-API-Key"}}},"paths":{"/protected":{"get":{"operationId":"readSecure","security":[{"ApiKey":[]}],"responses":{"204":{"description":"OK"}}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { createServer } from "node:http";
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const listen = (server) => new Promise((resolve, reject) => {
+  server.once("error", reject);
+  server.listen(0, "127.0.0.1", () => resolve("http://127.0.0.1:" + server.address().port));
+});
+let sinkCalls = 0;
+let leaked = false;
+const sink = createServer((request, response) => {
+  sinkCalls++;
+  leaked ||= request.headers["x-api-key"] === "audit-key";
+  response.writeHead(204);
+  response.end();
+});
+let source;
+try {
+  const sinkOrigin = await listen(sink);
+  source = createServer((_request, response) => {
+    response.writeHead(302, { location: sinkOrigin + "/redirected" });
+    response.end();
+  });
+  const sourceOrigin = await listen(source);
+  const api = createClient({
+    baseURL: sourceOrigin,
+    securityProvider: () => ({ ApiKey: { kind: "api-key", value: "audit-key" } }),
+  });
+  const error = await api.$operations.readSecure().then(
+    () => new Error("credential-bearing redirect unexpectedly succeeded"),
+    (cause) => cause,
+  );
+  if (error.code !== "NETWORK_ERROR") throw error;
+  if (sinkCalls !== 0 || leaked) throw new Error("redirect target received generated API credentials");
+} finally {
+  for (const server of [source, sink]) {
+    if (server === undefined) continue;
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript redirect credential security test: %v\n%s", err, output)
 	}
 }
 

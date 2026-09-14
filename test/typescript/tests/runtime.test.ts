@@ -105,6 +105,7 @@ describe("generated runtime", () => {
       expect(headers.get("cookie")).toBe("session=one; session=two");
       expect(headers.get("authorization")).toBe("Bearer client");
       expect(headers.get("x-request-id")).toBe("request-1");
+      expect(init?.redirect).toBe("error");
       expect(init?.body).toBe('{"wire_name":"widget"}');
       return jsonResponse({ wire_name: "response" }, 200, { "x-request-id": "server-1" });
     });
