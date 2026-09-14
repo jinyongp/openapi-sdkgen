@@ -1482,7 +1482,8 @@ async function decodeSelectedInboundBody(
     );
   } else {
     const text = await request.text();
-    if (text.trim() === "") {
+    const missing = contentType === "text/plain" ? text === "" : text.trim() === "";
+    if (missing) {
       if (options.required)
         throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
       return undefined;
