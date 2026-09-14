@@ -352,14 +352,14 @@ func emitPreparedParameterType(output *bytes.Buffer, document *ir.Document, oper
 		} else {
 			valueType += " | undefined"
 		}
-		emitOperationParameterJSDoc(output, "  ", parameter, locationLabel)
+		emitOperationParameterJSDoc(output, document, "  ", parameter, locationLabel)
 		fmt.Fprintf(output, "  readonly %s%s: %s\n", quoteTS(parameter.Property), optional, valueType)
 	}
 	output.WriteString("}\n\n")
 	return nil
 }
 
-func emitOperationParameterJSDoc(output *bytes.Buffer, indent string, parameter operationParameter, locationLabel string) {
+func emitOperationParameterJSDoc(output *bytes.Buffer, document *ir.Document, indent string, parameter operationParameter, locationLabel string) {
 	documentation := make(map[string]any, 2)
 	if schema, ok := parameter.Schema.(map[string]any); ok {
 		for key, value := range schema {
@@ -372,7 +372,7 @@ func emitOperationParameterJSDoc(output *bytes.Buffer, indent string, parameter 
 	if parameter.Deprecated {
 		documentation["deprecated"] = true
 	}
-	emitSchemaValueJSDoc(output, indent, documentation, locationLabel+" parameter `"+sanitizeComment(parameter.Name)+"`.")
+	emitSchemaValueJSDoc(output, document, indent, documentation, locationLabel+" parameter `"+sanitizeComment(parameter.Name)+"`.")
 }
 
 func emitOperationOptions(output *bytes.Buffer, operationName string, operation ir.Operation, item ManifestOperation) error {
@@ -522,7 +522,7 @@ func emitQueryTypes(output *bytes.Buffer, document *ir.Document, operation ir.Op
 			} else {
 				valueType += " | undefined"
 			}
-			emitOperationParameterJSDoc(output, "  ", parameter, "Query")
+			emitOperationParameterJSDoc(output, document, "  ", parameter, "Query")
 			fmt.Fprintf(output, "  readonly %s%s: %s\n", quoteTS(parameter.Property), optional, valueType)
 		}
 		output.WriteString("}\n\n")

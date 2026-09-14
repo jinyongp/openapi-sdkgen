@@ -31,7 +31,8 @@ line.
 | paths | root Paths Object and path template matching | all | generated | `internal/compiler/ir/build_test.go::TestBuildExtractsOperationsDeterministically` |
 | path-item-docs | Path Item `summary`, `description`, extensions | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | operation-identity | Operation `operationId` | all | generated | `internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic` |
-| operation-docs | Operation `tags`, `summary`, `description`, `externalDocs`, `deprecated`, extensions | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
+| operation-docs | Operation `tags`, `summary`, `description`, `externalDocs`, extensions | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
+| operation-deprecated | Operation `deprecated` propagated to generated call surfaces | all | metadata | `internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines` |
 
 ## Reuse and Components
 
@@ -72,7 +73,8 @@ line.
 | parameter-serialization | scalar/array `simple`, `label`, `matrix`, `form`, `spaceDelimited`, `pipeDelimited`, `deepObject`, `explode` | all | generated | `test/typescript/tests/runtime.test.ts::serializes paths, query styles, headers, cookies, and wire names` |
 | parameter-delimited-object | `spaceDelimited` and `pipeDelimited` object parameters | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSerializesDelimitedObjectQueryParameters` |
 | parameter-schema-content | parameter `schema`, single-media `content` | all | generated | `internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic` |
-| parameter-docs | parameter `description`, `deprecated`, examples | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
+| parameter-docs | parameter `description`, examples | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
+| parameter-deprecated | Parameter `deprecated` propagated to generated parameter properties | all | metadata | `internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines` |
 | required-inputs | required path/query/header/cookie parameters and request body | all | generated | `internal/target/typescript/runtime_parity_test.go::TestTargetsRejectMissingRequiredRuntimeInputsBeforeFetch` |
 | parameter-structured-non-json-content | structured single-media Parameter Object `content`, including caller-registered custom media codecs | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeUsesAsyncCustomCodecsForParameterContent` |
 | parameter-allow-reserved | `allowReserved: true` | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimePreservesReservedQueryCharactersWhenAllowed` |
@@ -93,6 +95,7 @@ line.
 | response-body-media | JSON, text, and binary response bodies | all | generated | `internal/target/typescript/types_test.go::TestOperationOutputTypesIncludeDefaultResponses` |
 | response-docs | Response `description` and examples | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | response-headers | Response Object and Header Object declarations | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeDecodesDeclaredResponseHeaders` |
+| header-deprecated | Header Object `deprecated` propagated to generated response-header properties, including reusable headers | all | metadata | `internal/target/typescript/version_matrix_test.go::TestResponseHeaderDeprecationEmitsAcrossSupportedVersionLines` |
 | response-media-wildcards | exact, type, and structured-suffix wildcard response media matching | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeDecodesWildcardResponseMediaTypes` |
 | response-streams | NDJSON/JSON Lines, JSON-seq, Server-Sent Event, multipart, and registered custom-media item streams | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeUsesRegisteredCustomResponseStreamCodec` |
 | response-links | Link Object `operationId`/local `operationRef`, response/request body/header/status expressions, parameters, requestBody, and same-name status dispatch | all | generated | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksDispatchSameNameByStatus` |
@@ -118,7 +121,8 @@ line.
 | oas30-variant-composition | `oneOf`, `anyOf` | 3.0 | generated | `internal/target/typescript/schema_support_test.go::TestSourceArtifactsEmitsVariantWireBranchSelection` |
 | oas30-negation | `not` | 3.0 | generated | `internal/target/typescript/schema_support_test.go::TestSourceArtifactsEmitsNegatedSchemaAssertion` |
 | oas30-nullability-projection | `nullable`, `readOnly`, `writeOnly` | 3.0 | generated | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsGenerateAcrossSupportedOpenAPIVersionLines` |
-| oas30-schema-deprecated | Schema `deprecated` | 3.0 | metadata | `internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic` |
+| oas30-schema-deprecated | Schema `deprecated`, including component aliases and statically unconditional references | 3.0 | metadata | `internal/target/typescript/version_matrix_test.go::TestSchemaDeprecationEmitsAcrossSupportedVersionLines` |
+| enum-component-deprecated | deprecated enum Schema propagated to the generated `Enums` component property without deprecating each value independently | all | metadata | `internal/target/typescript/version_matrix_test.go::TestDeprecatedEnumComponentsEmitAcrossSupportedVersionLines` |
 | oas30-discriminator | `discriminator` mappings over `oneOf` variants; 3.2 `defaultMapping` over `oneOf`/`anyOf` | 3.0; default mapping 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestOpenAPI32DiscriminatorDefaultMappingSelectsAnyOfTransform` |
 | oas30-xml | `xml` | 3.0 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeEncodesAndDecodesOpenAPIXMLObjects` |
 | oas30-schema-external-docs | Schema `externalDocs` | 3.0 | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
@@ -131,7 +135,10 @@ line.
 | jsonschema-variant-composition | `oneOf`, `anyOf` | 3.1+ | generated | `internal/target/typescript/schema_support_test.go::TestSourceArtifactsEmitsVariantWireBranchSelection` |
 | jsonschema-closed-objects | `additionalProperties: false` | 3.1+ | generated | `internal/target/typescript/types_test.go::TestSourceArtifactsEmitsClosedObjectRuntimeValidation` |
 | jsonschema-pattern-properties | `patternProperties` | 3.1+ | generated | `internal/target/typescript/schema_support_test.go::TestSourceArtifactsEmitsPatternPropertyWireSemantics` |
-| jsonschema-doc-annotations | `title`, `description`, `default`, `deprecated`, `examples`, `contentEncoding`, `contentMediaType` | 3.1+ | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
+| jsonschema-doc-annotations | `title`, `description`, `default`, `examples`, `contentEncoding`, `contentMediaType` | 3.1+ | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
+| jsonschema-deprecated | JSON Schema `deprecated`, propagated only when statically unconditional; conditional annotations remain in lossless metadata | 3.1+ | metadata | `internal/target/typescript/version_matrix_test.go::TestSchemaDeprecationEmitsAcrossSupportedVersionLines` |
+| jsonschema-annotated-enum | annotation-only `oneOf`/`anyOf` branches with unique `const` values become generated enum values | 3.1+ | generated | `internal/target/typescript/deprecation_test.go::TestSourceArtifactsEmitAnnotatedEnumDeprecationDocumentation` |
+| jsonschema-annotated-enum-member-deprecated | annotated enum string-member `title`, `description`, `deprecated` JSDoc | 3.1+ | metadata | `internal/target/typescript/deprecation_test.go::TestSourceArtifactsEmitAnnotatedEnumDeprecationDocumentation` |
 | jsonschema-format | `format` annotation; standard format assertion when its vocabulary is required | 3.1+ | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSupportsStandardFormatAssertionRegistry` |
 | jsonschema-numeric-string-array-object-constraints | `multipleOf`, bounds, string bounds, array bounds, object bounds | 3.1+ | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
 | jsonschema-directional-annotations | `readOnly`, `writeOnly` | 3.1+ | generated | `internal/target/typescript/types_test.go::TestSchemaTypeProjectsReadAndWriteOnlyProperties` |
@@ -163,7 +170,10 @@ line.
 | oas32-example-data-values | Example Object `dataValue`, `serializedValue` | 3.2 | metadata | `internal/compiler/openapi/read_test.go::TestReadAcceptsOpenAPI32OnlyFields` |
 | oas32-cookie-style | Parameter `style: cookie`, including raw cookie text preservation and inbound parsing | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSerializesOpenAPI32CookieStyleWithoutPercentEncoding` |
 | oas32-security-oauth2-metadata-url | Security Scheme `oauth2MetadataUrl` | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesEveryHostManagedSecurityCredentialShape` |
-| oas32-security-deprecated | Security Scheme `deprecated` | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesEveryHostManagedSecurityCredentialShape` |
+| oas32-security-deprecated | Security Scheme `deprecated`, accepted in 3.2 and version-gated from 3.0/3.1 | 3.2 | generated | `internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines` |
+| oas32-xml-node-type | XML Object `nodeType`, including `attribute` and array-wrapper `element` semantics | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeOpenAPI32XMLNodeTypeReplacesDeprecatedLegacyFields` |
+| oas32-xml-legacy-compatibility | deprecated XML `attribute`/`wrapped` fields remain valid and match their `nodeType` replacements | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeOpenAPI32XMLNodeTypeReplacesDeprecatedLegacyFields` |
+| oas32-xml-node-type-legacy-conflict | `nodeType` combined with deprecated `attribute` or `wrapped` | 3.2 | error | `internal/compiler/openapi/read_test.go::TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields` |
 | oas32-device-authorization-flow | OAuth `deviceAuthorization` flow | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesEveryHostManagedSecurityCredentialShape` |
 | oas32-response-summary | Response `summary` | 3.2 | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | oas32-optional-paths | optional `paths` when another API entry point is present | 3.2 | generated | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsAllowsOpenAPI32OptionalPaths` |

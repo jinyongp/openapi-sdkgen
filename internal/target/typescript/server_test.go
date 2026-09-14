@@ -139,6 +139,101 @@ catch (error) { if (String(error).includes("duplicate codec was accepted")) thro
 	}
 }
 
+func TestGeneratedServerDecodesOpenAPI32XMLNodeTypeLikeDeprecatedLegacyFields(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.2.0",
+  "info": {"title": "XML node type inbound compatibility", "version": "1"},
+  "paths": {},
+  "webhooks": {
+    "legacy": {"post": {
+      "operationId": "legacyXMLWebhook", "security": [],
+      "requestBody": {"required": true, "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/LegacyPayload"}}}},
+      "responses": {"204": {"description": "OK"}}
+    }},
+    "modern": {"post": {
+      "operationId": "modernXMLWebhook", "security": [],
+      "requestBody": {"required": true, "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/ModernPayload"}}}},
+      "responses": {"204": {"description": "OK"}}
+    }}
+  },
+  "components": {
+    "schemas": {
+      "LegacyPayload": {
+        "type": "object", "xml": {"name": "payload"}, "required": ["id", "tags"],
+        "properties": {
+          "id": {"type": "integer", "xml": {"name": "id", "attribute": true}},
+          "tags": {"type": "array", "xml": {"name": "tags", "wrapped": true}, "items": {"type": "string", "xml": {"name": "tag"}}}
+        }
+      },
+      "ModernPayload": {
+        "type": "object", "xml": {"name": "payload"}, "required": ["id", "tags"],
+        "properties": {
+          "id": {"type": "integer", "xml": {"name": "id", "nodeType": "attribute"}},
+          "tags": {"type": "array", "xml": {"name": "tags", "nodeType": "element"}, "items": {"type": "string", "xml": {"name": "tag"}}}
+        }
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options, err := registry.Resolve([]string{"server"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := (Generator{}).Generate(document, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	source := filepath.Join(directory, "source")
+	writeTargetArtifacts(t, source, artifacts)
+	if err := os.WriteFile(filepath.Join(source, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "tsconfig.json"), []byte(serverTSConfig), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tsc := filepath.Join("..", "..", "..", "test", "typescript", "node_modules", "typescript", "lib", "tsc.js")
+	if _, err := os.Stat(tsc); err != nil {
+		t.Skipf("TypeScript compiler unavailable for server test: %v", err)
+	}
+	if output, err := exec.Command("node", tsc, "--project", filepath.Join(source, "tsconfig.json")).CombinedOutput(); err != nil {
+		t.Fatalf("compile generated server: %v\n%s", err, output)
+	}
+	outputDirectory := filepath.Join(directory, "output")
+	if err := os.WriteFile(filepath.Join(outputDirectory, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	script := `
+import { pathToFileURL } from "node:url";
+const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href);
+const seen = [];
+const router = createWebhookRouter({
+  legacy: { POST: async ({ body }) => { seen.push(["legacy", body]); return { status: 204 }; } },
+  modern: { POST: async ({ body }) => { seen.push(["modern", body]); return { status: 204 }; } },
+}, { routes: { legacy: "/legacy", modern: "/modern" } });
+const xml = '<payload id="8"><tags><tag>red</tag><tag>blue</tag></tags></payload>';
+for (const path of ["/legacy", "/modern"]) {
+  const response = await router.fetch(new Request("https://host.test" + path, { method: "POST", headers: { "content-type": "application/xml" }, body: xml }));
+  if (response.status !== 204) throw new Error("XML webhook rejected: " + path + " => " + response.status);
+}
+if (seen.length !== 2) throw new Error("XML handlers did not run: " + JSON.stringify(seen));
+for (const [, body] of seen) {
+  if (body.id !== 8 || body.tags.join(",") !== "red,blue") throw new Error("XML compatibility body mismatch: " + JSON.stringify(body));
+}
+if (JSON.stringify(seen[0][1]) !== JSON.stringify(seen[1][1])) throw new Error("legacy and nodeType inbound XML diverged: " + JSON.stringify(seen));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute generated XML compatibility webhook: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedCallbackEndpointsAreHostBoundAndRoundTripJSON(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.1.1",

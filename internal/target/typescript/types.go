@@ -201,11 +201,61 @@ func componentSchemaValue(document *ir.Document, name string) any {
 	return document.ComponentSchemas[name]
 }
 
-func emitSchemaValueJSDoc(output *bytes.Buffer, indent string, schema map[string]any, fallback string) {
+func schemaIsAlwaysDeprecated(document *ir.Document, value any) bool {
+	return schemaIsAlwaysDeprecatedSeen(document, value, make(map[string]bool))
+}
+
+func schemaIsAlwaysDeprecatedSeen(document *ir.Document, value any, seen map[string]bool) bool {
+	schema, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	if boolValue(schema, "deprecated") {
+		return true
+	}
+	if document != nil {
+		if reference, _ := schema["$ref"].(string); reference != "" {
+			if name, err := componentSchemaReferenceName(reference); err == nil && !seen[name] {
+				seen[name] = true
+				deprecated := schemaIsAlwaysDeprecatedSeen(document, componentSchemaValue(document, name), seen)
+				delete(seen, name)
+				if deprecated {
+					return true
+				}
+			}
+		}
+	}
+	if branches, ok := schema["allOf"].([]any); ok {
+		for _, branch := range branches {
+			if schemaIsAlwaysDeprecatedSeen(document, branch, seen) {
+				return true
+			}
+		}
+	}
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		branches, ok := schema[keyword].([]any)
+		if !ok || len(branches) == 0 {
+			continue
+		}
+		allDeprecated := true
+		for _, branch := range branches {
+			if !schemaIsAlwaysDeprecatedSeen(document, branch, seen) {
+				allDeprecated = false
+				break
+			}
+		}
+		if allDeprecated {
+			return true
+		}
+	}
+	return false
+}
+
+func emitSchemaValueJSDoc(output *bytes.Buffer, document *ir.Document, indent string, schema map[string]any, fallback string) {
 	description, _ := schema["description"].(string)
 	format, _ := schema["format"].(string)
 	defaultValue, hasDefault := schema["default"]
-	deprecated, _ := schema["deprecated"].(bool)
+	deprecated := schemaIsAlwaysDeprecated(document, schema)
 	fmt.Fprintf(output, "%s/**\n", indent)
 	if description != "" {
 		fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(description))
@@ -537,7 +587,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 				propertyType += " | undefined"
 			}
 		}
-		emitSchemaValueJSDoc(&output, "  ", propertySchema, "OpenAPI property `"+sanitizeComment(wireName)+"`.")
+		emitSchemaValueJSDoc(&output, document, "  ", propertySchema, "OpenAPI property `"+sanitizeComment(wireName)+"`.")
 		fmt.Fprintf(&output, "  readonly %s%s: %s\n", propertyName, optional, propertyType)
 	}
 	output.WriteString("}")
@@ -788,7 +838,11 @@ func responseHeaderType(document *ir.Document, response map[string]any, scope ty
 		if boolValue(resolved, "required") {
 			optional = ""
 		}
-		fields = append(fields, "readonly "+quoteTS(name)+optional+": "+valueType)
+		field := "readonly " + quoteTS(name) + optional + ": " + valueType
+		if boolValue(resolved, "deprecated") {
+			field = "/** @deprecated This OpenAPI response header is deprecated. */ " + field
+		}
+		fields = append(fields, field)
 	}
 	return "{ " + strings.Join(fields, "; ") + " }", nil
 }

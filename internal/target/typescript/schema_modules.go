@@ -15,6 +15,14 @@ type renderedSchemaProjections struct {
 	output  string
 }
 
+func emitSchemaProjectionJSDoc(output *bytes.Buffer, summary string, deprecated bool) {
+	if !deprecated {
+		fmt.Fprintf(output, "/** %s */\n", summary)
+		return
+	}
+	fmt.Fprintf(output, "/**\n * %s\n * @deprecated This OpenAPI schema is deprecated.\n */\n", summary)
+}
+
 func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, write func(Artifact) error) ([]byte, error) {
 	if plan == nil {
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
@@ -82,9 +90,10 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 		output.WriteByte('\n')
 	}
 	if schema.publicProjection {
-		output.WriteString("/** Request/input projection. */\n")
+		deprecated := schemaIsAlwaysDeprecated(document, value)
+		emitSchemaProjectionJSDoc(&output, "Request/input projection.", deprecated)
 		fmt.Fprintf(&output, "export type Input = %s\n\n", projections.input)
-		output.WriteString("/** Response/output projection. */\n")
+		emitSchemaProjectionJSDoc(&output, "Response/output projection.", deprecated)
 		fmt.Fprintf(&output, "export type Output = %s\n", projections.output)
 		if schema.inputWire || schema.outputWire {
 			output.WriteByte('\n')
@@ -218,7 +227,7 @@ func emitSchemaIndex(document *ir.Document, plan *semanticModulePlan) ([]byte, e
 		}
 		value := componentSchemaValue(document, schema.name)
 		if object, ok := value.(map[string]any); ok {
-			emitSchemaValueJSDoc(&output, "  ", object, "OpenAPI component `"+sanitizeComment(schema.name)+"`.")
+			emitSchemaValueJSDoc(&output, document, "  ", object, "OpenAPI component `"+sanitizeComment(schema.name)+"`.")
 		} else {
 			fmt.Fprintf(&output, "  /** OpenAPI component `%s`. */\n", sanitizeComment(schema.name))
 		}

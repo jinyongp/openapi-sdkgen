@@ -2682,6 +2682,74 @@ if (pet.pet_id !== 8 || pet.name !== "Rex" || pet.tags.join(",") !== "red,blue")
 	}
 }
 
+func TestRuntimeOpenAPI32XMLNodeTypeReplacesDeprecatedLegacyFields(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.2.0",
+  "info": {"title": "XML node type compatibility", "version": "1"},
+  "paths": {
+    "/legacy": {
+      "post": {
+        "operationId": "saveLegacyXML",
+        "requestBody": {"required": true, "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/LegacyPayload"}}}},
+        "responses": {"200": {"description": "OK", "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/LegacyPayload"}}}}}
+      }
+    },
+    "/modern": {
+      "post": {
+        "operationId": "saveModernXML",
+        "requestBody": {"required": true, "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/ModernPayload"}}}},
+        "responses": {"200": {"description": "OK", "content": {"application/xml": {"schema": {"$ref": "#/components/schemas/ModernPayload"}}}}}
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LegacyPayload": {
+        "type": "object", "xml": {"name": "payload"}, "required": ["id", "tags"],
+        "properties": {
+          "id": {"type": "integer", "xml": {"name": "id", "attribute": true}},
+          "tags": {"type": "array", "xml": {"name": "tags", "wrapped": true}, "items": {"type": "string", "xml": {"name": "tag"}}}
+        }
+      },
+      "ModernPayload": {
+        "type": "object", "xml": {"name": "payload"}, "required": ["id", "tags"],
+        "properties": {
+          "id": {"type": "integer", "xml": {"name": "id", "nodeType": "attribute"}},
+          "tags": {"type": "array", "xml": {"name": "tags", "nodeType": "element"}, "items": {"type": "string", "xml": {"name": "tag"}}}
+        }
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const expectedRequest = '<payload id="7"><tags><tag>one</tag><tag>two</tag></tags></payload>';
+const expectedResponse = '<payload id="8"><tags><tag>red</tag><tag>blue</tag></tags></payload>';
+const requests = [];
+const api = createClient({ baseURL: "https://api.example.test", fetch: async (input, init) => {
+  const body = String(init.body);
+  requests.push([new URL(String(input)).pathname, body]);
+  if (body !== expectedRequest) throw new Error("XML compatibility request mismatch: " + body);
+  return new Response(expectedResponse, { status: 200, headers: { "content-type": "application/xml" } });
+} });
+const input = { id: 7, tags: ["one", "two"] };
+const legacy = await api.$operations.saveLegacyXML({ body: input });
+const modern = await api.$operations.saveModernXML({ body: input });
+for (const value of [legacy, modern]) {
+  if (value.id !== 8 || value.tags.join(",") !== "red,blue") throw new Error("XML compatibility response mismatch: " + JSON.stringify(value));
+}
+if (requests.length !== 2 || requests[0][1] !== requests[1][1]) throw new Error("legacy and nodeType XML encodings diverged: " + JSON.stringify(requests));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute OpenAPI 3.2 XML nodeType compatibility test: %v\n%s", err, output)
+	}
+}
+
 func TestRuntimeValidatesJSONSchemaContentSchema(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{"openapi":"3.1.0","info":{"title":"Content schema","version":"1"},"paths":{"/payload":{"get":{"operationId":"getPayload","responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"type":"string","contentEncoding":"base64","contentMediaType":"application/json","contentSchema":{"type":"object","required":["code"],"properties":{"code":{"type":"string"}}}}}}}}}}}}`))
 	if err != nil {

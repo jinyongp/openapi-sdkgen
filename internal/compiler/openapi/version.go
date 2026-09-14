@@ -402,6 +402,9 @@ func validateMediaTypeFeatures(value any, path string, version VersionLine) erro
 }
 
 func validateSchemaVersion(value any, path string, version VersionLine) error {
+	if version == Version32 {
+		return validateOpenAPI32XMLCompatibility(value, path)
+	}
 	if version == Version31 {
 		return validateOpenAPI32SchemaFields(value, path)
 	}
@@ -461,6 +464,43 @@ func validateOpenAPI32SchemaFields(value any, path string) error {
 		values, _ := schema[key].(map[string]any)
 		for _, name := range sortedKeys(values) {
 			if err := validateOpenAPI32SchemaFields(values[name], pointerFrom(path, key, name)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func validateOpenAPI32XMLCompatibility(value any, path string) error {
+	schema, _ := value.(map[string]any)
+	if xml, _ := schema["xml"].(map[string]any); xml != nil {
+		if _, hasNodeType := xml["nodeType"]; hasNodeType {
+			for _, legacy := range []string{"attribute", "wrapped"} {
+				if _, exists := xml[legacy]; exists {
+					return versionFeatureError(pointerFrom(path, "xml", legacy), "xml."+legacy+" must not be present when xml.nodeType is present in OpenAPI 3.2")
+				}
+			}
+		}
+	}
+	for _, key := range []string{"additionalProperties", "contains", "contentSchema", "else", "if", "items", "not", "propertyNames", "then", "unevaluatedItems", "unevaluatedProperties"} {
+		if nested, exists := schema[key]; exists {
+			if err := validateOpenAPI32XMLCompatibility(nested, pointerFrom(path, key)); err != nil {
+				return err
+			}
+		}
+	}
+	for _, key := range []string{"allOf", "anyOf", "oneOf", "prefixItems"} {
+		values, _ := schema[key].([]any)
+		for index, nested := range values {
+			if err := validateOpenAPI32XMLCompatibility(nested, pointerFrom(path, key, fmt.Sprint(index))); err != nil {
+				return err
+			}
+		}
+	}
+	for _, key := range []string{"$defs", "dependentSchemas", "patternProperties", "properties"} {
+		values, _ := schema[key].(map[string]any)
+		for _, name := range sortedKeys(values) {
+			if err := validateOpenAPI32XMLCompatibility(values[name], pointerFrom(path, key, name)); err != nil {
 				return err
 			}
 		}

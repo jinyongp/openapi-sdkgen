@@ -262,12 +262,12 @@ function encodeXMLElement(
   const name = xmlName(xml, fallbackName);
   if (Array.isArray(value)) {
     const itemSchema = schema.items ?? {};
-    const itemName =
-      itemSchema.xml?.name ?? (xml?.wrapped ? (itemSchema.xml?.name ?? fallbackName) : name);
+    const wrapped = xmlArrayWrapped(xml);
+    const itemName = itemSchema.xml?.name ?? (wrapped ? fallbackName : name);
     const values = value
       .map((item) => encodeXMLElement(item, itemSchema, schemas, itemName, false, scope))
       .join("");
-    return xml?.wrapped ? wrapXML(name, namespaceAttributes(xml, root), values) : values;
+    return wrapped ? wrapXML(name, namespaceAttributes(xml, root), values) : values;
   }
   if (!isRecord(value))
     return wrapXML(name, namespaceAttributes(xml, root), escapeXMLText(xmlScalar(value)));
@@ -308,6 +308,10 @@ function wrapXML(name: string, attributes: readonly string[], content: string): 
 function xmlName(xml: WireXML | undefined, fallback: string): string {
   const name = xml?.name ?? fallback;
   return xml?.prefix === undefined || xml.prefix === "" ? name : `${xml.prefix}:${name}`;
+}
+
+function xmlArrayWrapped(xml: WireXML | undefined): boolean {
+  return xml?.wrapped === true || xml?.nodeType === "element";
 }
 
 function namespaceAttributes(xml: WireXML | undefined, include: boolean): string[] {
@@ -441,7 +445,9 @@ function decodeXMLNode(
       }
       if (property.schema.types?.includes("array")) {
         const itemSchema = property.schema.items ?? {};
-        const container = xml?.wrapped ? node.children.find((child) => child.name === name) : node;
+        const container = xmlArrayWrapped(xml)
+          ? node.children.find((child) => child.name === name)
+          : node;
         if (container !== undefined) {
           const itemName = xmlName(itemSchema.xml, itemSchema.xml?.name ?? wireName);
           defineOwnDataProperty(

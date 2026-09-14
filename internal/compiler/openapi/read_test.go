@@ -95,6 +95,7 @@ func TestReadRejectsLaterMinorFeaturesAtJSONPointers(t *testing.T) {
 		{"3.0 info summary", "3.0.3", `,"info":{"title":"Example","version":"0.1.0","summary":"later"}`, "#/info/summary"},
 		{"3.0 license identifier", "3.0.3", `,"info":{"title":"Example","version":"0.1.0","license":{"name":"MIT","identifier":"MIT"}}`, "#/info/license/identifier"},
 		{"3.0 mutual TLS", "3.0.3", `,"components":{"securitySchemes":{"mtls":{"type":"mutualTLS"}}}`, "#/components/securitySchemes/mtls/type"},
+		{"3.0 security deprecated", "3.0.3", `,"components":{"securitySchemes":{"legacy":{"type":"apiKey","in":"header","name":"x-api-key","deprecated":true}}}`, "#/components/securitySchemes/legacy/deprecated"},
 		{"3.0 component path item", "3.0.3", `,"components":{"pathItems":{"Shared":{"query":{}}}}`, "#/components/pathItems"},
 		{"3.0 numeric exclusive bound", "3.0.3", `,"components":{"schemas":{"Limit":{"type":"number","exclusiveMaximum":5}}}`, "#/components/schemas/Limit/exclusiveMaximum"},
 		{"3.0 response reference sibling", "3.0.3", `,"components":{"responses":{"Base":{"description":"OK"}},"schemas":{}},"paths":{"/items":{"get":{"responses":{"200":{"$ref":"#/components/responses/Base","description":"later"}}}}}`, "#/paths/~1items/get/responses/200/description"},
@@ -110,6 +111,7 @@ func TestReadRejectsLaterMinorFeaturesAtJSONPointers(t *testing.T) {
 		{"3.1 cookie style", "3.1.1", `,"paths":{"/items":{"get":{"parameters":[{"name":"session","in":"cookie","style":"cookie"}]}}}`, "#/paths/~1items/get/parameters/0/style"},
 		{"3.1 webhook query operation", "3.1.1", `,"webhooks":{"hook":{"query":{"operationId":"bad","responses":{"200":{"description":"OK"}}}}}`, "#/webhooks/hook/query"},
 		{"3.1 oauth metadata", "3.1.1", `,"components":{"securitySchemes":{"oauth":{"type":"oauth2","oauth2MetadataUrl":"https://auth.example.test/metadata"}}}`, "#/components/securitySchemes/oauth/oauth2MetadataUrl"},
+		{"3.1 security deprecated", "3.1.1", `,"components":{"securitySchemes":{"legacy":{"type":"apiKey","in":"header","name":"x-api-key","deprecated":true}}}`, "#/components/securitySchemes/legacy/deprecated"},
 		{"3.1 device authorization flow", "3.1.1", `,"components":{"securitySchemes":{"oauth":{"type":"oauth2","flows":{"deviceAuthorization":{"deviceAuthorizationUrl":"https://auth.example.test/device"}}}}}`, "#/components/securitySchemes/oauth/flows/deviceAuthorization"},
 		{"3.1 response summary", "3.1.1", `,"paths":{"/items":{"get":{"responses":{"200":{"description":"OK","summary":"Items"}}}}}`, "#/paths/~1items/get/responses/200/summary"},
 		{"3.1 discriminator default mapping", "3.1.1", `,"components":{"schemas":{"Pet":{"oneOf":[],"discriminator":{"propertyName":"kind","defaultMapping":"Other"}}}}`, "#/components/schemas/Pet/discriminator/defaultMapping"},
@@ -120,6 +122,28 @@ func TestReadRejectsLaterMinorFeaturesAtJSONPointers(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			input := `{"openapi":"` + test.version + `","info":{"title":"Example","version":"0.1.0"},"paths":{}}`
 			input = strings.TrimSuffix(input, `}`) + test.insert + `}`
+			if _, err := Read([]byte(input)); err == nil || !strings.Contains(err.Error(), test.pointer) {
+				t.Fatalf("Read error = %v, want pointer %s", err, test.pointer)
+			}
+		})
+	}
+}
+
+func TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		xml     string
+		pointer string
+	}{
+		{"attribute", `{"nodeType":"attribute","attribute":true}`, "#/components/schemas/Pet/properties/id/xml/attribute"},
+		{"wrapped", `{"nodeType":"element","wrapped":true}`, "#/components/schemas/Pet/properties/tags/xml/wrapped"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			property := `"id":{"type":"string","xml":` + test.xml + `}`
+			if test.name == "wrapped" {
+				property = `"tags":{"type":"array","items":{"type":"string"},"xml":` + test.xml + `}`
+			}
+			input := `{"openapi":"3.2.0","info":{"title":"XML compatibility","version":"1"},"paths":{},"components":{"schemas":{"Pet":{"type":"object","properties":{` + property + `}}}}}`
 			if _, err := Read([]byte(input)); err == nil || !strings.Contains(err.Error(), test.pointer) {
 				t.Fatalf("Read error = %v, want pointer %s", err, test.pointer)
 			}

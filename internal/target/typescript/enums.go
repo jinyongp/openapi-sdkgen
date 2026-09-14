@@ -10,6 +10,12 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
+type enumMemberDocumentation struct {
+	title       string
+	description string
+	deprecated  bool
+}
+
 type enumValuesPlan struct {
 	name           string
 	valuesBinding  string
@@ -17,6 +23,8 @@ type enumValuesPlan struct {
 	renderedValues string
 	valueType      string
 	members        []string
+	memberDocs     map[string]enumMemberDocumentation
+	deprecated     bool
 	hasJSONRecord  bool
 }
 
@@ -101,10 +109,10 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
 	output.WriteString("/** Runtime enum values keyed by exact OpenAPI component schema names. */\n")
 	fmt.Fprintf(&output, "export const Enums = %s as {\n", runtimeObjectExpression(bindings))
 	for _, plan := range plans {
-		fmt.Fprintf(&output, "  /** Values declared by OpenAPI component `%s`. */\n", sanitizeComment(plan.name))
+		emitEnumComponentJSDoc(&output, plan)
 		fmt.Fprintf(&output, "  readonly %s: {\n", quoteTS(plan.name))
 		for _, member := range plan.members {
-			fmt.Fprintf(&output, "    /** Exact string value `%s`. */\n", sanitizeComment(member))
+			emitEnumMemberJSDoc(&output, member, plan.memberDocs[member])
 			fmt.Fprintf(&output, "    readonly %s: %s\n", quoteTS(member), quoteTS(member))
 		}
 		fmt.Fprintf(&output, "    [Symbol.iterator](): IterableIterator<%s>\n", plan.valueType)
@@ -132,6 +140,40 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
 	return output.Bytes(), nil
 }
 
+func emitEnumComponentJSDoc(output *bytes.Buffer, plan enumValuesPlan) {
+	if !plan.deprecated {
+		fmt.Fprintf(output, "  /** Values declared by OpenAPI component `%s`. */\n", sanitizeComment(plan.name))
+		return
+	}
+	fmt.Fprintf(output, "  /**\n   * Values declared by OpenAPI component `%s`.\n", sanitizeComment(plan.name))
+	output.WriteString("   * @deprecated This OpenAPI enum is deprecated.\n")
+	output.WriteString("   */\n")
+}
+
+func emitEnumMemberJSDoc(output *bytes.Buffer, member string, documentation enumMemberDocumentation) {
+	if documentation.title == "" && documentation.description == "" && !documentation.deprecated {
+		fmt.Fprintf(output, "    /** Exact string value `%s`. */\n", sanitizeComment(member))
+		return
+	}
+	output.WriteString("    /**\n")
+	if documentation.title != "" {
+		fmt.Fprintf(output, "     * %s\n", sanitizeComment(documentation.title))
+	} else if documentation.description == "" {
+		fmt.Fprintf(output, "     * Exact string value `%s`.\n", sanitizeComment(member))
+	}
+	if documentation.description != "" {
+		if documentation.title != "" {
+			output.WriteString("     *\n")
+		}
+		fmt.Fprintf(output, "     * %s\n", sanitizeComment(documentation.description))
+	}
+	if documentation.deprecated {
+		output.WriteString("     *\n")
+		output.WriteString("     * @deprecated This OpenAPI enum value is deprecated.\n")
+	}
+	output.WriteString("     */\n")
+}
+
 func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 	reachable := reachableComponentSchemas(document)
 	names := make([]string, 0, len(reachable))
@@ -146,6 +188,14 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 			continue
 		}
 		values, exists := schema["enum"].([]any)
+		memberDocs := map[string]enumMemberDocumentation(nil)
+		if !exists {
+			var err error
+			values, memberDocs, exists, err = annotatedEnumValues(document, schema)
+			if err != nil {
+				return nil, fmt.Errorf("component %s annotated enum: %w", schemaName, err)
+			}
+		}
 		if !exists {
 			continue
 		}
@@ -164,10 +214,77 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 			renderedValues: rendered,
 			valueType:      valueType,
 			members:        enumStringMembers(values),
+			memberDocs:     memberDocs,
+			deprecated:     schemaIsAlwaysDeprecated(document, schema),
 			hasJSONRecord:  hasJSONRecord,
 		})
 	}
 	return plans, nil
+}
+
+var annotatedEnumBranchAnnotations = map[string]bool{
+	"title": true, "description": true, "default": true, "deprecated": true,
+	"readOnly": true, "writeOnly": true, "examples": true, "example": true,
+	"externalDocs": true,
+}
+
+func annotatedEnumValues(document *ir.Document, schema map[string]any) ([]any, map[string]enumMemberDocumentation, bool, error) {
+	if document == nil || (document.OpenAPIVersionLine != "3.1" && document.OpenAPIVersionLine != "3.2") {
+		return nil, nil, false, nil
+	}
+	var branches []any
+	compositions := 0
+	for _, keyword := range []string{"oneOf", "anyOf"} {
+		value, exists := schema[keyword]
+		if !exists {
+			continue
+		}
+		compositions++
+		values, ok := value.([]any)
+		if !ok || len(values) == 0 {
+			return nil, nil, false, nil
+		}
+		branches = values
+	}
+	if compositions != 1 {
+		return nil, nil, false, nil
+	}
+
+	values := make([]any, 0, len(branches))
+	memberDocs := make(map[string]enumMemberDocumentation)
+	seen := make(map[string]bool, len(branches))
+	for _, item := range branches {
+		branch, ok := item.(map[string]any)
+		if !ok {
+			return nil, nil, false, nil
+		}
+		value, hasConst := branch["const"]
+		if !hasConst {
+			return nil, nil, false, nil
+		}
+		for key := range branch {
+			if key != "const" && !annotatedEnumBranchAnnotations[key] {
+				return nil, nil, false, nil
+			}
+		}
+		identity, _, err := enumRuntimeJSONExpression(value)
+		if err != nil {
+			return nil, nil, false, err
+		}
+		if seen[identity] {
+			return nil, nil, false, nil
+		}
+		seen[identity] = true
+		values = append(values, value)
+		if member, ok := value.(string); ok {
+			title, _ := branch["title"].(string)
+			description, _ := branch["description"].(string)
+			memberDocs[member] = enumMemberDocumentation{
+				title: title, description: description, deprecated: boolValue(branch, "deprecated"),
+			}
+		}
+	}
+	return values, memberDocs, true, nil
 }
 
 // enumRuntimeJSONExpression keeps enum literals inferable under an outer

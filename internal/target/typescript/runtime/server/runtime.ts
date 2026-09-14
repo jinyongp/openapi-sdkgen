@@ -2114,7 +2114,7 @@ function decodeInboundXMLNode(
     (wireSchema !== undefined && inboundWireSchemaTypes(wireSchema, wireSchemas).includes("array"))
   ) {
     const xml = isRecord(resolved["xml"]) ? resolved["xml"] : (wireSchema?.xml ?? {});
-    if (xml["wrapped"] === true) {
+    if (inboundXMLArrayWrapped(xml)) {
       if (node.name !== inboundXMLQualifiedName(xml, rootName))
         throw new TypeError("unexpected XML array wrapper " + node.name);
       for (const name of Object.keys(node.attributes)) {
@@ -2134,11 +2134,12 @@ function decodeInboundXMLNode(
       const itemXML = isRecord(itemDescriptor["xml"])
         ? itemDescriptor["xml"]
         : (wireItem?.xml ?? {});
-      const parentItemFallbackName =
-        xml["wrapped"] === true ? rootName : inboundXMLQualifiedName(xml, rootName);
+      const parentItemFallbackName = inboundXMLArrayWrapped(xml)
+        ? rootName
+        : inboundXMLQualifiedName(xml, rootName);
       const itemFallbackName =
         typeof itemXML?.name === "string" ? itemXML.name : parentItemFallbackName;
-      if (xml["wrapped"] === true && child.name !== inboundXMLQualifiedName(itemXML, rootName))
+      if (inboundXMLArrayWrapped(xml) && child.name !== inboundXMLQualifiedName(itemXML, rootName))
         throw new TypeError("unexpected XML array item " + child.name);
       return decodeInboundXMLNode(
         child,
@@ -2206,8 +2207,9 @@ function decodeInboundXMLNode(
         (wireProperty !== undefined &&
           inboundWireSchemaTypes(wireProperty, wireSchemas).includes("array"))
       ) {
-        const container =
-          xml["wrapped"] === true ? node.children.find((child) => child.name === xmlName) : node;
+        const container = inboundXMLArrayWrapped(xml)
+          ? node.children.find((child) => child.name === xmlName)
+          : node;
         if (container !== undefined) {
           if (container !== node) {
             consumedChildren.add(container);
@@ -2231,13 +2233,15 @@ function decodeInboundXMLNode(
               ? itemDescriptor["xml"]
               : (wireItem?.xml ?? {});
             const wrapperFallbackName = typeof xml?.name === "string" ? xml.name : name;
-            const parentItemFallbackName = xml["wrapped"] === true ? wrapperFallbackName : xmlName;
+            const parentItemFallbackName = inboundXMLArrayWrapped(xml)
+              ? wrapperFallbackName
+              : xmlName;
             const itemFallbackName =
               typeof itemXML?.name === "string" ? itemXML.name : parentItemFallbackName;
             const itemName = inboundXMLQualifiedName(itemXML, parentItemFallbackName);
-            if (xml["wrapped"] === true && child.name !== itemName)
+            if (inboundXMLArrayWrapped(xml) && child.name !== itemName)
               throw new TypeError("unexpected XML array item " + child.name);
-            if (xml["wrapped"] !== true && child.name !== xmlName && child.name !== itemName)
+            if (!inboundXMLArrayWrapped(xml) && child.name !== xmlName && child.name !== itemName)
               continue;
             consumedChildren.add(child);
             values.push(
@@ -2344,6 +2348,12 @@ function inboundXMLQualifiedName(
 ): string {
   const name = typeof xml?.name === "string" ? xml.name : fallback;
   return typeof xml?.prefix === "string" && xml.prefix !== "" ? xml.prefix + ":" + name : name;
+}
+
+function inboundXMLArrayWrapped(
+  xml: Readonly<Record<string, unknown>> | WireSchema["xml"],
+): boolean {
+  return xml?.wrapped === true || xml?.nodeType === "element";
 }
 
 function resolveInboundSchema(

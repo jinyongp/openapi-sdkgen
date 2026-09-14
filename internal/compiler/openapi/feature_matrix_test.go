@@ -247,7 +247,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		}
 	}
 	sort.Strings(manifestContracts)
-	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "8d27658e91eb2eae35532ae8397a655d7eb7441f1d98b14748204469db6c4048" {
+	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "aeeefcc7091bd5e891f0d943153f78b0c1ccfeb4f65de3987b92f7bb922388d5" {
 		t.Errorf("manifest feature/evidence contract changed: %s", got)
 	}
 
@@ -288,7 +288,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		"parameter.in.path", "parameter.in.query", "parameter.in.header", "parameter.header.fetch-managed", "parameter.in.cookie", "parameter.querystring", "parameter.required", "parameter.allowReserved", "parameter.allowEmptyValue",
 		"parameter.cookie-style", "parameter.styles", "parameter.delimited-object", "parameter.structured-non-json-content",
 		"requestBody.media.json", "requestBody.media.text", "requestBody.media.binary", "requestBody.media.form-urlencoded", "requestBody.media.multipart", "requestBody.encoding", "media.xml", "media.itemSchema", "media.prefixEncoding", "media.itemEncoding",
-		"response.status.exact", "response.status.default", "response.status.range", "response.default-media-negotiation", "response.headers", "response.links", "response.links.fetch-managed-request-headers", "response.streams",
+		"response.status.exact", "response.status.default", "response.status.range", "response.default-media-negotiation", "response.headers", "header.deprecated", "response.links", "response.links.fetch-managed-request-headers", "response.streams",
 		"securityScheme.type", "securityScheme.name", "securityScheme.in", "securityScheme.apiKey.fetch-managed-header", "securityScheme.scheme", "securityScheme.bearerFormat", "securityScheme.flows", "securityScheme.openIdConnectUrl",
 		"info.contact.name", "info.contact.url", "info.contact.email", "info.license.name", "info.license.url",
 		"server.url", "server.description", "server.name", "response.description", "response.summary", "response.content", "response.media-wildcard",
@@ -302,6 +302,8 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		"oauthFlow.authorizationUrl", "oauthFlow.tokenUrl", "oauthFlow.refreshUrl", "oauthFlow.scopes",
 		"example.dataValue", "example.serializedValue",
 		"input.yaml.flow-mapping", "pathItem.ref.local-pointer", "jsonschema.ref.sibling-wire-semantics",
+		"jsonschema.annotated-enum", "jsonschema.annotated-enum.member-deprecated", "enum.component-deprecated",
+		"oas32.schema.xml.legacy-compatibility", "oas32.schema.xml.nodeType-legacy-conflict",
 		"media.streaming-request", "media.case-insensitive-binary",
 	} {
 		if _, exists := seen[id]; !exists {
