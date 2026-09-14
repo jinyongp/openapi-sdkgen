@@ -1,0 +1,14 @@
+name: homebrew
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  homebrew:
+    uses: jinyongp/homebrew-tap/.github/workflows/publish-formula.yml@5e298c2d25af8f85e1d95b403cbe59c98b9a0b2d
+    with:
+      formula: openapi-sdkgen
+      dry-run: true
