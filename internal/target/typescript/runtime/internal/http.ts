@@ -1378,6 +1378,16 @@ function requiresParameterCodec(contentType: string): boolean {
   );
 }
 
+function assertSafeOperationPath(path: string): void {
+  for (const segment of path.split("/")) {
+    const dots = segment.toLowerCase().replaceAll("%2e", ".");
+    if (dots === "." || dots === "..")
+      throw new TypeError(
+        "Operation path contains a URL dot-segment after parameter serialization",
+      );
+  }
+}
+
 function encodeRequestSynchronous(
   baseURL: string | undefined,
   client: ClientOptions,
@@ -1402,6 +1412,7 @@ function encodeRequestSynchronous(
       operation.inputSchemas ?? {},
     );
   });
+  assertSafeOperationPath(path);
   const url = new URL(
     resolveOperationBaseURL(options.baseURL ?? baseURL, client.origin, client.server, operation) +
       (path.startsWith("/") ? path : `/${path}`),
@@ -1597,6 +1608,7 @@ async function encodeRequestAsync(
       await serializePathParameter(parameter, name, value, operation.inputSchemas ?? {}, codecs),
     );
   }
+  assertSafeOperationPath(path);
   const operationBaseURL = resolveOperationBaseURL(
     options.baseURL ?? baseURL,
     client.origin,

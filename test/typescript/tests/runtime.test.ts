@@ -819,6 +819,56 @@ describe("generated runtime", () => {
     ).resolves.toEqual({ ok: true });
   });
 
+  it("rejects serialized path parameters that would become URL dot-segments", async () => {
+    const paths: string[] = [];
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      codecs: { "application/x-dot": { encodeParameter: async () => ".." } },
+      fetch: async (input) => {
+        paths.push(new URL(String(input)).pathname);
+        return jsonResponse({ ok: true });
+      },
+    });
+    const simple = operation({
+      path: "/root/{id}/child",
+      parameters: [
+        { location: "path", name: "id", property: "id", style: "simple", explode: false },
+      ],
+    });
+    for (const value of [".", ".."]) {
+      const error = await request(simple, { path: { id: value } }).catch((cause: unknown) => cause);
+      expect(isErrorCode(error, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
+      expect(String((error as { cause?: unknown }).cause)).toContain("URL dot-segment");
+    }
+    const label = operation({
+      path: "/root/{id}/child",
+      parameters: [
+        { location: "path", name: "id", property: "id", style: "label", explode: false },
+      ],
+    });
+    const labelError = await request(label, { path: { id: "." } }).catch((cause: unknown) => cause);
+    expect(isErrorCode(labelError, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
+    const custom = operation({
+      path: "/root/{id}/child",
+      parameters: [
+        {
+          location: "path",
+          name: "id",
+          property: "id",
+          style: "simple",
+          explode: false,
+          contentType: "application/x-dot",
+        },
+      ],
+    });
+    const customError = await request(custom, { path: { id: "codec" } }).catch(
+      (cause: unknown) => cause,
+    );
+    expect(isErrorCode(customError, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
+    await expect(request(simple, { path: { id: "a/../b" } })).resolves.toEqual({ ok: true });
+    expect(paths).toEqual(["/root/a%2F..%2Fb/child"]);
+  });
+
   it("applies Encoding Object rules to urlencoded request-body properties", async () => {
     const request = createRequest({
       baseURL: "https://api.example.test",
