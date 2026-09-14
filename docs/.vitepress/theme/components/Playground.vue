@@ -21,6 +21,20 @@ const translations = {
     loadFromURL: "or load from URL",
     urlLabel: "OpenAPI document URL",
     load: "Load",
+    authentication: "Authentication",
+    authMode: "Authentication method",
+    authNone: "None",
+    authBearer: "Bearer token",
+    authApiKey: "API key header",
+    authBasic: "Basic auth",
+    authCookies: "Browser cookies",
+    bearerToken: "Bearer token",
+    apiKeyHeader: "Header name",
+    apiKeyValue: "API key",
+    basicUsername: "Username",
+    basicPassword: "Password",
+    cookieHelp: "Uses cookies already stored by this browser. The source server must allow credentialed CORS requests.",
+    authPrivacy: "Credentials stay in memory only and are cleared when you change documents or reload the page. Authenticated redirects are blocked.",
     localNetwork: "Allow local network access",
     localNetworkHelp: "May show a browser permission prompt. The source server must still allow CORS.",
     privacy: "Files stay in this browser. URL loading requires CORS access.",
@@ -39,6 +53,12 @@ const translations = {
     noFiles: "Generator returned no files.",
     invalidProtocol: "Use an HTTP or HTTPS URL.",
     invalidURL: "Enter a valid URL.",
+    embeddedCredentials: "Do not put credentials in the document URL. Use Authentication instead.",
+    missingBearer: "Enter a bearer token.",
+    missingApiKey: "Enter both an API key header name and value.",
+    invalidApiKeyHeader: "Enter a valid API key header name.",
+    missingBasic: "Enter a Basic auth username or password.",
+    authenticatedFetchError: "Could not load this authenticated URL. Check browser network access, CORS, and redirects; authenticated redirects are blocked.",
     corsError: "Could not load this URL. The server may not allow browser CORS requests.",
     localNetworkError: "Could not access the local network. Allow browser access and make sure the source server permits CORS.",
   },
@@ -52,6 +72,20 @@ const translations = {
     loadFromURL: "또는 URL에서 불러오기",
     urlLabel: "OpenAPI 문서 URL",
     load: "불러오기",
+    authentication: "인증",
+    authMode: "인증 방식",
+    authNone: "없음",
+    authBearer: "Bearer 토큰",
+    authApiKey: "API Key 헤더",
+    authBasic: "Basic 인증",
+    authCookies: "브라우저 쿠키",
+    bearerToken: "Bearer 토큰",
+    apiKeyHeader: "헤더 이름",
+    apiKeyValue: "API Key",
+    basicUsername: "사용자 이름",
+    basicPassword: "비밀번호",
+    cookieHelp: "이 브라우저에 이미 저장된 쿠키를 사용합니다. 원본 서버에서 credential CORS 요청을 허용해야 합니다.",
+    authPrivacy: "인증정보는 메모리에만 유지되며 문서를 변경하거나 페이지를 새로고침하면 제거됩니다. 인증 요청의 redirect는 차단됩니다.",
     localNetwork: "로컬 네트워크 접근 허용",
     localNetworkHelp: "브라우저 권한 요청이 표시될 수 있습니다. 원본 서버의 CORS 허용도 필요합니다.",
     privacy: "파일은 이 브라우저 안에서만 처리됩니다. URL은 CORS 접근을 허용해야 합니다.",
@@ -70,6 +104,12 @@ const translations = {
     noFiles: "생성된 파일이 없습니다.",
     invalidProtocol: "HTTP 또는 HTTPS URL을 사용하세요.",
     invalidURL: "올바른 URL을 입력하세요.",
+    embeddedCredentials: "문서 URL에 인증정보를 넣지 마세요. 인증 항목을 사용하세요.",
+    missingBearer: "Bearer 토큰을 입력하세요.",
+    missingApiKey: "API Key 헤더 이름과 값을 모두 입력하세요.",
+    invalidApiKeyHeader: "올바른 API Key 헤더 이름을 입력하세요.",
+    missingBasic: "Basic 인증 사용자 이름 또는 비밀번호를 입력하세요.",
+    authenticatedFetchError: "인증된 URL을 불러올 수 없습니다. 브라우저 네트워크 접근, CORS, redirect 여부를 확인하세요. 인증 요청의 redirect는 차단됩니다.",
     corsError: "URL을 불러올 수 없습니다. 서버에서 브라우저 CORS 요청을 허용하지 않을 수 있습니다.",
     localNetworkError: "로컬 네트워크에 접근할 수 없습니다. 브라우저 권한과 원본 서버의 CORS 설정을 확인하세요.",
   },
@@ -82,6 +122,13 @@ const colorTheme = ref<CodeTheme>("github-dark");
 const expandedPaths = ref<ReadonlySet<string>>(new Set());
 const url = ref("");
 const localNetworkAccess = ref(false);
+type AuthenticationMode = "none" | "bearer" | "api-key" | "basic" | "cookies";
+const authenticationMode = ref<AuthenticationMode>("none");
+const bearerToken = ref("");
+const apiKeyHeader = ref("X-API-Key");
+const apiKeyValue = ref("");
+const basicUsername = ref("");
+const basicPassword = ref("");
 const sourceLabel = ref("");
 const artifacts = ref<GeneratedArtifact[]>([]);
 const selectedPath = ref("");
@@ -123,6 +170,42 @@ function preferenceStorage(): Storage | undefined {
 
 type TargetAddressSpace = "local" | "loopback";
 type LocalNetworkRequestInit = RequestInit & { targetAddressSpace?: TargetAddressSpace };
+
+function encodeBasicCredential(username: string, password: string): string {
+  const bytes = new TextEncoder().encode(`${username}:${password}`);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function applyAuthentication(request: LocalNetworkRequestInit): void {
+  if (authenticationMode.value === "none") return;
+  request.redirect = "error";
+  if (authenticationMode.value === "cookies") {
+    request.credentials = "include";
+    return;
+  }
+
+  const headers = new Headers();
+  if (authenticationMode.value === "bearer") {
+    const token = bearerToken.value.trim();
+    if (token === "") throw new Error(copy.value.missingBearer);
+    headers.set("Authorization", `Bearer ${token}`);
+  } else if (authenticationMode.value === "api-key") {
+    const name = apiKeyHeader.value.trim();
+    if (name === "" || apiKeyValue.value === "") throw new Error(copy.value.missingApiKey);
+    try {
+      headers.set(name, apiKeyValue.value);
+    } catch {
+      throw new Error(copy.value.invalidApiKeyHeader);
+    }
+  } else {
+    if (basicUsername.value === "" && basicPassword.value === "")
+      throw new Error(copy.value.missingBasic);
+    headers.set("Authorization", `Basic ${encodeBasicCredential(basicUsername.value, basicPassword.value)}`);
+  }
+  request.headers = headers;
+}
 
 function targetAddressSpace(url: URL): TargetAddressSpace {
   const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
@@ -195,11 +278,16 @@ async function loadURL() {
     error.value = copy.value.invalidProtocol;
     return;
   }
+  if (parsed.username !== "" || parsed.password !== "") {
+    error.value = copy.value.embeddedCredentials;
+    return;
+  }
 
   loading.value = true;
   try {
     const request: LocalNetworkRequestInit = { mode: "cors" };
     if (localNetworkAccess.value) request.targetAddressSpace = targetAddressSpace(parsed);
+    applyAuthentication(request);
     const response = await fetch(parsed, request);
     if (!response.ok) {
       const message = lang.value === "ko-KR"
@@ -213,7 +301,11 @@ async function loadURL() {
     await runGeneration(await response.text(), label);
   } catch (cause) {
     error.value = cause instanceof TypeError
-      ? localNetworkAccess.value ? copy.value.localNetworkError : copy.value.corsError
+      ? authenticationMode.value !== "none"
+        ? copy.value.authenticatedFetchError
+        : localNetworkAccess.value
+          ? copy.value.localNetworkError
+          : copy.value.corsError
       : cause instanceof Error ? cause.message : String(cause);
     loading.value = false;
   }
@@ -231,6 +323,12 @@ function startOver() {
   diagnostics.value = "";
   error.value = "";
   url.value = "";
+  authenticationMode.value = "none";
+  bearerToken.value = "";
+  apiKeyHeader.value = "X-API-Key";
+  apiKeyValue.value = "";
+  basicUsername.value = "";
+  basicPassword.value = "";
   if (fileInput.value) fileInput.value.value = "";
 }
 
@@ -288,6 +386,47 @@ function toggleDirectory(path: string) {
             <input v-model.trim="url" type="url" placeholder="https://example.com/openapi.yaml" :aria-label="copy.urlLabel" />
             <button type="submit" :disabled="loading || !url">{{ copy.load }}</button>
           </form>
+          <details class="auth-panel">
+            <summary>{{ copy.authentication }}</summary>
+            <div class="auth-fields">
+              <label>
+                <span>{{ copy.authMode }}</span>
+                <select v-model="authenticationMode">
+                  <option value="none">{{ copy.authNone }}</option>
+                  <option value="bearer">{{ copy.authBearer }}</option>
+                  <option value="api-key">{{ copy.authApiKey }}</option>
+                  <option value="basic">{{ copy.authBasic }}</option>
+                  <option value="cookies">{{ copy.authCookies }}</option>
+                </select>
+              </label>
+              <label v-if="authenticationMode === 'bearer'">
+                <span>{{ copy.bearerToken }}</span>
+                <input v-model="bearerToken" type="password" autocomplete="off" spellcheck="false" />
+              </label>
+              <template v-else-if="authenticationMode === 'api-key'">
+                <label>
+                  <span>{{ copy.apiKeyHeader }}</span>
+                  <input v-model="apiKeyHeader" type="text" autocomplete="off" spellcheck="false" />
+                </label>
+                <label>
+                  <span>{{ copy.apiKeyValue }}</span>
+                  <input v-model="apiKeyValue" type="password" autocomplete="off" spellcheck="false" />
+                </label>
+              </template>
+              <template v-else-if="authenticationMode === 'basic'">
+                <label>
+                  <span>{{ copy.basicUsername }}</span>
+                  <input v-model="basicUsername" type="text" autocomplete="off" spellcheck="false" />
+                </label>
+                <label>
+                  <span>{{ copy.basicPassword }}</span>
+                  <input v-model="basicPassword" type="password" autocomplete="off" />
+                </label>
+              </template>
+              <p v-else-if="authenticationMode === 'cookies'" class="auth-help">{{ copy.cookieHelp }}</p>
+              <p class="auth-help">{{ copy.authPrivacy }}</p>
+            </div>
+          </details>
           <label class="network-option">
             <input v-model="localNetworkAccess" type="checkbox" />
             <span>
@@ -381,7 +520,7 @@ function toggleDirectory(path: string) {
 .source-controls { overflow: auto; padding: 26px; }
 .field-label { display: block; margin-bottom: 8px; color: var(--vp-c-text-2); font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
 .input-label { margin-top: 24px; }
-select, .url-form input { width: 100%; height: 42px; border: 1px solid var(--vp-c-divider); border-radius: 9px; color: var(--vp-c-text-1); background: var(--vp-c-bg); font: inherit; }
+select, .url-form input, .auth-fields input { width: 100%; height: 42px; border: 1px solid var(--vp-c-divider); border-radius: 9px; color: var(--vp-c-text-1); background: var(--vp-c-bg); font: inherit; }
 select { padding: 0 12px; }
 .drop-zone { display: flex; width: 100%; min-height: 185px; align-items: center; justify-content: center; flex-direction: column; gap: 6px; border: 1.5px dashed var(--vp-c-divider); border-radius: 12px; color: var(--vp-c-text-2); background: var(--vp-c-bg); cursor: pointer; transition: .15s ease; }
 .drop-zone:hover, .drop-zone.dragging { border-color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 6%, var(--vp-c-bg)); }
@@ -392,6 +531,13 @@ select { padding: 0 12px; }
 .separator::before, .separator::after { content: ""; flex: 1; height: 1px; background: var(--vp-c-divider); }
 .url-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .url-form input { padding: 0 11px; min-width: 0; font-size: 13px; }
+.auth-panel { margin-top: 14px; border: 1px solid var(--vp-c-divider); border-radius: 10px; background: var(--vp-c-bg); }
+.auth-panel summary { padding: 11px 12px; color: var(--vp-c-text-2); font-size: 12px; font-weight: 700; cursor: pointer; user-select: none; }
+.auth-panel[open] summary { border-bottom: 1px solid var(--vp-c-divider); }
+.auth-fields { display: grid; gap: 12px; padding: 13px 12px; }
+.auth-fields label { display: grid; gap: 6px; color: var(--vp-c-text-2); font-size: 11px; font-weight: 650; }
+.auth-fields input { padding: 0 11px; min-width: 0; font-size: 13px; font-weight: 400; }
+.auth-help { margin: 0; color: var(--vp-c-text-3); font-size: 10.5px; line-height: 1.45; }
 .url-form button, .tree-header button { border: 0; border-radius: 9px; font-weight: 700; cursor: pointer; }
 .url-form button { padding: 0 15px; color: white; background: var(--vp-c-brand-1); }
 .url-form button:disabled { opacity: .5; cursor: not-allowed; }
