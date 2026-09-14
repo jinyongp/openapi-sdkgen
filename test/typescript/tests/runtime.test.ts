@@ -11,6 +11,11 @@ import {
   isAPIError,
   isErrorCode,
 } from "../fixtures/generated/client/internal/runtime/errors.js";
+import {
+  transformWireValue,
+  validateWireValue,
+  type WireSchema,
+} from "../fixtures/generated/client/internal/runtime/codecs.js";
 import { createRequest } from "../fixtures/generated/client/internal/runtime/http.js";
 import {
   mergeLinkInput,
@@ -45,6 +50,64 @@ const collect = async <Item>(items: AsyncIterable<Item>): Promise<Item[]> => {
 };
 
 describe("generated runtime", () => {
+  it("reuses deep subtree validation while transforming nested values", () => {
+    const depth = 64;
+    let value: unknown = { leaf: 1 };
+    let schema: WireSchema = {
+      types: ["object"],
+      required: ["leaf"],
+      properties: { leaf: { property: "leaf", schema: { types: ["integer"] } } },
+      additionalProperties: false,
+    };
+    for (let index = 0; index < depth; index++) {
+      value = { child: value };
+      schema = {
+        types: ["object"],
+        required: ["child"],
+        properties: { child: { property: "child", schema } },
+        additionalProperties: false,
+      };
+    }
+
+    const values = vi.spyOn(Object, "values");
+    transformWireValue(value, schema, {}, "decode");
+    const scans = values.mock.calls.length;
+    values.mockRestore();
+    expect(scans).toBeLessThan((depth + 1) * 4);
+  });
+
+  it("checks uniqueItems without pairwise structural comparisons", () => {
+    let propertyReads = 0;
+    const values = Array.from({ length: 512 }, (_, id) =>
+      Object.defineProperty(Object.create(null), "id", {
+        enumerable: true,
+        get: () => {
+          propertyReads++;
+          return id;
+        },
+      }),
+    );
+    const schema: WireSchema = {
+      types: ["array"],
+      uniqueItems: true,
+      items: { types: ["object"] },
+    };
+
+    validateWireValue(values, schema, {}, "decode");
+    expect(propertyReads).toBeLessThan(values.length * 5);
+    expect(() =>
+      validateWireValue(
+        [
+          { first: 1, second: 2 },
+          { second: 2, first: 1 },
+        ],
+        schema,
+        {},
+        "decode",
+      ),
+    ).toThrow("must contain unique items");
+  });
+
   it("resolves OpenAPI Link runtime expressions into target operation input", () => {
     const response = {
       status: 201,
