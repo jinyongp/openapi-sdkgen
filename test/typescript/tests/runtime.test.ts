@@ -1524,6 +1524,58 @@ describe("generated runtime", () => {
     ).resolves.toEqual({ first: { displayName: "response" } });
   });
 
+  it("prefers strict response schema branches before tolerant fallback", async () => {
+    const branchA = {
+      types: ["object"],
+      properties: { a: { property: "alpha", schema: { types: ["number"] } } },
+      additionalProperties: false,
+    } as const;
+    const branchB = {
+      types: ["object"],
+      properties: { b: { property: "beta", schema: { types: ["number"] } } },
+      additionalProperties: false,
+    } as const;
+    const oneOfRequest = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () => jsonResponse({ a: 1 }),
+    });
+    await expect(
+      oneOfRequest(
+        operation({
+          path: "/strict-one-of",
+          responses: [
+            {
+              status: "200",
+              contentType: "application/json",
+              schema: { oneOf: [branchA, branchB] },
+            },
+          ],
+          outputSchemas: {},
+        }),
+      ),
+    ).resolves.toEqual({ alpha: 1 });
+
+    const anyOfRequest = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () => jsonResponse({ a: 1 }),
+    });
+    await expect(
+      anyOfRequest(
+        operation({
+          path: "/strict-any-of",
+          responses: [
+            {
+              status: "200",
+              contentType: "application/json",
+              schema: { anyOf: [branchB, branchA] },
+            },
+          ],
+          outputSchemas: {},
+        }),
+      ),
+    ).resolves.toEqual({ alpha: 1 });
+  });
+
   it("preserves unknown response properties through refs, variants, and nested schemas", async () => {
     const request = createRequest({
       baseURL: "https://api.example.test",

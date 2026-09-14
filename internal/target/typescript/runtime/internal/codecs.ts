@@ -620,7 +620,14 @@ export function transformWireValue(
     transformed = transformWireValue(transformed, branch, components, direction, options, scope);
   }
   if (schema.if !== undefined) {
-    const branch = schemaMatches(transformed, schema.if, components, direction, options, scope)
+    const branch = schemaMatchesForControlFlow(
+      transformed,
+      schema.if,
+      components,
+      direction,
+      options,
+      scope,
+    )
       ? schema.then
       : schema.else;
     if (branch !== undefined)
@@ -628,15 +635,18 @@ export function transformWireValue(
   }
   for (const variants of [schema.oneOf, schema.anyOf]) {
     if (variants === undefined) continue;
+    const matches = matchingSchemasForControlFlow(
+      transformed,
+      variants,
+      components,
+      direction,
+      options,
+      scope,
+    );
     const selected =
       schema.discriminator !== undefined
-        ? (discriminatorVariant(transformed, schema, components, direction) ??
-          variants.find((variant) =>
-            schemaMatches(transformed, variant, components, direction, options, scope),
-          ))
-        : variants.find((variant) =>
-            schemaMatches(transformed, variant, components, direction, options, scope),
-          );
+        ? (discriminatorVariant(transformed, schema, components, direction) ?? matches[0])
+        : matches[0];
     if (selected !== undefined)
       transformed = transformWireValue(
         transformed,
@@ -729,26 +739,39 @@ export function validateWireValue(
       throw new TypeError(`must match format ${schema.format}`);
   }
   if (schema.oneOf !== undefined) {
-    const matches = schema.oneOf.filter((item) =>
-      schemaMatches(value, item, components, direction, options, scope),
+    const matches = matchingSchemasForControlFlow(
+      value,
+      schema.oneOf,
+      components,
+      direction,
+      options,
+      scope,
     );
     if (matches.length !== 1)
       throw new TypeError(`oneOf requires exactly one matching schema, got ${matches.length}`);
   }
   if (
     schema.anyOf !== undefined &&
-    !schema.anyOf.some((item) => schemaMatches(value, item, components, direction, options, scope))
+    matchingSchemasForControlFlow(value, schema.anyOf, components, direction, options, scope)
+      .length === 0
   ) {
     throw new TypeError("anyOf requires at least one matching schema");
   }
   if (
     schema.not !== undefined &&
-    schemaMatches(value, schema.not, components, direction, options, scope)
+    schemaMatchesForControlFlow(value, schema.not, components, direction, options, scope)
   ) {
     throw new TypeError("must not match negated schema");
   }
   if (schema.if !== undefined) {
-    const branch = schemaMatches(value, schema.if, components, direction, options, scope)
+    const branch = schemaMatchesForControlFlow(
+      value,
+      schema.if,
+      components,
+      direction,
+      options,
+      scope,
+    )
       ? schema.then
       : schema.else;
     if (branch !== undefined)
@@ -778,7 +801,7 @@ export function validateWireValue(
       throw new TypeError("must contain unique items");
     if (schema.contains !== undefined) {
       const matches = value.filter((item) =>
-        schemaMatches(item, schema.contains!, components, direction, options, scope),
+        schemaMatchesForControlFlow(item, schema.contains!, components, direction, options, scope),
       ).length;
       const minimum = schema.minContains ?? 1;
       if (matches < minimum) throw new TypeError(`must contain at least ${minimum} matching items`);
@@ -1121,7 +1144,9 @@ function evaluatedArrayIndexes(
   }
   if (schema.contains !== undefined) {
     value.forEach((item, index) => {
-      if (schemaMatches(item, schema.contains!, components, direction, options, scope))
+      if (
+        schemaMatchesForControlFlow(item, schema.contains!, components, direction, options, scope)
+      )
         result.add(index);
     });
   }
@@ -1131,15 +1156,29 @@ function evaluatedArrayIndexes(
       evaluatedArrayIndexes(value, child, components, direction, options, scope, seen),
     );
   for (const variants of [schema.oneOf, schema.anyOf]) {
-    for (const child of variants ?? [])
-      if (schemaMatches(value, child, components, direction, options, scope))
-        mergeIndexes(
-          result,
-          evaluatedArrayIndexes(value, child, components, direction, options, scope, seen),
-        );
+    if (variants === undefined) continue;
+    for (const child of matchingSchemasForControlFlow(
+      value,
+      variants,
+      components,
+      direction,
+      options,
+      scope,
+    ))
+      mergeIndexes(
+        result,
+        evaluatedArrayIndexes(value, child, components, direction, options, scope, seen),
+      );
   }
   if (schema.if !== undefined) {
-    const child = schemaMatches(value, schema.if, components, direction, options, scope)
+    const child = schemaMatchesForControlFlow(
+      value,
+      schema.if,
+      components,
+      direction,
+      options,
+      scope,
+    )
       ? schema.then
       : schema.else;
     if (child !== undefined)
@@ -1194,15 +1233,29 @@ function evaluatedPropertyNames(
       evaluatedPropertyNames(value, child, components, direction, options, scope, seen),
     );
   for (const variants of [schema.oneOf, schema.anyOf]) {
-    for (const child of variants ?? [])
-      if (schemaMatches(value, child, components, direction, options, scope))
-        mergeProperties(
-          result,
-          evaluatedPropertyNames(value, child, components, direction, options, scope, seen),
-        );
+    if (variants === undefined) continue;
+    for (const child of matchingSchemasForControlFlow(
+      value,
+      variants,
+      components,
+      direction,
+      options,
+      scope,
+    ))
+      mergeProperties(
+        result,
+        evaluatedPropertyNames(value, child, components, direction, options, scope, seen),
+      );
   }
   if (schema.if !== undefined) {
-    const child = schemaMatches(value, schema.if, components, direction, options, scope)
+    const child = schemaMatchesForControlFlow(
+      value,
+      schema.if,
+      components,
+      direction,
+      options,
+      scope,
+    )
       ? schema.then
       : schema.else;
     if (child !== undefined)
@@ -1302,6 +1355,38 @@ function isMultipleOf(value: number, divisor: number): boolean {
   const quotient = value / divisor;
   return (
     Math.abs(quotient - Math.round(quotient)) <= Number.EPSILON * Math.max(1, Math.abs(quotient))
+  );
+}
+
+function schemaMatchesForControlFlow(
+  value: unknown,
+  schema: WireSchema,
+  components: WireSchemas,
+  direction: "encode" | "decode",
+  options: WireTransformOptions,
+  dynamicScope: DynamicScope = [],
+): boolean {
+  if (options.unknownProperties === "reject")
+    return schemaMatches(value, schema, components, direction, options, dynamicScope);
+  if (schemaMatches(value, schema, components, direction, strictWireTransformOptions, dynamicScope))
+    return true;
+  return schemaMatches(value, schema, components, direction, options, dynamicScope);
+}
+
+function matchingSchemasForControlFlow(
+  value: unknown,
+  schemas: readonly WireSchema[],
+  components: WireSchemas,
+  direction: "encode" | "decode",
+  options: WireTransformOptions,
+  dynamicScope: DynamicScope = [],
+): readonly WireSchema[] {
+  const strictMatches = schemas.filter((schema) =>
+    schemaMatches(value, schema, components, direction, strictWireTransformOptions, dynamicScope),
+  );
+  if (strictMatches.length > 0 || options.unknownProperties === "reject") return strictMatches;
+  return schemas.filter((schema) =>
+    schemaMatches(value, schema, components, direction, options, dynamicScope),
   );
 }
 
