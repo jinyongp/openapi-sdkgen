@@ -79,35 +79,44 @@ export function createRequest(options: ClientOptions): RequestFunction {
     raw = false,
   ): Promise<Output | RawResponse<Output>> => {
     const credentials = requestOptions.credentials ?? options.credentials;
-    let encoded: EncodedRequest;
-    try {
-      const pending = encodeRequest(baseURL, options, codecs, operation, input, requestOptions);
-      encoded = isPromise(pending) ? await pending : pending;
-      const secured = applyOperationSecurity(
-        options,
-        operation,
-        encoded,
-        requestOptions,
-        credentials,
-      );
-      encoded = isPromise(secured) ? await secured : secured;
-    } catch (cause) {
-      if (isAPIError(cause)) {
-        throw cause;
-      }
-      throw transportError(
-        TransportErrorCode.REQUEST_ENCODE_FAILED,
-        `Failed to encode ${operationDiagnosticName(operation)} request`,
-        cause,
-      );
-    }
-
     const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
     const abort = createAbortContext(requestOptions.signal, timeoutMS);
     let responseMetadata:
       | { request: RequestMetadata; status: number; response: Response }
       | undefined;
     try {
+      let encoded: EncodedRequest;
+      try {
+        if (abort.signal?.aborted) throw abort.signal.reason;
+        const effectiveRequestOptions =
+          abort.signal === undefined ? requestOptions : { ...requestOptions, signal: abort.signal };
+        const pending = encodeRequest(
+          baseURL,
+          options,
+          codecs,
+          operation,
+          input,
+          effectiveRequestOptions,
+        );
+        encoded = isPromise(pending) ? await awaitAbortable(pending, abort.signal) : pending;
+        if (abort.signal?.aborted) throw abort.signal.reason;
+        const secured = applyOperationSecurity(
+          options,
+          operation,
+          encoded,
+          effectiveRequestOptions,
+          credentials,
+        );
+        encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
+      } catch (cause) {
+        if (abort.timedOut() || abort.aborted()) throw cause;
+        if (isAPIError(cause)) throw cause;
+        throw transportError(
+          TransportErrorCode.REQUEST_ENCODE_FAILED,
+          `Failed to encode ${operationDiagnosticName(operation)} request`,
+          cause,
+        );
+      }
       const init: RequestInit = {
         method: operation.method,
         headers: encoded.headers,
@@ -130,7 +139,10 @@ export function createRequest(options: ClientOptions): RequestFunction {
         const contentType = responseContentType(response);
         let headerValues: Readonly<Record<string, unknown>>;
         try {
-          headerValues = await decodeResponseHeaders(operation, response, codecs);
+          headerValues = await awaitAbortable(
+            decodeResponseHeaders(operation, response, codecs),
+            abort.signal,
+          );
         } catch (cause) {
           await response.body?.cancel().catch(() => undefined);
           throw transportErrorFromCause(
@@ -175,7 +187,10 @@ export function createRequest(options: ClientOptions): RequestFunction {
       const contentType = responseContentType(response);
       let headerValues: Readonly<Record<string, unknown>>;
       try {
-        headerValues = await decodeResponseHeaders(operation, response, codecs);
+        headerValues = await awaitAbortable(
+          decodeResponseHeaders(operation, response, codecs),
+          abort.signal,
+        );
       } catch (cause) {
         throw transportErrorFromCause(
           TransportErrorCode.RESPONSE_DECODE_FAILED,
@@ -194,6 +209,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
       };
     } catch (cause) {
       if (abort.timedOut()) {
+        await cancelResponseBody(responseMetadata?.response, cause);
         throw transportErrorFromCause(
           TransportErrorCode.REQUEST_TIMEOUT,
           `Request timed out after ${timeoutMS}ms`,
@@ -202,6 +218,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
         );
       }
       if (abort.aborted()) {
+        await cancelResponseBody(responseMetadata?.response, cause);
         throw transportErrorFromCause(
           TransportErrorCode.REQUEST_ABORTED,
           "Request was aborted",
@@ -252,30 +269,42 @@ async function* streamOperation<Item>(
   requestOptions: RequestOptions,
 ): AsyncIterable<Item> {
   const credentials = requestOptions.credentials ?? options.credentials;
-  let encoded: EncodedRequest;
-  try {
-    const pending = encodeRequest(baseURL, options, codecs, operation, input, requestOptions);
-    encoded = isPromise(pending) ? await pending : pending;
-    const secured = applyOperationSecurity(
-      options,
-      operation,
-      encoded,
-      requestOptions,
-      credentials,
-    );
-    encoded = isPromise(secured) ? await secured : secured;
-  } catch (cause) {
-    if (isAPIError(cause)) throw cause;
-    throw transportError(
-      TransportErrorCode.REQUEST_ENCODE_FAILED,
-      `Failed to encode ${operationDiagnosticName(operation)} stream request`,
-      cause,
-    );
-  }
   const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
   const abort = createAbortContext(requestOptions.signal, timeoutMS);
-  let receivedResponse = false;
+  let response: Response | undefined;
   try {
+    let encoded: EncodedRequest;
+    try {
+      if (abort.signal?.aborted) throw abort.signal.reason;
+      const effectiveRequestOptions =
+        abort.signal === undefined ? requestOptions : { ...requestOptions, signal: abort.signal };
+      const pending = encodeRequest(
+        baseURL,
+        options,
+        codecs,
+        operation,
+        input,
+        effectiveRequestOptions,
+      );
+      encoded = isPromise(pending) ? await awaitAbortable(pending, abort.signal) : pending;
+      if (abort.signal?.aborted) throw abort.signal.reason;
+      const secured = applyOperationSecurity(
+        options,
+        operation,
+        encoded,
+        effectiveRequestOptions,
+        credentials,
+      );
+      encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
+    } catch (cause) {
+      if (abort.timedOut() || abort.aborted()) throw cause;
+      if (isAPIError(cause)) throw cause;
+      throw transportError(
+        TransportErrorCode.REQUEST_ENCODE_FAILED,
+        `Failed to encode ${operationDiagnosticName(operation)} stream request`,
+        cause,
+      );
+    }
     const init: RequestInit = {
       method: operation.method,
       headers: encoded.headers,
@@ -290,11 +319,13 @@ async function* streamOperation<Item>(
     if (credentials !== undefined) init.credentials = credentials;
     if (abort.signal?.aborted) throw abort.signal.reason;
     assertReadableResponseHeaders(options.transport, operation);
-    const response = await awaitAbortable(fetchImplementation(encoded.url, init), abort.signal);
-    receivedResponse = true;
+    response = await awaitAbortable(fetchImplementation(encoded.url, init), abort.signal);
     const request = requestMetadata(response);
     if (!response.ok) {
-      const decodedBody = await decodeResponse(operation, response, request, codecs);
+      const decodedBody = await awaitAbortable(
+        decodeResponse(operation, response, request, codecs),
+        abort.signal,
+      );
       const body = decodeResponseWireValue(operation, response, decodedBody);
       throw serverError(response, request, body);
     }
@@ -317,6 +348,7 @@ async function* streamOperation<Item>(
         codecs,
         definition.itemEncoding,
         maxFrameBytes,
+        abort.signal,
       )) {
         yield transformWireValue(
           value,
@@ -330,15 +362,19 @@ async function* streamOperation<Item>(
       const codec = codecs.get(normalizeMediaType(contentType));
       if (codec?.decodeStream === undefined)
         throw new TypeError(`missing decodeStream codec for ${contentType}`);
-      const reader = createMediaStreamReader(response.body, maxFrameBytes);
+      const reader = createMediaStreamReader(response.body, maxFrameBytes, abort.signal);
+      const stream = codec.decodeStream(reader, {
+        contentType,
+        maxFrameBytes,
+        ...(abort.signal === undefined ? {} : { signal: abort.signal }),
+      });
+      const iterator = stream[Symbol.asyncIterator]();
       try {
-        for await (const value of codec.decodeStream(reader, {
-          contentType,
-          maxFrameBytes,
-          ...(requestOptions.signal === undefined ? {} : { signal: requestOptions.signal }),
-        })) {
+        while (true) {
+          const next = await awaitAbortable(Promise.resolve(iterator.next()), abort.signal);
+          if (next.done) break;
           yield transformWireValue(
-            value,
+            next.value,
             definition.itemSchema,
             operation.outputSchemas ?? {},
             "decode",
@@ -346,20 +382,29 @@ async function* streamOperation<Item>(
           ) as Item;
         }
       } finally {
-        await reader.cancel();
+        await reader.cancel(abort.signal?.reason);
+        if (iterator.return !== undefined) {
+          const close = Promise.resolve(iterator.return());
+          if (abort.signal?.aborted) void close.catch(() => undefined);
+          else await close.catch(() => undefined);
+        }
       }
     }
   } catch (cause) {
-    if (isAPIError(cause)) throw cause;
-    if (abort.timedOut())
+    if (abort.timedOut()) {
+      await cancelResponseBody(response, cause);
       throw transportError(
         TransportErrorCode.REQUEST_TIMEOUT,
         `Request timed out after ${timeoutMS}ms`,
         cause,
       );
-    if (abort.aborted())
+    }
+    if (abort.aborted()) {
+      await cancelResponseBody(response, cause);
       throw transportError(TransportErrorCode.REQUEST_ABORTED, "Request was aborted", cause);
-    if (!receivedResponse)
+    }
+    if (isAPIError(cause)) throw cause;
+    if (response === undefined)
       throw transportError(TransportErrorCode.NETWORK_ERROR, "Network request failed", cause);
     throw transportError(
       TransportErrorCode.RESPONSE_DECODE_FAILED,
@@ -386,6 +431,7 @@ function isGeneratedStreamMediaType(contentType: string): boolean {
 function createMediaStreamReader(
   body: ReadableStream<Uint8Array>,
   maxFrameBytes: number,
+  signal?: AbortSignal,
 ): MediaStreamReader {
   if (!Number.isSafeInteger(maxFrameBytes) || maxFrameBytes <= 0)
     throw new TypeError("maxStreamItemBytes must be a positive safe integer");
@@ -410,7 +456,7 @@ function createMediaStreamReader(
         );
       if (released) return null;
       while (pending.length === 0 && !done) {
-        const next = await reader.read();
+        const next = await awaitAbortable(reader.read(), signal);
         done = next.done;
         if (next.value !== undefined) pending = next.value;
       }
@@ -437,6 +483,7 @@ async function* decodeStreamItems(
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   itemEncoding: WireEncodingDefinition | undefined,
   maxFrameBytes: number,
+  signal?: AbortSignal,
 ): AsyncIterable<unknown> {
   const mediaType = contentType.toLowerCase();
   if (normalizeMediaType(mediaType).startsWith("multipart/")) {
@@ -448,6 +495,7 @@ async function* decodeStreamItems(
       codecs,
       itemEncoding,
       maxFrameBytes,
+      signal,
     );
     return;
   }
@@ -461,7 +509,7 @@ async function* decodeStreamItems(
   const reader = body.getReader();
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await awaitAbortable(reader.read(), signal);
       pending += decoder.decode(value, { stream: !done });
       if (mediaType.includes("event-stream")) {
         let match: RegExpMatchArray | null;
@@ -518,9 +566,13 @@ async function* decodeMultipartStreamItems(
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   itemEncoding: WireEncodingDefinition | undefined,
   maxFrameBytes: number,
+  signal?: AbortSignal,
 ): AsyncIterable<unknown> {
-  for await (const part of decodeMultipartStreamParts(body, contentType, maxFrameBytes)) {
-    yield decodeMultipartStreamPart(part, itemSchema, schemas, codecs, itemEncoding);
+  for await (const part of decodeMultipartStreamParts(body, contentType, maxFrameBytes, signal)) {
+    yield await awaitAbortable(
+      decodeMultipartStreamPart(part, itemSchema, schemas, codecs, itemEncoding),
+      signal,
+    );
   }
 }
 
@@ -535,6 +587,7 @@ async function* decodeMultipartStreamParts(
   body: ReadableStream<Uint8Array>,
   contentType: string,
   maxFrameBytes?: number,
+  signal?: AbortSignal,
 ): AsyncIterable<MultipartStreamPart> {
   const boundary =
     /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType)?.[1] ??
@@ -550,7 +603,7 @@ async function* decodeMultipartStreamParts(
   let closed = false;
   try {
     while (!closed) {
-      const { done, value } = await reader.read();
+      const { done, value } = await awaitAbortable(reader.read(), signal);
       if (value !== undefined) pending = appendStreamBytes(pending, value);
       while (!closed) {
         if (!started) {
@@ -824,6 +877,7 @@ function applyOperationSecurity(
     },
     requirement: selected,
     origin: new URL(encoded.url).origin,
+    ...(requestOptions.signal === undefined ? {} : { signal: requestOptions.signal }),
   };
   const suppliedCredentials = options.securityProvider(context);
   const apply = (resolved: SecurityCredentials): EncodedRequest =>
@@ -3431,6 +3485,13 @@ function transportErrorFromCause(
     return new APIError({ code, message, cause, ...responseMetadata });
   }
   return transportError(code, message, cause);
+}
+
+async function cancelResponseBody(response: Response | undefined, reason?: unknown): Promise<void> {
+  const body = response?.body;
+  if (body === null || body === undefined || typeof body.cancel !== "function" || body.locked)
+    return;
+  await body.cancel(reason).catch(() => undefined);
 }
 
 function awaitAbortable<Value>(

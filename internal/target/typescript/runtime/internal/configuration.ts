@@ -43,6 +43,8 @@ export interface SecurityCredentialContext {
   /** The sole SDK-selected requirement or the caller-selected alternative. */
   readonly requirement: SecurityRequirementDefinition;
   readonly origin: string;
+  /** Combined request cancellation/deadline signal for credential acquisition. */
+  readonly signal?: AbortSignal | undefined;
 }
 
 /** Host-owned credential acquisition hook for the selected requirement. */

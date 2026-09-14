@@ -1070,6 +1070,253 @@ describe("generated runtime", () => {
     }
   });
 
+  it("applies abort and timeout while preparing encoded and secured requests", async () => {
+    vi.useFakeTimers();
+    try {
+      const secureOperation = operation({
+        path: "/secure",
+        security: [
+          {
+            id: "api-key",
+            schemes: [
+              { name: "api-key", type: "apiKey", location: "header", parameterName: "X-API-Key" },
+            ],
+          },
+        ],
+      });
+      let providerCalls = 0;
+      let fetchCalls = 0;
+      const aborted = new AbortController();
+      aborted.abort(new Error("stop"));
+      const alreadyAborted = createRequest({
+        baseURL: "https://api.example.test",
+        securityProvider: () => {
+          providerCalls++;
+          return { "api-key": { kind: "api-key", value: "secret" } };
+        },
+        fetch: async () => {
+          fetchCalls++;
+          return jsonResponse({ ok: true });
+        },
+      });
+      const abortedError = await alreadyAborted(secureOperation, undefined, {
+        signal: aborted.signal,
+      }).catch((cause: unknown) => cause);
+      expect(isErrorCode(abortedError, TransportErrorCode.REQUEST_ABORTED)).toBe(true);
+      expect(providerCalls).toBe(0);
+      expect(fetchCalls).toBe(0);
+
+      let providerSignal: AbortSignal | undefined;
+      const slowSecurity = createRequest({
+        baseURL: "https://api.example.test",
+        securityProvider: ({ signal }) => {
+          providerCalls++;
+          providerSignal = signal;
+          return new Promise((_, reject) =>
+            signal?.addEventListener("abort", () => reject(signal.reason), { once: true }),
+          );
+        },
+        fetch: async () => {
+          fetchCalls++;
+          return jsonResponse({ ok: true });
+        },
+      });
+      const securityResult = slowSecurity(secureOperation, undefined, { timeoutMS: 5 }).catch(
+        (cause: unknown) => cause,
+      );
+      await vi.advanceTimersByTimeAsync(5);
+      expect(isErrorCode(await securityResult, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
+      expect(providerSignal?.aborted).toBe(true);
+      expect(fetchCalls).toBe(0);
+
+      const slowEncoder = createRequest({
+        baseURL: "https://api.example.test",
+        codecs: {
+          "application/x-slow": {
+            encodeParameter: async () => new Promise<string>(() => undefined),
+          },
+        },
+        fetch: async () => {
+          fetchCalls++;
+          return jsonResponse({ ok: true });
+        },
+      });
+      const encoderOperation = operation({
+        path: "/items/{id}",
+        parameters: [
+          {
+            location: "path",
+            name: "id",
+            property: "id",
+            style: "simple",
+            explode: false,
+            contentType: "application/x-slow",
+          },
+        ],
+      });
+      const encoderResult = slowEncoder(
+        encoderOperation,
+        { path: { id: "one" } },
+        { timeoutMS: 5 },
+      ).catch((cause: unknown) => cause);
+      await vi.advanceTimersByTimeAsync(5);
+      expect(isErrorCode(await encoderResult, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
+      expect(fetchCalls).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("times out response-header decoding and cancels an unconsumed raw stream", async () => {
+    vi.useFakeTimers();
+    try {
+      let cancelled = false;
+      const body = new ReadableStream<Uint8Array>({
+        cancel() {
+          cancelled = true;
+        },
+      });
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        codecs: {
+          "application/x-slow-header": {
+            decodeParameter: async () => new Promise<unknown>(() => undefined),
+          },
+        },
+        fetch: async () =>
+          new Response(body, {
+            status: 200,
+            headers: {
+              "content-type": "application/x-ndjson",
+              "x-slow": "value",
+            },
+          }),
+      });
+      const pending = request
+        .raw(
+          operation({
+            path: "/raw-stream",
+            responses: [
+              {
+                status: "200",
+                contentType: "application/x-ndjson",
+                schema: {},
+                itemSchema: { types: ["object"] },
+                headers: [
+                  {
+                    name: "X-Slow",
+                    property: "slow",
+                    contentType: "application/x-slow-header",
+                    schema: {},
+                  },
+                ],
+              },
+            ],
+          }),
+          undefined,
+          { timeoutMS: 5 },
+        )
+        .catch((cause: unknown) => cause);
+      await vi.advanceTimersByTimeAsync(5);
+      expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
+      expect(cancelled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("times out generated stream reads and cancels the response reader", async () => {
+    vi.useFakeTimers();
+    try {
+      let cancelled = false;
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        fetch: async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              cancel() {
+                cancelled = true;
+              },
+            }),
+            { headers: { "content-type": "application/x-ndjson" } },
+          ),
+      });
+      const pending = collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/slow-stream",
+            responses: [
+              {
+                status: "200",
+                contentType: "application/x-ndjson",
+                schema: {},
+                itemSchema: { types: ["object"] },
+              },
+            ],
+          }),
+          undefined,
+          { timeoutMS: 5 },
+        ),
+      ).catch((cause: unknown) => cause);
+      await vi.advanceTimersByTimeAsync(5);
+      expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
+      expect(cancelled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("times out a custom stream codec even when its iterator ignores the signal", async () => {
+    vi.useFakeTimers();
+    try {
+      let cancelled = false;
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        codecs: {
+          "application/x-slow-stream": {
+            async *decodeStream() {
+              await new Promise(() => undefined);
+              yield { ok: true };
+            },
+          },
+        },
+        fetch: async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              cancel() {
+                cancelled = true;
+              },
+            }),
+            { headers: { "content-type": "application/x-slow-stream" } },
+          ),
+      });
+      const pending = collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/slow-custom-stream",
+            responses: [
+              {
+                status: "200",
+                contentType: "application/x-slow-stream",
+                schema: {},
+                itemSchema: { types: ["object"] },
+              },
+            ],
+          }),
+          undefined,
+          { timeoutMS: 5 },
+        ),
+      ).catch((cause: unknown) => cause);
+      await vi.advanceTimersByTimeAsync(5);
+      expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
+      expect(cancelled).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("decodes documented text and JSON media types and preserves empty raw responses", async () => {
     const text = createRequest({
       baseURL: "https://api.example.test",
