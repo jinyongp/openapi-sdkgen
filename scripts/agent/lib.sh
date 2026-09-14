@@ -17,8 +17,8 @@ export npm_config_cache="$ROOT/.tmp/node-cache"
 export npm_config_store_dir="$ROOT/.tmp/pnpm-store"
 export CI=true
 
-NODE_VERSION="24.19.0"
-PNPM_VERSION="11.24.0"
+NODE_VERSION="24.21.0"
+PNPM_VERSION="12.4.1"
 
 ts_node() {
   (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" "$@")

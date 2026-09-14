@@ -10,5 +10,5 @@ rm -rf "$directory/src/generated/capabilities-sdk"
   --target typescript \
   --with server \
   --output "$directory/src/generated/capabilities-sdk"
-pnpm --dir "$directory" install --frozen-lockfile
-pnpm --dir "$directory" run build
+corepack pnpm@12.4.1 --dir "$directory" install --frozen-lockfile
+corepack pnpm@12.4.1 --dir "$directory" run build

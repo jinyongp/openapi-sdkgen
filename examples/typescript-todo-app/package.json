@@ -8,11 +8,11 @@
     "client": "node dist/client.js"
   },
   "devDependencies": {
-    "@types/node": "24.13.3",
+    "@types/node": "24.13.4",
     "typescript": "7.0.2"
   },
   "engines": {
-    "node": ">=22",
-    "pnpm": ">=11"
+    "node": "24.x",
+    "pnpm": "12.x"
   }
 }

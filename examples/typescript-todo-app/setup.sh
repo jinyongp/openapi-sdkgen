@@ -9,5 +9,5 @@ rm -rf "$directory/src/generated/todo-sdk"
   --input "$directory/openapi.json" \
   --target typescript \
   --output "$directory/src/generated/todo-sdk"
-pnpm --dir "$directory" install --frozen-lockfile
-pnpm --dir "$directory" run build
+corepack pnpm@12.4.1 --dir "$directory" install --frozen-lockfile
+corepack pnpm@12.4.1 --dir "$directory" run build

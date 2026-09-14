@@ -13,17 +13,17 @@
     "conformance": "corepack pnpm run typecheck && corepack pnpm run test"
   },
   "devDependencies": {
-    "@types/node": "24.13.3",
-    "@vitest/coverage-v8": "4.1.11",
-    "oxfmt": "0.65.0",
-    "oxlint": "1.80.0",
+    "@types/node": "24.13.4",
+    "@vitest/coverage-v8": "5.0.0",
+    "oxfmt": "0.67.0",
+    "oxlint": "1.82.0",
     "typescript": "7.0.2",
-    "vite": "8.2.2",
-    "vitest": "4.1.11"
+    "vite": "8.3.0",
+    "vitest": "5.0.0"
   },
   "engines": {
-    "node": "24.19.0",
-    "pnpm": "11.24.0"
+    "node": "24.x",
+    "pnpm": "12.x"
   },
-  "packageManager": "pnpm@11.24.0"
+  "packageManager": "pnpm@12.4.1"
 }

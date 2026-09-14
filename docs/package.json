@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
-  "packageManager": "pnpm@11.24.0",
+  "packageManager": "pnpm@12.4.1",
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "scripts": {
     "playground:build": "node ./scripts/build-playground.mjs",
