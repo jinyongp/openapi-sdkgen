@@ -2755,10 +2755,10 @@ const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 const api = createClient({ baseURL: "https://api.example.test", fetch: async (_url, init) => {
   const body = String(init.body);
   if (!body.includes('<p:pet xmlns:p="https://example.test/pets" id="7">') || !body.includes("<pet_name>Milo &amp; Co</pet_name>") || !body.includes("<tags><tag>one</tag><tag>two</tag></tags>")) throw new Error("XML request encoding mismatch: " + body);
-  return new Response('<p:pet id="8"><pet_name>Rex</pet_name><tags><tag>red</tag><tag>blue</tag></tags></p:pet>', { status: 200, headers: { "content-type": "application/xml" } });
+  return new Response('<p:pet id="&#56;"><pet_name>&#65;&#x42;</pet_name><tags><tag>red</tag><tag>blue</tag></tags></p:pet>', { status: 200, headers: { "content-type": "application/xml" } });
 } });
 const pet = await api.$operations.savePet({ body: { pet_id: 7, name: "Milo & Co", tags: ["one", "two"] } });
-if (pet.pet_id !== 8 || pet.name !== "Rex" || pet.tags.join(",") !== "red,blue") throw new Error("XML response decoding mismatch");
+if (pet.pet_id !== 8 || pet.name !== "AB" || pet.tags.join(",") !== "red,blue") throw new Error("XML response decoding mismatch");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute TypeScript XML runtime test: %v\n%s", err, output)

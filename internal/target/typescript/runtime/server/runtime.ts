@@ -2506,11 +2506,34 @@ function decodeInboundXMLScalar(
 
 function unescapeInboundXML(value: string): string {
   return value
+    .replace(
+      /&#(?:x([0-9a-fA-F]+)|([0-9]+));/gu,
+      (_, hexadecimal: string | undefined, decimal: string | undefined) => {
+        const codePoint = Number.parseInt(
+          hexadecimal ?? decimal ?? "",
+          hexadecimal === undefined ? 10 : 16,
+        );
+        if (!isInboundXMLCharacterCodePoint(codePoint))
+          throw new TypeError("XML character reference is invalid");
+        return String.fromCodePoint(codePoint);
+      },
+    )
     .replaceAll("&lt;", "<")
     .replaceAll("&gt;", ">")
     .replaceAll("&quot;", '"')
     .replaceAll("&apos;", "'")
     .replaceAll("&amp;", "&");
+}
+
+function isInboundXMLCharacterCodePoint(value: number): boolean {
+  return (
+    value === 0x9 ||
+    value === 0xa ||
+    value === 0xd ||
+    (value >= 0x20 && value <= 0xd7ff) ||
+    (value >= 0xe000 && value <= 0xfffd) ||
+    (value >= 0x10000 && value <= 0x10ffff)
+  );
 }
 
 function assertInboundJSONSerializable(
