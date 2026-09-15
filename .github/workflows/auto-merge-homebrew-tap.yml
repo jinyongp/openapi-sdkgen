@@ -6,7 +6,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: write
 
 jobs:
   auto-merge:
-    uses: jinyongp/homebrew-tap/.github/workflows/auto-merge-homebrew-tap.yml@5e298c2d25af8f85e1d95b403cbe59c98b9a0b2d
+    uses: jinyongp/homebrew-tap/.github/workflows/auto-merge-homebrew-tap.yml@5d4694353a9ed933fe0be9055ca64b7eef53e4f0 # automation-v1.5.0

@@ -11,7 +11,8 @@ release_check="$ROOT/scripts/release/check.sh"
 npm_package="$ROOT/scripts/npm/package.sh"
 npm_check="$ROOT/scripts/npm/check.sh"
 homebrew_formula="$ROOT/.github/homebrew/formula.yml"
-homebrew_tap_sha="5e298c2d25af8f85e1d95b403cbe59c98b9a0b2d"
+homebrew_tap_sha="5d4694353a9ed933fe0be9055ca64b7eef53e4f0"
+homebrew_tap_release='automation-v1\.5\.0'
 
 require_file_pattern() {
   local file="$1"
@@ -74,7 +75,7 @@ require_pattern 'Build npm package'
 require_pattern 'scripts/npm/package\.sh'
 require_pattern 'scripts/npm/publish\.sh'
 require_pattern '\$GITHUB_WORKSPACE/\.tmp/npm-package'
-require_pattern "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha}"
+require_pattern "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}"
 require_pattern 'formula: openapi-sdkgen'
 require_pattern 'repository: \$\{\{ github\.repository \}\}'
 require_pattern 'ref: \$\{\{ needs\.validate-release\.outputs\.commit \}\}'
@@ -109,15 +110,17 @@ reject_pattern 'scripts/resolve-source-inputs\.sh'
 reject_pattern 'brew tap '
 
 require_file_pattern "$homebrew_check" 'pull_request:' 'Homebrew check workflow'
-require_file_pattern "$homebrew_check" "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha}" 'Homebrew check workflow'
+require_file_pattern "$homebrew_check" "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}" 'Homebrew check workflow'
 require_file_pattern "$homebrew_check" 'formula: openapi-sdkgen' 'Homebrew check workflow'
 require_file_pattern "$homebrew_check" 'dry-run: true' 'Homebrew check workflow'
+require_file_pattern "$homebrew_check" 'validation-mode: spec' 'Homebrew check workflow'
 reject_file_pattern "$homebrew_check" '^[[:space:]]*secrets:' 'Homebrew check workflow'
 
 require_file_pattern "$homebrew_auto_merge" 'pull_request_target:' 'Homebrew auto-merge workflow'
 require_file_pattern "$homebrew_auto_merge" 'contents: write' 'Homebrew auto-merge workflow'
 require_file_pattern "$homebrew_auto_merge" 'pull-requests: write' 'Homebrew auto-merge workflow'
-require_file_pattern "$homebrew_auto_merge" "uses: jinyongp/homebrew-tap/\\.github/workflows/auto-merge-homebrew-tap\\.yml@${homebrew_tap_sha}" 'Homebrew auto-merge workflow'
+require_file_pattern "$homebrew_auto_merge" 'statuses: write' 'Homebrew auto-merge workflow'
+require_file_pattern "$homebrew_auto_merge" "uses: jinyongp/homebrew-tap/\\.github/workflows/auto-merge-homebrew-tap\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}" 'Homebrew auto-merge workflow'
 reject_file_pattern "$homebrew_auto_merge" 'actions/checkout' 'Homebrew auto-merge workflow'
 reject_file_pattern "$homebrew_auto_merge" '^[[:space:]]*steps:' 'Homebrew auto-merge workflow'
 reject_file_pattern "$homebrew_auto_merge" '^[[:space:]]*run:' 'Homebrew auto-merge workflow'
