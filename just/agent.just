@@ -8,6 +8,9 @@ default:
 check:
     ./scripts/agent/check
 
+ci:
+    bash ./scripts/agent/ci
+
 fmt:
     ./scripts/agent/fmt
 

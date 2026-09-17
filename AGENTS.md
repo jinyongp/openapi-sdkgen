@@ -14,6 +14,7 @@ This repository uses agent-safe command wrappers.
 
 ```txt
 just agent check
+just agent ci
 just agent fmt
 just agent fmt-check
 just agent vet

@@ -20,12 +20,31 @@ export CI=true
 NODE_VERSION="24.21.0"
 PNPM_VERSION="12.4.1"
 
+require_system_node() {
+  local actual
+  actual="$(node --version 2>/dev/null || true)"
+  if [[ "$actual" != "v$NODE_VERSION" ]]; then
+    echo "Node $NODE_VERSION is required when fnm is unavailable (found ${actual:-none})" >&2
+    return 1
+  fi
+}
+
 ts_node() {
-  (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" "$@")
+  if command -v fnm >/dev/null 2>&1; then
+    (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" "$@")
+    return
+  fi
+  require_system_node
+  (cd "$TYPESCRIPT_ROOT" && "$@")
 }
 
 ts_pnpm() {
-  (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" corepack "pnpm@$PNPM_VERSION" --config.store-dir="$ROOT/.tmp/pnpm-store" "$@")
+  if command -v fnm >/dev/null 2>&1; then
+    (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" corepack "pnpm@$PNPM_VERSION" --config.store-dir="$ROOT/.tmp/pnpm-store" "$@")
+    return
+  fi
+  require_system_node
+  (cd "$TYPESCRIPT_ROOT" && corepack "pnpm@$PNPM_VERSION" --config.store-dir="$ROOT/.tmp/pnpm-store" "$@")
 }
 
 agent_run() {
