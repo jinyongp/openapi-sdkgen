@@ -238,24 +238,16 @@ func reachableErrorComponentSchemas(document *ir.Document) map[string]bool {
 		if operation.Visibility == "hidden" {
 			continue
 		}
-		responses, _ := operation.Raw["responses"].(map[string]any)
-		for status, value := range responses {
-			if strings.HasPrefix(status, "2") {
+		responses, err := operationResponses(document, operation)
+		if err != nil {
+			continue
+		}
+		for _, response := range responses {
+			if strings.HasPrefix(response.Status, "2") {
 				continue
 			}
-			response, _ := value.(map[string]any)
-			resolved, err := resolveComponentObject(document, response, "responses")
-			if err != nil {
-				continue
-			}
-			content, _ := resolved["content"].(map[string]any)
-			for _, mediaValue := range content {
-				media, _ := mediaValue.(map[string]any)
-				media, err = resolveMediaTypeObject(document, media)
-				if err != nil {
-					continue
-				}
-				schema, _ := media["schema"].(map[string]any)
+			for _, media := range response.Content {
+				schema, _ := media.Schema.(map[string]any)
 				visitSchema(schema)
 			}
 		}
@@ -343,19 +335,16 @@ func errorVariantCategory(document *ir.Document, schemaName string, schema, erro
 }
 
 func operationErrorTypes(document *ir.Document, operation ir.Operation, bySchema map[string][]errorContract) ([]string, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return nil, err
+	}
 	byCode := make(map[string]map[string]bool)
-	for status, value := range responses {
-		if strings.HasPrefix(status, "2") {
+	for _, response := range responses {
+		if strings.HasPrefix(response.Status, "2") {
 			continue
 		}
-		response, _ := value.(map[string]any)
-		var err error
-		response, err = resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return nil, err
-		}
-		for _, schemaName := range responseSchemaReferences(response) {
+		for _, schemaName := range responseSchemaReferences(response.Raw) {
 			for _, contract := range bySchema[schemaName] {
 				if byCode[contract.Code] == nil {
 					byCode[contract.Code] = make(map[string]bool)

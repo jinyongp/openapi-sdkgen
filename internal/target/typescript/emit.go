@@ -955,6 +955,15 @@ func operationTypeName(operationID string) string {
 }
 
 func operationAuth(operation ir.Operation) string {
+	if operation.Parameters != nil {
+		if !operation.SecurityDeclared {
+			return "inherited"
+		}
+		if len(operation.Security) == 0 {
+			return "public"
+		}
+		return "required"
+	}
 	security, exists := operation.Raw["security"]
 	if !exists {
 		return "inherited"

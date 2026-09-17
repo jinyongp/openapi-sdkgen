@@ -57,12 +57,27 @@ func reachableComponentSchemaProjections(document *ir.Document, includeServer bo
 			continue
 		}
 		base := []string{"paths", operation.Path, strings.ToLower(operation.Method)}
-		inputRoots = append(inputRoots,
-			componentSchemaReachabilityRoot{value: operation.PathItemRaw["parameters"], path: []string{"paths", operation.Path, "parameters"}},
-			componentSchemaReachabilityRoot{value: operation.Raw["parameters"], path: appendPath(base, "parameters")},
-			componentSchemaReachabilityRoot{value: operation.Raw["requestBody"], path: appendPath(base, "requestBody")},
-		)
-		outputRoots = append(outputRoots, componentSchemaReachabilityRoot{value: operation.Raw["responses"], path: appendPath(base, "responses")})
+		if operation.Parameters != nil {
+			for index, parameter := range operation.Parameters {
+				inputRoots = append(inputRoots, componentSchemaReachabilityRoot{value: parameter.Raw, path: appendPath(base, "parameters", fmt.Sprint(index))})
+			}
+			if operation.RequestBody != nil {
+				inputRoots = append(inputRoots, componentSchemaReachabilityRoot{value: operation.RequestBody.Raw, path: appendPath(base, "requestBody")})
+			}
+		} else {
+			inputRoots = append(inputRoots,
+				componentSchemaReachabilityRoot{value: operation.PathItemRaw["parameters"], path: []string{"paths", operation.Path, "parameters"}},
+				componentSchemaReachabilityRoot{value: operation.Raw["parameters"], path: appendPath(base, "parameters")},
+				componentSchemaReachabilityRoot{value: operation.Raw["requestBody"], path: appendPath(base, "requestBody")},
+			)
+		}
+		if operation.Responses != nil {
+			for _, response := range operation.Responses {
+				outputRoots = append(outputRoots, componentSchemaReachabilityRoot{value: response.Raw, path: appendPath(base, "responses", response.Status)})
+			}
+		} else {
+			outputRoots = append(outputRoots, componentSchemaReachabilityRoot{value: operation.Raw["responses"], path: appendPath(base, "responses")})
+		}
 		if includeServer {
 			callbacks, _ := operation.Raw["callbacks"].(map[string]any)
 			appendCallbackSchemaReachabilityRoots(document, callbacks, appendPath(base, "callbacks"), &inputRoots, &outputRoots)
@@ -671,54 +686,36 @@ func operationOutputTypeExpression(document *ir.Document, operation ir.Operation
 }
 
 func operationOutputTypeForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (string, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statusCodes := make([]string, 0, len(responses))
-	for status := range responses {
-		if isSuccessResponseStatus(status) {
-			statusCodes = append(statusCodes, status)
-		}
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return "", err
 	}
-	sort.Strings(statusCodes)
 	var result []string
-	for _, status := range statusCodes {
-		response, _ := responses[status].(map[string]any)
-		response, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return "", err
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
+			continue
 		}
-		content, _ := response["content"].(map[string]any)
-		if len(content) == 0 {
+		if len(response.Content) == 0 {
 			result = append(result, "void")
 			continue
 		}
-		mediaTypes := make([]string, 0, len(content))
-		for mediaType := range content {
-			mediaTypes = append(mediaTypes, mediaType)
-		}
-		sort.Strings(mediaTypes)
-		for _, mediaType := range mediaTypes {
-			media, _ := content[mediaType].(map[string]any)
-			media, err := resolveMediaTypeObject(document, media)
-			if err != nil {
-				return "", err
-			}
-			schemaValue, hasSchema := media["schema"]
-			if !hasSchema {
+		for _, media := range response.Content {
+			if _, hasSchema := media.Raw["schema"]; !hasSchema {
 				// A Media Type Object without a Schema Object still has a body.
 				// Its shape is unconstrained, not absent.
 				result = append(result, "unknown")
 				continue
 			}
-			if schemaValue == false {
+			if media.Schema == false {
 				result = append(result, "never")
 				continue
 			}
-			schema, _ := schemaValue.(map[string]any)
-			if isBinaryMedia(mediaType, schema) {
+			schema, _ := media.Schema.(map[string]any)
+			if isBinaryMedia(media.ContentType, schema) {
 				result = append(result, "ReadableStream<Uint8Array>")
 				continue
 			}
-			if isTextMedia(mediaType) {
+			if isTextMedia(media.ContentType) {
 				result = append(result, "string")
 				continue
 			}
@@ -757,63 +754,46 @@ func operationRawResponseTypeExpression(document *ir.Document, operation ir.Oper
 }
 
 func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (string, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statusCodes := make([]string, 0, len(responses))
-	for status := range responses {
-		if isSuccessResponseStatus(status) {
-			statusCodes = append(statusCodes, status)
-		}
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return "", err
 	}
-	sort.Strings(statusCodes)
 	var result []string
-	for _, status := range statusCodes {
-		response, _ := responses[status].(map[string]any)
-		response, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return "", err
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
+			continue
 		}
 		statusType := "number"
+		status := response.Status
 		if len(status) == 3 && status[0] >= '0' && status[0] <= '9' && status[1] >= '0' && status[1] <= '9' && status[2] >= '0' && status[2] <= '9' {
 			statusType = status
 		}
-		content, _ := response["content"].(map[string]any)
-		headerType, err := responseHeaderType(document, response, scope)
+		headerType, err := responseHeaderType(document, response.Raw, scope)
 		if err != nil {
 			return "", err
 		}
-		if len(content) == 0 {
+		if len(response.Content) == 0 {
 			result = append(result, "RawResponseFor<"+statusType+", undefined, void, "+headerType+">")
 			continue
 		}
-		mediaTypes := make([]string, 0, len(content))
-		for mediaType := range content {
-			mediaTypes = append(mediaTypes, mediaType)
-		}
-		sort.Strings(mediaTypes)
-		for _, mediaType := range mediaTypes {
-			media, _ := content[mediaType].(map[string]any)
-			media, err := resolveMediaTypeObject(document, media)
-			if err != nil {
-				return "", err
-			}
-			schema := media["schema"]
-			schemaObject, _ := schema.(map[string]any)
+		for _, media := range response.Content {
+			schemaObject, _ := media.Schema.(map[string]any)
 			valueType := "void"
-			if _, sequential := media["itemSchema"]; !sequential && schema != nil {
-				if schema == false {
+			if _, sequential := media.Raw["itemSchema"]; !sequential && media.Schema != nil {
+				if media.Schema == false {
 					valueType = "never"
-				} else if isBinaryMedia(mediaType, schemaObject) {
+				} else if isBinaryMedia(media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if isTextMedia(mediaType) {
+				} else if isTextMedia(media.ContentType) {
 					valueType = "string"
 				} else {
-					valueType, err = schemaTypeForScope(document, schema, projectionOutput, scope)
+					valueType, err = schemaTypeForScope(document, media.Schema, projectionOutput, scope)
 					if err != nil {
 						return "", err
 					}
 				}
 			}
-			result = append(result, "RawResponseFor<"+statusType+", "+quoteTS(mediaType)+", "+valueType+", "+headerType+">")
+			result = append(result, "RawResponseFor<"+statusType+", "+quoteTS(media.ContentType)+", "+valueType+", "+headerType+">")
 		}
 	}
 	if len(result) == 0 {
@@ -894,37 +874,25 @@ func operationMediaOutputTypeExpressions(document *ir.Document, operation ir.Ope
 }
 
 func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (map[string]string, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statusCodes := make([]string, 0, len(responses))
-	for status := range responses {
-		if isSuccessResponseStatus(status) {
-			statusCodes = append(statusCodes, status)
-		}
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return nil, err
 	}
-	sort.Strings(statusCodes)
 	byMedia := make(map[string][]string)
-	for _, status := range statusCodes {
-		response, _ := responses[status].(map[string]any)
-		response, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return nil, err
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
+			continue
 		}
-		content, _ := response["content"].(map[string]any)
-		for mediaType, value := range content {
-			media, _ := value.(map[string]any)
-			media, err := resolveMediaTypeObject(document, media)
-			if err != nil {
-				return nil, err
-			}
-			schema := media["schema"]
-			schemaObject, _ := schema.(map[string]any)
+		for _, media := range response.Content {
+			schemaObject, _ := media.Schema.(map[string]any)
 			valueType := "void"
-			if schema != nil {
+			if media.Schema != nil {
+				schema := media.Schema
 				if schema == false {
 					valueType = "never"
-				} else if isBinaryMedia(mediaType, schemaObject) {
+				} else if isBinaryMedia(media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if isTextMedia(mediaType) {
+				} else if isTextMedia(media.ContentType) {
 					valueType = "string"
 				} else {
 					if operation.Envelope == "data" {
@@ -938,7 +906,7 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 					}
 				}
 			}
-			byMedia[mediaType] = append(byMedia[mediaType], valueType)
+			byMedia[media.ContentType] = append(byMedia[media.ContentType], valueType)
 		}
 	}
 	result := make(map[string]string, len(byMedia))
@@ -1021,33 +989,16 @@ func copyStringBoolMap(source map[string]bool) map[string]bool {
 }
 
 func operationSuccessSchema(document *ir.Document, operation ir.Operation) (map[string]any, bool, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statusCodes := make([]string, 0, len(responses))
-	for status := range responses {
-		if isSuccessResponseStatus(status) {
-			statusCodes = append(statusCodes, status)
-		}
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return nil, false, err
 	}
-	sort.Strings(statusCodes)
-	for _, status := range statusCodes {
-		response, _ := responses[status].(map[string]any)
-		response, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return nil, false, err
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
+			continue
 		}
-		content, _ := response["content"].(map[string]any)
-		mediaTypes := make([]string, 0, len(content))
-		for mediaType := range content {
-			mediaTypes = append(mediaTypes, mediaType)
-		}
-		sort.Strings(mediaTypes)
-		for _, mediaType := range mediaTypes {
-			media, _ := content[mediaType].(map[string]any)
-			media, err := resolveMediaTypeObject(document, media)
-			if err != nil {
-				return nil, false, err
-			}
-			schema, _ := media["schema"].(map[string]any)
+		for _, media := range response.Content {
+			schema, _ := media.Schema.(map[string]any)
 			if len(schema) == 0 {
 				continue
 			}
@@ -1134,10 +1085,11 @@ func operationInputTypesFromPrepared(document *ir.Document, operation ir.Operati
 	if len(prepared.clientParametersByLocation["cookie"]) > 0 {
 		result = append(result, name+"CookieInput")
 	}
-	if body, ok := operation.Raw["requestBody"].(map[string]any); ok {
-		if _, err := resolveComponentObject(document, body, "requestBodies"); err != nil {
-			return nil, err
-		}
+	body, err := operationRequestBody(document, operation)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
 		result = append(result, name+"BodyInput")
 	}
 	return result, nil

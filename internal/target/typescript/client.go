@@ -67,16 +67,16 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 			return err
 		}
 	}
-	if body, ok := operation.Raw["requestBody"].(map[string]any); ok {
-		resolvedBody, err := resolveComponentObject(document, body, "requestBodies")
+	body, err := operationRequestBody(document, operation)
+	if err != nil {
+		return err
+	}
+	if body != nil {
+		bodyType, err := requestBodyIRTypeForScope(document, body, typeRenderContract)
 		if err != nil {
 			return err
 		}
-		bodyType, err := requestBodyTypeForScope(document, resolvedBody, typeRenderContract)
-		if err != nil {
-			return err
-		}
-		bodyDescription, _ := resolvedBody["description"].(string)
+		bodyDescription := body.Description
 		if bodyDescription == "" {
 			bodyDescription = "Request body for `" + operation.OperationID + "` (`" + operation.Method + " " + operation.Path + "`)."
 		}
@@ -290,12 +290,11 @@ func aggregateInputProperty(field string) (string, error) {
 
 func aggregateInputRequired(document *ir.Document, operation ir.Operation, field string) (bool, error) {
 	if field == "Body" {
-		body, _ := operation.Raw["requestBody"].(map[string]any)
-		resolvedBody, err := resolveComponentObject(document, body, "requestBodies")
+		body, err := operationRequestBody(document, operation)
 		if err != nil {
 			return false, err
 		}
-		return boolValue(resolvedBody, "required"), nil
+		return body != nil && body.Required, nil
 	}
 	location := strings.ToLower(field)
 	parameters, err := clientParametersIn(document, operation, location)
@@ -403,24 +402,20 @@ func emitOperationOptions(output *bytes.Buffer, operationName string, operation 
 }
 
 func operationResponseMediaTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return nil, err
+	}
 	seen := make(map[string]bool)
 	var result []string
-	for status, value := range responses {
-		if !isSuccessResponseStatus(status) {
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
 			continue
 		}
-		response, _ := value.(map[string]any)
-		var err error
-		response, err = resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return nil, err
-		}
-		content, _ := response["content"].(map[string]any)
-		for mediaType := range content {
-			if !seen[mediaType] {
-				seen[mediaType] = true
-				result = append(result, mediaType)
+		for _, media := range response.Content {
+			if !seen[media.ContentType] {
+				seen[media.ContentType] = true
+				result = append(result, media.ContentType)
 			}
 		}
 	}
@@ -430,46 +425,36 @@ func operationResponseMediaTypes(document *ir.Document, operation ir.Operation) 
 
 func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation ir.Operation) error {
 	fmt.Fprintf(output, "/**\n * Status- and media-aware raw response for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statuses := make([]string, 0, len(responses))
-	for status := range responses {
-		if isSuccessResponseStatus(status) {
-			statuses = append(statuses, status)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return err
+	}
+	successful := make([]ir.Response, 0, len(responses))
+	for _, response := range responses {
+		if isSuccessResponseStatus(response.Status) {
+			successful = append(successful, response)
 		}
 	}
-	sort.Strings(statuses)
-	if len(statuses) > 0 {
+	if len(successful) > 0 {
 		output.WriteString(" *\n * Successful responses:\n")
 	}
-	for _, status := range statuses {
-		response, _ := responses[status].(map[string]any)
-		resolved, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return err
-		}
-		description, _ := resolved["description"].(string)
-		content, _ := resolved["content"].(map[string]any)
-		mediaTypes := make([]string, 0, len(content))
-		for mediaType := range content {
-			mediaTypes = append(mediaTypes, mediaType)
-		}
-		sort.Strings(mediaTypes)
-		if len(mediaTypes) == 0 {
-			fmt.Fprintf(output, " * - `%s`", status)
-			if description != "" {
-				fmt.Fprintf(output, " — %s", sanitizeComment(description))
+	for _, response := range successful {
+		if len(response.Content) == 0 {
+			fmt.Fprintf(output, " * - `%s`", response.Status)
+			if response.Description != "" {
+				fmt.Fprintf(output, " — %s", sanitizeComment(response.Description))
 			}
 			output.WriteString("\n")
 		} else {
-			for _, mediaType := range mediaTypes {
-				fmt.Fprintf(output, " * - `%s %s`", status, sanitizeComment(mediaType))
-				if description != "" {
-					fmt.Fprintf(output, " — %s", sanitizeComment(description))
+			for _, media := range response.Content {
+				fmt.Fprintf(output, " * - `%s %s`", response.Status, sanitizeComment(media.ContentType))
+				if response.Description != "" {
+					fmt.Fprintf(output, " — %s", sanitizeComment(response.Description))
 				}
 				output.WriteString("\n")
 			}
 		}
-		headers, _ := resolved["headers"].(map[string]any)
+		headers, _ := response.Raw["headers"].(map[string]any)
 		headerNames := make([]string, 0, len(headers))
 		for name := range headers {
 			headerNames = append(headerNames, name)
@@ -567,6 +552,59 @@ func emitQueryTypes(output *bytes.Buffer, document *ir.Document, operation ir.Op
 
 func requestBodyType(document *ir.Document, body map[string]any) (string, error) {
 	return requestBodyTypeForScope(document, body, typeRenderLocal)
+}
+
+func requestBodyIRTypeForScope(document *ir.Document, body *ir.RequestBody, scope typeRenderScope) (string, error) {
+	if body == nil || len(body.Content) == 0 {
+		return "unknown", nil
+	}
+	if len(body.Content) == 1 && !strings.Contains(body.Content[0].ContentType, "*") {
+		media := body.Content[0]
+		if _, streaming := media.Raw["itemSchema"]; streaming {
+			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			return "AsyncIterable<" + itemType + ">", nil
+		}
+		if isTextMedia(media.ContentType) {
+			return "string", nil
+		}
+		schemaObject, _ := media.Schema.(map[string]any)
+		if media.Schema == false {
+			return "never", nil
+		}
+		if isBinaryMedia(media.ContentType, schemaObject) {
+			return "BinaryBody", nil
+		}
+		return schemaTypeForScope(document, media.Schema, projectionInput, scope)
+	}
+	variants := make([]string, 0, len(body.Content))
+	for _, media := range body.Content {
+		schemaObject, _ := media.Schema.(map[string]any)
+		valueType := "string"
+		if media.Schema == false {
+			valueType = "never"
+		} else if _, streaming := media.Raw["itemSchema"]; streaming {
+			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			valueType = "AsyncIterable<" + itemType + ">"
+		} else if !isTextMedia(media.ContentType) {
+			if isBinaryMedia(media.ContentType, schemaObject) {
+				valueType = "BinaryBody"
+			} else {
+				var err error
+				valueType, err = schemaTypeForScope(document, media.Schema, projectionInput, scope)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+		variants = append(variants, fmt.Sprintf("{ readonly contentType: %s; readonly value: %s }", quoteTS(media.ContentType), valueType))
+	}
+	return strings.Join(variants, " | "), nil
 }
 
 func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope typeRenderScope) (string, error) {
@@ -1063,13 +1101,17 @@ func operationPaginationValueName(operationID string) string {
 
 func hasVisibleInputSchemas(document *ir.Document) bool {
 	for _, operation := range document.Operations {
-		if operation.Visibility != "hidden" {
-			if operation.Raw["requestBody"] != nil {
+		if operation.Visibility == "hidden" {
+			continue
+		}
+		if operation.Parameters != nil {
+			if operation.RequestBody != nil || len(operation.Parameters) > 0 {
 				return true
 			}
-			if parameters, err := operationParameters(document, operation); err == nil && len(parameters) > 0 {
-				return true
-			}
+			continue
+		}
+		if operation.Raw["requestBody"] != nil || operation.Raw["parameters"] != nil || operation.PathItemRaw["parameters"] != nil {
+			return true
 		}
 	}
 	return false
@@ -1080,17 +1122,16 @@ func hasVisibleResponseBodies(document *ir.Document) bool {
 		if operation.Visibility == "hidden" {
 			continue
 		}
-		responses, _ := operation.Raw["responses"].(map[string]any)
-		for _, value := range responses {
-			response, _ := value.(map[string]any)
-			resolved, err := resolveComponentObject(document, response, "responses")
-			if err == nil {
-				if content, ok := resolved["content"].(map[string]any); ok && len(content) > 0 {
-					return true
-				}
-				if headers, ok := resolved["headers"].(map[string]any); ok && len(headers) > 0 {
-					return true
-				}
+		responses, err := operationResponses(document, operation)
+		if err != nil {
+			continue
+		}
+		for _, response := range responses {
+			if len(response.Content) > 0 {
+				return true
+			}
+			if headers, ok := response.Raw["headers"].(map[string]any); ok && len(headers) > 0 {
+				return true
 			}
 		}
 	}
@@ -1148,12 +1189,11 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 	}
 	if hasRequestBodies {
 		fields = append(fields, "requestBodies: "+requestBodies)
-		body, _ := irOperation.Raw["requestBody"].(map[string]any)
-		resolvedBody, err := resolveComponentObject(document, body, "requestBodies")
+		body, err := operationRequestBody(document, irOperation)
 		if err != nil {
 			return "", err
 		}
-		if boolValue(resolvedBody, "required") {
+		if body != nil && body.Required {
 			fields = append(fields, "requestBodyRequired: true")
 		}
 		usesInputSchemas = true
@@ -1187,44 +1227,65 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 }
 
 func requestBodyContentTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
-	body, _ := operation.Raw["requestBody"].(map[string]any)
-	body, err := resolveComponentObject(document, body, "requestBodies")
+	body, err := operationRequestBody(document, operation)
 	if err != nil {
 		return nil, err
 	}
-	content, _ := body["content"].(map[string]any)
-	result := make([]string, 0, len(content))
-	for mediaType := range content {
-		result = append(result, mediaType)
+	if body == nil {
+		return nil, nil
 	}
-	sort.Strings(result)
+	result := make([]string, 0, len(body.Content))
+	for _, media := range body.Content {
+		result = append(result, media.ContentType)
+	}
 	return result, nil
 }
 
 func operationServers(document *ir.Document, operation ir.Operation) string {
+	if operation.Parameters != nil {
+		return renderOperationServers(operation.Servers)
+	}
 	values, pointer := effectiveOperationServers(document, operation)
 	if len(values) == 0 {
 		return `[{ id: "#", url: "/" }]`
 	}
-	entries := make([]string, 0, len(values))
+	servers := make([]ir.Server, 0, len(values))
 	for index, value := range values {
 		server, _ := value.(map[string]any)
-		url, _ := server["url"].(string)
-		fields := []string{"id: " + quoteTS(fmt.Sprintf("%s/%d", pointer, index)), "url: " + quoteTS(url)}
-		variables, _ := server["variables"].(map[string]any)
-		if len(variables) > 0 {
-			names := sortedAnyKeys(variables)
-			items := make([]string, 0, len(names))
-			for _, name := range names {
-				variable, _ := variables[name].(map[string]any)
-				defaultValue, _ := variable["default"].(string)
-				item := "{ name: " + quoteTS(name) + ", defaultValue: " + quoteTS(defaultValue)
-				if enum, ok := variable["enum"].([]any); ok && len(enum) > 0 {
-					values := make([]string, 0, len(enum))
-					for _, value := range enum {
-						if text, ok := value.(string); ok {
-							values = append(values, quoteTS(text))
-						}
+		variablesRaw, _ := server["variables"].(map[string]any)
+		variables := make([]ir.ServerVariable, 0, len(variablesRaw))
+		for _, name := range sortedAnyKeys(variablesRaw) {
+			variable, _ := variablesRaw[name].(map[string]any)
+			enum := make([]string, 0)
+			if values, ok := variable["enum"].([]any); ok {
+				for _, value := range values {
+					if text, ok := value.(string); ok {
+						enum = append(enum, text)
+					}
+				}
+			}
+			variables = append(variables, ir.ServerVariable{Name: name, Default: stringMapValue(variable, "default"), Enum: enum, Description: stringMapValue(variable, "description")})
+		}
+		servers = append(servers, ir.Server{URL: stringMapValue(server, "url"), Description: stringMapValue(server, "description"), Variables: variables, Pointer: fmt.Sprintf("%s/%d", pointer, index), Raw: server})
+	}
+	return renderOperationServers(servers)
+}
+
+func renderOperationServers(servers []ir.Server) string {
+	if len(servers) == 0 {
+		return `[{ id: "#", url: "/" }]`
+	}
+	entries := make([]string, 0, len(servers))
+	for _, server := range servers {
+		fields := []string{"id: " + quoteTS(server.Pointer), "url: " + quoteTS(server.URL)}
+		if len(server.Variables) > 0 {
+			items := make([]string, 0, len(server.Variables))
+			for _, variable := range server.Variables {
+				item := "{ name: " + quoteTS(variable.Name) + ", defaultValue: " + quoteTS(variable.Default)
+				if len(variable.Enum) > 0 {
+					values := make([]string, 0, len(variable.Enum))
+					for _, value := range variable.Enum {
+						values = append(values, quoteTS(value))
 					}
 					item += ", enumValues: [" + strings.Join(values, ", ") + "]"
 				}

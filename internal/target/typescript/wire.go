@@ -517,62 +517,49 @@ func normalizedDiscriminatorReference(reference string) string {
 }
 
 func operationRequestWireBodies(document *ir.Document, operation ir.Operation) (string, bool, error) {
-	body, ok := operation.Raw["requestBody"].(map[string]any)
-	if !ok {
-		return "", false, nil
-	}
-	body, err := resolveComponentObject(document, body, "requestBodies")
+	body, err := operationRequestBody(document, operation)
 	if err != nil {
 		return "", false, err
 	}
-	content, _ := body["content"].(map[string]any)
-	mediaTypes := make([]string, 0, len(content))
-	for mediaType := range content {
-		mediaTypes = append(mediaTypes, mediaType)
+	if body == nil {
+		return "", false, nil
 	}
-	sort.Strings(mediaTypes)
-	entries := make([]string, 0, len(mediaTypes))
-	for _, mediaType := range mediaTypes {
-		media, _ := content[mediaType].(map[string]any)
-		media, err := resolveMediaTypeObject(document, media)
-		if err != nil {
-			return "", false, err
-		}
-		schema := media["schema"]
-		schemaObject, _ := schema.(map[string]any)
-		booleanSchema, isBooleanSchema := schema.(bool)
+	entries := make([]string, 0, len(body.Content))
+	for _, media := range body.Content {
+		schemaObject, _ := media.Schema.(map[string]any)
+		booleanSchema, isBooleanSchema := media.Schema.(bool)
 		schemaIsFalse := isBooleanSchema && !booleanSchema
 		descriptor := "{}"
-		if schemaIsFalse || !isBinaryMedia(mediaType, schemaObject) {
+		if schemaIsFalse || !isBinaryMedia(media.ContentType, schemaObject) {
 			var err error
-			descriptor, err = wireSchemaDescriptorForDocument(document, schema, projectionInput)
+			descriptor, err = wireSchemaDescriptorForDocument(document, media.Schema, projectionInput)
 			if err != nil {
 				return "", false, err
 			}
 		}
-		entry := "{ contentType: " + quoteTS(mediaType) + ", schema: " + descriptor
-		if itemSchema, exists := media["itemSchema"]; exists {
-			itemDescriptor, err := wireSchemaDescriptorForDocument(document, itemSchema, projectionInput)
+		entry := "{ contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+		if _, exists := media.Raw["itemSchema"]; exists {
+			itemDescriptor, err := wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionInput)
 			if err != nil {
 				return "", false, err
 			}
 			entry += ", itemSchema: " + itemDescriptor
 		}
-		encodings, err := requestBodyWireEncodings(document, media)
+		encodings, err := requestBodyWireEncodings(document, media.Raw)
 		if err != nil {
 			return "", false, err
 		}
 		if encodings != "" {
 			entry += ", encoding: " + encodings
 		}
-		prefixEncoding, err := positionalMultipartWireEncodings(document, media["prefixEncoding"])
+		prefixEncoding, err := positionalMultipartWireEncodings(document, media.Raw["prefixEncoding"])
 		if err != nil {
 			return "", false, err
 		}
 		if prefixEncoding != "" {
 			entry += ", prefixEncoding: " + prefixEncoding
 		}
-		itemEncoding, err := positionalMultipartWireEncoding(document, media["itemEncoding"])
+		itemEncoding, err := positionalMultipartWireEncoding(document, media.Raw["itemEncoding"])
 		if err != nil {
 			return "", false, err
 		}
@@ -729,64 +716,44 @@ func multipartWireHeaders(document *ir.Document, value any, direction projection
 }
 
 func operationResponseWireBodies(document *ir.Document, operation ir.Operation) (string, bool, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statuses := make([]string, 0, len(responses))
-	for status := range responses {
-		statuses = append(statuses, status)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return "", false, err
 	}
-	sort.Strings(statuses)
 	var entries []string
-	for _, status := range statuses {
-		response, _ := responses[status].(map[string]any)
-		response, err := resolveComponentObject(document, response, "responses")
+	for _, response := range responses {
+		headers, err := responseWireHeaders(document, response.Raw)
 		if err != nil {
 			return "", false, err
 		}
-		content, _ := response["content"].(map[string]any)
-		headers, err := responseWireHeaders(document, response)
-		if err != nil {
-			return "", false, err
+		if len(response.Content) == 0 && headers != "" {
+			entries = append(entries, "{ status: "+quoteTS(response.Status)+", contentType: \"\", schema: {}, headers: "+headers+" }")
 		}
-		mediaTypes := make([]string, 0, len(content))
-		for mediaType := range content {
-			mediaTypes = append(mediaTypes, mediaType)
-		}
-		sort.Strings(mediaTypes)
-		if len(mediaTypes) == 0 && headers != "" {
-			entries = append(entries, "{ status: "+quoteTS(status)+", contentType: \"\", schema: {}, headers: "+headers+" }")
-		}
-		for _, mediaType := range mediaTypes {
-			media, _ := content[mediaType].(map[string]any)
-			media, err := resolveMediaTypeObject(document, media)
-			if err != nil {
-				return "", false, err
-			}
-			schema := media["schema"]
-			schemaObject, _ := schema.(map[string]any)
-			booleanSchema, isBooleanSchema := schema.(bool)
+		for _, media := range response.Content {
+			schemaObject, _ := media.Schema.(map[string]any)
+			booleanSchema, isBooleanSchema := media.Schema.(bool)
 			schemaIsFalse := isBooleanSchema && !booleanSchema
 			descriptor := "{}"
-			if schemaIsFalse || !isBinaryMedia(mediaType, schemaObject) {
-				var err error
-				descriptor, err = wireSchemaDescriptorForDocument(document, schema, projectionOutput)
+			if schemaIsFalse || !isBinaryMedia(media.ContentType, schemaObject) {
+				descriptor, err = wireSchemaDescriptorForDocument(document, media.Schema, projectionOutput)
 				if err != nil {
 					return "", false, err
 				}
 			}
-			entry := "{ status: " + quoteTS(status) + ", contentType: " + quoteTS(mediaType) + ", schema: " + descriptor
-			if itemSchema, exists := media["itemSchema"]; exists {
-				itemDescriptor, err := wireSchemaDescriptorForDocument(document, itemSchema, projectionOutput)
+			entry := "{ status: " + quoteTS(response.Status) + ", contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+			if _, exists := media.Raw["itemSchema"]; exists {
+				itemDescriptor, err := wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionOutput)
 				if err != nil {
 					return "", false, err
 				}
 				entry += ", itemSchema: " + itemDescriptor
 			}
-			if prefixEncoding, err := positionalMultipartWireEncodingsForDirection(document, media["prefixEncoding"], projectionOutput); err != nil {
+			if prefixEncoding, err := positionalMultipartWireEncodingsForDirection(document, media.Raw["prefixEncoding"], projectionOutput); err != nil {
 				return "", false, err
 			} else if prefixEncoding != "" {
 				entry += ", prefixEncoding: " + prefixEncoding
 			}
-			if itemEncoding, err := positionalMultipartWireEncodingForDirection(document, media["itemEncoding"], projectionOutput); err != nil {
+			if itemEncoding, err := positionalMultipartWireEncodingForDirection(document, media.Raw["itemEncoding"], projectionOutput); err != nil {
 				return "", false, err
 			} else if itemEncoding != "" {
 				entry += ", itemEncoding: " + itemEncoding

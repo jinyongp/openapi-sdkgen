@@ -331,33 +331,25 @@ func validatePaginationRequest(document *ir.Document, operation ir.Operation, po
 }
 
 func paginationRepresentations(document *ir.Document, operation ir.Operation, pointer string) ([]paginationRepresentation, []diagnostic.Diagnostic, error) {
-	responses, _ := operation.Raw["responses"].(map[string]any)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return nil, nil, err
+	}
 	var result []paginationRepresentation
 	var diagnostics []diagnostic.Diagnostic
-	for _, status := range sortedAnyKeys(responses) {
-		if !isSuccessResponseStatus(status) {
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
 			continue
 		}
-		response, _ := responses[status].(map[string]any)
-		resolved, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return nil, nil, err
-		}
-		content, _ := resolved["content"].(map[string]any)
-		for _, mediaType := range sortedAnyKeys(content) {
-			media, _ := content[mediaType].(map[string]any)
-			media, err = resolveMediaTypeObject(document, media)
-			if err != nil {
-				return nil, nil, err
-			}
-			schemaValue, hasSchema := media["schema"]
-			label := status + " " + mediaType
+		for _, media := range response.Content {
+			_, hasSchema := media.Raw["schema"]
+			label := response.Status + " " + media.ContentType
 			if !hasSchema {
 				diagnostics = append(diagnostics, operationExtensionDiagnostic(document, operation, pointer, "SDKGEN-E652", fmt.Sprintf("Pagination cannot validate schemaless successful representation %s.", label), "Declare a body schema consistently or remove x-pagination."))
 				continue
 			}
-			schema, ok := schemaValue.(map[string]any)
-			if !isJSONMediaType(mediaType) || !ok || len(schema) == 0 {
+			schema, ok := media.Schema.(map[string]any)
+			if !isJSONMediaType(media.ContentType) || !ok || len(schema) == 0 {
 				diagnostics = append(diagnostics, operationExtensionDiagnostic(document, operation, pointer, "SDKGEN-E652", fmt.Sprintf("Pagination cannot consume successful representation %s.", label), "Use body-bearing JSON object/array schemas consistently or remove x-pagination."))
 				continue
 			}

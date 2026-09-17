@@ -167,7 +167,7 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 				}
 				security := operation["security"]
 				if security == nil {
-					security = document.Raw["security"]
+					security = rootSecurityValue(document)
 				}
 				identity := sourceRouteKey + "\x00" + componentName + "\x00" + name + "\x00" + expression + "\x00" + method
 				result = append(result, callbackDefinition{
@@ -335,29 +335,26 @@ func inboundResponseType(document *ir.Document, operation map[string]any, path s
 }
 
 func inboundResponseDefinition(document *ir.Document, operation map[string]any, path string) (string, string, error) {
-	responses, _ := operation["responses"].(map[string]any)
-	statuses := sortedAnyKeys(responses)
-	if len(statuses) == 0 {
+	responses, err := operationResponses(document, ir.Operation{Pointer: path, Raw: operation})
+	if err != nil {
+		return "", "", fmt.Errorf("%s/responses: %w", path, err)
+	}
+	if len(responses) == 0 {
 		return "InboundResponse", "[]", nil
 	}
-	values := make([]string, 0, len(statuses)+1)
-	plans := make([]string, 0, len(statuses))
-	for _, status := range statuses {
-		response, _ := responses[status].(map[string]any)
-		resolved, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			return "", "", fmt.Errorf("%s/responses/%s: %w", path, status, err)
-		}
+	values := make([]string, 0, len(responses)+1)
+	plans := make([]string, 0, len(responses))
+	for _, response := range responses {
+		status := response.Status
 		statusType := "number"
 		if status != "default" && !strings.ContainsAny(status, "Xx") {
 			statusType = status
 		}
-		content, _ := resolved["content"].(map[string]any)
-		headers, err := responseWireHeaders(document, resolved)
+		headers, err := responseWireHeaders(document, response.Raw)
 		if err != nil {
 			return "", "", fmt.Errorf("%s/responses/%s/headers: %w", path, status, err)
 		}
-		headerValues, err := inboundResponseHeaderValuesType(document, resolved)
+		headerValues, err := inboundResponseHeaderValuesType(document, response.Raw)
 		if err != nil {
 			return "", "", fmt.Errorf("%s/responses/%s/headers: %w", path, status, err)
 		}
@@ -365,8 +362,7 @@ func inboundResponseDefinition(document *ir.Document, operation map[string]any, 
 		if headerValues != "" {
 			headerField += "; readonly headerValues?: " + headerValues + " | undefined"
 		}
-		mediaTypes := sortedAnyKeys(content)
-		if len(mediaTypes) == 0 {
+		if len(response.Content) == 0 {
 			values = append(values, "{ readonly status: "+statusType+headerField+"; readonly body?: never }")
 			plan := "{ status: " + quoteTS(status)
 			if headers != "" {
@@ -375,33 +371,29 @@ func inboundResponseDefinition(document *ir.Document, operation map[string]any, 
 			plans = append(plans, plan+" }")
 			continue
 		}
-		for _, mediaType := range mediaTypes {
-			media, _ := content[mediaType].(map[string]any)
-			media, err = resolveMediaTypeObject(document, media)
-			if err != nil {
-				return "", "", fmt.Errorf("%s/responses/%s/content/%s: %w", path, status, mediaType, err)
-			}
-			schemaValue, hasSchema := media["schema"]
-			schema, _ := schemaValue.(map[string]any)
-			booleanSchema, isBooleanSchema := schemaValue.(bool)
+		for _, media := range response.Content {
+			mediaType := media.ContentType
+			schemaValue, hasSchema := media.Raw["schema"]
+			schema, _ := media.Schema.(map[string]any)
+			booleanSchema, isBooleanSchema := media.Schema.(bool)
 			schemaIsFalse := isBooleanSchema && !booleanSchema
 			binary := isBinaryMedia(mediaType, schema) && !schemaIsFalse
 			bodyType := "ArrayBuffer | Blob | ArrayBufferView"
 			if schemaIsFalse || isJSONMediaType(mediaType) || strings.Contains(strings.ToLower(mediaType), "xml") {
-				bodyType, err = schemaTypeForScope(document, schemaValue, projectionOutput, typeRenderContract)
+				bodyType, err = schemaTypeForScope(document, media.Schema, projectionOutput, typeRenderContract)
 				if err != nil {
 					return "", "", fmt.Errorf("%s/responses/%s/content/%s/schema: %w", path, status, mediaType, err)
 				}
 			} else if isTextMedia(mediaType) {
 				bodyType = "string"
 			} else if !binary {
-				bodyType, err = schemaTypeForScope(document, schemaValue, projectionOutput, typeRenderContract)
+				bodyType, err = schemaTypeForScope(document, media.Schema, projectionOutput, typeRenderContract)
 				if err != nil {
 					return "", "", fmt.Errorf("%s/responses/%s/content/%s/schema: %w", path, status, mediaType, err)
 				}
 			}
 			contentType := ""
-			if len(mediaTypes) > 1 || !isJSONMediaType(mediaType) || !strings.EqualFold(mediaType, "application/json") {
+			if len(response.Content) > 1 || !isJSONMediaType(mediaType) || !strings.EqualFold(mediaType, "application/json") {
 				if strings.Contains(mediaType, "*") {
 					contentType = "; readonly contentType: string"
 				} else {
@@ -626,7 +618,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		}
 		security := operation["security"]
 		if security == nil {
-			security = document.Raw["security"]
+			security = rootSecurityValue(document)
 		}
 		methodName := method
 		result = append(result, webhookDefinition{
@@ -897,9 +889,7 @@ func emitInboundSchemas(output *bytes.Buffer, document *ir.Document) error {
 }
 
 func emitInboundSecuritySchemes(output *bytes.Buffer, document *ir.Document) error {
-	components, _ := document.Raw["components"].(map[string]any)
-	schemes, _ := components["securitySchemes"].(map[string]any)
-	encoded, err := runtimeJSONExpression(schemes)
+	encoded, err := runtimeJSONExpression(securitySchemesValue(document))
 	if err != nil {
 		return fmt.Errorf("encode inbound security schemes: %w", err)
 	}

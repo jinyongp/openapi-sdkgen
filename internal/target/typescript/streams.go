@@ -37,37 +37,27 @@ func generatedStreamsDiagnostics(document *ir.Document, manifest Manifest) ([]ge
 		if !operationVisible {
 			continue
 		}
-		responses, _ := operation.Raw["responses"].(map[string]any)
+		responses, err := operationResponses(document, operation)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("streaming response %s: %w", operationLabel(operation), err))
+			continue
+		}
 		var types []string
-		for _, status := range sortedAnyKeys(responses) {
-			if !isSuccessResponseStatus(status) {
+		for _, response := range responses {
+			if !isSuccessResponseStatus(response.Status) {
 				continue
 			}
-			response, _ := responses[status].(map[string]any)
-			response, err := resolveComponentObject(document, response, "responses")
-			if err != nil {
-				failures = append(failures, fmt.Errorf("streaming response %s %s: %w", operationLabel(operation), status, err))
-				continue
-			}
-			content, _ := response["content"].(map[string]any)
-			for _, mediaType := range sortedAnyKeys(content) {
-				media, _ := content[mediaType].(map[string]any)
-				media, err = resolveMediaTypeObject(document, media)
+			for _, media := range response.Content {
+				if !isStreamingMediaType(media.ContentType, media.Raw) && media.Raw["itemSchema"] == nil {
+					continue
+				}
+				if _, exists := media.Raw["itemSchema"]; !exists {
+					failures = append(failures, fmt.Errorf("streaming response %s %s has no itemSchema", operationLabel(operation), media.ContentType))
+					continue
+				}
+				itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionOutput, typeRenderContract)
 				if err != nil {
-					failures = append(failures, fmt.Errorf("streaming response %s %s: %w", operationLabel(operation), mediaType, err))
-					continue
-				}
-				if !isStreamingMediaType(mediaType, media) && media["itemSchema"] == nil {
-					continue
-				}
-				itemSchema, exists := media["itemSchema"]
-				if !exists {
-					failures = append(failures, fmt.Errorf("streaming response %s %s has no itemSchema", operationLabel(operation), mediaType))
-					continue
-				}
-				itemType, err := schemaTypeForScope(document, itemSchema, projectionOutput, typeRenderContract)
-				if err != nil {
-					failures = append(failures, fmt.Errorf("streaming response %s %s item schema: %w", operationLabel(operation), mediaType, err))
+					failures = append(failures, fmt.Errorf("streaming response %s %s item schema: %w", operationLabel(operation), media.ContentType, err))
 					continue
 				}
 				types = append(types, itemType)

@@ -6,6 +6,8 @@ type Document struct {
 	OpenAPIVersion     string
 	OpenAPIVersionLine string
 	Servers            []Server
+	Security           []SecurityRequirement
+	SecuritySchemes    map[string]SecurityScheme
 	Operations         []Operation
 	ComponentSchemas   map[string]map[string]any
 	// Schemas is the target-neutral schema registry. Unlike ComponentSchemas it
@@ -66,6 +68,16 @@ type Schema struct {
 type Server struct {
 	URL         string
 	Description string
+	Variables   []ServerVariable
+	Pointer     string
+	Raw         map[string]any
+}
+
+type ServerVariable struct {
+	Name        string
+	Default     string
+	Enum        []string
+	Description string
 }
 
 type Operation struct {
@@ -84,8 +96,91 @@ type Operation struct {
 	PaginationPlan     *PaginationPlan
 	SortParameters     map[string]SortParameterPlan
 	PathParameterOrder []string
+	Parameters         []Parameter
+	RequestBody        *RequestBody
+	Responses          []Response
+	Servers            []Server
+	Security           []SecurityRequirement
+	SecurityDeclared   bool
 	PathItemRaw        map[string]any
 	Raw                map[string]any
+}
+
+// Parameter is the normalized request parameter contract after path-level and
+// operation-level inheritance, local reusable-object resolution, style/default
+// application, and content-media resolution. Raw is retained for extensions
+// and lossless metadata that are intentionally outside the common HTTP IR.
+type Parameter struct {
+	Name          string
+	Description   string
+	Location      string
+	Style         string
+	Explode       bool
+	Required      bool
+	Deprecated    bool
+	AllowReserved bool
+	ContentType   string
+	Content       []MediaType
+	Schema        any
+	Raw           map[string]any
+	Pointer       string
+}
+
+// MediaType is one normalized request/response media representation. Common
+// schema fields are explicit while Raw retains version-specific media and
+// Encoding Object details that lowerers may still need losslessly.
+type MediaType struct {
+	ContentType string
+	Schema      any
+	ItemSchema  any
+	Raw         map[string]any
+}
+
+// RequestBody is the normalized outbound request-body contract for an
+// operation after local reusable-object resolution.
+type RequestBody struct {
+	Description string
+	Required    bool
+	Content     []MediaType
+	Raw         map[string]any
+	Pointer     string
+}
+
+// Response is one normalized operation response after local reusable-object
+// resolution. Content is normalized independently while Raw retains headers,
+// links, extensions, and lossless metadata that are not yet separate IR nodes.
+type Response struct {
+	Status      string
+	Description string
+	Summary     string
+	Content     []MediaType
+	Raw         map[string]any
+	SourceRaw   map[string]any
+	Pointer     string
+}
+
+type SecurityRequirement struct {
+	Schemes []SecurityRequirementScheme
+	Raw     map[string]any
+}
+
+type SecurityRequirementScheme struct {
+	Name   string
+	Scopes []string
+}
+
+type SecurityScheme struct {
+	Name              string
+	Type              string
+	Location          string
+	ParameterName     string
+	Scheme            string
+	BearerFormat      string
+	Flows             any
+	OpenIDConnectURL  string
+	OAuth2MetadataURL string
+	Deprecated        bool
+	Raw               map[string]any
 }
 
 // StringExtension preserves declaration presence independently from its value

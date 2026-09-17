@@ -61,21 +61,19 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 		if !sourceVisible {
 			continue
 		}
-		responses, _ := source.Raw["responses"].(map[string]any)
-		for _, status := range sortedAnyKeys(responses) {
-			response, _ := responses[status].(map[string]any)
-			responseSourcePointer := responsePointer(source, status)
-			linksPointer, err := componentObjectFieldPointer(document, response, "responses", responseSourcePointer, "links")
+		responses, err := operationResponses(document, source)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("responses %s: %w", operationLabel(source), err))
+			continue
+		}
+		for _, response := range responses {
+			status := response.Status
+			linksPointer, err := componentObjectFieldPointer(document, response.SourceRaw, "responses", response.Pointer, "links")
 			if err != nil {
 				failures = append(failures, fmt.Errorf("response %s %s: %w", operationLabel(source), status, err))
 				continue
 			}
-			resolved, err := resolveComponentObject(document, response, "responses")
-			if err != nil {
-				failures = append(failures, fmt.Errorf("response %s %s: %w", operationLabel(source), status, err))
-				continue
-			}
-			links, _ := resolved["links"].(map[string]any)
+			links, _ := response.Raw["links"].(map[string]any)
 			for _, name := range sortedAnyKeys(links) {
 				linkPointer := linksPointer + "/" + escapePointerToken(name)
 				link, _ := links[name].(map[string]any)

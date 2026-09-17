@@ -65,12 +65,12 @@ func prepareOperation(document *ir.Document, operation ir.Operation) (preparedOp
 		prepared.clientParametersByLocation[clientParameter.Location] = append(prepared.clientParametersByLocation[clientParameter.Location], clientParameter)
 		prepared.requiredByLocation[clientParameter.Location] = prepared.requiredByLocation[clientParameter.Location] || clientParameter.Required
 	}
-	if body, ok := operation.Raw["requestBody"].(map[string]any); ok {
-		resolved, err := resolveComponentObject(document, body, "requestBodies")
-		if err != nil {
-			return preparedOperation{}, err
-		}
-		prepared.bodyRequired = boolValue(resolved, "required")
+	body, err := operationRequestBody(document, operation)
+	if err != nil {
+		return preparedOperation{}, err
+	}
+	if body != nil {
+		prepared.bodyRequired = body.Required
 	}
 	return prepared, nil
 }
@@ -144,16 +144,122 @@ func classifyFetchRequestHeader(name string) requestHeaderPolicy {
 }
 
 func operationParameters(document *ir.Document, operation ir.Operation) ([]operationParameter, error) {
+	if operation.Parameters == nil {
+		return syntheticOperationParameters(document, operation)
+	}
+	result := make([]operationParameter, 0, len(operation.Parameters))
+	for _, parameter := range operation.Parameters {
+		key := parameter.Location + "\x00" + parameter.Name
+		var sortPlan *ir.SortParameterPlan
+		if value, exists := operation.SortParameters[key]; exists {
+			copied := value
+			sortPlan = &copied
+		} else if value, exists := document.ParameterSortPlans[parameter.Pointer]; exists {
+			copied := value
+			sortPlan = &copied
+		}
+		headerPolicy := requestHeaderCallerManaged
+		if parameter.Location == "header" {
+			headerPolicy = classifyFetchRequestHeader(parameter.Name)
+		}
+		result = append(result, operationParameter{
+			Name:                  parameter.Name,
+			Property:              parameter.Name,
+			Binding:               stablePrivateIdentifier("operation-parameter", operationRouteKey(operation)+"\x00"+parameter.Location+"\x00"+parameter.Name),
+			Description:           parameter.Description,
+			Location:              parameter.Location,
+			Style:                 parameter.Style,
+			Explode:               parameter.Explode,
+			Required:              parameter.Required,
+			Deprecated:            parameter.Deprecated,
+			AllowReserved:         parameter.AllowReserved,
+			EnvironmentControlled: headerPolicy == requestHeaderEnvironmentControlled,
+			ContentType:           parameter.ContentType,
+			Schema:                parameter.Schema,
+			Raw:                   parameter.Raw,
+			Pointer:               parameter.Pointer,
+			Sort:                  sortPlan,
+		})
+	}
+	usedPathBindings := make(map[string]bool, len(operation.PathParameterOrder))
+	for index := range result {
+		if result[index].Location == "path" {
+			result[index].Binding = readablePathParameterBinding(result[index].Name, usedPathBindings)
+		}
+	}
+	return result, nil
+}
+
+func operationRequestBody(document *ir.Document, operation ir.Operation) (*ir.RequestBody, error) {
+	if operation.RequestBody != nil || operation.Parameters != nil {
+		return operation.RequestBody, nil
+	}
+	return syntheticOperationRequestBody(document, operation)
+}
+
+// syntheticOperationRequestBody preserves the raw-map path used by focused
+// target tests that construct ir.Operation directly instead of compiling an
+// OpenAPI document. Compiler-built path operations always carry a non-nil
+// Parameters slice and use the normalized RequestBody above.
+func syntheticOperationRequestBody(document *ir.Document, operation ir.Operation) (*ir.RequestBody, error) {
+	raw, ok := operation.Raw["requestBody"].(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+	pointer := operation.Pointer + "/requestBody"
+	if reference, _ := raw["$ref"].(string); reference != "" {
+		if resolvedPointer := localReferencePointer(reference); resolvedPointer != "" {
+			pointer = resolvedPointer
+		}
+	}
+	resolved, err := resolveComponentObject(document, raw, "requestBodies")
+	if err != nil {
+		return nil, err
+	}
+	content, _ := resolved["content"].(map[string]any)
+	mediaTypes := make([]string, 0, len(content))
+	for mediaType := range content {
+		mediaTypes = append(mediaTypes, mediaType)
+	}
+	sort.Strings(mediaTypes)
+	media := make([]ir.MediaType, 0, len(mediaTypes))
+	for _, contentType := range mediaTypes {
+		value, _ := content[contentType].(map[string]any)
+		value, err = resolveMediaTypeObject(document, value)
+		if err != nil {
+			return nil, err
+		}
+		media = append(media, ir.MediaType{
+			ContentType: contentType,
+			Schema:      value["schema"],
+			ItemSchema:  value["itemSchema"],
+			Raw:         value,
+		})
+	}
+	description, _ := resolved["description"].(string)
+	return &ir.RequestBody{
+		Description: description,
+		Required:    boolValue(resolved, "required"),
+		Content:     media,
+		Raw:         resolved,
+		Pointer:     pointer,
+	}, nil
+}
+
+// syntheticOperationParameters preserves the raw-map path used by inbound
+// webhook/callback operations and focused target tests that do not pass through
+// compiler IR construction. Compiled path operations always provide the typed
+// Parameters slice above.
+func syntheticOperationParameters(document *ir.Document, operation ir.Operation) ([]operationParameter, error) {
 	merged := make(map[string]operationParameter)
 	order := make([]string, 0)
-	sources := []struct {
+	for _, source := range []struct {
 		value   any
 		pointer string
 	}{
 		{value: operation.PathItemRaw["parameters"], pointer: operationPathItemPointer(operation) + "/parameters"},
 		{value: operation.Raw["parameters"], pointer: operation.Pointer + "/parameters"},
-	}
-	for _, source := range sources {
+	} {
 		values, _ := source.value.([]any)
 		for index, value := range values {
 			raw, _ := value.(map[string]any)
@@ -203,7 +309,6 @@ func operationParameters(document *ir.Document, operation ir.Operation) ([]opera
 			if _, exists := merged[key]; !exists {
 				order = append(order, key)
 			}
-			description, _ := raw["description"].(string)
 			var sortPlan *ir.SortParameterPlan
 			if value, exists := operation.SortParameters[key]; exists {
 				copied := value
@@ -212,14 +317,28 @@ func operationParameters(document *ir.Document, operation ir.Operation) ([]opera
 				copied := value
 				sortPlan = &copied
 			}
+			description, _ := raw["description"].(string)
 			headerPolicy := requestHeaderCallerManaged
 			if location == "header" {
 				headerPolicy = classifyFetchRequestHeader(name)
 			}
 			merged[key] = operationParameter{
-				Name: name, Property: name, Binding: stablePrivateIdentifier("operation-parameter", operationRouteKey(operation)+"\x00"+location+"\x00"+name), Description: description, Location: location, Style: style,
-				Explode: explode, Required: boolValue(raw, "required"), Deprecated: boolValue(raw, "deprecated"), AllowReserved: boolValue(raw, "allowReserved"), ContentType: contentType, Schema: schema,
-				EnvironmentControlled: headerPolicy == requestHeaderEnvironmentControlled, Raw: raw, Pointer: pointer, Sort: sortPlan,
+				Name:                  name,
+				Property:              name,
+				Binding:               stablePrivateIdentifier("operation-parameter", operationRouteKey(operation)+"\x00"+location+"\x00"+name),
+				Description:           description,
+				Location:              location,
+				Style:                 style,
+				Explode:               explode,
+				Required:              boolValue(raw, "required"),
+				Deprecated:            boolValue(raw, "deprecated"),
+				AllowReserved:         boolValue(raw, "allowReserved"),
+				EnvironmentControlled: headerPolicy == requestHeaderEnvironmentControlled,
+				ContentType:           contentType,
+				Schema:                schema,
+				Raw:                   raw,
+				Pointer:               pointer,
+				Sort:                  sortPlan,
 			}
 		}
 	}

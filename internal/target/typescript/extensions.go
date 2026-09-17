@@ -97,14 +97,16 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 		if source.Visibility == "hidden" {
 			continue
 		}
-		responses, _ := source.Raw["responses"].(map[string]any)
-		for _, status := range sortedAnyKeys(responses) {
-			response, _ := responses[status].(map[string]any)
-			resolved, err := resolveComponentObject(document, response, "responses")
+		responses, err := operationResponses(document, source)
+		if err != nil {
+			continue
+		}
+		for _, response := range responses {
+			linksPointer, err := componentObjectFieldPointer(document, response.SourceRaw, "responses", response.Pointer, "links")
 			if err != nil {
 				continue
 			}
-			links, _ := resolved["links"].(map[string]any)
+			links, _ := response.Raw["links"].(map[string]any)
 			for _, name := range sortedAnyKeys(links) {
 				link, _ := links[name].(map[string]any)
 				link, err = resolveComponentObject(document, link, "links")
@@ -115,7 +117,7 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 				if !exists || target.Visibility != "hidden" {
 					continue
 				}
-				pointer := source.Pointer + "/responses/" + escapePointerToken(status) + "/links/" + escapePointerToken(name)
+				pointer := linksPointer + "/" + escapePointerToken(name)
 				location, related := extensionDiagnosticLocation(document, pointer)
 				result = append(result, diagnostic.Diagnostic{
 					Severity: diagnostic.SeverityError, Code: "SDKGEN-E621", Phase: diagnostic.PhaseTarget,
@@ -280,34 +282,23 @@ func operationExtensionDiagnostic(document *ir.Document, operation ir.Operation,
 }
 
 func validateEnvelopeRepresentations(document *ir.Document, operation ir.Operation, extensionPointer string) []diagnostic.Diagnostic {
-	responses, _ := operation.Raw["responses"].(map[string]any)
-	statuses := sortedAnyKeys(responses)
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return []diagnostic.Diagnostic{operationExtensionDiagnostic(document, operation, extensionPointer, "SDKGEN-E612", "x-envelope: data could not inspect successful response representations.", "Resolve response references or omit x-envelope.")}
+	}
 	bodyRepresentations := 0
 	var incompatible []string
-	for _, status := range statuses {
-		if !isSuccessResponseStatus(status) {
+	for _, response := range responses {
+		if !isSuccessResponseStatus(response.Status) {
 			continue
 		}
-		response, _ := responses[status].(map[string]any)
-		resolved, err := resolveComponentObject(document, response, "responses")
-		if err != nil {
-			incompatible = append(incompatible, status+" (unresolved response)")
-			continue
-		}
-		content, _ := resolved["content"].(map[string]any)
-		for _, mediaType := range sortedAnyKeys(content) {
+		for _, media := range response.Content {
 			bodyRepresentations++
-			media, _ := content[mediaType].(map[string]any)
-			media, err = resolveMediaTypeObject(document, media)
-			if err != nil {
-				incompatible = append(incompatible, status+" "+mediaType+" (unresolved media type)")
-				continue
-			}
-			schemaValue, exists := media["schema"]
-			schema, schemaIsObject := schemaValue.(map[string]any)
+			_, exists := media.Raw["schema"]
+			schema, schemaIsObject := media.Schema.(map[string]any)
 			resolvedSchema := resolveSchemaReference(document, schema, make(map[string]bool))
-			if !exists || !schemaIsObject || schemaValue == false || !schemaCanDescribeObject(resolvedSchema) || isBinaryMedia(mediaType, schema) || isTextMedia(mediaType) || len(envelopeDataSchema(document, schema, make(map[string]bool))) == 0 {
-				incompatible = append(incompatible, status+" "+mediaType)
+			if !exists || !schemaIsObject || media.Schema == false || !schemaCanDescribeObject(resolvedSchema) || isBinaryMedia(media.ContentType, schema) || isTextMedia(media.ContentType) || len(envelopeDataSchema(document, schema, make(map[string]bool))) == 0 {
+				incompatible = append(incompatible, response.Status+" "+media.ContentType)
 			}
 		}
 	}

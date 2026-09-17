@@ -44,6 +44,12 @@ func TestBuildExtractsOperationsDeterministically(t *testing.T) {
 	gotIDs := make([]string, 0, len(model.Operations))
 	for _, operation := range model.Operations {
 		gotIDs = append(gotIDs, operation.OperationID)
+		if operation.Parameters == nil {
+			t.Fatalf("compiled operation %q has no normalized parameter slice", operation.OperationID)
+		}
+		if operation.Responses == nil {
+			t.Fatalf("compiled operation %q has no normalized response slice", operation.OperationID)
+		}
 	}
 	wantIDs := []string{"getAlpha", "getItem", "purgeItem", "queryItem"}
 	if !reflect.DeepEqual(gotIDs, wantIDs) {
@@ -61,6 +67,187 @@ func TestBuildExtractsOperationsDeterministically(t *testing.T) {
 	}
 	if _, ok := model.ComponentSchemas["Item"]; !ok {
 		t.Fatal("component schema not preserved")
+	}
+}
+
+func TestBuildNormalizesOperationRequestContracts(t *testing.T) {
+	document := &openapidoc.Document{Raw: map[string]any{
+		"openapi": "3.2.0",
+		"info":    map[string]any{"title": "Requests", "version": "1"},
+		"paths": map[string]any{
+			"/items/{itemId}": map[string]any{
+				"parameters": []any{
+					map[string]any{"name": "itemId", "in": "path", "required": true, "schema": map[string]any{"type": "string"}},
+					map[string]any{"$ref": "#/components/parameters/Trace~1Header"},
+					map[string]any{"name": "limit", "in": "query", "required": true, "schema": map[string]any{"type": "integer"}},
+				},
+				"post": map[string]any{
+					"operationId": "createItem",
+					"parameters": []any{
+						map[string]any{"name": "limit", "in": "query", "required": false, "style": "form", "explode": false, "allowReserved": true, "schema": map[string]any{"type": "number"}},
+					},
+					"requestBody": map[string]any{"$ref": "#/components/requestBodies/Payload", "description": "Operation payload", "required": true},
+					"responses":   map[string]any{"204": map[string]any{"description": "OK"}},
+				},
+			},
+		},
+		"components": map[string]any{
+			"parameters": map[string]any{
+				"Trace/Header": map[string]any{"name": "x-trace", "in": "header", "description": "Trace ID", "schema": map[string]any{"type": "string"}},
+			},
+			"requestBodies": map[string]any{
+				"Payload": map[string]any{"content": map[string]any{
+					"application/json": map[string]any{"$ref": "#/components/mediaTypes/Payload"},
+					"text/plain":       map[string]any{"schema": map[string]any{"type": "string"}},
+				}},
+			},
+			"mediaTypes": map[string]any{
+				"Payload": map[string]any{"schema": map[string]any{"type": "object", "required": []any{"id"}, "properties": map[string]any{"id": map[string]any{"type": "string"}}}},
+			},
+		},
+	}}
+	model, err := Build(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(model.Operations) != 1 {
+		t.Fatalf("operations = %#v", model.Operations)
+	}
+	operation := model.Operations[0]
+	if len(operation.Parameters) != 3 {
+		t.Fatalf("parameters = %#v", operation.Parameters)
+	}
+	if got := operation.Parameters[0]; got.Name != "itemId" || got.Location != "path" || got.Style != "simple" || got.Explode || !got.Required {
+		t.Fatalf("path parameter = %#v", got)
+	}
+	if got := operation.Parameters[1]; got.Name != "x-trace" || got.Pointer != "#/components/parameters/Trace~1Header" || got.Style != "simple" || got.Explode || got.Description != "Trace ID" {
+		t.Fatalf("referenced parameter = %#v", got)
+	}
+	if got := operation.Parameters[2]; got.Name != "limit" || got.Required || got.Style != "form" || got.Explode || !got.AllowReserved || got.Schema.(map[string]any)["type"] != "number" {
+		t.Fatalf("operation override parameter = %#v", got)
+	}
+	if operation.RequestBody == nil || !operation.RequestBody.Required || operation.RequestBody.Description != "Operation payload" || operation.RequestBody.Pointer != "#/components/requestBodies/Payload" {
+		t.Fatalf("request body = %#v", operation.RequestBody)
+	}
+	if got := operation.RequestBody.Content; len(got) != 2 || got[0].ContentType != "application/json" || got[1].ContentType != "text/plain" {
+		t.Fatalf("request media = %#v", got)
+	}
+	if schema, ok := operation.RequestBody.Content[0].Schema.(map[string]any); !ok || schema["type"] != "object" {
+		t.Fatalf("resolved media schema = %#v", operation.RequestBody.Content[0].Schema)
+	}
+}
+
+func TestBuildNormalizesOperationResponses(t *testing.T) {
+	document := &openapidoc.Document{Raw: map[string]any{
+		"openapi": "3.2.0",
+		"info":    map[string]any{"title": "Responses", "version": "1"},
+		"paths": map[string]any{
+			"/items": map[string]any{
+				"get": map[string]any{
+					"operationId": "listItems",
+					"responses": map[string]any{
+						"200": map[string]any{"$ref": "#/components/responses/Items", "description": "Operation items"},
+						"204": map[string]any{"description": "No content"},
+					},
+				},
+			},
+		},
+		"components": map[string]any{
+			"responses": map[string]any{
+				"Items": map[string]any{
+					"description": "Component items",
+					"summary":     "Items summary",
+					"content": map[string]any{
+						"application/json": map[string]any{"$ref": "#/components/mediaTypes/Items"},
+					},
+				},
+			},
+			"mediaTypes": map[string]any{
+				"Items": map[string]any{"schema": map[string]any{"type": "array", "items": map[string]any{"type": "string"}}},
+			},
+		},
+	}}
+	model, err := Build(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation := model.Operations[0]
+	if len(operation.Responses) != 2 {
+		t.Fatalf("responses = %#v", operation.Responses)
+	}
+	response := operation.Responses[0]
+	if response.Status != "200" || response.Description != "Operation items" || response.Summary != "Items summary" || response.Pointer != "#/paths/~1items/get/responses/200" {
+		t.Fatalf("normalized response = %#v", response)
+	}
+	if response.SourceRaw["$ref"] != "#/components/responses/Items" || len(response.Content) != 1 || response.Content[0].ContentType != "application/json" {
+		t.Fatalf("response source/media = %#v", response)
+	}
+	if schema, ok := response.Content[0].Schema.(map[string]any); !ok || schema["type"] != "array" {
+		t.Fatalf("resolved response media schema = %#v", response.Content[0].Schema)
+	}
+	if got := operation.Responses[1]; got.Status != "204" || got.Description != "No content" || len(got.Content) != 0 {
+		t.Fatalf("no-content response = %#v", got)
+	}
+}
+
+func TestBuildNormalizesSecurityAndEffectiveServers(t *testing.T) {
+	document := &openapidoc.Document{Raw: map[string]any{
+		"openapi": "3.2.0",
+		"info":    map[string]any{"title": "Security", "version": "1"},
+		"servers": []any{map[string]any{
+			"url": "https://{region}.example.test/v1",
+			"variables": map[string]any{"region": map[string]any{
+				"default": "kr", "enum": []any{"kr", "us"}, "description": "Region",
+			}},
+		}},
+		"security": []any{map[string]any{"Bearer": []any{}}},
+		"paths": map[string]any{
+			"/root": map[string]any{"get": map[string]any{"operationId": "root", "responses": map[string]any{"204": map[string]any{"description": "OK"}}}},
+			"/path": map[string]any{
+				"servers": []any{map[string]any{"url": "/v2"}},
+				"get":     map[string]any{"operationId": "path", "responses": map[string]any{"204": map[string]any{"description": "OK"}}},
+			},
+			"/operation": map[string]any{
+				"servers": []any{map[string]any{"url": "/ignored"}},
+				"get": map[string]any{
+					"operationId": "operation",
+					"servers":     []any{map[string]any{"url": "/v3"}},
+					"security":    []any{},
+					"responses":   map[string]any{"204": map[string]any{"description": "OK"}},
+				},
+			},
+		},
+		"components": map[string]any{"securitySchemes": map[string]any{
+			"Bearer": map[string]any{"type": "http", "scheme": "bearer", "bearerFormat": "JWT"},
+		}},
+	}}
+	model, err := Build(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byPath := make(map[string]Operation, len(model.Operations))
+	for _, operation := range model.Operations {
+		byPath[operation.Path] = operation
+	}
+	root := byPath["/root"]
+	if len(root.Servers) != 1 || root.Servers[0].Pointer != "#/servers/0" || root.Servers[0].Variables[0].Default != "kr" {
+		t.Fatalf("root effective servers = %#v", root.Servers)
+	}
+	if root.SecurityDeclared || len(root.Security) != 1 || len(root.Security[0].Schemes) != 1 || root.Security[0].Schemes[0].Name != "Bearer" {
+		t.Fatalf("root inherited security = %#v declared=%t", root.Security, root.SecurityDeclared)
+	}
+	if got := byPath["/path"].Servers; len(got) != 1 || got[0].Pointer != "#/paths/~1path/servers/0" || got[0].URL != "/v2" {
+		t.Fatalf("path effective servers = %#v", got)
+	}
+	op := byPath["/operation"]
+	if len(op.Servers) != 1 || op.Servers[0].Pointer != "#/paths/~1operation/get/servers/0" || op.Servers[0].URL != "/v3" {
+		t.Fatalf("operation effective servers = %#v", op.Servers)
+	}
+	if !op.SecurityDeclared || op.Security == nil || len(op.Security) != 0 {
+		t.Fatalf("operation security override = %#v declared=%t", op.Security, op.SecurityDeclared)
+	}
+	if scheme := model.SecuritySchemes["Bearer"]; scheme.Type != "http" || scheme.Scheme != "bearer" || scheme.BearerFormat != "JWT" {
+		t.Fatalf("security scheme = %#v", scheme)
 	}
 }
 
@@ -87,8 +274,11 @@ func TestBuildPreservesOpenAPI32SurfaceAndExtractsNewMethods(t *testing.T) {
 	if got, want := model.OpenAPIVersionLine, "3.2"; got != want {
 		t.Fatalf("OpenAPI version line = %q, want %q", got, want)
 	}
-	if got, want := model.Servers, []Server{{URL: "https://{region}.example.test/v1", Description: "Regional API"}}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("servers = %#v, want %#v", got, want)
+	if len(model.Servers) != 1 || model.Servers[0].URL != "https://{region}.example.test/v1" || model.Servers[0].Description != "Regional API" || model.Servers[0].Pointer != "#/servers/0" {
+		t.Fatalf("servers = %#v", model.Servers)
+	}
+	if got := model.Servers[0].Variables; len(got) != 1 || got[0].Name != "region" || got[0].Default == "" {
+		t.Fatalf("server variables = %#v", got)
 	}
 
 	methods := make(map[string]Operation, len(model.Operations))

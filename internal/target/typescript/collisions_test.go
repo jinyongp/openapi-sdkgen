@@ -48,15 +48,11 @@ func TestSourceArtifactsAllowsMissingOperationIDAndRejectsDuplicateExactIDs(t *t
 }
 
 func TestIDLessOperationParameterBindingsUseRouteIdentity(t *testing.T) {
-	first, err := operationParameters(&ir.Document{}, ir.Operation{Method: "GET", Path: "/first", Raw: map[string]any{
-		"parameters": []any{map[string]any{"name": "query", "in": "query", "schema": map[string]any{"type": "string"}}},
-	}})
+	first, err := operationParameters(&ir.Document{}, ir.Operation{Method: "GET", Path: "/first", Parameters: []ir.Parameter{{Name: "query", Location: "query", Style: "form", Explode: true, Schema: map[string]any{"type": "string"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := operationParameters(&ir.Document{}, ir.Operation{Method: "GET", Path: "/second", Raw: map[string]any{
-		"parameters": []any{map[string]any{"name": "query", "in": "query", "schema": map[string]any{"type": "string"}}},
-	}})
+	second, err := operationParameters(&ir.Document{}, ir.Operation{Method: "GET", Path: "/second", Parameters: []ir.Parameter{{Name: "query", Location: "query", Style: "form", Explode: true, Schema: map[string]any{"type": "string"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
