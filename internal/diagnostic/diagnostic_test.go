@@ -1,6 +1,7 @@
 package diagnostic
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -54,6 +55,56 @@ func TestCollectorSortCountsAndRender(t *testing.T) {
 		if !strings.Contains(report, want) {
 			t.Fatalf("report missing %q:\n%s", want, report)
 		}
+	}
+}
+
+func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
+	const secret = "credential-secret"
+	values := []Diagnostic{
+		{
+			Severity: SeverityWarning,
+			Code:     "SDKGEN-W002",
+			Phase:    PhaseTarget,
+			Location: Location{Source: "https://other:" + secret + "@example.test/openapi.yaml?token=two#fragment", Pointer: "#/b"},
+			Message:  "warning",
+		},
+		{
+			Severity: SeverityError,
+			Code:     "SDKGEN-E001",
+			Phase:    PhaseOpenAPI,
+			Location: Location{Source: "https://user:" + secret + "@example.test/openapi.yaml?token=one#fragment", Pointer: "#/a"},
+			Related:  []Location{{Source: "https://related:" + secret + "@example.test/schema.yaml?token=three", Pointer: "#/Thing"}},
+			Message:  "error",
+			Hint:     "fix it",
+		},
+	}
+	skipped := []SkippedPhase{{Phase: PhaseEmit, Reason: "target errors"}, {Phase: PhaseIR, Reason: "compile errors"}}
+	first, err := RenderJSON(values, skipped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := RenderJSON(values, skipped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first != second {
+		t.Fatalf("JSON report is not deterministic:\n%s\n%s", first, second)
+	}
+	if strings.Contains(first, secret) || strings.Contains(first, "token=") || strings.Contains(first, "#fragment") {
+		t.Fatalf("JSON report leaked source credentials: %s", first)
+	}
+	var report Report
+	if err := json.Unmarshal([]byte(first), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.SchemaVersion != 1 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+		t.Fatalf("report header = %#v", report)
+	}
+	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E001" || report.Diagnostics[1].Code != "SDKGEN-W002" {
+		t.Fatalf("diagnostics = %#v", report.Diagnostics)
+	}
+	if len(report.SkippedPhases) != 2 || report.SkippedPhases[0].Phase != PhaseIR || report.SkippedPhases[1].Phase != PhaseEmit {
+		t.Fatalf("skipped phases = %#v", report.SkippedPhases)
 	}
 }
 

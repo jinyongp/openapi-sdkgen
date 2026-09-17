@@ -312,7 +312,7 @@ func TestCLIUsageErrorsExitWithScopedStderr(t *testing.T) {
 		{
 			name: "missing required",
 			args: []string{"generate"},
-			stderr: "openapi-sdkgen: --input, --target, and --output are required\n" +
+			stderr: "openapi-sdkgen: --input and --target are required\n" +
 				"Try \"openapi-sdkgen generate --help\" for usage\n",
 		},
 	} {

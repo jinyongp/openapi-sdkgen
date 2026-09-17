@@ -6,9 +6,11 @@ Usage:
 Required:
   --input <source>                OpenAPI file, file:// URL, HTTP(S) URL, or -
   --target <name>                 SDK target (available: typescript)
-  --output <directory>            Generated-code directory
 
 Generation:
+  --output <directory>            Generated-code directory; with --check, verify this
+                                  managed output
+  --check                         Validate generation without writing output
   --incremental                   Update a manifest-owned output directory
   --with <addon>                  Add generated artifacts (available: server)
                                   (repeatable)
@@ -34,6 +36,7 @@ Schema extensions:
                                   (repeatable)
 
 Options:
+  --diagnostics-format <format>   Diagnostic report format (available: human, json)
   -h, --help                      Show help
 
 Examples:

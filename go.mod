@@ -5,6 +5,7 @@ go 1.27.0
 require (
 	github.com/pb33f/libopenapi v0.38.7
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
+	golang.org/x/sys v0.48.0
 )
 
 require (

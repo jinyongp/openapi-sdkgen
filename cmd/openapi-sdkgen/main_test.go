@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -46,6 +47,172 @@ func TestGenerateDoesNotPublishOutputWhenInputFails(t *testing.T) {
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("failed input published output: %v", err)
+	}
+}
+
+func TestGenerateJSONDiagnosticsAreStructuredAndSanitized(t *testing.T) {
+	const secret = "diagnostic-secret"
+	warning := diagnostic.Diagnostic{
+		Severity: diagnostic.SeverityWarning,
+		Code:     "SDKGEN-W900",
+		Phase:    diagnostic.PhaseTarget,
+		Location: diagnostic.Location{Source: "https://user:" + secret + "@example.test/openapi.json?token=alpha#fragment", Pointer: "#/paths"},
+		Message:  "test warning",
+	}
+	blocking := diagnostic.Diagnostic{
+		Severity: diagnostic.SeverityError,
+		Code:     "SDKGEN-E900",
+		Phase:    diagnostic.PhaseTarget,
+		Location: diagnostic.Location{Source: "https://other:" + secret + "@example.test/openapi.json?token=beta#fragment", Pointer: "#/paths/~1items/get"},
+		Related:  []diagnostic.Location{{Source: "https://related:" + secret + "@example.test/schema.json?token=gamma", Pointer: "#/Thing"}},
+		Message:  "test error",
+		Hint:     "fix it",
+	}
+	runtime := generationRuntime{
+		compile: func(string, compiler.CompileOptions) (compiler.Result, error) {
+			return compiler.Result{Document: &ir.Document{}}, nil
+		},
+		prepare: func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error) {
+			return generator.Preparation{
+				Plan:          generator.NewPlan("typescript", struct{}{}),
+				Diagnostics:   []diagnostic.Diagnostic{warning, blocking},
+				SkippedPhases: []diagnostic.SkippedPhase{{Phase: diagnostic.PhaseEmit, Reason: "target preflight reported errors"}},
+			}, nil
+		},
+	}
+	previousError := standardError
+	var output bytes.Buffer
+	standardError = &output
+	t.Cleanup(func() { standardError = previousError })
+	err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--output", filepath.Join(t.TempDir(), "generated"),
+		"--diagnostics-format", "json",
+	}, runtime)
+	if !errors.Is(err, errReportedDiagnostics) {
+		t.Fatalf("error = %v", err)
+	}
+	if strings.Contains(output.String(), secret) || strings.Contains(output.String(), "token=") || strings.Contains(output.String(), "#fragment") {
+		t.Fatalf("JSON diagnostics leaked source credentials: %s", output.String())
+	}
+	if strings.Contains(output.String(), "OpenAPI SDK generation:") {
+		t.Fatalf("JSON diagnostics contained human report: %s", output.String())
+	}
+	var report diagnostic.Report
+	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
+		t.Fatalf("decode JSON diagnostics: %v\n%s", err, output.String())
+	}
+	if report.SchemaVersion != 1 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+		t.Fatalf("report header = %#v", report)
+	}
+	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E900" || report.Diagnostics[1].Code != "SDKGEN-W900" {
+		t.Fatalf("diagnostics = %#v", report.Diagnostics)
+	}
+	if len(report.SkippedPhases) != 1 || report.SkippedPhases[0].Phase != diagnostic.PhaseEmit {
+		t.Fatalf("skipped phases = %#v", report.SkippedPhases)
+	}
+}
+
+func TestGenerateRejectsUnsupportedDiagnosticFormat(t *testing.T) {
+	err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--output", filepath.Join(t.TempDir(), "generated"),
+		"--diagnostics-format", "yaml",
+	}, generationRuntime{})
+	if err == nil || !strings.Contains(err.Error(), `unsupported --diagnostics-format "yaml" (available: human, json)`) {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestGenerateCheckWithoutOutputRunsCompileAndPrepareOnly(t *testing.T) {
+	compiled := false
+	prepared := false
+	checked := false
+	runtime := generationRuntime{
+		compile: func(string, compiler.CompileOptions) (compiler.Result, error) {
+			compiled = true
+			return compiler.Result{Document: &ir.Document{}}, nil
+		},
+		prepare: func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error) {
+			prepared = true
+			return generator.Preparation{Plan: generator.NewPlan("typescript", struct{}{})}, nil
+		},
+		check: func(generator.Target, generator.Plan, string, *artifactGeneration) error {
+			checked = true
+			return errors.New("managed output check should not run")
+		},
+	}
+	if err := generateWithRuntime([]string{"--input", "unused.json", "--target", "typescript", "--check"}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	if !compiled || !prepared || checked {
+		t.Fatalf("compile=%v prepare=%v managed-check=%v", compiled, prepared, checked)
+	}
+}
+
+func TestGenerateCheckRejectsIncrementalMode(t *testing.T) {
+	err := generateWithRuntime([]string{"--input", "unused.json", "--target", "typescript", "--check", "--incremental"}, generationRuntime{})
+	if err == nil || !strings.Contains(err.Error(), "--incremental cannot be used with --check") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestGenerateCheckManagedOutputIsReadOnlyAndDetectsDrift(t *testing.T) {
+	root := t.TempDir()
+	input := filepath.Join(root, "openapi.json")
+	output := filepath.Join(root, "generated")
+	if err := os.WriteFile(input, []byte(minimalDocument), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previousVersion := version
+	version = "7.3.0-check-test"
+	t.Cleanup(func() { version = previousVersion })
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	manifestBefore, err := os.Stat(filepath.Join(output, artifactManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexBefore, err := os.Stat(filepath.Join(output, "index.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--check", "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	manifestAfter, err := os.Stat(filepath.Join(output, artifactManifestName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexAfter, err := os.Stat(filepath.Join(output, "index.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(manifestBefore, manifestAfter) || !manifestBefore.ModTime().Equal(manifestAfter.ModTime()) {
+		t.Fatal("check replaced the managed manifest")
+	}
+	if !os.SameFile(indexBefore, indexAfter) || !indexBefore.ModTime().Equal(indexAfter.ModTime()) {
+		t.Fatal("check replaced a generated artifact")
+	}
+	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("check created a lock: %v", err)
+	}
+	for _, pattern := range []string{".openapi-sdkgen-output-*", ".openapi-sdkgen-backup-*"} {
+		matches, err := filepath.Glob(filepath.Join(root, pattern))
+		if err != nil || len(matches) != 0 {
+			t.Fatalf("check created temporary paths for %s: %v, %v", pattern, matches, err)
+		}
+	}
+	changed := strings.Replace(minimalDocument, "Example API", "Changed API", 1)
+	if err := os.WriteFile(input, []byte(changed), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err = run([]string{"generate", "--input", input, "--target", "typescript", "--check", "--output", output})
+	if err == nil || !strings.Contains(err.Error(), "different generation fingerprint") {
+		t.Fatalf("drift error = %v", err)
 	}
 }
 
@@ -403,9 +570,11 @@ func TestGenerateRejectsActionableOutputStateBeforeCompilation(t *testing.T) {
 			incremental: true,
 			prepare: func(t *testing.T, output string) {
 				t.Helper()
-				if err := os.WriteFile(output+".openapi-sdkgen.lock", nil, 0o600); err != nil {
+				publisher, err := newArtifactPublisherWithMode(output, true)
+				if err != nil {
 					t.Fatal(err)
 				}
+				t.Cleanup(publisher.Rollback)
 			},
 			want: "locked by another generation",
 		},
@@ -819,7 +988,7 @@ func TestArtifactPublisherWritesIncrementallyAndRollsBack(t *testing.T) {
 	if err := publisher.WriteArtifact(generator.Artifact{Path: "nested/client.ts", Data: []byte("export {}\n")}); err != nil {
 		t.Fatal(err)
 	}
-	if value, err := os.ReadFile(filepath.Join(publisher.staging, "nested", "client.ts")); err != nil || string(value) != "export {}\n" {
+	if value, err := os.ReadFile(filepath.Join(publisher.StagingPath(), "nested", "client.ts")); err != nil || string(value) != "export {}\n" {
 		t.Fatalf("staged artifact = %q, %v", value, err)
 	}
 	if err := publisher.WriteArtifact(generator.Artifact{Path: "nested/client.ts", Data: []byte("duplicate\n")}); err == nil {
@@ -829,7 +998,7 @@ func TestArtifactPublisherWritesIncrementallyAndRollsBack(t *testing.T) {
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Fatalf("partial output stat error = %v", err)
 	}
-	if _, err := os.Stat(publisher.staging); !os.IsNotExist(err) {
+	if _, err := os.Stat(publisher.StagingPath()); !os.IsNotExist(err) {
 		t.Fatalf("staging rollback stat error = %v", err)
 	}
 }
@@ -956,9 +1125,7 @@ func TestIncrementalNoopPreservesArtifactsAndManifest(t *testing.T) {
 			t.Fatalf("no-op incremental generation replaced %s", path)
 		}
 	}
-	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("incremental lock remains: %v", err)
-	}
+	assertIncrementalLockReusable(t, output)
 }
 
 func TestIncrementalNoopUpdatesOnlyManifestGeneration(t *testing.T) {
@@ -1041,9 +1208,7 @@ func TestIncrementalArtifactsRollBackUnsafeParentAndReleaseLock(t *testing.T) {
 	if _, err := readArtifactManifest(output); err != nil {
 		t.Fatalf("rollback manifest: %v", err)
 	}
-	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("incremental lock remains: %v", err)
-	}
+	assertIncrementalLockReusable(t, output)
 }
 
 func TestIncrementalArtifactPublisherLocksConcurrentGeneration(t *testing.T) {
@@ -1064,6 +1229,15 @@ func TestIncrementalArtifactPublisherLocksConcurrentGeneration(t *testing.T) {
 		t.Fatalf("released incremental lock was not reusable: %v", err)
 	}
 	second.Rollback()
+}
+
+func assertIncrementalLockReusable(t *testing.T, output string) {
+	t.Helper()
+	publisher, err := newArtifactPublisherWithMode(output, true)
+	if err != nil {
+		t.Fatalf("released incremental lock was not reusable: %v", err)
+	}
+	publisher.Rollback()
 }
 
 func TestGenerateIncrementalFlagReusesManagedOutput(t *testing.T) {
@@ -1122,9 +1296,7 @@ func TestGenerateIncrementalSkipsCompilationForMatchingReusableInput(t *testing.
 	if !os.SameFile(manifestInfo, after) || !manifestInfo.ModTime().Equal(after.ModTime()) {
 		t.Fatal("matching incremental generation replaced the manifest")
 	}
-	if _, err := os.Stat(output + ".openapi-sdkgen.lock"); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("incremental lock remains: %v", err)
-	}
+	assertIncrementalLockReusable(t, output)
 	if err := os.WriteFile(filepath.Join(output, "index.ts"), []byte("edited\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

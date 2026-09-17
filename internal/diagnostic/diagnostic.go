@@ -3,6 +3,7 @@
 package diagnostic
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"sort"
@@ -34,37 +35,45 @@ const (
 
 // Location identifies one source document and an RFC 6901 JSON Pointer.
 type Location struct {
-	Source  string
-	Pointer string
+	Source  string `json:"source,omitempty"`
+	Pointer string `json:"pointer,omitempty"`
 }
 
 // Diagnostic is an actionable author-facing compiler or target finding.
 // Cause contains only an explicitly sanitized summary; callers must never put
 // credentials, URLs with secrets, or arbitrary transport errors in it.
 type Diagnostic struct {
-	Severity  Severity
-	Code      string
-	Phase     Phase
-	Location  Location
-	Related   []Location
-	Target    string
-	Route     string
-	Operation string
-	Message   string
-	Hint      string
-	Cause     string
+	Severity  Severity   `json:"severity"`
+	Code      string     `json:"code"`
+	Phase     Phase      `json:"phase"`
+	Location  Location   `json:"location"`
+	Related   []Location `json:"related,omitempty"`
+	Target    string     `json:"target,omitempty"`
+	Route     string     `json:"route,omitempty"`
+	Operation string     `json:"operation,omitempty"`
+	Message   string     `json:"message"`
+	Hint      string     `json:"hint,omitempty"`
+	Cause     string     `json:"cause,omitempty"`
 }
 
 // SkippedPhase explains a prerequisite-bound phase that could not run.
 type SkippedPhase struct {
-	Phase  Phase
-	Reason string
+	Phase  Phase  `json:"phase"`
+	Reason string `json:"reason"`
 }
 
 // Counts summarizes a diagnostic set.
 type Counts struct {
-	Errors   int
-	Warnings int
+	Errors   int `json:"errors"`
+	Warnings int `json:"warnings"`
+}
+
+// Report is the stable machine-readable diagnostic envelope.
+type Report struct {
+	SchemaVersion int            `json:"schemaVersion"`
+	Counts        Counts         `json:"counts"`
+	Diagnostics   []Diagnostic   `json:"diagnostics"`
+	SkippedPhases []SkippedPhase `json:"skippedPhases"`
 }
 
 // Collector accumulates diagnostics without rendering them.
@@ -160,6 +169,27 @@ func Sort(values []Diagnostic) []Diagnostic {
 		return left.Cause < right.Cause
 	})
 	return result
+}
+
+// NewReport builds the stable machine-readable diagnostic envelope.
+func NewReport(values []Diagnostic, skipped []SkippedPhase) Report {
+	values = SanitizeSources(values)
+	skipped = normalizeSkipped(skipped)
+	return Report{
+		SchemaVersion: 1,
+		Counts:        Count(values),
+		Diagnostics:   append([]Diagnostic{}, values...),
+		SkippedPhases: append([]SkippedPhase{}, skipped...),
+	}
+}
+
+// RenderJSON renders one deterministic versioned JSON report.
+func RenderJSON(values []Diagnostic, skipped []SkippedPhase) (string, error) {
+	data, err := json.MarshalIndent(NewReport(values, skipped), "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("encode diagnostic report: %w", err)
+	}
+	return string(append(data, '\n')), nil
 }
 
 // RenderHuman renders one complete deterministic report. The severity counts
