@@ -126,7 +126,7 @@ export default defineConfig({
   srcExclude: [
     "openapi-feature-inventory.md",
     "openapi-feature-matrix.md",
-    "openapi-sdkgen-implementation-roadmap.md",
+    "architecture.md",
   ],
   lastUpdated: true,
   themeConfig: englishTheme,
