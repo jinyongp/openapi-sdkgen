@@ -39,8 +39,8 @@ type UpdateBody = OperationBody<typeof updateTodo>;
 ```
 
 `OperationInput`은 메서드에 전달하는 전체 인자입니다. `OperationBody`는 request
-body입니다. Resource tree 메서드에서는 selector로 전달한 값이 입력에서
-제외됩니다.
+body입니다. Resource tree 메서드의 입력에는 selector로 이미 바인딩된 값을 뺀
+나머지 항목이 들어갑니다.
 
 ```ts
 const filters = { completed: false } satisfies TodoFilters;
@@ -117,8 +117,7 @@ type TodoInput = ComponentInput<"Todo">;
 type TodoOutput = ComponentOutput<"Todo">;
 ```
 
-입력 타입에서는 `readOnly` 필드가 제외되고 출력 타입에서는 `writeOnly` 필드가
-제외됩니다.
+`readOnly` 필드는 출력 타입에, `writeOnly` 필드는 입력 타입에 포함됩니다.
 
 ## Enum 값과 타입
 
@@ -154,10 +153,9 @@ if (isEnumValue(Enums.TodoStatus, input)) {
 }
 ```
 
-기존과 같이 기본 `./generated/api` 진입점에서도 `Enums`, `EnumValue`,
-`isEnumValue`를 가져올 수 있으므로 기존 import는 바꿀 필요가 없습니다. 생성된
-enum 런타임 값과 타입만 필요한 모듈에서는 전용 `./generated/api/enums` 진입점을
-사용할 수 있습니다.
+기본 `./generated/api` 진입점의 기존 `Enums`, `EnumValue`, `isEnumValue` import도
+그대로 유효합니다. Enum 런타임 값과 타입을 사용하는 모듈에서는 전용
+`./generated/api/enums` 진입점도 사용할 수 있습니다.
 
 `Enums`에는 component 스키마로 선언된 enum이 포함됩니다. Inline enum과 중첩
 enum은 생성된 요청, 응답, component 타입에서 사용할 수 있습니다.

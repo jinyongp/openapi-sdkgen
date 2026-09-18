@@ -1,8 +1,8 @@
 # openapi-sdkgen Architecture
 
 This document describes the current implementation boundaries of
-`openapi-sdkgen`. It is a maintainer reference, not a feature roadmap. The
-canonical user-visible capability contract remains the
+`openapi-sdkgen` for maintainers. The canonical user-visible capability contract
+remains the
 [OpenAPI feature manifest](openapi-feature-manifest.json), with the
 [feature matrix](openapi-feature-matrix.md) and
 [feature inventory](openapi-feature-inventory.md) as readable views.
@@ -10,18 +10,16 @@ canonical user-visible capability contract remains the
 ## Product boundary
 
 `openapi-sdkgen` accepts OpenAPI 3.0.x, 3.1.x, and 3.2.x documents and generates
-application-owned TypeScript source. The generated source is compiled by the
-consumer's existing TypeScript toolchain; it does not require a separately
-published runtime package.
+application-owned TypeScript source. The generated source includes its source runtime and is compiled by the
+consumer's existing TypeScript toolchain.
 
-TypeScript is the active output target. The optional `server` add-on generates
-Fetch-native Webhook and Callback contracts alongside the client output. The
-server add-on does not introduce framework-specific adapters.
+TypeScript is the active output target. The optional `server` add-on generates Fetch-native Webhook and Callback
+contracts alongside the client output. Host applications connect those
+contracts to their framework and HTTP stack.
 
-The central correctness rule is that valid OpenAPI semantics are never silently
-dropped. A supported construct is generated or preserved as documented
-metadata. A construct that cannot be represented safely is rejected with a
-source-aware diagnostic.
+Supported OpenAPI semantics are generated or preserved as documented metadata.
+A construct that cannot be represented safely is rejected with a source-aware
+diagnostic.
 
 ## Pipeline
 
@@ -48,34 +46,32 @@ transactional output publication
 ```
 
 The pipeline separates expected author errors from internal failures. Compiler
-and target preflight findings are accumulated as structured diagnostics. Source
-emission begins only after a safe compiler document and target plan exist, and
-publication begins only after target preparation succeeds.
+and target preflight findings are accumulated as structured diagnostics. Source emission begins after a safe compiler document and target plan exist.
+Publication begins after target preparation succeeds.
 
 ## Input and reference layer
 
 The compiler owns input acquisition and reference policy. Inputs may come from a
 local file, `file:` URL, HTTP(S) URL, or standard input. Relative local
-references are resolved within the permitted input root. Network access for
-remote references is explicit rather than implicit.
+references are resolved within the permitted input root. Remote-reference network access requires an explicit trust policy.
 
 Remote references use an exact HTTPS-origin allowlist, integrity lock, bounded
-fetching, a content-addressed cache, and offline mode. Credential-bearing root
-requests never forward credentials to another origin or through a redirect.
+fetching, a content-addressed cache, and offline mode. Credential-bearing root requests keep credentials scoped to the trusted origin
+and same-origin redirects.
 Protected cache entries require owner-only protection on platforms where that
 policy can be enforced.
 
-Custom required JSON Schema vocabularies are compile-time extensions. An
-extension is explicitly registered from a trusted local manifest, is integrity
-tracked, returns schema data rather than executable TypeScript, and is never
-required by generated application code.
+Custom required JSON Schema vocabularies are compile-time extensions. Each
+extension is registered from a trusted local manifest, integrity tracked, and
+returns normalized schema data. Generated application code consumes the lowered
+schema semantics.
 
 ## Compiler and normalized IR
 
-The compiler owns OpenAPI-version semantics and the reusable meaning that should
-not be rediscovered independently by an output target. Its IR retains the
-lossless source document for metadata and exceptional scans, but common HTTP
-semantics are normalized before target preparation.
+The compiler owns OpenAPI-version semantics and reusable meaning shared by all
+output targets. Its IR retains the lossless source document for metadata and
+exceptional scans. Common HTTP semantics are normalized before target
+preparation.
 
 The normalized operation model includes:
 
@@ -91,11 +87,10 @@ The normalized operation model includes:
 - operation extensions that require target-specific validation, such as
   visibility, pagination, envelope, and sort plans.
 
-The raw OpenAPI tree remains an intentional escape hatch for lossless metadata,
+The raw OpenAPI tree is used for lossless metadata,
 feature-preflight scans, custom extensions, and Webhook/Callback operation
-surfaces that are not ordinary path operations. New common HTTP behavior should
-prefer a typed IR field instead of adding another target-side traversal of
-`map[string]any`.
+surfaces outside the ordinary path-operation model. New common HTTP behavior
+belongs in typed IR fields so targets consume one normalized representation.
 
 Schema resources have their own normalized registry. Resource URI, dialect,
 pointer identity, boolean schemas, anchors, dynamic references, and compiled
@@ -110,12 +105,12 @@ Pointer location, related locations, target, route, operation, message, hint,
 and a sanitized cause.
 
 The CLI renders human-readable diagnostics by default and can emit the versioned
-JSON report for CI and tool integration. Source identities are sanitized before
-they are rendered so URL credentials, queries, fragments, and arbitrary
-transport details cannot leak through diagnostics.
+JSON report for CI and tool integration. Source sanitization removes URL
+credentials, queries, fragments, and arbitrary transport details before
+rendering.
 
-Skipped pipeline phases are reported explicitly when an earlier phase prevents
-safe continuation.
+Skipped pipeline phases are reported when an earlier phase prevents safe
+continuation.
 
 ## TypeScript target
 
@@ -139,35 +134,33 @@ metadata, enum/error, runtime, and optional server artifacts. Generated paths
 are validated for portability and collision safety before they reach the output
 publisher.
 
-The generated runtime is source, not a dependency. Client runtime modules keep
-transport, configuration, security, codecs, pagination, Links, request
-construction, and HTTP execution behind internal generated entry points. The
-server add-on has a separate Fetch-native runtime surface while reusing the
-shared schema/wire semantics where applicable.
+The generated runtime is application source compiled with the rest of the SDK.
+Client runtime modules keep transport, configuration, security, codecs,
+pagination, Links, request construction, and HTTP execution behind internal
+generated entry points. The server add-on uses its own Fetch-native runtime
+surface and shares schema/wire semantics where applicable.
 
 ## Generated-output publication
 
-Output publication is owned by the dedicated output subsystem rather than the
-CLI command handler. Target emission can stream artifacts into a rollback-safe
-staging area, so large generated trees do not need to be retained only for
-publication.
+The dedicated output subsystem owns publication. Target emission streams
+artifacts into a rollback-safe staging area, which keeps publication memory
+bounded for large generated trees.
 
 A fresh generation publishes atomically into a previously absent output
 directory. Managed incremental generation uses
 `.openapi-sdkgen-manifest.json` to record generated-file hashes and, when
-available, a generation fingerprint. Before replacing a managed file, the
-publisher verifies that its current contents still match the previous manifest;
-user edits to generated files therefore fail closed instead of being silently
-overwritten.
+available, a generation fingerprint. Before replacing a managed file, the publisher verifies that its current
+contents still match the previous manifest. Edited generated files fail closed
+before publication.
 
 Incremental publication preserves unchanged file identities and timestamps,
-removes only stale manifest-owned files, and leaves unmanaged files untouched.
+removes stale manifest-owned files, and leaves unmanaged files untouched.
 Changes are staged and backed up so a failed commit can restore the previous
 managed output.
 
 Concurrent incremental writers use a non-blocking operating-system advisory
-lock. The lock file may persist, but ownership follows the live file descriptor,
-so an abnormal process exit does not leave a permanently blocking stale lock.
+lock. Ownership follows the live file descriptor, so stale lock files remain
+reusable after an abnormal process exit.
 
 `generate --check` reuses the same compiler, target, artifact validation, and
 managed-output comparison semantics without publishing changes. Without an
@@ -180,48 +173,47 @@ fingerprints have drifted.
 `docs/openapi-feature-manifest.json` is the canonical field-level capability
 register. Every entry has a version scope, state, and executable evidence.
 Conditional support, such as Webhooks and Callbacks under `--with server`, is
-recorded explicitly rather than changing the base client contract.
+recorded in the capability contract while the base client contract stays stable.
 
 The manifest tests enforce feature IDs, supported states, version scopes, and
-references to executable evidence. The inventory and matrix provide readable
-views but do not replace the manifest as the source of truth.
+references to executable evidence. The manifest remains the source of truth;
+the inventory and matrix provide readable views.
 
 ## Validation and performance
 
-Repository validation is layered so ordinary development and releases do not
-need identical cost profiles.
+Repository validation uses separate cost tiers for ordinary development and
+release workflows.
 
 `just agent ci` is the ordinary pull-request gate and remains available for
 manual validation. It covers formatting, vetting, Go tests/build/module
 integrity, TypeScript formatting/lint/typecheck, conformance generation,
-generate-check behavior, and coverage without running release publishing
-simulations. Pushes to `main` do not repeat this gate; `just release` runs the
-full release checks before atomically pushing `main` and the release tag.
+generate-check behavior, and coverage. Release publishing simulations belong to
+the release path. `just release` runs the full release checks before atomically
+pushing `main` and the release tag.
 
 `just agent check` is the broader integrated gate. In addition to the ordinary
 quality checks it exercises release scripts and workflows, npm package/publish
 contracts, and runnable examples. Release builds are also checked across the
 supported macOS, Linux, and Windows architectures.
 
-Performance has a separate acceptance gate. It tracks compile, prepare, emit,
+Performance has its own acceptance gate. It tracks compile, prepare, emit,
 publish, full-process, memory, fresh-publication, and incremental workloads
-against checked-in regression thresholds. Performance baselines are treated as
-guards against regressions rather than implementation targets.
+against checked-in regression thresholds. The baselines serve as regression
+guards.
 
 ## Maintenance rules
 
 When changing the generator, preserve these boundaries:
 
-1. OpenAPI-version and reusable HTTP semantics belong in the compiler/IR rather
-   than being independently reinterpreted by a target.
+1. The compiler/IR owns OpenAPI-version and reusable HTTP semantics.
 2. Target-specific API design, TypeScript naming, module planning, and source
    formatting belong in the TypeScript target.
 3. Expected input problems become structured diagnostics before emission;
    unexpected errors remain internal failures.
-4. Generated-output ownership, path safety, locking, rollback, and incremental
-   comparison stay in the output subsystem rather than the CLI or a target.
-5. Generated code remains application-owned source with no mandatory runtime
-   package or framework adapter.
+4. The output subsystem owns generated-output ownership, path safety, locking,
+   rollback, and incremental comparison.
+5. Generated code remains application-owned source, and host applications supply
+   framework integration.
 6. New capability claims update the canonical feature manifest and executable
    evidence together.
 7. Security-sensitive input, reference, credential, and publication paths fail

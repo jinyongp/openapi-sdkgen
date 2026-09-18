@@ -1,24 +1,28 @@
-# SDK extensions
+# OpenAPI x-* extensions
 
-Standard OpenAPI is enough to generate an SDK. Use the `x-*` fields on this
-page only when you need a convenience that OpenAPI cannot express directly.
+Standard OpenAPI is enough to generate an SDK. The `x-*` fields on this page
+are optional openapi-sdkgen conveniences layered on top of the ordinary OpenAPI
+contract.
 
-openapi-sdkgen validates every supported extension before writing code. An
-invalid declaration stops generation instead of being ignored or guessed.
+Required custom JSON Schema vocabularies use the
+[Custom JSON Schema vocabularies](../guide/schema-vocabularies.md) workflow.
 
-## Behavior without extensions
+openapi-sdkgen validates every supported `x-*` declaration before writing code.
+Invalid declarations stop generation with a diagnostic.
 
-- An API without an `operationId` is available through
-  `api.$routes["METHOD /path"]`.
+## Standard OpenAPI behavior
+
+- `api.$routes["METHOD /path"]` identifies APIs by HTTP method and path,
+  independently of `operationId`.
 - Query, header, cookie, and path parameters keep their OpenAPI names.
 - Schema constraints such as `required`, `minimum`, `pattern`, and `enum`
   apply to generated request and response validation.
-- Unknown `x-*` fields remain available in metadata but do not change SDK
+- Unknown `x-*` fields remain available in metadata and have no effect on SDK
   behavior.
 
-Declare filters as query parameters. Declare `If-Match` and `Idempotency-Key`
-as header parameters. `x-filter`, `x-concurrency`, and `x-idempotency` do not
-have special behavior.
+Declare filters as query parameters and `If-Match` or `Idempotency-Key` as header
+parameters. The supported `x-*` fields on this page define the available SDK
+extension behavior.
 
 ## `x-envelope`
 
@@ -36,8 +40,8 @@ Omit `x-envelope` when the complete response should be returned.
 
 ## `x-pagination`
 
-Generate a `.paginate()` method for an API. Without this extension, the normal
-API is still generated but `.paginate()` is not added.
+Generate a `.paginate()` method for an API. The operation remains available as a
+normal call when `x-pagination` is absent.
 
 ### Default form
 
@@ -77,7 +81,7 @@ x-pagination:
     offset: pageOffset
     limit: pageSize
   response:
-    items: /payload/rows
+    items: /payload/todos
     nextCursor: /payload/page/next
     offset: /payload/page/offset
     limit: /payload/page/limit
@@ -101,7 +105,7 @@ Declare `x-sort` on the query parameter used for sorting.
     type: array
     items:
       type: string
-      enum: [name:asc, name:desc, createdAt:asc, createdAt:desc]
+      enum: [title:asc, title:desc, createdAt:asc, createdAt:desc]
   x-sort:
     format: field-direction
 ```
@@ -113,7 +117,7 @@ The generated client accepts values such as:
 { field: "createdAt", direction: "desc" }
 ```
 
-`x-sort` is not supported on Webhooks or Callbacks.
+Use `x-sort` on client operations.
 
 ## `x-sdk-visibility`
 
@@ -123,16 +127,16 @@ Control how an API appears in the generated client.
 x-sdk-visibility: internal
 ```
 
-- `internal`: keep the API in `$routes` and `$operations`, but omit its
-  resource method.
-- `hidden`: omit the API and related client methods.
+- `internal`: expose the API through `$routes` and `$operations`; hide its resource
+  method.
+- `hidden`: remove the API and related client methods from generated output.
 
 Omitting the extension generates a normal public API.
 
 ## `x-error-category`
 
 Add a static error category when the outer `error` object has an exact `code`
-but no `category`.
+and no `category`.
 
 ```yaml
 x-error-category: validation

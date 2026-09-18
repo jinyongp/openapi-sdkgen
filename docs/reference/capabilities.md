@@ -1,49 +1,83 @@
 # OpenAPI support
 
-openapi-sdkgen supports OpenAPI 3.0.x, 3.1.x, and 3.2.x files. Each file is
-interpreted according to its declared OpenAPI version.
+openapi-sdkgen reads OpenAPI 3.0.x, 3.1.x, and 3.2.x documents and interprets
+features according to the version declared by the document. Generation is fail-closed: when the selected TypeScript target cannot represent a
+used feature safely, the command reports the OpenAPI location and stops.
 
-## Requests and responses
+This page summarizes the main public capability groups. For generation
+workflows and flags, use the [CLI reference](./cli.md).
 
-The TypeScript target generates types and client code for:
+## Client requests and responses
 
-- API paths, HTTP methods, and parameters
-- JSON, text, binary, form, and multipart request bodies
-- status-specific responses and response headers
-- request and response validation based on OpenAPI schemas
+The TypeScript target generates types and executable client behavior for:
 
-Call an API through a resource method, its exact HTTP route, or its
-`operationId`.
+- paths, HTTP methods, path/query/header/cookie parameters, and request bodies;
+- JSON, text, binary, form, multipart, and supported streaming media;
+- status-specific responses, response headers, and raw response access;
+- request and decoded-response validation from the applicable OpenAPI/JSON
+  Schema contract.
 
-Headers declared in OpenAPI are available through `headerParams`. See
-[Request headers](../guide/transport.md#request-headers).
+Operations can be called through generated resource methods, exact
+`"METHOD /path"` routes, or `operationId` values. See
+[Use the generated client](../guide/client.md).
 
-## Servers and authentication
+## Servers and security
 
-OpenAPI Server Objects, security schemes, and operation-specific security
-requirements are supported. The SDK selects a sole effective requirement.
-Generated operation options expose stable Security Requirement Object IDs
-through a required `securityRequirement` union only when alternatives exist.
-Your application provides tokens and certificates directly or through a
-`securityProvider` that receives the selected requirement.
+OpenAPI Server Objects are available to generated operations, including
+operation/path/root precedence and server variables. A caller-supplied `baseURL` overrides the selected OpenAPI server.
 
-See [transport, authentication, and streams](../guide/transport.md) for
-configuration examples.
+The generated client supports OpenAPI API keys, HTTP Basic/Bearer, OAuth2,
+OpenID Connect, and mutual TLS security schemes. When several effective Security
+Requirement Objects are alternatives, generated request options expose the
+allowed `securityRequirement` values as a TypeScript union.
 
-## Links and streams
+Credential acquisition remains application-owned. See
+[Authentication, transport, and streams](../guide/transport.md).
 
-OpenAPI Links become typed follow-up request helpers. Streaming responses are
-available as `AsyncIterable` values.
+## Links, pagination, and streams
+
+OpenAPI Link Objects become typed follow-up call helpers under `$links`.
+Supported streaming responses are exposed as `AsyncIterable` values under
+`$streams`.
+
+Declaring `x-pagination` adds pagination helpers. Standard OpenAPI operations
+remain available as normal calls. See [OpenAPI x-* extensions](./extensions.md).
 
 ## Webhooks and Callbacks
 
-Add `--with server` to generate types and Fetch-based routers for receiving
-Webhooks and Callbacks.
+Webhook and Callback Objects describe inbound requests. The base target contains
+outbound client artifacts; `--with server` adds the inbound contracts when the
+application receives them. The
+add-on generates Fetch-native handler/router APIs while the application remains
+responsible for its HTTP listener, framework integration, public routes, and
+authentication policy.
 
-## Unsupported features
+See [Receive Webhooks and Callbacks](../guide/server.md).
 
-When the selected target cannot generate an OpenAPI feature, generation stops
-with an error that identifies the relevant location. Unsupported features are
-not silently skipped.
+## JSON Schema vocabularies
 
-The source OpenAPI document is available through the generated metadata entry point.
+Standard JSON Schema vocabulary used by supported OpenAPI versions is handled by
+the generator. A required unknown custom vocabulary needs additional schema semantics. Register
+a trusted compile-time schema extension for that case. The extension lowers
+the custom vocabulary to standard JSON Schema during generation; the generated
+runtime uses the lowered schema semantics.
+
+See [Custom JSON Schema vocabularies](../guide/schema-vocabularies.md).
+
+## SDK-specific OpenAPI extensions
+
+Supported `x-*` fields such as `x-pagination`, `x-envelope`,
+`x-sdk-visibility`, `x-sort`, and `x-error-category` configure generated SDK
+conveniences. Custom JSON Schema vocabulary extensions handle schema semantics.
+
+See [OpenAPI x-* extensions](./extensions.md).
+
+## Feature coverage
+
+The project maintains executable feature evidence for supported OpenAPI
+versions. The documentation site focuses on how to use supported behavior;
+generation diagnostics determine compatibility for a particular document and
+installed version.
+
+The source OpenAPI document used for generation is also available through the
+generated metadata entry point.

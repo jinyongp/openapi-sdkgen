@@ -1,24 +1,22 @@
 # 생성된 클라이언트 API
 
-TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반적인 API 호출에는
-`./generated/api`만 사용하면 됩니다.
+TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 호출은
+`./generated/api`를 사용합니다.
 
 | 경로 | 용도 |
 | --- | --- |
 | `./generated/api` | API 호출, 생성 타입, 오류, Link, 스트림 |
 | `./generated/api/metadata` | 원본 OpenAPI 파일과 버전 확인 |
-| `./generated/api/server/webhooks` | Webhook 처리 |
-| `./generated/api/server/callbacks` | Callback 처리 |
+| `./generated/api/server/webhooks` | Webhook 처리. `--with server`에서 생성 |
+| `./generated/api/server/callbacks` | Callback 처리. `--with server`에서 생성 |
 
-::: details Node ESM으로 직접 실행할 때
+::: details Node ESM으로 실행할 때
 
-Node에서 컴파일된 파일을 직접 실행한다면 `.js` 파일 경로를 명시하세요.
+Node에서 컴파일된 파일을 실행한다면 `.js` 파일 경로를 명시하세요.
 
 ```ts
 import { createClient } from "./generated/api/index.js";
 ```
-
-Node ESM은 디렉터리 경로에서 `index.js`를 자동으로 찾지 않습니다.
 :::
 
 ## 클라이언트
@@ -54,8 +52,7 @@ const todo = await api.todos.create({
 
 ### `$routes`
 
-HTTP 메서드와 OpenAPI 경로를 그대로 사용합니다. `operationId`가 없는 API도
-호출할 수 있습니다.
+HTTP 메서드와 OpenAPI 경로를 기준으로 호출합니다.
 
 ```ts
 const todos = await api.$routes["GET /todos"]({
@@ -75,24 +72,33 @@ const todos = await api.$operations["listTodos"]({
 
 ## Security Requirement
 
-Operation에 OpenAPI security 대안이 여러 개라면 `securityRequirement`로 하나를
-선택합니다. Requirement가 하나이면 자동으로 선택되며 빈 requirement의 이름은
-`"anonymous"`입니다.
+Operation에 OpenAPI security 대안이 여러 개라면 생성된 요청 옵션이
+`securityRequirement`를 요구합니다. Requirement가 하나이면 자동 선택되며, 빈
+requirement가 다른 대안과 함께 있으면 `"anonymous"`로 표현됩니다.
+
+Todo operation이 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
 
 ```ts
-await api.$operations.updateCheckout({
-  securityRequirement: "GuestCapability",
-  authorization: "Bearer example-token",
-});
+await api.$operations.updateTodo(
+  {
+    path: { todoID: "todo-1" },
+    body: { completed: true },
+  },
+  {
+    securityRequirement: "userAuth",
+    authorization: "Bearer example-token",
+  },
+);
 ```
 
-선택된 requirement의 인증 정보를 가져오려면 `securityProvider`를 사용합니다.
-예시는 [인증](../guide/transport.md#인증)에서 확인할 수 있습니다.
+유효한 requirement ID는 생성된 TypeScript 타입에 포함됩니다. Credential을
+동적으로 가져와야 한다면 `securityProvider`를 사용합니다. 전체 security
+모델과 예시는 [인증, 전송, 스트림](../guide/transport.md)을 참고하세요.
 
 ## 요청 헤더
 
-선언된 헤더는 모두 `headerParams`에 생성됩니다. Fetch가 제어하는 헤더는 호출자
-입력에서 선택 사항이며 실제 전송 여부는 실행 중인 Fetch가 결정합니다. 자세한
+선언된 헤더는 `headerParams`에 생성됩니다. Fetch가 제어하는 헤더는 호출자
+입력에서 선택 사항이며 전송 여부는 실행 중인 Fetch가 결정합니다. 자세한
 사용법은 [요청 헤더](../guide/transport.md#요청-헤더)에서 확인할 수 있습니다.
 
 ## Link와 스트림
@@ -145,4 +151,4 @@ import { createCallbackHandlers } from "./generated/api/server/callbacks";
 ```
 
 자세한 사용법은
-[Webhook과 Callback 처리](../guide/server.md)에서 확인하세요.
+[Webhook과 Callback 수신](../guide/server.md)에서 설정과 예시를 확인하세요.

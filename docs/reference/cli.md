@@ -1,5 +1,9 @@
 # CLI reference
 
+Use this page to look up command syntax and flag behavior. For a task-oriented
+walkthrough, start with [Getting started](../guide/getting-started.md) or
+[Generate and verify an SDK](../guide/generate.md).
+
 ## Help and version
 
 ```sh
@@ -8,77 +12,115 @@ openapi-sdkgen generate --help
 openapi-sdkgen --version
 ```
 
-`openapi-sdkgen --help` lists commands.
-`openapi-sdkgen generate --help` lists every generation target, optional
-feature, and flag supported by the installed CLI.
+`generate --help` lists the targets, add-ons, and flags supported by the installed
+CLI.
 
 ## `generate`
 
 ```text
-openapi-sdkgen generate \
-  --input <path|file-url|http-url|-> \
-  --target <target> \
-  --output <directory>
+openapi-sdkgen generate [options]
 ```
 
-### Required options
+`--input` and `--target` are required. Normal generation also requires `--output`;
+check mode makes `--output` optional.
 
-- `--input <openapi>`: an OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON or YAML file.
-  Use a local path, `file://` URL, HTTP(S) URL, or `-` for stdin.
-- `--target typescript`: generates a TypeScript SDK.
-- `--output <directory>`: the generated-code directory. It must not exist
-  unless `--incremental` is selected.
+### Core options
 
-`--output` always expects a directory path. Unlike `--input -`, `--output -`
-does not mean standard output.
+| Option | Meaning |
+| --- | --- |
+| `--input <source>` | OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON/YAML source: local path, `file://` URL, HTTP(S) URL, or `-` for stdin |
+| `--target typescript` | Generate the TypeScript target |
+| `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
+| `--check` | Compile and prepare while leaving generated output unchanged; with `--output`, also verify managed-output drift |
+| `--incremental` | Update an existing manifest-owned output directory |
+| `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
+| `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
 
-## Update an existing output
+Choose either `--check` or `--incremental` for a run. `--output` expects a
+directory path; standard output is not a supported generation destination.
 
-Use `--incremental` after an initial successful generation:
+## Fresh, incremental, and check modes
+
+Fresh generation creates a new output directory:
 
 ```sh
 openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
-  --output ./src/generated/api \
-  --incremental
+  --output ./src/generated/api
 ```
 
-The initial run creates `.openapi-sdkgen-manifest.json`. Incremental runs keep
-unchanged generated files in place, atomically replace changed files, and
-remove only stale files recorded in that manifest. Unmanaged files remain
-untouched. The command stops without changing the output if the manifest is
-missing or invalid, a generated file was edited, an unmanaged path conflicts
-with a new artifact, or another incremental run holds the output lock.
+Use `--incremental` after the first successful generation to update the same
+managed directory. The output manifest controls which files may be replaced or
+removed; unmanaged files are preserved.
 
-## Read an OpenAPI file
+Omit `--output` for a compiler/target preflight:
 
-Pass a local file or URL to `--input`.
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --check
+```
+
+Add an existing managed output to verify checked-in generated source while
+leaving the directory unchanged:
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --check \
+  --output ./src/generated/api
+```
+
+The managed check fails for generated content/path drift, a generation
+fingerprint change, edited or missing owned files, an invalid manifest, or an
+unmanaged path conflict.
+
+See [Generate and verify an SDK](../guide/generate.md) for the intended CI and
+regeneration workflows.
+
+## Diagnostics
+
+The default format is `human`. Use JSON when another tool needs structured
+output:
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target typescript \
+  --check \
+  --diagnostics-format json 2> diagnostics.json
+```
+
+The JSON envelope is versioned and contains counts, diagnostics, and skipped
+phases. Diagnostic reports are written to stderr; generated artifacts are written to the
+output directory.
+
+## Input source options
+
+### `--input <source>`
+
+Accepted sources:
 
 ```sh
 # Local file
-openapi-sdkgen generate --input ./openapi.yaml --target typescript --output ./src/generated/api
+openapi-sdkgen generate --input ./openapi.yaml --target typescript --check
 
 # file URL
-openapi-sdkgen generate --input file:///workspace/openapi.yaml --target typescript --output ./src/generated/api
+openapi-sdkgen generate --input file:///workspace/openapi.yaml --target typescript --check
 
-# Development server
-openapi-sdkgen generate --input http://localhost:4010/openapi.json --target typescript --output ./src/generated/api
+# HTTP(S) URL
+openapi-sdkgen generate --input https://api.example.test/openapi.yaml --target typescript --check
+
+# stdin
+cat ./openapi.yaml | openapi-sdkgen generate --input - --target typescript --check
 ```
 
-Use `--input -` to read an OpenAPI file from another command. The `-` means
-standard input (stdin) instead of a file path.
+### `--input-base <source>`
 
-```sh
-curl https://api.example.test/openapi.json | \
-  openapi-sdkgen generate \
-    --input - \
-    --target typescript \
-    --output ./src/generated/api
-```
-
-When the OpenAPI file uses relative `$ref` values, use `--input-base` to set
-the base path or URL.
+Use this when stdin needs a base location for relative references:
 
 ```sh
 curl https://api.example.test/openapi.yaml | \
@@ -86,98 +128,128 @@ curl https://api.example.test/openapi.yaml | \
     --input - \
     --input-base https://api.example.test/openapi.yaml \
     --target typescript \
-    --output ./src/generated/api
+    --check
 ```
 
-## Authenticated URLs
+File and URL inputs already provide their own base.
 
-Read HTTP request header values from environment variables so secrets do not
-appear in the command line.
+## Authenticated HTTP(S) input
+
+### `--http-header-env <header=env>`
+
+Maps an HTTP header name to an environment-variable name. The environment
+variable's value becomes the complete header value.
 
 ```sh
-export OPENAPI_TOKEN='...'
+export OPENAPI_TOKEN='Bearer example-token'
+
 openapi-sdkgen generate \
   --input https://api.internal.example/openapi.yaml \
   --http-header-env Authorization=OPENAPI_TOKEN \
   --target typescript \
-  --output ./src/generated/api
+  --check
 ```
 
-`--http-header-env` uses the format `Header-Name=ENV_VAR` and may be repeated.
-Empty values, invalid header names, and duplicate headers are rejected. `Host`,
-`Cookie`, connection-management headers, and proxy authorization headers
-cannot be set.
+Pass the environment-variable name, as in `Authorization=OPENAPI_TOKEN`.
+`Authorization=$OPENAPI_TOKEN` and `Authorization=${OPENAPI_TOKEN}` invoke shell
+expansion, placing the secret value in argv and violating the expected
+`Header-Name=ENV_VAR` syntax.
 
-The CLI warns when a mapped header is sent over an unencrypted `http://`
-connection.
+The option is repeatable. Environment variables must exist and contain a
+non-empty valid header value. Duplicate header names are rejected. `Host`,
+`Cookie`, connection-management headers, proxy authorization, and other
+unsafe transport-controlled headers cannot be mapped.
 
-### Client certificates and private CAs
+The CLI warns when mapped credentials are sent to an unencrypted `http://`
+root input.
+
+### `--tls-client-cert <path>` and `--tls-client-key <path>`
+
+Supply a PEM client certificate and private key together for HTTPS input.
+
+### `--tls-ca-file <path>`
+
+Add PEM certificate authorities for the HTTPS input. This extends the certificate trust set while preserving normal TLS verification.
+
+Mapped headers, client certificates, and private CA settings are protected input
+credentials scoped to the root OpenAPI origin. Only same-origin requests receive
+them.
+
+## TypeScript server add-on
+
+### `--with server`
+
+Adds Fetch-native inbound handler/router artifacts for OpenAPI Webhooks and
+Callbacks.
 
 ```sh
 openapi-sdkgen generate \
-  --input https://api.internal.example/openapi.yaml \
-  --tls-client-cert ./secrets/openapi-client.pem \
-  --tls-client-key ./secrets/openapi-client-key.pem \
-  --tls-ca-file ./certs/internal-ca.pem \
+  --input ./openapi.yaml \
   --target typescript \
+  --with server \
   --output ./src/generated/api
 ```
 
-The client certificate and key must be provided together. `--tls-ca-file` adds
-a private CA to the system trust store; it does not disable TLS verification.
+The add-on generates Fetch-native inbound contracts. Your application supplies the
+HTTP listener, framework integration, and public routes.
 
-## Webhooks and Callbacks
+See [Receive Webhooks and Callbacks](../guide/server.md).
 
-```text
---with server
-```
+## Remote `$ref` options
 
-Generate handler types and Fetch-based routers under `server/`. See
-[Handle Webhooks and Callbacks](../guide/server.md) for examples.
+Remote references use an explicit allowlist and integrity lock for reproducible,
+fail-closed resolution.
 
-## Errors and warnings
+| Option | Meaning |
+| --- | --- |
+| `--allow-remote-ref <origin>` | Allow one exact HTTPS origin for remote `$ref`; repeatable |
+| `--ref-lock <path>` | Use an explicit remote-reference/schema-extension integrity lock |
+| `--update-ref-lock` | Create or update accepted reference/extension digests after successful compilation |
+| `--offline` | Resolve remote references from the locked local cache with no network fetch |
 
-`generate` checks the OpenAPI file before writing code. Warnings do not stop
-generation. Errors leave existing generated code unchanged and identify the
-relevant OpenAPI location when possible.
+For a local input file, the default lock path is
+`<input>.openapi-sdkgen.lock`.
 
-There is no separate `validate` command. See
-[Generate an SDK](../guide/generate.md) for CI use.
-
-## Remote `$ref` values
-
-Relative file references must stay within the OpenAPI file's directory tree.
-To fetch a `$ref` from another server, allow its exact HTTPS origin.
-
-- `--allow-remote-ref <origin>`: allow one HTTPS origin. Repeat the option for
-  more than one origin.
-- `--ref-lock <path>`: set the reference lock file path.
-- `--update-ref-lock`: fetch remote references and create or update the lock.
-- `--offline`: use previously cached references without network access.
+First use of a cross-origin reference:
 
 ```sh
 openapi-sdkgen generate \
-  --input ./openapi.json \
+  --input ./openapi.yaml \
   --target typescript \
-  --output ./src/generated/api \
   --allow-remote-ref https://schemas.example.test \
-  --update-ref-lock
+  --update-ref-lock \
+  --output ./src/generated/api
 ```
 
-For an HTTP(S) OpenAPI URL, same-origin relative `$ref` values are resolved
-automatically. Update the lock the first time they are fetched. A different
-origin still requires `--allow-remote-ref`.
+Later runs omit `--update-ref-lock` and verify remote content against the lock.
 
-Authentication headers, client certificates, and private CAs are only used for
-the same origin as the OpenAPI file. They are never forwarded to a different
-origin or redirect.
+Same-origin relative references from an HTTP(S) root input are allowed as part
+of that input. URL/stdin roots require an explicit `--ref-lock` for remote
+`$ref` fetching because no local input filename exists for the default lock
+path. A different origin additionally needs `--allow-remote-ref`.
+Credentials configured for the root origin remain scoped to that origin.
 
-## JSON Schema extensions
+## Schema extensions
 
-```text
---schema-extension <manifest>
-```
+### `--schema-extension <manifest>`
 
-Register a local extension for a required custom JSON Schema vocabulary.
-Repeat the option to register more than one extension. Extensions run only
-while generating the SDK and are not included in application code.
+Registers a trusted local compiler for a required custom JSON Schema vocabulary. Repeat the option when more than one manifest is needed.
+
+Schema extensions handle required custom JSON Schema vocabularies. SDK-specific
+OpenAPI `x-*` fields are documented under
+[OpenAPI x-* extensions](./extensions.md).
+
+A schema-extension manifest is versioned, names the vocabulary URI(s), points to
+an executable and arguments, and pins the executable by SHA-256. Extension
+digests share the reference integrity lock. The first accepted version therefore
+requires `--update-ref-lock`.
+
+For local OpenAPI files the lock path can be derived automatically. Schema
+extensions with URL or stdin root input require an explicit `--ref-lock`.
+
+The executable runs during generation and lowers the custom vocabulary to ordinary
+JSON Schema. Treat it as trusted local code running with the generation process's
+permissions; generated source contains the lowered schema semantics.
+
+See [Custom JSON Schema vocabularies](../guide/schema-vocabularies.md) for the
+manifest shape, trust model, and first-run/steady-state commands.

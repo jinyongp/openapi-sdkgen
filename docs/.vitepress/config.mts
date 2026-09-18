@@ -3,7 +3,7 @@ import { defineConfig } from "vitepress";
 const englishTheme = {
   nav: [
     { text: "Start", link: "/guide/getting-started" },
-    { text: "Guides", link: "/guide/client" },
+    { text: "Guides", link: "/guide/generate" },
     { text: "Reference", link: "/reference/cli" },
     { text: "Playground", link: "/playground" },
   ],
@@ -13,10 +13,11 @@ const englishTheme = {
         text: "Build and use your SDK",
         items: [
           { text: "Create your first SDK", link: "/guide/getting-started" },
-          { text: "Generate from OpenAPI", link: "/guide/generate" },
+          { text: "Generate and verify", link: "/guide/generate" },
           { text: "Call your API", link: "/guide/client" },
           { text: "Authentication, transport, and streams", link: "/guide/transport" },
           { text: "Receive webhooks and callbacks", link: "/guide/server" },
+          { text: "Custom JSON Schema vocabularies", link: "/guide/schema-vocabularies" },
         ],
       },
     ],
@@ -28,7 +29,7 @@ const englishTheme = {
           { text: "Generated client API", link: "/reference/client-api" },
           { text: "TypeScript types", link: "/reference/typescript-types" },
           { text: "OpenAPI support", link: "/reference/capabilities" },
-          { text: "SDK extensions", link: "/reference/extensions" },
+          { text: "OpenAPI x-* extensions", link: "/reference/extensions" },
         ],
       },
     ],
@@ -47,7 +48,7 @@ const englishTheme = {
 const koreanTheme = {
   nav: [
     { text: "시작하기", link: "/ko/guide/getting-started" },
-    { text: "사용 가이드", link: "/ko/guide/client" },
+    { text: "사용 가이드", link: "/ko/guide/generate" },
     { text: "레퍼런스", link: "/ko/reference/cli" },
     { text: "플레이그라운드", link: "/ko/playground" },
   ],
@@ -57,10 +58,11 @@ const koreanTheme = {
         text: "SDK 만들기와 사용하기",
         items: [
           { text: "첫 SDK 만들기", link: "/ko/guide/getting-started" },
-          { text: "OpenAPI에서 SDK 생성", link: "/ko/guide/generate" },
+          { text: "SDK 생성과 검증", link: "/ko/guide/generate" },
           { text: "클라이언트로 API 호출", link: "/ko/guide/client" },
           { text: "인증·전송·스트림", link: "/ko/guide/transport" },
           { text: "Webhook과 Callback 수신", link: "/ko/guide/server" },
+          { text: "사용자 정의 JSON Schema vocabulary", link: "/ko/guide/schema-vocabularies" },
         ],
       },
     ],
@@ -72,7 +74,7 @@ const koreanTheme = {
           { text: "생성된 클라이언트 API", link: "/ko/reference/client-api" },
           { text: "TypeScript 타입", link: "/ko/reference/typescript-types" },
           { text: "OpenAPI 지원 범위", link: "/ko/reference/capabilities" },
-          { text: "SDK 확장 기능", link: "/ko/reference/extensions" },
+          { text: "OpenAPI x-* 확장", link: "/ko/reference/extensions" },
         ],
       },
     ],

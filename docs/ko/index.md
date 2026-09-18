@@ -3,47 +3,59 @@ layout: home
 
 hero:
   name: openapi-sdkgen
-  text: OpenAPI를 애플리케이션 코드로
-  tagline: API 명세와 일치하는 SDK 소스를 생성해 바로 사용하세요.
+  text: OpenAPI에서 TypeScript SDK 소스 생성
+  tagline: API 계약은 OpenAPI에 두고, 애플리케이션이 소유하는 client source를 생성해 기존 toolchain에서 바로 사용하고 CI에서 검증하세요.
   actions:
     - theme: brand
-      text: 시작하기
+      text: 첫 SDK 만들기
       link: /ko/guide/getting-started
     - theme: alt
-      text: 생성된 클라이언트 살펴보기
-      link: /ko/guide/client
+      text: SDK 생성과 검증
+      link: /ko/guide/generate
 
 features:
   - icon: 🧩
-    title: 애플리케이션에서 바로 사용
-    details: 생성한 클라이언트와 타입을 프로젝트에서 곧바로 가져와 사용합니다.
+    title: 애플리케이션이 소유하는 소스
+    details: TypeScript를 프로젝트 안에 생성하고 이미 사용하는 compiler와 bundler로 함께 빌드합니다.
   - icon: ✓
-    title: 요청과 응답 검증
-    details: 요청은 전송하기 전에, 응답은 애플리케이션에서 사용하기 전에 검증합니다.
+    title: 계약 검증
+    details: 요청 입력과 decoded response를 검증하고, --check로 생성 가능 여부와 drift를 파일 변경 없이 확인합니다.
   - icon: ⚡
-    title: 원하는 방식으로 API 호출
-    details: 읽기 쉬운 리소스 메서드나 정확한 HTTP 메서드, 경로, operationId를 사용합니다.
+    title: 타입이 지정된 호출 방식
+    details: 같은 OpenAPI 계약에서 Todo 같은 resource method, HTTP method/path route, operationId API를 생성합니다.
   - icon: ↗
-    title: Webhook과 Callback 처리
-    details: 필요하면 같은 OpenAPI 문서에서 Webhook과 Callback 핸들러 타입과 라우터를 생성합니다.
+    title: 선택적인 inbound 계약
+    details: OpenAPI가 inbound Webhook이나 Callback을 정의하면 Fetch 기반 handler를 추가로 생성합니다.
 ---
 
-## 명령 하나로 일반 애플리케이션 소스 생성
+## OpenAPI에서 Todo 호출까지
+
+SDK를 애플리케이션 소스 안에 생성합니다.
 
 ```sh
 openapi-sdkgen generate \
-  --input ./openapi.json \
+  --input ./openapi.yaml \
   --target typescript \
   --output ./src/generated/api
 ```
 
+생성된 코드는 일반 TypeScript처럼 import해서 사용합니다.
+
 ```ts
 import { createClient } from "./generated/api";
 
-const api = createClient({ baseURL: "https://api.example.test/v1" });
-const todo = await api.todos.create({ body: { title: "문서 작성" } });
+const api = createClient({
+  baseURL: "https://api.example.test/v1",
+});
+
+const todo = await api.todos.create({
+  body: { title: "문서 작성" },
+});
 ```
 
-명령을 실행하면 클라이언트와 타입이 지정한 디렉터리에 생성됩니다.
-[첫 SDK 만들기](./guide/getting-started.md)에서 생성부터 첫 API 호출까지
-따라 해보세요.
+생성 디렉터리에는 애플리케이션이 필요한 client, type, source runtime이 함께
+들어갑니다.
+
+완전한 최소 Todo 계약부터 따라가려면 [첫 SDK 만들기](./guide/getting-started.md)를
+보세요. 이미 프로젝트에 생성을 연결했다면 [SDK 생성과 검증](./guide/generate.md)에서
+증분 갱신, `--check`, 인증이 필요한 입력, 원격 참조를 확인할 수 있습니다.

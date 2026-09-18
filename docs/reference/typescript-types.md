@@ -39,7 +39,7 @@ type UpdateBody = OperationBody<typeof updateTodo>;
 ```
 
 `OperationInput` is the complete argument accepted by the method. `OperationBody` is
-its request body. A resource-tree method includes only the arguments that remain after
+its request body. A resource-tree method includes the arguments that remain after
 its selectors have been applied.
 
 ```ts
@@ -118,7 +118,8 @@ type TodoInput = ComponentInput<"Todo">;
 type TodoOutput = ComponentOutput<"Todo">;
 ```
 
-Input types omit `readOnly` fields. Output types omit `writeOnly` fields.
+`readOnly` fields appear in output types, and `writeOnly` fields appear in input
+types.
 
 ## Enum values and types
 
@@ -155,9 +156,9 @@ if (isEnumValue(Enums.TodoStatus, input)) {
 ```
 
 The same `Enums`, `EnumValue`, and `isEnumValue` exports remain available from the
-main `./generated/api` entry, so existing imports do not need to change. Use the
-dedicated `./generated/api/enums` entry when a module only needs generated enum
-runtime values and types.
+main `./generated/api` entry, so existing imports remain valid. Use the dedicated
+`./generated/api/enums` entry for modules that need generated enum runtime values
+and types.
 
 `Enums` contains enums declared as component schemas. Inline and nested enums remain
 available through their generated request, response, or component types.

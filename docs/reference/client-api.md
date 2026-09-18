@@ -1,24 +1,22 @@
 # Generated client API
 
-The TypeScript SDK provides separate import paths for different tasks. Most
-applications only need `./generated/api`.
+The TypeScript SDK provides import paths for different tasks. Most applications
+use `./generated/api`.
 
 | Import path | Use it for |
 | --- | --- |
 | `./generated/api` | API calls, generated types, errors, Links, and streams |
 | `./generated/api/metadata` | Reading the source OpenAPI file and version |
-| `./generated/api/server/webhooks` | Handling Webhooks |
-| `./generated/api/server/callbacks` | Handling Callbacks |
+| `./generated/api/server/webhooks` | Handling Webhooks; generated with `--with server` |
+| `./generated/api/server/callbacks` | Handling Callbacks; generated with `--with server` |
 
 ::: details Running directly in Node ESM
 
-Use an explicit `.js` path when running compiled files directly in Node.
+Use an explicit `.js` path when running compiled files with Node ESM.
 
 ```ts
 import { createClient } from "./generated/api/index.js";
 ```
-
-Node ESM does not resolve a directory import to `index.js`.
 :::
 
 ## Client
@@ -76,19 +74,30 @@ const todos = await api.$operations["listTodos"]({
 
 ## Security requirements
 
-When an operation has several OpenAPI security alternatives, select one with
-`securityRequirement`. A sole requirement is selected automatically, and an empty
-requirement is named `"anonymous"`.
+When an operation has several OpenAPI security alternatives, the generated
+request options require `securityRequirement`. With one requirement, the SDK
+selects it automatically. An empty requirement uses the ID `"anonymous"` when
+it participates in a choice.
+
+For a Todo operation that accepts `userAuth` or `serviceAuth`:
 
 ```ts
-await api.$operations.updateCheckout({
-  securityRequirement: "GuestCapability",
-  authorization: "Bearer example-token",
-});
+await api.$operations.updateTodo(
+  {
+    path: { todoID: "todo-1" },
+    body: { completed: true },
+  },
+  {
+    securityRequirement: "userAuth",
+    authorization: "Bearer example-token",
+  },
+);
 ```
 
-Use `securityProvider` to load credentials for the selected requirement. See
-[Authentication](../guide/transport.md#authentication) for examples.
+The generated type exposes the valid requirement IDs. Use `securityProvider`
+when credentials need to be acquired dynamically. See
+[Authentication](../guide/transport.md#provide-ordinary-bearer-credentials) for
+the full security model and examples.
 
 ## Request headers
 
@@ -144,4 +153,4 @@ import { createWebhookRouter } from "./generated/api/server/webhooks";
 import { createCallbackHandlers } from "./generated/api/server/callbacks";
 ```
 
-See [Handle Webhooks and Callbacks](../guide/server.md) for examples.
+See [Receive Webhooks and Callbacks](../guide/server.md) for setup and examples.

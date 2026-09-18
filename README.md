@@ -7,11 +7,11 @@ release includes the `typescript` target.
 
 ## Quick start: TypeScript
 
-The TypeScript target generates source inside your application. Your existing
-TypeScript toolchain compiles it, so there is no separate SDK package to build
-or publish.
+The TypeScript target generates the client, types, and source runtime inside your
+application. Your existing TypeScript toolchain compiles them with the rest of the
+project.
 
-Generate a client directly from a Node-based project:
+Generate a client from a Node-based project:
 
 ```sh
 pnpm dlx openapi-sdkgen generate \
@@ -50,9 +50,8 @@ pnpm dlx openapi-sdkgen generate \
   --incremental
 ```
 
-Incremental generation uses the manifest created on the first run. It refuses
-to overwrite edited generated files and leaves files outside that manifest
-untouched. When a self-contained local OpenAPI file and the generation settings
+Incremental generation uses the manifest created on the first run. It verifies
+managed file hashes before replacement and preserves files outside the manifest. When a self-contained local OpenAPI file and the generation settings
 are unchanged, it also skips compilation and source emission. Inputs from
 stdin, HTTP(S), external `$ref` files, and schema extensions continue through
 the full validation and generation path.
@@ -60,7 +59,7 @@ the full validation and generation path.
 ## Install
 
 The npm package includes precompiled binaries for macOS, Linux, and Windows on
-arm64 and x64. Go is not required.
+arm64 and x64, so the CLI runs directly in Node-based projects.
 
 ```sh
 pnpm dlx openapi-sdkgen generate --help
@@ -106,8 +105,8 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-The server add-on creates separate `server/webhooks.ts` and
-`server/callbacks.ts` entry points. The main entry remains client-only.
+The server add-on creates `server/webhooks.ts` and `server/callbacks.ts` entry
+points alongside the main client entry.
 
 ## Documentation
 

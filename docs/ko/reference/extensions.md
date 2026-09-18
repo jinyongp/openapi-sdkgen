@@ -1,30 +1,31 @@
-# SDK 확장 기능
+# OpenAPI x-* 확장
 
-표준 OpenAPI만으로 SDK를 생성할 수 있습니다. 이 페이지의 `x-*` 필드는
-OpenAPI만으로 표현하기 어려운 편의 기능이 필요할 때만 사용하세요.
+표준 OpenAPI만으로 SDK를 생성할 수 있습니다. 이 페이지의 `x-*` 필드는 일반
+OpenAPI 계약 위에 openapi-sdkgen의 선택적인 편의 기능을 추가합니다.
 
-openapi-sdkgen이 지원하는 확장 필드가 있으면 선언 내용을 먼저 검사합니다.
-잘못된 설정을 무시하거나 임의로 해석하지 않으며, 오류가 있으면 SDK를 생성하지
-않습니다.
+Schema extension은 필수 사용자 정의 JSON Schema vocabulary를 처리합니다.
+해당 기능은 [사용자 정의 JSON Schema vocabulary](../guide/schema-vocabularies.md)에서
+설명합니다.
 
-## 확장 필드 없이 사용할 수 있는 기능
+openapi-sdkgen은 지원하는 `x-*` 선언을 코드를 쓰기 전에 검증합니다. 잘못된
+선언은 diagnostic과 함께 생성을 중단합니다.
 
-- `operationId`가 없어도 `api.$routes["METHOD /path"]`로 API를 호출할 수
-  있습니다.
+## 표준 OpenAPI 동작
+
+- `api.$routes["METHOD /path"]`는 HTTP method/path를 기준으로 API를 호출합니다.
 - query, header, cookie, path 매개변수는 OpenAPI에 선언된 이름을 그대로
   사용합니다.
 - `required`, `minimum`, `pattern`, `enum` 같은 스키마 제약은 생성된 코드의
   요청·응답 검사에 반영됩니다.
-- openapi-sdkgen이 알지 못하는 `x-*` 필드는 메타데이터에 보존되지만 SDK 동작을
-  바꾸지는 않습니다.
+- openapi-sdkgen이 알지 못하는 `x-*` 필드는 메타데이터에 보존되고 SDK 동작은
+  그대로 유지됩니다.
 
 필터는 query 매개변수로, `If-Match`와 `Idempotency-Key`는 header 매개변수로
-선언하세요. `x-filter`, `x-concurrency`, `x-idempotency`에는 별도 동작을
-부여하지 않습니다.
+선언하세요. 이 페이지의 지원 `x-*` 필드가 SDK 확장 동작을 정의합니다.
 
 ## `x-envelope`
 
-성공 응답의 `data` 속성만 일반 호출의 반환값으로 사용합니다.
+`x-envelope`를 선언하면 일반 호출은 성공 응답의 `data` 속성을 반환합니다.
 
 ```yaml
 x-envelope: data
@@ -34,12 +35,12 @@ x-envelope: data
 object여야 합니다. `.raw()`는 나머지 메타데이터를 포함한 전체 응답 본문을
 반환합니다.
 
-전체 응답을 그대로 받으려면 `x-envelope`를 생략하세요.
+`x-envelope`의 기본 동작은 전체 응답 반환입니다.
 
 ## `x-pagination`
 
-페이지 순회를 돕는 `.paginate()` 메서드를 생성합니다. 확장을 생략하면 API는
-그대로 생성되지만 `.paginate()`는 추가되지 않습니다.
+`x-pagination`은 페이지 순회를 돕는 `.paginate()` 메서드를 추가합니다. 일반
+operation 호출도 함께 생성됩니다.
 
 ### 기본 형식
 
@@ -69,10 +70,10 @@ cursor 방식의 `nextCursor`는 문자열 또는 `null`이어야 합니다. off
 `offset`, `limit`, `total`을 사용할 수 있으며 스키마에도 각 값의 범위를
 선언해야 합니다.
 
-### 매개변수와 응답 경로 직접 지정
+### 매개변수와 응답 경로 지정
 
 다른 이름이나 응답 구조를 사용한다면 query 매개변수 이름과 응답 본문의 JSON
-Pointer를 직접 연결합니다.
+Pointer를 연결합니다.
 
 ```yaml
 x-pagination:
@@ -82,7 +83,7 @@ x-pagination:
     offset: pageOffset
     limit: pageSize
   response:
-    items: /payload/rows
+    items: /payload/todos
     nextCursor: /payload/page/next
     offset: /payload/page/offset
     limit: /payload/page/limit
@@ -107,7 +108,7 @@ x-pagination:
     type: array
     items:
       type: string
-      enum: [name:asc, name:desc, createdAt:asc, createdAt:desc]
+      enum: [title:asc, title:desc, createdAt:asc, createdAt:desc]
   x-sort:
     format: field-direction
 ```
@@ -119,7 +120,7 @@ x-pagination:
 { field: "createdAt", direction: "desc" }
 ```
 
-Webhook과 Callback에는 `x-sort`를 사용할 수 없습니다.
+`x-sort`는 client operation의 정렬 query parameter에 사용합니다.
 
 ## `x-sdk-visibility`
 
@@ -129,16 +130,15 @@ Webhook과 Callback에는 `x-sort`를 사용할 수 없습니다.
 x-sdk-visibility: internal
 ```
 
-- `internal`: `$routes`와 `$operations`에서는 호출할 수 있지만 리소스
-  메서드에서는 제외합니다.
-- `hidden`: API와 관련 클라이언트 메서드를 생성하지 않습니다.
+- `internal`: `$routes`와 `$operations`에는 유지하고 resource method에서는 숨깁니다.
+- `hidden`: API와 관련 client method를 generated output에서 제거합니다.
 
-확장을 생략하면 일반 공개 API로 생성됩니다.
+`x-sdk-visibility` 기본값은 일반 공개 API입니다.
 
 ## `x-error-category`
 
-오류 응답의 `error` object에 정확한 `code`가 있고 `category`가 없을 때 정적인
-오류 범주를 추가합니다.
+오류 응답의 `error` object에 `code`가 있고 `category`가 없을 때 정적인 오류
+범주를 추가합니다.
 
 ```yaml
 x-error-category: validation

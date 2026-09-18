@@ -1,19 +1,24 @@
 # 시작하기
 
-`openapi-sdkgen`은 OpenAPI 3.x 파일로 애플리케이션에서 사용할 SDK 소스를
-만드는 CLI입니다. 이 가이드에서는 OpenAPI JSON 또는 YAML 파일로 TypeScript
-클라이언트를 만들고 첫 API 요청까지 직접 실행합니다.
+`openapi-sdkgen`은 OpenAPI 3.x 문서에서 애플리케이션이 소유하는 TypeScript
+클라이언트 소스를 생성합니다. 이 가이드에서는 작은 Todo API를 정의하고 SDK를
+애플리케이션 소스 안에 생성한 뒤 첫 요청까지 호출합니다.
 
-## 1. CLI 실행
+## 1. CLI 설치
 
-Node.js 프로젝트에서는 npm 패키지로 CLI를 바로 실행할 수 있습니다.
+애플리케이션 저장소에서는 CLI를 개발 의존성으로 설치하면 다른 개발 도구와 함께
+생성기 버전도 고정할 수 있습니다.
 
 ```sh
-pnpm dlx openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --output ./src/generated/api
+pnpm add -D openapi-sdkgen
+pnpm exec openapi-sdkgen --version
 ```
+
+이 페이지의 명령은 `pnpm exec openapi-sdkgen`을 기준으로 설명합니다. Homebrew나
+GitHub Release 실행 파일로 설치했다면 앞의 `pnpm exec` 없이
+`openapi-sdkgen`을 사용하면 됩니다.
+
+일회성 실행에는 `pnpm dlx openapi-sdkgen ...`을 사용할 수 있습니다.
 
 macOS와 Linux에서는 Homebrew로 설치할 수도 있습니다.
 
@@ -21,42 +26,87 @@ macOS와 Linux에서는 Homebrew로 설치할 수도 있습니다.
 brew install jinyongp/tap/openapi-sdkgen
 ```
 
-GitHub Releases에서도 운영체제별 실행 파일을 내려받을 수 있습니다.
+## 2. Todo OpenAPI 문서 만들기
 
-## 2. OpenAPI 파일에서 클라이언트 생성
+다음 내용을 `openapi.yaml`로 저장합니다.
 
-`--input`에는 SDK 생성에 사용할 OpenAPI JSON 또는 YAML 파일을 지정합니다.
-`--output`에는 최초 실행 시 아직 존재하지 않는 경로를 지정합니다. 같은 생성
-디렉터리를 다시 갱신할 때는 `--incremental`을 추가합니다.
+```yaml
+openapi: 3.2.0
+info:
+  title: Todo API
+  version: 1.0.0
+paths:
+  /todos:
+    get:
+      operationId: listTodos
+      responses:
+        "200":
+          description: Todo list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Todo"
+    post:
+      operationId: createTodo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+      responses:
+        "201":
+          description: Created todo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Todo"
+components:
+  schemas:
+    Todo:
+      type: object
+      required: [id, title, completed]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        completed:
+          type: boolean
+```
+
+두 operation에 안정적인 `operationId`를 주고, 요청과 응답 스키마를 선언했습니다.
+이 정보가 생성된 TypeScript 타입과 클라이언트 API의 기준이 됩니다.
+
+## 3. 애플리케이션 소스 안에 생성
+
+최초 실행에서는 새 출력 디렉터리를 지정합니다.
 
 ```sh
-openapi-sdkgen generate \
-  --input ./openapi.json \
+pnpm exec openapi-sdkgen generate \
+  --input ./openapi.yaml \
   --target typescript \
   --output ./src/generated/api
 ```
 
-생성이 끝나면 `./src/generated/api` 아래에 클라이언트와 타입이 만들어집니다.
-자체 완결된 로컬 OpenAPI 파일과 생성 옵션이 이전 실행과 같으면
-`--incremental`은 기존 생성 파일을 검증한 뒤 컴파일과 소스 생성을 생략합니다.
-stdin, HTTP(S), 외부 `$ref`, 스키마 확장을 사용하는 입력은 전체 생성 과정을
-계속 실행합니다.
+생성된 디렉터리는 client, type, source runtime을 포함한 일반 애플리케이션
+소스입니다. 기존 TypeScript 컴파일러나 번들러가 나머지 코드와 함께 빌드합니다.
 
-URL에 있는 OpenAPI 파일을 바로 사용할 수도 있습니다.
+생성기가 소유한 파일은 CLI로 다시 생성합니다. OpenAPI 문서가 바뀌어 같은
+디렉터리를 갱신할 때는 `--incremental`을 사용합니다. 안전한 재생성과 CI
+검증 흐름은 [SDK 생성과 검증](./generate.md)에서 설명합니다.
 
-```sh
-openapi-sdkgen generate \
-  --input http://localhost:4010/openapi.json \
-  --target typescript \
-  --output ./src/generated/api
-```
-
-다른 명령이 출력한 OpenAPI 파일을 읽으려면 `--input -`를 지정합니다. 여기서
-`-`는 파일 경로 대신 표준 입력(stdin)을 사용한다는 뜻입니다. OpenAPI 파일이
-상대 `$ref`를 사용한다면 `--input-base`로 기준 경로 또는 URL을 함께
-지정하세요.
-
-## 3. 클라이언트 만들기
+## 4. 클라이언트 만들기
 
 ```ts
 import { createClient } from "./generated/api";
@@ -66,33 +116,39 @@ const api = createClient({
 });
 ```
 
-Vite, Next.js, Nuxt 같은 번들러는 생성 디렉터리의 `index.ts`를 자동으로
-찾습니다.
+OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 `baseURL`을
+생략할 때 그 서버 정의를 사용합니다.
 
-::: details Node ESM으로 직접 실행할 때
+::: details 컴파일된 코드를 Node ESM으로 실행할 때
 
-Node ESM은 디렉터리 경로에서 `index.js`를 자동으로 찾지 않습니다. Node에서
-컴파일된 파일을 직접 실행한다면 `./generated/api/index.js`에서 가져오세요.
-:::
-
-## 4. API 호출
-
-OpenAPI 파일에 정의된 API 경로와 HTTP 메서드를 바탕으로 리소스 메서드가
-생성됩니다.
+Vite, Next.js, Nuxt 같은 번들러는 생성 디렉터리의 진입점을 찾습니다. Node
+ESM으로 컴파일된 코드를 실행할 때는 `index.js` 파일을 명시합니다.
 
 ```ts
-const todo = await api.todos.create({
+import { createClient } from "./generated/api/index.js";
+```
+:::
+
+## 5. Todo API 호출
+
+일반 애플리케이션 코드에서는 리소스 메서드가 짧고 읽기 쉽습니다.
+
+```ts
+const created = await api.todos.create({
   body: { title: "문서 작성" },
 });
 
-const todos = await api.todos.list({
-  query: { limit: 20 },
-});
+const todos = await api.todos.list();
 ```
 
-모든 API는 HTTP 메서드와 OpenAPI 경로를 사용해 `api.$routes`에서도 호출할 수
-있습니다. `operationId`가 선언되어 있다면 `api.$operations`도 사용할 수
-있습니다.
+모든 operation은 HTTP method/path로도 호출할 수 있고, `operationId`가 있으면
+`$operations`에서도 사용할 수 있습니다.
 
-다음으로 [SDK 생성 옵션](./generate.md)과
-[생성된 클라이언트 사용법](./client.md)을 확인하세요.
+```ts
+await api.$routes["GET /todos"]();
+await api.$operations.listTodos();
+```
+
+다음으로 [SDK 생성과 검증](./generate.md)에서 증분 생성, `--check`, 인증이
+필요한 입력, 원격 참조를 확인하세요. 응답, Link, stream 등 생성된 호출 API는
+[생성된 클라이언트 사용](./client.md)에서 이어서 설명합니다.
