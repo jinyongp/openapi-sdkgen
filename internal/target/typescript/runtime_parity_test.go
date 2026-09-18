@@ -396,7 +396,7 @@ func TestGeneratedLinksAndStreamsUseStandardHeaderParameters(t *testing.T) {
 		`invocation?: LinkInvocation<import("../target/post.js").Contract["input"], import("../target/post.js").Contract["options"]`,
 		`readonly "Idempotency-Key": string`,
 		`readonly "If-Match": string`,
-		`readonly "tailEvents": StreamCall<"GET /events">`,
+		`readonly stream: StreamCall<RouteKey>`,
 	} {
 		if !strings.Contains(client, expected) {
 			t.Fatalf("standard header contract missing %q:\n%s", expected, client)
@@ -425,7 +425,7 @@ const api = createClient({ baseURL: "https://api.example.test", fetch: async (in
 }});
 const source = await api.$operations.getSource.raw();
 await api.$links.getSource.follow(source, { input: { headerParams: { "Idempotency-Key": "idem", "If-Match": "v1" } } });
-for await (const _event of api.$streams.tailEvents({ headerParams: { "If-Match": "v2" } })) { break; }
+for await (const _event of api.$operations.tailEvents.stream({ headerParams: { "If-Match": "v2" } })) { break; }
 if (JSON.stringify(seen) !== JSON.stringify([["/source",null,null],["/target","idem","v1"],["/events",null,"v2"]])) throw new Error("declared headers were not forwarded: " + JSON.stringify(seen));
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -641,10 +641,10 @@ if (!Object.prototype.hasOwnProperty.call(api.$links["source-op"], "__proto__"))
 const source = await api.$operations["source-op"].raw();
 for (const name of ["next-step", "next_step", "__proto__", "constructor"]) await api.$links["source-op"][name](source);
 if (targets !== 4) throw new Error("exact-key links did not dispatch");
-if (JSON.stringify(Object.keys(api.$streams).sort()) !== JSON.stringify(["__proto__", "tail-log", "tail_log"])) throw new Error("stream identities changed");
+if ("$streams" in api) throw new Error("legacy $streams registry leaked into the client");
 for (const name of ["tail-log", "tail_log", "__proto__"]) {
   const values = [];
-  for await (const value of api.$streams[name]()) values.push(value);
+  for await (const value of api.$operations[name].stream()) values.push(value);
   if (values.join(",") !== "item") throw new Error("stream identity did not dispatch: " + name);
 }
 `
@@ -1357,6 +1357,50 @@ if (calls !== 1) throw new Error("fetch ran for undeclared request media");
 	}
 }
 
+func TestGeneratedStreamCallDefaultsToStreamingResponseMedia(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Stream accept","version":"1"},
+  "paths":{
+    "/events":{
+      "get":{
+        "operationId":"listEvents",
+        "responses":{"200":{"description":"OK","content":{
+          "application/json":{"schema":{"type":"array","items":{"type":"string"}}},
+          "application/x-ndjson":{"itemSchema":{"type":"string"}}
+        }}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const accepts = [];
+const api = createClient({ baseURL: "https://api.example.test", fetch: async (_input, init) => {
+  const accept = new Headers(init.headers).get("accept");
+  accepts.push(accept);
+  if (accept === "application/x-ndjson") {
+    return new Response('"streamed"\n', { status: 200, headers: { "content-type": "application/x-ndjson" } });
+  }
+  return new Response('["buffered"]', { status: 200, headers: { "content-type": "application/json" } });
+} });
+const buffered = await api.$operations.listEvents({ accept: "application/json" });
+const streamed = [];
+for await (const event of api.$operations.listEvents.stream()) streamed.push(event);
+if (buffered.join(",") !== "buffered") throw new Error("buffered representation changed");
+if (streamed.join(",") !== "streamed") throw new Error("streaming representation was not selected");
+if (accepts.join(",") !== "application/json,application/x-ndjson") throw new Error("stream accept selection changed: " + accepts.join(","));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute stream media-selection test: %v\\n%s", err, output)
+	}
+}
+
 func TestGeneratedResponseStreamsDecodeNDJSONItemsLazily(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Streams","version":"1"},
@@ -1374,10 +1418,10 @@ const api = createClient({ baseURL: "https://api.example.test", fetch: async () 
   start(controller) { controller.enqueue(encoder.encode('{"event_id":"one"}\n{"event')); controller.enqueue(encoder.encode('_id":"two"}\n')); controller.close(); },
 }), { status: 200, headers: { "content-type": "application/x-ndjson" } }) });
 const events = [];
-for await (const event of api.$streams.tailLogs()) events.push(event.event_id);
+for await (const event of api.$operations.tailLogs.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two") throw new Error("NDJSON stream did not decode item schemas");
 const oversized = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response('{"event_id":"too-long"}', { status: 200, headers: { "content-type": "application/x-ndjson" } }) });
-try { for await (const _event of oversized.$streams.tailLogs({ maxStreamItemBytes: 4 })) { /* consume */ } throw new Error("oversized stream item was accepted"); }
+try { for await (const _event of oversized.$operations.tailLogs.stream({ maxStreamItemBytes: 4 })) { /* consume */ } throw new Error("oversized stream item was accepted"); }
 catch (error) { if (!String(error).includes("exceeds 4 bytes") && !String(error.cause).includes("exceeds 4 bytes")) throw error; }
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1405,7 +1449,7 @@ const api = createClient({
   ),
 });
 const events = [];
-for await (const event of api.$streams.watchEvents()) events.push(event);
+for await (const event of api.$operations.watchEvents.stream()) events.push(event);
 if (events.length !== 2) throw new Error("SSE event count mismatch");
 if (events[0].event !== "delta" || events[0].data !== '{"token":"a"}' || events[0].retry !== 5)
   throw new Error("SSE event object was not parsed according to OpenAPI semantics");
@@ -1413,6 +1457,76 @@ if (events[1].data !== "[DONE]") throw new Error("SSE sentinel-shaped data was i
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute TypeScript SSE stream runtime test: %v\n%s", err, output)
+	}
+}
+
+func TestGeneratedStreamOnlyOperationUsesCanonicalOperationAndResourceCapabilities(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Canonical streams","version":"1"},
+  "paths":{
+    "/projects/{projectId}/events":{
+      "get":{
+        "operationId":"watchProjectEvents",
+        "parameters":[
+          {"name":"projectId","in":"path","required":true,"schema":{"type":"string"}}
+        ],
+        "responses":{
+          "200":{
+            "description":"OK",
+            "content":{
+              "application/x-ndjson":{
+                "itemSchema":{"type":"string"}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+api.$operations.watchProjectEvents.stream({ path: { projectId: "p1" } })
+api.$routes["GET /projects/{projectId}/events"].stream({ path: { projectId: "p1" } })
+api.projects("p1").events.get.stream()
+api.$operations.watchProjectEvents.raw({ path: { projectId: "p1" } })
+api.projects("p1").events.get.raw()
+// @ts-expect-error stream-only operations do not expose a buffered invocation signature
+api.$operations.watchProjectEvents({ path: { projectId: "p1" } })
+// @ts-expect-error path-bound stream-only resources do not expose a buffered invocation signature
+api.projects("p1").events.get()
+// @ts-expect-error the legacy stream registry was removed
+api.$streams
+`
+	output := compileTypeScriptArtifactsWithProbe(t, document, "canonical-stream.probe.ts", probe)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const seen = [];
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async (input, init) => {
+    const url = new URL(String(input));
+    seen.push([url.pathname, new Headers(init.headers).get("accept")]);
+    return new Response('"one"\n', {
+      status: 200,
+      headers: { "content-type": "application/x-ndjson" },
+    });
+  },
+});
+if ("$streams" in api) throw new Error("legacy $streams registry is still present");
+const values = [];
+for await (const event of api.projects("p1").events.get.stream()) values.push(event);
+if (values.join(",") !== "one") throw new Error("path-bound resource stream did not decode");
+if (JSON.stringify(seen) !== JSON.stringify([["/projects/p1/events","application/x-ndjson"]]))
+  throw new Error("stream request did not bind path and select streaming Accept: " + JSON.stringify(seen));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute canonical stream surface runtime test: %v\n%s", err, output)
 	}
 }
 
@@ -1452,7 +1566,7 @@ const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFil
 let calls = 0;
 const api = createClient({ baseURL: "https://api.example.test", fetch: async () => { calls++; throw new Error("fetch must not run"); } });
 const controller = new AbortController(); controller.abort("stop");
-try { await api.$streams.listEvents({ signal: controller.signal }).next(); throw new Error("aborted stream started"); }
+try { await api.$operations.listEvents.stream({ signal: controller.signal }).next(); throw new Error("aborted stream started"); }
 catch (error) { if (!isErrorCode(error, TransportErrorCode.REQUEST_ABORTED)) throw error; }
 if (calls !== 0) throw new Error("pre-aborted stream dispatched fetch");
 `
@@ -1474,7 +1588,7 @@ func TestGeneratedResponseStreamClassifiesFetchFailureAsNetworkError(t *testing.
 import { pathToFileURL } from "node:url";
 const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
 const api = createClient({ baseURL: "https://api.example.test", fetch: async () => { throw new Error("offline"); } });
-try { await api.$streams.listEvents().next(); throw new Error("network failure was accepted"); }
+try { await api.$operations.listEvents.stream().next(); throw new Error("network failure was accepted"); }
 catch (error) { if (!isErrorCode(error, TransportErrorCode.NETWORK_ERROR)) throw error; }
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1493,7 +1607,7 @@ import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 const api = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/jsonl" } }) });
 const events = [];
-for await (const event of api.$streams.tailJSONLines()) events.push(event.event_id);
+for await (const event of api.$operations.tailJSONLines.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two") throw new Error("JSON Lines stream did not decode item schemas");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1524,7 +1638,7 @@ const codec = { decodeStream: async function* (reader, context) {
 } };
 const api = createClient({ baseURL: "https://api.example.test", maxStreamItemBytes: 5, codecs: { "application/vnd.acme.events": codec }, fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/vnd.acme.events" } }) });
 const events = [];
-for await (const event of api.$streams.tailCustomEvents()) events.push(event.event_id);
+for await (const event of api.$operations.tailCustomEvents.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two" || maxFrameBytes !== 5) throw new Error("custom stream codec did not receive bounded reader data");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1664,7 +1778,7 @@ const api = createClient({
   },
 });
 const received = [];
-for await (const event of api.$streams.watchEvents()) received.push(event.data);
+for await (const event of api.$operations.watchEvents.stream()) received.push(event.data);
 if (received.join(",") !== "decoded" || maxFrameBytes !== 4)
   throw new Error("built-in response framing was not overridden");
 async function* events() { yield { data: "encoded" }; }
@@ -1694,7 +1808,7 @@ const api = createClient({ baseURL: "https://api.example.test", fetch: async () 
   start(controller) { controller.enqueue(encoder.encode(body.slice(0, 37))); controller.enqueue(encoder.encode(body.slice(37, 113))); controller.enqueue(encoder.encode(body.slice(113))); controller.close(); },
 }), { status: 200, headers: { "content-type": "multipart/mixed; boundary=frames" } }) });
 const frames = [];
-for await (const frame of api.$streams.tailFrames()) frames.push(frame.frame_id);
+for await (const frame of api.$operations.tailFrames.stream()) frames.push(frame.frame_id);
 if (frames.join(",") !== "one,two") throw new Error("streaming multipart response did not decode item schemas");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -2299,10 +2413,10 @@ api.$operations.getOperator({ headers: { "x-trace": "one" } })
 api.$operations.testSecurityRequirementIDs({ securityRequirement: "anonymous" })
 api.$operations.testSecurityRequirementIDs({ securityRequirement: "anonymous__2" })
 api.$operations.testSecurityRequirementIDs({ securityRequirement: "anonymous__3" })
-api.$streams.watchEvents({ securityRequirement: "GuestCapability", authorization: "Bearer guest" })
-api.$streams.searchEvents({ securityRequirement: "anonymous" })
-api.$streams.searchEvents({ query: { query: "input" } }, { securityRequirement: "GuestCapability", authorization: "Bearer guest" })
-api.$streams.searchEvents(undefined, { securityRequirement: "anonymous" })
+api.$operations.watchEvents.stream({ securityRequirement: "GuestCapability", authorization: "Bearer guest" })
+api.$operations.searchEvents.stream({ securityRequirement: "anonymous" })
+api.$operations.searchEvents.stream({ query: { query: "input" } }, { securityRequirement: "GuestCapability", authorization: "Bearer guest" })
+api.$operations.searchEvents.stream(undefined, { securityRequirement: "anonymous" })
 api.$operations.listItems.paginate({ query: {} }, { securityRequirement: "GuestCapability", authorization: "Bearer guest" })
 api.$links.getPublic.checkout(source, { options: { securityRequirement: "GuestCapability", authorization: "Bearer guest" } })
 // @ts-expect-error generic RequestOptions does not expose operation security selection
@@ -2331,11 +2445,11 @@ api.$operations.searchSecure()
 // @ts-expect-error ambiguous optional-input operation cannot omit options after input
 api.$operations.searchSecure({ query: { query: "input" } })
 // @ts-expect-error ambiguous stream requires options
-api.$streams.watchEvents()
+api.$operations.watchEvents.stream()
 // @ts-expect-error ambiguous optional-input stream cannot omit all arguments
-api.$streams.searchEvents()
+api.$operations.searchEvents.stream()
 // @ts-expect-error ambiguous optional-input stream cannot omit options after input
-api.$streams.searchEvents({ query: { query: "input" } })
+api.$operations.searchEvents.stream({ query: { query: "input" } })
 // @ts-expect-error ambiguous pagination target requires options
 api.$operations.listItems.paginate({ query: {} })
 // @ts-expect-error ambiguous Link target requires invocation options
@@ -2349,7 +2463,7 @@ api.$operations.mutateCheckout({ securityRequirement: "OperatorKey" })
 // @ts-expect-error unsecured operations do not expose securityRequirement
 api.$operations.getPublic({ securityRequirement: "GuestCapability" })
 // @ts-expect-error stream options retain the target operation's requirement IDs
-api.$streams.watchEvents({ securityRequirement: "OperatorKey" })
+api.$operations.watchEvents.stream({ securityRequirement: "OperatorKey" })
 // @ts-expect-error Link target options retain the target operation's requirement IDs
 api.$links.getPublic.checkout(source, { options: { securityRequirement: "OperatorKey" } })
 `

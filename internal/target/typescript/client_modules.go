@@ -46,7 +46,7 @@ func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []genera
 		return nil, err
 	}
 	var output bytes.Buffer
-	fmt.Fprintf(&output, "import type { LinkCalls, OperationMethod, StreamCall } from %s\n", quoteTS(helpers))
+	fmt.Fprintf(&output, "import type { LinkCalls, OperationMethod } from %s\n", quoteTS(helpers))
 	fmt.Fprintf(&output, "import type { Surface as Resources } from %s\n\n", quoteTS(resources))
 	output.WriteString("/** Generated API client with route, operation-ID, and resource-oriented call surfaces. */\n")
 	output.WriteString("export interface Client extends Resources {\n")
@@ -79,17 +79,6 @@ func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []genera
 				continue
 			}
 			fmt.Fprintf(&output, "    readonly %s: LinkCalls<%s>\n", quoteTS(source.OperationID), quoteTS(operationRouteKey(source)))
-		}
-		output.WriteString("  }\n")
-	}
-	if len(streams) > 0 {
-		output.WriteString("  /** Lazy typed response streams keyed by OpenAPI operation ID. */\n")
-		output.WriteString("  readonly $streams: {\n")
-		for _, stream := range streams {
-			if stream.Operation.OperationID == "" {
-				continue
-			}
-			fmt.Fprintf(&output, "    readonly %s: StreamCall<%s>\n", quoteTS(stream.Operation.OperationID), quoteTS(operationRouteKey(stream.Operation)))
 		}
 		output.WriteString("  }\n")
 	}
@@ -157,9 +146,6 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	output.WriteString("    $operations: registry.operations,\n")
 	if len(links) > 0 {
 		output.WriteString("    $links: registry.links,\n")
-	}
-	if len(streams) > 0 {
-		output.WriteString("    $streams: registry.streams,\n")
 	}
 	output.WriteString("    ...resources,\n")
 	output.WriteString("  }\n")

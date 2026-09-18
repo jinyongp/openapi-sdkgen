@@ -117,13 +117,18 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		return nil, err
 	}
 	streamType := "never"
+	resourceStreamType := "never"
 	if hasStream {
 		streamType, err = streamFunctionType(document, stream)
 		if err != nil {
 			return nil, err
 		}
+		resourceStreamType, err = resourceStreamFunctionType(document, stream)
+		if err != nil {
+			return nil, err
+		}
 	}
-	for _, capabilityType := range []*string{&paginationType, &linksType, &streamType} {
+	for _, capabilityType := range []*string{&paginationType, &linksType, &streamType, &resourceStreamType} {
 		if *capabilityType == "never" {
 			continue
 		}
@@ -146,11 +151,18 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 			exactCallType = "(" + exactCallType + ") & { readonly " + capability.field + ": " + publicCapabilityType(capability.field) + "<RouteKey> }"
 		}
 	}
-	if resourceCallType != "never" && len(item.PathParameterOrder) == 0 {
+	if resourceCallType != "never" {
 		for _, capability := range capabilityTypes {
-			if capability.value != "never" {
-				resourceCallType = "(" + resourceCallType + ") & { readonly " + capability.field + ": " + publicCapabilityType(capability.field) + "<RouteKey> }"
+			if capability.value == "never" {
+				continue
 			}
+			if len(item.PathParameterOrder) > 0 {
+				if capability.field == "stream" && resourceStreamType != "never" {
+					resourceCallType = "(" + resourceCallType + ") & { readonly stream: ResourceStream }"
+				}
+				continue
+			}
+			resourceCallType = "(" + resourceCallType + ") & { readonly " + capability.field + ": " + publicCapabilityType(capability.field) + "<RouteKey> }"
 		}
 	}
 
@@ -209,6 +221,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "export type Pagination = %s\n", paginationType)
 	fmt.Fprintf(&output, "export type Links = %s\n", linksType)
 	fmt.Fprintf(&output, "export type Stream = %s\n", streamType)
+	fmt.Fprintf(&output, "export type ResourceStream = %s\n", resourceStreamType)
 	fmt.Fprintf(&output, "export type ExactCall = (%s) & OperationTypeIdentity<RouteKey, \"exact\">\n", exactCallType)
 	fmt.Fprintf(&output, "export type ResourceCall = %s\n\n", resourceCallType)
 	output.WriteString("export interface Contract {\n")
@@ -263,9 +276,13 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 	if hasStream {
 		streamItemType := strings.ReplaceAll(stream.ItemType, "Contract.", "ContractSchemas.")
-		output.WriteString("\n/** Creates this operation's separately bound streaming callable. */\n")
+		defaultAccept := "undefined"
+		if len(stream.Plan.streamMediaTypes) > 0 {
+			defaultAccept = quoteTS(stream.Plan.streamMediaTypes[0])
+		}
+		output.WriteString("\n/** Creates this operation's streaming capability. */\n")
 		output.WriteString("export function bindStream(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): Stream {\n")
-		fmt.Fprintf(&output, "  return bindStreamOperation<Input, %s, Options>(request, %s, %t, %t) as Stream\n", streamItemType, definition, hasInput, inputOptional)
+		fmt.Fprintf(&output, "  return bindStreamOperation<Input, %s, Options>(request, %s, %t, %t, %s) as Stream\n", streamItemType, definition, hasInput, inputOptional, defaultAccept)
 		output.WriteString("}\n")
 	}
 

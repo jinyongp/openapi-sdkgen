@@ -111,15 +111,6 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		fmt.Fprintf(&output, "    readonly %s: Routes[%s][\"links\"]\n", quoteTS(source.OperationID), quoteTS(route))
 	}
 	output.WriteString("  }\n")
-	output.WriteString("  readonly streams: {\n")
-	for _, stream := range streams {
-		if stream.Operation.OperationID == "" {
-			continue
-		}
-		route := operationRouteKey(stream.Operation)
-		fmt.Fprintf(&output, "    readonly %s: Routes[%s][\"stream\"]\n", quoteTS(stream.Operation.OperationID), quoteTS(route))
-	}
-	output.WriteString("  }\n")
 	output.WriteString("}\n\n")
 
 	output.WriteString("/** Binds and decorates every generated operation exactly once. */\n")
@@ -174,7 +165,6 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	routeValues := make([]runtimeProperty, 0)
 	operationValues := make([]runtimeProperty, 0)
 	linkValues := make([]runtimeProperty, 0)
-	streamValues := make([]runtimeProperty, 0)
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
@@ -186,9 +176,6 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			if factories[route].links != "" {
 				linkValues = append(linkValues, runtimeProperty{key: operation.OperationID, value: operationLinksValueName(route)})
 			}
-			if factories[route].stream != "" {
-				streamValues = append(streamValues, runtimeProperty{key: operation.OperationID, value: stablePrivateIdentifier("stream-value", route)})
-			}
 		}
 	}
 	fmt.Fprintf(&output, "  Object.assign(completed, %s)\n", runtimeObjectExpression(routeValues))
@@ -196,7 +183,6 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	fmt.Fprintf(&output, "    routes: completed,\n")
 	fmt.Fprintf(&output, "    operations: %s as CallableRegistry[\"operations\"],\n", runtimeObjectExpression(operationValues))
 	fmt.Fprintf(&output, "    links: %s as CallableRegistry[\"links\"],\n", runtimeObjectExpression(linkValues))
-	fmt.Fprintf(&output, "    streams: %s as CallableRegistry[\"streams\"],\n", runtimeObjectExpression(streamValues))
 	output.WriteString("  }\n")
 	output.WriteString("}\n")
 	return output.Bytes(), nil

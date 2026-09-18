@@ -303,7 +303,7 @@ describe("exact identity collision fixture", () => {
     await api.$operations.get_pet({ query: { "legacy-id": "direct" } });
 
     const streamed = [];
-    for await (const value of api.$streams["stream-pet"]()) streamed.push(value);
+    for await (const value of api.$operations["stream-pet"].stream()) streamed.push(value);
     expect(streamed).toHaveLength(1);
     expect(streamed[0]?.constructor).toBe("constructor");
     await api.$operations["root-index"]();

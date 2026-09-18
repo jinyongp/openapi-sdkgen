@@ -138,12 +138,16 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 	if len(item.InputTypes) > 0 {
 		inputType = "RouteInput<" + quotedRoute + ">"
 	}
+	buffered, err := operationHasBufferedSuccess(document, operation)
+	if err != nil {
+		return err
+	}
 	inputRequired := item.prepared.inputRequired
 	if err := emitOperationRawCallInterface(output, operation, item, operationName+"RawCall", inputType, inputType != "never" && !inputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
 		return err
 	}
 	emitOperationJSDoc(output, "", item)
-	if err := emitOperationCallInterface(output, operation, item, operationName+"Call", inputType, inputType != "never" && !inputRequired, "RouteOutput<"+quotedRoute+">", "OperationRawCall<"+quotedRoute+">", ""); err != nil {
+	if err := emitOperationCallInterface(output, operation, item, operationName+"Call", inputType, inputType != "never" && !inputRequired, "RouteOutput<"+quotedRoute+">", "OperationRawCall<"+quotedRoute+">", "", buffered); err != nil {
 		return err
 	}
 	if item.Visibility == "public" {
@@ -159,7 +163,7 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 		if err := emitOperationRawCallInterface(output, operation, item, operationName+"ResourceRawCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteRawResponse<"+quotedRoute+">"); err != nil {
 			return err
 		}
-		if err := emitOperationCallInterface(output, operation, item, operationName+"ResourceCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteOutput<"+quotedRoute+">", "", "ResourceRawCapability<"+quotedRoute+">"); err != nil {
+		if err := emitOperationCallInterface(output, operation, item, operationName+"ResourceCall", resourceInput, resourceInput != "never" && !resourceInputRequired, "RouteOutput<"+quotedRoute+">", "", "ResourceRawCapability<"+quotedRoute+">", buffered); err != nil {
 			return err
 		}
 	}
@@ -174,7 +178,7 @@ func renderMediaOutputTypes(expressions map[string]typeExpression, scope typeRen
 	return result
 }
 
-func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, outputType, rawCallType, rawCapabilityType string) error {
+func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, callName, inputType string, inputOptional bool, outputType, rawCallType, rawCapabilityType string, buffered bool) error {
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
 	optionsRequired := item.optionsRequired
 	mediaOutputs := item.renderedMedia
@@ -184,13 +188,15 @@ func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, it
 		extends = " extends " + rawCapabilityType
 	}
 	fmt.Fprintf(output, "interface %s%s {\n", callName, extends)
-	if len(mediaTypes) > 1 {
-		for _, mediaType := range mediaTypes {
-			mediaOptionsType := "Omit<" + optionsType + ", \"accept\"> & { readonly accept: " + quoteTS(mediaType) + " }"
-			emitCallSignature(output, inputType, inputOptional, mediaOptionsType, mediaOutputs[mediaType], false)
+	if buffered {
+		if len(mediaTypes) > 1 {
+			for _, mediaType := range mediaTypes {
+				mediaOptionsType := "Omit<" + optionsType + ", \"accept\"> & { readonly accept: " + quoteTS(mediaType) + " }"
+				emitCallSignature(output, inputType, inputOptional, mediaOptionsType, mediaOutputs[mediaType], false)
+			}
 		}
+		emitCallSignature(output, inputType, inputOptional, optionsType, outputType, !optionsRequired)
 	}
-	emitCallSignature(output, inputType, inputOptional, optionsType, outputType, !optionsRequired)
 	if rawCallType != "" {
 		output.WriteString("  /** Sends the request and returns the decoded body with HTTP response metadata. */\n")
 		fmt.Fprintf(output, "  readonly raw: %s\n", rawCallType)
@@ -415,6 +421,19 @@ func operationStreamingResponseMediaTypes(document *ir.Document, operation ir.Op
 		return nil, err
 	}
 	return responseMediaTypes(sets.streaming), nil
+}
+
+func operationHasBufferedSuccess(document *ir.Document, operation ir.Operation) (bool, error) {
+	sets, err := operationResponseMediaSets(document, operation)
+	if err != nil {
+		return false, err
+	}
+	for _, response := range sets.normal {
+		if isSuccessResponseStatus(response.Status) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func responseMediaTypes(responses []ir.Response) []string {

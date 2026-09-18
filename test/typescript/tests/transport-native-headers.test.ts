@@ -62,12 +62,11 @@ if (false) {
   typedClient.$operations.allEnvironmentHeaders.raw({ headers: { "X-Raw": "raw" } });
   typedClient.$operations.mixedHeaders(mixedInput);
   typedClient.$operations.overrideMethod(overrideInput);
-  typedClient.$streams.streamEnvironmentHeaders();
-  typedClient.$streams.streamEnvironmentHeaders({ headers: { "X-Raw": "stream" } });
-  typedClient.$streams.streamEnvironmentHeaders(undefined, {
-    headers: { "X-Raw": "legacy-stream" },
-  });
   typedClient.$operations.streamEnvironmentHeaders.stream();
+  typedClient.$operations.streamEnvironmentHeaders.stream({ headers: { "X-Raw": "stream" } });
+  typedClient.$operations.streamEnvironmentHeaders.stream(undefined, {
+    headers: { "X-Raw": "stream-options" },
+  });
   typedClient.$operations.streamEnvironmentHeaders.stream({
     headerParams: { Origin: "https://stream.example" },
   });
@@ -156,9 +155,9 @@ describe("transport-native request headers", () => {
       }
     };
 
-    await consume(api.$streams.streamEnvironmentHeaders());
+    await consume(api.$operations.streamEnvironmentHeaders.stream());
     await consume(
-      api.$streams.streamEnvironmentHeaders({
+      api.$operations.streamEnvironmentHeaders.stream({
         headers: { "X-Raw": "stream-options" },
       }),
     );

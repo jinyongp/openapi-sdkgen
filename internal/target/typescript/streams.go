@@ -1,7 +1,6 @@
 package typescript
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -70,62 +69,6 @@ func generatedStreamsDiagnostics(document *ir.Document, manifest Manifest) ([]ge
 	return result, failures
 }
 
-func emitStreamInterface(output *bytes.Buffer, document *ir.Document, streams []generatedStream) error {
-	if len(streams) == 0 {
-		return nil
-	}
-	output.WriteString("  /** Lazy typed response streams keyed by OpenAPI operation ID. */\n")
-	output.WriteString("  readonly $streams: {\n")
-	for _, stream := range streams {
-		if stream.Operation.OperationID == "" {
-			continue
-		}
-		fmt.Fprintf(output, "    readonly %s: StreamCall<%s>\n", quoteTS(stream.Operation.OperationID), quoteTS(operationRouteKey(stream.Operation)))
-	}
-	output.WriteString("  }\n")
-	return nil
-}
-
-func emitStreamValues(output *bytes.Buffer, document *ir.Document, streams []generatedStream) error {
-	for _, stream := range streams {
-		definition, err := operationDefinition(document, stream.Operation, stream.Plan)
-		if err != nil {
-			return err
-		}
-		inputs := stream.Plan.InputTypes
-		inputRequired := stream.Plan.prepared.inputRequired
-		inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
-		optionsType := streamOptionsType(stream)
-		variable := stablePrivateIdentifier("stream-value", operationRouteKey(stream.Operation))
-		functionType, err := streamFunctionType(document, stream)
-		if err != nil {
-			return err
-		}
-		hasInput := len(inputs) > 0
-		inputOptional := hasInput && !inputRequired
-		fmt.Fprintf(output, "  const %s = bindStreamOperation<%s, %s, %s>(request, %s, %t, %t) as %s\n", variable, inputType, stream.ItemType, optionsType, definition, hasInput, inputOptional, functionType)
-	}
-	return nil
-}
-
-func emitStreamReturnValue(output *bytes.Buffer, streams []generatedStream) error {
-	if len(streams) == 0 {
-		return nil
-	}
-	values := make([]runtimeProperty, 0, len(streams))
-	for _, stream := range streams {
-		if stream.Operation.OperationID == "" {
-			continue
-		}
-		values = append(values, runtimeProperty{
-			key:   stream.Operation.OperationID,
-			value: stablePrivateIdentifier("stream-value", operationRouteKey(stream.Operation)),
-		})
-	}
-	fmt.Fprintf(output, "    $streams: %s as unknown as Client[\"$streams\"],\n", runtimeObjectExpression(values))
-	return nil
-}
-
 func streamForRoute(streams []generatedStream, routeKey string) (generatedStream, bool) {
 	for _, stream := range streams {
 		if operationRouteKey(stream.Operation) == routeKey {
@@ -150,18 +93,29 @@ func streamOptionsType(stream generatedStream) string {
 
 func streamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
 	_ = document
-	inputs := stream.Plan.InputTypes
-	inputRequired := stream.Plan.prepared.inputRequired
+	inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
+	return streamFunctionTypeForInput(stream, inputType, len(stream.Plan.InputTypes) > 0, stream.Plan.prepared.inputRequired), nil
+}
+
+func resourceStreamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
+	_ = document
+	if len(stream.Plan.PathParameterOrder) == 0 {
+		return streamFunctionType(document, stream)
+	}
+	hasInput := len(stream.Plan.InputTypes) > 1
+	inputType := operationSlotType(operationRouteKey(stream.Operation), "resourceInput")
+	return streamFunctionTypeForInput(stream, inputType, hasInput, stream.Plan.prepared.resourceInputRequired), nil
+}
+
+func streamFunctionTypeForInput(stream generatedStream, inputType string, hasInput, inputRequired bool) string {
 	optionsType := streamOptionsType(stream)
 	optionMarker := "?"
-	optionsRequired := stream.Plan.optionsRequired
-	if optionsRequired {
+	if stream.Plan.optionsRequired {
 		optionMarker = ""
 	}
-	if len(inputs) == 0 {
-		return "(options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">", nil
+	if !hasInput {
+		return "(options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
 	}
-	inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
 	if !inputRequired {
 		optionsOnly := "(options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
 		inputMarker := ""
@@ -171,10 +125,9 @@ func streamFunctionType(document *ir.Document, stream generatedStream) (string, 
 			inputType += " | undefined"
 		}
 		inputCall := "(input" + inputMarker + ": " + inputType + ", options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
-		return "(" + optionsOnly + ") & (" + inputCall + ")", nil
+		return "(" + optionsOnly + ") & (" + inputCall + ")"
 	}
-	inputMarker := ""
-	return "(input" + inputMarker + ": " + inputType + ", options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">", nil
+	return "(input: " + inputType + ", options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
 }
 
 func operationRequiresOptions(document *ir.Document, operation ir.Operation) (bool, error) {

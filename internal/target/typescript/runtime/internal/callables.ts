@@ -151,14 +151,27 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
   operation: OperationDefinition,
   hasInput: boolean,
   inputOptional = false,
+  defaultAccept?: string,
 ): (...args: readonly unknown[]) => AsyncIterable<Item> {
+  const streamOptions = (options: Options | undefined): Options | undefined => {
+    if (defaultAccept === undefined || options?.accept !== undefined) return options;
+    return { ...options, accept: defaultAccept } as Options;
+  };
   return (...args: readonly unknown[]) => {
     if (!hasInput)
-      return request.stream<Item>(operation, undefined, args[0] as Options | undefined);
+      return request.stream<Item>(
+        operation,
+        undefined,
+        streamOptions(args[0] as Options | undefined),
+      );
     if (!inputOptional)
-      return request.stream<Item>(operation, args[0] as Input, args[1] as Options | undefined);
+      return request.stream<Item>(
+        operation,
+        args[0] as Input,
+        streamOptions(args[1] as Options | undefined),
+      );
     const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
-    return request.stream<Item>(operation, input, options);
+    return request.stream<Item>(operation, input, streamOptions(options));
   };
 }
 
@@ -204,7 +217,30 @@ export function bindPathOperation<
           operation.raw(mergeInput(input), ...options)
     : (...options: OperationOptionsArguments<Options>) =>
         operation.raw(mergeInput(undefined), ...options);
-  return Object.assign(call, { raw }) as OperationCall<Input, Output, Options, Raw>;
+  const sourceStream = (
+    operation as InputOperationCall<FullInput, Output, Options, Raw> & {
+      readonly stream?: (...args: readonly unknown[]) => unknown;
+    }
+  ).stream;
+  const stream =
+    sourceStream === undefined
+      ? undefined
+      : hasInput
+        ? inputOptional
+          ? (...args: readonly unknown[]) => {
+              const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+              return sourceStream(mergeInput(input), options);
+            }
+          : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+              sourceStream(mergeInput(input), options[0])
+        : (...options: OperationOptionsArguments<Options>) =>
+            sourceStream(mergeInput(undefined), options[0]);
+  return Object.assign(call, { raw }, stream === undefined ? {} : { stream }) as OperationCall<
+    Input,
+    Output,
+    Options,
+    Raw
+  >;
 }
 
 /** Adds namespace members to a callable without colliding with Function prototype properties. */
