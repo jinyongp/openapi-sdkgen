@@ -84,6 +84,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
     let responseMetadata:
       | { request: RequestMetadata; status: number; response: Response }
       | undefined;
+    let requestBodyFailure: (() => unknown) | undefined;
     try {
       let encoded: EncodedRequest;
       try {
@@ -108,6 +109,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
           credentials,
         );
         encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
+        requestBodyFailure = encoded.bodyFailure;
       } catch (cause) {
         if (abort.timedOut() || abort.aborted()) throw cause;
         if (isAPIError(cause)) throw cause;
@@ -227,6 +229,15 @@ export function createRequest(options: ClientOptions): RequestFunction {
         );
       }
       if (isAPIError(cause)) throw cause;
+      const bodyFailure = requestBodyFailure?.();
+      if (bodyFailure !== undefined) {
+        throw transportErrorFromCause(
+          TransportErrorCode.REQUEST_ENCODE_FAILED,
+          `Failed to encode ${operationDiagnosticName(operation)} request body stream`,
+          bodyFailure,
+          responseMetadata,
+        );
+      }
       throw transportError(TransportErrorCode.NETWORK_ERROR, "Network request failed", cause);
     } finally {
       abort.cleanup();
@@ -270,8 +281,11 @@ async function* streamOperation<Item>(
 ): AsyncIterable<Item> {
   const credentials = requestOptions.credentials ?? options.credentials;
   const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
-  const abort = createAbortContext(requestOptions.signal, timeoutMS);
+  const abort = createAbortContext(requestOptions.signal, timeoutMS, true);
   let response: Response | undefined;
+  let streamContentType: string | undefined;
+  let requestBodyFailure: (() => unknown) | undefined;
+  let completed = false;
   try {
     let encoded: EncodedRequest;
     try {
@@ -296,6 +310,7 @@ async function* streamOperation<Item>(
         credentials,
       );
       encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
+      requestBodyFailure = encoded.bodyFailure;
     } catch (cause) {
       if (abort.timedOut() || abort.aborted()) throw cause;
       if (isAPIError(cause)) throw cause;
@@ -336,60 +351,29 @@ async function* streamOperation<Item>(
       );
     }
     const contentType = response.headers.get("content-type") ?? definition.contentType;
+    streamContentType = normalizeMediaType(contentType);
     const maxFrameBytes = resolveMaxStreamItemBytes(
       requestOptions.maxStreamItemBytes ?? options.maxStreamItemBytes,
     );
-    const codec = codecs.get(normalizeMediaType(contentType));
-    if (codec?.decodeStream !== undefined) {
-      const reader = createMediaStreamReader(response.body, maxFrameBytes, abort.signal);
-      const stream = codec.decodeStream(reader, {
-        contentType,
-        maxFrameBytes,
-        ...(abort.signal === undefined ? {} : { signal: abort.signal }),
-      });
-      const iterator = stream[Symbol.asyncIterator]();
-      try {
-        while (true) {
-          const next = await awaitAbortable(Promise.resolve(iterator.next()), abort.signal);
-          if (next.done) break;
-          yield transformWireValue(
-            next.value,
-            definition.itemSchema,
-            operation.outputSchemas ?? {},
-            "decode",
-            tolerantResponseTransformOptions,
-          ) as Item;
-        }
-      } finally {
-        await reader.cancel(abort.signal?.reason);
-        if (iterator.return !== undefined) {
-          const close = Promise.resolve(iterator.return());
-          if (abort.signal?.aborted) void close.catch(() => undefined);
-          else await close.catch(() => undefined);
-        }
-      }
-    } else if (isGeneratedStreamMediaType(contentType)) {
-      for await (const value of decodeStreamItems(
-        response.body,
-        contentType,
+    for await (const value of decodeResponseStreamItems(
+      response.body,
+      contentType,
+      definition.itemSchema,
+      operation.outputSchemas ?? {},
+      codecs,
+      definition.itemEncoding,
+      maxFrameBytes,
+      abort.signal,
+    )) {
+      yield transformWireValue(
+        value,
         definition.itemSchema,
         operation.outputSchemas ?? {},
-        codecs,
-        definition.itemEncoding,
-        maxFrameBytes,
-        abort.signal,
-      )) {
-        yield transformWireValue(
-          value,
-          definition.itemSchema,
-          operation.outputSchemas ?? {},
-          "decode",
-          tolerantResponseTransformOptions,
-        ) as Item;
-      }
-    } else {
-      throw new TypeError(`missing decodeStream codec for ${contentType}`);
+        "decode",
+        tolerantResponseTransformOptions,
+      ) as Item;
     }
+    completed = true;
   } catch (cause) {
     if (abort.timedOut()) {
       await cancelResponseBody(response, cause);
@@ -404,14 +388,23 @@ async function* streamOperation<Item>(
       throw transportError(TransportErrorCode.REQUEST_ABORTED, "Request was aborted", cause);
     }
     if (isAPIError(cause)) throw cause;
+    const bodyFailure = requestBodyFailure?.();
+    if (bodyFailure !== undefined) {
+      throw transportError(
+        TransportErrorCode.REQUEST_ENCODE_FAILED,
+        `Failed to encode ${operationDiagnosticName(operation)} stream request body`,
+        bodyFailure,
+      );
+    }
     if (response === undefined)
       throw transportError(TransportErrorCode.NETWORK_ERROR, "Network request failed", cause);
     throw transportError(
       TransportErrorCode.RESPONSE_DECODE_FAILED,
-      `Failed to decode ${operationDiagnosticName(operation)} stream`,
+      `Failed to decode ${operationDiagnosticName(operation)} stream${streamContentType === undefined ? "" : ` (${streamContentType})`}`,
       cause,
     );
   } finally {
+    if (!completed) abort.cancel(new Error("Stream consumption ended before completion"));
     abort.cleanup();
   }
 }
@@ -426,6 +419,56 @@ function resolveMaxStreamItemBytes(value: number | undefined): number {
 function isGeneratedStreamMediaType(contentType: string): boolean {
   const mediaType = normalizeMediaType(contentType);
   return isSequentialStreamMediaType(mediaType) || mediaType.startsWith("multipart/");
+}
+
+async function* decodeResponseStreamItems(
+  body: ReadableStream<Uint8Array>,
+  contentType: string,
+  itemSchema: WireSchema,
+  schemas: WireSchemas,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  itemEncoding: WireEncodingDefinition | undefined,
+  maxFrameBytes: number,
+  signal?: AbortSignal,
+): AsyncIterable<unknown> {
+  const codec = codecs.get(normalizeMediaType(contentType));
+  if (codec?.decodeStream !== undefined) {
+    const reader = createMediaStreamReader(body, maxFrameBytes, signal);
+    const stream = codec.decodeStream(reader, {
+      contentType,
+      maxFrameBytes,
+      ...(signal === undefined ? {} : { signal }),
+    });
+    const iterator = stream[Symbol.asyncIterator]();
+    try {
+      while (true) {
+        const next = await awaitAbortable(Promise.resolve(iterator.next()), signal);
+        if (next.done) return;
+        yield next.value;
+      }
+    } finally {
+      await reader.cancel(signal?.reason);
+      if (iterator.return !== undefined) {
+        const close = Promise.resolve(iterator.return());
+        if (signal?.aborted) void close.catch(() => undefined);
+        else await close.catch(() => undefined);
+      }
+    }
+  }
+  if (isGeneratedStreamMediaType(contentType)) {
+    yield* decodeStreamItems(
+      body,
+      contentType,
+      itemSchema,
+      schemas,
+      codecs,
+      itemEncoding,
+      maxFrameBytes,
+      signal,
+    );
+    return;
+  }
+  throw new TypeError(`missing decodeStream codec for ${contentType}`);
 }
 
 function createMediaStreamReader(
@@ -905,8 +948,8 @@ function parseMultipartStreamHeaders(source: string): Headers {
 function parseStreamJSON(value: string): unknown {
   try {
     return JSON.parse(value);
-  } catch (cause) {
-    throw new TypeError("stream item is not valid JSON", { cause });
+  } catch {
+    throw new TypeError("stream item is not valid JSON");
   }
 }
 
@@ -1521,6 +1564,7 @@ interface EncodedRequest {
   readonly url: string;
   readonly headers: Headers;
   readonly body?: BodyInit | ReadableStream<Uint8Array>;
+  readonly bodyFailure?: () => unknown;
   readonly redirect?: RequestRedirect;
 }
 
@@ -1535,13 +1579,61 @@ function encodeRequest(
   const pending = hasCustomParameterInput(operation, input)
     ? encodeRequestAsync(baseURL, client, codecs, operation, input, options)
     : encodeRequestSynchronous(baseURL, client, codecs, operation, input, options);
-  const finish = (encoded: EncodedRequest): EncodedRequest =>
-    options.authorization !== undefined ||
-    client.authorization !== undefined ||
-    options.csrfToken !== undefined
-      ? { ...encoded, redirect: "error" }
-      : encoded;
+  const finish = (encoded: EncodedRequest): EncodedRequest => {
+    let result =
+      options.authorization !== undefined ||
+      client.authorization !== undefined ||
+      options.csrfToken !== undefined
+        ? { ...encoded, redirect: "error" as const }
+        : encoded;
+    if (isReadableStream(result.body)) {
+      const tracked = trackRequestBodyStream(result.body);
+      result = { ...result, body: tracked.body, bodyFailure: tracked.failure };
+    }
+    return result;
+  };
   return isPromise(pending) ? pending.then(finish) : finish(pending);
+}
+
+function trackRequestBodyStream(source: ReadableStream<Uint8Array>): {
+  readonly body: ReadableStream<Uint8Array>;
+  readonly failure: () => unknown;
+} {
+  const reader = source.getReader();
+  let failure: unknown;
+  let released = false;
+  const release = (): void => {
+    if (released) return;
+    released = true;
+    reader.releaseLock();
+  };
+  return {
+    body: new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const next = await reader.read();
+          if (next.done) {
+            release();
+            controller.close();
+            return;
+          }
+          controller.enqueue(next.value);
+        } catch (cause) {
+          failure = cause;
+          release();
+          controller.error(cause);
+        }
+      },
+      async cancel(reason) {
+        try {
+          await reader.cancel(reason);
+        } finally {
+          release();
+        }
+      },
+    }),
+    failure: () => failure,
+  };
 }
 
 function hasCustomParameterInput(operation: OperationDefinition, input: unknown): boolean {
@@ -3515,21 +3607,24 @@ interface AbortContext {
   readonly signal: AbortSignal | undefined;
   readonly timedOut: () => boolean;
   readonly aborted: () => boolean;
+  readonly cancel: (reason?: unknown) => void;
   readonly cleanup: () => void;
 }
 
 function createAbortContext(
   signal: AbortSignal | undefined,
   timeoutMS: number | undefined,
+  alwaysCreateSignal = false,
 ): AbortContext {
   if (timeoutMS !== undefined && (!Number.isFinite(timeoutMS) || timeoutMS <= 0)) {
     throw new TypeError("timeoutMS must be a positive finite number");
   }
-  if (signal === undefined && timeoutMS === undefined) {
+  if (signal === undefined && timeoutMS === undefined && !alwaysCreateSignal) {
     return {
       signal: undefined,
       timedOut: () => false,
       aborted: () => false,
+      cancel: () => undefined,
       cleanup: () => undefined,
     };
   }
@@ -3549,6 +3644,7 @@ function createAbortContext(
     signal: controller.signal,
     timedOut: () => timeoutReached,
     aborted: () => signal?.aborted === true,
+    cancel: (reason?: unknown) => controller.abort(reason),
     cleanup: () => {
       if (timer !== undefined) clearTimeout(timer);
       signal?.removeEventListener("abort", forwardAbort);

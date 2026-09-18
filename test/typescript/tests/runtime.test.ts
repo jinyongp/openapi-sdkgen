@@ -1233,10 +1233,10 @@ describe("generated runtime", () => {
   it("times out response-header decoding and cancels an unconsumed raw stream", async () => {
     vi.useFakeTimers();
     try {
-      let cancelled = false;
+      let cancelCount = 0;
       const body = new ReadableStream<Uint8Array>({
         cancel() {
-          cancelled = true;
+          cancelCount++;
         },
       });
       const request = createRequest({
@@ -1282,7 +1282,7 @@ describe("generated runtime", () => {
         .catch((cause: unknown) => cause);
       await vi.advanceTimersByTimeAsync(5);
       expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
-      expect(cancelled).toBe(true);
+      expect(cancelCount).toBe(1);
     } finally {
       vi.useRealTimers();
     }
@@ -1291,14 +1291,14 @@ describe("generated runtime", () => {
   it("times out generated stream reads and cancels the response reader", async () => {
     vi.useFakeTimers();
     try {
-      let cancelled = false;
+      let cancelCount = 0;
       const request = createRequest({
         baseURL: "https://api.example.test",
         fetch: async () =>
           new Response(
             new ReadableStream<Uint8Array>({
               cancel() {
-                cancelled = true;
+                cancelCount++;
               },
             }),
             { headers: { "content-type": "application/x-ndjson" } },
@@ -1324,7 +1324,7 @@ describe("generated runtime", () => {
       ).catch((cause: unknown) => cause);
       await vi.advanceTimersByTimeAsync(5);
       expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
-      expect(cancelled).toBe(true);
+      expect(cancelCount).toBe(1);
     } finally {
       vi.useRealTimers();
     }
@@ -1333,7 +1333,7 @@ describe("generated runtime", () => {
   it("times out a custom stream codec even when its iterator ignores the signal", async () => {
     vi.useFakeTimers();
     try {
-      let cancelled = false;
+      let cancelCount = 0;
       const request = createRequest({
         baseURL: "https://api.example.test",
         codecs: {
@@ -1348,7 +1348,7 @@ describe("generated runtime", () => {
           new Response(
             new ReadableStream<Uint8Array>({
               cancel() {
-                cancelled = true;
+                cancelCount++;
               },
             }),
             { headers: { "content-type": "application/x-slow-stream" } },
@@ -1374,7 +1374,7 @@ describe("generated runtime", () => {
       ).catch((cause: unknown) => cause);
       await vi.advanceTimersByTimeAsync(5);
       expect(isErrorCode(await pending, TransportErrorCode.REQUEST_TIMEOUT)).toBe(true);
-      expect(cancelled).toBe(true);
+      expect(cancelCount).toBe(1);
     } finally {
       vi.useRealTimers();
     }
@@ -1822,6 +1822,263 @@ describe("generated runtime", () => {
     }
   });
 
+  it("releases built-in and custom stream resources exactly once on early break", async () => {
+    const encoder = new TextEncoder();
+
+    let builtInCancels = 0;
+    let builtInSignal: AbortSignal | undefined;
+    const builtIn = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async (_input, init) => {
+        builtInSignal = init?.signal as AbortSignal | undefined;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(encoder.encode('{"value":1}\n'));
+            },
+            cancel() {
+              builtInCancels++;
+            },
+          }),
+          { headers: { "content-type": "application/x-ndjson" } },
+        );
+      },
+    });
+    for await (const item of builtIn.stream<{ value: number }>(
+      operation({
+        method: "GET",
+        path: "/events",
+        responses: [
+          {
+            status: "200",
+            contentType: "application/x-ndjson",
+            schema: {},
+            itemSchema: {
+              types: ["object"],
+              required: ["value"],
+              properties: { value: { property: "value", schema: { types: ["integer"] } } },
+            },
+          },
+        ],
+        outputSchemas: {},
+      }),
+    )) {
+      expect(item).toEqual({ value: 1 });
+      break;
+    }
+    expect(builtInCancels).toBe(1);
+    expect(builtInSignal?.aborted).toBe(true);
+
+    let customCancels = 0;
+    let customReturns = 0;
+    let customSignal: AbortSignal | undefined;
+    const custom = createRequest({
+      baseURL: "https://api.example.test",
+      codecs: {
+        "application/x-custom-stream": {
+          decodeStream(reader) {
+            let yielded = false;
+            return {
+              [Symbol.asyncIterator]() {
+                return {
+                  async next() {
+                    if (yielded) return new Promise<IteratorResult<unknown>>(() => undefined);
+                    yielded = true;
+                    await reader.read(1);
+                    return { done: false, value: { value: 1 } };
+                  },
+                  async return() {
+                    customReturns++;
+                    return { done: true, value: undefined };
+                  },
+                };
+              },
+            };
+          },
+        },
+      },
+      fetch: async (_input, init) => {
+        customSignal = init?.signal as AbortSignal | undefined;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(encoder.encode("x"));
+            },
+            cancel() {
+              customCancels++;
+            },
+          }),
+          { headers: { "content-type": "application/x-custom-stream" } },
+        );
+      },
+    });
+    for await (const item of custom.stream<{ value: number }>(
+      operation({
+        method: "GET",
+        path: "/events",
+        responses: [
+          {
+            status: "200",
+            contentType: "application/x-custom-stream",
+            schema: {},
+            itemSchema: {
+              types: ["object"],
+              required: ["value"],
+              properties: { value: { property: "value", schema: { types: ["integer"] } } },
+            },
+          },
+        ],
+        outputSchemas: {},
+      }),
+    )) {
+      expect(item).toEqual({ value: 1 });
+      break;
+    }
+    expect(customCancels).toBe(1);
+    expect(customReturns).toBe(1);
+    expect(customSignal?.aborted).toBe(true);
+  });
+
+  it("releases stream resources once on framing, schema, and codec failures without leaking payloads", async () => {
+    const encoder = new TextEncoder();
+    const secret = "TOP_SECRET_STREAM_PAYLOAD";
+    const cases: Array<{
+      contentType: string;
+      wire: string;
+      itemSchema: WireSchema;
+      codecs?: Parameters<typeof createRequest>[0]["codecs"];
+      cause: string;
+    }> = [
+      {
+        contentType: "application/x-ndjson",
+        wire: `${secret}\n`,
+        itemSchema: { types: ["object"] },
+        cause: "stream item is not valid JSON",
+      },
+      {
+        contentType: "application/x-ndjson",
+        wire: '{"wire_name":42}\n',
+        itemSchema: {
+          types: ["object"],
+          required: ["wire_name"],
+          properties: {
+            wire_name: { property: "displayName", schema: { types: ["string"] } },
+          },
+        },
+        cause: "expected string",
+      },
+      {
+        contentType: "application/x-codec-failure",
+        wire: "x",
+        itemSchema: { types: ["object"] },
+        codecs: {
+          "application/x-codec-failure": {
+            decodeStream: async function* (reader) {
+              await reader.read(1);
+              throw new TypeError("codec framing failed");
+            },
+          },
+        },
+        cause: "codec framing failed",
+      },
+    ];
+
+    for (const test of cases) {
+      let cancels = 0;
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        ...(test.codecs === undefined ? {} : { codecs: test.codecs }),
+        fetch: async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(encoder.encode(test.wire));
+              },
+              cancel() {
+                cancels++;
+              },
+            }),
+            { headers: { "content-type": test.contentType } },
+          ),
+      });
+      const error = await collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/events",
+            responses: [
+              {
+                status: "200",
+                contentType: test.contentType,
+                schema: {},
+                itemSchema: test.itemSchema,
+              },
+            ],
+            outputSchemas: {},
+          }),
+        ),
+      ).catch((cause: unknown) => cause);
+
+      expect(isAPIError(error)).toBe(true);
+      if (!isAPIError(error)) throw new Error("expected API error");
+      expect(error.code).toBe(TransportErrorCode.RESPONSE_DECODE_FAILED);
+      expect(error.message).toContain("runtimeTest");
+      expect(error.message).toContain(test.contentType);
+      expect(String(error.cause)).toContain(test.cause);
+      expect(error.message).not.toContain(secret);
+      expect(String(error.cause)).not.toContain(secret);
+      expect(cancels).toBe(1);
+    }
+  });
+
+  it("cancels a pending response reader exactly once on external stream abort", async () => {
+    let cancels = 0;
+    let fetched = false;
+    let receivedSignal: AbortSignal | undefined;
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async (_input, init) => {
+        fetched = true;
+        receivedSignal = init?.signal as AbortSignal | undefined;
+        return new Response(
+          new ReadableStream<Uint8Array>({
+            cancel() {
+              cancels++;
+            },
+          }),
+          { headers: { "content-type": "application/x-ndjson" } },
+        );
+      },
+    });
+    const controller = new AbortController();
+    const iterator = request
+      .stream(
+        operation({
+          method: "GET",
+          path: "/events",
+          responses: [
+            {
+              status: "200",
+              contentType: "application/x-ndjson",
+              schema: {},
+              itemSchema: { types: ["object"] },
+            },
+          ],
+          outputSchemas: {},
+        }),
+        undefined,
+        { signal: controller.signal },
+      )
+      [Symbol.asyncIterator]();
+    const pending = iterator.next().catch((cause: unknown) => cause);
+    await vi.waitFor(() => expect(fetched).toBe(true));
+    controller.abort("stop");
+    const error = await pending;
+    expect(isErrorCode(error, TransportErrorCode.REQUEST_ABORTED)).toBe(true);
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(cancels).toBe(1);
+  });
+
   it("enforces generated stream item limits independently of chunk boundaries", async () => {
     const itemSchema = { types: ["object"] } as const;
     const streamOperation = (contentType: string): OperationDefinition =>
@@ -2207,7 +2464,7 @@ describe("generated runtime", () => {
   });
 
   it("validates SSE request fields while preserving request-stream cancellation", async () => {
-    let iteratorClosed = false;
+    let iteratorReturnCount = 0;
     const streamOperation = operation({
       path: "/events",
       contentType: "text/event-stream",
@@ -2243,7 +2500,7 @@ describe("generated runtime", () => {
       const error = await request(streamOperation, { body: values() }).catch(
         (cause: unknown) => cause,
       );
-      expect(error).toBeInstanceOf(Error);
+      expect(isErrorCode(error, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
     }
 
     const request = createRequest({
@@ -2261,11 +2518,11 @@ describe("generated runtime", () => {
         yield { data: "first" };
         yield { data: "second" };
       } finally {
-        iteratorClosed = true;
+        iteratorReturnCount++;
       }
     }
     await expect(request(streamOperation, { body: cancellable() })).resolves.toEqual({ ok: true });
-    expect(iteratorClosed).toBe(true);
+    expect(iteratorReturnCount).toBe(1);
   });
 
   it("keeps request encoding strict for closed objects", async () => {
