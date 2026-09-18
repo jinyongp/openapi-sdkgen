@@ -8,6 +8,7 @@ binary="$perf_dir/openapi-sdkgen.test"
 shape_log="$perf_dir/workloads.log"
 bench_log="$perf_dir/bench.log"
 metric_log="$perf_dir/process.log"
+stream_log="$perf_dir/stream-runtime.log"
 mkdir -p "$perf_dir"
 
 agent_run "build performance test binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
@@ -27,6 +28,13 @@ fi
 if ! OPENAPI_SDKGEN_PERF=1 "$binary" -test.v -test.run '^TestPerformanceProcessMetrics$' >"$metric_log" 2>&1; then
   echo "failed performance process metrics"
   tail -n "$TAIL_LINES" "$metric_log" || true
+  exit 1
+fi
+
+"$ROOT/scripts/agent/prepare-conformance"
+if ! OPENAPI_SDKGEN_STREAM_PERF=1 ts_pnpm exec vitest run tests/stream-performance.test.ts >"$stream_log" 2>&1; then
+  echo "failed TypeScript stream performance acceptance"
+  tail -n "$TAIL_LINES" "$stream_log" || true
   exit 1
 fi
 
