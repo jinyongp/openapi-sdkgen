@@ -1,6 +1,6 @@
 import { defineOwnDataProperty, isRecord } from "./objects.js";
 
-/** Host-owned encoder/decoder for a declared non-built-in media type. */
+/** Host-owned encoder/decoder for a declared media type. Stream hooks override built-in framing. */
 export interface MediaCodec<Value> {
   readonly encode?: (
     value: Value,
@@ -25,12 +25,12 @@ export interface MediaCodec<Value> {
     value: string,
     context: { readonly contentType: string },
   ) => Value | Promise<Value>;
-  /** Encodes validated items for one declared custom streaming request body. */
+  /** Encodes validated items for one declared streaming request body, overriding built-in framing. */
   readonly encodeStream?: (
     items: AsyncIterable<Value>,
     context: { readonly contentType: string; readonly signal?: AbortSignal | undefined },
   ) => ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>>;
-  /** Decodes one declared custom streaming response without exposing the raw Fetch stream. */
+  /** Decodes one declared streaming response, overriding built-in framing without exposing the raw Fetch stream. */
   readonly decodeStream?: (
     reader: MediaStreamReader,
     context: {

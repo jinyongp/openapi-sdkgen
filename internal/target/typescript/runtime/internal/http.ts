@@ -339,29 +339,8 @@ async function* streamOperation<Item>(
     const maxFrameBytes = resolveMaxStreamItemBytes(
       requestOptions.maxStreamItemBytes ?? options.maxStreamItemBytes,
     );
-    if (isGeneratedStreamMediaType(contentType)) {
-      for await (const value of decodeStreamItems(
-        response.body,
-        contentType,
-        definition.itemSchema,
-        operation.outputSchemas ?? {},
-        codecs,
-        definition.itemEncoding,
-        maxFrameBytes,
-        abort.signal,
-      )) {
-        yield transformWireValue(
-          value,
-          definition.itemSchema,
-          operation.outputSchemas ?? {},
-          "decode",
-          tolerantResponseTransformOptions,
-        ) as Item;
-      }
-    } else {
-      const codec = codecs.get(normalizeMediaType(contentType));
-      if (codec?.decodeStream === undefined)
-        throw new TypeError(`missing decodeStream codec for ${contentType}`);
+    const codec = codecs.get(normalizeMediaType(contentType));
+    if (codec?.decodeStream !== undefined) {
       const reader = createMediaStreamReader(response.body, maxFrameBytes, abort.signal);
       const stream = codec.decodeStream(reader, {
         contentType,
@@ -389,6 +368,27 @@ async function* streamOperation<Item>(
           else await close.catch(() => undefined);
         }
       }
+    } else if (isGeneratedStreamMediaType(contentType)) {
+      for await (const value of decodeStreamItems(
+        response.body,
+        contentType,
+        definition.itemSchema,
+        operation.outputSchemas ?? {},
+        codecs,
+        definition.itemEncoding,
+        maxFrameBytes,
+        abort.signal,
+      )) {
+        yield transformWireValue(
+          value,
+          definition.itemSchema,
+          operation.outputSchemas ?? {},
+          "decode",
+          tolerantResponseTransformOptions,
+        ) as Item;
+      }
+    } else {
+      throw new TypeError(`missing decodeStream codec for ${contentType}`);
     }
   } catch (cause) {
     if (abort.timedOut()) {
@@ -1711,6 +1711,26 @@ function encodeRequestSynchronous(
       : selectRequestBodyDefinition(requestBodies, contentType);
   if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
     throw new TypeError("streaming request body must be an AsyncIterable");
+  const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
+  if (
+    definition?.itemSchema !== undefined &&
+    isAsyncIterable(bodyValue) &&
+    streamCodec !== undefined
+  ) {
+    const stream = encodeCustomStreamingRequestBody(
+      contentType,
+      bodyValue,
+      definition.itemSchema,
+      operation.inputSchemas ?? {},
+      codecs,
+      options.signal,
+    );
+    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
+      headers.set("Content-Type", contentType);
+      return { url: url.href, headers, body };
+    };
+    return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
+  }
   if (
     definition?.itemSchema !== undefined &&
     isAsyncIterable(bodyValue) &&
@@ -1919,6 +1939,23 @@ async function encodeRequestAsync(
       : selectRequestBodyDefinition(requestBodies, contentType);
   if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
     throw new TypeError("streaming request body must be an AsyncIterable");
+  const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
+  if (
+    definition?.itemSchema !== undefined &&
+    isAsyncIterable(bodyValue) &&
+    streamCodec !== undefined
+  ) {
+    const stream = await encodeCustomStreamingRequestBody(
+      contentType,
+      bodyValue,
+      definition.itemSchema,
+      operation.inputSchemas ?? {},
+      codecs,
+      options.signal,
+    );
+    headers.set("Content-Type", contentType);
+    return { url: url.href, headers, body: stream };
+  }
   if (
     definition?.itemSchema !== undefined &&
     isAsyncIterable(bodyValue) &&

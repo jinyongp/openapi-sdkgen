@@ -2008,6 +2008,117 @@ describe("generated runtime", () => {
     ).resolves.toEqual([{ payload: '{"token":"a"}', eventType: "delta", retryAfter: 5 }]);
   });
 
+  it("lets stream codecs override built-in framing in both directions", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    let responseMaxFrameBytes = 0;
+    let responseWire = "";
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    const codec = {
+      decodeStream: async function* (
+        reader: {
+          read(maxBytes: number): Promise<Uint8Array | null>;
+        },
+        context: { maxFrameBytes: number },
+      ) {
+        responseMaxFrameBytes = context.maxFrameBytes;
+        for (;;) {
+          const bytes = await reader.read(context.maxFrameBytes);
+          if (bytes === null) break;
+          responseWire += decoder.decode(bytes);
+        }
+        yield { wire_name: "decoded" };
+      },
+      encodeStream: (items: AsyncIterable<unknown>) => {
+        const iterator = items[Symbol.asyncIterator]();
+        return new ReadableStream<Uint8Array>({
+          async pull(controller) {
+            const next = await iterator.next();
+            if (next.done) {
+              controller.close();
+              return;
+            }
+            const item = next.value as { wire_name: string };
+            controller.enqueue(encoder.encode(`override:${item.wire_name}\n`));
+          },
+          async cancel(reason) {
+            await iterator.return?.(reason);
+          },
+        });
+      },
+    };
+
+    const responseRequest = createRequest({
+      baseURL: "https://api.example.test",
+      maxStreamItemBytes: 4,
+      codecs: { "text/event-stream": codec },
+      fetch: async () =>
+        new Response("not-sse-framing", {
+          headers: { "content-type": "text/event-stream" },
+        }),
+    });
+    await expect(
+      collect(
+        responseRequest.stream(
+          operation({
+            method: "GET",
+            path: "/events",
+            responses: [
+              {
+                status: "200",
+                contentType: "text/event-stream",
+                schema: {},
+                itemSchema,
+              },
+            ],
+            outputSchemas: {},
+          }),
+        ),
+      ),
+    ).resolves.toEqual([{ displayName: "decoded" }]);
+    expect(responseMaxFrameBytes).toBe(4);
+    expect(responseWire).toBe("not-sse-framing");
+
+    let requestWire = "";
+    const requestRequest = createRequest({
+      baseURL: "https://api.example.test",
+      codecs: { "text/event-stream": codec },
+      fetch: async (_input, init) => {
+        requestWire = await new Response(init?.body).text();
+        return jsonResponse({ ok: true });
+      },
+    });
+    async function* items() {
+      yield { displayName: "encoded" };
+    }
+    await expect(
+      requestRequest(
+        operation({
+          path: "/events",
+          contentType: "text/event-stream",
+          requestBodyRequired: true,
+          requestBodies: [
+            {
+              contentType: "text/event-stream",
+              schema: {},
+              itemSchema,
+            },
+          ],
+          inputSchemas: {},
+        }),
+        { body: items() },
+      ),
+    ).resolves.toEqual({ ok: true });
+    expect(requestWire).toBe("override:encoded\n");
+  });
+
   it("preserves unknown properties in generated and custom stream items", async () => {
     const itemSchema = {
       types: ["object"],

@@ -1566,6 +1566,116 @@ if (fetched) throw new Error("fetch ran without a custom stream codec");
 	}
 }
 
+func TestRuntimeStreamCodecOverridesBuiltInFraming(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.2.0",
+  "info": {"title": "Stream codec override", "version": "1"},
+  "paths": {
+    "/events": {
+      "get": {
+        "operationId": "watchEvents",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "itemSchema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {"data": {"type": "string"}}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "publishEvents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/event-stream": {
+              "itemSchema": {
+                "type": "object",
+                "required": ["data"],
+                "properties": {"data": {"type": "string"}}
+              }
+            }
+          }
+        },
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+let maxFrameBytes = 0;
+let sent = "";
+const codec = {
+  decodeStream: async function* (reader, context) {
+    maxFrameBytes = context.maxFrameBytes;
+    let wire = "";
+    for (;;) {
+      const bytes = await reader.read(context.maxFrameBytes);
+      if (bytes === null) break;
+      wire += decoder.decode(bytes);
+    }
+    if (!wire.startsWith("CUSTOM|")) throw new Error("override decoder did not receive custom wire");
+    yield { data: wire.slice("CUSTOM|".length) };
+  },
+  encodeStream: (items) => {
+    const iterator = items[Symbol.asyncIterator]();
+    return new ReadableStream({
+      async pull(controller) {
+        const next = await iterator.next();
+        if (next.done) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(encoder.encode("CUSTOM|" + next.value.data));
+      },
+      async cancel(reason) {
+        await iterator.return?.(reason);
+      },
+    });
+  },
+};
+const api = createClient({
+  baseURL: "https://api.example.test",
+  maxStreamItemBytes: 4,
+  codecs: { "text/event-stream": codec },
+  fetch: async (_input, init) => {
+    if (init.method === "POST") {
+      sent = await new Response(init.body).text();
+      return new Response(null, { status: 204 });
+    }
+    return new Response("CUSTOM|decoded", {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+  },
+});
+const received = [];
+for await (const event of api.$streams.watchEvents()) received.push(event.data);
+if (received.join(",") !== "decoded" || maxFrameBytes !== 4)
+  throw new Error("built-in response framing was not overridden");
+async function* events() { yield { data: "encoded" }; }
+await api.$operations.publishEvents({ body: events() });
+if (sent !== "CUSTOM|encoded") throw new Error("built-in request framing was not overridden: " + sent);
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript built-in stream-codec override test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedStreamingMultipartResponseDecodesItemsAndHeaders(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Multipart stream","version":"1"},
