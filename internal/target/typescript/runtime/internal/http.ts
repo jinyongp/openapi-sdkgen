@@ -30,6 +30,7 @@ import type {
   RawResponse,
   RequestMetadata,
   RequestOptions,
+  ServerSentEvent,
   StreamResponseMetadata,
 } from "./request.js";
 import type {
@@ -804,13 +805,6 @@ async function* decodeStreamItems(
   }
 }
 
-interface SSEStreamItem {
-  readonly data: string;
-  readonly event?: string;
-  readonly id?: string;
-  readonly retry?: number;
-}
-
 interface SSELine {
   readonly line: string;
   readonly terminator: string;
@@ -821,7 +815,7 @@ async function* decodeSSEStreamItems(
   body: ReadableStream<Uint8Array>,
   maxFrameBytes: number,
   signal?: AbortSignal,
-): AsyncIterable<SSEStreamItem> {
+): AsyncIterable<ServerSentEvent> {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const reader = body.getReader();
@@ -846,7 +840,7 @@ async function* decodeSSEStreamItems(
     id = undefined;
     retry = undefined;
   };
-  const dispatchEvent = (): SSEStreamItem | undefined => {
+  const dispatchEvent = (): ServerSentEvent | undefined => {
     if (!hasData) {
       resetEvent();
       return undefined;

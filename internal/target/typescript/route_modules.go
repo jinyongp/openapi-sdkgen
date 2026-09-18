@@ -112,7 +112,7 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	}
 
 	var output bytes.Buffer
-	fmt.Fprintf(&output, "import type { BinaryBody } from %s\n", quoteTS(request))
+	fmt.Fprintf(&output, "import type { BinaryBody, OperationStream } from %s\n", quoteTS(request))
 	fmt.Fprintf(&output, "import type { OperationSurface, OperationTypeIdentity, RouteTypeIdentity } from %s\n", quoteTS(identity))
 	fmt.Fprintf(&output, "import type { OperationRoutes, Routes } from %s\n", quoteTS(index))
 	fmt.Fprintf(&output, "import type { RouteRequestSections } from %s\n\n", quoteTS(inputs))
@@ -172,6 +172,11 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	output.WriteString("export type ResourceCall<Route extends keyof Routes> = Routes[Route][\"resourceCall\"] & RouteTypeIdentity<Route> & OperationTypeIdentity<Route, \"resource\">\n\n")
 	output.WriteString("/** Raw resource-operation call for one exact route. */\n")
 	output.WriteString("export type RawCall<Route extends keyof Routes> = ResourceRawCalls[Route] & RouteTypeIdentity<Route>\n\n")
+	output.WriteString("type StreamItemOf<Call> = [Call] extends [never]\n")
+	output.WriteString("  ? never\n")
+	output.WriteString("  : Call extends (...args: any[]) => OperationStream<infer Item> ? Item : never\n\n")
+	output.WriteString("/** Item emitted by the streaming call for one exact route. */\n")
+	output.WriteString("export type RouteStreamItem<Route extends keyof Routes> = StreamItemOf<Routes[Route][\"stream\"]>\n\n")
 	output.WriteString("/** Streaming operation call for one exact route. */\n")
 	output.WriteString("export type StreamCall<Route extends keyof Routes> = Routes[Route][\"stream\"] & RouteTypeIdentity<Route>\n\n")
 	output.WriteString("/** Pagination operation call for one exact route. */\n")
@@ -232,6 +237,11 @@ func emitRouteOperationHelpers(output *bytes.Buffer, manifest Manifest) error {
 	output.WriteString("export type OperationOutput<Source extends OperationSource> =\n")
 	output.WriteString("  OperationIdentityOf<Source> extends { readonly route: infer Route }\n")
 	output.WriteString("    ? Route extends keyof Routes ? RouteOutput<Route> : never\n")
+	output.WriteString("    : never\n\n")
+	output.WriteString("/** Streaming item selected by operation ID or generated method type. */\n")
+	output.WriteString("export type OperationStreamItem<Source extends OperationSource> =\n")
+	output.WriteString("  OperationIdentityOf<Source> extends { readonly route: infer Route }\n")
+	output.WriteString("    ? Route extends keyof Routes ? RouteStreamItem<Route> : never\n")
 	output.WriteString("    : never\n\n")
 	emitRequestSectionHelpers(output)
 	return nil

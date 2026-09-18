@@ -4,6 +4,14 @@ export interface RequestMetadata {
   readonly id?: string;
 }
 
+/** One parsed Server-Sent Event using the standard event-stream fields. */
+export interface ServerSentEvent {
+  readonly data: string;
+  readonly event?: string;
+  readonly id?: string;
+  readonly retry?: number;
+}
+
 /** Response metadata exposed as soon as a streaming response has been accepted. */
 export interface StreamResponseMetadata {
   /** HTTP status code. */

@@ -65,7 +65,9 @@ func TestRouteArtifactsAreThinInlineTypeRegistries(t *testing.T) {
 		`from "./index.js"`,
 		`from "./inputs.js"`,
 		"export type RouteInput<",
+		"export type RouteStreamItem<",
 		"export type OperationInput<",
+		"export type OperationStreamItem<",
 		"export type RouteParameter<",
 	} {
 		if !strings.Contains(helpers, expected) {

@@ -176,7 +176,7 @@ export type { TransportError } from "./runtime/errors.js"
 export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/links.js"
 export type { OperationCall } from "./runtime/callables.js"
 export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/pagination.js"
-export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, StreamResponseMetadata, StreamSource } from "./runtime/request.js"
+export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, ServerSentEvent, StreamResponseMetadata, StreamSource } from "./runtime/request.js"
 export type { APIKeyCredential, HTTPBasicCredential, HTTPBearerCredential, HTTPCredential, MutualTLSCredential, OAuthCredential, SecurityCredential, SecurityCredentials, SecurityRequirementDefinition, SecuritySchemeDefinition } from "./runtime/security.js"
 export type { Transport, TransportCapabilities } from "./runtime/transport.js"
 `)
