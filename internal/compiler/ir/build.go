@@ -389,7 +389,7 @@ func readOperationParameters(document, pathItem, operation map[string]any, pathP
 			if !hasExplode {
 				explode = style == "form"
 			}
-			content, err := readMediaTypes(document, resolved["content"])
+			content, err := readMediaTypes(document, resolved["content"], pointer+"/content", false)
 			if err != nil {
 				return nil, err
 			}
@@ -446,7 +446,7 @@ func readRequestBody(document map[string]any, value any, pointer string) (*Reque
 	if err != nil {
 		return nil, err
 	}
-	content, err := readMediaTypes(document, resolved["content"])
+	content, err := readMediaTypes(document, resolved["content"], pointer+"/content", true)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func readResponses(document map[string]any, value any, pointer string) ([]Respon
 		if err != nil {
 			return nil, err
 		}
-		content, err := readMediaTypes(document, resolved["content"])
+		content, err := readMediaTypes(document, resolved["content"], responsePointer+"/content", true)
 		if err != nil {
 			return nil, err
 		}
@@ -489,7 +489,7 @@ func readResponses(document map[string]any, value any, pointer string) ([]Respon
 	return result, nil
 }
 
-func readMediaTypes(document map[string]any, value any) ([]MediaType, error) {
+func readMediaTypes(document map[string]any, value any, pointer string, streamEligible bool) ([]MediaType, error) {
 	values, _ := value.(map[string]any)
 	result := make([]MediaType, 0, len(values))
 	for _, contentType := range sortedKeys(values) {
@@ -498,10 +498,19 @@ func readMediaTypes(document map[string]any, value any) ([]MediaType, error) {
 		if err != nil {
 			return nil, err
 		}
+		stream := StreamPlan{Framing: StreamFramingNone}
+		_, hasItemSchema := resolved["itemSchema"]
+		if streamEligible {
+			stream = StreamPlanForMediaType(contentType, hasItemSchema)
+			if stream.IsStreaming() && !hasItemSchema {
+				return nil, fmt.Errorf("%s/%s: sequential stream media type requires itemSchema", pointer, escapeJSONPointerToken(contentType))
+			}
+		}
 		result = append(result, MediaType{
 			ContentType: contentType,
 			Schema:      resolved["schema"],
 			ItemSchema:  resolved["itemSchema"],
+			Stream:      stream,
 			Raw:         resolved,
 		})
 	}

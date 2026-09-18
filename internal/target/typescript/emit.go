@@ -173,6 +173,7 @@ type ManifestOperation struct {
 	mediaOutputs       map[string]typeExpression
 	renderedMedia      map[string]string
 	mediaTypes         []string
+	streamMediaTypes   []string
 	security           []operationSecurityRequirement
 	hasSecurity        bool
 	optionsRequired    bool
@@ -602,6 +603,11 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			mediaTypes = append(mediaTypes, mediaType)
 		}
 		sort.Strings(mediaTypes)
+		streamMediaTypes, err := operationStreamingResponseMediaTypes(document, operation)
+		if err != nil {
+			failures = append(failures, fmt.Errorf("operation %s stream media: %w", operationLabel(operation), err))
+			operationFailed = true
+		}
 		security, hasSecurity, err := operationSecurityRequirements(document, operation)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("operation %s security: %w", operationLabel(operation), err))
@@ -658,6 +664,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			mediaOutputs:       mediaOutputs,
 			renderedMedia:      renderedMedia,
 			mediaTypes:         mediaTypes,
+			streamMediaTypes:   streamMediaTypes,
 			security:           security,
 			hasSecurity:        hasSecurity,
 			optionsRequired:    len(security) > 1,

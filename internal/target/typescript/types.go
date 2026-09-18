@@ -686,10 +686,11 @@ func operationOutputTypeExpression(document *ir.Document, operation ir.Operation
 }
 
 func operationOutputTypeForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (string, error) {
-	responses, err := operationResponses(document, operation)
+	sets, err := operationResponseMediaSets(document, operation)
 	if err != nil {
 		return "", err
 	}
+	responses := sets.normal
 	var result []string
 	for _, response := range responses {
 		if !isSuccessResponseStatus(response.Status) {
@@ -779,7 +780,7 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 		for _, media := range response.Content {
 			schemaObject, _ := media.Schema.(map[string]any)
 			valueType := "void"
-			if _, sequential := media.Raw["itemSchema"]; !sequential && media.Schema != nil {
+			if !media.Stream.IsStreaming() && media.Schema != nil {
 				if media.Schema == false {
 					valueType = "never"
 				} else if isBinaryMedia(media.ContentType, schemaObject) {
@@ -874,10 +875,11 @@ func operationMediaOutputTypeExpressions(document *ir.Document, operation ir.Ope
 }
 
 func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Operation, scope typeRenderScope) (map[string]string, error) {
-	responses, err := operationResponses(document, operation)
+	sets, err := operationResponseMediaSets(document, operation)
 	if err != nil {
 		return nil, err
 	}
+	responses := sets.normal
 	byMedia := make(map[string][]string)
 	for _, response := range responses {
 		if !isSuccessResponseStatus(response.Status) {

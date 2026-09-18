@@ -37,20 +37,17 @@ func generatedStreamsDiagnostics(document *ir.Document, manifest Manifest) ([]ge
 		if !operationVisible {
 			continue
 		}
-		responses, err := operationResponses(document, operation)
+		sets, err := operationResponseMediaSets(document, operation)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("streaming response %s: %w", operationLabel(operation), err))
 			continue
 		}
 		var types []string
-		for _, response := range responses {
+		for _, response := range sets.streaming {
 			if !isSuccessResponseStatus(response.Status) {
 				continue
 			}
 			for _, media := range response.Content {
-				if !isStreamingMediaType(media.ContentType, media.Raw) && media.Raw["itemSchema"] == nil {
-					continue
-				}
 				if _, exists := media.Raw["itemSchema"]; !exists {
 					failures = append(failures, fmt.Errorf("streaming response %s %s has no itemSchema", operationLabel(operation), media.ContentType))
 					continue
@@ -98,7 +95,7 @@ func emitStreamValues(output *bytes.Buffer, document *ir.Document, streams []gen
 		inputs := stream.Plan.InputTypes
 		inputRequired := stream.Plan.prepared.inputRequired
 		inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
-		optionsType := operationSlotType(operationRouteKey(stream.Operation), "options")
+		optionsType := streamOptionsType(stream)
 		variable := stablePrivateIdentifier("stream-value", operationRouteKey(stream.Operation))
 		functionType, err := streamFunctionType(document, stream)
 		if err != nil {
@@ -138,11 +135,24 @@ func streamForRoute(streams []generatedStream, routeKey string) (generatedStream
 	return generatedStream{}, false
 }
 
+func streamOptionsType(stream generatedStream) string {
+	base := operationSlotType(operationRouteKey(stream.Operation), "options")
+	base = "Omit<" + base + ", \"accept\">"
+	if len(stream.Plan.streamMediaTypes) <= 1 {
+		return base
+	}
+	accepted := make([]string, 0, len(stream.Plan.streamMediaTypes))
+	for _, mediaType := range stream.Plan.streamMediaTypes {
+		accepted = append(accepted, quoteTS(mediaType))
+	}
+	return base + " & { readonly accept?: " + strings.Join(accepted, " | ") + " | undefined }"
+}
+
 func streamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
 	_ = document
 	inputs := stream.Plan.InputTypes
 	inputRequired := stream.Plan.prepared.inputRequired
-	optionsType := operationSlotType(operationRouteKey(stream.Operation), "options")
+	optionsType := streamOptionsType(stream)
 	optionMarker := "?"
 	optionsRequired := stream.Plan.optionsRequired
 	if optionsRequired {
@@ -172,16 +182,7 @@ func operationRequiresOptions(document *ir.Document, operation ir.Operation) (bo
 }
 
 func isStreamMediaType(mediaType string) bool {
-	mediaType = strings.ToLower(mediaType)
-	return strings.Contains(mediaType, "event-stream") || strings.Contains(mediaType, "json-seq") || strings.Contains(mediaType, "ndjson") || strings.Contains(mediaType, "jsonl")
-}
-
-func isStreamingMediaType(mediaType string, media map[string]any) bool {
-	if isStreamMediaType(mediaType) {
-		return true
-	}
-	_, hasItemSchema := media["itemSchema"]
-	return hasItemSchema && strings.HasPrefix(strings.ToLower(mediaType), "multipart/")
+	return ir.StreamPlanForMediaType(mediaType, false).IsStreaming()
 }
 
 func stringsJoinUnique(values []string, separator string) string {

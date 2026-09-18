@@ -14,6 +14,48 @@ func operationResponses(document *ir.Document, operation ir.Operation) ([]ir.Res
 	return syntheticOperationResponses(document, operation)
 }
 
+type responseMediaSets struct {
+	normal    []ir.Response
+	streaming []ir.Response
+}
+
+func operationResponseMediaSets(document *ir.Document, operation ir.Operation) (responseMediaSets, error) {
+	responses, err := operationResponses(document, operation)
+	if err != nil {
+		return responseMediaSets{}, err
+	}
+	sets := responseMediaSets{
+		normal:    make([]ir.Response, 0, len(responses)),
+		streaming: make([]ir.Response, 0, len(responses)),
+	}
+	for _, response := range responses {
+		if len(response.Content) == 0 {
+			sets.normal = append(sets.normal, response)
+			continue
+		}
+		normalContent := make([]ir.MediaType, 0, len(response.Content))
+		streamContent := make([]ir.MediaType, 0, len(response.Content))
+		for _, media := range response.Content {
+			if media.Stream.IsStreaming() {
+				streamContent = append(streamContent, media)
+			} else {
+				normalContent = append(normalContent, media)
+			}
+		}
+		if len(normalContent) != 0 {
+			normalResponse := response
+			normalResponse.Content = normalContent
+			sets.normal = append(sets.normal, normalResponse)
+		}
+		if len(streamContent) != 0 {
+			streamResponse := response
+			streamResponse.Content = streamContent
+			sets.streaming = append(sets.streaming, streamResponse)
+		}
+	}
+	return sets, nil
+}
+
 // syntheticOperationResponses preserves the raw-map path used by focused
 // target tests that construct ir.Operation directly instead of compiling an
 // OpenAPI document. Compiler-built path operations always carry a non-nil
@@ -48,10 +90,12 @@ func syntheticOperationResponses(document *ir.Document, operation ir.Operation) 
 			if err != nil {
 				return nil, err
 			}
+			_, hasItemSchema := value["itemSchema"]
 			media = append(media, ir.MediaType{
 				ContentType: contentType,
 				Schema:      value["schema"],
 				ItemSchema:  value["itemSchema"],
+				Stream:      ir.StreamPlanForMediaType(contentType, hasItemSchema),
 				Raw:         value,
 			})
 		}

@@ -133,7 +133,32 @@ type MediaType struct {
 	ContentType string
 	Schema      any
 	ItemSchema  any
+	Stream      StreamPlan
 	Raw         map[string]any
+}
+
+// StreamFraming identifies the logical framing carried by a Media Type Object.
+// Targets consume this normalized contract instead of inferring stream behavior
+// from content-type substrings or raw itemSchema presence.
+type StreamFraming string
+
+const (
+	StreamFramingNone              StreamFraming = "none"
+	StreamFramingLineDelimitedJSON StreamFraming = "line-delimited-json"
+	StreamFramingJSONSequence      StreamFraming = "json-sequence"
+	StreamFramingSSE               StreamFraming = "sse"
+	StreamFramingMultipart         StreamFraming = "multipart"
+	StreamFramingCustom            StreamFraming = "custom"
+)
+
+// StreamPlan is the compiler-owned sequential-media contract for one media
+// representation. Framing None means the representation is decoded normally.
+type StreamPlan struct {
+	Framing StreamFraming
+}
+
+func (plan StreamPlan) IsStreaming() bool {
+	return plan.Framing != "" && plan.Framing != StreamFramingNone
 }
 
 // RequestBody is the normalized outbound request-body contract for an

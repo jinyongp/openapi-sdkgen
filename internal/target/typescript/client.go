@@ -402,10 +402,22 @@ func emitOperationOptions(output *bytes.Buffer, operationName string, operation 
 }
 
 func operationResponseMediaTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
-	responses, err := operationResponses(document, operation)
+	sets, err := operationResponseMediaSets(document, operation)
 	if err != nil {
 		return nil, err
 	}
+	return responseMediaTypes(sets.normal), nil
+}
+
+func operationStreamingResponseMediaTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
+	sets, err := operationResponseMediaSets(document, operation)
+	if err != nil {
+		return nil, err
+	}
+	return responseMediaTypes(sets.streaming), nil
+}
+
+func responseMediaTypes(responses []ir.Response) []string {
 	seen := make(map[string]bool)
 	var result []string
 	for _, response := range responses {
@@ -420,7 +432,7 @@ func operationResponseMediaTypes(document *ir.Document, operation ir.Operation) 
 		}
 	}
 	sort.Strings(result)
-	return result, nil
+	return result
 }
 
 func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation ir.Operation) error {
@@ -560,7 +572,7 @@ func requestBodyIRTypeForScope(document *ir.Document, body *ir.RequestBody, scop
 	}
 	if len(body.Content) == 1 && !strings.Contains(body.Content[0].ContentType, "*") {
 		media := body.Content[0]
-		if _, streaming := media.Raw["itemSchema"]; streaming {
+		if media.Stream.IsStreaming() {
 			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
 			if err != nil {
 				return "", err
@@ -585,7 +597,7 @@ func requestBodyIRTypeForScope(document *ir.Document, body *ir.RequestBody, scop
 		valueType := "string"
 		if media.Schema == false {
 			valueType = "never"
-		} else if _, streaming := media.Raw["itemSchema"]; streaming {
+		} else if media.Stream.IsStreaming() {
 			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
 			if err != nil {
 				return "", err
