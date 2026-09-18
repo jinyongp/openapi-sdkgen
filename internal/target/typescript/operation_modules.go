@@ -316,7 +316,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintf(&output, "  return %s\n", value)
+	fmt.Fprintf(&output, "  return %s as Links\n", value)
 	output.WriteString("}\n")
 	return output.Bytes(), nil
 }

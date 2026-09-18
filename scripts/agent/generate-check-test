@@ -68,10 +68,21 @@ cat >"$input" <<'EOF'
                   }
                 }
               }
+            },
+            "links": {
+              "follow": {"operationId": "get-item"}
             }
           }
         },
         "x-pagination": "cursor"
+      }
+    },
+    "/item-details": {
+      "get": {
+        "operationId": "get-item",
+        "responses": {
+          "204": {"description": "OK"}
+        }
       }
     }
   },
