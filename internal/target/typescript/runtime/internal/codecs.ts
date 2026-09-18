@@ -172,6 +172,8 @@ export interface WireBodyDefinition {
   readonly contentType: string;
   /** Wire transformation schema for this representation. */
   readonly schema: WireSchema;
+  /** Whether the Media Type Object explicitly declares a complete-content schema. */
+  readonly schemaDeclared?: true;
   /** OpenAPI 3.2 schema for one streamed response item. */
   readonly itemSchema?: WireSchema;
   /** Per-property Encoding Object declarations for form request bodies. */

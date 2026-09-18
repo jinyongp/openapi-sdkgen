@@ -449,13 +449,13 @@ func TestSourceArtifactsRejectsMultiMediaParameterContent(t *testing.T) {
 	}
 }
 
-func TestSourceArtifactsRejectsOpenAPI32StreamingAndPositionalMediaFeatures(t *testing.T) {
+func TestSourceArtifactsAcceptsOpenAPI32SequentialSchemaRequest(t *testing.T) {
 	document := &ir.Document{Raw: map[string]any{
 		"openapi": "3.2.0",
 	}, Operations: []ir.Operation{{
 		Path: "/logs", Method: "POST", Raw: map[string]any{
 			"requestBody": map[string]any{"content": map[string]any{
-				"application/x-ndjson": map[string]any{"schema": map[string]any{"type": "object"}},
+				"application/x-ndjson": map[string]any{"schema": map[string]any{"type": "array", "items": map[string]any{"type": "object"}}},
 			}},
 			"responses": map[string]any{"200": map[string]any{"content": map[string]any{
 				"application/json-seq": map[string]any{"itemSchema": map[string]any{"type": "object"}},
@@ -463,14 +463,31 @@ func TestSourceArtifactsRejectsOpenAPI32StreamingAndPositionalMediaFeatures(t *t
 		},
 	}}}
 	for _, generate := range []func(*ir.Document) ([]Artifact, error){SourceArtifacts} {
+		if _, err := generate(document); err != nil {
+			t.Fatalf("schema-backed sequential request rejected: %v", err)
+		}
+	}
+}
+
+func TestSourceArtifactsRejectsSequentialRequestWithoutSchemaOrItemSchema(t *testing.T) {
+	document := &ir.Document{Raw: map[string]any{
+		"openapi": "3.2.0",
+	}, Operations: []ir.Operation{{
+		Path: "/logs", Method: "POST", Raw: map[string]any{
+			"requestBody": map[string]any{"content": map[string]any{
+				"application/x-ndjson": map[string]any{},
+			}},
+			"responses": map[string]any{"204": map[string]any{"description": "Accepted"}},
+		},
+	}}}
+	for _, generate := range []func(*ir.Document) ([]Artifact, error){SourceArtifacts} {
 		_, err := generate(document)
 		if err == nil {
-			t.Fatal("OpenAPI 3.2 streaming request without itemSchema accepted")
+			t.Fatal("OpenAPI 3.2 sequential request without schema or itemSchema accepted")
 		}
-		for _, expected := range []string{"/application~1x-ndjson (streaming request encoder requires itemSchema)"} {
-			if !strings.Contains(err.Error(), expected) {
-				t.Fatalf("error = %q, missing %q", err, expected)
-			}
+		expected := "/application~1x-ndjson (streaming request encoder requires schema or itemSchema)"
+		if !strings.Contains(err.Error(), expected) {
+			t.Fatalf("error = %q, missing %q", err, expected)
 		}
 	}
 }

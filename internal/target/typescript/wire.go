@@ -538,6 +538,9 @@ func operationRequestWireBodies(document *ir.Document, operation ir.Operation) (
 			}
 		}
 		entry := "{ contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+		if _, exists := media.Raw["schema"]; exists {
+			entry += ", schemaDeclared: true"
+		}
 		if _, exists := media.Raw["itemSchema"]; exists {
 			itemDescriptor, err := wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionInput)
 			if err != nil {

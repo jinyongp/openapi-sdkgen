@@ -1006,6 +1006,115 @@ if (received !== "{\"id\":\"first\"}\n{\"id\":\"second\"}\n") throw new Error("s
 	}
 }
 
+func TestGeneratedStreamingRequestSourcesAndCompleteSequentialBodies(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Streaming request sources","version":"1"},
+  "paths":{
+    "/items":{"post":{"operationId":"publishItems","requestBody":{"required":true,"content":{"application/x-ndjson":{"itemSchema":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}},"responses":{"204":{"description":"Accepted"}}}},
+    "/batch":{"post":{"operationId":"publishBatch","requestBody":{"required":true,"content":{"application/x-ndjson":{"schema":{"type":"array","items":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}}},"responses":{"204":{"description":"Accepted"}}}},
+    "/dual":{"post":{"operationId":"publishDual","requestBody":{"required":true,"content":{"application/x-ndjson":{"schema":{"type":"array","items":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}},"itemSchema":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}},"responses":{"204":{"description":"Accepted"}}}}
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient, type StreamSource } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+declare const readable: ReadableStream<{ id: string }>
+declare const iterable: AsyncIterable<{ id: string }>
+const readableSource: StreamSource<{ id: string }> = readable
+const iterableSource: StreamSource<{ id: string }> = iterable
+void api.$operations.publishItems({ body: readableSource })
+void api.$operations.publishItems({ body: iterableSource })
+void api.$operations.publishBatch({ body: [{ id: "one" }] })
+void api.$operations.publishDual({ body: readableSource })
+void api.$operations.publishDual({ body: [{ id: "one" }] })
+// @ts-expect-error itemSchema-only request bodies require a StreamSource
+void api.$operations.publishItems({ body: [{ id: "one" }] })
+// @ts-expect-error schema-only sequential request bodies require the complete schema value
+void api.$operations.publishBatch({ body: readable })
+`
+	output := compileTypeScriptArtifactsWithProbe(t, document, "stream-source.probe.ts", probe)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const decoder = new TextDecoder();
+const seen = [];
+let sourceCancels = 0;
+let iterableReturns = 0;
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async (input, init) => {
+    const path = new URL(String(input)).pathname;
+    if (path === "/items") {
+      const reader = init.body.getReader();
+      const first = await reader.read();
+      if (first.done) throw new Error("ReadableStream source produced no request bytes");
+      seen.push([path, decoder.decode(first.value)]);
+      void reader.cancel("transport stopped").catch(() => undefined);
+      return new Response(null, { status: 204 });
+    }
+    seen.push([path, await new Response(init.body).text()]);
+    return new Response(null, { status: 204 });
+  },
+});
+const readable = new ReadableStream({
+  start(controller) {
+    controller.enqueue({ id: "readable" });
+  },
+  cancel() {
+    sourceCancels++;
+  },
+});
+await api.$operations.publishItems({ body: readable });
+for (let index = 0; index < 100 && sourceCancels === 0; index++)
+  await new Promise((resolve) => setTimeout(resolve, 0));
+if (sourceCancels !== 1) throw new Error("ReadableStream source cancellation was not propagated exactly once: " + sourceCancels);
+const iterable = {
+  [Symbol.asyncIterator]() {
+    let yielded = false;
+    return {
+      async next() {
+        if (yielded) return new Promise(() => {});
+        yielded = true;
+        return { done: false, value: { id: "iterable" } };
+      },
+      async return() {
+        iterableReturns++;
+        return { done: true, value: undefined };
+      },
+    };
+  },
+};
+await api.$operations.publishItems({ body: iterable });
+for (let index = 0; index < 100 && iterableReturns === 0; index++)
+  await new Promise((resolve) => setTimeout(resolve, 0));
+if (iterableReturns !== 1) throw new Error("AsyncIterable source return was not propagated exactly once: " + iterableReturns);
+await api.$operations.publishBatch({ body: [{ id: "batch-1" }, { id: "batch-2" }] });
+const dualReadable = new ReadableStream({
+  start(controller) {
+    controller.enqueue({ id: "dual-stream" });
+    controller.close();
+  },
+});
+await api.$operations.publishDual({ body: dualReadable });
+await api.$operations.publishDual({ body: [{ id: "dual-complete" }] });
+const expected = [
+  ["/items", "{\"id\":\"readable\"}\n"],
+  ["/items", "{\"id\":\"iterable\"}\n"],
+  ["/batch", "{\"id\":\"batch-1\"}\n{\"id\":\"batch-2\"}\n"],
+  ["/dual", "{\"id\":\"dual-stream\"}\n"],
+  ["/dual", "{\"id\":\"dual-complete\"}\n"],
+];
+if (JSON.stringify(seen) !== JSON.stringify(expected))
+  throw new Error("stream source/complete sequential encoding mismatch: " + JSON.stringify(seen));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript stream-source runtime test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedStreamingRequestEncodesSSEEventObjects(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.2.0",

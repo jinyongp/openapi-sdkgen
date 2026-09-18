@@ -293,8 +293,10 @@ func unsupportedMediaFeatures(document *ir.Document, content map[string]any, pat
 		streaming := isStreamMediaType(normalizedMediaType) || media["itemSchema"] != nil
 		if streaming {
 			if request {
-				if _, hasItemSchema := media["itemSchema"]; !hasItemSchema {
-					result = append(result, itemPath+" (streaming request encoder requires itemSchema)")
+				_, hasSchema := media["schema"]
+				_, hasItemSchema := media["itemSchema"]
+				if !hasSchema && !hasItemSchema {
+					result = append(result, itemPath+" (streaming request encoder requires schema or itemSchema)")
 				}
 			} else if _, hasItemSchema := media["itemSchema"]; !hasItemSchema {
 				result = append(result, itemPath+" (streaming response API)")

@@ -2014,17 +2014,25 @@ function encodeRequestSynchronous(
     requestBodies === undefined
       ? undefined
       : selectRequestBodyDefinition(requestBodies, contentType);
-  if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
-    throw new TypeError("streaming request body must be an AsyncIterable");
+  const streamSource =
+    definition?.itemSchema !== undefined && isStreamSource(bodyValue)
+      ? normalizeStreamSource(bodyValue, options.signal)
+      : undefined;
+  if (
+    definition?.itemSchema !== undefined &&
+    streamSource === undefined &&
+    definition.schemaDeclared !== true
+  )
+    throw new TypeError("streaming request body must be a StreamSource");
   const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     streamCodec !== undefined
   ) {
     const stream = encodeCustomStreamingRequestBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       codecs,
@@ -2038,12 +2046,12 @@ function encodeRequestSynchronous(
   }
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     normalizeMediaType(contentType).startsWith("multipart/")
   ) {
     const encoded = encodeStreamingMultipartBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       definition.itemEncoding,
@@ -2056,12 +2064,12 @@ function encodeRequestSynchronous(
   }
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     !isGeneratedStreamMediaType(contentType)
   ) {
     const stream = encodeCustomStreamingRequestBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       codecs,
@@ -2073,11 +2081,32 @@ function encodeRequestSynchronous(
     };
     return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
   }
+  if (
+    streamSource === undefined &&
+    definition?.schemaDeclared === true &&
+    !normalizeMediaType(contentType).startsWith("multipart/") &&
+    (definition.itemSchema !== undefined ||
+      isSequentialStreamMediaType(normalizeMediaType(contentType)))
+  ) {
+    const stream = encodeCompleteSequentialRequestBody(
+      contentType,
+      bodyValue,
+      definition.schema,
+      operation.inputSchemas ?? {},
+      codecs,
+      options.signal,
+    );
+    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
+      headers.set("Content-Type", contentType);
+      return { url: url.href, headers, body };
+    };
+    return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
+  }
   const body =
-    definition?.itemSchema !== undefined && isAsyncIterable(bodyValue)
+    definition?.itemSchema !== undefined && streamSource !== undefined
       ? encodeSequentialRequestBody(
           contentType,
-          bodyValue,
+          streamSource,
           definition.itemSchema,
           operation.inputSchemas ?? {},
         )
@@ -2242,17 +2271,25 @@ async function encodeRequestAsync(
     requestBodies === undefined
       ? undefined
       : selectRequestBodyDefinition(requestBodies, contentType);
-  if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
-    throw new TypeError("streaming request body must be an AsyncIterable");
+  const streamSource =
+    definition?.itemSchema !== undefined && isStreamSource(bodyValue)
+      ? normalizeStreamSource(bodyValue, options.signal)
+      : undefined;
+  if (
+    definition?.itemSchema !== undefined &&
+    streamSource === undefined &&
+    definition.schemaDeclared !== true
+  )
+    throw new TypeError("streaming request body must be a StreamSource");
   const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     streamCodec !== undefined
   ) {
     const stream = await encodeCustomStreamingRequestBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       codecs,
@@ -2263,12 +2300,12 @@ async function encodeRequestAsync(
   }
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     normalizeMediaType(contentType).startsWith("multipart/")
   ) {
     const encoded = encodeStreamingMultipartBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       definition.itemEncoding,
@@ -2281,12 +2318,12 @@ async function encodeRequestAsync(
   }
   if (
     definition?.itemSchema !== undefined &&
-    isAsyncIterable(bodyValue) &&
+    streamSource !== undefined &&
     !isGeneratedStreamMediaType(contentType)
   ) {
     const stream = await encodeCustomStreamingRequestBody(
       contentType,
-      bodyValue,
+      streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
       codecs,
@@ -2295,11 +2332,32 @@ async function encodeRequestAsync(
     headers.set("Content-Type", contentType);
     return { url: url.href, headers, body: stream };
   }
+  if (
+    streamSource === undefined &&
+    definition?.schemaDeclared === true &&
+    !normalizeMediaType(contentType).startsWith("multipart/") &&
+    (definition.itemSchema !== undefined ||
+      isSequentialStreamMediaType(normalizeMediaType(contentType)))
+  ) {
+    const stream = encodeCompleteSequentialRequestBody(
+      contentType,
+      bodyValue,
+      definition.schema,
+      operation.inputSchemas ?? {},
+      codecs,
+      options.signal,
+    );
+    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
+      headers.set("Content-Type", contentType);
+      return { url: url.href, headers, body };
+    };
+    return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
+  }
   const body =
-    definition?.itemSchema !== undefined && isAsyncIterable(bodyValue)
+    definition?.itemSchema !== undefined && streamSource !== undefined
       ? encodeSequentialRequestBody(
           contentType,
-          bodyValue,
+          streamSource,
           definition.itemSchema,
           operation.inputSchemas ?? {},
         )
@@ -2494,33 +2552,45 @@ function encodeSequentialRequestBody(
   itemSchema: WireSchema,
   schemas: WireSchemas,
 ): ReadableStream<Uint8Array> {
+  return encodeSequentialRequestWireBody(
+    contentType,
+    transformStreamingRequestItems(values, itemSchema, schemas),
+  );
+}
+
+function encodeSequentialRequestWireBody(
+  contentType: string,
+  values: AsyncIterable<unknown>,
+): ReadableStream<Uint8Array> {
   const mediaType = normalizeMediaType(contentType);
   const encodeItem = sequentialRequestItemEncoder(mediaType, contentType);
   const iterator = values[Symbol.asyncIterator]();
   const encoder = new TextEncoder();
-  return new ReadableStream<Uint8Array>({
-    async pull(controller): Promise<void> {
-      try {
-        const next = await iterator.next();
-        if (next.done) {
-          controller.close();
-          return;
-        }
-        const value = transformWireValue(next.value, itemSchema, schemas, "encode");
-        controller.enqueue(encoder.encode(encodeItem(value)));
-      } catch (cause) {
-        controller.error(cause);
+  return new ReadableStream<Uint8Array>(
+    {
+      async pull(controller): Promise<void> {
         try {
-          await iterator.return?.();
-        } catch {
-          /* original error wins */
+          const next = await iterator.next();
+          if (next.done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(encoder.encode(encodeItem(next.value)));
+        } catch (cause) {
+          controller.error(cause);
+          try {
+            await iterator.return?.();
+          } catch {
+            /* original error wins */
+          }
         }
-      }
+      },
+      async cancel(reason): Promise<void> {
+        await iterator.return?.(reason);
+      },
     },
-    async cancel(reason): Promise<void> {
-      await iterator.return?.(reason);
-    },
-  });
+    { highWaterMark: 0 },
+  );
 }
 
 function sequentialRequestItemEncoder(
@@ -2589,21 +2659,90 @@ function encodeCustomStreamingRequestBody(
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   signal: AbortSignal | undefined,
 ): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
+  return encodeCustomStreamingRequestWireBody(
+    contentType,
+    transformStreamingRequestItems(values, itemSchema, schemas),
+    codecs,
+    signal,
+  );
+}
+
+function encodeCustomStreamingRequestWireBody(
+  contentType: string,
+  values: AsyncIterable<unknown>,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  signal: AbortSignal | undefined,
+): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
   const codec = codecs.get(normalizeMediaType(contentType));
   if (codec?.encodeStream === undefined)
     throw new TypeError(`missing encodeStream codec for ${contentType}`);
-  return codec.encodeStream(transformStreamingRequestItems(values, itemSchema, schemas), {
+  return codec.encodeStream(values, {
     contentType,
     ...(signal === undefined ? {} : { signal }),
   });
 }
 
-async function* transformStreamingRequestItems(
+function encodeCompleteSequentialRequestBody(
+  contentType: string,
+  value: unknown,
+  schema: WireSchema,
+  schemas: WireSchemas,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  signal: AbortSignal | undefined,
+): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
+  const transformed = transformWireValue(value, schema, schemas, "encode");
+  if (!Array.isArray(transformed))
+    throw new TypeError("complete sequential request body must be an array value");
+  const values = streamArrayValues(transformed);
+  const codec = codecs.get(normalizeMediaType(contentType));
+  if (codec?.encodeStream !== undefined)
+    return encodeCustomStreamingRequestWireBody(contentType, values, codecs, signal);
+  if (isSequentialStreamMediaType(normalizeMediaType(contentType)))
+    return encodeSequentialRequestWireBody(contentType, values);
+  throw new TypeError(`missing encodeStream codec for ${contentType}`);
+}
+
+async function* streamArrayValues(values: readonly unknown[]): AsyncIterable<unknown> {
+  for (const value of values) yield value;
+}
+
+function transformStreamingRequestItems(
   values: AsyncIterable<unknown>,
   itemSchema: WireSchema,
   schemas: WireSchemas,
 ): AsyncIterable<unknown> {
-  for await (const value of values) yield transformWireValue(value, itemSchema, schemas, "encode");
+  return mapAsyncIterable(values, (value) =>
+    transformWireValue(value, itemSchema, schemas, "encode"),
+  );
+}
+
+function mapAsyncIterable<Input, Output>(
+  values: AsyncIterable<Input>,
+  transform: (value: Input) => Output,
+): AsyncIterable<Output> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<Output> {
+      const iterator = values[Symbol.asyncIterator]();
+      let done = false;
+      return {
+        async next(): Promise<IteratorResult<Output>> {
+          if (done) return { done: true, value: undefined as never };
+          const next = await iterator.next();
+          if (done || next.done) {
+            done = true;
+            return { done: true, value: undefined as never };
+          }
+          return { done: false, value: transform(next.value) };
+        },
+        async return(reason?: unknown): Promise<IteratorResult<Output>> {
+          if (done) return { done: true, value: undefined as never };
+          done = true;
+          await iterator.return?.(reason);
+          return { done: true, value: undefined as never };
+        },
+      };
+    },
+  };
 }
 
 function encodeStreamingMultipartBody(
@@ -3977,6 +4116,89 @@ function isLineDelimitedJSONMediaType(contentType: string): boolean {
 
 function isPromise<Value>(value: Value | Promise<Value>): value is Promise<Value> {
   return typeof (value as Promise<Value>)?.then === "function";
+}
+
+function isStreamSource(value: unknown): value is AsyncIterable<unknown> | ReadableStream<unknown> {
+  return isAsyncIterable(value) || isReadableStreamLike(value);
+}
+
+function normalizeStreamSource(
+  source: AsyncIterable<unknown> | ReadableStream<unknown>,
+  signal: AbortSignal | undefined,
+): AsyncIterable<unknown> {
+  return {
+    [Symbol.asyncIterator](): AsyncIterator<unknown> {
+      const iterator = isAsyncIterable(source)
+        ? source[Symbol.asyncIterator]()
+        : readableStreamIterator(source);
+      let done = false;
+      return {
+        async next(): Promise<IteratorResult<unknown>> {
+          if (done) return { done: true, value: undefined };
+          try {
+            const next = await awaitAbortable(Promise.resolve(iterator.next()), signal);
+            if (done || next.done) {
+              done = true;
+              return { done: true, value: undefined };
+            }
+            return next;
+          } catch (cause) {
+            if (signal?.aborted && !done) {
+              done = true;
+              void Promise.resolve(iterator.return?.(signal.reason)).catch(() => undefined);
+            }
+            throw cause;
+          }
+        },
+        async return(reason?: unknown): Promise<IteratorResult<unknown>> {
+          if (done) return { done: true, value: undefined };
+          done = true;
+          const close = Promise.resolve(iterator.return?.(reason));
+          if (signal?.aborted) void close.catch(() => undefined);
+          else await close.catch(() => undefined);
+          return { done: true, value: undefined };
+        },
+      };
+    },
+  };
+}
+
+function readableStreamIterator(source: ReadableStream<unknown>): AsyncIterator<unknown> {
+  const reader = source.getReader();
+  let released = false;
+  const release = (): void => {
+    if (released) return;
+    released = true;
+    reader.releaseLock();
+  };
+  return {
+    async next(): Promise<IteratorResult<unknown>> {
+      try {
+        const next = await reader.read();
+        if (next.done) release();
+        return next;
+      } catch (cause) {
+        release();
+        throw cause;
+      }
+    },
+    async return(reason?: unknown): Promise<IteratorResult<unknown>> {
+      try {
+        await reader.cancel(reason);
+      } finally {
+        release();
+      }
+      return { done: true, value: undefined };
+    },
+  };
+}
+
+function isReadableStreamLike(value: unknown): value is ReadableStream<unknown> {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    typeof (value as ReadableStream<unknown>).getReader === "function"
+  );
 }
 
 function isAsyncIterable(value: unknown): value is AsyncIterable<unknown> {

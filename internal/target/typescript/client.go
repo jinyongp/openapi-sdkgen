@@ -590,52 +590,55 @@ func requestBodyIRTypeForScope(document *ir.Document, body *ir.RequestBody, scop
 		return "unknown", nil
 	}
 	if len(body.Content) == 1 && !strings.Contains(body.Content[0].ContentType, "*") {
-		media := body.Content[0]
-		if media.Stream.IsStreaming() {
-			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
-			if err != nil {
-				return "", err
-			}
-			return "AsyncIterable<" + itemType + ">", nil
-		}
-		if isTextMedia(media.ContentType) {
-			return "string", nil
-		}
-		schemaObject, _ := media.Schema.(map[string]any)
-		if media.Schema == false {
-			return "never", nil
-		}
-		if isBinaryMedia(media.ContentType, schemaObject) {
-			return "BinaryBody", nil
-		}
-		return schemaTypeForScope(document, media.Schema, projectionInput, scope)
+		return requestBodyIRMediaValueTypeForScope(document, body.Content[0], scope)
 	}
 	variants := make([]string, 0, len(body.Content))
 	for _, media := range body.Content {
-		schemaObject, _ := media.Schema.(map[string]any)
-		valueType := "string"
-		if media.Schema == false {
-			valueType = "never"
-		} else if media.Stream.IsStreaming() {
-			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
-			if err != nil {
-				return "", err
-			}
-			valueType = "AsyncIterable<" + itemType + ">"
-		} else if !isTextMedia(media.ContentType) {
-			if isBinaryMedia(media.ContentType, schemaObject) {
-				valueType = "BinaryBody"
-			} else {
-				var err error
-				valueType, err = schemaTypeForScope(document, media.Schema, projectionInput, scope)
-				if err != nil {
-					return "", err
-				}
-			}
+		valueType, err := requestBodyIRMediaValueTypeForScope(document, media, scope)
+		if err != nil {
+			return "", err
 		}
 		variants = append(variants, fmt.Sprintf("{ readonly contentType: %s; readonly value: %s }", quoteTS(media.ContentType), valueType))
 	}
 	return strings.Join(variants, " | "), nil
+}
+
+func requestBodyIRMediaValueTypeForScope(document *ir.Document, media ir.MediaType, scope typeRenderScope) (string, error) {
+	if media.Stream.IsStreaming() {
+		variants := make([]string, 0, 2)
+		if media.Schema != nil && media.Schema != false {
+			completeType, err := schemaTypeForScope(document, media.Schema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			variants = append(variants, completeType)
+		}
+		if media.ItemSchema != nil {
+			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			variants = append(variants, "StreamSource<"+itemType+">")
+		}
+		if len(variants) == 0 {
+			if media.Schema == false {
+				return "never", nil
+			}
+			return "unknown", nil
+		}
+		return strings.Join(variants, " | "), nil
+	}
+	if isTextMedia(media.ContentType) {
+		return "string", nil
+	}
+	schemaObject, _ := media.Schema.(map[string]any)
+	if media.Schema == false {
+		return "never", nil
+	}
+	if isBinaryMedia(media.ContentType, schemaObject) {
+		return "BinaryBody", nil
+	}
+	return schemaTypeForScope(document, media.Schema, projectionInput, scope)
 }
 
 func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope typeRenderScope) (string, error) {
@@ -654,29 +657,7 @@ func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope t
 		if err != nil {
 			return "", err
 		}
-		if isStreamingRequestMediaType(mediaTypes[0], media) {
-			itemSchema, exists := media["itemSchema"]
-			if !exists {
-				return "", fmt.Errorf("streaming request body %s has no itemSchema", mediaTypes[0])
-			}
-			itemType, err := schemaTypeForScope(document, itemSchema, projectionInput, scope)
-			if err != nil {
-				return "", err
-			}
-			return "AsyncIterable<" + itemType + ">", nil
-		}
-		if isTextMedia(mediaTypes[0]) {
-			return "string", nil
-		}
-		schema := media["schema"]
-		schemaObject, _ := schema.(map[string]any)
-		if schema == false {
-			return "never", nil
-		}
-		if isBinaryMedia(mediaTypes[0], schemaObject) {
-			return "BinaryBody", nil
-		}
-		return schemaTypeForScope(document, schema, projectionInput, scope)
+		return requestBodyMediaValueTypeForScope(document, mediaTypes[0], media, scope)
 	}
 	variants := make([]string, 0, len(mediaTypes))
 	for _, mediaType := range mediaTypes {
@@ -685,28 +666,7 @@ func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope t
 		if err != nil {
 			return "", err
 		}
-		schema := media["schema"]
-		schemaObject, _ := schema.(map[string]any)
-		valueType := "string"
-		if schema == false {
-			valueType = "never"
-		} else if isStreamingRequestMediaType(mediaType, media) {
-			itemSchema, exists := media["itemSchema"]
-			if !exists {
-				return "", fmt.Errorf("streaming request body %s has no itemSchema", mediaType)
-			}
-			itemType, err := schemaTypeForScope(document, itemSchema, projectionInput, scope)
-			if err != nil {
-				return "", err
-			}
-			valueType = "AsyncIterable<" + itemType + ">"
-		} else if !isTextMedia(mediaType) {
-			if isBinaryMedia(mediaType, schemaObject) {
-				valueType = "BinaryBody"
-			} else {
-				valueType, err = schemaTypeForScope(document, schema, projectionInput, scope)
-			}
-		}
+		valueType, err := requestBodyMediaValueTypeForScope(document, mediaType, media, scope)
 		if err != nil {
 			return "", err
 		}
@@ -715,9 +675,44 @@ func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope t
 	return strings.Join(variants, " | "), nil
 }
 
-func isStreamingRequestMediaType(mediaType string, media map[string]any) bool {
-	_, hasItemSchema := media["itemSchema"]
-	return hasItemSchema
+func requestBodyMediaValueTypeForScope(document *ir.Document, mediaType string, media map[string]any, scope typeRenderScope) (string, error) {
+	schema, hasSchema := media["schema"]
+	itemSchema, hasItemSchema := media["itemSchema"]
+	if ir.StreamPlanForMediaType(mediaType, hasItemSchema).IsStreaming() {
+		variants := make([]string, 0, 2)
+		if hasSchema && schema != false {
+			completeType, err := schemaTypeForScope(document, schema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			variants = append(variants, completeType)
+		}
+		if hasItemSchema {
+			itemType, err := schemaTypeForScope(document, itemSchema, projectionInput, scope)
+			if err != nil {
+				return "", err
+			}
+			variants = append(variants, "StreamSource<"+itemType+">")
+		}
+		if len(variants) == 0 {
+			if schema == false {
+				return "never", nil
+			}
+			return "unknown", nil
+		}
+		return strings.Join(variants, " | "), nil
+	}
+	if isTextMedia(mediaType) {
+		return "string", nil
+	}
+	schemaObject, _ := schema.(map[string]any)
+	if schema == false {
+		return "never", nil
+	}
+	if isBinaryMedia(mediaType, schemaObject) {
+		return "BinaryBody", nil
+	}
+	return schemaTypeForScope(document, schema, projectionInput, scope)
 }
 
 type resourceNode struct {

@@ -26,6 +26,9 @@ export interface OperationStream<Item> extends AsyncIterable<Item> {
   toReadableStream(): ReadableStream<Item>;
 }
 
+/** Incremental request source accepted by generated streaming request bodies. */
+export type StreamSource<Item> = AsyncIterable<Item> | ReadableStream<Item>;
+
 /** Options applied to one generated operation call. */
 export interface RequestOptions {
   /** Explicit absolute base URL. Generated Link helpers use this for a Link Server Object. */
