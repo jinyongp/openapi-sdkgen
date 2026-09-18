@@ -741,7 +741,7 @@ func TestExactRouteCarriesIDLessLinkAndStreamCapabilities(t *testing.T) {
 	client := clientSemanticSource(artifacts)
 	for _, expected := range []string{
 		`readonly "GET /events": import("../operations/events/get.js").Contract`,
-		`export type Stream = (options?: Omit<Options, "accept">) => AsyncIterable<string>`,
+		`export type Stream = (options?: Omit<Options, "accept">) => OperationStream<string>`,
 		`readonly "GET /source": import("../operations/source/get.js").Contract`,
 		`export type Links = { readonly "follow":`,
 		`readonly "GET /source": Routes["GET /source"]["call"]`,

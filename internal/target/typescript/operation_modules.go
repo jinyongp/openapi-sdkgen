@@ -174,7 +174,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "import { %s } from %s\n", callableImports, quoteTS(runtimeCallables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
 	fmt.Fprintf(&output, "import type { TransportError } from %s\n", quoteTS(runtimeErrors))
-	fmt.Fprintf(&output, "import type { BinaryBody, RawResponseFor, RequestOptions } from %s\n", quoteTS(runtimeRequest))
+	fmt.Fprintf(&output, "import type { BinaryBody, OperationStream, RawResponseFor, RequestOptions } from %s\n", quoteTS(runtimeRequest))
 	fmt.Fprintf(&output, "import type { OperationTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
 	fmt.Fprintf(&output, "import type { LinkCalls, OperationRawCall, PaginateCall, ResourceRawCapability, RouteInput, RouteOptions, RouteOutput, RouteRawResponse, RouteResourceInput, StreamCall } from %s\n", quoteTS(routeHelpers))
 	fmt.Fprintf(&output, "import type * as ContractSchemas from %s\n", quoteTS(schemaIndex))

@@ -1530,6 +1530,122 @@ if (JSON.stringify(seen) !== JSON.stringify([["/projects/p1/events","application
 	}
 }
 
+func TestGeneratedOperationStreamLifecycleAndInterop(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Operation stream","version":"1"},
+  "paths":{
+    "/events":{
+      "get":{
+        "operationId":"watchEvents",
+        "responses":{"200":{"description":"OK","content":{"application/x-ndjson":{"itemSchema":{"type":"string"}}}}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient, type OperationStream, type StreamResponseMetadata } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+const stream: OperationStream<string> = api.$operations.watchEvents.stream()
+const response: Promise<StreamResponseMetadata> = stream.response
+const readable: ReadableStream<string> = stream.toReadableStream()
+stream.abort("stop")
+void [response, readable]
+`
+	output := compileTypeScriptArtifactsWithProbe(t, document, "operation-stream.probe.ts", probe)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const encoder = new TextEncoder();
+const waitFor = async (predicate, label) => {
+  for (let index = 0; index < 100; index++) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  throw new Error("timed out waiting for " + label);
+};
+
+let metadataCalls = 0;
+let metadataCancels = 0;
+const metadataBody = new ReadableStream({
+  cancel() { metadataCancels++; },
+});
+const metadataApi = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => {
+    metadataCalls++;
+    return new Response(metadataBody, {
+      status: 200,
+      headers: {
+        "content-type": "application/x-ndjson",
+        "x-request-id": "request-1",
+        "x-stream-meta": "ready",
+      },
+    });
+  },
+});
+const metadataStream = metadataApi.$operations.watchEvents.stream();
+if (metadataCalls !== 0) throw new Error("OperationStream dispatched eagerly");
+const metadata = await Promise.race([
+  metadataStream.response,
+  new Promise((_, reject) => setTimeout(() => reject(new Error("response metadata did not resolve after headers")), 1000)),
+]);
+if (metadataCalls !== 1) throw new Error("response metadata did not lazily dispatch exactly once");
+if (metadata.status !== 200 || metadata.contentType !== "application/x-ndjson")
+  throw new Error("response metadata status/content type mismatch");
+if (metadata.headers.get("x-stream-meta") !== "ready" || metadata.request.id !== "request-1")
+  throw new Error("response metadata headers/request mismatch");
+metadataStream.abort("metadata complete");
+await waitFor(() => metadataCancels === 1, "explicit abort cleanup");
+metadataStream.abort("duplicate abort");
+await new Promise((resolve) => setTimeout(resolve, 0));
+if (metadataCancels !== 1) throw new Error("explicit abort cancelled the body more than once: " + metadataCancels);
+
+let readableCancels = 0;
+const readableApi = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(new ReadableStream({
+    start(controller) { controller.enqueue(encoder.encode('"one"\n')); },
+    cancel() { readableCancels++; },
+  }), { status: 200, headers: { "content-type": "application/x-ndjson" } }),
+});
+const operationStream = readableApi.$operations.watchEvents.stream();
+const readable = operationStream.toReadableStream();
+try {
+  operationStream[Symbol.asyncIterator]();
+  throw new Error("second OperationStream consumer was accepted");
+} catch (error) {
+  if (!(error instanceof TypeError) || !String(error).includes("already has a consumer")) throw error;
+}
+const reader = readable.getReader();
+const first = await reader.read();
+if (first.done || first.value !== "one") throw new Error("ReadableStream adapter did not yield the typed item");
+await reader.cancel("stop readable");
+await waitFor(() => readableCancels === 1, "ReadableStream cancellation");
+if (readableCancels !== 1) throw new Error("ReadableStream cancellation was not exactly once");
+
+let breakCancels = 0;
+const breakApi = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(new ReadableStream({
+    start(controller) { controller.enqueue(encoder.encode('"one"\n')); },
+    cancel() { breakCancels++; },
+  }), { status: 200, headers: { "content-type": "application/x-ndjson" } }),
+});
+for await (const item of breakApi.$operations.watchEvents.stream()) {
+  if (item !== "one") throw new Error("async iteration yielded the wrong item");
+  break;
+}
+await waitFor(() => breakCancels === 1, "early-break cleanup");
+if (breakCancels !== 1) throw new Error("early break did not cancel the body exactly once");
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute OperationStream lifecycle test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedResponseStreamRawPreservesResponseBody(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Stream raw","version":"1"},
@@ -1566,7 +1682,8 @@ const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFil
 let calls = 0;
 const api = createClient({ baseURL: "https://api.example.test", fetch: async () => { calls++; throw new Error("fetch must not run"); } });
 const controller = new AbortController(); controller.abort("stop");
-try { await api.$operations.listEvents.stream({ signal: controller.signal }).next(); throw new Error("aborted stream started"); }
+const stream = api.$operations.listEvents.stream({ signal: controller.signal });
+try { await stream[Symbol.asyncIterator]().next(); throw new Error("aborted stream started"); }
 catch (error) { if (!isErrorCode(error, TransportErrorCode.REQUEST_ABORTED)) throw error; }
 if (calls !== 0) throw new Error("pre-aborted stream dispatched fetch");
 `
@@ -1588,7 +1705,8 @@ func TestGeneratedResponseStreamClassifiesFetchFailureAsNetworkError(t *testing.
 import { pathToFileURL } from "node:url";
 const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
 const api = createClient({ baseURL: "https://api.example.test", fetch: async () => { throw new Error("offline"); } });
-try { await api.$operations.listEvents.stream().next(); throw new Error("network failure was accepted"); }
+const stream = api.$operations.listEvents.stream();
+try { await stream[Symbol.asyncIterator]().next(); throw new Error("network failure was accepted"); }
 catch (error) { if (!isErrorCode(error, TransportErrorCode.NETWORK_ERROR)) throw error; }
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {

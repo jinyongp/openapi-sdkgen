@@ -25,7 +25,13 @@ import {
   type ParameterDefinition,
   type ServerSelection,
 } from "./operation.js";
-import type { RawResponse, RequestMetadata, RequestOptions } from "./request.js";
+import type {
+  OperationStream,
+  RawResponse,
+  RequestMetadata,
+  RequestOptions,
+  StreamResponseMetadata,
+} from "./request.js";
 import type {
   APIKeyCredential,
   HTTPBasicCredential,
@@ -257,8 +263,8 @@ export function createRequest(options: ClientOptions): RequestFunction {
     operation: OperationDefinition,
     input?: unknown,
     requestOptions: RequestOptions = {},
-  ): AsyncIterable<Item> =>
-    streamOperation<Item>(
+  ): OperationStream<Item> =>
+    createOperationStream<Item>(
       baseURL,
       options,
       codecs,
@@ -270,6 +276,206 @@ export function createRequest(options: ClientOptions): RequestFunction {
   return request;
 }
 
+function createOperationStream<Item>(
+  baseURL: string | undefined,
+  options: ClientOptions,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  fetchImplementation: typeof globalThis.fetch,
+  operation: OperationDefinition,
+  input: unknown,
+  requestOptions: RequestOptions,
+): OperationStream<Item> {
+  const controller = new AbortController();
+  const externalSignal = requestOptions.signal;
+  let externalAbortCleanup = (): void => undefined;
+  let source: AsyncIterator<Item> | undefined;
+  let firstNext: Promise<IteratorResult<Item>> | undefined;
+  let consumerClaimed = false;
+  let terminal = false;
+  let closePromise: Promise<void> | undefined;
+  let responseMetadata: StreamResponseMetadata | undefined;
+  let responseFailure: unknown;
+  let responsePromise: Promise<StreamResponseMetadata> | undefined;
+  let resolveResponse: ((metadata: StreamResponseMetadata) => void) | undefined;
+  let rejectResponse: ((cause: unknown) => void) | undefined;
+
+  const cleanupExternalAbort = (): void => {
+    externalAbortCleanup();
+    externalAbortCleanup = (): void => undefined;
+  };
+
+  const settleResponse = (metadata: StreamResponseMetadata): void => {
+    if (responseMetadata !== undefined) return;
+    responseMetadata = metadata;
+    resolveResponse?.(metadata);
+  };
+
+  const failResponse = (cause: unknown): void => {
+    if (responseMetadata !== undefined || responseFailure !== undefined) return;
+    responseFailure = cause;
+    rejectResponse?.(cause);
+  };
+
+  const observe = (result: Promise<IteratorResult<Item>>): Promise<IteratorResult<Item>> => {
+    void result.then(
+      (next) => {
+        if (!next.done) return;
+        terminal = true;
+        cleanupExternalAbort();
+      },
+      (cause) => {
+        terminal = true;
+        failResponse(cause);
+        cleanupExternalAbort();
+      },
+    );
+    return result;
+  };
+
+  const nextFrom = (iterator: AsyncIterator<Item>): Promise<IteratorResult<Item>> => {
+    try {
+      return observe(Promise.resolve(iterator.next()));
+    } catch (cause) {
+      return observe(Promise.reject(cause));
+    }
+  };
+
+  const stopStarted = (reason?: unknown): Promise<void> => {
+    if (!controller.signal.aborted) {
+      controller.abort(reason ?? new Error("OperationStream consumption ended before completion"));
+    }
+    if (source === undefined) {
+      cleanupExternalAbort();
+      return Promise.resolve();
+    }
+    closePromise ??= (async () => {
+      firstNext = undefined;
+      try {
+        await source?.return?.();
+      } catch {
+        // Cancellation cleanup is best-effort; the stream's terminal result is already settled.
+      } finally {
+        terminal = true;
+        cleanupExternalAbort();
+      }
+    })();
+    return closePromise;
+  };
+
+  const ensureStarted = (): AsyncIterator<Item> => {
+    if (source !== undefined) return source;
+    if (!controller.signal.aborted && externalSignal !== undefined) {
+      if (externalSignal.aborted) {
+        controller.abort(externalSignal.reason);
+      } else {
+        const forwardAbort = (): void => {
+          void stopStarted(externalSignal.reason);
+        };
+        externalSignal.addEventListener("abort", forwardAbort, { once: true });
+        externalAbortCleanup = () => externalSignal.removeEventListener("abort", forwardAbort);
+      }
+    }
+    const effectiveRequestOptions: RequestOptions = {
+      ...requestOptions,
+      signal: controller.signal,
+    };
+    source = streamOperation<Item>(
+      baseURL,
+      options,
+      codecs,
+      fetchImplementation,
+      operation,
+      input,
+      effectiveRequestOptions,
+      settleResponse,
+    )[Symbol.asyncIterator]();
+    firstNext = nextFrom(source);
+    return source;
+  };
+
+  const advance = async (): Promise<IteratorResult<Item>> => {
+    if (terminal) return { done: true, value: undefined as never };
+    const iterator = ensureStarted();
+    const pending = firstNext ?? nextFrom(iterator);
+    firstNext = undefined;
+    return pending;
+  };
+
+  const close = async (reason?: unknown): Promise<void> => {
+    if (terminal) {
+      cleanupExternalAbort();
+      return;
+    }
+    await stopStarted(reason);
+  };
+
+  const consume = async function* (): AsyncIterableIterator<Item> {
+    try {
+      while (true) {
+        const next = await advance();
+        if (next.done) return;
+        yield next.value;
+      }
+    } finally {
+      if (!terminal) await close();
+    }
+  };
+
+  const claimConsumer = (): void => {
+    if (consumerClaimed) throw new TypeError("OperationStream already has a consumer");
+    consumerClaimed = true;
+  };
+
+  const getResponse = (): Promise<StreamResponseMetadata> => {
+    ensureStarted();
+    if (responseMetadata !== undefined) return Promise.resolve(responseMetadata);
+    if (responseFailure !== undefined) return Promise.reject(responseFailure);
+    responsePromise ??= new Promise<StreamResponseMetadata>((resolve, reject) => {
+      resolveResponse = resolve;
+      rejectResponse = reject;
+      if (responseMetadata !== undefined) resolve(responseMetadata);
+      else if (responseFailure !== undefined) reject(responseFailure);
+    });
+    return responsePromise;
+  };
+
+  const stream: OperationStream<Item> = {
+    get response(): Promise<StreamResponseMetadata> {
+      return getResponse();
+    },
+    abort(reason?: unknown): void {
+      void stopStarted(reason);
+    },
+    toReadableStream(): ReadableStream<Item> {
+      claimConsumer();
+      const iterator = consume();
+      return new ReadableStream<Item>(
+        {
+          async pull(readableController) {
+            try {
+              const next = await iterator.next();
+              if (next.done) readableController.close();
+              else readableController.enqueue(next.value);
+            } catch (cause) {
+              readableController.error(cause);
+            }
+          },
+          async cancel(reason) {
+            stream.abort(reason);
+            await iterator.return?.();
+          },
+        },
+        { highWaterMark: 0 },
+      );
+    },
+    [Symbol.asyncIterator](): AsyncIterator<Item> {
+      claimConsumer();
+      return consume();
+    },
+  };
+  return stream;
+}
+
 async function* streamOperation<Item>(
   baseURL: string | undefined,
   options: ClientOptions,
@@ -278,6 +484,7 @@ async function* streamOperation<Item>(
   operation: OperationDefinition,
   input: unknown,
   requestOptions: RequestOptions,
+  onResponse: (metadata: StreamResponseMetadata) => void,
 ): AsyncIterable<Item> {
   const credentials = requestOptions.credentials ?? options.credentials;
   const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
@@ -352,6 +559,12 @@ async function* streamOperation<Item>(
     }
     const contentType = response.headers.get("content-type") ?? definition.contentType;
     streamContentType = normalizeMediaType(contentType);
+    onResponse({
+      status: response.status,
+      contentType: streamContentType,
+      headers: response.headers,
+      request,
+    });
     const maxFrameBytes = resolveMaxStreamItemBytes(
       requestOptions.maxStreamItemBytes ?? options.maxStreamItemBytes,
     );

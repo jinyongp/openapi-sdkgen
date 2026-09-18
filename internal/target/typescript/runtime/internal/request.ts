@@ -4,6 +4,28 @@ export interface RequestMetadata {
   readonly id?: string;
 }
 
+/** Response metadata exposed as soon as a streaming response has been accepted. */
+export interface StreamResponseMetadata {
+  /** HTTP status code. */
+  readonly status: number;
+  /** Normalized response media type without parameters. */
+  readonly contentType?: string;
+  /** Response headers available when the stream starts. */
+  readonly headers: Headers;
+  /** Request metadata extracted from the response. */
+  readonly request: RequestMetadata;
+}
+
+/** Lazy single-consumer handle for one operation streaming response. */
+export interface OperationStream<Item> extends AsyncIterable<Item> {
+  /** Response metadata, available after response headers arrive. Access starts the request. */
+  readonly response: Promise<StreamResponseMetadata>;
+  /** Aborts the request and active body reader. */
+  abort(reason?: unknown): void;
+  /** Adapts this handle to a Web ReadableStream. This claims the single consumer. */
+  toReadableStream(): ReadableStream<Item>;
+}
+
 /** Options applied to one generated operation call. */
 export interface RequestOptions {
   /** Explicit absolute base URL. Generated Link helpers use this for a Link Server Object. */

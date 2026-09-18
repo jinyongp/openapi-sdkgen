@@ -114,20 +114,20 @@ func streamFunctionTypeForInput(stream generatedStream, inputType string, hasInp
 		optionMarker = ""
 	}
 	if !hasInput {
-		return "(options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
+		return "(options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
 	}
 	if !inputRequired {
-		optionsOnly := "(options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
+		optionsOnly := "(options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
 		inputMarker := ""
 		if optionMarker == "?" {
 			inputMarker = "?"
 		} else {
 			inputType += " | undefined"
 		}
-		inputCall := "(input" + inputMarker + ": " + inputType + ", options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
+		inputCall := "(input" + inputMarker + ": " + inputType + ", options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
 		return "(" + optionsOnly + ") & (" + inputCall + ")"
 	}
-	return "(input: " + inputType + ", options" + optionMarker + ": " + optionsType + ") => AsyncIterable<" + stream.ItemType + ">"
+	return "(input: " + inputType + ", options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
 }
 
 func operationRequiresOptions(document *ir.Document, operation ir.Operation) (bool, error) {

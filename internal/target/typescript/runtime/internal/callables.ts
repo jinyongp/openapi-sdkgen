@@ -1,6 +1,6 @@
 import { isRecord } from "./objects.js";
 import type { OperationDefinition } from "./operation.js";
-import type { RawResponse, RequestOptions } from "./request.js";
+import type { OperationStream, RawResponse, RequestOptions } from "./request.js";
 
 /** Low-level request executor used by generated operation bindings. */
 export interface RequestFunction {
@@ -33,7 +33,7 @@ export interface RequestFunction {
     operation: OperationDefinition,
     input?: unknown,
     options?: RequestOptions,
-  ): AsyncIterable<Item>;
+  ): OperationStream<Item>;
 }
 
 type RequiredKeys<Value> = {
@@ -152,7 +152,7 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
   hasInput: boolean,
   inputOptional = false,
   defaultAccept?: string,
-): (...args: readonly unknown[]) => AsyncIterable<Item> {
+): (...args: readonly unknown[]) => OperationStream<Item> {
   const streamOptions = (options: Options | undefined): Options | undefined => {
     if (defaultAccept === undefined || options?.accept !== undefined) return options;
     return { ...options, accept: defaultAccept } as Options;
