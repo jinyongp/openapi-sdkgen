@@ -36,10 +36,13 @@ func operationResponseMediaSets(document *ir.Document, operation ir.Operation) (
 		normalContent := make([]ir.MediaType, 0, len(response.Content))
 		streamContent := make([]ir.MediaType, 0, len(response.Content))
 		for _, media := range response.Content {
-			if media.Stream.IsStreaming() {
-				streamContent = append(streamContent, media)
-			} else {
+			_, hasSchema := media.Raw["schema"]
+			_, hasItemSchema := media.Raw["itemSchema"]
+			if hasSchema || !hasItemSchema {
 				normalContent = append(normalContent, media)
+			}
+			if hasItemSchema {
+				streamContent = append(streamContent, media)
 			}
 		}
 		if len(normalContent) != 0 {

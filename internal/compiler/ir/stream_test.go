@@ -1,7 +1,6 @@
 package ir
 
 import (
-	"strings"
 	"testing"
 
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
@@ -70,7 +69,7 @@ func TestBuildAttachesStreamPlansToRequestAndResponseMedia(t *testing.T) {
 	}
 }
 
-func TestBuildRejectsBuiltInStreamWithoutItemSchema(t *testing.T) {
+func TestBuildAllowsSequentialMediaWithoutItemSchema(t *testing.T) {
 	document := &openapidoc.Document{Raw: map[string]any{
 		"openapi": "3.2.0",
 		"info":    map[string]any{"title": "Streams", "version": "1"},
@@ -86,13 +85,15 @@ func TestBuildRejectsBuiltInStreamWithoutItemSchema(t *testing.T) {
 			}},
 		},
 	}}
-	_, err := Build(document)
-	if err == nil {
-		t.Fatal("expected missing itemSchema error")
+	model, err := Build(document)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, want := range []string{"#/paths/~1events/get/responses/200/content/text~1event-stream", "requires itemSchema"} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("error = %q, want %q", err, want)
-		}
+	media := model.Operations[0].Responses[0].Content[0]
+	if media.Stream.Framing != StreamFramingSSE {
+		t.Fatalf("framing = %q, want %q", media.Stream.Framing, StreamFramingSSE)
+	}
+	if media.ItemSchema != nil {
+		t.Fatalf("item schema = %#v, want nil", media.ItemSchema)
 	}
 }

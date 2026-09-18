@@ -502,9 +502,6 @@ func readMediaTypes(document map[string]any, value any, pointer string, streamEl
 		_, hasItemSchema := resolved["itemSchema"]
 		if streamEligible {
 			stream = StreamPlanForMediaType(contentType, hasItemSchema)
-			if stream.IsStreaming() && !hasItemSchema {
-				return nil, fmt.Errorf("%s/%s: sequential stream media type requires itemSchema", pointer, escapeJSONPointerToken(contentType))
-			}
 		}
 		result = append(result, MediaType{
 			ContentType: contentType,

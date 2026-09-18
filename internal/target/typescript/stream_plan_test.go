@@ -19,7 +19,10 @@ func TestOperationResponseMediaSetsPartitionNormalAndStreaming(t *testing.T) {
 				"application/json":     map[string]any{"schema": map[string]any{"type": "string"}},
 				"text/plain":           map[string]any{"schema": map[string]any{"type": "string"}},
 				"application/x-ndjson": map[string]any{"itemSchema": map[string]any{"type": "string"}},
-				"text/event-stream":    map[string]any{"itemSchema": map[string]any{"type": "object"}},
+				"text/event-stream": map[string]any{
+					"schema":     map[string]any{"type": "array", "items": map[string]any{"type": "object"}},
+					"itemSchema": map[string]any{"type": "object"},
+				},
 			}},
 		}},
 	}
@@ -28,7 +31,7 @@ func TestOperationResponseMediaSetsPartitionNormalAndStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := responseMediaTypes(sets.normal); !reflect.DeepEqual(got, []string{"application/json", "text/plain"}) {
+	if got := responseMediaTypes(sets.normal); !reflect.DeepEqual(got, []string{"application/json", "text/event-stream", "text/plain"}) {
 		t.Fatalf("normal media = %#v", got)
 	}
 	if got := responseMediaTypes(sets.streaming); !reflect.DeepEqual(got, []string{"application/x-ndjson", "text/event-stream"}) {
@@ -38,14 +41,18 @@ func TestOperationResponseMediaSetsPartitionNormalAndStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output != "string" {
-		t.Fatalf("normal output = %q, want string", output)
+	if output != "string | readonly (Readonly<Record<string, unknown>>)[]" {
+		t.Fatalf("normal output = %q, want dual-mode complete output", output)
 	}
 	media, err := operationMediaOutputTypes(document, operation)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(media, map[string]string{"application/json": "string", "text/plain": "string"}) {
+	if !reflect.DeepEqual(media, map[string]string{
+		"application/json":  "string",
+		"text/event-stream": "readonly (Readonly<Record<string, unknown>>)[]",
+		"text/plain":        "string",
+	}) {
 		t.Fatalf("normal media outputs = %#v", media)
 	}
 }

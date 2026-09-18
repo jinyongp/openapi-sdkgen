@@ -712,11 +712,11 @@ func operationOutputTypeForScope(document *ir.Document, operation ir.Operation, 
 				continue
 			}
 			schema, _ := media.Schema.(map[string]any)
-			if isBinaryMedia(media.ContentType, schema) {
+			if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schema) {
 				result = append(result, "ReadableStream<Uint8Array>")
 				continue
 			}
-			if isTextMedia(media.ContentType) {
+			if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
 				result = append(result, "string")
 				continue
 			}
@@ -892,9 +892,9 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 				schema := media.Schema
 				if schema == false {
 					valueType = "never"
-				} else if isBinaryMedia(media.ContentType, schemaObject) {
+				} else if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if isTextMedia(media.ContentType) {
+				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
 					valueType = "string"
 				} else {
 					if operation.Envelope == "data" {
