@@ -1569,6 +1569,276 @@ if (events[1].data !== "[DONE]") throw new Error("SSE sentinel-shaped data was i
 	}
 }
 
+func TestGeneratedProviderNeutralSSEAdapterBoundaries(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Provider neutral stream","version":"1"},
+  "paths":{
+    "/events":{
+      "get":{
+        "operationId":"streamEvents",
+        "responses":{
+          "200":{
+            "description":"OK",
+            "content":{
+              "text/event-stream":{
+                "itemSchema":{
+                  "oneOf":[
+                    {
+                      "type":"object",
+                      "required":["kind","text"],
+                      "additionalProperties":false,
+                      "properties":{
+                        "kind":{"const":"text_delta"},
+                        "text":{"type":"string"}
+                      }
+                    },
+                    {
+                      "type":"object",
+                      "required":["kind","callID","argumentsDelta"],
+                      "additionalProperties":false,
+                      "properties":{
+                        "kind":{"const":"tool_delta"},
+                        "callID":{"type":"string"},
+                        "argumentsDelta":{"type":"string"}
+                      }
+                    },
+                    {
+                      "type":"object",
+                      "required":["kind","code","message"],
+                      "additionalProperties":false,
+                      "properties":{
+                        "kind":{"const":"error"},
+                        "code":{"type":"string"},
+                        "message":{"type":"string"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient, type OperationStreamItem } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+type Item = OperationStreamItem<"streamEvents">
+const textItem: Item = { kind: "text_delta", text: "hello" }
+const toolItem: Item = { kind: "tool_delta", callID: "call-1", argumentsDelta: "{\"city\":" }
+const errorItem: Item = { kind: "error", code: "TEMPORARY", message: "retry later" }
+const fromMethod: OperationStreamItem<typeof api.$operations.streamEvents> = textItem
+// @ts-expect-error application adapters cannot invent an undeclared item kind
+const invalid: Item = { kind: "terminal" }
+void [toolItem, errorItem, fromMethod, invalid]
+`
+	output := compileTypeScriptArtifactsWithProbe(t, document, "provider-neutral-stream.probe.ts", probe)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+
+let calls = 0;
+const adapter = {
+  async *decode(frames) {
+    for await (const frame of frames) {
+      if (frame.data === "[END]") return;
+      const payload = JSON.parse(frame.data);
+      if (frame.event === "text") {
+        yield { kind: "text_delta", text: payload.text };
+        continue;
+      }
+      if (frame.event === "tool") {
+        yield {
+          kind: "tool_delta",
+          callID: payload.callID,
+          argumentsDelta: payload.argumentsDelta,
+        };
+        continue;
+      }
+      if (frame.event === "error") {
+        yield { kind: "error", code: payload.code, message: payload.message };
+        continue;
+      }
+      throw new Error("unexpected application event " + frame.event);
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) yield { data: JSON.stringify(item) };
+  },
+};
+const wire =
+  "event: text\nid: event-1\nretry: 25\ndata: {\"text\":\"hello\"}\n\n" +
+  "event: tool\ndata: {\"callID\":\"call-1\",\"argumentsDelta\":\"{\\\"city\\\":\"}\n\n" +
+  "event: error\ndata: {\"code\":\"TEMPORARY\",\"message\":\"retry later\"}\n\n" +
+  "event: terminal\ndata: [END]\n\n" +
+  "event: text\ndata: {\"text\":\"must-not-appear\"}\n\n";
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => {
+    calls++;
+    return new Response(wire, {
+      status: 200,
+      headers: {
+        "content-type": "text/event-stream",
+        "x-request-id": "request-stream-1",
+        "x-stream-version": "v1",
+      },
+    });
+  },
+});
+const stream = api.$operations.streamEvents.stream({ streamCodec: { adapter } });
+const metadata = await stream.response;
+if (
+  metadata.status !== 200 ||
+  metadata.contentType !== "text/event-stream" ||
+  metadata.request.id !== "request-stream-1" ||
+  metadata.headers.get("x-stream-version") !== "v1"
+) {
+  throw new Error("stream response metadata mismatch");
+}
+const items = [];
+for await (const item of stream) items.push(item);
+const expected = [
+  { kind: "text_delta", text: "hello" },
+  { kind: "tool_delta", callID: "call-1", argumentsDelta: "{\"city\":" },
+  { kind: "error", code: "TEMPORARY", message: "retry later" },
+];
+if (JSON.stringify(items) !== JSON.stringify(expected))
+  throw new Error("application adapter output mismatch: " + JSON.stringify(items));
+if (calls !== 1) throw new Error("SSE retry/id fields triggered reconnect or replay");
+`
+	if runOutput, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute provider-neutral SSE adapter test: %v\n%s", err, runOutput)
+	}
+}
+
+func TestGeneratedSSEContentSchemaValidatesJSONDataWithoutChangingStringValue(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"SSE content schema","version":"1"},
+  "paths":{
+    "/events":{
+      "get":{
+        "operationId":"watchValidatedEvents",
+        "responses":{
+          "200":{
+            "description":"OK",
+            "content":{
+              "text/event-stream":{
+                "itemSchema":{
+                  "type":"object",
+                  "required":["data"],
+                  "additionalProperties":false,
+                  "properties":{
+                    "data":{
+                      "type":"string",
+                      "contentMediaType":"application/json",
+                      "contentSchema":{
+                        "type":"object",
+                        "required":["token"],
+                        "additionalProperties":false,
+                        "properties":{"token":{"type":"string"}}
+                      }
+                    },
+                    "event":{"type":"string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
+
+const valid = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    "event: delta\ndata: {\"token\":\"a\"}\n\n",
+    { status: 200, headers: { "content-type": "text/event-stream" } },
+  ),
+});
+const events = [];
+for await (const event of valid.$operations.watchValidatedEvents.stream()) events.push(event);
+if (
+  events.length !== 1 ||
+  events[0].event !== "delta" ||
+  events[0].data !== "{\"token\":\"a\"}" ||
+  typeof events[0].data !== "string"
+) {
+  throw new Error("SSE JSON content validation changed the public data string");
+}
+
+const invalid = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    "data: {\"token\":1}\n\n",
+    { status: 200, headers: { "content-type": "text/event-stream" } },
+  ),
+});
+try {
+  for await (const _event of invalid.$operations.watchValidatedEvents.stream()) {
+    // consume
+  }
+  throw new Error("invalid contentSchema data was accepted");
+} catch (error) {
+  if (!isErrorCode(error, TransportErrorCode.RESPONSE_DECODE_FAILED)) throw error;
+}
+`
+	if runOutput, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute SSE contentSchema validation test: %v\n%s", err, runOutput)
+	}
+}
+
+func TestStreamRuntimeHasNoProviderOrRealtimeSemantics(t *testing.T) {
+	for _, path := range []string{
+		"runtime/internal/http.ts",
+		"runtime/server/runtime.ts",
+	} {
+		source, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		normalized := strings.ToLower(string(source))
+		for _, forbidden := range []string{
+			"[done]",
+			"tool_call",
+			"tool_calls",
+			"tool_delta",
+			"text_delta",
+			"content_block_delta",
+			"message_delta",
+			"response.output",
+			"openai",
+			"anthropic",
+			"gemini",
+			"eventsource",
+			"last-event-id",
+			"reconnect",
+			"replay",
+			"websocket",
+			"webrtc",
+		} {
+			if strings.Contains(normalized, forbidden) {
+				t.Fatalf("%s contains provider/realtime stream semantic %q", path, forbidden)
+			}
+		}
+	}
+}
+
 func TestGeneratedStreamOnlyOperationUsesCanonicalOperationAndResourceCapabilities(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0",
