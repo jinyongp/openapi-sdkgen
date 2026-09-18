@@ -568,7 +568,13 @@ func ReadManifest(path string) (Manifest, error) {
 			return Manifest{}, fmt.Errorf("incremental output manifest %s has invalid generation fingerprint: %w", manifestPath, err)
 		}
 	}
-	for artifactPath, hash := range manifest.Files {
+	artifactPaths := make([]string, 0, len(manifest.Files))
+	for artifactPath := range manifest.Files {
+		artifactPaths = append(artifactPaths, artifactPath)
+	}
+	sort.Strings(artifactPaths)
+	for _, artifactPath := range artifactPaths {
+		hash := manifest.Files[artifactPath]
 		clean, err := SafeArtifactPath(artifactPath)
 		if err != nil || clean != artifactPath || artifactPath == ManifestName || len(hash) != sha256.Size*2 {
 			return Manifest{}, fmt.Errorf("incremental output manifest contains invalid artifact %q", artifactPath)
@@ -583,7 +589,13 @@ func ReadManifest(path string) (Manifest, error) {
 // ValidateOwnedFiles verifies that every manifest-owned artifact is unchanged.
 func ValidateOwnedFiles(path string, files map[string]string) error {
 	buffer := make([]byte, 32*1024)
-	for artifactPath, expected := range files {
+	artifactPaths := make([]string, 0, len(files))
+	for artifactPath := range files {
+		artifactPaths = append(artifactPaths, artifactPath)
+	}
+	sort.Strings(artifactPaths)
+	for _, artifactPath := range artifactPaths {
+		expected := files[artifactPath]
 		fullPath := filepath.Join(path, artifactPath)
 		if err := validateSafeParents(path, filepath.Dir(fullPath)); err != nil {
 			return err

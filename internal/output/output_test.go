@@ -300,6 +300,42 @@ func TestCheckManagedRejectsEditedMissingAndMalformedManagedOutput(t *testing.T)
 	}
 }
 
+func TestManagedOutputValidationReportsPathsDeterministically(t *testing.T) {
+	t.Run("manifest", func(t *testing.T) {
+		path := t.TempDir()
+		hash := strings.Repeat("a", 64)
+		manifest := fmt.Sprintf("{\"version\":1,\"files\":{\"z/../bad\":%q,\"a/../bad\":%q}}\n", hash, hash)
+		if err := os.WriteFile(filepath.Join(path, ManifestName), []byte(manifest), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		_, err := ReadManifest(path)
+		if err == nil || !strings.Contains(err.Error(), `invalid artifact "a/../bad"`) {
+			t.Fatalf("manifest error = %v", err)
+		}
+	})
+
+	t.Run("owned files", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "generated")
+		artifacts := []generator.Artifact{
+			{Path: "b.ts", Data: []byte("stable b\n")},
+			{Path: "a.ts", Data: []byte("stable a\n")},
+		}
+		if err := PublishArtifacts(path, artifacts, false, nil); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Remove(filepath.Join(path, "a.ts")); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Remove(filepath.Join(path, "b.ts")); err != nil {
+			t.Fatal(err)
+		}
+		err := CheckManaged(path, nil, emitArtifacts(artifacts))
+		if err == nil || !strings.Contains(err.Error(), filepath.Join(path, "a.ts")) {
+			t.Fatalf("check error = %v", err)
+		}
+	})
+}
+
 func TestAdvisoryLockBlocksLiveOwnerAndRecoversAfterProcessExit(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "generated")
 	artifacts := []generator.Artifact{{Path: "index.ts", Data: []byte("stable\n")}}
