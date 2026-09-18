@@ -130,6 +130,53 @@ const response =
 The runtime expression remains part of the OpenAPI contract, while your application
 chooses the deployment URL that receives the callback.
 
+## Customize inbound streams
+
+For an OpenAPI 3.2 inbound body with `itemSchema`, the generated handler receives
+typed items as the request stream is consumed. Webhook and Callback options use
+the same `StreamCodec` model as the outbound client.
+
+Use a `StreamAdapter` when the wire framing is standard but the application
+needs to map events. For example, a Todo SSE adapter can parse the string
+`data` field while reusing the built-in SSE protocol:
+
+```ts
+import type {
+  ServerSentEvent,
+  StreamAdapter,
+} from "./generated/api";
+
+const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.event !== "todo") continue;
+      yield JSON.parse(event.data) as TodoEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { event: "todo", data: JSON.stringify(item) };
+    }
+  },
+};
+
+const router = createWebhookRouter(handlers, {
+  routes: {
+    todoCompleted: "/webhooks/todos/completed",
+  },
+  streamCodecs: {
+    "text/event-stream": { adapter: todoAdapter },
+  },
+  maxStreamFrameBytes: 256 * 1024,
+});
+```
+
+Adapter output is validated and projected through the declared `itemSchema`
+before it reaches the handler. Use `StreamProtocol` instead when a custom
+sequential media type needs its own byte framing. `maxStreamFrameBytes` limits
+one wire frame before adaptation. The same `streamCodecs` and frame-limit
+options are available to `createCallbackHandlers`.
+
 ## Generated server artifacts
 
 The server artifact set owns OpenAPI-specific decoding, validation, typed

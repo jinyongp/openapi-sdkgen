@@ -165,14 +165,71 @@ const todos = await api.todos.list(
 
 ## 스트리밍 동작
 
-지원되는 streaming 응답은 `$streams` 아래에서 `AsyncIterable`로 노출됩니다.
-Iterator가 필요한 만큼 읽으면서 Fetch backpressure를 유지합니다.
+OpenAPI 3.2 sequential media는 다른 operation과 같은 호출 구조를 사용합니다.
+`itemSchema`가 있는 operation에는 `.stream()`이 추가되고
+`OperationStream<T>`를 반환합니다. SSE, NDJSON/JSON Lines, JSON Sequence,
+streaming multipart framing은 기본으로 처리합니다.
 
-순회를 일찍 끝내거나 요청을 abort하면 underlying reader도 취소됩니다. Decode
-오류는 iteration 과정에서 발생합니다.
+Incremental request body는 `StreamSource<T>`를 사용하므로
+`AsyncIterable<T>`와 Web `ReadableStream<T>`을 모두 전달할 수 있습니다.
+Sequential media에 `schema`가 있으면 complete application value를 사용할 수
+있고, `schema`와 `itemSchema`가 함께 있으면 complete와 incremental 입력을
+모두 지원합니다.
 
-Server-Sent Events의 인증 갱신, replay cursor, 중복 event 처리, reconnect 정책은
-애플리케이션에서 관리합니다.
+`maxStreamFrameBytes`는 application adapter 적용 전의 wire frame, record,
+multipart part 크기를 제한합니다. client 기본값과 개별 요청 옵션에서 설정할 수
+있습니다.
+
+### 기본 protocol에 adapter 적용
+
+`StreamAdapter<Frame, Item>`는 표준 framing 위에 application semantics를
+적용합니다. 예를 들어 Todo SSE의 `data`를 application event로 변환하면서
+SSE parser는 그대로 재사용할 수 있습니다.
+
+```ts
+import type {
+  ServerSentEvent,
+  StreamAdapter,
+} from "./generated/api";
+
+const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.event !== "todo") continue;
+      yield JSON.parse(event.data) as TodoEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { event: "todo", data: JSON.stringify(item) };
+    }
+  },
+};
+
+const api = createClient({
+  baseURL,
+  streamCodecs: {
+    "text/event-stream": { adapter: todoAdapter },
+  },
+});
+```
+
+한 번의 요청에서 client 기본값을 바꾸려면 `streamCodec`을 지정합니다.
+Adapter가 만든 값은 operation의 `itemSchema` 검증과 property projection을
+거칩니다.
+
+### 사용자 정의 framing
+
+사용자 정의 sequential media의 byte framing은 `StreamProtocol<Frame>`로
+정의합니다. Protocol에는 bounded `StreamReader`와
+`StreamContext.maxFrameBytes`가 전달되며 built-in protocol과 같은 취소·크기
+제한을 적용받습니다. `StreamCodec`은 protocol과 선택적인 adapter를 함께
+구성합니다.
+
+순회를 끝내거나 `abort()`를 호출하거나 `toReadableStream()`을 cancel하면
+underlying body를 해제합니다. 외부 `AbortSignal`과 timeout도 같은 lifecycle을
+사용합니다. Server-Sent Events의 reconnect와 replay는 애플리케이션에서
+관리합니다.
 
 Todo stream 예시는
 [생성된 클라이언트 사용](./client.md#스트리밍-응답-읽기)에서 확인하세요.

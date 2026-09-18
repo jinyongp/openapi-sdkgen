@@ -129,6 +129,54 @@ const response =
 Runtime expression은 OpenAPI 계약에 그대로 유지되고, callback 수신 URL은
 애플리케이션에서 정합니다.
 
+## Inbound stream 사용자 정의
+
+OpenAPI 3.2 inbound body에 `itemSchema`가 있으면 생성된 handler는 request
+stream을 소비하면서 검증된 item을 받습니다. Webhook과 Callback 옵션도 outbound
+client와 같은 `StreamCodec` 모델을 사용합니다.
+
+Wire framing은 표준이고 application event 변환만 필요하다면
+`StreamAdapter`를 사용합니다. 예를 들어 Todo SSE의 문자열 `data`를
+application event로 변환하면서 built-in SSE protocol을 그대로 사용할 수
+있습니다.
+
+```ts
+import type {
+  ServerSentEvent,
+  StreamAdapter,
+} from "./generated/api";
+
+const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.event !== "todo") continue;
+      yield JSON.parse(event.data) as TodoEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { event: "todo", data: JSON.stringify(item) };
+    }
+  },
+};
+
+const router = createWebhookRouter(handlers, {
+  routes: {
+    todoCompleted: "/webhooks/todos/completed",
+  },
+  streamCodecs: {
+    "text/event-stream": { adapter: todoAdapter },
+  },
+  maxStreamFrameBytes: 256 * 1024,
+});
+```
+
+Adapter가 만든 값은 handler에 전달되기 전에 선언된 `itemSchema` 검증과
+property projection을 거칩니다. 사용자 정의 sequential media의 byte framing이
+필요하면 `StreamProtocol`을 사용합니다. `maxStreamFrameBytes`는 adapter
+적용 전의 wire frame 하나를 제한합니다. `createCallbackHandlers`도 같은
+`streamCodecs`와 frame limit 옵션을 제공합니다.
+
 ## Generated server artifact
 
 Server artifact set은 OpenAPI에 따른 decoding, validation, 타입이 지정된 handler

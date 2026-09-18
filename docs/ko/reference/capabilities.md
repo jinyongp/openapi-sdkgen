@@ -38,11 +38,17 @@ Credential 획득은 애플리케이션이 담당합니다.
 ## Link, pagination, stream
 
 OpenAPI Link Object는 `$links` 아래의 타입 안전 후속 호출 helper로 생성됩니다.
-지원되는 streaming response는 `$streams` 아래의 `AsyncIterable`로
-노출됩니다.
+OpenAPI 3.2 response에 `itemSchema`가 있으면 생성된 operation, route,
+resource 호출에 `.stream(...)`이 추가됩니다. 반환 타입은
+`OperationStream<T>`이며 incremental request body에는 `StreamSource<T>`를
+사용합니다.
 
-`x-pagination`을 선언하면 pagination helper가 생성됩니다. 표준 OpenAPI
-operation은 일반 호출로 계속 사용할 수 있습니다.
+SSE, NDJSON/JSON Lines, JSON Sequence, streaming multipart framing은 기본으로
+지원합니다. 사용자 정의 framing은 `StreamProtocol`, application-level 변환은
+`StreamAdapter`로 구성합니다. media type별 기본값은 `streamCodecs`, 한 번의
+요청에는 `streamCodec`을 지정할 수 있습니다.
+
+`x-pagination`을 선언하면 pagination helper가 생성됩니다.
 [OpenAPI x-* 확장](./extensions.md)을 참고하세요.
 
 ## Webhook과 Callback

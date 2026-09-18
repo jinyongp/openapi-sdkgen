@@ -104,9 +104,20 @@ await api.$operations.updateTodo(
 ## Link와 스트림
 
 - `$links`: OpenAPI Link에 정의된 후속 요청
-- `$streams`: 스트리밍 응답을 읽는 `AsyncIterable`
+- `.stream(...)`: 생성된 operation, route, resource 호출의 타입 안전 스트리밍 기능
+- `OperationStream<T>`: `response`, `abort()`, `toReadableStream()`을 제공하는 lazy 단일 소비자 스트림
+- `StreamSource<T>`: incremental request body에 사용하는 `AsyncIterable<T> | ReadableStream<T>`
+- `RouteStreamItem<Route>`: exact route의 stream item 타입 추출
+- `OperationStreamItem<Source>`: operation ID나 생성된 operation method에서 stream item 타입 추출
+- `ServerSentEvent`: 문자열 `data`와 선택적인 `event`, `id`, `retry`를 가진 표준 SSE 값
 
-사용 예시는 [생성된 클라이언트 사용](../guide/client.md)에서 확인하세요.
+media type별 기본 설정은 `ClientOptions.streamCodecs`, 한 번의 호출에만
+적용할 설정은 `RequestOptions.streamCodec`을 사용합니다.
+`maxStreamFrameBytes`는 application adapter 적용 전의 wire frame 크기를
+제한합니다.
+
+사용 예시는 [생성된 클라이언트 사용](../guide/client.md)과
+[인증, 전송, 스트림](../guide/transport.md)에서 확인하세요.
 
 ## 오류 처리
 

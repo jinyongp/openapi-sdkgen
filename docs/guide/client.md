@@ -122,22 +122,55 @@ If a required runtime expression cannot be resolved, the call fails.
 
 ## Consume streaming responses
 
-Operations whose declared response is a supported stream expose an
-`AsyncIterable` under `$streams`.
+An operation with an OpenAPI 3.2 `itemSchema` exposes `.stream(...)` on its
+operation, exact-route, and generated resource call surfaces.
 
 ```ts
-for await (const event of api.$streams.watchTodos({
+const stream = api.$operations.watchTodos.stream({
   query: { cursor: "0" },
-})) {
+});
+
+for await (const event of stream) {
   console.log(event.todoID, event.completed);
 }
 ```
 
-Iteration follows Fetch backpressure. Stopping iteration releases the response
-body. Pass an `AbortSignal` or timeout through request options when the caller
-needs cancellation.
+`.stream()` returns an `OperationStream<T>`. It starts lazily, preserves Fetch
+backpressure, and owns one response body. Use `stream.response` when status,
+headers, content type, or request metadata are needed after the response opens.
 
-Applications manage Server-Sent Events reconnection and replay policy.
+```ts
+const metadata = await stream.response;
+console.log(metadata.status, metadata.request.id);
+```
+
+Call `stream.abort()`, pass an `AbortSignal`, or use a request timeout to stop
+the operation. `stream.toReadableStream()` adapts the same single-consumer
+source to the Web Streams API.
+
+For the unconsumed Fetch response body, make a separate `.raw()` call.
+Server-Sent Events preserve `data`, `event`, `id`, and `retry`; replay and
+reconnect policy stays in application code.
+
+## Send streaming request bodies
+
+An OpenAPI 3.2 request body with `itemSchema` accepts `StreamSource<T>`, so an
+async iterable and a Web `ReadableStream` use the same generated input type.
+
+```ts
+async function* todoEvents() {
+  yield { todoID: "todo-1", completed: false };
+  yield { todoID: "todo-1", completed: true };
+}
+
+await api.$operations.publishTodoEvents({
+  body: todoEvents(),
+});
+```
+
+If the sequential media type declares only `schema`, pass the complete schema
+value instead. When it declares both `schema` and `itemSchema`, the generated
+request body accepts either the complete value or a `StreamSource<T>`.
 
 ## Where to go next
 

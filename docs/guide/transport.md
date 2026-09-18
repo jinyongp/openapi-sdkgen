@@ -164,14 +164,64 @@ stream calls where applicable.
 
 ## Streaming behavior
 
-Supported streaming responses are exposed through `$streams` as
-`AsyncIterable` values. The iterator reads on demand and preserves Fetch backpressure.
+OpenAPI 3.2 sequential media use the same operation-centric API as other calls.
+An operation with `itemSchema` exposes `.stream()`, which returns
+`OperationStream<T>`. Built-in framing covers Server-Sent Events, NDJSON/JSON
+Lines, JSON Sequence, and streaming multipart.
 
-Stopping iteration early or aborting the request cancels the underlying reader.
-Decode errors surface from iteration.
+Incremental request bodies accept `StreamSource<T>`, so callers can provide an
+`AsyncIterable<T>` or a Web `ReadableStream<T>`. A sequential media type with
+`schema` accepts its complete application value; when both `schema` and
+`itemSchema` are present, both complete and incremental request modes are
+available.
 
-Applications manage Server-Sent Events authentication refresh, replay cursors,
-duplicate-event handling, and reconnect policy.
+Use `maxStreamFrameBytes` on the client or one request to bound a wire frame,
+record, or multipart part before application adaptation.
+
+### Adapt a built-in protocol
+
+`StreamAdapter<Frame, Item>` handles application semantics layered on standard
+framing. For example, an application can map Todo SSE data without reimplementing
+the SSE parser:
+
+```ts
+import type { ServerSentEvent, StreamAdapter } from "./generated/api";
+
+const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.event !== "todo") continue;
+      yield JSON.parse(event.data) as TodoEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { event: "todo", data: JSON.stringify(item) };
+    }
+  },
+};
+
+const api = createClient({
+  baseURL,
+  streamCodecs: {
+    "text/event-stream": { adapter: todoAdapter },
+  },
+});
+```
+
+A request can override that client default with `streamCodec`. Adapter output is
+then validated and projected through the operation's declared `itemSchema`.
+
+### Define custom framing
+
+`StreamProtocol<Frame>` owns byte framing for a custom sequential media type.
+Its bounded `StreamReader` and `StreamContext.maxFrameBytes` keep framing under
+the same cancellation and size limits as built-in protocols. A `StreamCodec`
+can combine a custom protocol with an optional adapter.
+
+Stopping iteration, calling `abort()`, cancelling `toReadableStream()`, an
+external `AbortSignal`, or a timeout releases the underlying body. Generated
+clients do not automatically reconnect or replay Server-Sent Events.
 
 See [Use the generated client](./client.md#consume-streaming-responses) for a
 Todo stream example.

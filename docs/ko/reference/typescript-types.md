@@ -88,6 +88,7 @@ type TodoID = RouteParameter<
 | --- | --- | --- |
 | 전체 호출 입력 | `OperationInput` | `RouteInput` |
 | 성공 응답 | `OperationOutput` | `RouteOutput` |
+| stream item | `OperationStreamItem` | `RouteStreamItem` |
 | request body | `OperationBody` | `RouteBody` |
 | path 파라미터 | `OperationPath` | `RoutePath` |
 | query 파라미터 | `OperationQuery` | `RouteQuery` |
@@ -174,6 +175,15 @@ enum은 생성된 요청, 응답, component 타입에서 사용할 수 있습니
 | `PaginateCall<Route>` | pagination 호출 |
 | `LinkCalls<Route>` | OpenAPI Link 호출 |
 | `StreamCall<Route>` | stream 호출 |
+| `RouteStreamItem<Route>` | exact route stream의 item 타입 |
+| `OperationStreamItem<Source>` | operation ID나 생성된 메서드에서 추출한 stream item 타입 |
+| `OperationStream<T>` | lazy 단일 소비자 streaming response handle |
+| `StreamSource<T>` | 요청에 사용하는 `AsyncIterable<T>` 또는 `ReadableStream<T>` source |
+| `ServerSentEvent` | 표준 SSE frame 값 |
+| `StreamProtocol<Frame>` | 사용자 정의 sequential media byte framing |
+| `StreamAdapter` | stream protocol 위에 적용하는 application 변환 |
+| `StreamCodec` | 선택적인 protocol/adapter 조합 |
+| `StreamResponseMetadata` | 열린 stream의 status, header, content type, request metadata |
 | `CursorPaginationInput` | cursor pagination 입력 |
 | `OffsetPaginationInput` | offset pagination 입력 |
 | `BothPaginationInput` | cursor 또는 offset pagination 입력 |

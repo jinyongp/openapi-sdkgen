@@ -108,9 +108,19 @@ sent. See [Request headers](../guide/transport.md#request-headers).
 ## Links and streams
 
 - `$links`: follow-up requests defined by OpenAPI Links
-- `$streams`: `AsyncIterable` values for streaming responses
+- `.stream(...)`: typed streaming capability on generated operation, route, and resource calls
+- `OperationStream<T>`: lazy single-consumer stream handle with `response`, `abort()`, and `toReadableStream()`
+- `StreamSource<T>`: `AsyncIterable<T> | ReadableStream<T>` for incremental request bodies
+- `RouteStreamItem<Route>`: extracts the item type for an exact route
+- `OperationStreamItem<Source>`: extracts the item type from an operation ID or generated operation method
+- `ServerSentEvent`: standard SSE value with string `data` and optional `event`, `id`, and `retry`
 
-See [Use the generated client](../guide/client.md) for examples.
+Use `ClientOptions.streamCodecs` for media-type defaults and
+`RequestOptions.streamCodec` for one-call protocol/adapter overrides.
+`maxStreamFrameBytes` bounds one wire frame before adaptation.
+
+See [Use the generated client](../guide/client.md) and
+[Authentication, transport, and streams](../guide/transport.md) for examples.
 
 ## Errors
 

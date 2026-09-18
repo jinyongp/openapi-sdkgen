@@ -264,7 +264,15 @@
     {"id":"input.yaml.flow-mapping","versions":["3.0","3.1","3.2"],"state":"generated","evidence":"internal/compiler/openapi/read_test.go::TestReadAcceptsYAMLFlowMappingsThatStartWithABrace"},
     {"id":"pathItem.ref.local-pointer","versions":["3.0","3.1","3.2"],"state":"generated","evidence":"internal/compiler/ir/build_test.go::TestBuildResolvesLocalPathsPathItemReferences"},
     {"id":"jsonschema.ref.sibling-wire-semantics","versions":["3.1","3.2"],"state":"generated","evidence":"internal/target/typescript/schema_support_test.go::TestSourceArtifactsEmitsSchemaReferenceSiblingsWithWireSemantics"},
-    {"id":"media.streaming-request","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedStreamingRequestEncodesNDJSONItemsLazily"},
+    {"id":"media.streaming-request","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedStreamingRequestSourcesAndCompleteSequentialBodies"},
+    {"id":"media.streaming-request-source","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedStreamingRequestSourcesAndCompleteSequentialBodies"},
+    {"id":"media.stream-protocol-adapter","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedProviderNeutralSSEAdapterBoundaries"},
+    {"id":"response.operation-stream","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedOperationStreamLifecycleAndInterop"},
+    {"id":"response.stream-frame-limit","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestRuntimeStreamCodecOverridesBuiltInFraming"},
+    {"id":"response.stream-raw-body","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseStreamRawPreservesResponseBody"},
+    {"id":"response.stream-type-helpers","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedOperationStreamLifecycleAndInterop"},
+    {"id":"media.sse-content-schema","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedSSEContentSchemaValidatesJSONDataWithoutChangingStringValue"},
+    {"id":"media.stream-provider-neutral-boundary","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestGeneratedProviderNeutralSSEAdapterBoundaries"},
     {"id":"media.unknown-stream-request-codec","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/runtime_parity_test.go::TestRuntimeUsesRegisteredCustomRequestStreamCodec"},
     {"id":"media.case-insensitive-binary","versions":["3.0","3.1","3.2"],"state":"generated","evidence":"internal/target/typescript/types_test.go::TestOperationOutputTypesNormalizeMediaTypeCasing"}
   ]

@@ -125,22 +125,57 @@ Link 호출 인자를 지정하면 Link Object에서 유도한 값보다 해당 
 
 ## 스트리밍 응답 읽기
 
-응답이 지원되는 stream 형식으로 선언된 operation은 `$streams` 아래에서
-`AsyncIterable`로 사용할 수 있습니다.
+OpenAPI 3.2 `itemSchema`가 있는 operation에는 operation, exact route, 생성된
+resource 호출에 `.stream(...)`이 추가됩니다.
 
 ```ts
-for await (const event of api.$streams.watchTodos({
+const stream = api.$operations.watchTodos.stream({
   query: { cursor: "0" },
-})) {
+});
+
+for await (const event of stream) {
   console.log(event.todoID, event.completed);
 }
 ```
 
-순회는 Fetch backpressure를 따르며, 중간에 순회를 끝내면 응답 body도
-해제합니다. 취소가 필요하면 요청 옵션으로 `AbortSignal`이나 timeout을
-전달하세요.
+`.stream()`은 `OperationStream<T>`를 반환합니다. 요청은 실제 순회나
+`stream.response` 접근 시 시작되고 Fetch backpressure를 유지합니다.
+`stream.response`에서는 status, header, content type, request metadata를
+확인할 수 있습니다.
 
-Server-Sent Events의 replay와 reconnect 정책은 애플리케이션에서 관리합니다.
+```ts
+const metadata = await stream.response;
+console.log(metadata.status, metadata.request.id);
+```
+
+`stream.abort()`, 요청 옵션의 `AbortSignal`, timeout으로 작업을 중단할 수
+있습니다. `stream.toReadableStream()`은 같은 단일 소비자 source를 Web
+Streams API로 연결합니다.
+
+원본 Fetch response body가 필요하면 별도의 `.raw()` 호출을 사용합니다.
+Server-Sent Events는 `data`, `event`, `id`, `retry`를 그대로 보존하며
+replay와 reconnect 정책은 애플리케이션에서 관리합니다.
+
+## 스트리밍 request body 전송
+
+OpenAPI 3.2 request body에 `itemSchema`가 있으면 `StreamSource<T>`를
+사용합니다. Async iterable과 Web `ReadableStream`을 같은 생성 타입으로
+전달할 수 있습니다.
+
+```ts
+async function* todoEvents() {
+  yield { todoID: "todo-1", completed: false };
+  yield { todoID: "todo-1", completed: true };
+}
+
+await api.$operations.publishTodoEvents({
+  body: todoEvents(),
+});
+```
+
+Sequential media에 `schema`만 있으면 complete schema value를 전달합니다.
+`schema`와 `itemSchema`가 함께 있으면 complete value와
+`StreamSource<T>` 중 필요한 방식을 선택할 수 있습니다.
 
 ## 다음 문서
 

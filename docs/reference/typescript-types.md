@@ -88,6 +88,7 @@ type TodoID = RouteParameter<
 | --- | --- | --- |
 | complete call input | `OperationInput` | `RouteInput` |
 | successful output | `OperationOutput` | `RouteOutput` |
+| streaming item | `OperationStreamItem` | `RouteStreamItem` |
 | request body | `OperationBody` | `RouteBody` |
 | path parameters | `OperationPath` | `RoutePath` |
 | query parameters | `OperationQuery` | `RouteQuery` |
@@ -177,6 +178,15 @@ pagination, Links, and streams.
 | `PaginateCall<Route>` | pagination call |
 | `LinkCalls<Route>` | OpenAPI Link calls |
 | `StreamCall<Route>` | streaming call |
+| `RouteStreamItem<Route>` | item emitted by one exact route's stream |
+| `OperationStreamItem<Source>` | stream item selected by operation ID or generated method |
+| `OperationStream<T>` | lazy single-consumer streaming response handle |
+| `StreamSource<T>` | `AsyncIterable<T>` or `ReadableStream<T>` request source |
+| `ServerSentEvent` | standard SSE frame value |
+| `StreamProtocol<Frame>` | custom sequential-media byte framing |
+| `StreamAdapter` | application transform layered on a stream protocol |
+| `StreamCodec` | optional protocol/adapter combination |
+| `StreamResponseMetadata` | status, headers, content type, and request metadata for an open stream |
 | `CursorPaginationInput` | cursor pagination input |
 | `OffsetPaginationInput` | offset pagination input |
 | `BothPaginationInput` | cursor or offset pagination input |

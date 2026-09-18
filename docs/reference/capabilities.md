@@ -37,11 +37,18 @@ Credential acquisition remains application-owned. See
 ## Links, pagination, and streams
 
 OpenAPI Link Objects become typed follow-up call helpers under `$links`.
-Supported streaming responses are exposed as `AsyncIterable` values under
-`$streams`.
+OpenAPI 3.2 responses with `itemSchema` add a typed `.stream(...)` capability
+to the generated operation, route, and resource surfaces. The call returns
+`OperationStream<T>`; incremental request bodies accept `StreamSource<T>`.
 
-Declaring `x-pagination` adds pagination helpers. Standard OpenAPI operations
-remain available as normal calls. See [OpenAPI x-* extensions](./extensions.md).
+Built-in sequential protocols cover SSE, NDJSON/JSON Lines, JSON Sequence, and
+streaming multipart. `StreamProtocol` adds custom framing and `StreamAdapter`
+adds application-level transforms while keeping item-schema validation in the
+generated runtime. Client defaults use `streamCodecs`; one request can use
+`streamCodec`.
+
+Declaring `x-pagination` adds pagination helpers. See
+[OpenAPI x-* extensions](./extensions.md).
 
 ## Webhooks and Callbacks
 
