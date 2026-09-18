@@ -1006,6 +1006,110 @@ if (received !== "{\"id\":\"first\"}\n{\"id\":\"second\"}\n") throw new Error("s
 	}
 }
 
+func TestGeneratedStreamingRequestEncodesSSEEventObjects(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.2.0",
+  "info": {"title": "SSE request", "version": "1"},
+  "paths": {
+    "/events": {
+      "post": {
+        "operationId": "publishEvents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/event-stream": {
+              "itemSchema": {
+                "type": "object",
+                "required": ["data"],
+                "additionalProperties": false,
+                "properties": {
+                  "data": {"type": "string"},
+                  "event": {"type": "string"},
+                  "id": {"type": "string"},
+                  "retry": {"type": "integer", "minimum": 0}
+                }
+              }
+            }
+          }
+        },
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+let received = "";
+const api = createClient({ baseURL: "https://api.example.test", fetch: async (_input, init) => {
+  received = await new Response(init.body).text();
+  if (new Headers(init.headers).get("content-type") !== "text/event-stream") throw new Error("SSE request content type missing");
+  return new Response(null, { status: 204 });
+} });
+async function* events() {
+  yield { event: "delta", data: "first\n second", id: "event-1", retry: 25 };
+  yield { data: "" };
+}
+await api.$operations.publishEvents({ body: events() });
+const expected = "event: delta\ndata: first\ndata:  second\nid: event-1\nretry: 25\n\ndata: \n\n";
+if (received !== expected) throw new Error("SSE request was not encoded as event objects: " + JSON.stringify(received));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript SSE request runtime test: %v\n%s", err, output)
+	}
+}
+
+func TestGeneratedStreamingRequestEncodesJSONSequenceSuffix(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.2.0",
+  "info": {"title": "JSON sequence request", "version": "1"},
+  "paths": {
+    "/features": {
+      "post": {
+        "operationId": "publishFeatures",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/geo+json-seq": {
+              "itemSchema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": {"id": {"type": "string"}}
+              }
+            }
+          }
+        },
+        "responses": {"204": {"description": "Accepted"}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+let received = "";
+const api = createClient({ baseURL: "https://api.example.test", fetch: async (_input, init) => {
+  received = await new Response(init.body).text();
+  if (new Headers(init.headers).get("content-type") !== "application/geo+json-seq") throw new Error("JSON sequence request content type missing");
+  return new Response(null, { status: 204 });
+} });
+async function* features() { yield { id: "first" }; yield { id: "second" }; }
+await api.$operations.publishFeatures({ body: features() });
+if (received !== "\u001e{\"id\":\"first\"}\n\u001e{\"id\":\"second\"}\n") throw new Error("JSON sequence request encoding mismatch: " + JSON.stringify(received));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript JSON sequence request runtime test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedPositionalMultipartRequestUsesDeclaredPartOrder(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Positional multipart","version":"1"},

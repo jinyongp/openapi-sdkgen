@@ -2053,6 +2053,110 @@ describe("generated runtime", () => {
     ).resolves.toEqual([{ displayName: "custom", future: true }]);
   });
 
+  it("encodes standard SSE request event objects and rejects non-stream bodies before fetch", async () => {
+    const bodies: string[] = [];
+    const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
+      bodies.push(await new Response(init?.body).text());
+      return jsonResponse({ ok: true });
+    });
+    const request = createRequest({ baseURL: "https://api.example.test", fetch });
+    const streamOperation = operation({
+      path: "/events",
+      contentType: "text/event-stream",
+      requestBodyRequired: true,
+      requestBodies: [
+        {
+          contentType: "text/event-stream",
+          schema: {},
+          itemSchema: { types: ["object"] },
+        },
+      ],
+      inputSchemas: {},
+    });
+    async function* events() {
+      yield {
+        event: "delta",
+        data: "first\n second",
+        id: "event-1",
+        retry: 25,
+      };
+      yield { data: "" };
+    }
+
+    await expect(request(streamOperation, { body: events() })).resolves.toEqual({ ok: true });
+    expect(bodies).toEqual([
+      "event: delta\ndata: first\ndata:  second\nid: event-1\nretry: 25\n\ndata: \n\n",
+    ]);
+
+    const error = await request(streamOperation, { body: { data: "not-a-stream" } }).catch(
+      (cause: unknown) => cause,
+    );
+    expect(isErrorCode(error, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates SSE request fields while preserving request-stream cancellation", async () => {
+    let iteratorClosed = false;
+    const streamOperation = operation({
+      path: "/events",
+      contentType: "text/event-stream",
+      requestBodyRequired: true,
+      requestBodies: [
+        {
+          contentType: "text/event-stream",
+          schema: {},
+          itemSchema: { types: ["object"] },
+        },
+      ],
+      inputSchemas: {},
+    });
+
+    const invalidCases = [
+      { data: 1 },
+      { data: "ok", event: "bad\nname" },
+      { data: "ok", id: "bad\u0000id" },
+      { data: "ok", retry: -1 },
+      { data: "ok", extra: true },
+    ];
+    for (const invalid of invalidCases) {
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        fetch: async (_input, init) => {
+          await new Response(init?.body).text();
+          return jsonResponse({ ok: true });
+        },
+      });
+      async function* values() {
+        yield invalid;
+      }
+      const error = await request(streamOperation, { body: values() }).catch(
+        (cause: unknown) => cause,
+      );
+      expect(error).toBeInstanceOf(Error);
+    }
+
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async (_input, init) => {
+        const reader = (init?.body as ReadableStream<Uint8Array>).getReader();
+        const first = await reader.read();
+        expect(new TextDecoder().decode(first.value)).toBe("data: first\n\n");
+        await reader.cancel("stop");
+        return jsonResponse({ ok: true });
+      },
+    });
+    async function* cancellable() {
+      try {
+        yield { data: "first" };
+        yield { data: "second" };
+      } finally {
+        iteratorClosed = true;
+      }
+    }
+    await expect(request(streamOperation, { body: cancellable() })).resolves.toEqual({ ok: true });
+    expect(iteratorClosed).toBe(true);
+  });
+
   it("keeps request encoding strict for closed objects", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => jsonResponse({ ok: true }));
     const request = createRequest({ baseURL: "https://api.example.test", fetch });

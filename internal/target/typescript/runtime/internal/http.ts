@@ -1709,6 +1709,8 @@ function encodeRequestSynchronous(
     requestBodies === undefined
       ? undefined
       : selectRequestBodyDefinition(requestBodies, contentType);
+  if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
+    throw new TypeError("streaming request body must be an AsyncIterable");
   if (
     definition?.itemSchema !== undefined &&
     isAsyncIterable(bodyValue) &&
@@ -1915,6 +1917,8 @@ async function encodeRequestAsync(
     requestBodies === undefined
       ? undefined
       : selectRequestBodyDefinition(requestBodies, contentType);
+  if (definition?.itemSchema !== undefined && !isAsyncIterable(bodyValue))
+    throw new TypeError("streaming request body must be an AsyncIterable");
   if (
     definition?.itemSchema !== undefined &&
     isAsyncIterable(bodyValue) &&
@@ -2149,8 +2153,7 @@ function encodeSequentialRequestBody(
   schemas: WireSchemas,
 ): ReadableStream<Uint8Array> {
   const mediaType = normalizeMediaType(contentType);
-  if (!isSequentialStreamMediaType(mediaType))
-    throw new TypeError(`unsupported streaming request media type ${contentType}`);
+  const encodeItem = sequentialRequestItemEncoder(mediaType, contentType);
   const iterator = values[Symbol.asyncIterator]();
   const encoder = new TextEncoder();
   return new ReadableStream<Uint8Array>({
@@ -2162,13 +2165,7 @@ function encodeSequentialRequestBody(
           return;
         }
         const value = transformWireValue(next.value, itemSchema, schemas, "encode");
-        const json = JSON.stringify(value);
-        const record = mediaType.includes("event-stream")
-          ? `data: ${json}\n\n`
-          : mediaType.includes("json-seq")
-            ? `\u001e${json}\n`
-            : `${json}\n`;
-        controller.enqueue(encoder.encode(record));
+        controller.enqueue(encoder.encode(encodeItem(value)));
       } catch (cause) {
         controller.error(cause);
         try {
@@ -2182,6 +2179,64 @@ function encodeSequentialRequestBody(
       await iterator.return?.(reason);
     },
   });
+}
+
+function sequentialRequestItemEncoder(
+  mediaType: string,
+  contentType: string,
+): (value: unknown) => string {
+  if (mediaType === "text/event-stream") return encodeSSERequestItem;
+  if (isJSONSequenceMediaType(mediaType))
+    return (value) => `\u001e${encodeJSONStreamItem(value)}\n`;
+  if (isLineDelimitedJSONMediaType(mediaType)) return (value) => `${encodeJSONStreamItem(value)}\n`;
+  throw new TypeError(`unsupported streaming request media type ${contentType}`);
+}
+
+function encodeJSONStreamItem(value: unknown): string {
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) throw new TypeError("stream item is not JSON-serializable");
+  return encoded;
+}
+
+function encodeSSERequestItem(value: unknown): string {
+  if (!isRecord(value)) throw new TypeError("SSE stream item must be an object");
+  for (const field of Object.keys(value)) {
+    if (field !== "data" && field !== "event" && field !== "id" && field !== "retry")
+      throw new TypeError(`SSE stream item contains unsupported field ${field}`);
+  }
+  if (!Object.hasOwn(value, "data") || typeof value.data !== "string")
+    throw new TypeError("SSE stream item data must be a string");
+
+  const event = sseRequestStringField(value, "event");
+  const id = sseRequestStringField(value, "id");
+  if (event !== undefined && /[\r\n]/.test(event))
+    throw new TypeError("SSE stream item event must not contain a line break");
+  if (id !== undefined && /[\u0000\r\n]/.test(id))
+    throw new TypeError("SSE stream item id must not contain NUL or a line break");
+
+  let retry: number | undefined;
+  if (Object.hasOwn(value, "retry") && value.retry !== undefined) {
+    if (typeof value.retry !== "number" || !Number.isSafeInteger(value.retry) || value.retry < 0)
+      throw new TypeError("SSE stream item retry must be a non-negative safe integer");
+    retry = value.retry;
+  }
+
+  const lines: string[] = [];
+  if (event !== undefined) lines.push(`event: ${event}`);
+  for (const line of value.data.split(/\r\n|\r|\n/)) lines.push(`data: ${line}`);
+  if (id !== undefined) lines.push(`id: ${id}`);
+  if (retry !== undefined) lines.push(`retry: ${retry}`);
+  return lines.join("\n") + "\n\n";
+}
+
+function sseRequestStringField(
+  value: Readonly<Record<string, unknown>>,
+  field: "event" | "id",
+): string | undefined {
+  if (!Object.hasOwn(value, field) || value[field] === undefined) return undefined;
+  if (typeof value[field] !== "string")
+    throw new TypeError(`SSE stream item ${field} must be a string`);
+  return value[field];
 }
 
 function encodeCustomStreamingRequestBody(
@@ -3557,15 +3612,21 @@ function isSequentialStreamMediaType(contentType: string): boolean {
   return (
     contentType === "text/event-stream" ||
     isJSONSequenceMediaType(contentType) ||
-    contentType === "application/x-ndjson" ||
-    contentType === "application/ndjson" ||
-    contentType === "application/jsonl" ||
-    contentType === "application/json-lines"
+    isLineDelimitedJSONMediaType(contentType)
   );
 }
 
 function isJSONSequenceMediaType(contentType: string): boolean {
   return contentType === "application/json-seq" || contentType.endsWith("+json-seq");
+}
+
+function isLineDelimitedJSONMediaType(contentType: string): boolean {
+  return (
+    contentType === "application/x-ndjson" ||
+    contentType === "application/ndjson" ||
+    contentType === "application/jsonl" ||
+    contentType === "application/json-lines"
+  );
 }
 
 function isPromise<Value>(value: Value | Promise<Value>): value is Promise<Value> {
