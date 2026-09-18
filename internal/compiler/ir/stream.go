@@ -14,10 +14,11 @@ func StreamPlanForMediaType(contentType string, hasItemSchema bool) StreamPlan {
 	switch mediaType {
 	case "application/x-ndjson", "application/ndjson", "application/jsonl", "application/json-lines":
 		return StreamPlan{Framing: StreamFramingLineDelimitedJSON}
-	case "application/json-seq":
-		return StreamPlan{Framing: StreamFramingJSONSequence}
 	case "text/event-stream":
 		return StreamPlan{Framing: StreamFramingSSE}
+	}
+	if mediaType == "application/json-seq" || strings.HasSuffix(mediaType, "+json-seq") {
+		return StreamPlan{Framing: StreamFramingJSONSequence}
 	}
 	if hasItemSchema {
 		if strings.HasPrefix(mediaType, "multipart/") {

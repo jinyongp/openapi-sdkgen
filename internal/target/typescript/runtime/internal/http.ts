@@ -485,8 +485,8 @@ async function* decodeStreamItems(
   maxFrameBytes: number,
   signal?: AbortSignal,
 ): AsyncIterable<unknown> {
-  const mediaType = contentType.toLowerCase();
-  if (normalizeMediaType(mediaType).startsWith("multipart/")) {
+  const mediaType = normalizeMediaType(contentType);
+  if (mediaType.startsWith("multipart/")) {
     yield* decodeMultipartStreamItems(
       body,
       contentType,
@@ -497,6 +497,10 @@ async function* decodeStreamItems(
       maxFrameBytes,
       signal,
     );
+    return;
+  }
+  if (mediaType === "text/event-stream") {
+    yield* decodeSSEStreamItems(body, maxFrameBytes, signal);
     return;
   }
   const decoder = new TextDecoder();
@@ -511,21 +515,7 @@ async function* decodeStreamItems(
     while (true) {
       const { done, value } = await awaitAbortable(reader.read(), signal);
       pending += decoder.decode(value, { stream: !done });
-      if (mediaType.includes("event-stream")) {
-        let match: RegExpMatchArray | null;
-        while ((match = pending.match(/(?:\r\n|\r|\n){2}/)) !== null) {
-          const boundary = match.index ?? 0;
-          const event = pending.slice(0, boundary);
-          pending = pending.slice(boundary + match[0].length);
-          assertFrameBytes(event);
-          const data = event
-            .split(/\r\n|\r|\n/)
-            .filter((line) => line.startsWith("data:"))
-            .map((line) => line.slice(5).trimStart())
-            .join("\n");
-          if (data !== "") yield parseStreamJSON(data);
-        }
-      } else if (mediaType.includes("json-seq")) {
+      if (isJSONSequenceMediaType(mediaType)) {
         const records = pending.split("\u001e");
         pending = records.pop() ?? "";
         for (const record of records) {
@@ -545,7 +535,7 @@ async function* decodeStreamItems(
       assertFrameBytes(pending);
       if (done) break;
     }
-    if (!mediaType.includes("event-stream") && pending.trim() !== "") {
+    if (pending.trim() !== "") {
       assertFrameBytes(pending);
       yield parseStreamJSON(pending.trim().replace(/^\u001e/, ""));
     }
@@ -556,6 +546,157 @@ async function* decodeStreamItems(
       reader.releaseLock();
     }
   }
+}
+
+interface SSEStreamItem {
+  readonly data: string;
+  readonly event?: string;
+  readonly id?: string;
+  readonly retry?: number;
+}
+
+interface SSELine {
+  readonly line: string;
+  readonly terminator: string;
+  readonly rest: string;
+}
+
+async function* decodeSSEStreamItems(
+  body: ReadableStream<Uint8Array>,
+  maxFrameBytes: number,
+  signal?: AbortSignal,
+): AsyncIterable<SSEStreamItem> {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const reader = body.getReader();
+  let pending = "";
+  let pendingBytes = 0;
+  let frameBytes = 0;
+  let firstText = true;
+  let data = "";
+  let hasData = false;
+  let event: string | undefined;
+  let id: string | undefined;
+  let retry: number | undefined;
+
+  const assertFrameBytes = (byteLength: number): void => {
+    if (byteLength > maxFrameBytes)
+      throw new TypeError(`stream item exceeds ${maxFrameBytes} bytes`);
+  };
+  const resetEvent = (): void => {
+    data = "";
+    hasData = false;
+    event = undefined;
+    id = undefined;
+    retry = undefined;
+  };
+  const dispatchEvent = (): SSEStreamItem | undefined => {
+    if (!hasData) {
+      resetEvent();
+      return undefined;
+    }
+    const item: {
+      data: string;
+      event?: string;
+      id?: string;
+      retry?: number;
+    } = { data: data.slice(0, -1) };
+    if (event !== undefined) item.event = event;
+    if (id !== undefined) item.id = id;
+    if (retry !== undefined) item.retry = retry;
+    resetEvent();
+    return item;
+  };
+  const processLine = (line: string): void => {
+    if (line.startsWith(":")) return;
+    const separator = line.indexOf(":");
+    const field = separator < 0 ? line : line.slice(0, separator);
+    let value = separator < 0 ? "" : line.slice(separator + 1);
+    if (value.startsWith(" ")) value = value.slice(1);
+    switch (field) {
+      case "data":
+        data += value + "\n";
+        hasData = true;
+        break;
+      case "event":
+        event = value;
+        break;
+      case "id":
+        if (!value.includes("\u0000")) id = value;
+        break;
+      case "retry":
+        if (/^[0-9]+$/.test(value)) {
+          const parsed = Number(value);
+          if (Number.isFinite(parsed)) retry = parsed;
+        }
+        break;
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await awaitAbortable(reader.read(), signal);
+      let decoded = decoder.decode(value, { stream: !done });
+      if (firstText && decoded !== "") {
+        if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
+        firstText = false;
+      }
+      pending += decoded;
+      pendingBytes += encoder.encode(decoded).byteLength;
+      while (true) {
+        const parsed = takeSSELine(pending, done);
+        if (parsed === undefined) break;
+        const lineBytes = encoder.encode(parsed.line + parsed.terminator).byteLength;
+        pending = parsed.rest;
+        pendingBytes -= lineBytes;
+        if (parsed.line === "") {
+          const item = dispatchEvent();
+          frameBytes = 0;
+          if (item !== undefined) yield item;
+          continue;
+        }
+        frameBytes += lineBytes;
+        assertFrameBytes(frameBytes);
+        processLine(parsed.line);
+      }
+      assertFrameBytes(frameBytes + pendingBytes);
+      if (done) break;
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
+function takeSSELine(source: string, eof: boolean): SSELine | undefined {
+  for (let index = 0; index < source.length; index++) {
+    const code = source.charCodeAt(index);
+    if (code === 10) {
+      return {
+        line: source.slice(0, index),
+        terminator: "\n",
+        rest: source.slice(index + 1),
+      };
+    }
+    if (code !== 13) continue;
+    if (index + 1 === source.length && !eof) return undefined;
+    if (source.charCodeAt(index + 1) === 10) {
+      return {
+        line: source.slice(0, index),
+        terminator: "\r\n",
+        rest: source.slice(index + 2),
+      };
+    }
+    return {
+      line: source.slice(0, index),
+      terminator: "\r",
+      rest: source.slice(index + 1),
+    };
+  }
+  return undefined;
 }
 
 async function* decodeMultipartStreamItems(
@@ -3414,11 +3555,17 @@ function isBinaryMediaType(contentType: string): boolean {
 
 function isSequentialStreamMediaType(contentType: string): boolean {
   return (
-    contentType.includes("event-stream") ||
-    contentType.includes("json-seq") ||
-    contentType.includes("ndjson") ||
-    contentType.includes("jsonl")
+    contentType === "text/event-stream" ||
+    isJSONSequenceMediaType(contentType) ||
+    contentType === "application/x-ndjson" ||
+    contentType === "application/ndjson" ||
+    contentType === "application/jsonl" ||
+    contentType === "application/json-lines"
   );
+}
+
+function isJSONSequenceMediaType(contentType: string): boolean {
+  return contentType === "application/json-seq" || contentType.endsWith("+json-seq");
 }
 
 function isPromise<Value>(value: Value | Promise<Value>): value is Promise<Value> {

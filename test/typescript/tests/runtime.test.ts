@@ -1902,7 +1902,110 @@ describe("generated runtime", () => {
           }),
         ),
       ),
-    ).resolves.toEqual([{ value: 1 }]);
+    ).resolves.toEqual([{ data: '{"value":1}' }]);
+  });
+
+  it("parses SSE event objects across arbitrary UTF-8 and line boundaries", async () => {
+    const wire =
+      "\uFEFF: ignored comment\r\n" +
+      "event: update\r\n" +
+      "data: hello 🌍\r\n" +
+      "data:  second line\r\n" +
+      "id: event-1\r\n" +
+      "retry: 42\r\n" +
+      "unknownField: ignored\r\n" +
+      "\r\n" +
+      "data\r" +
+      "event\r" +
+      "id: kept\r" +
+      "id: bad\u0000value\r" +
+      "retry: 7\r" +
+      "retry: nope\r" +
+      "\r" +
+      "data: [DONE]\n\n" +
+      "data: incomplete";
+    const bytes = new TextEncoder().encode(wire);
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        new Response(
+          new ReadableStream({
+            start(controller) {
+              for (const byte of bytes) controller.enqueue(new Uint8Array([byte]));
+              controller.close();
+            },
+          }),
+          { headers: { "content-type": "text/event-stream" } },
+        ),
+    });
+
+    await expect(
+      collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/events",
+            responses: [
+              {
+                status: "200",
+                contentType: "text/event-stream",
+                schema: {},
+                itemSchema: { types: ["object"] },
+              },
+            ],
+            outputSchemas: {},
+          }),
+        ),
+      ),
+    ).resolves.toEqual([
+      {
+        data: "hello 🌍\n second line",
+        event: "update",
+        id: "event-1",
+        retry: 42,
+      },
+      { data: "", event: "", id: "kept", retry: 7 },
+      { data: "[DONE]" },
+    ]);
+  });
+
+  it("applies item-schema transformation to parsed SSE event objects", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["data"],
+      properties: {
+        data: { property: "payload", schema: { types: ["string"] } },
+        event: { property: "eventType", schema: { types: ["string"] } },
+        retry: { property: "retryAfter", schema: { types: ["integer"] } },
+      },
+    } as const;
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        new Response('event: delta\ndata: {"token":"a"}\nretry: 5\n\n', {
+          headers: { "content-type": "text/event-stream" },
+        }),
+    });
+
+    await expect(
+      collect(
+        request.stream(
+          operation({
+            method: "GET",
+            path: "/events",
+            responses: [
+              {
+                status: "200",
+                contentType: "text/event-stream",
+                schema: {},
+                itemSchema,
+              },
+            ],
+            outputSchemas: {},
+          }),
+        ),
+      ),
+    ).resolves.toEqual([{ payload: '{"token":"a"}', eventType: "delta", retryAfter: 5 }]);
   });
 
   it("preserves unknown properties in generated and custom stream items", async () => {

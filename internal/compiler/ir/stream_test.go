@@ -17,6 +17,7 @@ func TestStreamPlanForMediaTypeNormalizesFraming(t *testing.T) {
 		{name: "ndjson", contentType: "application/x-ndjson", want: StreamFramingLineDelimitedJSON},
 		{name: "json lines alias", contentType: "APPLICATION/JSONL; charset=utf-8", want: StreamFramingLineDelimitedJSON},
 		{name: "json sequence", contentType: "application/json-seq", want: StreamFramingJSONSequence},
+		{name: "json sequence suffix", contentType: "application/geo+json-seq", want: StreamFramingJSONSequence},
 		{name: "sse", contentType: "text/event-stream", want: StreamFramingSSE},
 		{name: "multipart stream", contentType: "multipart/mixed", hasItemSchema: true, want: StreamFramingMultipart},
 		{name: "custom stream", contentType: "application/vnd.example.frames", hasItemSchema: true, want: StreamFramingCustom},

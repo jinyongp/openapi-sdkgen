@@ -1281,6 +1281,37 @@ catch (error) { if (!String(error).includes("exceeds 4 bytes") && !String(error.
 	}
 }
 
+func TestGeneratedResponseStreamsDecodeSSEEventObjects(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0", "info":{"title":"SSE","version":"1"},
+  "paths":{"/events":{"get":{"operationId":"watchEvents","responses":{"200":{"description":"OK","content":{"text/event-stream":{"itemSchema":{"type":"object","required":["data"],"properties":{"data":{"type":"string"},"event":{"type":"string"},"id":{"type":"string"},"retry":{"type":"integer"}}}}}}}}}}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    'event: delta\ndata: {"token":"a"}\nretry: 5\n\ndata: [DONE]\n\n',
+    { status: 200, headers: { "content-type": "text/event-stream" } },
+  ),
+});
+const events = [];
+for await (const event of api.$streams.watchEvents()) events.push(event);
+if (events.length !== 2) throw new Error("SSE event count mismatch");
+if (events[0].event !== "delta" || events[0].data !== '{"token":"a"}' || events[0].retry !== 5)
+  throw new Error("SSE event object was not parsed according to OpenAPI semantics");
+if (events[1].data !== "[DONE]") throw new Error("SSE sentinel-shaped data was interpreted by the runtime");
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute TypeScript SSE stream runtime test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedResponseStreamRawPreservesResponseBody(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Stream raw","version":"1"},
