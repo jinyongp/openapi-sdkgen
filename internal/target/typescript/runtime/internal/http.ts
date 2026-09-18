@@ -576,8 +576,8 @@ async function* streamOperation<Item>(
       headers: response.headers,
       request,
     });
-    const maxFrameBytes = resolveMaxStreamItemBytes(
-      requestOptions.maxStreamItemBytes ?? options.maxStreamItemBytes,
+    const maxFrameBytes = resolveMaxStreamFrameBytes(
+      requestOptions.maxStreamFrameBytes ?? options.maxStreamFrameBytes,
     );
     const streamCodec = resolveStreamCodec(contentType, requestOptions.streamCodec, streamCodecs);
     for await (const value of decodeResponseStreamItems(
@@ -635,10 +635,10 @@ async function* streamOperation<Item>(
   }
 }
 
-function resolveMaxStreamItemBytes(value: number | undefined): number {
+function resolveMaxStreamFrameBytes(value: number | undefined): number {
   const resolved = value ?? 1024 * 1024;
   if (!Number.isSafeInteger(resolved) || resolved <= 0)
-    throw new TypeError("maxStreamItemBytes must be a positive safe integer");
+    throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
   return resolved;
 }
 
@@ -748,7 +748,7 @@ function createMediaStreamReader(
   signal?: AbortSignal,
 ): StreamReader {
   if (!Number.isSafeInteger(maxFrameBytes) || maxFrameBytes <= 0)
-    throw new TypeError("maxStreamItemBytes must be a positive safe integer");
+    throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
   const reader = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
   let done = false;
@@ -821,7 +821,7 @@ async function* decodeStreamItems(
   const encoder = new TextEncoder();
   const assertFrameBytes = (source: string): void => {
     if (encoder.encode(source).byteLength > maxFrameBytes)
-      throw new TypeError(`stream item exceeds ${maxFrameBytes} bytes`);
+      throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
   };
   let pending = "";
   const reader = body.getReader();
@@ -888,7 +888,7 @@ async function* decodeSSEStreamItems(
 
   const assertFrameBytes = (byteLength: number): void => {
     if (byteLength > maxFrameBytes)
-      throw new TypeError(`stream item exceeds ${maxFrameBytes} bytes`);
+      throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
   };
   const resetEvent = (): void => {
     data = "";
@@ -1087,7 +1087,7 @@ async function* decodeMultipartStreamParts(
           ? maxFrameBytes + maxMultipartStreamHeaderBytes + separator.length + 4
           : maxMultipartStreamHeaderBytes + opening.length + 2;
         if (pending.byteLength > maximumBuffered)
-          throw new TypeError(`multipart stream item exceeds ${maxFrameBytes} bytes`);
+          throw new TypeError(`multipart stream frame exceeds ${maxFrameBytes} bytes`);
       }
       if (done) break;
     }
@@ -1177,7 +1177,7 @@ function parseMultipartStreamPart(part: Uint8Array, maxFrameBytes?: number): Mul
     throw new TypeError("multipart stream headers exceed 8192 bytes");
   const bytes = part.slice(split + 4);
   if (maxFrameBytes !== undefined && bytes.byteLength > maxFrameBytes)
-    throw new TypeError(`multipart stream item exceeds ${maxFrameBytes} bytes`);
+    throw new TypeError(`multipart stream frame exceeds ${maxFrameBytes} bytes`);
   const headers = parseMultipartStreamHeaders(new TextDecoder().decode(part.slice(0, split)));
   return { headers, bytes };
 }
@@ -2089,7 +2089,7 @@ function encodeRequestSynchronous(
       definition.itemSchema,
       operation.inputSchemas ?? {},
       selectedStreamCodec,
-      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
+      resolveMaxStreamFrameBytes(options.maxStreamFrameBytes ?? client.maxStreamFrameBytes),
       options.signal,
       definition.itemEncoding,
       options.multipartHeaders,
@@ -2111,7 +2111,7 @@ function encodeRequestSynchronous(
       definition.schema,
       operation.inputSchemas ?? {},
       selectedStreamCodec,
-      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
+      resolveMaxStreamFrameBytes(options.maxStreamFrameBytes ?? client.maxStreamFrameBytes),
       options.signal,
       definition.itemEncoding,
       options.multipartHeaders,
@@ -2304,7 +2304,7 @@ async function encodeRequestAsync(
       definition.itemSchema,
       operation.inputSchemas ?? {},
       selectedStreamCodec,
-      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
+      resolveMaxStreamFrameBytes(options.maxStreamFrameBytes ?? client.maxStreamFrameBytes),
       options.signal,
       definition.itemEncoding,
       options.multipartHeaders,
@@ -2326,7 +2326,7 @@ async function encodeRequestAsync(
       definition.schema,
       operation.inputSchemas ?? {},
       selectedStreamCodec,
-      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
+      resolveMaxStreamFrameBytes(options.maxStreamFrameBytes ?? client.maxStreamFrameBytes),
       options.signal,
       definition.itemEncoding,
       options.multipartHeaders,
@@ -2520,21 +2520,10 @@ async function encodePositionalMultipartBody(
   return new Blob(chunks, { type: `${contentType}; boundary=${boundary}` });
 }
 
-function encodeSequentialRequestBody(
-  contentType: string,
-  values: AsyncIterable<unknown>,
-  itemSchema: WireSchema,
-  schemas: WireSchemas,
-): ReadableStream<Uint8Array> {
-  return encodeSequentialRequestWireBody(
-    contentType,
-    transformStreamingRequestItems(values, itemSchema, schemas),
-  );
-}
-
 function encodeSequentialRequestWireBody(
   contentType: string,
   values: AsyncIterable<unknown>,
+  maxFrameBytes: number,
 ): ReadableStream<Uint8Array> {
   const mediaType = normalizeMediaType(contentType);
   const encodeItem = sequentialRequestItemEncoder(mediaType, contentType);
@@ -2549,7 +2538,10 @@ function encodeSequentialRequestWireBody(
             controller.close();
             return;
           }
-          controller.enqueue(encoder.encode(encodeItem(next.value)));
+          const frame = encoder.encode(encodeItem(next.value));
+          if (frame.byteLength > maxFrameBytes)
+            throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
+          controller.enqueue(frame);
         } catch (cause) {
           controller.error(cause);
           try {
@@ -2734,9 +2726,13 @@ function encodeStreamProtocolFrames(
       suppliedHeaders,
       suppliedContentTypes,
       codecs,
+      context.maxFrameBytes,
     );
   if (isSequentialStreamMediaType(mediaType))
-    return { body: encodeSequentialRequestWireBody(contentType, frames), contentType };
+    return {
+      body: encodeSequentialRequestWireBody(contentType, frames, context.maxFrameBytes),
+      contentType,
+    };
   throw new TypeError(`missing stream protocol for ${contentType}`);
 }
 
@@ -2792,6 +2788,7 @@ function encodeStreamingMultipartBody(
   suppliedHeaders: Readonly<Record<string, HeadersInit>> | undefined,
   suppliedContentTypes: Readonly<Record<string, string>> | undefined,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  maxFrameBytes: number,
 ): { readonly body: ReadableStream<Uint8Array>; readonly contentType: string } {
   const boundary = `----openapi-sdkgen-${multipartBoundaryToken()}`;
   const iterator = values[Symbol.asyncIterator]();
@@ -2821,6 +2818,9 @@ function encodeStreamingMultipartBody(
           schemas,
           codecs,
         );
+        const frameBytes = new Blob([part.body]).size;
+        if (frameBytes > maxFrameBytes)
+          throw new TypeError(`multipart stream frame exceeds ${maxFrameBytes} bytes`);
         const headers = await multipartPartHeaders(
           undefined,
           itemEncoding,

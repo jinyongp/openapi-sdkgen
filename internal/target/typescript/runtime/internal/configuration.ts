@@ -35,8 +35,8 @@ export interface ClientOptions {
   readonly securityProvider?: SecurityCredentialProvider;
   /** Default positive timeout in milliseconds. Individual requests may override it. */
   readonly timeoutMS?: number;
-  /** Maximum byte count a custom streaming codec may request in one read. */
-  readonly maxStreamItemBytes?: number;
+  /** Maximum byte count of one wire-protocol stream frame before adaptation. */
+  readonly maxStreamFrameBytes?: number;
 }
 
 /** Context supplied to a security credential provider after final server selection. */

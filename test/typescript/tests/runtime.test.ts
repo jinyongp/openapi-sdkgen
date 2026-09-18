@@ -2094,7 +2094,7 @@ describe("generated runtime", () => {
     expect(cancels).toBe(1);
   });
 
-  it("enforces generated stream item limits independently of chunk boundaries", async () => {
+  it("enforces generated stream frame limits independently of chunk boundaries", async () => {
     const itemSchema = { types: ["object"] } as const;
     const streamOperation = (contentType: string): OperationDefinition =>
       operation({
@@ -2124,7 +2124,7 @@ describe("generated runtime", () => {
       ]) {
         const request = createRequest({
           baseURL: "https://api.example.test",
-          maxStreamItemBytes: 32,
+          maxStreamFrameBytes: 32,
           fetch: async () =>
             new Response(
               new ReadableStream({
@@ -2145,6 +2145,66 @@ describe("generated runtime", () => {
         expect(isErrorCode(error, TransportErrorCode.RESPONSE_DECODE_FAILED)).toBe(true);
         expect(String((error as { cause?: unknown }).cause)).toContain("exceeds 32 bytes");
       }
+    }
+  });
+
+  it("enforces generated request frame limits before adaptation leaves the runtime", async () => {
+    const cases = [
+      {
+        contentType: "application/x-ndjson",
+        itemSchema: { types: ["string"] } as WireSchema,
+        value: "0123456789",
+      },
+      {
+        contentType: "application/json-seq",
+        itemSchema: { types: ["string"] } as WireSchema,
+        value: "0123456789",
+      },
+      {
+        contentType: "text/event-stream",
+        itemSchema: { types: ["object"] } as WireSchema,
+        value: { data: "0123456789" },
+      },
+      {
+        contentType: "multipart/mixed",
+        itemSchema: { types: ["string"] } as WireSchema,
+        value: "0123456789",
+      },
+    ];
+    for (const test of cases) {
+      let fetchCalls = 0;
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        maxStreamFrameBytes: 8,
+        fetch: async (_input, init) => {
+          fetchCalls++;
+          await new Response(init?.body).arrayBuffer();
+          return jsonResponse({ ok: true });
+        },
+      });
+      const requestOperation = operation({
+        method: "POST",
+        path: "/bounded-request",
+        contentType: test.contentType,
+        requestBodyRequired: true,
+        requestBodies: [
+          {
+            contentType: test.contentType,
+            schema: {},
+            itemSchema: test.itemSchema,
+          },
+        ],
+        inputSchemas: {},
+      });
+      async function* values() {
+        yield test.value;
+      }
+      const error = await request(requestOperation, { body: values() }).catch(
+        (cause: unknown) => cause,
+      );
+      expect(isErrorCode(error, TransportErrorCode.REQUEST_ENCODE_FAILED)).toBe(true);
+      expect(String((error as { cause?: unknown }).cause)).toContain("exceeds 8 bytes");
+      expect(fetchCalls).toBe(1);
     }
   });
 
@@ -2290,6 +2350,7 @@ describe("generated runtime", () => {
       additionalProperties: false,
     } as const;
     let responseMaxFrameBytes = 0;
+    let requestMaxFrameBytes = 0;
     let responseWire = "";
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -2309,7 +2370,8 @@ describe("generated runtime", () => {
           }
           yield { wire_name: "decoded" };
         },
-        encode(items: AsyncIterable<unknown>) {
+        encode(items: AsyncIterable<unknown>, context: { maxFrameBytes: number }) {
+          requestMaxFrameBytes = context.maxFrameBytes;
           const iterator = items[Symbol.asyncIterator]();
           return new ReadableStream<Uint8Array>({
             async pull(controller) {
@@ -2331,7 +2393,7 @@ describe("generated runtime", () => {
 
     const responseRequest = createRequest({
       baseURL: "https://api.example.test",
-      maxStreamItemBytes: 4,
+      maxStreamFrameBytes: 4,
       streamCodecs: { "text/event-stream": codec },
       fetch: async () =>
         new Response("not-sse-framing", {
@@ -2363,6 +2425,7 @@ describe("generated runtime", () => {
     let requestWire = "";
     const requestRequest = createRequest({
       baseURL: "https://api.example.test",
+      maxStreamFrameBytes: 6,
       streamCodecs: { "text/event-stream": codec },
       fetch: async (_input, init) => {
         requestWire = await new Response(init?.body).text();
@@ -2391,6 +2454,7 @@ describe("generated runtime", () => {
       ),
     ).resolves.toEqual({ ok: true });
     expect(requestWire).toBe("override:encoded\n");
+    expect(requestMaxFrameBytes).toBe(6);
   });
 
   it("layers stream adapters over built-in protocols with per-request overrides", async () => {

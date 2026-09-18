@@ -65,8 +65,8 @@ export interface RequestOptions {
   readonly multipartHeaders?: Readonly<Record<string, HeadersInit>>;
   /** Selected media type for multipart parts keyed by form name or positional index. */
   readonly multipartContentTypes?: Readonly<Record<string, string>>;
-  /** Maximum byte count a custom streaming codec may request in one read. */
-  readonly maxStreamItemBytes?: number;
+  /** Maximum byte count of one wire-protocol stream frame before adaptation. */
+  readonly maxStreamFrameBytes?: number;
 }
 
 /** Binary body values supported by generated request encoders. */

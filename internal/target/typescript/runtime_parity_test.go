@@ -1530,7 +1530,7 @@ const events = [];
 for await (const event of api.$operations.tailLogs.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two") throw new Error("NDJSON stream did not decode item schemas");
 const oversized = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response('{"event_id":"too-long"}', { status: 200, headers: { "content-type": "application/x-ndjson" } }) });
-try { for await (const _event of oversized.$operations.tailLogs.stream({ maxStreamItemBytes: 4 })) { /* consume */ } throw new Error("oversized stream item was accepted"); }
+try { for await (const _event of oversized.$operations.tailLogs.stream({ maxStreamFrameBytes: 4 })) { /* consume */ } throw new Error("oversized stream frame was accepted"); }
 catch (error) { if (!String(error).includes("exceeds 4 bytes") && !String(error.cause).includes("exceeds 4 bytes")) throw error; }
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1875,7 +1875,7 @@ const codec = { protocol: { decode: async function* (reader, context) {
     while ((index = pending.indexOf("\n")) >= 0) { const record = pending.slice(0, index); pending = pending.slice(index + 1); if (record !== "") yield JSON.parse(record); }
   }
 }, encode() { throw new Error("encode not used"); } } };
-const api = createClient({ baseURL: "https://api.example.test", maxStreamItemBytes: 5, streamCodecs: { "application/vnd.acme.events": codec }, fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/vnd.acme.events" } }) });
+const api = createClient({ baseURL: "https://api.example.test", maxStreamFrameBytes: 5, streamCodecs: { "application/vnd.acme.events": codec }, fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/vnd.acme.events" } }) });
 const events = [];
 for await (const event of api.$operations.tailCustomEvents.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two" || maxFrameBytes !== 5) throw new Error("custom stream codec did not receive bounded reader data");
@@ -2008,7 +2008,7 @@ const codec = {
 };
 const api = createClient({
   baseURL: "https://api.example.test",
-  maxStreamItemBytes: 4,
+  maxStreamFrameBytes: 4,
   streamCodecs: { "text/event-stream": codec },
   fetch: async (_input, init) => {
     if (init.method === "POST") {

@@ -1359,7 +1359,7 @@ export interface InboundBodyOptions {
   /** Stream protocol/adapter overrides for inbound sequential media. */
   readonly streamCodecs?: ReadonlyMap<string, StreamCodec> | undefined;
   /** Maximum byte count a custom inbound stream protocol may request in one read. */
-  readonly maxStreamItemBytes?: number | undefined;
+  readonly maxStreamFrameBytes?: number | undefined;
 }
 
 /** Decodes and validates one declared JSON, text, form, or XML request body. */
@@ -1615,10 +1615,10 @@ function inboundMediaCodec(
   return codecs.get(normalizeInboundMediaType(contentType));
 }
 
-function resolveInboundStreamItemBytes(value: number | undefined): number {
+function resolveInboundStreamFrameBytes(value: number | undefined): number {
   const resolved = value ?? 1024 * 1024;
   if (!Number.isSafeInteger(resolved) || resolved <= 0)
-    throw new TypeError("maxStreamItemBytes must be a positive safe integer");
+    throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
   return resolved;
 }
 
@@ -1651,7 +1651,7 @@ async function* decodeInboundStreamBody(
   signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
 ): AsyncIterable<unknown> {
-  const maxFrameBytes = resolveInboundStreamItemBytes(options.maxStreamItemBytes);
+  const maxFrameBytes = resolveInboundStreamFrameBytes(options.maxStreamFrameBytes);
   const context: StreamContext = { contentType: rawContentType, maxFrameBytes, signal };
   const codec = inboundStreamCodec(options.streamCodecs, contentType);
   const frames =
@@ -1722,7 +1722,7 @@ function createInboundMediaStreamReader(
   return {
     async read(maxBytes: number): Promise<Uint8Array | null> {
       if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > maximum)
-        throw new TypeError("custom stream read exceeds maxStreamItemBytes");
+        throw new TypeError("stream protocol read exceeds maxStreamFrameBytes");
       while (pending.byteLength === 0 && !done) {
         const next = await reader.read();
         done = next.done;
@@ -1781,7 +1781,7 @@ async function* decodeInboundBuiltInStreamFrames(
   const assertFrameBytes = (source: string): void => {
     if (encoder.encode(source).byteLength > maxFrameBytes)
       throw new InboundRequestError(
-        new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
+        new Response("Stream frame exceeds maxStreamFrameBytes", { status: 400 }),
       );
   };
   const parse = (source: string, frameSource = source): unknown => {
@@ -1852,7 +1852,7 @@ async function* decodeInboundSSEStreamFrames(
   const assertFrameBytes = (byteLength: number): void => {
     if (byteLength > maxFrameBytes)
       throw new InboundRequestError(
-        new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
+        new Response("Stream frame exceeds maxStreamFrameBytes", { status: 400 }),
       );
   };
   const reset = (): void => {
@@ -2026,7 +2026,7 @@ async function* decodeInboundMultipartStream(
           : 8192 + opening.length + 2;
         if (pending.byteLength > maximumBuffered)
           throw new InboundRequestError(
-            new Response("Multipart item exceeds maxStreamItemBytes", { status: 400 }),
+            new Response("Multipart frame exceeds maxStreamFrameBytes", { status: 400 }),
           );
       }
       if (next.done) break;
@@ -2064,7 +2064,7 @@ function decodeInboundMultipartPart(
   const bytes = part.slice(split + 4);
   if (bytes.byteLength > maxFrameBytes)
     throw new InboundRequestError(
-      new Response("Multipart item exceeds maxStreamItemBytes", { status: 400 }),
+      new Response("Multipart frame exceeds maxStreamFrameBytes", { status: 400 }),
     );
   const rawContentType =
     headers.get("content-type") ?? itemContentType?.split(",", 1)[0]?.trim() ?? "text/plain";
