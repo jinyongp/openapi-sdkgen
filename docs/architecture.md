@@ -191,10 +191,12 @@ views but do not replace the manifest as the source of truth.
 Repository validation is layered so ordinary development and releases do not
 need identical cost profiles.
 
-`just agent ci` is the ordinary pull-request/main gate. It covers formatting,
-vetting, Go tests/build/module integrity, TypeScript formatting/lint/typecheck,
-conformance generation, generate-check behavior, and coverage without running
-release publishing simulations.
+`just agent ci` is the ordinary pull-request gate and remains available for
+manual validation. It covers formatting, vetting, Go tests/build/module
+integrity, TypeScript formatting/lint/typecheck, conformance generation,
+generate-check behavior, and coverage without running release publishing
+simulations. Pushes to `main` do not repeat this gate; `just release` runs the
+full release checks before atomically pushing `main` and the release tag.
 
 `just agent check` is the broader integrated gate. In addition to the ordinary
 quality checks it exercises release scripts and workflows, npm package/publish
