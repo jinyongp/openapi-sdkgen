@@ -1,6 +1,6 @@
 import { defineOwnDataProperty, isRecord } from "./objects.js";
 
-/** Host-owned encoder/decoder for a declared media type. Stream hooks override built-in framing. */
+/** Host-owned encoder/decoder for one complete declared media value. */
 export interface MediaCodec<Value> {
   readonly encode?: (
     value: Value,
@@ -25,33 +25,42 @@ export interface MediaCodec<Value> {
     value: string,
     context: { readonly contentType: string },
   ) => Value | Promise<Value>;
-  /** Encodes validated items for one declared streaming request body, overriding built-in framing. */
-  readonly encodeStream?: (
-    items: AsyncIterable<Value>,
-    context: { readonly contentType: string; readonly signal?: AbortSignal | undefined },
-  ) => ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>>;
-  /** Decodes one declared streaming response, overriding built-in framing without exposing the raw Fetch stream. */
-  readonly decodeStream?: (
-    reader: MediaStreamReader,
-    context: {
-      readonly contentType: string;
-      readonly maxFrameBytes: number;
-      readonly signal?: AbortSignal | undefined;
-    },
-  ) => AsyncIterable<Value>;
-  /** Decodes one inbound server stream for a declared custom media type. */
-  readonly decodeInboundStream?: (
-    reader: MediaStreamReader,
-    context: { readonly contentType: string; readonly maxFrameBytes: number },
-  ) => AsyncIterable<Value>;
 }
 
-/** Bounded, cancellable reader supplied to a custom response streaming codec. */
-export interface MediaStreamReader {
-  /** Reads at most `maxBytes`, which must not exceed the generated stream limit. */
+/** Bounded, cancellable byte reader supplied to custom stream protocols. */
+export interface StreamReader {
+  /** Reads at most `maxBytes`, which must not exceed the configured frame limit. */
   read(maxBytes: number): Promise<Uint8Array | null>;
-  /** Cancels the source response body and releases its reader lock. */
+  /** Cancels the source body and releases its reader lock. */
   cancel(reason?: unknown): Promise<void>;
+}
+
+/** Context shared by stream protocols and adapters. */
+export interface StreamContext {
+  readonly contentType: string;
+  readonly maxFrameBytes: number;
+  readonly signal?: AbortSignal | undefined;
+}
+
+/** Byte framing for one sequential media protocol. */
+export interface StreamProtocol<Frame> {
+  decode(reader: StreamReader, context: StreamContext): AsyncIterable<Frame>;
+  encode(
+    frames: AsyncIterable<Frame>,
+    context: StreamContext,
+  ): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>>;
+}
+
+/** Application-level transform layered over a stream protocol. */
+export interface StreamAdapter<Frame, Item> {
+  decode(frames: AsyncIterable<Frame>, context: StreamContext): AsyncIterable<Item>;
+  encode(items: AsyncIterable<Item>, context: StreamContext): AsyncIterable<Frame>;
+}
+
+/** Optional protocol and application adapter for one sequential media type. */
+export interface StreamCodec<Frame = unknown, Item = unknown> {
+  readonly protocol?: StreamProtocol<Frame>;
+  readonly adapter?: StreamAdapter<Frame, Item>;
 }
 
 /** Explicit capabilities a host transport grants to generated SDK code. */

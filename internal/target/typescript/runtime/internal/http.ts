@@ -8,7 +8,10 @@ import {
   transformWireValue,
   validateWireValue,
   type MediaCodec,
-  type MediaStreamReader,
+  type StreamCodec,
+  type StreamContext,
+  type StreamProtocol,
+  type StreamReader,
   type WireBodyDefinition,
   type WireEncodingDefinition,
   type WireMultipartHeaderDefinition,
@@ -78,6 +81,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
     throw new TypeError("fetch is unavailable; pass ClientOptions.fetch");
   }
   const codecs = normalizeCodecs(options.codecs);
+  const streamCodecs = normalizeStreamCodecs(options.streamCodecs);
 
   const execute = async <Output>(
     operation: OperationDefinition,
@@ -102,6 +106,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
           baseURL,
           options,
           codecs,
+          streamCodecs,
           operation,
           input,
           effectiveRequestOptions,
@@ -269,6 +274,7 @@ export function createRequest(options: ClientOptions): RequestFunction {
       baseURL,
       options,
       codecs,
+      streamCodecs,
       fetchImplementation,
       operation,
       input,
@@ -281,6 +287,7 @@ function createOperationStream<Item>(
   baseURL: string | undefined,
   options: ClientOptions,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodecs: ReadonlyMap<string, StreamCodec>,
   fetchImplementation: typeof globalThis.fetch,
   operation: OperationDefinition,
   input: unknown,
@@ -384,6 +391,7 @@ function createOperationStream<Item>(
       baseURL,
       options,
       codecs,
+      streamCodecs,
       fetchImplementation,
       operation,
       input,
@@ -481,6 +489,7 @@ async function* streamOperation<Item>(
   baseURL: string | undefined,
   options: ClientOptions,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodecs: ReadonlyMap<string, StreamCodec>,
   fetchImplementation: typeof globalThis.fetch,
   operation: OperationDefinition,
   input: unknown,
@@ -504,6 +513,7 @@ async function* streamOperation<Item>(
         baseURL,
         options,
         codecs,
+        streamCodecs,
         operation,
         input,
         effectiveRequestOptions,
@@ -569,6 +579,7 @@ async function* streamOperation<Item>(
     const maxFrameBytes = resolveMaxStreamItemBytes(
       requestOptions.maxStreamItemBytes ?? options.maxStreamItemBytes,
     );
+    const streamCodec = resolveStreamCodec(contentType, requestOptions.streamCodec, streamCodecs);
     for await (const value of decodeResponseStreamItems(
       response.body,
       contentType,
@@ -577,6 +588,7 @@ async function* streamOperation<Item>(
       codecs,
       definition.itemEncoding,
       maxFrameBytes,
+      streamCodec,
       abort.signal,
     )) {
       yield transformWireValue(
@@ -643,53 +655,98 @@ async function* decodeResponseStreamItems(
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   itemEncoding: WireEncodingDefinition | undefined,
   maxFrameBytes: number,
+  streamCodec: StreamCodec | undefined,
   signal?: AbortSignal,
 ): AsyncIterable<unknown> {
-  const codec = codecs.get(normalizeMediaType(contentType));
-  if (codec?.decodeStream !== undefined) {
-    const reader = createMediaStreamReader(body, maxFrameBytes, signal);
-    const stream = codec.decodeStream(reader, {
-      contentType,
-      maxFrameBytes,
-      ...(signal === undefined ? {} : { signal }),
-    });
-    const iterator = stream[Symbol.asyncIterator]();
-    try {
-      while (true) {
-        const next = await awaitAbortable(Promise.resolve(iterator.next()), signal);
-        if (next.done) return;
-        yield next.value;
-      }
-    } finally {
-      await reader.cancel(signal?.reason);
-      if (iterator.return !== undefined) {
-        const close = Promise.resolve(iterator.return());
-        if (signal?.aborted) void close.catch(() => undefined);
-        else await close.catch(() => undefined);
-      }
+  const context: StreamContext = {
+    contentType,
+    maxFrameBytes,
+    ...(signal === undefined ? {} : { signal }),
+  };
+  const frames =
+    streamCodec?.protocol === undefined
+      ? decodeBuiltInStreamFrames(
+          body,
+          contentType,
+          itemSchema,
+          schemas,
+          codecs,
+          itemEncoding,
+          maxFrameBytes,
+          signal,
+        )
+      : decodeCustomStreamProtocol(body, streamCodec.protocol, context);
+  const items =
+    streamCodec?.adapter === undefined ? frames : streamCodec.adapter.decode(frames, context);
+  const iterator = items[Symbol.asyncIterator]();
+  try {
+    while (true) {
+      const next = await awaitAbortable(Promise.resolve(iterator.next()), signal);
+      if (next.done) return;
+      yield next.value;
+    }
+  } finally {
+    if (iterator.return !== undefined) {
+      const close = Promise.resolve(iterator.return());
+      if (signal?.aborted) void close.catch(() => undefined);
+      else await close.catch(() => undefined);
     }
   }
-  if (isGeneratedStreamMediaType(contentType)) {
-    yield* decodeStreamItems(
-      body,
-      contentType,
-      itemSchema,
-      schemas,
-      codecs,
-      itemEncoding,
-      maxFrameBytes,
-      signal,
-    );
-    return;
+}
+
+async function* decodeBuiltInStreamFrames(
+  body: ReadableStream<Uint8Array>,
+  contentType: string,
+  itemSchema: WireSchema,
+  schemas: WireSchemas,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  itemEncoding: WireEncodingDefinition | undefined,
+  maxFrameBytes: number,
+  signal?: AbortSignal,
+): AsyncIterable<unknown> {
+  if (!isGeneratedStreamMediaType(contentType))
+    throw new TypeError(`missing stream protocol for ${contentType}`);
+  yield* decodeStreamItems(
+    body,
+    contentType,
+    itemSchema,
+    schemas,
+    codecs,
+    itemEncoding,
+    maxFrameBytes,
+    signal,
+  );
+}
+
+async function* decodeCustomStreamProtocol(
+  body: ReadableStream<Uint8Array>,
+  protocol: StreamProtocol<unknown>,
+  context: StreamContext,
+): AsyncIterable<unknown> {
+  const reader = createMediaStreamReader(body, context.maxFrameBytes, context.signal);
+  const frames = protocol.decode(reader, context);
+  const iterator = frames[Symbol.asyncIterator]();
+  try {
+    while (true) {
+      const next = await awaitAbortable(Promise.resolve(iterator.next()), context.signal);
+      if (next.done) return;
+      yield next.value;
+    }
+  } finally {
+    await reader.cancel(context.signal?.reason);
+    if (iterator.return !== undefined) {
+      const close = Promise.resolve(iterator.return());
+      if (context.signal?.aborted) void close.catch(() => undefined);
+      else await close.catch(() => undefined);
+    }
   }
-  throw new TypeError(`missing decodeStream codec for ${contentType}`);
 }
 
 function createMediaStreamReader(
   body: ReadableStream<Uint8Array>,
   maxFrameBytes: number,
   signal?: AbortSignal,
-): MediaStreamReader {
+): StreamReader {
   if (!Number.isSafeInteger(maxFrameBytes) || maxFrameBytes <= 0)
     throw new TypeError("maxStreamItemBytes must be a positive safe integer");
   const reader = body.getReader();
@@ -1779,13 +1836,14 @@ function encodeRequest(
   baseURL: string | undefined,
   client: ClientOptions,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodecs: ReadonlyMap<string, StreamCodec>,
   operation: OperationDefinition,
   input: unknown,
   options: RequestOptions,
 ): EncodedRequest | Promise<EncodedRequest> {
   const pending = hasCustomParameterInput(operation, input)
-    ? encodeRequestAsync(baseURL, client, codecs, operation, input, options)
-    : encodeRequestSynchronous(baseURL, client, codecs, operation, input, options);
+    ? encodeRequestAsync(baseURL, client, codecs, streamCodecs, operation, input, options)
+    : encodeRequestSynchronous(baseURL, client, codecs, streamCodecs, operation, input, options);
   const finish = (encoded: EncodedRequest): EncodedRequest => {
     let result =
       options.authorization !== undefined ||
@@ -1886,6 +1944,7 @@ function encodeRequestSynchronous(
   baseURL: string | undefined,
   client: ClientOptions,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodecs: ReadonlyMap<string, StreamCodec>,
   operation: OperationDefinition,
   input: unknown,
   options: RequestOptions,
@@ -2018,61 +2077,25 @@ function encodeRequestSynchronous(
     definition.schemaDeclared !== true
   )
     throw new TypeError("streaming request body must be a StreamSource");
-  const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    streamCodec !== undefined
-  ) {
-    const stream = encodeCustomStreamingRequestBody(
+  const selectedStreamCodec = resolveStreamCodec(contentType, options.streamCodec, streamCodecs);
+  const finishStream = (encoded: EncodedStreamRequestBody): EncodedRequest => {
+    headers.set("Content-Type", encoded.contentType);
+    return { url: url.href, headers, body: encoded.body };
+  };
+  if (definition?.itemSchema !== undefined && streamSource !== undefined) {
+    const stream = encodeIncrementalStreamRequestBody(
       contentType,
       streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
-      codecs,
+      selectedStreamCodec,
+      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
       options.signal,
-    );
-    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
-      headers.set("Content-Type", contentType);
-      return { url: url.href, headers, body };
-    };
-    return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
-  }
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    normalizeMediaType(contentType).startsWith("multipart/")
-  ) {
-    const encoded = encodeStreamingMultipartBody(
-      contentType,
-      streamSource,
-      definition.itemSchema,
-      operation.inputSchemas ?? {},
       definition.itemEncoding,
       options.multipartHeaders,
       options.multipartContentTypes,
       codecs,
     );
-    headers.set("Content-Type", encoded.contentType);
-    return { url: url.href, headers, body: encoded.body };
-  }
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    !isGeneratedStreamMediaType(contentType)
-  ) {
-    const stream = encodeCustomStreamingRequestBody(
-      contentType,
-      streamSource,
-      definition.itemSchema,
-      operation.inputSchemas ?? {},
-      codecs,
-      options.signal,
-    );
-    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
-      headers.set("Content-Type", contentType);
-      return { url: url.href, headers, body };
-    };
     return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
   }
   if (
@@ -2087,33 +2110,26 @@ function encodeRequestSynchronous(
       bodyValue,
       definition.schema,
       operation.inputSchemas ?? {},
-      codecs,
+      selectedStreamCodec,
+      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
       options.signal,
+      definition.itemEncoding,
+      options.multipartHeaders,
+      options.multipartContentTypes,
+      codecs,
     );
-    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
-      headers.set("Content-Type", contentType);
-      return { url: url.href, headers, body };
-    };
     return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
   }
-  const body =
-    definition?.itemSchema !== undefined && streamSource !== undefined
-      ? encodeSequentialRequestBody(
-          contentType,
-          streamSource,
-          definition.itemSchema,
-          operation.inputSchemas ?? {},
-        )
-      : encodeRequestBody(
-          contentType,
-          encodeRequestWireValue(operation, contentType, bodyValue),
-          codecs,
-          definition?.schema,
-          operation.inputSchemas ?? {},
-          definition,
-          options.multipartHeaders,
-          options.multipartContentTypes,
-        );
+  const body = encodeRequestBody(
+    contentType,
+    encodeRequestWireValue(operation, contentType, bodyValue),
+    codecs,
+    definition?.schema,
+    operation.inputSchemas ?? {},
+    definition,
+    options.multipartHeaders,
+    options.multipartContentTypes,
+  );
   const finish = (resolved: BodyInit | ReadableStream<Uint8Array>): EncodedRequest => {
     if (!(resolved instanceof FormData))
       headers.set(
@@ -2131,6 +2147,7 @@ async function encodeRequestAsync(
   baseURL: string | undefined,
   client: ClientOptions,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodecs: ReadonlyMap<string, StreamCodec>,
   operation: OperationDefinition,
   input: unknown,
   options: RequestOptions,
@@ -2275,56 +2292,26 @@ async function encodeRequestAsync(
     definition.schemaDeclared !== true
   )
     throw new TypeError("streaming request body must be a StreamSource");
-  const streamCodec = codecs.get(normalizeMediaType(contentType))?.encodeStream;
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    streamCodec !== undefined
-  ) {
-    const stream = await encodeCustomStreamingRequestBody(
+  const selectedStreamCodec = resolveStreamCodec(contentType, options.streamCodec, streamCodecs);
+  const finishStream = (encoded: EncodedStreamRequestBody): EncodedRequest => {
+    headers.set("Content-Type", encoded.contentType);
+    return { url: url.href, headers, body: encoded.body };
+  };
+  if (definition?.itemSchema !== undefined && streamSource !== undefined) {
+    const stream = await encodeIncrementalStreamRequestBody(
       contentType,
       streamSource,
       definition.itemSchema,
       operation.inputSchemas ?? {},
-      codecs,
+      selectedStreamCodec,
+      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
       options.signal,
-    );
-    headers.set("Content-Type", contentType);
-    return { url: url.href, headers, body: stream };
-  }
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    normalizeMediaType(contentType).startsWith("multipart/")
-  ) {
-    const encoded = encodeStreamingMultipartBody(
-      contentType,
-      streamSource,
-      definition.itemSchema,
-      operation.inputSchemas ?? {},
       definition.itemEncoding,
       options.multipartHeaders,
       options.multipartContentTypes,
       codecs,
     );
-    headers.set("Content-Type", encoded.contentType);
-    return { url: url.href, headers, body: encoded.body };
-  }
-  if (
-    definition?.itemSchema !== undefined &&
-    streamSource !== undefined &&
-    !isGeneratedStreamMediaType(contentType)
-  ) {
-    const stream = await encodeCustomStreamingRequestBody(
-      contentType,
-      streamSource,
-      definition.itemSchema,
-      operation.inputSchemas ?? {},
-      codecs,
-      options.signal,
-    );
-    headers.set("Content-Type", contentType);
-    return { url: url.href, headers, body: stream };
+    return finishStream(stream);
   }
   if (
     streamSource === undefined &&
@@ -2333,38 +2320,31 @@ async function encodeRequestAsync(
     (definition.itemSchema !== undefined ||
       isSequentialStreamMediaType(normalizeMediaType(contentType)))
   ) {
-    const stream = encodeCompleteSequentialRequestBody(
+    const stream = await encodeCompleteSequentialRequestBody(
       contentType,
       bodyValue,
       definition.schema,
       operation.inputSchemas ?? {},
-      codecs,
+      selectedStreamCodec,
+      resolveMaxStreamItemBytes(options.maxStreamItemBytes ?? client.maxStreamItemBytes),
       options.signal,
+      definition.itemEncoding,
+      options.multipartHeaders,
+      options.multipartContentTypes,
+      codecs,
     );
-    const finishStream = (body: ReadableStream<Uint8Array>): EncodedRequest => {
-      headers.set("Content-Type", contentType);
-      return { url: url.href, headers, body };
-    };
-    return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
+    return finishStream(stream);
   }
-  const body =
-    definition?.itemSchema !== undefined && streamSource !== undefined
-      ? encodeSequentialRequestBody(
-          contentType,
-          streamSource,
-          definition.itemSchema,
-          operation.inputSchemas ?? {},
-        )
-      : encodeRequestBody(
-          contentType,
-          encodeRequestWireValue(operation, contentType, bodyValue),
-          codecs,
-          definition?.schema,
-          operation.inputSchemas ?? {},
-          definition,
-          options.multipartHeaders,
-          options.multipartContentTypes,
-        );
+  const body = encodeRequestBody(
+    contentType,
+    encodeRequestWireValue(operation, contentType, bodyValue),
+    codecs,
+    definition?.schema,
+    operation.inputSchemas ?? {},
+    definition,
+    options.multipartHeaders,
+    options.multipartContentTypes,
+  );
   const finish = (resolved: BodyInit | ReadableStream<Uint8Array>): EncodedRequest => {
     if (!(resolved instanceof FormData)) {
       const resolvedContentType =
@@ -2645,35 +2625,44 @@ function sseRequestStringField(
   return value[field];
 }
 
-function encodeCustomStreamingRequestBody(
+interface EncodedStreamRequestBody {
+  readonly body: ReadableStream<Uint8Array>;
+  readonly contentType: string;
+}
+
+function encodeIncrementalStreamRequestBody(
   contentType: string,
   values: AsyncIterable<unknown>,
   itemSchema: WireSchema,
   schemas: WireSchemas,
-  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodec: StreamCodec | undefined,
+  maxFrameBytes: number,
   signal: AbortSignal | undefined,
-): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
-  return encodeCustomStreamingRequestWireBody(
-    contentType,
-    transformStreamingRequestItems(values, itemSchema, schemas),
-    codecs,
-    signal,
-  );
-}
-
-function encodeCustomStreamingRequestWireBody(
-  contentType: string,
-  values: AsyncIterable<unknown>,
+  itemEncoding: WireEncodingDefinition | undefined,
+  suppliedHeaders: Readonly<Record<string, HeadersInit>> | undefined,
+  suppliedContentTypes: Readonly<Record<string, string>> | undefined,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
-  signal: AbortSignal | undefined,
-): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
-  const codec = codecs.get(normalizeMediaType(contentType));
-  if (codec?.encodeStream === undefined)
-    throw new TypeError(`missing encodeStream codec for ${contentType}`);
-  return codec.encodeStream(values, {
+): EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> {
+  const context: StreamContext = {
     contentType,
+    maxFrameBytes,
     ...(signal === undefined ? {} : { signal }),
-  });
+  };
+  const items = transformStreamingRequestItems(values, itemSchema, schemas);
+  const frames =
+    streamCodec?.adapter === undefined ? items : streamCodec.adapter.encode(items, context);
+  return encodeStreamProtocolFrames(
+    contentType,
+    frames,
+    streamCodec,
+    context,
+    itemSchema,
+    schemas,
+    itemEncoding,
+    suppliedHeaders,
+    suppliedContentTypes,
+    codecs,
+  );
 }
 
 function encodeCompleteSequentialRequestBody(
@@ -2681,19 +2670,74 @@ function encodeCompleteSequentialRequestBody(
   value: unknown,
   schema: WireSchema,
   schemas: WireSchemas,
-  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+  streamCodec: StreamCodec | undefined,
+  maxFrameBytes: number,
   signal: AbortSignal | undefined,
-): ReadableStream<Uint8Array> | Promise<ReadableStream<Uint8Array>> {
+  itemEncoding: WireEncodingDefinition | undefined,
+  suppliedHeaders: Readonly<Record<string, HeadersInit>> | undefined,
+  suppliedContentTypes: Readonly<Record<string, string>> | undefined,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+): EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> {
   const transformed = transformWireValue(value, schema, schemas, "encode");
   if (!Array.isArray(transformed))
     throw new TypeError("complete sequential request body must be an array value");
-  const values = streamArrayValues(transformed);
-  const codec = codecs.get(normalizeMediaType(contentType));
-  if (codec?.encodeStream !== undefined)
-    return encodeCustomStreamingRequestWireBody(contentType, values, codecs, signal);
-  if (isSequentialStreamMediaType(normalizeMediaType(contentType)))
-    return encodeSequentialRequestWireBody(contentType, values);
-  throw new TypeError(`missing encodeStream codec for ${contentType}`);
+  const context: StreamContext = {
+    contentType,
+    maxFrameBytes,
+    ...(signal === undefined ? {} : { signal }),
+  };
+  const items = streamArrayValues(transformed);
+  const frames =
+    streamCodec?.adapter === undefined ? items : streamCodec.adapter.encode(items, context);
+  return encodeStreamProtocolFrames(
+    contentType,
+    frames,
+    streamCodec,
+    context,
+    schema.items ?? {},
+    schemas,
+    itemEncoding,
+    suppliedHeaders,
+    suppliedContentTypes,
+    codecs,
+  );
+}
+
+function encodeStreamProtocolFrames(
+  contentType: string,
+  frames: AsyncIterable<unknown>,
+  streamCodec: StreamCodec | undefined,
+  context: StreamContext,
+  frameSchema: WireSchema,
+  schemas: WireSchemas,
+  itemEncoding: WireEncodingDefinition | undefined,
+  suppliedHeaders: Readonly<Record<string, HeadersInit>> | undefined,
+  suppliedContentTypes: Readonly<Record<string, string>> | undefined,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+): EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> {
+  if (streamCodec?.protocol !== undefined) {
+    const encoded = streamCodec.protocol.encode(frames, context);
+    const finish = (body: ReadableStream<Uint8Array>): EncodedStreamRequestBody => ({
+      body,
+      contentType,
+    });
+    return isPromise(encoded) ? encoded.then(finish) : finish(encoded);
+  }
+  const mediaType = normalizeMediaType(contentType);
+  if (mediaType.startsWith("multipart/"))
+    return encodeStreamingMultipartBody(
+      contentType,
+      frames,
+      frameSchema,
+      schemas,
+      itemEncoding,
+      suppliedHeaders,
+      suppliedContentTypes,
+      codecs,
+    );
+  if (isSequentialStreamMediaType(mediaType))
+    return { body: encodeSequentialRequestWireBody(contentType, frames), contentType };
+  throw new TypeError(`missing stream protocol for ${contentType}`);
 }
 
 async function* streamArrayValues(values: readonly unknown[]): AsyncIterable<unknown> {
@@ -2762,7 +2806,7 @@ function encodeStreamingMultipartBody(
           controller.close();
           return;
         }
-        const value = transformWireValue(next.value, itemSchema, schemas, "encode");
+        const value = next.value;
         const selectedContentType = resolveMultipartContentType(
           itemEncoding?.contentType,
           suppliedContentTypes?.[String(index)],
@@ -4072,6 +4116,27 @@ function normalizeCodecs(
     result.set(normalized, codec);
   }
   return result;
+}
+
+function normalizeStreamCodecs(
+  codecs: Readonly<Record<string, StreamCodec>> | undefined,
+): ReadonlyMap<string, StreamCodec> {
+  const result = new Map<string, StreamCodec>();
+  for (const [contentType, codec] of Object.entries(codecs ?? {})) {
+    const normalized = normalizeMediaType(contentType);
+    if (normalized === "" || result.has(normalized))
+      throw new TypeError(`duplicate or invalid stream codec ${contentType}`);
+    result.set(normalized, codec);
+  }
+  return result;
+}
+
+function resolveStreamCodec(
+  contentType: string,
+  override: StreamCodec | undefined,
+  defaults: ReadonlyMap<string, StreamCodec>,
+): StreamCodec | undefined {
+  return override ?? defaults.get(normalizeMediaType(contentType));
 }
 
 function normalizeMediaType(contentType: string): string {

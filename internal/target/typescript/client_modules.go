@@ -170,7 +170,7 @@ func emitClientIndex(plan *semanticModulePlan) ([]byte, error) {
 }
 
 func publicRuntimeExportSource() []byte {
-	return []byte(`export type { MediaCodec, MediaStreamReader } from "./runtime/codecs.js"
+	return []byte(`export type { MediaCodec, StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamReader } from "./runtime/codecs.js"
 export type { ClientOptions, SecurityCredentialContext, SecurityCredentialProvider } from "./runtime/configuration.js"
 export type { TransportError } from "./runtime/errors.js"
 export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/links.js"

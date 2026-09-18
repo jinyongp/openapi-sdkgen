@@ -449,8 +449,8 @@ func inboundResponseHeaderValuesType(document *ir.Document, response map[string]
 
 func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byte, error) {
 	var output bytes.Buffer
-	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, InboundRequestError, normalizeInboundMediaCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
-	output.WriteString("import type { MediaCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
+	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
+	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
 	if len(callbacks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
@@ -497,7 +497,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreeHandlers)
 	output.WriteString("\n  readonly componentCallbacks?: ")
 	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreeHandlers)
-	output.WriteString("\n}\n\n/** Optional host authentication, media codecs, and host-bound path parameters for generated Callback endpoints. */\nexport interface CallbackHandlerOptions {\n  readonly authenticate?: Authenticate | undefined\n  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined\n  readonly maxStreamItemBytes?: number | undefined\n  readonly pathParams?: {\n    readonly routeCallbacks?: ")
+	output.WriteString("\n}\n\n/** Optional host authentication, media codecs, and host-bound path parameters for generated Callback endpoints. */\nexport interface CallbackHandlerOptions {\n  readonly authenticate?: Authenticate | undefined\n  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined\n  readonly streamCodecs?: Readonly<Record<string, StreamCodec>> | undefined\n  readonly maxStreamItemBytes?: number | undefined\n  readonly pathParams?: {\n    readonly routeCallbacks?: ")
 	emitCallbackTree(&output, routeTree, nil, "RouteCallbacks", callbackTreePathParams)
 	output.WriteString("\n    readonly callbacks?: ")
 	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreePathParams)
@@ -509,7 +509,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreeEndpoints)
 	output.WriteString("\n  readonly componentCallbacks: ")
 	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreeEndpoints)
-	output.WriteString("\n}\n\n/**\n * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.\n * The host chooses each concrete route and mounts the matching endpoint.\n */\nexport function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n")
+	output.WriteString("\n}\n\n/**\n * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.\n * The host chooses each concrete route and mounts the matching endpoint.\n */\nexport function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs = normalizeInboundStreamCodecs(options.streamCodecs)\n")
 	for _, callback := range callbacks {
 		definition := callbackDefinitionSymbol(callback)
 		routeHandler := callbackAccess("handlers."+callbackRootField(callback, true), callback, true)
@@ -534,7 +534,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 		output.WriteString("      if (requiresInboundAuthentication(context.security)) {\n        if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n        try { const denied = await options.authenticate(context); if (denied instanceof Response) return denied }\n        catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n      }\n")
 		if callback.hasBody {
 			output.WriteString("      try {\n")
-			fmt.Fprintf(&output, "        const body = await decodeInboundBody(request, { required: %t, plans: %s, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, maxStreamItemBytes: options.maxStreamItemBytes }) as %s\n", callback.bodyRequired, callback.bodyPlans, callback.bodyType)
+			fmt.Fprintf(&output, "        const body = await decodeInboundBody(request, { required: %t, plans: %s, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxStreamItemBytes: options.maxStreamItemBytes }) as %s\n", callback.bodyRequired, callback.bodyPlans, callback.bodyType)
 			fmt.Fprintf(&output, "        return await responseFromHandler(await handler({ ...context, body }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", definition)
 			output.WriteString("      } catch (error) {\n        if (error instanceof InboundRequestError) return error.response\n        return new Response(\"Internal Server Error\", { status: 500 })\n      }\n")
 		} else {
@@ -899,8 +899,8 @@ func emitInboundSecuritySchemes(output *bytes.Buffer, document *ir.Document) err
 
 func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, error) {
 	var output bytes.Buffer
-	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, matchInboundRoute, InboundRequestError, normalizeInboundMediaCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
-	output.WriteString("import type { MediaCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
+	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, matchInboundRoute, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
+	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
 	if len(webhooks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
@@ -951,7 +951,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	output.WriteString("/** Concrete host paths keyed by generated Webhook handler name. */\n")
 	output.WriteString("export type WebhookRoutes = Readonly<Partial<Record<keyof WebhookHandlers, string>>>\n\n")
 	output.WriteString("/** Options for a Fetch-native generated Webhook router. */\n")
-	output.WriteString("export interface WebhookRouterOptions {\n  readonly routes: WebhookRoutes\n  readonly authenticate?: Authenticate | undefined\n  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined\n  readonly maxStreamItemBytes?: number | undefined\n}\n\n")
+	output.WriteString("export interface WebhookRouterOptions {\n  readonly routes: WebhookRoutes\n  readonly authenticate?: Authenticate | undefined\n  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined\n  readonly streamCodecs?: Readonly<Record<string, StreamCodec>> | undefined\n  readonly maxStreamItemBytes?: number | undefined\n}\n\n")
 	output.WriteString("/** Fetch-compatible generated inbound Webhook router. */\n")
 	output.WriteString("export interface WebhookRouter {\n  fetch(request: Request): Promise<Response>\n}\n\n")
 	for _, webhook := range webhooks {
@@ -966,7 +966,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	}
 	output.WriteString("/**\n * Creates a Fetch-native router for the generated root Webhook Objects.\n * Webhook names are OpenAPI identifiers, so the host supplies their concrete paths.\n * Authentication policy stays in the host callback; generated code never verifies credentials.\n */\n")
 	output.WriteString("export function createWebhookRouter(handlers: WebhookHandlers, options: WebhookRouterOptions): WebhookRouter {\n")
-	output.WriteString("  const routes = options.routes\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const registrations = new Set<string>()\n")
+	output.WriteString("  const routes = options.routes\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs = normalizeInboundStreamCodecs(options.streamCodecs)\n  const registrations = new Set<string>()\n")
 	for _, webhook := range webhooks {
 		fmt.Fprintf(&output, "  if (handlers[%s]?.[%s] !== undefined) {\n", quoteTS(webhook.name), quoteTS(webhook.method))
 		fmt.Fprintf(&output, "    const path = routes[%s]\n", quoteTS(webhook.name))
@@ -985,7 +985,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 		output.WriteString("        if (requiresInboundAuthentication(context.security)) {\n          if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n          try { const denied = await options.authenticate(context); if (denied instanceof Response) return denied }\n          catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n        }\n")
 		if webhook.hasBody {
 			output.WriteString("        try {\n")
-			fmt.Fprintf(&output, "          const body = await decodeInboundBody(request, { required: %s.requestBodyRequired, plans: %s.requestBodyPlans, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, maxStreamItemBytes: options.maxStreamItemBytes }) as %s\n", symbol, symbol, webhook.bodyType)
+			fmt.Fprintf(&output, "          const body = await decodeInboundBody(request, { required: %s.requestBodyRequired, plans: %s.requestBodyPlans, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxStreamItemBytes: options.maxStreamItemBytes }) as %s\n", symbol, symbol, webhook.bodyType)
 			fmt.Fprintf(&output, "          return await responseFromHandler(await handler({ ...context, body }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", symbol)
 			output.WriteString("        } catch (error) {\n          if (error instanceof InboundRequestError) return error.response\n          return new Response(\"Internal Server Error\", { status: 500 })\n        }\n")
 		} else {

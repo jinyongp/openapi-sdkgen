@@ -5,7 +5,10 @@ import {
   encodeXML,
   validateWireValue,
   type MediaCodec,
-  type MediaStreamReader,
+  type StreamCodec,
+  type StreamContext,
+  type StreamProtocol,
+  type StreamReader,
   type WireEncodingDefinition,
   type WireHeaderDefinition,
   type WireProperty,
@@ -1351,9 +1354,11 @@ export interface InboundBodyOptions {
   readonly wireSchema?: WireSchema | undefined;
   /** Generated component mappings used by wireSchema. */
   readonly wireSchemas?: WireSchemas | undefined;
-  /** Host codecs for declared custom inbound media types. */
+  /** Host codecs for declared custom complete inbound media values. */
   readonly codecs?: ReadonlyMap<string, MediaCodec<unknown>> | undefined;
-  /** Maximum byte count a custom inbound stream codec may request in one read. */
+  /** Stream protocol/adapter overrides for inbound sequential media. */
+  readonly streamCodecs?: ReadonlyMap<string, StreamCodec> | undefined;
+  /** Maximum byte count a custom inbound stream protocol may request in one read. */
   readonly maxStreamItemBytes?: number | undefined;
 }
 
@@ -1421,19 +1426,12 @@ async function decodeSelectedInboundBody(
         throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
       return emptyInboundStream();
     }
-    if (!isGeneratedInboundStreamMediaType(contentType)) {
-      return decodeInboundCustomStream(request.body, contentType, options);
-    }
-    return decodeInboundStream(
+    return decodeInboundStreamBody(
       request.body,
       rawContentType,
-      options.schema,
-      options.schemas,
-      options.required,
-      options.itemContentType,
-      options.wireSchema,
-      options.wireSchemas,
-      resolveInboundStreamItemBytes(options.maxStreamItemBytes),
+      contentType,
+      request.signal,
+      options,
     );
   }
   if (!isGeneratedInboundMediaType(contentType, options.schema)) {
@@ -1624,19 +1622,54 @@ function resolveInboundStreamItemBytes(value: number | undefined): number {
   return resolved;
 }
 
-async function* decodeInboundCustomStream(
-  body: ReadableStream<Uint8Array>,
+export function normalizeInboundStreamCodecs(
+  codecs: Readonly<Record<string, StreamCodec>> | undefined,
+): ReadonlyMap<string, StreamCodec> {
+  const result = new Map<string, StreamCodec>();
+  for (const [mediaType, codec] of Object.entries(codecs ?? {})) {
+    const normalized = normalizeInboundMediaType(mediaType);
+    if (normalized === "" || normalized.includes("/ ") || !normalized.includes("/"))
+      throw new TypeError("invalid inbound stream codec media type " + mediaType);
+    if (result.has(normalized))
+      throw new TypeError("duplicate inbound stream codec media type " + mediaType);
+    result.set(normalized, codec);
+  }
+  return result;
+}
+
+function inboundStreamCodec(
+  codecs: ReadonlyMap<string, StreamCodec> | undefined,
   contentType: string,
+): StreamCodec | undefined {
+  return codecs?.get(normalizeInboundMediaType(contentType));
+}
+
+async function* decodeInboundStreamBody(
+  body: ReadableStream<Uint8Array>,
+  rawContentType: string,
+  contentType: string,
+  signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
 ): AsyncIterable<unknown> {
-  const codec = inboundMediaCodec(options.codecs, contentType);
-  if (codec?.decodeInboundStream === undefined)
-    throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
   const maxFrameBytes = resolveInboundStreamItemBytes(options.maxStreamItemBytes);
-  const reader = createInboundMediaStreamReader(body, maxFrameBytes);
+  const context: StreamContext = { contentType: rawContentType, maxFrameBytes, signal };
+  const codec = inboundStreamCodec(options.streamCodecs, contentType);
+  const frames =
+    codec?.protocol === undefined
+      ? decodeInboundBuiltInStreamFrames(
+          body,
+          rawContentType,
+          contentType,
+          options.schema,
+          options.schemas,
+          options.itemContentType,
+          maxFrameBytes,
+        )
+      : decodeInboundCustomProtocol(body, codec.protocol, context);
+  const items = codec?.adapter === undefined ? frames : codec.adapter.decode(frames, context);
   let count = 0;
   try {
-    for await (const value of codec.decodeInboundStream(reader, { contentType, maxFrameBytes })) {
+    for await (const value of items) {
       validateInboundWireValue(value, options.wireSchema, options.wireSchemas, "stream item");
       count++;
       yield decodeInboundWireValue(value, options.wireSchema, options.wireSchemas);
@@ -1646,15 +1679,33 @@ async function* decodeInboundCustomStream(
   } catch (error) {
     if (error instanceof InboundRequestError) throw error;
     throw new InboundRequestError(new Response("Invalid stream item", { status: 400 }));
+  }
+}
+
+async function* decodeInboundCustomProtocol(
+  body: ReadableStream<Uint8Array>,
+  protocol: StreamProtocol<unknown>,
+  context: StreamContext,
+): AsyncIterable<unknown> {
+  const reader = createInboundMediaStreamReader(body, context.maxFrameBytes);
+  const frames = protocol.decode(reader, context);
+  const iterator = frames[Symbol.asyncIterator]();
+  try {
+    while (true) {
+      const next = await iterator.next();
+      if (next.done) return;
+      yield next.value;
+    }
   } finally {
-    await reader.cancel();
+    await reader.cancel(context.signal?.reason);
+    await iterator.return?.().catch(() => undefined);
   }
 }
 
 function createInboundMediaStreamReader(
   body: ReadableStream<Uint8Array>,
   maximum: number,
-): MediaStreamReader {
+): StreamReader {
   const reader = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
   let done = false;
@@ -1693,78 +1744,64 @@ async function* emptyInboundStream(): AsyncIterable<unknown> {
   return;
 }
 
-async function* decodeInboundStream(
+async function* decodeInboundBuiltInStreamFrames(
   body: ReadableStream<Uint8Array>,
+  rawContentType: string,
   contentType: string,
   schema: InboundSchema | undefined,
   schemas: InboundSchemas,
-  required: boolean,
   itemContentType: string | undefined,
-  wireSchema: WireSchema | undefined,
-  wireSchemas: WireSchemas | undefined,
   maxFrameBytes: number,
 ): AsyncIterable<unknown> {
-  if (contentType.toLowerCase().startsWith("multipart/")) {
+  if (!isGeneratedInboundStreamMediaType(contentType))
+    throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
+  if (contentType.startsWith("multipart/")) {
     yield* decodeInboundMultipartStream(
       body,
-      contentType,
+      rawContentType,
       schema,
       schemas,
-      required,
+      false,
       itemContentType,
-      wireSchema,
-      wireSchemas,
+      undefined,
+      undefined,
       maxFrameBytes,
     );
     return;
   }
+  if (contentType.includes("event-stream")) {
+    yield* decodeInboundSSEStreamFrames(body, maxFrameBytes);
+    return;
+  }
+
   const reader = body.getReader();
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let pending = "";
-  let count = 0;
   const assertFrameBytes = (source: string): void => {
     if (encoder.encode(source).byteLength > maxFrameBytes)
       throw new InboundRequestError(
         new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
       );
   };
-  const emit = (source: string, frameSource = source): unknown => {
+  const parse = (source: string, frameSource = source): unknown => {
     assertFrameBytes(frameSource);
-    let value: unknown;
     try {
-      value = JSON.parse(source);
+      return JSON.parse(source);
     } catch {
       throw new InboundRequestError(new Response("Invalid stream item", { status: 400 }));
     }
-    validateInboundWireValue(value, wireSchema, wireSchemas, "stream item");
-    count++;
-    return decodeInboundWireValue(value, wireSchema, wireSchemas);
   };
   try {
     while (true) {
       const next = await reader.read();
       pending += decoder.decode(next.value, { stream: !next.done });
-      if (contentType.includes("event-stream")) {
-        let match: RegExpMatchArray | null;
-        while ((match = pending.match(/(?:\r\n|\r|\n){2}/)) !== null) {
-          const boundary = match.index ?? 0;
-          const event = pending.slice(0, boundary);
-          pending = pending.slice(boundary + match[0].length);
-          assertFrameBytes(event);
-          const data = event
-            .split(/\r\n|\r|\n/)
-            .filter((line) => line.startsWith("data:"))
-            .map((line) => line.slice(5).trimStart())
-            .join("\n");
-          if (data !== "") yield emit(data, event);
-        }
-      } else if (contentType.includes("json-seq")) {
+      if (contentType.includes("json-seq")) {
         const records = pending.split("\u001e");
         pending = records.pop() ?? "";
         for (const record of records) {
           assertFrameBytes(record);
-          if (record.trim() !== "") yield emit(record.trim(), record);
+          if (record.trim() !== "") yield parse(record.trim(), record);
         }
       } else {
         let newline: number;
@@ -1773,16 +1810,13 @@ async function* decodeInboundStream(
           pending = pending.slice(newline + 1);
           assertFrameBytes(rawLine);
           const line = rawLine.replace(/\r$/, "");
-          if (line.trim() !== "") yield emit(line, rawLine);
+          if (line.trim() !== "") yield parse(line, rawLine);
         }
       }
       assertFrameBytes(pending);
       if (next.done) break;
     }
-    if (!contentType.includes("event-stream") && pending.trim() !== "")
-      yield emit(pending.trim().replace(/^\u001e/, ""), pending);
-    if (required && count === 0)
-      throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
+    if (pending.trim() !== "") yield parse(pending.trim().replace(/^\u001e/, ""), pending);
   } finally {
     try {
       await reader.cancel();
@@ -1790,6 +1824,131 @@ async function* decodeInboundStream(
       reader.releaseLock();
     }
   }
+}
+
+interface InboundSSELine {
+  readonly line: string;
+  readonly terminator: string;
+  readonly rest: string;
+}
+
+async function* decodeInboundSSEStreamFrames(
+  body: ReadableStream<Uint8Array>,
+  maxFrameBytes: number,
+): AsyncIterable<unknown> {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const reader = body.getReader();
+  let pending = "";
+  let pendingBytes = 0;
+  let frameBytes = 0;
+  let firstText = true;
+  let data = "";
+  let hasData = false;
+  let event: string | undefined;
+  let id: string | undefined;
+  let retry: number | undefined;
+
+  const assertFrameBytes = (byteLength: number): void => {
+    if (byteLength > maxFrameBytes)
+      throw new InboundRequestError(
+        new Response("Stream item exceeds maxStreamItemBytes", { status: 400 }),
+      );
+  };
+  const reset = (): void => {
+    data = "";
+    hasData = false;
+    event = undefined;
+    id = undefined;
+    retry = undefined;
+  };
+  const dispatch = (): unknown | undefined => {
+    if (!hasData) {
+      reset();
+      return undefined;
+    }
+    const result: { data: string; event?: string; id?: string; retry?: number } = {
+      data: data.slice(0, -1),
+    };
+    if (event !== undefined) result.event = event;
+    if (id !== undefined) result.id = id;
+    if (retry !== undefined) result.retry = retry;
+    reset();
+    return result;
+  };
+  const processLine = (line: string): void => {
+    if (line.startsWith(":")) return;
+    const separator = line.indexOf(":");
+    const field = separator < 0 ? line : line.slice(0, separator);
+    let value = separator < 0 ? "" : line.slice(separator + 1);
+    if (value.startsWith(" ")) value = value.slice(1);
+    if (field === "data") {
+      data += value + "\n";
+      hasData = true;
+    } else if (field === "event") {
+      event = value;
+    } else if (field === "id") {
+      if (!value.includes("\u0000")) id = value;
+    } else if (field === "retry" && /^[0-9]+$/.test(value)) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) retry = parsed;
+    }
+  };
+
+  try {
+    while (true) {
+      const next = await reader.read();
+      let decoded = decoder.decode(next.value, { stream: !next.done });
+      if (firstText && decoded !== "") {
+        if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
+        firstText = false;
+      }
+      pending += decoded;
+      pendingBytes += encoder.encode(decoded).byteLength;
+      while (true) {
+        const parsed = takeInboundSSELine(pending, next.done);
+        if (parsed === undefined) break;
+        const lineBytes = encoder.encode(parsed.line + parsed.terminator).byteLength;
+        pending = parsed.rest;
+        pendingBytes -= lineBytes;
+        if (parsed.line === "") {
+          const frame = dispatch();
+          frameBytes = 0;
+          if (frame !== undefined) yield frame;
+          continue;
+        }
+        frameBytes += lineBytes;
+        assertFrameBytes(frameBytes);
+        processLine(parsed.line);
+      }
+      assertFrameBytes(frameBytes + pendingBytes);
+      if (next.done) break;
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
+function takeInboundSSELine(source: string, eof: boolean): InboundSSELine | undefined {
+  for (let index = 0; index < source.length; index++) {
+    const code = source.charCodeAt(index);
+    if (code === 10)
+      return { line: source.slice(0, index), terminator: "\n", rest: source.slice(index + 1) };
+    if (code !== 13) continue;
+    if (index + 1 === source.length && !eof) return undefined;
+    if (source.charCodeAt(index + 1) === 10)
+      return {
+        line: source.slice(0, index),
+        terminator: "\r\n",
+        rest: source.slice(index + 2),
+      };
+    return { line: source.slice(0, index), terminator: "\r", rest: source.slice(index + 1) };
+  }
+  return undefined;
 }
 
 async function* decodeInboundMultipartStream(

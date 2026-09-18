@@ -1,4 +1,4 @@
-import type { MediaCodec } from "./codecs.js";
+import type { MediaCodec, StreamCodec } from "./codecs.js";
 import type { OperationDefinition, ServerSelection } from "./operation.js";
 import type { SecurityCredentials, SecurityRequirementDefinition } from "./security.js";
 import type { Transport } from "./transport.js";
@@ -14,8 +14,10 @@ export interface ClientOptions {
   readonly origin?: string;
   /** Selects one server from each operation's effective OpenAPI Server list. */
   readonly server?: ServerSelection;
-  /** Host-provided codecs for declared non-built-in media types. */
+  /** Host-provided codecs for declared non-built-in complete media values. */
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
+  /** Default stream protocol/adapter overrides keyed by normalized media type. */
+  readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
   /** Optional host transport with explicit capabilities beyond ordinary Fetch. */
   readonly transport?: Transport;
   /** Fetch implementation or wrapper. Defaults to `globalThis.fetch`; the SDK adds no retries. */

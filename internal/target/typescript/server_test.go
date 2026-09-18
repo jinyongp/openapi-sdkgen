@@ -614,13 +614,28 @@ const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href
 const seen = [];
 const codecs = {
   "application/vnd.example.event": { async decodeInbound(request) { return JSON.parse(await request.text()); } },
-  "application/vnd.example.events": { async *decodeInboundStream(reader) { const decoder = new TextDecoder(); let pending = ""; while (true) { const chunk = await reader.read(1024); if (chunk === null) break; pending += decoder.decode(chunk, { stream: true }); let newline; while ((newline = pending.indexOf("\n")) >= 0) { const line = pending.slice(0, newline); pending = pending.slice(newline + 1); if (line !== "") yield JSON.parse(line); } } if (pending !== "") yield JSON.parse(pending); } },
 };
-const router = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, frames: { POST: async ({ body }) => { for await (const item of body) seen.push(item.frame_id); return { status: 204 }; } }, custom: { POST: async ({ body }) => { seen.push(body.event_id); return { status: 204 }; } }, customStream: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, denied: { POST: async () => ({ status: 204 }) } }, { routes: { events: "/events", frames: "/frames", custom: "/custom", customStream: "/custom-stream", denied: "/denied" }, codecs, maxStreamItemBytes: 1024 });
+const streamCodecs = {
+  "application/x-ndjson": { adapter: {
+    async *decode(frames) { for await (const frame of frames) yield typeof frame.event_id === "string" ? { ...frame, event_id: "adapted-" + frame.event_id } : frame; },
+    async *encode(items) { yield* items; },
+  } },
+  "application/vnd.example.events": {
+    protocol: {
+      async *decode(reader) { const decoder = new TextDecoder(); let pending = ""; while (true) { const chunk = await reader.read(1024); if (chunk === null) break; pending += decoder.decode(chunk, { stream: true }); let newline; while ((newline = pending.indexOf("\n")) >= 0) { const line = pending.slice(0, newline); pending = pending.slice(newline + 1); if (line !== "") yield JSON.parse(line); } } if (pending !== "") yield JSON.parse(pending); },
+      encode() { throw new Error("encode not used"); },
+    },
+    adapter: {
+      async *decode(frames) { for await (const frame of frames) yield { ...frame, event_id: "custom-" + frame.event_id }; },
+      async *encode(items) { yield* items; },
+    },
+  },
+};
+const router = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, frames: { POST: async ({ body }) => { for await (const item of body) seen.push(item.frame_id); return { status: 204 }; } }, custom: { POST: async ({ body }) => { seen.push(body.event_id); return { status: 204 }; } }, customStream: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, denied: { POST: async () => ({ status: 204 }) } }, { routes: { events: "/events", frames: "/frames", custom: "/custom", customStream: "/custom-stream", denied: "/denied" }, codecs, streamCodecs, maxStreamItemBytes: 1024 });
 const encoder = new TextEncoder();
 const valid = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode('{"event_id":"one"}\n{"ev')); controller.enqueue(encoder.encode('ent_id":"two"}\n')); controller.close(); } });
 const validResponse = await router.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: valid, duplex: "half" }));
-if (validResponse.status !== 204 || seen.join(",") !== "one,two") throw new Error("inbound NDJSON stream was not decoded");
+if (validResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two") throw new Error("inbound NDJSON stream adapter was not applied");
 const invalid = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode('{"wrong":true}\n')); controller.close(); } });
 const invalidResponse = await router.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: invalid, duplex: "half" }));
 if (invalidResponse.status !== 400) throw new Error("invalid inbound stream item was accepted");
@@ -639,11 +654,11 @@ for (const chunks of [[boundedMultipartBody], [boundedMultipartBody.slice(0, 50)
 }
 const multipartBody = "--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"one\"}\r\n--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"two\"}\r\n--frames--\r\n";
 const multipartResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: multipartBody }));
-if (multipartResponse.status !== 204 || seen.join(",") !== "one,two,one,two") throw new Error("inbound multipart stream was not decoded");
+if (multipartResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two") throw new Error("inbound multipart stream was not decoded");
 const customResponse = await router.fetch(new Request("https://host.test/custom", { method: "POST", headers: { "content-type": "application/vnd.example.event" }, body: '{"event_id":"three"}' }));
-if (customResponse.status !== 204 || seen.join(",") !== "one,two,one,two,three") throw new Error("custom inbound body was not decoded");
+if (customResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,three") throw new Error("custom inbound body was not decoded");
 const customStreamResponse = await router.fetch(new Request("https://host.test/custom-stream", { method: "POST", headers: { "content-type": "application/vnd.example.events" }, body: '{"event_id":"four"}\n{"event_id":"five"}\n' }));
-if (customStreamResponse.status !== 204 || seen.join(",") !== "one,two,one,two,three,four,five") throw new Error("custom inbound stream was not decoded");
+if (customStreamResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,three,custom-four,custom-five") throw new Error("custom inbound stream protocol/adapter was not decoded");
 const deniedResponse = await router.fetch(new Request("https://host.test/denied", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }));
 if (deniedResponse.status !== 400) throw new Error("false inbound schema accepted a body");
 `

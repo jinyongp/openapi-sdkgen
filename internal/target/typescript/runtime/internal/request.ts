@@ -1,3 +1,5 @@
+import type { StreamCodec } from "./codecs.js";
+
 /** Metadata that identifies the server-side request associated with a result or error. */
 export interface RequestMetadata {
   /** Server request ID, usually read from the `X-Request-Id` response header. */
@@ -51,6 +53,8 @@ export interface RequestOptions {
   readonly authorization?: string;
   /** Requested response media type for operations with multiple representations. */
   readonly accept?: string;
+  /** Stream protocol/adapter override for the selected request or response media type. */
+  readonly streamCodec?: StreamCodec;
   /** Value sent through the `X-CSRF-Token` header. */
   readonly csrfToken?: string;
   /** Caller-provided value sent through the `X-Request-Id` header. */

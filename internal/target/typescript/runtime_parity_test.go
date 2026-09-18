@@ -1864,7 +1864,7 @@ func TestRuntimeUsesRegisteredCustomResponseStreamCodec(t *testing.T) {
 import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 let maxFrameBytes = 0;
-const codec = { decodeStream: async function* (reader, context) {
+const codec = { protocol: { decode: async function* (reader, context) {
   maxFrameBytes = context.maxFrameBytes;
   let pending = "";
   for (;;) {
@@ -1874,8 +1874,8 @@ const codec = { decodeStream: async function* (reader, context) {
     let index;
     while ((index = pending.indexOf("\n")) >= 0) { const record = pending.slice(0, index); pending = pending.slice(index + 1); if (record !== "") yield JSON.parse(record); }
   }
-} };
-const api = createClient({ baseURL: "https://api.example.test", maxStreamItemBytes: 5, codecs: { "application/vnd.acme.events": codec }, fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/vnd.acme.events" } }) });
+}, encode() { throw new Error("encode not used"); } } };
+const api = createClient({ baseURL: "https://api.example.test", maxStreamItemBytes: 5, streamCodecs: { "application/vnd.acme.events": codec }, fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', { status: 200, headers: { "content-type": "application/vnd.acme.events" } }) });
 const events = [];
 for await (const event of api.$operations.tailCustomEvents.stream()) events.push(event.event_id);
 if (events.join(",") !== "one,two" || maxFrameBytes !== 5) throw new Error("custom stream codec did not receive bounded reader data");
@@ -1895,12 +1895,15 @@ func TestRuntimeUsesRegisteredCustomRequestStreamCodec(t *testing.T) {
 import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 const encoder = new TextEncoder();
-const codec = { encodeStream: (items) => {
-  const iterator = items[Symbol.asyncIterator]();
-  return new ReadableStream({ async pull(controller) { const next = await iterator.next(); if (next.done) controller.close(); else controller.enqueue(encoder.encode(next.value.event_id + "\n")); }, async cancel(reason) { await iterator.return?.(reason); } });
+const codec = { protocol: {
+  decode() { throw new Error("decode not used"); },
+  encode(items) {
+    const iterator = items[Symbol.asyncIterator]();
+    return new ReadableStream({ async pull(controller) { const next = await iterator.next(); if (next.done) controller.close(); else controller.enqueue(encoder.encode(next.value.event_id + "\n")); }, async cancel(reason) { await iterator.return?.(reason); } });
+  },
 } };
 let sent = "";
-const api = createClient({ baseURL: "https://api.example.test", codecs: { "application/vnd.acme.events": codec }, fetch: async (_input, init) => {
+const api = createClient({ baseURL: "https://api.example.test", streamCodecs: { "application/vnd.acme.events": codec }, fetch: async (_input, init) => {
   if (new Headers(init.headers).get("content-type") !== "application/vnd.acme.events") throw new Error("custom stream content type missing");
   sent = await new Response(init.body).text();
   return new Response(null, { status: 204 });
@@ -1911,7 +1914,7 @@ if (sent !== "one\ntwo\n") throw new Error("custom request stream codec did not 
 let fetched = false;
 const missing = createClient({ baseURL: "https://api.example.test", fetch: async () => { fetched = true; throw new Error("fetch must not run"); } });
 try { await missing.$operations.publishCustomEvents({ body: events() }); throw new Error("missing custom stream codec was accepted"); }
-catch (error) { if (!String(error).includes("missing encodeStream codec") && !String(error.cause).includes("missing encodeStream codec")) throw error; }
+catch (error) { if (!String(error).includes("missing stream protocol") && !String(error.cause).includes("missing stream protocol")) throw error; }
 if (fetched) throw new Error("fetch ran without a custom stream codec");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
@@ -1973,38 +1976,40 @@ const decoder = new TextDecoder();
 let maxFrameBytes = 0;
 let sent = "";
 const codec = {
-  decodeStream: async function* (reader, context) {
-    maxFrameBytes = context.maxFrameBytes;
-    let wire = "";
-    for (;;) {
-      const bytes = await reader.read(context.maxFrameBytes);
-      if (bytes === null) break;
-      wire += decoder.decode(bytes);
-    }
-    if (!wire.startsWith("CUSTOM|")) throw new Error("override decoder did not receive custom wire");
-    yield { data: wire.slice("CUSTOM|".length) };
-  },
-  encodeStream: (items) => {
-    const iterator = items[Symbol.asyncIterator]();
-    return new ReadableStream({
-      async pull(controller) {
-        const next = await iterator.next();
-        if (next.done) {
-          controller.close();
-          return;
-        }
-        controller.enqueue(encoder.encode("CUSTOM|" + next.value.data));
-      },
-      async cancel(reason) {
-        await iterator.return?.(reason);
-      },
-    });
+  protocol: {
+    decode: async function* (reader, context) {
+      maxFrameBytes = context.maxFrameBytes;
+      let wire = "";
+      for (;;) {
+        const bytes = await reader.read(context.maxFrameBytes);
+        if (bytes === null) break;
+        wire += decoder.decode(bytes);
+      }
+      if (!wire.startsWith("CUSTOM|")) throw new Error("override decoder did not receive custom wire");
+      yield { data: wire.slice("CUSTOM|".length) };
+    },
+    encode(items) {
+      const iterator = items[Symbol.asyncIterator]();
+      return new ReadableStream({
+        async pull(controller) {
+          const next = await iterator.next();
+          if (next.done) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(encoder.encode("CUSTOM|" + next.value.data));
+        },
+        async cancel(reason) {
+          await iterator.return?.(reason);
+        },
+      });
+    },
   },
 };
 const api = createClient({
   baseURL: "https://api.example.test",
   maxStreamItemBytes: 4,
-  codecs: { "text/event-stream": codec },
+  streamCodecs: { "text/event-stream": codec },
   fetch: async (_input, init) => {
     if (init.method === "POST") {
       sent = await new Response(init.body).text();

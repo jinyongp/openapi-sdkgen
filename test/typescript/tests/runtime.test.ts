@@ -1336,11 +1336,16 @@ describe("generated runtime", () => {
       let cancelCount = 0;
       const request = createRequest({
         baseURL: "https://api.example.test",
-        codecs: {
+        streamCodecs: {
           "application/x-slow-stream": {
-            async *decodeStream() {
-              await new Promise(() => undefined);
-              yield { ok: true };
+            protocol: {
+              async *decode() {
+                await new Promise(() => undefined);
+                yield { ok: true };
+              },
+              encode() {
+                throw new Error("encode not used");
+              },
             },
           },
         },
@@ -1874,26 +1879,31 @@ describe("generated runtime", () => {
     let customSignal: AbortSignal | undefined;
     const custom = createRequest({
       baseURL: "https://api.example.test",
-      codecs: {
+      streamCodecs: {
         "application/x-custom-stream": {
-          decodeStream(reader) {
-            let yielded = false;
-            return {
-              [Symbol.asyncIterator]() {
-                return {
-                  async next() {
-                    if (yielded) return new Promise<IteratorResult<unknown>>(() => undefined);
-                    yielded = true;
-                    await reader.read(1);
-                    return { done: false, value: { value: 1 } };
-                  },
-                  async return() {
-                    customReturns++;
-                    return { done: true, value: undefined };
-                  },
-                };
-              },
-            };
+          protocol: {
+            decode(reader) {
+              let yielded = false;
+              return {
+                [Symbol.asyncIterator]() {
+                  return {
+                    async next() {
+                      if (yielded) return new Promise<IteratorResult<unknown>>(() => undefined);
+                      yielded = true;
+                      await reader.read(1);
+                      return { done: false, value: { value: 1 } };
+                    },
+                    async return() {
+                      customReturns++;
+                      return { done: true, value: undefined };
+                    },
+                  };
+                },
+              };
+            },
+            encode() {
+              throw new Error("encode not used");
+            },
           },
         },
       },
@@ -1946,7 +1956,7 @@ describe("generated runtime", () => {
       contentType: string;
       wire: string;
       itemSchema: WireSchema;
-      codecs?: Parameters<typeof createRequest>[0]["codecs"];
+      streamCodecs?: Parameters<typeof createRequest>[0]["streamCodecs"];
       cause: string;
     }> = [
       {
@@ -1971,11 +1981,16 @@ describe("generated runtime", () => {
         contentType: "application/x-codec-failure",
         wire: "x",
         itemSchema: { types: ["object"] },
-        codecs: {
+        streamCodecs: {
           "application/x-codec-failure": {
-            decodeStream: async function* (reader) {
-              await reader.read(1);
-              throw new TypeError("codec framing failed");
+            protocol: {
+              decode: async function* (reader) {
+                await reader.read(1);
+                throw new TypeError("codec framing failed");
+              },
+              encode() {
+                throw new Error("encode not used");
+              },
             },
           },
         },
@@ -1987,7 +2002,7 @@ describe("generated runtime", () => {
       let cancels = 0;
       const request = createRequest({
         baseURL: "https://api.example.test",
-        ...(test.codecs === undefined ? {} : { codecs: test.codecs }),
+        ...(test.streamCodecs === undefined ? {} : { streamCodecs: test.streamCodecs }),
         fetch: async () =>
           new Response(
             new ReadableStream<Uint8Array>({
@@ -2279,43 +2294,45 @@ describe("generated runtime", () => {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
     const codec = {
-      decodeStream: async function* (
-        reader: {
-          read(maxBytes: number): Promise<Uint8Array | null>;
+      protocol: {
+        decode: async function* (
+          reader: {
+            read(maxBytes: number): Promise<Uint8Array | null>;
+          },
+          context: { maxFrameBytes: number },
+        ) {
+          responseMaxFrameBytes = context.maxFrameBytes;
+          for (;;) {
+            const bytes = await reader.read(context.maxFrameBytes);
+            if (bytes === null) break;
+            responseWire += decoder.decode(bytes);
+          }
+          yield { wire_name: "decoded" };
         },
-        context: { maxFrameBytes: number },
-      ) {
-        responseMaxFrameBytes = context.maxFrameBytes;
-        for (;;) {
-          const bytes = await reader.read(context.maxFrameBytes);
-          if (bytes === null) break;
-          responseWire += decoder.decode(bytes);
-        }
-        yield { wire_name: "decoded" };
-      },
-      encodeStream: (items: AsyncIterable<unknown>) => {
-        const iterator = items[Symbol.asyncIterator]();
-        return new ReadableStream<Uint8Array>({
-          async pull(controller) {
-            const next = await iterator.next();
-            if (next.done) {
-              controller.close();
-              return;
-            }
-            const item = next.value as { wire_name: string };
-            controller.enqueue(encoder.encode(`override:${item.wire_name}\n`));
-          },
-          async cancel(reason) {
-            await iterator.return?.(reason);
-          },
-        });
+        encode(items: AsyncIterable<unknown>) {
+          const iterator = items[Symbol.asyncIterator]();
+          return new ReadableStream<Uint8Array>({
+            async pull(controller) {
+              const next = await iterator.next();
+              if (next.done) {
+                controller.close();
+                return;
+              }
+              const item = next.value as { wire_name: string };
+              controller.enqueue(encoder.encode(`override:${item.wire_name}\n`));
+            },
+            async cancel(reason) {
+              await iterator.return?.(reason);
+            },
+          });
+        },
       },
     };
 
     const responseRequest = createRequest({
       baseURL: "https://api.example.test",
       maxStreamItemBytes: 4,
-      codecs: { "text/event-stream": codec },
+      streamCodecs: { "text/event-stream": codec },
       fetch: async () =>
         new Response("not-sse-framing", {
           headers: { "content-type": "text/event-stream" },
@@ -2346,7 +2363,7 @@ describe("generated runtime", () => {
     let requestWire = "";
     const requestRequest = createRequest({
       baseURL: "https://api.example.test",
-      codecs: { "text/event-stream": codec },
+      streamCodecs: { "text/event-stream": codec },
       fetch: async (_input, init) => {
         requestWire = await new Response(init?.body).text();
         return jsonResponse({ ok: true });
@@ -2376,6 +2393,114 @@ describe("generated runtime", () => {
     expect(requestWire).toBe("override:encoded\n");
   });
 
+  it("layers stream adapters over built-in protocols with per-request overrides", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    const makeAdapter = (prefix: string) => ({
+      async *decode(frames: AsyncIterable<unknown>) {
+        for await (const frame of frames) {
+          const record = frame as { frame: string };
+          yield { wire_name: prefix + record.frame };
+        }
+      },
+      async *encode(items: AsyncIterable<unknown>) {
+        for await (const item of items) {
+          const record = item as { wire_name: string };
+          yield { frame: prefix + record.wire_name };
+        }
+      },
+    });
+    let responseWire = '{"frame":"one"}\n';
+    let requestWire = "";
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      streamCodecs: {
+        "application/x-ndjson": { adapter: makeAdapter("default-") },
+      },
+      fetch: async (_input, init) => {
+        if (init?.method === "POST") {
+          requestWire = await new Response(init.body).text();
+          return jsonResponse({ ok: true });
+        }
+        return new Response(responseWire, {
+          headers: { "content-type": "application/x-ndjson" },
+        });
+      },
+    });
+    const responseOperation = operation({
+      method: "GET",
+      path: "/events",
+      responses: [
+        {
+          status: "200",
+          contentType: "application/x-ndjson",
+          schema: {},
+          itemSchema,
+        },
+      ],
+      outputSchemas: {},
+    });
+    await expect(collect(request.stream(responseOperation))).resolves.toEqual([
+      { displayName: "default-one" },
+    ]);
+    await expect(
+      collect(
+        request.stream(responseOperation, undefined, {
+          streamCodec: { adapter: makeAdapter("override-") },
+        }),
+      ),
+    ).resolves.toEqual([{ displayName: "override-one" }]);
+
+    async function* items() {
+      yield { displayName: "encoded" };
+    }
+    await request(
+      operation({
+        method: "POST",
+        path: "/events",
+        contentType: "application/x-ndjson",
+        requestBodyRequired: true,
+        requestBodies: [
+          {
+            contentType: "application/x-ndjson",
+            schema: {},
+            itemSchema,
+          },
+        ],
+        inputSchemas: {},
+      }),
+      { body: items() },
+    );
+    expect(requestWire).toBe('{"frame":"default-encoded"}\n');
+
+    responseWire = '{"frame":"ignored"}\n';
+    await expect(
+      collect(
+        request.stream(responseOperation, undefined, {
+          streamCodec: {
+            adapter: {
+              async *decode(frames) {
+                for await (const _frame of frames) yield { wire_name: 42 };
+              },
+              async *encode(items) {
+                yield* items;
+              },
+            },
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      code: TransportErrorCode.RESPONSE_DECODE_FAILED,
+      cause: expect.objectContaining({ message: expect.stringContaining("expected string") }),
+    });
+  });
+
   it("preserves unknown properties in generated and custom stream items", async () => {
     const itemSchema = {
       types: ["object"],
@@ -2400,10 +2525,15 @@ describe("generated runtime", () => {
     });
     const custom = createRequest({
       baseURL: "https://api.example.test",
-      codecs: {
+      streamCodecs: {
         "application/x-tolerant-stream": {
-          decodeStream: async function* () {
-            yield { wire_name: "custom", future: true };
+          protocol: {
+            decode: async function* () {
+              yield { wire_name: "custom", future: true };
+            },
+            encode() {
+              throw new Error("encode not used");
+            },
           },
         },
       },
