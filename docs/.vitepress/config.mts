@@ -1,6 +1,14 @@
 import { defineConfig } from "vitepress";
 
+const socialLinks = [
+  {
+    icon: "github",
+    link: "https://github.com/jinyongp/openapi-sdkgen",
+  },
+];
+
 const englishTheme = {
+  socialLinks,
   nav: [
     { text: "Start", link: "/guide/getting-started" },
     { text: "Guides", link: "/guide/generate" },
@@ -60,6 +68,7 @@ const englishTheme = {
 };
 
 const koreanTheme = {
+  socialLinks,
   nav: [
     { text: "시작하기", link: "/ko/guide/getting-started" },
     { text: "사용 가이드", link: "/ko/guide/generate" },
