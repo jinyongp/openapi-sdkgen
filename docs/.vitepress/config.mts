@@ -5,7 +5,7 @@ const englishTheme = {
     { text: "Start", link: "/guide/getting-started" },
     { text: "Guides", link: "/guide/generate" },
     { text: "Examples", link: "/examples/" },
-    { text: "Reference", link: "/reference/cli" },
+    { text: "Reference", link: "/reference/" },
     { text: "Playground", link: "/playground" },
   ],
   sidebar: {
@@ -28,6 +28,7 @@ const englishTheme = {
         items: [
           { text: "Overview", link: "/examples/" },
           { text: "AI streaming API", link: "/examples/ai-streaming" },
+          { text: "Webhook receiver", link: "/examples/webhook-server" },
         ],
       },
     ],
@@ -35,6 +36,7 @@ const englishTheme = {
       {
         text: "Reference",
         items: [
+          { text: "Overview", link: "/reference/" },
           { text: "CLI", link: "/reference/cli" },
           { text: "Generated client API", link: "/reference/client-api" },
           { text: "Generated server API", link: "/reference/server-api" },
@@ -62,7 +64,7 @@ const koreanTheme = {
     { text: "시작하기", link: "/ko/guide/getting-started" },
     { text: "사용 가이드", link: "/ko/guide/generate" },
     { text: "예제", link: "/ko/examples/" },
-    { text: "레퍼런스", link: "/ko/reference/cli" },
+    { text: "레퍼런스", link: "/ko/reference/" },
     { text: "플레이그라운드", link: "/ko/playground" },
   ],
   sidebar: {
@@ -85,6 +87,7 @@ const koreanTheme = {
         items: [
           { text: "개요", link: "/ko/examples/" },
           { text: "AI streaming API", link: "/ko/examples/ai-streaming" },
+          { text: "Webhook 수신", link: "/ko/examples/webhook-server" },
         ],
       },
     ],
@@ -92,6 +95,7 @@ const koreanTheme = {
       {
         text: "레퍼런스",
         items: [
+          { text: "개요", link: "/ko/reference/" },
           { text: "CLI", link: "/ko/reference/cli" },
           { text: "생성된 클라이언트 API", link: "/ko/reference/client-api" },
           { text: "생성된 서버 API", link: "/ko/reference/server-api" },

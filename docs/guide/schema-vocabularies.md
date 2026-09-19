@@ -106,6 +106,8 @@ because the extension runs with the permissions of the generation process.
 Generation diagnostics use the supported schema-extension protocol result. Arbitrary
 extension process output stays outside application diagnostics.
 
-For ordinary SDK-specific `x-*` fields such as `x-pagination` and
-`x-sdk-visibility`, see [OpenAPI x-* extensions](../reference/extensions.md).
+For ordinary SDK-specific `x-*` fields such as
+[`x-pagination`](../reference/extensions.md#x-pagination) and
+[`x-sdk-visibility`](../reference/extensions.md#x-sdk-visibility), see
+[OpenAPI x-* extensions](../reference/extensions.md).
 For CLI flags, see the [CLI reference](../reference/cli.md).

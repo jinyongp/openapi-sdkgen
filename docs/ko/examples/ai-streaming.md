@@ -17,6 +17,11 @@ sdk-consumer/
 HTTP/SSE API를 공개합니다. **consumer**는 그 contract에서 client를 생성하며
 AI SDK package에 의존하지 않습니다.
 
+| 코드베이스 | 소유 범위 | 주요 dependency |
+| --- | --- | --- |
+| `ai-service` | model/provider 설정, HTTP endpoint, OpenAPI contract | `ai`, model-provider package, server framework/runtime |
+| `sdk-consumer` | generated SDK, stream adapter, application 동작 | openapi-sdkgen 출력물. AI SDK와 model-provider dependency 없음 |
+
 ## 1. Server: streaming contract 공개
 
 Server repository가 OpenAPI 문서를 소유합니다.
@@ -102,7 +107,7 @@ stream으로 제공합니다. 이 예제는 안정적인 public event shape 하�
 server가 AI SDK의 richer stream을 추가 `itemSchema` variant로 매핑하면 됩니다.
 Provider-specific wire event 자체를 public contract로 노출할 필요는 없습니다.
 
-현재 server-side API는 AI SDK
+Server에서 사용하는 AI-side streaming API는 AI SDK
 [`streamText` 레퍼런스](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)를
 참고하세요.
 

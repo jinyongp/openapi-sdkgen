@@ -18,6 +18,11 @@ The **server** owns the AI SDK and model provider. It publishes a normal HTTP/SS
 API described by OpenAPI 3.2. The **consumer** generates its client from that
 contract and does not depend on the AI SDK package.
 
+| Codebase | Owns | Key dependencies |
+| --- | --- | --- |
+| `ai-service` | model/provider configuration, HTTP endpoint, OpenAPI contract | `ai`, model-provider package, server framework/runtime |
+| `sdk-consumer` | generated SDK, stream adapter, application behavior | openapi-sdkgen output; no AI SDK or model-provider dependency |
+
 ## 1. Server: publish the streaming contract
 
 The server repository owns the OpenAPI document:
@@ -105,7 +110,7 @@ the public contract.
 
 See the AI SDK
 [`streamText` reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)
-for its current server-side API.
+for the AI-side streaming API used by the server.
 
 ## 3. Consumer: generate the client
 

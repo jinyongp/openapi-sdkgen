@@ -108,6 +108,9 @@ changes, use [`--incremental`](../reference/cli.md#fresh-incremental-and-check-m
 
 ## 4. Create the client
 
+Create the generated client with
+[`createClient`](../reference/client-api.md#createclient):
+
 ```ts
 import { createClient } from "./generated/api";
 

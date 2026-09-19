@@ -105,6 +105,7 @@ integrity lock은 실행 파일 identity를 고정하며, extension은 생성 �
 Generation diagnostics에는 schema-extension 프로토콜이 정의한 결과만 반영됩니다.
 생성된 SDK에는 변환된 스키마 의미가 포함됩니다.
 
-`x-pagination`, `x-sdk-visibility` 같은 일반 SDK `x-*` 기능은
-[OpenAPI x-* 확장](../reference/extensions.md)을 참고하세요. CLI 옵션은
+[`x-pagination`](../reference/extensions.md#x-pagination),
+[`x-sdk-visibility`](../reference/extensions.md#x-sdk-visibility) 같은 일반 SDK
+`x-*` 기능은 [OpenAPI x-* 확장](../reference/extensions.md)을 참고하세요. CLI 옵션은
 [CLI 레퍼런스](../reference/cli.md)에서 확인할 수 있습니다.

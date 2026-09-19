@@ -108,6 +108,9 @@ pnpm exec openapi-sdkgen generate \
 
 ## 4. 클라이언트 만들기
 
+[`createClient`](../reference/client-api.md#createclient)로 generated client를
+만듭니다.
+
 ```ts
 import { createClient } from "./generated/api";
 

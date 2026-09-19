@@ -17,3 +17,9 @@ consumer를 별도 코드베이스로 나눕니다.
 
 API 구현과 SDK consumer가 서로 다른 repository 또는 deployment unit에 있을 때
 이 구조를 그대로 적용할 수 있습니다.
+
+## Webhook receiver
+
+[OpenAPI Webhook 수신](./webhook-server.md)은 반대 방향의 integration을
+보여줍니다. OpenAPI 3.1이 inbound Webhook을 설명하고, [`--with server`](../reference/cli.md#with-server)가 typed
+Fetch router를 생성하며, host application이 route mount와 인증을 소유합니다.

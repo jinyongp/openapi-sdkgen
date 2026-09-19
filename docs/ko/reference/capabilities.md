@@ -44,12 +44,13 @@ Operation은 generated resource method, `"METHOD /path"` route, `operationId` �
 ## Server와 security
 
 OpenAPI Server Object와 server variable을 지원하며 operation/path/root 범위의
-우선순위를 반영합니다. 호출자가 지정한 `baseURL`은 server selection을
-override합니다.
+우선순위를 반영합니다. 호출자가 지정한
+[`baseURL`](./client-api.md#clientoptions)은 server selection을 override합니다.
 
 OpenAPI API key, HTTP Basic/Bearer, OAuth2, OpenID Connect, mutual TLS security
 scheme을 지원합니다. 여러 Security Requirement Object가 대안으로 적용되면
-생성된 요청 옵션이 사용할 수 있는 `securityRequirement` 값을 TypeScript union으로
+생성된 요청 옵션이 사용할 수 있는
+[`securityRequirement`](./client-api.md#security-requirement) 값을 TypeScript union으로
 노출합니다.
 
 Credential 획득은 애플리케이션이 담당합니다.
@@ -89,8 +90,12 @@ custom vocabulary를 표준 JSON Schema로 낮추고, generated runtime은 변�
 
 ## SDK 전용 OpenAPI 확장
 
-`x-pagination`, `x-envelope`, `x-sdk-visibility`, `x-sort`,
-`x-error-category` 같은 지원 `x-*` 필드는 선택적인 SDK 편의 기능을 추가합니다.
+[`x-pagination`](./extensions.md#x-pagination),
+[`x-envelope`](./extensions.md#x-envelope),
+[`x-sdk-visibility`](./extensions.md#x-sdk-visibility),
+[`x-sort`](./extensions.md#x-sort),
+[`x-error-category`](./extensions.md#x-error-category) 같은 지원 `x-*` 필드는
+선택적인 SDK 편의 기능을 추가합니다.
 Custom JSON Schema vocabulary extension은 schema 의미를 처리합니다.
 
 [OpenAPI x-* 확장](./extensions.md)을 참고하세요.

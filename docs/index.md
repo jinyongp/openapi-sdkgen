@@ -63,6 +63,6 @@ minimal Todo contract. If generation is already part of your project, see
 
 For complete integration boundaries, browse [Examples](./examples/index.md).
 For exact generated APIs and compatibility details, use the
-[Reference](./reference/client-api.md), including the dedicated
+[Reference](./reference/index.md), including the dedicated
 [Streaming API](./reference/streaming.md) and
 [Generated server API](./reference/server-api.md).

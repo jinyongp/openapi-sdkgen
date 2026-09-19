@@ -41,12 +41,13 @@ Operations can be called through generated resource methods, exact
 ## Servers and security
 
 OpenAPI Server Objects are available to generated operations, including
-operation/path/root precedence and server variables. A caller-supplied `baseURL` overrides the selected OpenAPI server.
+operation/path/root precedence and server variables. A caller-supplied
+[`baseURL`](./client-api.md#clientoptions) overrides the selected OpenAPI server.
 
 The generated client supports OpenAPI API keys, HTTP Basic/Bearer, OAuth2,
 OpenID Connect, and mutual TLS security schemes. When several effective Security
 Requirement Objects are alternatives, generated request options expose the
-allowed `securityRequirement` values as a TypeScript union.
+allowed [`securityRequirement`](./client-api.md#security-requirements) values as a TypeScript union.
 
 Credential acquisition remains application-owned. See
 [Authentication, transport, and streams](../guide/transport.md).
@@ -84,8 +85,11 @@ See [Custom JSON Schema vocabularies](../guide/schema-vocabularies.md).
 
 ## SDK-specific OpenAPI extensions
 
-Supported `x-*` fields such as `x-pagination`, `x-envelope`,
-`x-sdk-visibility`, `x-sort`, and `x-error-category` configure generated SDK
+Supported `x-*` fields such as [`x-pagination`](./extensions.md#x-pagination),
+[`x-envelope`](./extensions.md#x-envelope),
+[`x-sdk-visibility`](./extensions.md#x-sdk-visibility),
+[`x-sort`](./extensions.md#x-sort), and
+[`x-error-category`](./extensions.md#x-error-category) configure generated SDK
 conveniences. Custom JSON Schema vocabulary extensions handle schema semantics.
 
 See [OpenAPI x-* extensions](./extensions.md).
