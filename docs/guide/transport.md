@@ -82,7 +82,8 @@ credential storage remain host concerns.
 
 ## Cookie authentication
 
-For browser-managed cookie authentication, configure Fetch credentials:
+For browser-managed cookie authentication, set
+[`ClientOptions.credentials`](../reference/client-api.md#clientoptions):
 
 ```ts
 const api = createClient({

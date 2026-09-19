@@ -83,7 +83,8 @@ API key, HTTP Basic/Bearer, OAuth2, OpenID Connect, mTLS를 지원합니다. OAu
 
 ## Cookie 인증
 
-브라우저가 관리하는 cookie 인증을 사용한다면 Fetch credentials를 설정합니다.
+브라우저가 관리하는 cookie 인증을 사용한다면
+[`ClientOptions.credentials`](../reference/client-api.md#clientoptions)를 설정합니다.
 
 ```ts
 const api = createClient({

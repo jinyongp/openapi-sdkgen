@@ -117,7 +117,11 @@ Full guides and reference documentation:
 - [Generating an SDK](docs/guide/generate.md)
 - [Using the generated client](docs/guide/client.md)
 - [Transport, authentication, and streams](docs/guide/transport.md)
+- [Examples](docs/examples/index.md)
 - [CLI reference](docs/reference/cli.md)
+- [Generated client API](docs/reference/client-api.md)
+- [Generated server API](docs/reference/server-api.md)
+- [Streaming API](docs/reference/streaming.md)
 - [Supported OpenAPI capabilities](docs/reference/capabilities.md)
 
 Runnable examples:

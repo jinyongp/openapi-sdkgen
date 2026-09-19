@@ -135,7 +135,7 @@ import { createClient } from "./generated/api/index.js";
 
 ## 5. Call the Todo API
 
-Resource methods are the shortest interface for normal application code:
+[Resource methods](../reference/client-api.md#resource-methods) are the shortest interface for normal application code:
 
 ```ts
 const created = await api.todos.create({
