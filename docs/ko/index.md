@@ -59,3 +59,8 @@ const todo = await api.todos.create({
 완전한 최소 Todo 계약부터 따라가려면 [첫 SDK 만들기](./guide/getting-started.md)를
 보세요. 이미 프로젝트에 생성을 연결했다면 [SDK 생성과 검증](./guide/generate.md)에서
 증분 갱신, `--check`, 인증이 필요한 입력, 원격 참조를 확인할 수 있습니다.
+
+전체 integration 경계를 다루는 내용은 [예제](./examples/index.md)에서 확인할 수
+있습니다. 정확한 generated API와 호환성 정보는 [레퍼런스](./reference/client-api.md),
+[스트리밍 API](./reference/streaming.md), [생성된 서버 API](./reference/server-api.md)를
+사용하세요.

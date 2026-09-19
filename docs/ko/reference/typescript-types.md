@@ -189,45 +189,7 @@ enum은 생성된 요청, 응답, component 타입에서 사용할 수 있습니
 | `BothPaginationInput` | cursor 또는 offset pagination 입력 |
 | `SortDirection` | `"asc" | "desc"` 타입과 런타임 상수 |
 
-## 스트림 타입
-
-### OperationStream
-
-`OperationStream<T>`은 생성된 `.stream(...)` 호출이 반환하는 lazy 단일 소비자
-handle입니다. `AsyncIterable<T>`로 순회할 수 있고 `response`에서 응답
-metadata를 확인할 수 있습니다. `abort(reason?)`로 중단할 수 있으며
-`toReadableStream()`으로 같은 source를 Web `ReadableStream<T>`에 연결합니다.
-
-OpenAPI schema를 TypeScript에서 다시 작성하지 않고 생성된 item 타입만 추출하려면
-`RouteStreamItem<Route>` 또는 `OperationStreamItem<Source>`를 사용합니다.
-
-### StreamSource
-
-`StreamSource<T>`는 `AsyncIterable<T> | ReadableStream<T>`입니다. OpenAPI 3.2
-request body에 `itemSchema`가 있으면 incremental 입력 타입으로 사용됩니다.
-
-### ServerSentEvent
-
-`ServerSentEvent`는 built-in SSE protocol frame입니다.
-
-```ts
-interface ServerSentEvent {
-  readonly data: string;
-  readonly event?: string;
-  readonly id?: string;
-  readonly retry?: number;
-}
-```
-
-Built-in parser는 `data`를 문자열로 유지합니다. JSON parsing, provider sentinel,
-application event mapping은 `StreamAdapter`가 담당합니다.
-
-### StreamProtocol, StreamAdapter, StreamCodec
-
-`StreamProtocol<Frame>`은 byte framing을 담당합니다.
-`StreamAdapter<Frame, Item>`는 protocol frame과 application item 사이를
-변환하고, `StreamCodec<Frame, Item>`은 protocol과 adapter를 조합합니다.
-Built-in SSE, NDJSON/JSON Lines, JSON Sequence, multipart framing은
-application-specific adapter와 함께 재사용할 수 있습니다.
+Stream lifecycle, request source, SSE frame, protocol/adapter 계약과 codec
+설정은 [스트리밍 API](./streaming.md)에 정리되어 있습니다.
 
 `Components`, `Operations`, `Routes`는 생성된 전체 타입 map을 제공합니다.

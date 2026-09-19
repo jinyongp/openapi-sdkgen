@@ -3,9 +3,9 @@
 The generated TypeScript source exposes three complementary ways to call an
 operation:
 
-- resource methods such as `api.todos.create()` for readable application code;
-- `$routes` when the HTTP method and OpenAPI path are the stable identifier;
-- `$operations` when the document declares an `operationId`.
+- [resource methods](../reference/client-api.md#resource-methods) such as `api.todos.create()` for readable application code;
+- [`$routes`](../reference/client-api.md#routes) when the HTTP method and OpenAPI path are the stable identifier;
+- [`$operations`](../reference/client-api.md#operations) when the document declares an `operationId`.
 
 All three surfaces call the same OpenAPI operations. Choose the one that makes the
 caller easiest to understand.
@@ -20,7 +20,7 @@ const api = createClient({
 });
 ```
 
-When `baseURL` is omitted, the client uses applicable OpenAPI Server Objects.
+When [`baseURL`](../reference/client-api.md#client) is omitted, the client uses applicable OpenAPI Server Objects.
 An operation-level server takes precedence over a path-level server, which takes
 precedence over a root server.
 
@@ -61,7 +61,7 @@ const todos = await api.$operations.listTodos({
 
 ## Read status and headers with `.raw()`
 
-A normal call returns the generated successful output value. Use `.raw()` when
+A normal call returns the generated successful output value. Use [`.raw()`](../reference/client-api.md#raw) when
 the application also needs the exact status, decoded response headers, selected
 content type, or original Fetch `Response`.
 
@@ -103,7 +103,7 @@ the same media type.
 
 An OpenAPI Link describes a follow-up operation using values from a response.
 When a Todo creation response defines a Link named `getTodo`, the generated
-`$links` helper carries the source response context into that follow-up call:
+[`$links`](../reference/client-api.md#links) helper carries the source response context into that follow-up call:
 
 ```ts
 const created = await api.$operations.createTodo.raw({
@@ -124,7 +124,7 @@ If a required runtime expression cannot be resolved, the call fails.
 
 An operation with an OpenAPI 3.2
 [`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)
-exposes [`.stream(...)`](../reference/client-api.md#links-and-streams) on its
+exposes [`.stream(...)`](../reference/streaming.md#response-streams) on its
 operation, exact-route, and generated resource call surfaces. See
 [OpenAPI support](../reference/capabilities.md#supported-openapi-versions) for
 the 3.0/3.1/3.2 version split.
@@ -140,7 +140,7 @@ for await (const event of stream) {
 ```
 
 `.stream()` returns an
-[`OperationStream<T>`](../reference/typescript-types.md#stream-types).
+[`OperationStream<T>`](../reference/streaming.md#operationstream).
 It starts lazily, preserves Fetch backpressure, and owns one response body. Use `stream.response` when status,
 headers, content type, or request metadata are needed after the response opens.
 
@@ -160,7 +160,7 @@ reconnect policy stays in application code.
 ## Send streaming request bodies
 
 An OpenAPI 3.2 request body with `itemSchema` accepts
-[`StreamSource<T>`](../reference/typescript-types.md#stream-types),
+[`StreamSource<T>`](../reference/streaming.md#streaming-request-bodies),
 so an async iterable and a Web `ReadableStream` use the same generated input
 type.
 
@@ -187,3 +187,5 @@ request body accepts either the complete value or a `StreamSource<T>`.
   exports and error helpers.
 - [Generated TypeScript types](../reference/typescript-types.md) shows how to
   extract request and response types from the generated contract.
+- [Streaming API](../reference/streaming.md) is the lookup reference for stream
+  lifecycle, request sources, codecs, and frame limits.

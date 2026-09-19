@@ -8,6 +8,8 @@ openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고 문서에 선언�
 이 페이지는 주요 공개 capability를 요약합니다. 실제 생성 흐름과 flag는
 [CLI 레퍼런스](./cli.md)를 참고하세요.
 
+<span id="supported-openapi-versions"></span>
+
 ## 지원 OpenAPI 버전
 
 | OpenAPI | SDK 생성 | Sequential media |
@@ -16,12 +18,11 @@ openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고 문서에 선언�
 | 3.1.x | 지원 | 3.0.x와 같은 complete-value 처리를 지원하며 3.1 JSON Schema 모델을 사용합니다. |
 | 3.2.x | 지원 | Media Type Object의 `itemSchema`, `prefixEncoding`, `itemEncoding`을 사용해 typed incremental stream과 positional/streaming multipart를 표현할 수 있습니다. |
 
-따라서 생성기 전체가 OpenAPI 3.2에만 한정되는 것은 아닙니다. Operation의
-[`.stream()`](./client-api.md#link와-스트림)과 incremental
-[`StreamSource<T>`](./typescript-types.md#스트림-타입) 입력은 OpenAPI 3.2
-`itemSchema`가 필요합니다. OpenAPI 3.0과 3.1 문서도 SSE, NDJSON/JSON Lines,
-JSON Sequence content type에 일반 `schema`를 선언하면 built-in framing으로
-complete value를 처리할 수 있습니다.
+따라서 생성기 전체가 OpenAPI 3.2에만 한정되는 것은 아닙니다. OpenAPI 3.2
+`itemSchema`가 typed incremental streaming을 추가하고, 3.0/3.1은 complete
+`schema` value에 built-in sequential framing을 사용할 수 있습니다. 정확한
+streaming 계약은 [스트리밍 API](./streaming.md#openapi-version-support)를
+참고하세요.
 
 3.2 전용 필드는
 [OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)에
@@ -56,30 +57,24 @@ Credential 획득은 애플리케이션이 담당합니다.
 
 ## Link, pagination, stream
 
-OpenAPI Link Object는 `$links` 아래의 타입 안전 후속 호출 helper로 생성됩니다.
-지원하는 모든 OpenAPI 버전에서 complete `schema`가 있는 알려진 sequential
-media는 buffered 호출 시 built-in framing pipeline을 사용합니다. OpenAPI 3.2
-response에 `itemSchema`가 있으면 생성된 operation, route, resource 호출에
-`.stream(...)`이 추가됩니다. 반환 타입은
-`OperationStream<T>`이며 incremental request body에는 `StreamSource<T>`를
-사용합니다.
+OpenAPI Link Object는 [`$links`](./client-api.md#link) 아래의 타입 안전 후속 호출
+helper로 생성됩니다. `x-pagination`을 선언하면 pagination helper가 생성됩니다.
+[OpenAPI x-* 확장](./extensions.md#x-pagination)을 참고하세요.
 
-SSE, NDJSON/JSON Lines, JSON Sequence, streaming multipart framing은 기본으로
-지원합니다. 사용자 정의 framing은 `StreamProtocol`, application-level 변환은
-`StreamAdapter`로 구성합니다. media type별 기본값은 `streamCodecs`, 한 번의
-요청에는 `streamCodec`을 지정할 수 있습니다.
-
-`x-pagination`을 선언하면 pagination helper가 생성됩니다.
-[OpenAPI x-* 확장](./extensions.md)을 참고하세요.
+Sequential media는 generated operation-centric stream surface를 사용합니다.
+`.stream()`, request source, built-in protocol, adapter, frame limit, lifecycle은
+[스트리밍 API](./streaming.md)에 정리되어 있습니다.
 
 ## Webhook과 Callback
 
 Webhook과 Callback Object는 inbound request를 설명합니다. 기본 target은 outbound
-client artifact를 만들고, `--with server`가 inbound contract를 추가합니다.
-Add-on은 Fetch 기반 handler/router API를 만듭니다. HTTP listener, framework
-연결, 공개 route, 인증 정책은 애플리케이션이 담당합니다.
+client artifact를 만들고, [`--with server`](./cli.md#typescript-server-add-on)가
+inbound contract를 추가합니다. Add-on은 Fetch 기반 handler/router API를
+만듭니다. HTTP listener, framework 연결, 공개 route, 인증 정책은
+애플리케이션이 담당합니다.
 
-[Webhook과 Callback 수신](../guide/server.md)에서 자세히 설명합니다.
+Lookup 정보는 [생성된 서버 API](./server-api.md), 실제 연결 흐름은
+[Webhook과 Callback 수신](../guide/server.md)을 참고하세요.
 
 ## JSON Schema vocabulary
 

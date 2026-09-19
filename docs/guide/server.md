@@ -15,7 +15,7 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-`--with server` adds Fetch-native handler and router entry points. Your application
+[`--with server`](../reference/cli.md#with-server) adds Fetch-native handler and router entry points. Your application
 provides the HTTP listener, framework integration, public URL, deployment model,
 and authentication policy.
 
@@ -25,7 +25,7 @@ inbound requests before typed values reach your handlers.
 ## Receive a Todo Webhook
 
 Suppose the OpenAPI document defines a Webhook named `todoCompleted`.
-Implement the generated handler contract:
+Implement the [generated Webhook handler contract](../reference/server-api.md#createwebhookrouter):
 
 ```ts
 import {
@@ -91,7 +91,7 @@ that operation's request data. For example, a `createTodo` request can provide
 a `callbackUrl`, while the OpenAPI Callback named `statusUpdates` describes
 what will later be POSTed to that URL.
 
-Implement the generated Callback handler:
+Implement the [generated Callback handler](../reference/server-api.md#createcallbackhandlers):
 
 ```ts
 import {
@@ -134,9 +134,9 @@ chooses the deployment URL that receives the callback.
 
 For an OpenAPI 3.2 inbound body with `itemSchema`, the generated handler receives
 typed items as the request stream is consumed. Webhook and Callback options use
-the same `StreamCodec` model as the outbound client.
+the same [`StreamCodec`](../reference/streaming.md#streamcodec) model as the outbound client.
 
-Use a `StreamAdapter` when the wire framing is standard but the application
+Use a [`StreamAdapter`](../reference/streaming.md#streamadapter) when the wire framing is standard but the application
 needs to map events. For example, a Todo SSE adapter can parse the string
 `data` field while reusing the built-in SSE protocol:
 
@@ -172,8 +172,8 @@ const router = createWebhookRouter(handlers, {
 ```
 
 Adapter output is validated and projected through the declared `itemSchema`
-before it reaches the handler. Use `StreamProtocol` instead when a custom
-sequential media type needs its own byte framing. `maxStreamFrameBytes` limits
+before it reaches the handler. Use [`StreamProtocol`](../reference/streaming.md#streamprotocol) instead when a custom
+sequential media type needs its own byte framing. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes) limits
 one wire frame before adaptation. The same `streamCodecs` and frame-limit
 options are available to `createCallbackHandlers`.
 
@@ -195,5 +195,6 @@ The application owns:
 For OpenAPI documents limited to outbound calls, use the base client artifact set.
 
 See [OpenAPI support](../reference/capabilities.md) for version-specific Webhook
-and Callback support and [Generated client API](../reference/client-api.md) for
-the generated import paths.
+and Callback support, [Generated server API](../reference/server-api.md) for the
+inbound API, and [Streaming API](../reference/streaming.md) for inbound stream
+protocol/adapter configuration.

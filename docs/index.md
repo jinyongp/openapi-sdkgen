@@ -60,3 +60,9 @@ Start with [Create your first SDK](./guide/getting-started.md) for a complete
 minimal Todo contract. If generation is already part of your project, see
 [Generate and verify an SDK](./guide/generate.md) for incremental updates,
 `--check`, authenticated inputs, and remote references.
+
+For complete integration boundaries, browse [Examples](./examples/index.md).
+For exact generated APIs and compatibility details, use the
+[Reference](./reference/client-api.md), including the dedicated
+[Streaming API](./reference/streaming.md) and
+[Generated server API](./reference/server-api.md).

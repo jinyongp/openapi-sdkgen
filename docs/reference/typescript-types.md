@@ -192,45 +192,7 @@ pagination, Links, and streams.
 | `BothPaginationInput` | cursor or offset pagination input |
 | `SortDirection` | `"asc" | "desc"` and runtime constants |
 
-## Stream types
-
-### OperationStream
-
-`OperationStream<T>` is the lazy, single-consumer handle returned by generated
-`.stream(...)` calls. It is an `AsyncIterable<T>`, exposes response metadata
-through `response`, supports `abort(reason?)`, and can expose the same source
-as a Web `ReadableStream<T>` through `toReadableStream()`.
-
-Use `RouteStreamItem<Route>` or `OperationStreamItem<Source>` when application
-code needs to extract the generated item type without repeating the OpenAPI
-schema in TypeScript.
-
-### StreamSource
-
-`StreamSource<T>` is `AsyncIterable<T> | ReadableStream<T>`. OpenAPI 3.2
-request bodies with `itemSchema` accept this type for incremental input.
-
-### ServerSentEvent
-
-`ServerSentEvent` is the built-in SSE protocol frame:
-
-```ts
-interface ServerSentEvent {
-  readonly data: string;
-  readonly event?: string;
-  readonly id?: string;
-  readonly retry?: number;
-}
-```
-
-The built-in parser keeps `data` as a string. JSON parsing, provider sentinels,
-and application event mapping belong in a `StreamAdapter`.
-
-### Stream protocol, adapter, and codec
-
-`StreamProtocol<Frame>` owns byte framing. `StreamAdapter<Frame, Item>` maps
-protocol frames to application items and back. `StreamCodec<Frame, Item>`
-combines either or both. Built-in SSE, NDJSON/JSON Lines, JSON Sequence, and
-multipart framing can be reused with an application-specific adapter.
+Stream lifecycle, request sources, SSE frames, protocol/adapter contracts,
+and codec configuration are documented in [Streaming API](./streaming.md).
 
 `Components`, `Operations`, and `Routes` provide complete generated type maps.

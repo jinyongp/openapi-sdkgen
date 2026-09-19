@@ -22,7 +22,7 @@ const api = createClient({
 
 OpenAPI는 하나의 operation에 여러 Security Requirement Object를 선언할 수
 있습니다. 적용 가능한 requirement가 여러 개라면 생성된 요청 옵션은
-`securityRequirement`를 요구하며, 애플리케이션이 어느 대안을 충족할지
+[`securityRequirement`](../reference/client-api.md#security-requirement)를 요구하며, 애플리케이션이 어느 대안을 충족할지
 선택합니다.
 
 Todo 수정 operation이 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
@@ -48,7 +48,7 @@ SDK가 자동 선택합니다. 빈 requirement가 다른 대안과 함께 있으
 ## `securityProvider`로 credential 로드
 
 선택된 requirement에 맞춰 credential을 동적으로 가져와야 한다면
-`securityProvider`를 사용합니다.
+[`securityProvider`](../reference/client-api.md#clientoptions)를 사용합니다.
 
 ```ts
 const api = createClient({
@@ -97,9 +97,11 @@ const api = createClient({
 브라우저 밖에서 cookie jar가 필요하면 해당 기능을 제공하는 transport를
 사용합니다.
 
+<span id="request-headers"></span>
+
 ## 선언된 요청 header 전달
 
-OpenAPI parameter로 선언된 header는 `headerParams`에 생성됩니다.
+OpenAPI parameter로 선언된 header는 [`headerParams`](../reference/client-api.md#request-headers)에 생성됩니다.
 
 ```ts
 await api.$operations.createTodo({
@@ -116,7 +118,7 @@ caller-provided 값을 적용할 수 있는지도 transport가 결정합니다.
 
 ## Custom transport 설정
 
-Transport는 Fetch-compatible 함수와 지원하는 추가 capability를 제공합니다.
+[`ClientOptions.transport`](../reference/client-api.md#clientoptions)는 Fetch-compatible 함수와 지원하는 추가 capability를 제공합니다.
 
 ```ts
 const api = createClient({
@@ -149,7 +151,7 @@ const api = createClient({
 
 ## 요청 취소와 timeout
 
-요청 옵션에는 `AbortSignal`과 timeout을 전달할 수 있습니다.
+[요청 옵션](../reference/client-api.md#request-options)에는 `AbortSignal`과 timeout을 전달할 수 있습니다.
 
 ```ts
 const controller = new AbortController();
@@ -166,42 +168,34 @@ const todos = await api.todos.list(
 ## 스트리밍 동작
 
 openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x를 모두 지원합니다. 알려진
-sequential content type에 일반 `schema`를 선언하면 세 버전 모두 complete
-buffered value로 처리할 수 있습니다. OpenAPI 3.2의 Media Type Object에는
-[`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)가
-추가되며, 이를 사용하면 [`.stream()`](../reference/client-api.md#link와-스트림)
-기반 typed incremental 호출을 생성합니다.
+sequential content type은 모든 지원 버전에서 일반 `schema`로 complete
+buffered value를 표현할 수 있습니다. OpenAPI 3.2의 `itemSchema`가 typed
+incremental input/output을 추가합니다.
 
-`itemSchema`가 있는 operation의 `.stream()`은
-[`OperationStream<T>`](../reference/typescript-types.md#스트림-타입)을
-반환합니다. SSE, NDJSON/JSON Lines, JSON Sequence, streaming multipart
-framing은 기본으로 처리합니다. 버전별 차이는
-[OpenAPI 지원 범위](../reference/capabilities.md#지원-openapi-버전)에 정리되어
-있습니다.
+정확한 버전 및 media-type 계약은
+[스트리밍 API](../reference/streaming.md#openapi-version-support)를 참고하세요.
 
+`itemSchema`가 있는 operation에는 `.stream()`이 추가되고
+[`OperationStream<T>`](../reference/streaming.md#operationstream)을 반환합니다.
 Incremental request body는
-[`StreamSource<T>`](../reference/typescript-types.md#스트림-타입)를
+[`StreamSource<T>`](../reference/streaming.md#streaming-request-body)를
 사용하므로 `AsyncIterable<T>`와 Web `ReadableStream<T>`을 모두 전달할 수
-있습니다. Sequential media에 `schema`가 있으면 complete application value를
-사용할 수 있고, `schema`와 `itemSchema`가 함께 있으면 complete와 incremental
-입력을 모두 지원합니다.
+있습니다. Sequential Media Type Object에 `schema`와 `itemSchema`가 함께
+있으면 generated request type이 complete와 incremental 입력을 모두 받습니다.
 
-[`maxStreamFrameBytes`](../reference/client-api.md#link와-스트림)는 application
-adapter 적용 전의 wire frame, record, multipart part 크기를 제한합니다. client
-기본값과 개별 요청 옵션에서 설정할 수 있습니다.
+[`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는
+application adaptation 전의 wire frame, record, multipart part 하나의 크기를
+제한합니다.
 
 ### 기본 protocol에 adapter 적용
 
-[`StreamAdapter<Frame, Item>`](../reference/typescript-types.md#스트림-타입)는
-표준 framing 위에 application semantics를 적용합니다. 예를 들어 Todo SSE의
-`data`를 application event로 변환하면서 SSE parser는 그대로 재사용할 수
-있습니다.
+Wire framing은 이미 지원되지만 application semantic layer가 별도로 필요하면
+[`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter)를
+사용합니다. 예를 들어 SSE parser를 다시 구현하지 않고 Todo SSE `data` 안의
+JSON을 application event로 변환할 수 있습니다.
 
 ```ts
-import type {
-  ServerSentEvent,
-  StreamAdapter,
-} from "./generated/api";
+import type { ServerSentEvent, StreamAdapter } from "./generated/api";
 
 const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
   async *decode(events) {
@@ -225,106 +219,31 @@ const api = createClient({
 });
 ```
 
-한 번의 요청에서 client 기본값을 바꾸려면 `streamCodec`을 지정합니다.
-Adapter가 만든 값은 operation의 `itemSchema` 검증과 property projection을
+한 번의 요청에서 client media-type 기본값을 바꾸려면
+[`streamCodec`](../reference/streaming.md#requestoptions-streamcodec)을
+사용합니다. Adapter 결과는 operation의 `itemSchema` validation과 projection을
 거칩니다.
-
-### AI event stream을 AI SDK UI로 연결
-
-AI API는 text delta나 tool-input delta 같은 application event를 SSE 위에
-전송하는 경우가 많습니다. 이런 provider/application protocol은
-[`StreamAdapter`](../reference/typescript-types.md#스트림-타입)에 두고,
-생성된 typed stream을 애플리케이션 경계에서 AI SDK UI stream으로 연결할 수
-있습니다.
-
-아래 예시는 `generate` operation의 `itemSchema`로 생성된 타입에 JSON-in-SSE를
-매핑한 뒤 text delta를 AI SDK UI message stream으로 전달합니다.
-
-```ts
-import {
-  createUIMessageStream,
-  createUIMessageStreamResponse,
-} from "ai";
-import {
-  createClient,
-  type OperationStreamItem,
-  type ServerSentEvent,
-  type StreamAdapter,
-} from "./generated/api";
-
-type AiEvent = OperationStreamItem<"generate">;
-
-const aiAdapter: StreamAdapter<ServerSentEvent, AiEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      if (event.data === "[DONE]") return;
-      yield JSON.parse(event.data) as AiEvent;
-    }
-  },
-  async *encode(items) {
-    for await (const item of items) {
-      yield { data: JSON.stringify(item) };
-    }
-  },
-};
-
-const api = createClient({
-  baseURL,
-  streamCodecs: {
-    "text/event-stream": { adapter: aiAdapter },
-  },
-});
-
-export async function POST() {
-  const upstream = api.$operations.generate.stream({
-    body: { prompt: "릴리스 노트를 요약해줘." },
-  });
-
-  const stream = createUIMessageStream({
-    async execute({ writer }) {
-      const id = "answer";
-      writer.write({ type: "text-start", id });
-
-      for await (const event of upstream) {
-        if (event.type === "text-delta") {
-          writer.write({ type: "text-delta", id, delta: event.text });
-        }
-      }
-
-      writer.write({ type: "text-end", id });
-    },
-    onError: () => "Upstream generation failed",
-  });
-
-  return createUIMessageStreamResponse({ stream });
-}
-```
-
-Tool call, reasoning, source, custom data를 어떤 AI SDK UI part로 변환할지는
-애플리케이션이 결정합니다. openapi-sdkgen은 HTTP framing, adapter composition,
-생성 타입, validation, lifecycle을 담당합니다. AI SDK 쪽 API는
-[`createUIMessageStream`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream)과
-[`createUIMessageStreamResponse`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response)
-레퍼런스를 참고하세요.
-
-Playground에도 **AI event stream** OpenAPI 3.2 예제를 추가했습니다.
-[Playground → AI event stream](../playground.md?example=ai-event-stream)에서 바로
-열 수 있습니다.
 
 ### 사용자 정의 framing
 
-사용자 정의 sequential media의 byte framing은
-[`StreamProtocol<Frame>`](../reference/typescript-types.md#스트림-타입)로
-정의합니다. Protocol에는 bounded `StreamReader`와
-`StreamContext.maxFrameBytes`가 전달되며 built-in protocol과 같은 취소·크기
-제한을 적용받습니다.
-[`StreamCodec`](../reference/typescript-types.md#스트림-타입)은 protocol과
-선택적인 adapter를 함께 구성합니다.
+사용자 정의 sequential media가 자체 byte framing을 필요로 하면
+[`StreamProtocol<Frame>`](../reference/streaming.md#streamprotocol)을
+사용합니다. [`StreamCodec`](../reference/streaming.md#streamcodec)은 custom
+protocol과 선택적인 adapter를 함께 구성할 수 있습니다.
+
+Protocol에는 bounded `StreamReader`와 `StreamContext.maxFrameBytes`가
+전달되므로 built-in protocol과 같은 cancellation/frame-size 계약을 따릅니다.
 
 순회를 끝내거나 `abort()`를 호출하거나 `toReadableStream()`을 cancel하면
 underlying body를 해제합니다. 외부 `AbortSignal`과 timeout도 같은 lifecycle을
-사용합니다. Server-Sent Events의 reconnect와 replay는 애플리케이션에서
-관리합니다.
+사용합니다. Generated client는 Server-Sent Events reconnect/replay를 자동
+수행하지 않습니다. 전체 lifecycle과 설정은
+[스트리밍 API](../reference/streaming.md)를 참고하세요.
 
-Todo stream 예시는
-[생성된 클라이언트 사용](./client.md#스트리밍-응답-읽기)에서 확인하세요.
+### Integration 예제
+
+Provider나 framework integration은 transport 계약과 분리해 Examples 섹션에서
+다룹니다. AI SDK를 사용하는 server application과 generated client를 사용하는
+별도 consumer application은
+[Generated client로 AI streaming API 사용](../examples/ai-streaming.md)을
+참고하세요.

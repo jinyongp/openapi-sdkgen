@@ -7,8 +7,9 @@ use `./generated/api`.
 | --- | --- |
 | `./generated/api` | API calls, generated types, errors, Links, and streams |
 | `./generated/api/metadata` | Reading the source OpenAPI file and version |
-| `./generated/api/server/webhooks` | Handling Webhooks; generated with `--with server` |
-| `./generated/api/server/callbacks` | Handling Callbacks; generated with `--with server` |
+
+For inbound Webhook and Callback imports, see
+[Generated server API](./server-api.md).
 
 ::: details Running directly in Node ESM
 
@@ -29,8 +30,50 @@ const api = createClient({
 });
 ```
 
-See [transport, authentication, and streams](../guide/transport.md) for client
-configuration.
+See [transport, authentication, and streams](../guide/transport.md) for guided
+configuration examples.
+
+### ClientOptions
+
+| Option | Purpose |
+| --- | --- |
+| `baseURL` | explicit absolute API base URL |
+| `origin` | origin used to resolve a relative OpenAPI Server URL |
+| `server` | generated OpenAPI Server selection |
+| `codecs` | complete-value codecs for declared custom media types |
+| `streamCodecs` | media-type defaults for sequential protocol/adapters; see [Streaming API](./streaming.md#clientoptions-streamcodecs) |
+| `transport` | host transport with explicit capabilities |
+| `fetch` | Fetch implementation or wrapper |
+| `headers` | default request headers |
+| `authorization` | default complete Authorization header value |
+| `credentials` | default Fetch credentials mode |
+| `securityProvider` | dynamic credential acquisition for the selected OpenAPI security requirement |
+| `timeoutMS` | default request timeout |
+| `maxStreamFrameBytes` | default sequential frame limit; see [Streaming API](./streaming.md#maxstreamframebytes) |
+
+## Request options
+
+Generated calls accept per-request options where applicable.
+
+| Option | Purpose |
+| --- | --- |
+| `baseURL` | override the API base URL for one call |
+| `signal` | caller-owned cancellation signal |
+| `timeoutMS` | request timeout overriding the client default |
+| `headers` | additional non-contract-owned headers |
+| `authorization` | Authorization header overriding the client default |
+| `accept` | select one declared response media type |
+| `streamCodec` | one-call sequential protocol/adapter override; see [Streaming API](./streaming.md#requestoptions-streamcodec) |
+| `csrfToken` | value for the generated `X-CSRF-Token` header |
+| `requestID` | value for the generated `X-Request-Id` header |
+| `credentials` | Fetch credentials mode for one call |
+| `multipartHeaders` | declared additional multipart-part headers |
+| `multipartContentTypes` | selected multipart-part media types |
+| `maxStreamFrameBytes` | one-call sequential frame limit |
+
+Operation-specific input sections such as `path`, `query`, `headerParams`, and
+`body` are generated from the OpenAPI operation rather than from
+`RequestOptions`.
 
 ## TypeScript types
 
@@ -72,6 +115,25 @@ const todos = await api.$operations["listTodos"]({
 });
 ```
 
+### `.raw()`
+
+Every generated operation call also exposes `.raw()`. It returns the decoded
+body together with status, response headers, request metadata, selected content
+type, and the original Fetch `Response`.
+
+```ts
+const result = await api.$operations.getTodo.raw({
+  path: { todoID: "todo-1" },
+});
+
+result.status;
+result.headers;
+result.response;
+```
+
+The Fetch body is normally already consumed by decoded calls. For declared
+streaming responses, a separate `.raw()` request preserves the unconsumed body.
+
 ## Security requirements
 
 When an operation has several OpenAPI security alternatives, the generated
@@ -103,24 +165,22 @@ the full security model and examples.
 
 Every declared header appears under `headerParams`. Headers controlled by Fetch are
 optional caller inputs, and the active Fetch implementation decides whether they are
-sent. See [Request headers](../guide/transport.md#request-headers).
+sent. See [Request headers](../guide/transport.md#pass-declared-request-headers).
 
-## Links and streams
+## Links
 
-- `$links`: follow-up requests defined by OpenAPI Links
-- `.stream(...)`: typed streaming capability on generated operation, route, and resource calls
-- `OperationStream<T>`: lazy single-consumer stream handle with `response`, `abort()`, and `toReadableStream()`
-- `StreamSource<T>`: `AsyncIterable<T> | ReadableStream<T>` for incremental request bodies
-- `RouteStreamItem<Route>`: extracts the item type for an exact route
-- `OperationStreamItem<Source>`: extracts the item type from an operation ID or generated operation method
-- `ServerSentEvent`: standard SSE value with string `data` and optional `event`, `id`, and `retry`
+`$links` contains typed follow-up calls generated from OpenAPI Link Objects.
+Each helper carries the source response context needed to resolve Link runtime
+expressions.
 
-Use `ClientOptions.streamCodecs` for media-type defaults and
-`RequestOptions.streamCodec` for one-call protocol/adapter overrides.
-`maxStreamFrameBytes` bounds one wire frame before adaptation.
+See [Follow OpenAPI Links](../guide/client.md#follow-openapi-links) for a
+complete example.
 
-See [Use the generated client](../guide/client.md) and
-[Authentication, transport, and streams](../guide/transport.md) for examples.
+## Streaming
+
+Generated sequential-media APIs, lifecycle, protocol/adapter extension points,
+request sources, and frame limits are documented in the dedicated
+[Streaming API](./streaming.md) reference.
 
 ## Errors
 
@@ -153,14 +213,3 @@ openapi.versionLine;
 ```
 
 `openapi.document` contains the OpenAPI content used to generate the SDK.
-
-## Webhooks and Callbacks
-
-When generation includes `--with server`, use these imports:
-
-```ts
-import { createWebhookRouter } from "./generated/api/server/webhooks";
-import { createCallbackHandlers } from "./generated/api/server/callbacks";
-```
-
-See [Receive Webhooks and Callbacks](../guide/server.md) for setup and examples.

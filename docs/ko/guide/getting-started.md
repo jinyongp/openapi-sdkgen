@@ -1,6 +1,6 @@
 # 시작하기
 
-`openapi-sdkgen`은 OpenAPI 3.x 문서에서 애플리케이션이 소유하는 TypeScript
+[`openapi-sdkgen`](../reference/cli.md)은 OpenAPI 3.x 문서에서 애플리케이션이 소유하는 TypeScript
 클라이언트 소스를 생성합니다. 이 가이드에서는 작은 Todo API를 정의하고 SDK를
 애플리케이션 소스 안에 생성한 뒤 첫 요청까지 호출합니다.
 
@@ -103,7 +103,7 @@ pnpm exec openapi-sdkgen generate \
 소스입니다. 기존 TypeScript 컴파일러나 번들러가 나머지 코드와 함께 빌드합니다.
 
 생성기가 소유한 파일은 CLI로 다시 생성합니다. OpenAPI 문서가 바뀌어 같은
-디렉터리를 갱신할 때는 `--incremental`을 사용합니다. 안전한 재생성과 CI
+디렉터리를 갱신할 때는 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes)을 사용합니다. 안전한 재생성과 CI
 검증 흐름은 [SDK 생성과 검증](./generate.md)에서 설명합니다.
 
 ## 4. 클라이언트 만들기
@@ -116,7 +116,7 @@ const api = createClient({
 });
 ```
 
-OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 `baseURL`을
+OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 [`baseURL`](../reference/client-api.md#client)을
 생략할 때 그 서버 정의를 사용합니다.
 
 ::: details 컴파일된 코드를 Node ESM으로 실행할 때
@@ -142,7 +142,7 @@ const todos = await api.todos.list();
 ```
 
 모든 operation은 HTTP method/path로도 호출할 수 있고, `operationId`가 있으면
-`$operations`에서도 사용할 수 있습니다.
+[`$operations`](../reference/client-api.md#operations)에서도 사용할 수 있습니다.
 
 ```ts
 await api.$routes["GET /todos"]();

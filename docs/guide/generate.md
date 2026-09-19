@@ -4,7 +4,7 @@ Generation has two modes. Normal generation updates application source. Check
 mode runs the same compiler and target preparation while leaving generated output
 unchanged, which fits CI, editor, and pre-commit validation.
 
-Examples below use `openapi-sdkgen` directly. If the CLI is installed as a
+Examples below use [`openapi-sdkgen`](../reference/cli.md) directly. If the CLI is installed as a
 project dependency, prefix the command with `pnpm exec`.
 
 ## Create a fresh generated directory
@@ -27,7 +27,7 @@ publishes the output atomically after the full operation succeeds.
 
 ## Regenerate an existing SDK
 
-After the first successful generation, use `--incremental` with the same
+After the first successful generation, use [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) with the same
 managed directory:
 
 ```sh
@@ -54,10 +54,10 @@ an unchanged incremental run can also skip compilation and emission.
 
 ## Check generation
 
-Use `--check` when CI, an editor, or a pre-commit task needs to validate whether
+Use [`--check`](../reference/cli.md#fresh-incremental-and-check-modes) when CI, an editor, or a pre-commit task needs to validate whether
 the OpenAPI document can be generated.
 
-Omitting `--output` runs input loading, compilation, and target preparation, then
+Omitting [`--output`](../reference/cli.md#core-options) runs input loading, compilation, and target preparation, then
 exits after the preflight:
 
 ```sh
@@ -86,7 +86,7 @@ with an unmanaged path. Choose either `--check` or `--incremental` for a run.
 ## Use diagnostics in CI and tools
 
 Human-readable diagnostics are the default. Tooling can request the stable,
-versioned JSON report:
+versioned JSON report through [`--diagnostics-format`](../reference/cli.md#diagnostics):
 
 ```sh
 openapi-sdkgen generate \
@@ -105,7 +105,7 @@ non-zero status reports generation diagnostics, drift, or an operational error.
 
 ## Choose the input source
 
-`--input` accepts a local JSON/YAML file, a `file://` URL, an HTTP(S) URL, or
+[`--input`](../reference/cli.md#input-source-options) accepts a local JSON/YAML file, a `file://` URL, an HTTP(S) URL, or
 `-` for stdin.
 
 ```sh
@@ -127,13 +127,13 @@ curl https://api.example.test/openapi.yaml | \
     --check
 ```
 
-`--input-base` supplies the location used to resolve relative references from
+[`--input-base`](../reference/cli.md#input-source-options) supplies the location used to resolve relative references from
 stdin. File and URL inputs already have their own base location.
 
 ## Read a protected OpenAPI URL
 
 Pass protected input credentials through environment variables. This keeps secret
-values out of command-line arguments. `--http-header-env` maps a request header to the name of an environment variable,
+values out of command-line arguments. [`--http-header-env`](../reference/cli.md#authenticated-http-s-input) maps a request header to the name of an environment variable,
 and the generator reads its value internally:
 
 ```sh
@@ -165,8 +165,7 @@ The environment variable contains the complete header value, including `Bearer`
 when the scheme requires it. Header mappings may be repeated. The CLI rejects
 transport-controlled headers such as `Host`, `Cookie`, and `Proxy-Authorization`.
 
-For mTLS or a private CA, use `--tls-client-cert`, `--tls-client-key`, and
-`--tls-ca-file`. Provide the client certificate and key together. Mapped headers, client certificates, and private CA settings are scoped to the root
+For mTLS or a private CA, use [`--tls-client-cert`, `--tls-client-key`, and `--tls-ca-file`](../reference/cli.md#authenticated-http-s-input). Provide the client certificate and key together. Mapped headers, client certificates, and private CA settings are scoped to the root
 OpenAPI origin. Only same-origin requests receive them.
 
 ## Use remote `$ref` values reproducibly
@@ -174,7 +173,7 @@ OpenAPI origin. Only same-origin requests receive them.
 Root OpenAPI URL loading and cross-origin `$ref` fetching use separate controls.
 Cross-origin remote references require an explicit allowlist.
 
-On the first run, allow each exact HTTPS origin and update the integrity lock:
+On the first run, use [`--allow-remote-ref`](../reference/cli.md#remote-ref-options) for each exact HTTPS origin and [`--update-ref-lock`](../reference/cli.md#remote-ref-options) to update the integrity lock:
 
 ```sh
 openapi-sdkgen generate \
@@ -186,11 +185,11 @@ openapi-sdkgen generate \
 ```
 
 For a local root file, the default lock path is
-`<input>.openapi-sdkgen.lock`. Later runs omit `--update-ref-lock` and verify
+`<input>.openapi-sdkgen.lock`. Later runs omit [`--update-ref-lock`](../reference/cli.md#remote-ref-options) and verify
 remote content against the lock before generation continues.
 
-`--offline` resolves references only from the locked local cache and performs no
-network fetches. Use `--ref-lock <path>` when you need an explicit lock
+[`--offline`](../reference/cli.md#remote-ref-options) resolves references only from the locked local cache and performs no
+network fetches. Use [`--ref-lock <path>`](../reference/cli.md#remote-ref-options) when you need an explicit lock
 location, including URL/stdin workflows that cannot derive one from a local
 input filename.
 
@@ -209,7 +208,7 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-`--with server` adds Fetch-native handler/router entry points. Your application
+[`--with server`](../reference/cli.md#typescript-server-add-on) adds Fetch-native handler/router entry points. Your application
 connects them to its HTTP listener, framework, routes, and deployment environment. See [Receive Webhooks and Callbacks](./server.md).
 
 For documents limited to outbound operations, use the base client artifact set.
@@ -217,7 +216,7 @@ For documents limited to outbound operations, use the base client artifact set.
 ## Required custom JSON Schema vocabularies
 
 A document that declares a required custom JSON Schema vocabulary needs a trusted
-local schema extension. OpenAPI `x-*` fields configure SDK convenience features.
+local [`--schema-extension`](../reference/cli.md#schema-extensions). OpenAPI `x-*` fields configure SDK convenience features.
 
 See [Custom JSON Schema vocabularies](./schema-vocabularies.md) for the manifest,
 SHA-256, JSON-RPC lowering, integrity-lock workflow, and security boundary.

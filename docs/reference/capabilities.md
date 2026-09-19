@@ -15,12 +15,11 @@ workflows and flags, use the [CLI reference](./cli.md).
 | 3.1.x | Supported | Same complete-value support as 3.0.x, with the 3.1 JSON Schema model. |
 | 3.2.x | Supported | Adds Media Type Object `itemSchema`, `prefixEncoding`, and `itemEncoding`; these enable typed incremental streams and positional/streaming multipart. |
 
-The generator therefore supports all three OpenAPI 3.x version lines. The
-operation-level [`.stream()`](./client-api.md#links-and-streams) capability and
-incremental [`StreamSource<T>`](./typescript-types.md#stream-types)
-inputs require OpenAPI 3.2 `itemSchema`. OpenAPI 3.0 and 3.1 documents can still
-use built-in SSE, NDJSON/JSON Lines, and JSON Sequence framing for complete
-`schema` values when those media types are declared.
+The generator therefore supports all three OpenAPI 3.x version lines.
+OpenAPI 3.2 `itemSchema` adds typed incremental streaming; 3.0 and 3.1 can
+still use built-in sequential framing for complete `schema` values. See
+[Streaming API](./streaming.md#openapi-version-support) for the exact streaming
+contract.
 
 The 3.2-only fields come from the
 [OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object).
@@ -54,32 +53,24 @@ Credential acquisition remains application-owned. See
 
 ## Links, pagination, and streams
 
-OpenAPI Link Objects become typed follow-up call helpers under `$links`.
-Across supported OpenAPI versions, known sequential media with a complete
-`schema` use the built-in framing pipeline for buffered calls. OpenAPI 3.2
-responses with `itemSchema` additionally expose a typed `.stream(...)`
-capability on the generated operation, route, and resource surfaces. The call returns
-`OperationStream<T>`; incremental request bodies accept `StreamSource<T>`.
+OpenAPI Link Objects become typed follow-up call helpers under
+[`$links`](./client-api.md#links). Declaring `x-pagination` adds pagination
+helpers; see [OpenAPI x-* extensions](./extensions.md#x-pagination).
 
-Built-in sequential protocols cover SSE, NDJSON/JSON Lines, JSON Sequence, and
-streaming multipart. `StreamProtocol` adds custom framing and `StreamAdapter`
-adds application-level transforms while keeping item-schema validation in the
-generated runtime. Client defaults use `streamCodecs`; one request can use
-`streamCodec`.
-
-Declaring `x-pagination` adds pagination helpers. See
-[OpenAPI x-* extensions](./extensions.md).
+Sequential media use the generated operation-centric stream surface. See
+[Streaming API](./streaming.md) for `.stream()`, request sources, built-in
+protocols, adapters, frame limits, and lifecycle behavior.
 
 ## Webhooks and Callbacks
 
 Webhook and Callback Objects describe inbound requests. The base target contains
-outbound client artifacts; `--with server` adds the inbound contracts when the
-application receives them. The
-add-on generates Fetch-native handler/router APIs while the application remains
-responsible for its HTTP listener, framework integration, public routes, and
-authentication policy.
+outbound client artifacts; [`--with server`](./cli.md#typescript-server-add-on)
+adds the inbound contracts. The add-on generates Fetch-native handler/router
+APIs while the application remains responsible for its HTTP listener, framework
+integration, public routes, and authentication policy.
 
-See [Receive Webhooks and Callbacks](../guide/server.md).
+See [Generated server API](./server-api.md) for lookup details and
+[Receive Webhooks and Callbacks](../guide/server.md) for the guided workflow.
 
 ## JSON Schema vocabularies
 

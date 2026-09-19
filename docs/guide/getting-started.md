@@ -1,6 +1,6 @@
 # Getting started
 
-`openapi-sdkgen` generates application-owned TypeScript client source from an
+[`openapi-sdkgen`](../reference/cli.md) generates application-owned TypeScript client source from an
 OpenAPI 3.x document. This guide starts with a small Todo API, generates the SDK
 into your application, and makes the first request.
 
@@ -103,7 +103,7 @@ runtime. Your existing TypeScript compiler or bundler builds it together with th
 rest of the application.
 
 Regenerate generator-owned files through the CLI. When the OpenAPI document
-changes, use `--incremental` to update the same managed directory safely. See
+changes, use [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) to update the same managed directory safely. See
 [Generate and verify an SDK](./generate.md) for regeneration and CI workflows.
 
 ## 4. Create the client
@@ -116,7 +116,7 @@ const api = createClient({
 });
 ```
 
-When the OpenAPI document declares usable Server Objects, omitting `baseURL` lets
+When the OpenAPI document declares usable Server Objects, omitting [`baseURL`](../reference/client-api.md#client) lets
 the generated client use those server definitions.
 
 ::: details Running compiled output directly with Node ESM
@@ -143,7 +143,7 @@ const todos = await api.todos.list();
 ```
 
 Every operation is also available through its exact HTTP route, and operations
-with an `operationId` are available through `$operations`:
+with an `operationId` are available through [`$operations`](../reference/client-api.md#operations):
 
 ```ts
 await api.$routes["GET /todos"]();

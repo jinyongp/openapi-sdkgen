@@ -1,7 +1,7 @@
 # 사용자 정의 JSON Schema vocabulary
 
 OpenAPI 3.1 또는 3.2 스키마가 필수 사용자 정의 JSON Schema vocabulary를
-선언하면 `--schema-extension`으로 해당 vocabulary compiler를 등록합니다.
+선언하면 [`--schema-extension`](../reference/cli.md#schema-extension)으로 해당 vocabulary compiler를 등록합니다.
 
 Schema extension은 사용자 정의 JSON Schema vocabulary를 일반 JSON Schema로
 변환합니다. OpenAPI `x-*` 필드는 pagination, visibility 같은 SDK 편의 기능을
@@ -80,11 +80,11 @@ openapi-sdkgen generate \
   --incremental
 ```
 
-실행 파일을 변경하면 매니페스트의 digest를 갱신하고 `--update-ref-lock`으로 새
+실행 파일을 변경하면 매니페스트의 digest를 갱신하고 [`--update-ref-lock`](../reference/cli.md#remote-ref-options)으로 새
 digest를 integrity lock에 기록합니다.
 
 루트 OpenAPI 문서를 HTTP(S) URL이나 stdin에서 읽으면 잠금 파일 이름을 유도할
-로컬 입력 파일이 없습니다. 이 경우 `--ref-lock`을 지정합니다.
+로컬 입력 파일이 없습니다. 이 경우 [`--ref-lock`](../reference/cli.md#remote-ref-options)을 지정합니다.
 
 ```sh
 openapi-sdkgen generate \

@@ -15,7 +15,7 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-`--with server`는 Fetch 기반 handler와 router 진입점을 추가합니다. HTTP listener,
+[`--with server`](../reference/cli.md#with-server)는 Fetch 기반 handler와 router 진입점을 추가합니다. HTTP listener,
 framework 연결, 공개 URL, 배포 방식, 인증 정책은 애플리케이션에서 구성합니다.
 
 Client와 같은 OpenAPI schema를 사용해 inbound request를 파싱하고 검증한 뒤
@@ -24,7 +24,7 @@ Client와 같은 OpenAPI schema를 사용해 inbound request를 파싱하고 검
 ## Todo Webhook 수신
 
 OpenAPI 문서에 `todoCompleted`라는 Webhook이 있다고 가정합니다. 생성된 handler
-계약을 구현합니다.
+[generated Webhook handler contract](../reference/server-api.md#createwebhookrouter)을 구현합니다.
 
 ```ts
 import {
@@ -89,7 +89,7 @@ Callback은 outbound operation에 선언되고, URL은 그 요청 데이터에�
 있습니다. 예를 들어 `createTodo` 요청이 `callbackUrl`을 보내고
 `statusUpdates` Callback이 이후 그 URL로 들어올 POST 요청을 설명할 수 있습니다.
 
-생성된 Callback handler를 구현합니다.
+[생성된 Callback handler](../reference/server-api.md#createcallbackhandlers)를 구현합니다.
 
 ```ts
 import {
@@ -133,10 +133,10 @@ Runtime expression은 OpenAPI 계약에 그대로 유지되고, callback 수신 
 
 OpenAPI 3.2 inbound body에 `itemSchema`가 있으면 생성된 handler는 request
 stream을 소비하면서 검증된 item을 받습니다. Webhook과 Callback 옵션도 outbound
-client와 같은 `StreamCodec` 모델을 사용합니다.
+client와 같은 [`StreamCodec`](../reference/streaming.md#streamcodec) 모델을 사용합니다.
 
 Wire framing은 표준이고 application event 변환만 필요하다면
-`StreamAdapter`를 사용합니다. 예를 들어 Todo SSE의 문자열 `data`를
+[`StreamAdapter`](../reference/streaming.md#streamadapter)를 사용합니다. 예를 들어 Todo SSE의 문자열 `data`를
 application event로 변환하면서 built-in SSE protocol을 그대로 사용할 수
 있습니다.
 
@@ -173,7 +173,7 @@ const router = createWebhookRouter(handlers, {
 
 Adapter가 만든 값은 handler에 전달되기 전에 선언된 `itemSchema` 검증과
 property projection을 거칩니다. 사용자 정의 sequential media의 byte framing이
-필요하면 `StreamProtocol`을 사용합니다. `maxStreamFrameBytes`는 adapter
+필요하면 [`StreamProtocol`](../reference/streaming.md#streamprotocol)을 사용합니다. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는 adapter
 적용 전의 wire frame 하나를 제한합니다. `createCallbackHandlers`도 같은
 `streamCodecs`와 frame limit 옵션을 제공합니다.
 
@@ -195,6 +195,7 @@ Server artifact set은 OpenAPI에 따른 decoding, validation, 타입이 지정�
 OpenAPI 문서가 outbound operation만 설명한다면 기본 client artifact set을
 사용합니다.
 
-버전별 Webhook/Callback 지원 범위는
-[OpenAPI 지원 범위](../reference/capabilities.md)에서, 생성된 import 경로는
-[생성된 클라이언트 API](../reference/client-api.md)에서 확인할 수 있습니다.
+버전별 Webhook/Callback 지원 범위는 [OpenAPI 지원 범위](../reference/capabilities.md),
+generated inbound API는 [생성된 서버 API](../reference/server-api.md), inbound
+stream protocol/adapter 설정은 [스트리밍 API](../reference/streaming.md)에서
+확인할 수 있습니다.

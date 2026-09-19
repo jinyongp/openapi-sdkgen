@@ -4,7 +4,7 @@
 소스를 갱신하고, check 모드는 같은 컴파일·target 준비 과정을 실행해 CI, 편집기,
 pre-commit에서 결과를 검증합니다.
 
-아래 예시는 `openapi-sdkgen`이 PATH에 있다고 가정합니다. 프로젝트 개발
+아래 예시는 [`openapi-sdkgen`](../reference/cli.md)이 PATH에 있다고 가정합니다. 프로젝트 개발
 의존성으로 설치했다면 명령 앞에 `pnpm exec`을 붙이세요.
 
 ## 새 출력 디렉터리 생성
@@ -26,7 +26,7 @@ TypeScript target은 클라이언트, 생성 타입, 소스 runtime, OpenAPI 메
 
 ## 기존 SDK 다시 생성
 
-최초 생성이 성공한 뒤 같은 관리 디렉터리를 갱신하려면 `--incremental`을
+최초 생성이 성공한 뒤 같은 관리 디렉터리를 갱신하려면 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes)을
 사용합니다.
 
 ```sh
@@ -54,9 +54,9 @@ openapi-sdkgen generate \
 ## 생성 결과 확인
 
 CI, 편집기, pre-commit 작업에서 OpenAPI 문서의 생성 가능 여부를 확인하려면
-`--check`를 사용합니다.
+[`--check`](../reference/cli.md#fresh-incremental-and-check-modes)를 사용합니다.
 
-`--output`을 생략하면 입력 로딩, 컴파일, target 준비까지 실행하며 기존 출력은
+[`--output`](../reference/cli.md#core-options)을 생략하면 입력 로딩, 컴파일, target 준비까지 실행하며 기존 출력은
 그대로 유지됩니다.
 
 ```sh
@@ -85,8 +85,8 @@ openapi-sdkgen generate \
 
 ## CI와 도구에서 diagnostics 사용
 
-기본 출력은 사람이 읽기 좋은 형식입니다. CI나 편집기 같은 도구에서는 버전이
-있는 JSON report를 선택할 수 있습니다.
+기본 출력은 사람이 읽기 좋은 형식입니다. CI나 편집기 같은 도구에서는
+[`--diagnostics-format`](../reference/cli.md#diagnostics)으로 버전이 있는 JSON report를 선택할 수 있습니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -105,7 +105,7 @@ drift 또는 실행 환경 오류가 있으면 0이 아닌 코드로 종료합�
 
 ## 입력 소스 선택
 
-`--input`은 로컬 JSON/YAML 파일, `file://` URL, HTTP(S) URL, 표준 입력을
+[`--input`](../reference/cli.md#input-source-options)은 로컬 JSON/YAML 파일, `file://` URL, HTTP(S) URL, 표준 입력을
 뜻하는 `-`를 받을 수 있습니다.
 
 ```sh
@@ -127,12 +127,12 @@ curl https://api.example.test/openapi.yaml | \
     --check
 ```
 
-`--input-base`는 stdin에서 읽은 문서의 상대 참조를 해석할 기준 위치를
+[`--input-base`](../reference/cli.md#input-source-options)는 stdin에서 읽은 문서의 상대 참조를 해석할 기준 위치를
 지정합니다. 파일과 URL 입력은 각 입력 위치를 base로 사용합니다.
 
 ## 인증이 필요한 OpenAPI URL 읽기
 
-보호된 입력 credential은 환경 변수로 전달합니다. `--http-header-env`는 요청
+보호된 입력 credential은 환경 변수로 전달합니다. [`--http-header-env`](../reference/cli.md#authenticated-http-input)는 요청
 header를 환경 변수 이름에 연결하고 생성기가 그 값을 내부에서 읽으므로,
 secret 값은 환경 변수에 유지됩니다.
 
@@ -165,8 +165,7 @@ OPENAPI_TOKEN='Bearer example-token' \
 mapping은 여러 번 지정할 수 있습니다. `Host`, `Cookie`, `Proxy-Authorization`
 같은 transport 관리 header는 CLI가 거부합니다.
 
-mTLS 또는 사설 CA가 필요하면 `--tls-client-cert`, `--tls-client-key`,
-`--tls-ca-file`을 사용합니다. Client certificate와 key는 함께 지정해야 합니다.
+mTLS 또는 사설 CA가 필요하면 [`--tls-client-cert`, `--tls-client-key`, `--tls-ca-file`](../reference/cli.md#authenticated-http-input)을 사용합니다. Client certificate와 key는 함께 지정해야 합니다.
 이 credential과 header mapping은 루트 OpenAPI origin에 묶이며 same-origin
 요청에만 적용됩니다.
 
@@ -175,7 +174,7 @@ mTLS 또는 사설 CA가 필요하면 `--tls-client-cert`, `--tls-client-key`,
 루트 OpenAPI URL과 cross-origin `$ref`는 각각 별도의 입력 정책을 사용합니다.
 Cross-origin 원격 참조는 허용할 HTTPS origin을 명시합니다.
 
-최초 실행에서는 정확한 HTTPS origin을 허용하고 integrity lock을 갱신합니다.
+최초 실행에서는 [`--allow-remote-ref`](../reference/cli.md#remote-ref-options)로 정확한 HTTPS origin을 허용하고 [`--update-ref-lock`](../reference/cli.md#remote-ref-options)으로 integrity lock을 갱신합니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -187,12 +186,12 @@ openapi-sdkgen generate \
 ```
 
 로컬 루트 파일의 기본 lock 경로는 `<input>.openapi-sdkgen.lock`입니다. 이후
-실행에서는 `--update-ref-lock`을 생략하며, 잠금 파일에 기록된 내용과 실제
+실행에서는 [`--update-ref-lock`](../reference/cli.md#remote-ref-options)을 생략하며, 잠금 파일에 기록된 내용과 실제
 참조가 일치해야 생성이 계속됩니다.
 
-`--offline`은 잠긴 local cache만 사용해 원격 참조를 해석합니다.
+[`--offline`](../reference/cli.md#remote-ref-options)은 잠긴 local cache만 사용해 원격 참조를 해석합니다.
 URL/stdin 흐름처럼 로컬 입력 파일 이름에서 lock 경로를 만들 수 없거나 별도
-위치를 사용하려면 `--ref-lock <path>`를 지정합니다.
+위치를 사용하려면 [`--ref-lock <path>`](../reference/cli.md#remote-ref-options)를 지정합니다.
 
 루트 OpenAPI URL에 설정한 인증 정보는 같은 origin에만 적용됩니다.
 
@@ -210,7 +209,7 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-`--with server`는 Fetch 기반 handler/router 진입점을 추가합니다. HTTP listener,
+[`--with server`](../reference/cli.md#typescript-server-add-on)는 Fetch 기반 handler/router 진입점을 추가합니다. HTTP listener,
 framework, 실제 경로, 배포 환경 연결은 애플리케이션에서 구성합니다. 자세한
 사용법은 [Webhook과 Callback 수신](./server.md)을 참고하세요.
 
@@ -218,8 +217,8 @@ Outbound operation으로 구성된 문서는 기본 client artifact set을 사�
 
 ## 필수 사용자 정의 JSON Schema vocabulary
 
-필수 custom JSON Schema vocabulary를 선언한 문서는 신뢰한 로컬 schema
-extension이 필요합니다. Schema extension은 custom JSON Schema 의미를
+필수 custom JSON Schema vocabulary를 선언한 문서는 신뢰한 로컬
+[`--schema-extension`](../reference/cli.md#schema-extension)이 필요합니다. Schema extension은 custom JSON Schema 의미를
 처리하고, OpenAPI `x-*` 필드는 SDK 편의 기능을 설정합니다.
 
 매니페스트, SHA-256, JSON-RPC lowering, integrity lock 흐름과 보안 경계는

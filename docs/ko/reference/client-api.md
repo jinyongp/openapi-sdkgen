@@ -7,8 +7,9 @@ TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 
 | --- | --- |
 | `./generated/api` | API 호출, 생성 타입, 오류, Link, 스트림 |
 | `./generated/api/metadata` | 원본 OpenAPI 파일과 버전 확인 |
-| `./generated/api/server/webhooks` | Webhook 처리. `--with server`에서 생성 |
-| `./generated/api/server/callbacks` | Callback 처리. `--with server`에서 생성 |
+
+Inbound Webhook/Callback import는
+[생성된 서버 API](./server-api.md)를 참고하세요.
 
 ::: details Node ESM으로 실행할 때
 
@@ -18,6 +19,8 @@ Node에서 컴파일된 파일을 실행한다면 `.js` 파일 경로를 명시�
 import { createClient } from "./generated/api/index.js";
 ```
 :::
+
+<span id="client"></span>
 
 ## 클라이언트
 
@@ -29,7 +32,50 @@ const api = createClient({
 });
 ```
 
-클라이언트 설정은 [전송, 인증, 스트림](../guide/transport.md)에서 확인하세요.
+실제 설정 흐름은 [인증·전송·스트림](../guide/transport.md)에서 확인하세요.
+
+### ClientOptions
+
+| 옵션 | 용도 |
+| --- | --- |
+| `baseURL` | 명시적인 absolute API base URL |
+| `origin` | relative OpenAPI Server URL을 해석할 origin |
+| `server` | generated OpenAPI Server 선택 |
+| `codecs` | 선언된 custom media type의 complete-value codec |
+| `streamCodecs` | sequential protocol/adapter의 media-type 기본값. [스트리밍 API](./streaming.md#clientoptions-streamcodecs) 참고 |
+| `transport` | 명시적인 capability를 가진 host transport |
+| `fetch` | Fetch 구현 또는 wrapper |
+| `headers` | 기본 request header |
+| `authorization` | 기본 complete Authorization header 값 |
+| `credentials` | 기본 Fetch credentials mode |
+| `securityProvider` | 선택된 OpenAPI security requirement의 dynamic credential 획득 |
+| `timeoutMS` | 기본 request timeout |
+| `maxStreamFrameBytes` | 기본 sequential frame limit. [스트리밍 API](./streaming.md#maxstreamframebytes) 참고 |
+
+<span id="request-options"></span>
+
+## 요청 옵션
+
+Generated call은 적용 가능한 경우 다음 per-request option을 받습니다.
+
+| 옵션 | 용도 |
+| --- | --- |
+| `baseURL` | 한 호출의 API base URL override |
+| `signal` | caller-owned cancellation signal |
+| `timeoutMS` | client 기본값을 override하는 request timeout |
+| `headers` | 호출자가 추가하는 non-contract header |
+| `authorization` | client 기본값을 override하는 Authorization header |
+| `accept` | 선언된 response media type 선택 |
+| `streamCodec` | 한 호출의 sequential protocol/adapter override. [스트리밍 API](./streaming.md#requestoptions-streamcodec) 참고 |
+| `csrfToken` | generated `X-CSRF-Token` header 값 |
+| `requestID` | generated `X-Request-Id` header 값 |
+| `credentials` | 한 호출의 Fetch credentials mode |
+| `multipartHeaders` | 선언된 multipart part 추가 header |
+| `multipartContentTypes` | multipart part media type 선택 |
+| `maxStreamFrameBytes` | 한 호출의 sequential frame limit |
+
+`path`, `query`, `headerParams`, `body` 같은 operation-specific input section은
+OpenAPI operation에서 생성됩니다. `RequestOptions`는 호출 단위 동작을 설정합니다.
 
 ## TypeScript 타입
 
@@ -38,6 +84,8 @@ const api = createClient({
 [생성된 TypeScript 타입](./typescript-types.md)에서 확인하세요.
 
 ## API 호출
+
+<span id="resource-methods"></span>
 
 ### 리소스 메서드
 
@@ -70,6 +118,25 @@ const todos = await api.$operations["listTodos"]({
 });
 ```
 
+### `.raw()`
+
+모든 generated operation call에는 `.raw()`가 있습니다. Decoded body와 함께
+status, response header, request metadata, 선택된 content type, 원본 Fetch
+`Response`를 반환합니다.
+
+```ts
+const result = await api.$operations.getTodo.raw({
+  path: { todoID: "todo-1" },
+});
+
+result.status;
+result.headers;
+result.response;
+```
+
+일반 decoded call에서는 Fetch body가 이미 소비됩니다. 선언된 streaming
+response에서 소비되지 않은 body가 필요하면 별도의 `.raw()` 요청을 사용합니다.
+
 ## Security Requirement
 
 Operation에 OpenAPI security 대안이 여러 개라면 생성된 요청 옵션이
@@ -95,29 +162,28 @@ await api.$operations.updateTodo(
 동적으로 가져와야 한다면 `securityProvider`를 사용합니다. 전체 security
 모델과 예시는 [인증, 전송, 스트림](../guide/transport.md)을 참고하세요.
 
+<span id="request-headers"></span>
+
 ## 요청 헤더
 
 선언된 헤더는 `headerParams`에 생성됩니다. Fetch가 제어하는 헤더는 호출자
 입력에서 선택 사항이며 전송 여부는 실행 중인 Fetch가 결정합니다. 자세한
-사용법은 [요청 헤더](../guide/transport.md#요청-헤더)에서 확인할 수 있습니다.
+사용법은 [요청 헤더](../guide/transport.md#request-headers)에서 확인할 수 있습니다.
 
-## Link와 스트림
+## Link
 
-- `$links`: OpenAPI Link에 정의된 후속 요청
-- `.stream(...)`: 생성된 operation, route, resource 호출의 타입 안전 스트리밍 기능
-- `OperationStream<T>`: `response`, `abort()`, `toReadableStream()`을 제공하는 lazy 단일 소비자 스트림
-- `StreamSource<T>`: incremental request body에 사용하는 `AsyncIterable<T> | ReadableStream<T>`
-- `RouteStreamItem<Route>`: exact route의 stream item 타입 추출
-- `OperationStreamItem<Source>`: operation ID나 생성된 operation method에서 stream item 타입 추출
-- `ServerSentEvent`: 문자열 `data`와 선택적인 `event`, `id`, `retry`를 가진 표준 SSE 값
+`$links`에는 OpenAPI Link Object에서 생성된 타입 안전 후속 호출이 있습니다.
+각 helper는 Link runtime expression을 해석하는 데 필요한 원본 response context를
+전달합니다.
 
-media type별 기본 설정은 `ClientOptions.streamCodecs`, 한 번의 호출에만
-적용할 설정은 `RequestOptions.streamCodec`을 사용합니다.
-`maxStreamFrameBytes`는 application adapter 적용 전의 wire frame 크기를
-제한합니다.
+전체 예시는 [OpenAPI Link 따라가기](../guide/client.md#openapi-links)를
+참고하세요.
 
-사용 예시는 [생성된 클라이언트 사용](../guide/client.md)과
-[인증, 전송, 스트림](../guide/transport.md)에서 확인하세요.
+## 스트리밍
+
+Generated sequential-media API, lifecycle, protocol/adapter extension point,
+request source, frame limit는 전용 [스트리밍 API](./streaming.md) 레퍼런스에
+정리되어 있습니다.
 
 ## 오류 처리
 
@@ -151,15 +217,3 @@ openapi.versionLine;
 
 `openapi.document`에서 SDK 생성에 사용한 OpenAPI 파일의 내용을 확인할 수
 있습니다.
-
-## Webhook과 Callback
-
-`--with server`로 생성했다면 다음 경로를 사용할 수 있습니다.
-
-```ts
-import { createWebhookRouter } from "./generated/api/server/webhooks";
-import { createCallbackHandlers } from "./generated/api/server/callbacks";
-```
-
-자세한 사용법은
-[Webhook과 Callback 수신](../guide/server.md)에서 설정과 예시를 확인하세요.

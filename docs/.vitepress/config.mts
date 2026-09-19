@@ -4,6 +4,7 @@ const englishTheme = {
   nav: [
     { text: "Start", link: "/guide/getting-started" },
     { text: "Guides", link: "/guide/generate" },
+    { text: "Examples", link: "/examples/" },
     { text: "Reference", link: "/reference/cli" },
     { text: "Playground", link: "/playground" },
   ],
@@ -21,12 +22,23 @@ const englishTheme = {
         ],
       },
     ],
+    "/examples/": [
+      {
+        text: "Examples",
+        items: [
+          { text: "Overview", link: "/examples/" },
+          { text: "AI streaming API", link: "/examples/ai-streaming" },
+        ],
+      },
+    ],
     "/reference/": [
       {
         text: "Reference",
         items: [
           { text: "CLI", link: "/reference/cli" },
           { text: "Generated client API", link: "/reference/client-api" },
+          { text: "Generated server API", link: "/reference/server-api" },
+          { text: "Streaming API", link: "/reference/streaming" },
           { text: "TypeScript types", link: "/reference/typescript-types" },
           { text: "OpenAPI support", link: "/reference/capabilities" },
           { text: "OpenAPI x-* extensions", link: "/reference/extensions" },
@@ -49,6 +61,7 @@ const koreanTheme = {
   nav: [
     { text: "시작하기", link: "/ko/guide/getting-started" },
     { text: "사용 가이드", link: "/ko/guide/generate" },
+    { text: "예제", link: "/ko/examples/" },
     { text: "레퍼런스", link: "/ko/reference/cli" },
     { text: "플레이그라운드", link: "/ko/playground" },
   ],
@@ -66,12 +79,23 @@ const koreanTheme = {
         ],
       },
     ],
+    "/ko/examples/": [
+      {
+        text: "예제",
+        items: [
+          { text: "개요", link: "/ko/examples/" },
+          { text: "AI streaming API", link: "/ko/examples/ai-streaming" },
+        ],
+      },
+    ],
     "/ko/reference/": [
       {
         text: "레퍼런스",
         items: [
           { text: "CLI", link: "/ko/reference/cli" },
           { text: "생성된 클라이언트 API", link: "/ko/reference/client-api" },
+          { text: "생성된 서버 API", link: "/ko/reference/server-api" },
+          { text: "스트리밍 API", link: "/ko/reference/streaming" },
           { text: "TypeScript 타입", link: "/ko/reference/typescript-types" },
           { text: "OpenAPI 지원 범위", link: "/ko/reference/capabilities" },
           { text: "OpenAPI x-* 확장", link: "/ko/reference/extensions" },

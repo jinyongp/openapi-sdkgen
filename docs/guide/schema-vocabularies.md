@@ -1,6 +1,6 @@
 # Custom JSON Schema vocabularies
 
-Use `--schema-extension` when an OpenAPI 3.1 or 3.2 schema declares a required
+Use [`--schema-extension`](../reference/cli.md#schema-extensions) when an OpenAPI 3.1 or 3.2 schema declares a required
 custom JSON Schema vocabulary that openapi-sdkgen needs an external compiler to
 interpret.
 
@@ -70,7 +70,7 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-Later runs omit `--update-ref-lock`:
+Later runs omit [`--update-ref-lock`](../reference/cli.md#remote-ref-options):
 
 ```sh
 openapi-sdkgen generate \
@@ -82,10 +82,10 @@ openapi-sdkgen generate \
 ```
 
 If the executable changes, update its manifest digest and run
-`--update-ref-lock` to record the new trusted digest.
+[`--update-ref-lock`](../reference/cli.md#remote-ref-options) to record the new trusted digest.
 
 When the root OpenAPI document comes from an HTTP(S) URL or stdin, there is no
-local input filename from which to derive a lock path. Provide `--ref-lock`:
+local input filename from which to derive a lock path. Provide [`--ref-lock`](../reference/cli.md#remote-ref-options):
 
 ```sh
 openapi-sdkgen generate \

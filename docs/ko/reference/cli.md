@@ -24,6 +24,8 @@ openapi-sdkgen generate [options]
 `--input`과 `--target`은 필수입니다. 일반 생성은 `--output`을 요구하고,
 `--check`는 `--output` 없이도 실행할 수 있습니다.
 
+<span id="core-options"></span>
+
 ### 옵션
 
 | 옵션 | 의미 |
@@ -38,6 +40,8 @@ openapi-sdkgen generate [options]
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
 `--output`은 디렉터리 경로를 받으며 stdout 출력 모드는 제공하지 않습니다.
+
+<span id="fresh-incremental-and-check-modes"></span>
 
 ## Fresh, incremental, check 모드
 
@@ -98,6 +102,8 @@ JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 p
 포함됩니다. Diagnostic report는 stderr에 기록되며, 생성 artifact는 요청한
 경우에만 output 디렉터리에 기록됩니다.
 
+<span id="input-source-options"></span>
+
 ## 입력 소스 옵션
 
 ### `--input <source>`
@@ -132,6 +138,8 @@ curl https://api.example.test/openapi.yaml | \
 ```
 
 파일과 URL 입력은 각 입력 위치를 base로 사용합니다.
+
+<span id="authenticated-http-input"></span>
 
 ## 인증이 필요한 HTTP(S) 입력
 
@@ -193,6 +201,8 @@ Fetch 기반 inbound contract를 생성하며, HTTP listener와 framework 연결
 사용하세요.
 
 자세한 사용법은 [Webhook과 Callback 수신](../guide/server.md)을 참고하세요.
+
+<span id="remote-ref-options"></span>
 
 ## 원격 `$ref` 옵션
 
