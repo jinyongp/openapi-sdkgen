@@ -96,10 +96,12 @@ interface ServerSentEvent {
 }
 ```
 
-`data`는 문자열로 유지됩니다. JSON decode, provider sentinel, event aggregation,
-domain semantics는 application adapter에서 처리합니다. Parser는 SSE의
-last-event-id state를 event 사이에 유지하고 wire stream의 빈 `id:` 필드에서
-reset합니다.
+`data`는 protocol frame 단계에서 문자열로 유지됩니다. Built-in SSE를
+custom adapter나 protocol 없이 사용하면 openapi-sdkgen이 일반적인
+JSON-in-`data` mapping을 기본으로 적용합니다. Response와 inbound stream에서는
+`event.data`를 JSON으로 parsing하고, request item은 JSON 문자열을 SSE
+`data`에 넣습니다. Parser는 SSE의 last-event-id state를 event 사이에
+유지하고 wire stream의 빈 `id:` 필드에서 reset합니다.
 
 Generated client는 SSE reconnect 또는 replay를 자동 수행하지 않습니다.
 
@@ -128,8 +130,10 @@ Response와 inbound server stream에서는 adapter 결과가 선언된 `itemSche
 validation과 projection을 거칩니다. Streaming request body에서는 generated item
 value를 `itemSchema`로 encode한 다음 adapter가 실행됩니다.
 
-Byte framing은 이미 지원되지만 SSE `data` 안의 JSON처럼 application wire
-event에 추가 semantics가 필요할 때 adapter를 사용합니다.
+Built-in application mapping으로 처리할 수 없는 semantics가 있을 때 adapter를
+사용합니다. SSE에서는 non-JSON `data`, named event routing, terminal marker,
+frame aggregation 같은 경우가 해당합니다. Explicit adapter에는 raw
+`ServerSentEvent` frame이 전달되며 기본 JSON mapping을 대체합니다.
 
 ### StreamProtocol
 
@@ -162,13 +166,18 @@ interface StreamCodec<Frame = unknown, Item = unknown> {
 ```
 
 Codec은 framing을 교체하거나 application adapter를 추가하거나 두 작업을 함께
-수행할 수 있습니다.
+수행할 수 있습니다. Built-in SSE에서 `adapter`를 생략하면 기본
+JSON-in-`data` mapping을 사용합니다. Adapter를 지정하면 이 기본 mapping을
+대체합니다. Custom protocol을 지정한 경우에는 SSE JSON adapter가 암묵적으로
+적용되지 않습니다.
 
 ## 설정
 
 ### ClientOptions.streamCodecs
 
-한 client의 media type별 기본 설정입니다.
+한 client의 media type별 기본 설정입니다. 일반적인 JSON SSE에는
+`streamCodecs` 설정이 필요하지 않으며, application-specific semantics가 있을
+때만 설정합니다.
 
 ```ts
 const api = createClient({
@@ -217,7 +226,7 @@ Generated Webhook/Callback server API도 inbound stream에 같은 옵션을
 | `OperationStream<T>` | lazy 단일 소비자 response stream |
 | `StreamResponseMetadata` | status, header, content type, request metadata |
 | `StreamSource<T>` | incremental request source |
-| `ServerSentEvent` | built-in SSE frame |
+| `ServerSentEvent` | custom adapter에 전달되는 raw built-in SSE frame |
 | `StreamReader` | 사용자 정의 protocol용 bounded reader |
 | `StreamContext` | content type, frame limit, abort signal |
 | `StreamProtocol<Frame>` | byte framing |

@@ -93,8 +93,10 @@ interface ServerSentEvent {
 }
 ```
 
-`data` remains a string. JSON decoding, provider sentinels, event aggregation,
-and domain-specific semantics belong in an application adapter. The parser
+`data` remains a string at the protocol-frame layer. When built-in SSE is used
+without a custom adapter or protocol, openapi-sdkgen applies the common
+JSON-in-`data` mapping automatically: it parses `event.data` for responses and
+inbound streams and stringifies request items into SSE `data`. The parser
 preserves the SSE last-event-id state and resets it when the wire stream sends an
 empty `id:` field.
 
@@ -125,8 +127,10 @@ For responses and inbound server streams, adapter output is validated and
 projected through the declared `itemSchema`. For streaming request bodies, the
 generated item value is encoded through `itemSchema` before the adapter runs.
 
-Use an adapter when the byte framing is already supported but the application
-wire events need another semantic layer, such as JSON carried in SSE `data`.
+Use an adapter when the built-in application mapping is not enough. For SSE,
+this includes non-JSON `data`, named-event routing, terminal markers, frame
+aggregation, or other application-specific semantics. An explicit adapter
+receives raw `ServerSentEvent` frames and replaces the default JSON mapping.
 
 ### StreamProtocol
 
@@ -158,13 +162,18 @@ interface StreamCodec<Frame = unknown, Item = unknown> {
 }
 ```
 
-A codec may replace framing, add an application adapter, or do both.
+A codec may replace framing, add an application adapter, or do both. For
+built-in SSE, omitting `adapter` uses the default JSON-in-`data` mapping.
+Providing an adapter replaces that mapping. Providing a custom protocol does not
+implicitly apply the SSE JSON adapter.
 
 ## Configuration
 
 ### ClientOptions.streamCodecs
 
-Set media-type defaults for every operation on one client:
+Set media-type defaults for every operation on one client. Ordinary JSON SSE
+does not need a `streamCodecs` entry; configure one when the application needs
+custom stream semantics:
 
 ```ts
 const api = createClient({
@@ -212,7 +221,7 @@ The generated entry point exports:
 | `OperationStream<T>` | lazy single-consumer response stream |
 | `StreamResponseMetadata` | status, headers, content type, request metadata |
 | `StreamSource<T>` | incremental request source |
-| `ServerSentEvent` | built-in SSE frame |
+| `ServerSentEvent` | raw built-in SSE frame exposed to custom adapters |
 | `StreamReader` | bounded reader for custom protocols |
 | `StreamContext` | content type, frame limit, abort signal |
 | `StreamProtocol<Frame>` | byte framing |

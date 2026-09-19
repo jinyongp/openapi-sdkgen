@@ -92,6 +92,15 @@ const collect = async <Item>(items: AsyncIterable<Item>): Promise<Item[]> => {
   return result;
 };
 
+const rawSSEAdapter = {
+  async *decode(frames: AsyncIterable<unknown>): AsyncIterable<unknown> {
+    yield* frames;
+  },
+  async *encode(items: AsyncIterable<unknown>): AsyncIterable<unknown> {
+    yield* items;
+  },
+};
+
 describe("generated runtime", () => {
   it("reuses deep subtree validation while transforming nested values", () => {
     const depth = 64;
@@ -2251,7 +2260,7 @@ describe("generated runtime", () => {
     }
   });
 
-  it("accepts CR-only SSE framing and discards an incomplete event at EOF", async () => {
+  it("accepts CR-only SSE framing with default JSON mapping and discards an incomplete event at EOF", async () => {
     const request = createRequest({
       baseURL: "https://api.example.test",
       fetch: async () =>
@@ -2277,10 +2286,10 @@ describe("generated runtime", () => {
           }),
         ),
       ),
-    ).resolves.toEqual([{ data: '{"value":1}' }]);
+    ).resolves.toEqual([{ value: 1 }]);
   });
 
-  it("parses SSE event objects across arbitrary UTF-8 and line boundaries", async () => {
+  it("parses raw SSE event objects across arbitrary UTF-8 and line boundaries with an adapter", async () => {
     const wire =
       "\uFEFF: ignored comment\r\n" +
       "event: update\r\n" +
@@ -2307,6 +2316,7 @@ describe("generated runtime", () => {
     const bytes = new TextEncoder().encode(wire);
     const request = createRequest({
       baseURL: "https://api.example.test",
+      streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
       fetch: async () =>
         new Response(
           new ReadableStream({
@@ -2351,14 +2361,12 @@ describe("generated runtime", () => {
     ]);
   });
 
-  it("applies item-schema transformation to parsed SSE event objects", async () => {
+  it("applies item-schema transformation after the default SSE JSON adapter", async () => {
     const itemSchema = {
       types: ["object"],
-      required: ["data"],
+      required: ["token"],
       properties: {
-        data: { property: "payload", schema: { types: ["string"] } },
-        event: { property: "eventType", schema: { types: ["string"] } },
-        retry: { property: "retryAfter", schema: { types: ["integer"] } },
+        token: { property: "payload", schema: { types: ["string"] } },
       },
     } as const;
     const request = createRequest({
@@ -2387,7 +2395,7 @@ describe("generated runtime", () => {
           }),
         ),
       ),
-    ).resolves.toEqual([{ payload: '{"token":"a"}', eventType: "delta", retryAfter: 5 }]);
+    ).resolves.toEqual([{ payload: "a" }]);
   });
 
   it("lets stream codecs override built-in framing in both directions", async () => {
@@ -2843,7 +2851,7 @@ describe("generated runtime", () => {
     ).resolves.toEqual([{ displayName: "custom", future: true }]);
   });
 
-  it("encodes standard SSE request event objects and rejects non-stream bodies before fetch", async () => {
+  it("encodes default SSE JSON request items and rejects non-stream bodies before fetch", async () => {
     const bodies: string[] = [];
     const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
       bodies.push(await new Response(init?.body).text());
@@ -2864,18 +2872,13 @@ describe("generated runtime", () => {
       inputSchemas: {},
     });
     async function* events() {
-      yield {
-        event: "delta",
-        data: "first\n second",
-        id: "event-1",
-        retry: 25,
-      };
-      yield { data: "" };
+      yield { type: "delta", text: "first\n second" };
+      yield { type: "done", text: "" };
     }
 
     await expect(request(streamOperation, { body: events() })).resolves.toEqual({ ok: true });
     expect(bodies).toEqual([
-      "event: delta\ndata: first\ndata:  second\nid: event-1\nretry: 25\n\ndata: \n\n",
+      'data: {"type":"delta","text":"first\\n second"}\n\ndata: {"type":"done","text":""}\n\n',
     ]);
 
     const error = await request(streamOperation, { body: { data: "not-a-stream" } }).catch(
@@ -2885,7 +2888,7 @@ describe("generated runtime", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("validates SSE request fields while preserving request-stream cancellation", async () => {
+  it("validates explicit SSE adapter frames while preserving request-stream cancellation", async () => {
     let iteratorReturnCount = 0;
     const streamOperation = operation({
       path: "/events",
@@ -2911,6 +2914,7 @@ describe("generated runtime", () => {
     for (const invalid of invalidCases) {
       const request = createRequest({
         baseURL: "https://api.example.test",
+        streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
         fetch: async (_input, init) => {
           await new Response(init?.body).text();
           return jsonResponse({ ok: true });
@@ -2927,6 +2931,7 @@ describe("generated runtime", () => {
 
     const request = createRequest({
       baseURL: "https://api.example.test",
+      streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
       fetch: async (_input, init) => {
         const reader = (init?.body as ReadableStream<Uint8Array>).getReader();
         const first = await reader.read();

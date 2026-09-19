@@ -700,10 +700,7 @@ async function* decodeResponseStreamItems(
     options.streamCodec?.protocol === undefined
       ? decodeBuiltInStreamFrames(body, options)
       : decodeCustomStreamProtocol(body, options.streamCodec.protocol, context);
-  const items =
-    options.streamCodec?.adapter === undefined
-      ? frames
-      : options.streamCodec.adapter.decode(frames, context);
+  const items = decodeStreamApplicationItems(frames, options, context);
   const iterator = items[Symbol.asyncIterator]();
   try {
     while (true) {
@@ -717,6 +714,26 @@ async function* decodeResponseStreamItems(
       if (options.signal?.aborted) void close.catch(() => undefined);
       else await close.catch(() => undefined);
     }
+  }
+}
+
+function decodeStreamApplicationItems(
+  frames: AsyncIterable<unknown>,
+  options: StreamDecodeOptions,
+  context: StreamContext,
+): AsyncIterable<unknown> {
+  if (options.streamCodec?.adapter !== undefined)
+    return options.streamCodec.adapter.decode(frames, context);
+  if (options.streamCodec?.protocol === undefined && options.streamFraming === "sse")
+    return decodeDefaultSSEJSONItems(frames);
+  return frames;
+}
+
+async function* decodeDefaultSSEJSONItems(frames: AsyncIterable<unknown>): AsyncIterable<unknown> {
+  for await (const frame of frames) {
+    if (!isRecord(frame) || typeof frame.data !== "string")
+      throw new TypeError("SSE stream protocol produced an invalid event frame");
+    yield parseStreamJSON(frame.data);
   }
 }
 
@@ -2704,10 +2721,12 @@ function encodeIncrementalStreamRequestBody(
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   };
   const items = transformStreamingRequestItems(values, options.itemSchema, options.schemas);
-  const frames =
-    options.streamCodec?.adapter === undefined
-      ? items
-      : options.streamCodec.adapter.encode(items, context);
+  const frames = encodeStreamApplicationFrames(
+    items,
+    options.streamFraming,
+    options.streamCodec,
+    context,
+  );
   return encodeStreamProtocolFrames(frames, {
     contentType: options.contentType,
     streamFraming: options.streamFraming,
@@ -2737,10 +2756,12 @@ function encodeCompleteSequentialRequestBody(
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   };
   const items = streamArrayValues(transformed);
-  const frames =
-    options.streamCodec?.adapter === undefined
-      ? items
-      : options.streamCodec.adapter.encode(items, context);
+  const frames = encodeStreamApplicationFrames(
+    items,
+    options.streamFraming,
+    options.streamCodec,
+    context,
+  );
   return encodeStreamProtocolFrames(frames, {
     contentType: options.contentType,
     streamFraming: options.streamFraming,
@@ -2755,6 +2776,28 @@ function encodeCompleteSequentialRequestBody(
     suppliedContentTypes: options.suppliedContentTypes,
     codecs: options.codecs,
   });
+}
+
+function encodeStreamApplicationFrames(
+  items: AsyncIterable<unknown>,
+  streamFraming: StreamFraming | undefined,
+  streamCodec: StreamCodec | undefined,
+  context: StreamContext,
+): AsyncIterable<unknown> {
+  if (streamCodec?.adapter !== undefined) return streamCodec.adapter.encode(items, context);
+  if (streamCodec?.protocol === undefined && streamFraming === "sse")
+    return encodeDefaultSSEJSONFrames(items);
+  return items;
+}
+
+async function* encodeDefaultSSEJSONFrames(
+  items: AsyncIterable<unknown>,
+): AsyncIterable<ServerSentEvent> {
+  for await (const item of items) {
+    const data = JSON.stringify(item);
+    if (data === undefined) throw new TypeError("SSE stream item must be JSON-serializable");
+    yield { data };
+  }
 }
 
 function encodeStreamProtocolFrames(

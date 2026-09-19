@@ -1116,7 +1116,7 @@ if (JSON.stringify(seen) !== JSON.stringify(expected))
 	}
 }
 
-func TestGeneratedStreamingRequestEncodesSSEEventObjects(t *testing.T) {
+func TestGeneratedStreamingRequestUsesDefaultSSEJSONAdapter(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.2.0",
   "info": {"title": "SSE request", "version": "1"},
@@ -1128,15 +1128,25 @@ func TestGeneratedStreamingRequestEncodesSSEEventObjects(t *testing.T) {
           "required": true,
           "content": {
             "text/event-stream": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["type", "text"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "type": {"type": "string"},
+                    "text": {"type": "string"}
+                  }
+                }
+              },
               "itemSchema": {
                 "type": "object",
-                "required": ["data"],
+                "required": ["type", "text"],
                 "additionalProperties": false,
                 "properties": {
-                  "data": {"type": "string"},
-                  "event": {"type": "string"},
-                  "id": {"type": "string"},
-                  "retry": {"type": "integer", "minimum": 0}
+                  "type": {"type": "string"},
+                  "text": {"type": "string"}
                 }
               }
             }
@@ -1154,22 +1164,27 @@ func TestGeneratedStreamingRequestEncodesSSEEventObjects(t *testing.T) {
 	script := `
 import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
-let received = "";
+const received = [];
 const api = createClient({ baseURL: "https://api.example.test", fetch: async (_input, init) => {
-  received = await new Response(init.body).text();
+  received.push(await new Response(init.body).text());
   if (new Headers(init.headers).get("content-type") !== "text/event-stream") throw new Error("SSE request content type missing");
   return new Response(null, { status: 204 });
 } });
 async function* events() {
-  yield { event: "delta", data: "first\n second", id: "event-1", retry: 25 };
-  yield { data: "" };
+  yield { type: "delta", text: "first\n second" };
+  yield { type: "done", text: "" };
 }
 await api.$operations.publishEvents({ body: events() });
-const expected = "event: delta\ndata: first\ndata:  second\nid: event-1\nretry: 25\n\ndata: \n\n";
-if (received !== expected) throw new Error("SSE request was not encoded as event objects: " + JSON.stringify(received));
+await api.$operations.publishEvents({ body: [{ type: "batch", text: "all" }] });
+const expected = [
+  'data: {"type":"delta","text":"first\\n second"}\n\ndata: {"type":"done","text":""}\n\n',
+  'data: {"type":"batch","text":"all"}\n\n',
+];
+if (JSON.stringify(received) !== JSON.stringify(expected))
+  throw new Error("SSE JSON adapter request encoding mismatch: " + JSON.stringify(received));
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript SSE request runtime test: %v\n%s", err, output)
+		t.Fatalf("execute TypeScript default SSE JSON request runtime test: %v\n%s", err, output)
 	}
 }
 
@@ -1582,10 +1597,13 @@ catch (error) { if (!String(error).includes("exceeds 4 bytes") && !String(error.
 	}
 }
 
-func TestGeneratedResponseStreamsDecodeSSEEventObjects(t *testing.T) {
+func TestGeneratedResponseStreamsUseDefaultSSEJSONAdapter(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"SSE","version":"1"},
-  "paths":{"/events":{"get":{"operationId":"watchEvents","responses":{"200":{"description":"OK","content":{"text/event-stream":{"itemSchema":{"type":"object","required":["data"],"properties":{"data":{"type":"string"},"event":{"type":"string"},"id":{"type":"string"},"retry":{"type":"integer"}}}}}}}}}}
+  "paths":{"/events":{"get":{"operationId":"watchEvents","responses":{"200":{"description":"OK","content":{"text/event-stream":{
+    "schema":{"type":"array","items":{"type":"object","required":["token"],"additionalProperties":false,"properties":{"token":{"type":"string"}}}},
+    "itemSchema":{"type":"object","required":["token"],"additionalProperties":false,"properties":{"token":{"type":"string"}}}
+  }}}}}}}}
 }`))
 	if err != nil {
 		t.Fatal(err)
@@ -1593,23 +1611,45 @@ func TestGeneratedResponseStreamsDecodeSSEEventObjects(t *testing.T) {
 	output := compileTypeScriptArtifacts(t, document)
 	script := `
 import { pathToFileURL } from "node:url";
-const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
+let calls = 0;
 const api = createClient({
   baseURL: "https://api.example.test",
-  fetch: async () => new Response(
-    'event: delta\ndata: {"token":"a"}\nretry: 5\n\ndata: [DONE]\n\n',
-    { status: 200, headers: { "content-type": "text/event-stream" } },
-  ),
+  fetch: async () => {
+    calls++;
+    return new Response(
+      'event: delta\nid: event-1\nretry: 5\ndata: {"token":"a"}\n\n',
+      { status: 200, headers: { "content-type": "text/event-stream" } },
+    );
+  },
 });
 const events = [];
 for await (const event of api.$operations.watchEvents.stream()) events.push(event);
-if (events.length !== 2) throw new Error("SSE event count mismatch");
-if (events[0].event !== "delta" || events[0].data !== '{"token":"a"}' || events[0].retry !== 5)
-  throw new Error("SSE event object was not parsed according to OpenAPI semantics");
-if (events[1].data !== "[DONE]") throw new Error("SSE sentinel-shaped data was interpreted by the runtime");
+if (JSON.stringify(events) !== JSON.stringify([{ token: "a" }]))
+  throw new Error("default SSE JSON stream decode mismatch: " + JSON.stringify(events));
+const complete = await api.$operations.watchEvents();
+if (JSON.stringify(complete) !== JSON.stringify([{ token: "a" }]))
+  throw new Error("default SSE JSON complete decode mismatch: " + JSON.stringify(complete));
+if (calls !== 2) throw new Error("unexpected SSE request count: " + calls);
+
+const invalid = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    "data: [DONE]\n\n",
+    { status: 200, headers: { "content-type": "text/event-stream" } },
+  ),
+});
+try {
+  for await (const _event of invalid.$operations.watchEvents.stream()) {
+    // consume
+  }
+  throw new Error("invalid default SSE JSON data was accepted");
+} catch (error) {
+  if (!isErrorCode(error, TransportErrorCode.RESPONSE_DECODE_FAILED)) throw error;
+}
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript SSE stream runtime test: %v\n%s", err, output)
+		t.Fatalf("execute TypeScript default SSE JSON response runtime test: %v\n%s", err, output)
 	}
 }
 
@@ -1807,9 +1847,14 @@ func TestGeneratedSSEContentSchemaValidatesJSONDataWithoutChangingStringValue(t 
 	script := `
 import { pathToFileURL } from "node:url";
 const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
+const rawSSEAdapter = {
+  async *decode(frames) { yield* frames; },
+  async *encode(items) { yield* items; },
+};
 
 const valid = createClient({
   baseURL: "https://api.example.test",
+  streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
   fetch: async () => new Response(
     "event: delta\ndata: {\"token\":\"a\"}\n\n",
     { status: 200, headers: { "content-type": "text/event-stream" } },
@@ -1828,6 +1873,7 @@ if (
 
 const invalid = createClient({
   baseURL: "https://api.example.test",
+  streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
   fetch: async () => new Response(
     "data: {\"token\":1}\n\n",
     { status: 200, headers: { "content-type": "text/event-stream" } },

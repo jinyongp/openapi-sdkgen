@@ -135,10 +135,12 @@ OpenAPI 3.2 inbound body에 `itemSchema`가 있으면 생성된 handler는 reque
 stream을 소비하면서 검증된 item을 받습니다. Webhook과 Callback 옵션도 outbound
 client와 같은 [`StreamCodec`](../reference/streaming.md#streamcodec) 모델을 사용합니다.
 
-Wire framing은 표준이고 application event 변환만 필요하다면
-[`StreamAdapter`](../reference/streaming.md#streamadapter)를 사용합니다. 예를 들어 Todo SSE의 문자열 `data`를
-application event로 변환하면서 built-in SSE protocol을 그대로 사용할 수
-있습니다.
+Built-in SSE는 JSON `data`를 선언된 `itemSchema`에 맞는 값으로 기본
+변환하므로 일반적인 JSON event에는 stream 설정이 필요하지 않습니다. 다른
+semantics가 필요할 때
+[`StreamAdapter`](../reference/streaming.md#streamadapter)를 사용합니다. 아래
+예제는 built-in SSE protocol을 그대로 사용하면서 이름이 `todo`인 event만
+선택합니다.
 
 ```ts
 import type {

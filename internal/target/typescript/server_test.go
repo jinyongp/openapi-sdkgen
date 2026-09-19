@@ -728,7 +728,7 @@ if (deniedResponse.status !== 400) throw new Error("false inbound schema accepte
 	}
 }
 
-func TestGeneratedWebhookRouterPreservesSSELastEventID(t *testing.T) {
+func TestGeneratedWebhookRouterUsesDefaultSSEJSONAdapterAndCustomRawFrames(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0",
   "info":{"title":"Inbound SSE","version":"1"},
@@ -736,8 +736,9 @@ func TestGeneratedWebhookRouterPreservesSSELastEventID(t *testing.T) {
   "webhooks":{"events":{"post":{
     "requestBody":{"required":true,"content":{"text/event-stream":{"itemSchema":{
       "type":"object",
-      "required":["data"],
-      "properties":{"data":{"type":"string"},"id":{"type":"string"}}
+      "required":["value"],
+      "additionalProperties":false,
+      "properties":{"value":{"type":"string"}}
     }}}},
     "responses":{"204":{"description":"OK"}}
   }}}
@@ -780,29 +781,64 @@ func TestGeneratedWebhookRouterPreservesSSELastEventID(t *testing.T) {
 	script := `
 import { pathToFileURL } from "node:url";
 const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href);
-const seen = [];
-const router = createWebhookRouter({
+const wire =
+  'id: one\ndata: {"value":"first"}\n\n' +
+  'data: {"value":"inherited"}\n\n' +
+  'id\ndata: {"value":"reset"}\n\n' +
+  'data: {"value":"after"}\n\n';
+
+const defaultSeen = [];
+const defaultRouter = createWebhookRouter({
   events: { POST: async ({ body }) => {
-    for await (const event of body) seen.push((event.id ?? "missing") + ":" + event.data);
+    for await (const item of body) defaultSeen.push(item.value);
     return { status: 204 };
   } },
 }, { routes: { events: "/events" } });
-const wire =
-  "id: one\ndata: first\n\n" +
-  "data: inherited\n\n" +
-  "id\ndata: reset\n\n" +
-  "data: after\n\n";
-const response = await router.fetch(new Request("https://host.test/events", {
+const defaultResponse = await defaultRouter.fetch(new Request("https://host.test/events", {
   method: "POST",
   headers: { "content-type": "text/event-stream" },
   body: wire,
 }));
-if (response.status !== 204) throw new Error("inbound SSE request failed: " + response.status);
-if (seen.join(",") !== "one:first,one:inherited,:reset,:after")
-  throw new Error("inbound SSE last-event-id state changed: " + seen.join(","));
+if (defaultResponse.status !== 204) throw new Error("default inbound SSE request failed: " + defaultResponse.status);
+if (defaultSeen.join(",") !== "first,inherited,reset,after")
+  throw new Error("default inbound SSE JSON adapter mismatch: " + defaultSeen.join(","));
+
+const rawFrames = [];
+const customSeen = [];
+const adapter = {
+  async *decode(frames) {
+    for await (const frame of frames) {
+      rawFrames.push((frame.id ?? "missing") + ":" + frame.data);
+      yield JSON.parse(frame.data);
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) yield { data: JSON.stringify(item) };
+  },
+};
+const customRouter = createWebhookRouter({
+  events: { POST: async ({ body }) => {
+    for await (const item of body) customSeen.push(item.value);
+    return { status: 204 };
+  } },
+}, {
+  routes: { events: "/events" },
+  streamCodecs: { "text/event-stream": { adapter } },
+});
+const customResponse = await customRouter.fetch(new Request("https://host.test/events", {
+  method: "POST",
+  headers: { "content-type": "text/event-stream" },
+  body: wire,
+}));
+if (customResponse.status !== 204) throw new Error("custom inbound SSE request failed: " + customResponse.status);
+if (customSeen.join(",") !== "first,inherited,reset,after")
+  throw new Error("custom inbound SSE adapter output mismatch: " + customSeen.join(","));
+if (rawFrames.join("|") !==
+  'one:{"value":"first"}|one:{"value":"inherited"}|:{"value":"reset"}|:{"value":"after"}')
+  throw new Error("custom adapter did not receive raw SSE frames: " + rawFrames.join("|"));
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute generated inbound SSE server: %v\n%s", err, output)
+		t.Fatalf("execute generated inbound SSE JSON/default adapter server test: %v\n%s", err, output)
 	}
 }
 

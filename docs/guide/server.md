@@ -136,9 +136,11 @@ For an OpenAPI 3.2 inbound body with `itemSchema`, the generated handler receive
 typed items as the request stream is consumed. Webhook and Callback options use
 the same [`StreamCodec`](../reference/streaming.md#streamcodec) model as the outbound client.
 
-Use a [`StreamAdapter`](../reference/streaming.md#streamadapter) when the wire framing is standard but the application
-needs to map events. For example, a Todo SSE adapter can parse the string
-`data` field while reusing the built-in SSE protocol:
+Built-in SSE already maps JSON `data` to the declared `itemSchema`, so the
+common JSON event shape needs no stream configuration. Use a
+[`StreamAdapter`](../reference/streaming.md#streamadapter) when the application
+needs different semantics. For example, this adapter routes only the named
+`todo` SSE events while reusing the built-in SSE protocol:
 
 ```ts
 import type {

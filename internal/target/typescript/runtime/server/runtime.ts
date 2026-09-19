@@ -1740,8 +1740,34 @@ function decodeInboundProtocolItems(
         })
       : decodeInboundCustomProtocol(body, codec.protocol, context);
   return {
-    items: codec?.adapter === undefined ? frames : codec.adapter.decode(frames, context),
+    items: decodeInboundStreamApplicationItems(frames, options.streamFraming, codec, context),
   };
+}
+
+function decodeInboundStreamApplicationItems(
+  frames: AsyncIterable<unknown>,
+  streamFraming: StreamFraming | undefined,
+  codec: StreamCodec | undefined,
+  context: StreamContext,
+): AsyncIterable<unknown> {
+  if (codec?.adapter !== undefined) return codec.adapter.decode(frames, context);
+  if (codec?.protocol === undefined && streamFraming === "sse")
+    return decodeInboundDefaultSSEJSONItems(frames);
+  return frames;
+}
+
+async function* decodeInboundDefaultSSEJSONItems(
+  frames: AsyncIterable<unknown>,
+): AsyncIterable<unknown> {
+  for await (const frame of frames) {
+    if (!isRecord(frame) || typeof frame.data !== "string")
+      throw new InboundRequestError(new Response("Invalid stream item", { status: 400 }));
+    try {
+      yield JSON.parse(frame.data);
+    } catch {
+      throw new InboundRequestError(new Response("Invalid stream item", { status: 400 }));
+    }
+  }
 }
 
 async function* decodeInboundCustomProtocol(

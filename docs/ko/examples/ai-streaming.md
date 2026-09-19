@@ -20,7 +20,7 @@ AI SDK package에 의존하지 않습니다.
 | 코드베이스 | 소유 범위 | 주요 dependency |
 | --- | --- | --- |
 | `ai-service` | model/provider 설정, HTTP endpoint, OpenAPI contract | `ai`, model-provider package, server framework/runtime |
-| `sdk-consumer` | generated SDK, stream adapter, application 동작 | openapi-sdkgen 출력물. AI SDK와 model-provider dependency 없음 |
+| `sdk-consumer` | generated SDK, application 동작 | openapi-sdkgen 출력물. AI SDK와 model-provider dependency 없음 |
 
 ## 1. Server: streaming contract 공개
 
@@ -123,45 +123,18 @@ pnpm exec openapi-sdkgen generate \
 ```
 
 Generated client는 `generate` operation에 incremental response item 타입이
-있다는 사실을 알고 있습니다. 남은 application-specific 규칙은 SSE의 각
-`data`에 JSON event 하나가 들어 있다는 점입니다.
+있다는 사실을 알고 있습니다. Built-in SSE에서는 흔히 사용하는
+JSON-in-`data` mapping도 openapi-sdkgen이 기본으로 처리하므로 이 형태를 위해
+adapter를 따로 작성할 필요가 없습니다.
 
-## 4. Consumer: SSE frame을 generated event로 변환
-
-이 mapping은 client repository가 소유합니다.
+## 4. Consumer: typed SSE item 사용
 
 ```ts
 // sdk-consumer/src/client.ts
-import {
-  createClient,
-  type OperationStreamItem,
-  type ServerSentEvent,
-  type StreamAdapter,
-} from "./generated/api";
-
-type AIEvent = OperationStreamItem<"generate">;
-
-const aiEventAdapter: StreamAdapter<ServerSentEvent, AIEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      yield JSON.parse(event.data) as AIEvent;
-    }
-  },
-
-  async *encode(items) {
-    for await (const item of items) {
-      yield { data: JSON.stringify(item) };
-    }
-  },
-};
+import { createClient } from "./generated/api";
 
 const api = createClient({
   baseURL: "https://api.example.test",
-  streamCodecs: {
-    "text/event-stream": {
-      adapter: aiEventAdapter,
-    },
-  },
 });
 
 const stream = api.$operations.generate.stream({
@@ -178,21 +151,22 @@ for await (const event of stream) {
 Consumer는 `ai`나 model provider package를 import하지 않습니다. Generated
 SDK contract와 typed event를 사용하는 application code만 필요합니다.
 
-## Adapter가 client에 있는 이유
+## SSE 기본 mapping
 
-SSE는 `data`, `event`, `id`, `retry` 같은 framing field를 정의합니다.
-이 예제의 public API는 그 위에 두 번째 semantic layer인 JSON application
-event를 정의합니다.
+Built-in SSE protocol은 표준 `data`, `event`, `id`, `retry` field를
+그대로 parsing합니다. Custom stream adapter나 protocol을 지정하지 않으면
+openapi-sdkgen이 각 SSE `data` 값을 JSON으로 parsing한 뒤 결과를
+`itemSchema`로 validation/projection합니다.
 
-openapi-sdkgen은 이 두 경계를 분리합니다.
+Non-JSON data, named event routing, terminal marker, frame aggregation처럼 다른
+application semantics가 필요할 때만 `StreamAdapter<ServerSentEvent, Item>`를
+사용합니다. Custom adapter에는 raw `ServerSentEvent` frame이 전달되며,
+지정한 adapter가 기본 JSON mapping을 대체합니다.
 
-1. built-in SSE protocol이 wire frame을 `ServerSentEvent`로 parsing합니다.
-2. `StreamAdapter`가 frame을 public application event로 변환합니다.
-3. generated runtime이 결과를 `itemSchema`로 validation/projection합니다.
-4. application code는 generated `AIEvent` 타입을 받습니다.
-
-이 구조에서는 server가 AI provider를 변경해도 client contract가 provider
-dependency를 가질 필요가 없습니다.
+따라서 일반적인 JSON SSE는 별도 설정 없이 사용할 수 있고, 특수한 protocol은
+명시적인 extension point로 처리할 수 있습니다. Server가 AI provider를
+변경해도 generated client는 provider-specific dependency를 가질 필요가
+없습니다.
 
 Protocol/adapter 계약은 [스트리밍 API](../reference/streaming.md), 버전별 기능은
 [OpenAPI 지원 범위](../reference/capabilities.md)를 참고하세요.

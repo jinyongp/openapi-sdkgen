@@ -21,7 +21,7 @@ contract and does not depend on the AI SDK package.
 | Codebase | Owns | Key dependencies |
 | --- | --- | --- |
 | `ai-service` | model/provider configuration, HTTP endpoint, OpenAPI contract | `ai`, model-provider package, server framework/runtime |
-| `sdk-consumer` | generated SDK, stream adapter, application behavior | openapi-sdkgen output; no AI SDK or model-provider dependency |
+| `sdk-consumer` | generated SDK, application behavior | openapi-sdkgen output; no AI SDK or model-provider dependency |
 
 ## 1. Server: publish the streaming contract
 
@@ -123,46 +123,18 @@ pnpm exec openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-The generated client now knows that `generate` has an incremental response item
-type. The remaining application-specific detail is that each SSE `data` field
-contains one JSON event.
+The generated client knows that `generate` has an incremental response item
+type. For built-in SSE, openapi-sdkgen also handles the common JSON-in-`data`
+mapping automatically, so the consumer does not need an adapter for this shape.
 
-## 4. Consumer: adapt SSE frames to generated events
-
-The client repository owns that mapping:
+## 4. Consumer: consume typed SSE items
 
 ```ts
 // sdk-consumer/src/client.ts
-import {
-  createClient,
-  type OperationStreamItem,
-  type ServerSentEvent,
-  type StreamAdapter,
-} from "./generated/api";
-
-type AIEvent = OperationStreamItem<"generate">;
-
-const aiEventAdapter: StreamAdapter<ServerSentEvent, AIEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      yield JSON.parse(event.data) as AIEvent;
-    }
-  },
-
-  async *encode(items) {
-    for await (const item of items) {
-      yield { data: JSON.stringify(item) };
-    }
-  },
-};
+import { createClient } from "./generated/api";
 
 const api = createClient({
   baseURL: "https://api.example.test",
-  streamCodecs: {
-    "text/event-stream": {
-      adapter: aiEventAdapter,
-    },
-  },
 });
 
 const stream = api.$operations.generate.stream({
@@ -180,21 +152,23 @@ The consumer does not import `ai` or a model provider package. Its dependencies
 are the generated SDK contract and whatever application code consumes the typed
 events.
 
-## Why the adapter lives on the client side
+## Default SSE mapping
 
-SSE defines framing fields such as `data`, `event`, `id`, and `retry`.
-The public API in this example defines a second semantic layer: JSON application
-events inside `data`.
+The built-in SSE protocol still parses standard `data`, `event`, `id`, and
+`retry` fields. When no custom stream adapter or protocol is configured,
+openapi-sdkgen parses each SSE `data` value as JSON and validates/projects the
+result through `itemSchema`.
 
-openapi-sdkgen keeps those concerns separate:
+Use `StreamAdapter<ServerSentEvent, Item>` only when the application needs
+different semantics, such as non-JSON data, named-event routing, a terminal
+marker, frame aggregation, or another application-specific mapping. A custom
+adapter receives the raw `ServerSentEvent` frames and replaces the default JSON
+mapping.
 
-1. the built-in SSE protocol parses wire frames into `ServerSentEvent`;
-2. `StreamAdapter` converts the frame into the public application event;
-3. the generated runtime validates/projects the result through `itemSchema`;
-4. application code receives the generated `AIEvent` type.
-
-This keeps the server free to change AI providers and keeps the generated client
-free of provider-specific dependencies.
+This keeps the common JSON SSE path configuration-free while preserving an
+explicit extension point for specialized protocols. The server remains free to
+change AI providers, and the generated client stays free of provider-specific
+dependencies.
 
 See [Streaming API](../reference/streaming.md) for the protocol/adapter contract
 and [OpenAPI support](../reference/capabilities.md) for version-specific

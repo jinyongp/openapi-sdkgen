@@ -190,10 +190,12 @@ application adaptation 전의 wire frame, record, multipart part 하나의 크�
 
 ### 기본 protocol에 adapter 적용
 
-Wire framing은 이미 지원되지만 application semantic layer가 별도로 필요하면
+Built-in SSE는 `data` 안의 JSON을 기본으로 decode하므로 일반적인 경우에는
+adapter가 필요하지 않습니다. 지원되는 framing 위에 다른 application
+semantics가 필요할 때
 [`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter)를
-사용합니다. 예를 들어 SSE parser를 다시 구현하지 않고 Todo SSE `data` 안의
-JSON을 application event로 변환할 수 있습니다.
+사용합니다. 아래 예제는 SSE parser를 다시 구현하지 않고 이름이 `todo`인
+event만 선택합니다.
 
 ```ts
 import type { ServerSentEvent, StreamAdapter } from "./generated/api";
