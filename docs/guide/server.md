@@ -174,8 +174,8 @@ const router = createWebhookRouter(handlers, {
 Adapter output is validated and projected through the declared `itemSchema`
 before it reaches the handler. Use [`StreamProtocol`](../reference/streaming.md#streamprotocol) instead when a custom
 sequential media type needs its own byte framing. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes) limits
-one wire frame before adaptation. The same `streamCodecs` and frame-limit
-options are available to `createCallbackHandlers`.
+one wire frame before adaptation. The same [`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs) and frame-limit
+options are available to [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers).
 
 ## Generated server artifacts
 

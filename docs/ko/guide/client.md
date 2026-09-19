@@ -12,6 +12,8 @@
 
 ## 클라이언트 설정
 
+[`createClient`](../reference/client-api.md#createclient)로 generated client 하나를 설정합니다.
+
 ```ts
 import { createClient } from "./generated/api";
 
@@ -20,7 +22,7 @@ const api = createClient({
 });
 ```
 
-[`baseURL`](../reference/client-api.md#client)을 생략하면 적용 가능한 OpenAPI Server Object를 사용합니다. 더 구체적인
+[`baseURL`](../reference/client-api.md#clientoptions)을 생략하면 적용 가능한 OpenAPI Server Object를 사용합니다. 더 구체적인
 operation server가 path server보다 우선하고, path server는 root server보다
 우선합니다.
 
@@ -42,7 +44,7 @@ const todos = await api.todos.list({
 });
 ```
 
-`$routes`는 HTTP method와 OpenAPI path를 기준으로 operation을 호출합니다.
+[`$routes`](../reference/client-api.md#routes)는 HTTP method와 OpenAPI path를 기준으로 operation을 호출합니다.
 `operationId`가 없는 operation도 이 방식으로 호출할 수 있습니다.
 
 ```ts
@@ -51,7 +53,7 @@ const todos = await api.$routes["GET /todos"]({
 });
 ```
 
-`operationId`가 애플리케이션에서 사용할 안정적인 이름이라면 `$operations`를
+`operationId`가 애플리케이션에서 사용할 안정적인 이름이라면 [`$operations`](../reference/client-api.md#operations)를
 사용합니다.
 
 ```ts
@@ -159,7 +161,7 @@ console.log(metadata.status, metadata.request.id);
 있습니다. `stream.toReadableStream()`은 같은 단일 소비자 source를 Web
 Streams API로 연결합니다.
 
-원본 Fetch response body가 필요하면 별도의 `.raw()` 호출을 사용합니다.
+원본 Fetch response body가 필요하면 별도의 [`.raw()`](../reference/client-api.md#raw) 호출을 사용합니다.
 Server-Sent Events는 `data`, `event`, `id`, `retry`를 그대로 보존하며
 replay와 reconnect 정책은 애플리케이션에서 관리합니다.
 
@@ -183,7 +185,7 @@ await api.$operations.publishTodoEvents({
 
 Sequential media에 `schema`만 있으면 complete schema value를 전달합니다.
 `schema`와 `itemSchema`가 함께 있으면 complete value와
-`StreamSource<T>` 중 필요한 방식을 선택할 수 있습니다.
+[`StreamSource<T>`](../reference/streaming.md#streaming-request-body) 중 필요한 방식을 선택할 수 있습니다.
 
 ## 다음 문서
 

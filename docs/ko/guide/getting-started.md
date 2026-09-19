@@ -116,7 +116,7 @@ const api = createClient({
 });
 ```
 
-OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 [`baseURL`](../reference/client-api.md#client)을
+OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 [`baseURL`](../reference/client-api.md#clientoptions)을
 생략할 때 그 서버 정의를 사용합니다.
 
 ::: details 컴파일된 코드를 Node ESM으로 실행할 때
@@ -149,6 +149,6 @@ await api.$routes["GET /todos"]();
 await api.$operations.listTodos();
 ```
 
-다음으로 [SDK 생성과 검증](./generate.md)에서 증분 생성, `--check`, 인증이
+다음으로 [SDK 생성과 검증](./generate.md)에서 증분 생성, [`--check`](../reference/cli.md#fresh-incremental-and-check-modes), 인증이
 필요한 입력, 원격 참조를 확인하세요. 응답, Link, stream 등 생성된 호출 API는
 [생성된 클라이언트 사용](./client.md)에서 이어서 설명합니다.

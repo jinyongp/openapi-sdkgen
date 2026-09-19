@@ -81,7 +81,7 @@ openapi-sdkgen generate \
 
 The check fails on generated content/path drift, a changed generation
 fingerprint, edited or missing owned files, an invalid manifest, or a conflict
-with an unmanaged path. Choose either `--check` or `--incremental` for a run.
+with an unmanaged path. Choose either [`--check`](../reference/cli.md#fresh-incremental-and-check-modes) or [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) for a run.
 
 ## Use diagnostics in CI and tools
 

@@ -48,21 +48,13 @@ paths:
           content:
             text/event-stream:
               itemSchema:
-                oneOf:
-                  - type: object
-                    required: [type, text]
-                    properties:
-                      type:
-                        const: text-delta
-                      text:
-                        type: string
-                  - type: object
-                    required: [type, message]
-                    properties:
-                      type:
-                        const: error
-                      message:
-                        type: string
+                type: object
+                required: [type, text]
+                properties:
+                  type:
+                    const: text-delta
+                  text:
+                    type: string
 ```
 
 `itemSchema` describes the application event after the SSE frame has been
@@ -85,25 +77,13 @@ export async function handleGenerate(request: Request): Promise<Response> {
 
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
-      try {
-        for await (const text of result.textStream) {
-          const event = { type: "text-delta", text };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-          );
-        }
-      } catch {
+      for await (const text of result.textStream) {
+        const event = { type: "text-delta", text };
         controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "error",
-              message: "Generation failed",
-            })}\n\n`,
-          ),
+          encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
         );
-      } finally {
-        controller.close();
       }
+      controller.close();
     },
   });
 
@@ -117,10 +97,11 @@ export async function handleGenerate(request: Request): Promise<Response> {
 ```
 
 The AI SDK's `streamText()` API exposes `textStream` as an async iterable/Web
-stream of text deltas. If the public API needs tool calls, sources, reasoning, or
-other event kinds, the server can map the AI SDK's richer stream into additional
-OpenAPI `itemSchema` variants instead of leaking provider-specific wire events
-through the public contract.
+stream of text deltas. This example intentionally publishes one stable public
+event shape. If the API also needs tool calls, sources, reasoning, or other event
+kinds, the server can map the AI SDK's richer stream into additional OpenAPI
+`itemSchema` variants instead of leaking provider-specific wire events through
+the public contract.
 
 See the AI SDK
 [`streamText` reference](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)
@@ -186,11 +167,7 @@ const stream = api.$operations.generate.stream({
 });
 
 for await (const event of stream) {
-  if (event.type === "text-delta") {
-    process.stdout.write(event.text);
-  } else if (event.type === "error") {
-    console.error(event.message);
-  }
+  process.stdout.write(event.text);
 }
 ```
 
@@ -209,7 +186,7 @@ openapi-sdkgen keeps those concerns separate:
 1. the built-in SSE protocol parses wire frames into `ServerSentEvent`;
 2. `StreamAdapter` converts the frame into the public application event;
 3. the generated runtime validates/projects the result through `itemSchema`;
-4. application code receives the generated `AIEvent` union.
+4. application code receives the generated `AIEvent` type.
 
 This keeps the server free to change AI providers and keeps the generated client
 free of provider-specific dependencies.

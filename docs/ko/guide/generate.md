@@ -80,7 +80,7 @@ openapi-sdkgen generate \
 
 생성 내용이나 경로가 달라졌거나 generation fingerprint가 바뀌었거나, 소유 파일이
 수정·삭제됐거나, 매니페스트가 잘못됐거나, 새 생성 경로가 사용자 파일과
-충돌하면 실패합니다. 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를
+충돌하면 실패합니다. 한 번의 실행에서는 [`--check`](../reference/cli.md#fresh-incremental-and-check-modes)와 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) 중 하나를
 선택합니다.
 
 ## CI와 도구에서 diagnostics 사용

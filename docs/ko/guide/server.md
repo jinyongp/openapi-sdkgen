@@ -174,8 +174,8 @@ const router = createWebhookRouter(handlers, {
 Adapter가 만든 값은 handler에 전달되기 전에 선언된 `itemSchema` 검증과
 property projection을 거칩니다. 사용자 정의 sequential media의 byte framing이
 필요하면 [`StreamProtocol`](../reference/streaming.md#streamprotocol)을 사용합니다. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는 adapter
-적용 전의 wire frame 하나를 제한합니다. `createCallbackHandlers`도 같은
-`streamCodecs`와 frame limit 옵션을 제공합니다.
+적용 전의 wire frame 하나를 제한합니다. [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers)도 같은
+[`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs)와 frame limit 옵션을 제공합니다.
 
 ## Generated server artifact
 

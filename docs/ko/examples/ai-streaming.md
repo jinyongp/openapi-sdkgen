@@ -47,21 +47,13 @@ paths:
           content:
             text/event-stream:
               itemSchema:
-                oneOf:
-                  - type: object
-                    required: [type, text]
-                    properties:
-                      type:
-                        const: text-delta
-                      text:
-                        type: string
-                  - type: object
-                    required: [type, message]
-                    properties:
-                      type:
-                        const: error
-                      message:
-                        type: string
+                type: object
+                required: [type, text]
+                properties:
+                  type:
+                    const: text-delta
+                  text:
+                    type: string
 ```
 
 `itemSchema`는 SSE frame을 adapter가 변환한 뒤의 application event를
@@ -85,25 +77,13 @@ export async function handleGenerate(request: Request): Promise<Response> {
 
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
-      try {
-        for await (const text of result.textStream) {
-          const event = { type: "text-delta", text };
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-          );
-        }
-      } catch {
+      for await (const text of result.textStream) {
+        const event = { type: "text-delta", text };
         controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "error",
-              message: "Generation failed",
-            })}\n\n`,
-          ),
+          encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
         );
-      } finally {
-        controller.close();
       }
+      controller.close();
     },
   });
 
@@ -117,10 +97,10 @@ export async function handleGenerate(request: Request): Promise<Response> {
 ```
 
 AI SDK의 `streamText()`는 `textStream`을 text delta의 async iterable/Web
-stream으로 제공합니다. Public API에 tool call, source, reasoning 같은 event가
-필요하면 AI SDK의 더 풍부한 stream을 추가 `itemSchema` variant로 매핑하면
-됩니다. Provider-specific wire event 자체를 public contract로 노출할 필요는
-없습니다.
+stream으로 제공합니다. 이 예제는 안정적인 public event shape 하나만
+공개합니다. Public API에 tool call, source, reasoning 같은 event가 더 필요하면
+server가 AI SDK의 richer stream을 추가 `itemSchema` variant로 매핑하면 됩니다.
+Provider-specific wire event 자체를 public contract로 노출할 필요는 없습니다.
 
 현재 server-side API는 AI SDK
 [`streamText` 레퍼런스](https://ai-sdk.dev/docs/reference/ai-sdk-core/stream-text)를
@@ -186,11 +166,7 @@ const stream = api.$operations.generate.stream({
 });
 
 for await (const event of stream) {
-  if (event.type === "text-delta") {
-    process.stdout.write(event.text);
-  } else if (event.type === "error") {
-    console.error(event.message);
-  }
+  process.stdout.write(event.text);
 }
 ```
 
@@ -208,7 +184,7 @@ openapi-sdkgen은 이 두 경계를 분리합니다.
 1. built-in SSE protocol이 wire frame을 `ServerSentEvent`로 parsing합니다.
 2. `StreamAdapter`가 frame을 public application event로 변환합니다.
 3. generated runtime이 결과를 `itemSchema`로 validation/projection합니다.
-4. application code는 generated `AIEvent` union을 받습니다.
+4. application code는 generated `AIEvent` 타입을 받습니다.
 
 이 구조에서는 server가 AI provider를 변경해도 client contract가 provider
 dependency를 가질 필요가 없습니다.

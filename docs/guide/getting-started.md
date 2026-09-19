@@ -116,7 +116,7 @@ const api = createClient({
 });
 ```
 
-When the OpenAPI document declares usable Server Objects, omitting [`baseURL`](../reference/client-api.md#client) lets
+When the OpenAPI document declares usable Server Objects, omitting [`baseURL`](../reference/client-api.md#clientoptions) lets
 the generated client use those server definitions.
 
 ::: details Running compiled output directly with Node ESM
@@ -151,6 +151,6 @@ await api.$operations.listTodos();
 ```
 
 Continue with [Generate and verify an SDK](./generate.md) to learn about
-incremental generation, `--check`, authenticated inputs, and remote references.
+incremental generation, [`--check`](../reference/cli.md#fresh-incremental-and-check-modes), authenticated inputs, and remote references.
 Then see [Use the generated client](./client.md) for responses, Links, streams,
 and other call surfaces.

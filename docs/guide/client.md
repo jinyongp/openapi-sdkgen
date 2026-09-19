@@ -12,6 +12,8 @@ caller easiest to understand.
 
 ## Configure a client
 
+Use [`createClient`](../reference/client-api.md#createclient) to configure one generated client.
+
 ```ts
 import { createClient } from "./generated/api";
 
@@ -20,7 +22,7 @@ const api = createClient({
 });
 ```
 
-When [`baseURL`](../reference/client-api.md#client) is omitted, the client uses applicable OpenAPI Server Objects.
+When [`baseURL`](../reference/client-api.md#clientoptions) is omitted, the client uses applicable OpenAPI Server Objects.
 An operation-level server takes precedence over a path-level server, which takes
 precedence over a root server.
 
@@ -42,7 +44,7 @@ const todos = await api.todos.list({
 });
 ```
 
-Use `$routes` to identify an operation by HTTP method and OpenAPI path, including
+Use [`$routes`](../reference/client-api.md#routes) to identify an operation by HTTP method and OpenAPI path, including
 operations with no `operationId`:
 
 ```ts
@@ -51,7 +53,7 @@ const todos = await api.$routes["GET /todos"]({
 });
 ```
 
-Use `$operations` when `operationId` is the stable application-facing name:
+Use [`$operations`](../reference/client-api.md#operations) when `operationId` is the stable application-facing name:
 
 ```ts
 const todos = await api.$operations.listTodos({
@@ -153,7 +155,7 @@ Call `stream.abort()`, pass an `AbortSignal`, or use a request timeout to stop
 the operation. `stream.toReadableStream()` adapts the same single-consumer
 source to the Web Streams API.
 
-For the unconsumed Fetch response body, make a separate `.raw()` call.
+For the unconsumed Fetch response body, make a separate [`.raw()`](../reference/client-api.md#raw) call.
 Server-Sent Events preserve `data`, `event`, `id`, and `retry`; replay and
 reconnect policy stays in application code.
 
@@ -177,7 +179,7 @@ await api.$operations.publishTodoEvents({
 
 If the sequential media type declares only `schema`, pass the complete schema
 value instead. When it declares both `schema` and `itemSchema`, the generated
-request body accepts either the complete value or a `StreamSource<T>`.
+request body accepts either the complete value or a [`StreamSource<T>`](../reference/streaming.md#streaming-request-bodies).
 
 ## Where to go next
 

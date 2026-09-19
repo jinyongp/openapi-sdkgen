@@ -22,6 +22,8 @@ import { createClient } from "./generated/api/index.js";
 
 ## Client
 
+### createClient
+
 ```ts
 import { createClient } from "./generated/api";
 
