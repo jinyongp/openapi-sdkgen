@@ -42,8 +42,6 @@ configuration examples.
 | `baseURL` | explicit absolute API base URL |
 | `origin` | origin used to resolve a relative OpenAPI Server URL |
 | `server` | generated OpenAPI Server selection |
-| `codecs` | complete-value codecs for declared custom media types |
-| `streamCodecs` | media-type defaults for sequential protocol/adapters; see [Streaming API](./streaming.md#clientoptions-streamcodecs) |
 | `transport` | host transport with explicit capabilities |
 | `fetch` | Fetch implementation or wrapper |
 | `headers` | default request headers |
@@ -51,6 +49,8 @@ configuration examples.
 | `credentials` | default Fetch credentials mode |
 | `securityProvider` | dynamic credential acquisition for the selected OpenAPI security requirement |
 | `timeoutMS` | default request timeout |
+| `codecs` | complete-value codecs for declared custom media types |
+| `streamCodecs` | media-type defaults for sequential protocol/adapters; see [Streaming API](./streaming.md#clientoptions-streamcodecs) |
 | `maxStreamFrameBytes` | default sequential frame limit; see [Streaming API](./streaming.md#maxstreamframebytes) |
 
 ## Request options
@@ -60,17 +60,17 @@ Generated calls accept per-request options where applicable.
 | Option | Purpose |
 | --- | --- |
 | `baseURL` | override the API base URL for one call |
-| `signal` | caller-owned cancellation signal |
-| `timeoutMS` | request timeout overriding the client default |
+| `accept` | select one declared response media type |
 | `headers` | additional non-contract-owned headers |
 | `authorization` | Authorization header overriding the client default |
-| `accept` | select one declared response media type |
-| `streamCodec` | one-call sequential protocol/adapter override; see [Streaming API](./streaming.md#requestoptions-streamcodec) |
+| `credentials` | Fetch credentials mode for one call |
 | `csrfToken` | value for the generated `X-CSRF-Token` header |
 | `requestID` | value for the generated `X-Request-Id` header |
-| `credentials` | Fetch credentials mode for one call |
+| `signal` | caller-owned cancellation signal |
+| `timeoutMS` | request timeout overriding the client default |
 | `multipartHeaders` | declared additional multipart-part headers |
 | `multipartContentTypes` | selected multipart-part media types |
+| `streamCodec` | one-call sequential protocol/adapter override; see [Streaming API](./streaming.md#requestoptions-streamcodec) |
 | `maxStreamFrameBytes` | one-call sequential frame limit |
 
 Operation-specific input sections such as `path`, `query`, `headerParams`, and

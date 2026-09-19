@@ -8,8 +8,8 @@ export interface RequestMetadata {
 
 /** One parsed Server-Sent Event using the standard event-stream fields. */
 export interface ServerSentEvent {
-  readonly data: string;
   readonly event?: string;
+  readonly data: string;
   readonly id?: string;
   readonly retry?: number;
 }
@@ -18,10 +18,10 @@ export interface ServerSentEvent {
 export interface StreamResponseMetadata {
   /** HTTP status code. */
   readonly status: number;
-  /** Normalized response media type without parameters. */
-  readonly contentType?: string;
   /** Response headers available when the stream starts. */
   readonly headers: Headers;
+  /** Normalized response media type without parameters. */
+  readonly contentType?: string;
   /** Request metadata extracted from the response. */
   readonly request: RequestMetadata;
 }
@@ -43,28 +43,28 @@ export type StreamSource<Item> = AsyncIterable<Item> | ReadableStream<Item>;
 export interface RequestOptions {
   /** Explicit absolute base URL. Generated Link helpers use this for a Link Server Object. */
   readonly baseURL?: string;
-  /** Caller-owned cancellation signal. Cancellation is reported as `REQUEST_ABORTED`. */
-  readonly signal?: AbortSignal;
-  /** Positive timeout in milliseconds for this request, overriding the client default. */
-  readonly timeoutMS?: number;
+  /** Requested response media type for operations with multiple representations. */
+  readonly accept?: string;
   /** Additional request headers. Contract-owned and SDK-managed headers are rejected here. */
   readonly headers?: HeadersInit;
   /** Complete `Authorization` header value, overriding the client default. */
   readonly authorization?: string;
-  /** Requested response media type for operations with multiple representations. */
-  readonly accept?: string;
-  /** Stream protocol/adapter override for the selected request or response media type. */
-  readonly streamCodec?: StreamCodec;
+  /** Fetch credentials mode; `"include"` also satisfies cookie API-key security ambiently. */
+  readonly credentials?: RequestCredentials;
   /** Value sent through the `X-CSRF-Token` header. */
   readonly csrfToken?: string;
   /** Caller-provided value sent through the `X-Request-Id` header. */
   readonly requestID?: string;
-  /** Fetch credentials mode; `"include"` also satisfies cookie API-key security ambiently. */
-  readonly credentials?: RequestCredentials;
+  /** Caller-owned cancellation signal. Cancellation is reported as `REQUEST_ABORTED`. */
+  readonly signal?: AbortSignal;
+  /** Positive timeout in milliseconds for this request, overriding the client default. */
+  readonly timeoutMS?: number;
   /** Declared additional headers for named multipart form-data parts. */
   readonly multipartHeaders?: Readonly<Record<string, HeadersInit>>;
   /** Selected media type for multipart parts keyed by form name or positional index. */
   readonly multipartContentTypes?: Readonly<Record<string, string>>;
+  /** Stream protocol/adapter override for the selected request or response media type. */
+  readonly streamCodec?: StreamCodec;
   /** Maximum byte count of one wire-protocol stream frame before adaptation. */
   readonly maxStreamFrameBytes?: number;
 }
@@ -76,12 +76,12 @@ export type BinaryBody = Blob | ArrayBuffer | ArrayBufferView;
 export interface RawResponse<Output, HeaderValues = Readonly<Record<string, unknown>>> {
   /** HTTP status code. */
   readonly status: number;
+  /** Response headers. */
+  readonly headers: HeaderValues;
   /** Normalized response media type without parameters. */
   readonly contentType?: string;
   /** Decoded, typed response body. */
   readonly data: Output;
-  /** Response headers. */
-  readonly headers: HeaderValues;
   /** Request metadata extracted from the response. */
   readonly request: RequestMetadata;
   /** Original Fetch API response. Its body has already been consumed unless streamed. */

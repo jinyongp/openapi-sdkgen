@@ -43,8 +43,6 @@ const api = createClient({
 | `baseURL` | 명시적인 absolute API base URL |
 | `origin` | relative OpenAPI Server URL을 해석할 origin |
 | `server` | generated OpenAPI Server 선택 |
-| `codecs` | 선언된 custom media type의 complete-value codec |
-| `streamCodecs` | sequential protocol/adapter의 media-type 기본값. [스트리밍 API](./streaming.md#clientoptions-streamcodecs) 참고 |
 | `transport` | 명시적인 capability를 가진 host transport |
 | `fetch` | Fetch 구현 또는 wrapper |
 | `headers` | 기본 request header |
@@ -52,6 +50,8 @@ const api = createClient({
 | `credentials` | 기본 Fetch credentials mode |
 | `securityProvider` | 선택된 OpenAPI security requirement의 dynamic credential 획득 |
 | `timeoutMS` | 기본 request timeout |
+| `codecs` | 선언된 custom media type의 complete-value codec |
+| `streamCodecs` | sequential protocol/adapter의 media-type 기본값. [스트리밍 API](./streaming.md#clientoptions-streamcodecs) 참고 |
 | `maxStreamFrameBytes` | 기본 sequential frame limit. [스트리밍 API](./streaming.md#maxstreamframebytes) 참고 |
 
 <span id="request-options"></span>
@@ -63,17 +63,17 @@ Generated call은 적용 가능한 경우 다음 per-request option을 받습니
 | 옵션 | 용도 |
 | --- | --- |
 | `baseURL` | 한 호출의 API base URL override |
-| `signal` | caller-owned cancellation signal |
-| `timeoutMS` | client 기본값을 override하는 request timeout |
+| `accept` | 선언된 response media type 선택 |
 | `headers` | 호출자가 추가하는 non-contract header |
 | `authorization` | client 기본값을 override하는 Authorization header |
-| `accept` | 선언된 response media type 선택 |
-| `streamCodec` | 한 호출의 sequential protocol/adapter override. [스트리밍 API](./streaming.md#requestoptions-streamcodec) 참고 |
+| `credentials` | 한 호출의 Fetch credentials mode |
 | `csrfToken` | generated `X-CSRF-Token` header 값 |
 | `requestID` | generated `X-Request-Id` header 값 |
-| `credentials` | 한 호출의 Fetch credentials mode |
+| `signal` | caller-owned cancellation signal |
+| `timeoutMS` | client 기본값을 override하는 request timeout |
 | `multipartHeaders` | 선언된 multipart part 추가 header |
 | `multipartContentTypes` | multipart part media type 선택 |
+| `streamCodec` | 한 호출의 sequential protocol/adapter override. [스트리밍 API](./streaming.md#requestoptions-streamcodec) 참고 |
 | `maxStreamFrameBytes` | 한 호출의 sequential frame limit |
 
 `path`, `query`, `headerParams`, `body` 같은 operation-specific input section은

@@ -14,10 +14,6 @@ export interface ClientOptions {
   readonly origin?: string;
   /** Selects one server from each operation's effective OpenAPI Server list. */
   readonly server?: ServerSelection;
-  /** Host-provided codecs for declared non-built-in complete media values. */
-  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
-  /** Default stream protocol/adapter overrides keyed by normalized media type. */
-  readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
   /** Optional host transport with explicit capabilities beyond ordinary Fetch. */
   readonly transport?: Transport;
   /** Fetch implementation or wrapper. Defaults to `globalThis.fetch`; the SDK adds no retries. */
@@ -35,6 +31,10 @@ export interface ClientOptions {
   readonly securityProvider?: SecurityCredentialProvider;
   /** Default positive timeout in milliseconds. Individual requests may override it. */
   readonly timeoutMS?: number;
+  /** Host-provided codecs for declared non-built-in complete media values. */
+  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
+  /** Default stream protocol/adapter overrides keyed by normalized media type. */
+  readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
   /** Maximum byte count of one wire-protocol stream frame before adaptation. */
   readonly maxStreamFrameBytes?: number;
 }

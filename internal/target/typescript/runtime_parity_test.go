@@ -2029,7 +2029,7 @@ const readable: ReadableStream<string> = stream.toReadableStream()
 const routeItem: RouteStreamItem<"GET /events"> = "event"
 const operationItem: OperationStreamItem<"watchEvents"> = routeItem
 const methodItem: OperationStreamItem<typeof api.$operations.watchEvents> = operationItem
-const serverSentEvent: ServerSentEvent = { data: "payload", event: "delta", id: "event-1", retry: 1000 }
+const serverSentEvent: ServerSentEvent = { event: "delta", data: "payload", id: "event-1", retry: 1000 }
 // @ts-expect-error a non-streaming route has no stream item type
 const plainItem: RouteStreamItem<"GET /plain"> = "invalid"
 stream.abort("stop")

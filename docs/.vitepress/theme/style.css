@@ -8,8 +8,65 @@
   --vp-home-hero-image-filter: blur(42px);
 }
 
+.VPHomeHero .container {
+  display: block;
+}
+
+.VPHomeHero .main {
+  max-width: 900px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.VPHomeHero .name,
+.VPHomeHero .text {
+  max-width: none;
+  margin-inline: auto;
+  text-wrap: balance;
+}
+
+.VPHomeHero .tagline {
+  max-width: 760px;
+  margin-inline: auto;
+  text-wrap: balance;
+}
+
+.VPHomeHero .actions {
+  justify-content: center;
+}
+
+.VPHomeFeatures .items {
+  justify-content: center;
+}
+
 .VPFeature {
   border-color: var(--vp-c-divider);
+}
+
+.VPFeature .box {
+  text-align: center;
+}
+
+.VPFeature .icon {
+  margin-inline: auto;
+}
+
+.VPFeature .details {
+  text-wrap: pretty;
+}
+
+.VPHome .vp-doc > h2:first-of-type,
+.VPHome .vp-doc > h2:first-of-type + p {
+  text-align: center;
+  text-wrap: balance;
+}
+
+html[lang="ko-KR"] .VPHomeHero :is(.name, .text, .tagline),
+html[lang="ko-KR"] .VPFeature :is(.title, .details),
+html[lang="ko-KR"] .VPHome .vp-doc > h2:first-of-type,
+html[lang="ko-KR"] .VPHome .vp-doc > h2:first-of-type + p {
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .VPHomeHero .image-container {

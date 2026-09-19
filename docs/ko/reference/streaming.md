@@ -60,8 +60,8 @@ underlying HTTP body를 취소합니다.
 ```ts
 const metadata = await stream.response;
 metadata.status;
-metadata.contentType;
 metadata.headers;
+metadata.contentType;
 metadata.request;
 ```
 
@@ -89,8 +89,8 @@ Built-in SSE parser는 표준 event-stream 필드를 반환합니다.
 
 ```ts
 interface ServerSentEvent {
-  readonly data: string;
   readonly event?: string;
+  readonly data: string;
   readonly id?: string;
   readonly retry?: number;
 }

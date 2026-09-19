@@ -93,13 +93,13 @@ component Callback identity 기준으로 제공됩니다.
 
 ```ts
 interface CallbackHandlerOptions {
+  readonly pathParams?: {
+    // generated callback별 path parameter 값
+  };
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
   readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
   readonly maxStreamFrameBytes?: number;
-  readonly pathParams?: {
-    // generated callback별 path parameter 값
-  };
 }
 ```
 

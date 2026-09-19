@@ -10,11 +10,6 @@ export interface MediaCodec<Value> {
     response: Response,
     context: { readonly contentType: string },
   ) => Value | Promise<Value>;
-  /** Decodes one non-streaming inbound server request for a declared custom media type. */
-  readonly decodeInbound?: (
-    request: Request,
-    context: { readonly contentType: string },
-  ) => Value | Promise<Value>;
   /** Serializes one Parameter Object `content` value into its required string representation. */
   readonly encodeParameter?: (
     value: Value,
@@ -23,6 +18,11 @@ export interface MediaCodec<Value> {
   /** Decodes a Parameter Object or response Header Object `content` string. */
   readonly decodeParameter?: (
     value: string,
+    context: { readonly contentType: string },
+  ) => Value | Promise<Value>;
+  /** Decodes one non-streaming inbound server request for a declared custom media type. */
+  readonly decodeInbound?: (
+    request: Request,
     context: { readonly contentType: string },
   ) => Value | Promise<Value>;
 }

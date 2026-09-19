@@ -3,34 +3,35 @@ layout: home
 
 hero:
   name: openapi-sdkgen
-  text: Generate TypeScript SDK source from OpenAPI
-  tagline: Keep the API contract in OpenAPI, generate application-owned client source with its runtime, and verify it in CI.
+  text: Generate SDK source from OpenAPI
+  tagline: Read OpenAPI 3.0, 3.1, and 3.2 documents and generate application SDK source for an explicitly selected target. The current release includes the TypeScript target.
   actions:
     - theme: brand
-      text: Create your first SDK
+      text: Get started
       link: /guide/getting-started
     - theme: alt
-      text: Generate and verify
-      link: /guide/generate
+      text: Open Playground
+      link: /playground
 
 features:
-  - icon: 🧩
-    title: Application-owned source
-    details: Generate TypeScript into your project and compile it with the toolchain you already use.
-  - icon: ✓
-    title: Contract validation
-    details: Validate request inputs and decoded responses, and use --check to verify generation while keeping output unchanged.
-  - icon: ⚡
-    title: Typed call surfaces
-    details: Call Todo-style resources, exact HTTP routes, or operationId APIs from the same generated contract.
+  - icon: ◇
+    title: OpenAPI 3.x input
+    details: Interpret OpenAPI 3.0, 3.1, and 3.2 according to the version declared by the document.
   - icon: ↗
-    title: Optional inbound contracts
-    details: Generate Fetch-native Webhook and Callback handlers for inbound requests described by your OpenAPI document.
+    title: Explicit generation targets
+    details: Select the output target explicitly. The target determines the generated output language.
+  - icon: 🧩
+    title: Application-owned output
+    details: Write generated SDK source to an output directory managed by the application.
+  - icon: ✓
+    title: Generate and check
+    details: Stop when the selected target cannot represent a used feature safely, and use --check to verify generation without rewriting files.
 ---
 
-## From OpenAPI to a Todo call
+## Current target: TypeScript
 
-Generate the SDK into your application source:
+The current release includes the TypeScript target. Select it explicitly when
+generating an SDK.
 
 ```sh
 openapi-sdkgen generate \
@@ -39,7 +40,9 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-Then import it like ordinary TypeScript:
+The TypeScript target currently emits the client, generated types, and source
+runtime into the output directory. Import the generated client like ordinary
+TypeScript.
 
 ```ts
 import { createClient } from "./generated/api";
@@ -53,16 +56,10 @@ const todo = await api.todos.create({
 });
 ```
 
-The generated directory contains the client, types, and source runtime needed by
-your application.
+Start with [Get started](./guide/getting-started.md) for the current TypeScript
+workflow. See [Generate and verify](./guide/generate.md) for generation and CI
+checks, and [OpenAPI support](./reference/capabilities.md) for the capability
+boundary of the selected target.
 
-Start with [Create your first SDK](./guide/getting-started.md) for a complete
-minimal Todo contract. If generation is already part of your project, see
-[Generate and verify an SDK](./guide/generate.md) for incremental updates,
-`--check`, authenticated inputs, and remote references.
-
-For complete integration boundaries, browse [Examples](./examples/index.md).
-For exact generated APIs and compatibility details, use the
-[Reference](./reference/index.md), including the dedicated
-[Streaming API](./reference/streaming.md) and
-[Generated server API](./reference/server-api.md).
+Use the [Reference](./reference/index.md) and [Examples](./examples/index.md) for
+the APIs and integration patterns available in the current release.

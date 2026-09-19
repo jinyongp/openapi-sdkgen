@@ -58,8 +58,8 @@ underlying HTTP body.
 ```ts
 const metadata = await stream.response;
 metadata.status;
-metadata.contentType;
 metadata.headers;
+metadata.contentType;
 metadata.request;
 ```
 
@@ -86,8 +86,8 @@ The built-in SSE parser yields standard event-stream fields:
 
 ```ts
 interface ServerSentEvent {
-  readonly data: string;
   readonly event?: string;
+  readonly data: string;
   readonly id?: string;
   readonly retry?: number;
 }
