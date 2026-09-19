@@ -14,6 +14,8 @@ import {
 import {
   transformWireValue,
   validateWireValue,
+  type StreamFraming,
+  type WireBodyDefinition,
   type WireSchema,
 } from "../fixtures/generated/client/internal/runtime/codecs.js";
 import { createRequest } from "../fixtures/generated/client/internal/runtime/http.js";
@@ -28,14 +30,55 @@ import type {
   RequestOptions,
 } from "../fixtures/generated/client/internal/runtime/request.js";
 
-const operation = (overrides: Partial<OperationDefinition> = {}): OperationDefinition => ({
-  route: "POST /items/{itemID}",
-  operationID: "runtimeTest",
-  method: "POST",
-  path: "/items/{itemID}",
-  envelope: "",
-  ...overrides,
-});
+const testStreamFraming = (
+  contentType: string,
+  hasItemSchema: boolean,
+): StreamFraming | undefined => {
+  const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  if (
+    mediaType === "application/x-ndjson" ||
+    mediaType === "application/ndjson" ||
+    mediaType === "application/jsonl" ||
+    mediaType === "application/json-lines"
+  )
+    return "line-delimited-json";
+  if (mediaType === "text/event-stream") return "sse";
+  if (mediaType === "application/json-seq" || mediaType.endsWith("+json-seq"))
+    return "json-sequence";
+  if (!hasItemSchema) return undefined;
+  return mediaType.startsWith("multipart/") ? "multipart" : "custom";
+};
+
+const withTestStreamFraming = <Definition extends WireBodyDefinition>(
+  definition: Definition,
+): Definition => {
+  if (definition.streamFraming !== undefined) return definition;
+  const streamFraming = testStreamFraming(
+    definition.contentType,
+    definition.itemSchema !== undefined,
+  );
+  return streamFraming === undefined ? definition : { ...definition, streamFraming };
+};
+
+const operation = (overrides: Partial<OperationDefinition> = {}): OperationDefinition => {
+  const definition: OperationDefinition = {
+    route: "POST /items/{itemID}",
+    operationID: "runtimeTest",
+    method: "POST",
+    path: "/items/{itemID}",
+    envelope: "",
+    ...overrides,
+  };
+  return {
+    ...definition,
+    ...(definition.requestBodies === undefined
+      ? {}
+      : { requestBodies: definition.requestBodies.map(withTestStreamFraming) }),
+    ...(definition.responses === undefined
+      ? {}
+      : { responses: definition.responses.map(withTestStreamFraming) }),
+  };
+};
 
 const jsonResponse = (body: unknown, status = 200, headers: HeadersInit = {}): Response =>
   new Response(JSON.stringify(body), {
@@ -2254,6 +2297,11 @@ describe("generated runtime", () => {
       "retry: 7\r" +
       "retry: nope\r" +
       "\r" +
+      "data: inherited\r" +
+      "\r" +
+      "data: reset\r" +
+      "id\r" +
+      "\r" +
       "data: [DONE]\n\n" +
       "data: incomplete";
     const bytes = new TextEncoder().encode(wire);
@@ -2297,7 +2345,9 @@ describe("generated runtime", () => {
         retry: 42,
       },
       { data: "", event: "", id: "kept", retry: 7 },
-      { data: "[DONE]" },
+      { data: "inherited", id: "kept" },
+      { data: "reset", id: "" },
+      { data: "[DONE]", id: "" },
     ]);
   });
 
@@ -2455,6 +2505,184 @@ describe("generated runtime", () => {
     ).resolves.toEqual({ ok: true });
     expect(requestWire).toBe("override:encoded\n");
     expect(requestMaxFrameBytes).toBe(6);
+  });
+
+  it("decodes complete sequential responses through the stream protocol pipeline", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    const arraySchema = {
+      types: ["array"],
+      items: itemSchema,
+    } as const;
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      streamCodecs: {
+        "application/x-ndjson": {
+          adapter: {
+            async *decode(frames) {
+              for await (const frame of frames) {
+                const value = frame as { wire_name: string };
+                yield { wire_name: "adapted-" + value.wire_name };
+              }
+            },
+            async *encode(items) {
+              yield* items;
+            },
+          },
+        },
+      },
+      fetch: async () =>
+        new Response('{"wire_name":"one"}\n{"wire_name":"two"}\n', {
+          headers: { "content-type": "application/x-ndjson" },
+        }),
+    });
+    const definition = operation({
+      method: "GET",
+      path: "/events",
+      responses: [
+        {
+          status: "200",
+          contentType: "application/x-ndjson",
+          schema: arraySchema,
+          schemaDeclared: true,
+        },
+      ],
+      outputSchemas: {},
+    });
+
+    await expect(request(definition)).resolves.toEqual([
+      { displayName: "adapted-one" },
+      { displayName: "adapted-two" },
+    ]);
+  });
+
+  it("preserves prefix encoding for complete dual-mode multipart responses", async () => {
+    const firstSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    const arraySchema = {
+      types: ["array"],
+      prefixItems: [firstSchema, { types: ["string"] }],
+    } as const;
+    const body =
+      '--dual\r\nx-first: yes\r\n\r\n{"wire_name":"one"}\r\n' +
+      "--dual\r\ncontent-type: text/plain\r\n\r\nready\r\n" +
+      "--dual--\r\n";
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      fetch: async () =>
+        new Response(body, {
+          headers: { "content-type": "multipart/mixed; boundary=dual" },
+        }),
+    });
+    const definition = operation({
+      method: "GET",
+      path: "/events",
+      responses: [
+        {
+          status: "200",
+          contentType: "multipart/mixed",
+          schema: arraySchema,
+          schemaDeclared: true,
+          itemSchema: {},
+          prefixEncoding: [
+            {
+              contentType: "application/json",
+              headers: [
+                {
+                  name: "X-First",
+                  required: true,
+                  schema: { types: ["string"] },
+                },
+              ],
+            },
+          ],
+          itemEncoding: { contentType: "text/plain" },
+        },
+      ],
+      outputSchemas: {},
+    });
+
+    await expect(request(definition)).resolves.toEqual([{ displayName: "one" }, "ready"]);
+  });
+
+  it("applies stream adapters to complete dual-mode multipart requests", async () => {
+    const itemSchema = {
+      types: ["object"],
+      required: ["wire_name"],
+      properties: {
+        wire_name: { property: "displayName", schema: { types: ["string"] } },
+      },
+      additionalProperties: false,
+    } as const;
+    const arraySchema = {
+      types: ["array"],
+      items: itemSchema,
+    } as const;
+    let sent = "";
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      streamCodecs: {
+        "multipart/mixed": {
+          adapter: {
+            async *decode(frames) {
+              yield* frames;
+            },
+            async *encode(items) {
+              for await (const item of items) {
+                const value = item as { wire_name: string };
+                yield { wire_name: "adapted-" + value.wire_name };
+              }
+            },
+          },
+        },
+      },
+      fetch: async (_input, init) => {
+        sent = await new Response(init?.body).text();
+        return jsonResponse({ ok: true });
+      },
+    });
+    await expect(
+      request(
+        operation({
+          method: "POST",
+          path: "/events",
+          contentType: "multipart/mixed",
+          requestBodyRequired: true,
+          requestBodies: [
+            {
+              contentType: "multipart/mixed",
+              schema: arraySchema,
+              schemaDeclared: true,
+              itemSchema,
+              prefixEncoding: [
+                {
+                  contentType: "application/json",
+                  headers: [{ name: "X-First", schema: { types: ["string"] } }],
+                },
+              ],
+              itemEncoding: { contentType: "application/json" },
+            },
+          ],
+          inputSchemas: {},
+        }),
+        { body: [{ displayName: "one" }] },
+        { multipartHeaders: { "0": { "X-First": "yes" } } },
+      ),
+    ).resolves.toEqual({ ok: true });
+    expect(sent).toContain('{"wire_name":"adapted-one"}');
+    expect(sent.toLowerCase()).toContain("x-first: yes");
   });
 
   it("layers stream adapters over built-in protocols with per-request overrides", async () => {
@@ -2744,6 +2972,86 @@ describe("generated runtime", () => {
     if (!isAPIError(error)) throw new Error("expected API error");
     expect(error.code).toBe(TransportErrorCode.REQUEST_ENCODE_FAILED);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("cancels pending adapted request streams when transport ignores abort", async () => {
+    let sourceReturns = 0;
+    let adapterReturns = 0;
+    let adapterNextStarted = false;
+    const request = createRequest({
+      baseURL: "https://api.example.test",
+      streamCodecs: {
+        "application/x-ndjson": {
+          adapter: {
+            decode(frames) {
+              return frames;
+            },
+            encode(items) {
+              const source = items[Symbol.asyncIterator]();
+              return {
+                [Symbol.asyncIterator]() {
+                  return {
+                    async next() {
+                      adapterNextStarted = true;
+                      await source.next();
+                      return new Promise<IteratorResult<unknown>>(() => undefined);
+                    },
+                    async return(reason?: unknown) {
+                      adapterReturns++;
+                      await source.return?.(reason);
+                      return { done: true, value: undefined };
+                    },
+                  };
+                },
+              };
+            },
+          },
+        },
+      },
+      fetch: async (_input, init) => {
+        const reader = (init?.body as ReadableStream<Uint8Array>).getReader();
+        void reader.read().catch(() => undefined);
+        return new Promise<Response>(() => undefined);
+      },
+    });
+    async function* source() {
+      try {
+        yield { id: "one" };
+        yield { id: "two" };
+      } finally {
+        sourceReturns++;
+      }
+    }
+    const controller = new AbortController();
+    const pending = request(
+      operation({
+        path: "/events",
+        contentType: "application/x-ndjson",
+        requestBodyRequired: true,
+        requestBodies: [
+          {
+            contentType: "application/x-ndjson",
+            schema: {},
+            itemSchema: {
+              types: ["object"],
+              required: ["id"],
+              properties: { id: { property: "id", schema: { types: ["string"] } } },
+            },
+          },
+        ],
+        inputSchemas: {},
+      }),
+      { body: source() },
+      { signal: controller.signal },
+    );
+    await vi.waitFor(() => expect(adapterNextStarted).toBe(true));
+    controller.abort("stop");
+    const error = await pending.catch((cause: unknown) => cause);
+    expect(isErrorCode(error, TransportErrorCode.REQUEST_ABORTED)).toBe(true);
+    await vi.waitFor(() => {
+      expect(adapterReturns).toBe(1);
+      expect(sourceReturns).toBe(1);
+    });
   });
 
   it("honors cancellation even when fetch ignores its AbortSignal", async () => {

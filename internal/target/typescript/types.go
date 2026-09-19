@@ -779,13 +779,14 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 		}
 		for _, media := range response.Content {
 			schemaObject, _ := media.Schema.(map[string]any)
+			_, hasItemSchema := media.Raw["itemSchema"]
 			valueType := "void"
-			if !media.Stream.IsStreaming() && media.Schema != nil {
+			if !hasItemSchema && media.Schema != nil {
 				if media.Schema == false {
 					valueType = "never"
-				} else if isBinaryMedia(media.ContentType, schemaObject) {
+				} else if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if isTextMedia(media.ContentType) {
+				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
 					valueType = "string"
 				} else {
 					valueType, err = schemaTypeForScope(document, media.Schema, projectionOutput, scope)

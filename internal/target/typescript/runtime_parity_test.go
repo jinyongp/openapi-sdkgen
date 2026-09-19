@@ -1510,6 +1510,45 @@ if (accepts.join(",") !== "application/json,application/x-ndjson") throw new Err
 	}
 }
 
+func TestGeneratedCompleteSequentialResponseUsesStreamProtocol(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Buffered sequential response","version":"1"},
+  "paths":{"/events":{"get":{
+    "operationId":"listEvents",
+    "responses":{"200":{"description":"OK","content":{"application/x-ndjson":{
+      "schema":{"type":"array","items":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}
+    }}}}
+  }}}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import { createClient } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+const raw = await api.$operations.listEvents.raw()
+raw.data.map((event) => event.event_id)
+`
+	output := compileTypeScriptArtifactsWithProbe(t, document, "complete-sequential.probe.ts", probe)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => new Response('{"event_id":"one"}\n{"event_id":"two"}\n', {
+    status: 200,
+    headers: { "content-type": "application/x-ndjson" },
+  }),
+});
+const events = await api.$operations.listEvents();
+if (events.map((event) => event.event_id).join(",") !== "one,two")
+  throw new Error("complete sequential response did not use the built-in stream protocol");
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute complete sequential response runtime test: %v\n%s", err, output)
+	}
+}
+
 func TestGeneratedResponseStreamsDecodeNDJSONItemsLazily(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Streams","version":"1"},

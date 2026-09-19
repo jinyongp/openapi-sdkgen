@@ -289,16 +289,19 @@ func unsupportedMediaFeatures(document *ir.Document, content map[string]any, pat
 		}
 		media = resolved
 		normalizedMediaType := strings.ToLower(mediaType)
-		streamingMultipart := strings.HasPrefix(normalizedMediaType, "multipart/") && media["itemSchema"] != nil
-		streaming := isStreamMediaType(normalizedMediaType) || media["itemSchema"] != nil
+		streaming := ir.StreamPlanForMediaType(
+			normalizedMediaType,
+			mediaTypeHasSequentialShape(media),
+		).IsStreaming()
+		streamingMultipart := strings.HasPrefix(normalizedMediaType, "multipart/") && streaming
 		if streaming {
+			_, hasSchema := media["schema"]
+			_, hasItemSchema := media["itemSchema"]
 			if request {
-				_, hasSchema := media["schema"]
-				_, hasItemSchema := media["itemSchema"]
 				if !hasSchema && !hasItemSchema {
 					result = append(result, itemPath+" (streaming request encoder requires schema or itemSchema)")
 				}
-			} else if _, hasItemSchema := media["itemSchema"]; !hasItemSchema {
+			} else if !hasSchema && !hasItemSchema {
 				result = append(result, itemPath+" (streaming response API)")
 			}
 		}

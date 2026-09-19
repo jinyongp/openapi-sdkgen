@@ -93,12 +93,11 @@ func syntheticOperationResponses(document *ir.Document, operation ir.Operation) 
 			if err != nil {
 				return nil, err
 			}
-			_, hasItemSchema := value["itemSchema"]
 			media = append(media, ir.MediaType{
 				ContentType: contentType,
 				Schema:      value["schema"],
 				ItemSchema:  value["itemSchema"],
-				Stream:      ir.StreamPlanForMediaType(contentType, hasItemSchema),
+				Stream:      ir.StreamPlanForMediaType(contentType, mediaTypeHasSequentialShape(value)),
 				Raw:         value,
 			})
 		}

@@ -678,7 +678,7 @@ func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope t
 func requestBodyMediaValueTypeForScope(document *ir.Document, mediaType string, media map[string]any, scope typeRenderScope) (string, error) {
 	schema, hasSchema := media["schema"]
 	itemSchema, hasItemSchema := media["itemSchema"]
-	if ir.StreamPlanForMediaType(mediaType, hasItemSchema).IsStreaming() {
+	if ir.StreamPlanForMediaType(mediaType, mediaTypeHasSequentialShape(media)).IsStreaming() {
 		variants := make([]string, 0, 2)
 		if hasSchema && schema != false {
 			completeType, err := schemaTypeForScope(document, schema, projectionInput, scope)

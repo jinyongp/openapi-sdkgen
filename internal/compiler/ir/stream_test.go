@@ -69,6 +69,39 @@ func TestBuildAttachesStreamPlansToRequestAndResponseMedia(t *testing.T) {
 	}
 }
 
+func TestBuildClassifiesPositionalMultipartWithoutItemSchema(t *testing.T) {
+	document := &openapidoc.Document{Raw: map[string]any{
+		"openapi": "3.2.0",
+		"info":    map[string]any{"title": "Multipart", "version": "1"},
+		"paths": map[string]any{
+			"/bundle": map[string]any{"post": map[string]any{
+				"operationId": "bundle",
+				"requestBody": map[string]any{"content": map[string]any{
+					"multipart/mixed": map[string]any{
+						"schema": map[string]any{
+							"type":        "array",
+							"prefixItems": []any{map[string]any{"type": "string"}},
+						},
+						"prefixEncoding": []any{map[string]any{"contentType": "text/plain"}},
+					},
+				}},
+				"responses": map[string]any{"204": map[string]any{"description": "OK"}},
+			}},
+		},
+	}}
+	model, err := Build(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	media := model.Operations[0].RequestBody.Content[0]
+	if media.Stream.Framing != StreamFramingMultipart {
+		t.Fatalf("framing = %q, want %q", media.Stream.Framing, StreamFramingMultipart)
+	}
+	if media.ItemSchema != nil {
+		t.Fatalf("item schema = %#v, want nil", media.ItemSchema)
+	}
+}
+
 func TestBuildAllowsSequentialMediaWithoutItemSchema(t *testing.T) {
 	document := &openapidoc.Document{Raw: map[string]any{
 		"openapi": "3.2.0",

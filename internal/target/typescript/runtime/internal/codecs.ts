@@ -175,6 +175,14 @@ export interface WireProperty {
   readonly schema: WireSchema;
 }
 
+/** Compiler-owned sequential framing identity carried into generated runtime metadata. */
+export type StreamFraming =
+  | "line-delimited-json"
+  | "json-sequence"
+  | "sse"
+  | "multipart"
+  | "custom";
+
 /** Request or response body representation understood by the runtime. */
 export interface WireBodyDefinition {
   /** Exact media type, excluding parameters such as charset. */
@@ -183,6 +191,8 @@ export interface WireBodyDefinition {
   readonly schema: WireSchema;
   /** Whether the Media Type Object explicitly declares a complete-content schema. */
   readonly schemaDeclared?: true;
+  /** Compiler-selected sequential framing; omitted for ordinary media. */
+  readonly streamFraming?: StreamFraming;
   /** OpenAPI 3.2 schema for one streamed response item. */
   readonly itemSchema?: WireSchema;
   /** Per-property Encoding Object declarations for form request bodies. */

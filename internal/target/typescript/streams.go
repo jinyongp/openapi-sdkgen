@@ -138,6 +138,15 @@ func isStreamMediaType(mediaType string) bool {
 	return ir.StreamPlanForMediaType(mediaType, false).IsStreaming()
 }
 
+func mediaTypeHasSequentialShape(media map[string]any) bool {
+	for _, key := range []string{"itemSchema", "prefixEncoding", "itemEncoding"} {
+		if _, exists := media[key]; exists {
+			return true
+		}
+	}
+	return false
+}
+
 func stringsJoinUnique(values []string, separator string) string {
 	seen := map[string]bool{}
 	result := make([]string, 0, len(values))

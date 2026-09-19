@@ -571,7 +571,7 @@ if (JSON.stringify(seen) !== JSON.stringify([{ name: "widget", count: 2, enabled
 func TestGeneratedWebhookRouterStreamsSequentialBodies(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"Inbound streams","version":"1"}, "paths":{},
-  "webhooks":{"events":{"post":{"requestBody":{"required":true,"content":{"application/x-ndjson":{"itemSchema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"frames":{"post":{"requestBody":{"required":true,"content":{"multipart/mixed":{"itemSchema":{"type":"object","required":["frame_id"],"properties":{"frame_id":{"type":"string"}}},"itemEncoding":{"contentType":"application/json"}}}},"responses":{"204":{"description":"OK"}}}},"custom":{"post":{"requestBody":{"required":true,"content":{"application/*":{"schema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"customStream":{"post":{"requestBody":{"required":true,"content":{"application/vnd.example.events":{"itemSchema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"denied":{"post":{"requestBody":{"required":true,"content":{"application/json":{"schema":false}}},"responses":{"204":{"description":"OK"}}}}}
+  "webhooks":{"events":{"post":{"requestBody":{"required":true,"content":{"application/x-ndjson":{"itemSchema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"frames":{"post":{"requestBody":{"required":true,"content":{"multipart/mixed":{"itemSchema":{"type":"object","required":["frame_id"],"properties":{"frame_id":{"type":"string"}}},"itemEncoding":{"contentType":"application/json","headers":{"x-frame":{"required":true,"schema":{"type":"string"}}}}}}},"responses":{"204":{"description":"OK"}}}},"custom":{"post":{"requestBody":{"required":true,"content":{"application/*":{"schema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"customStream":{"post":{"requestBody":{"required":true,"content":{"application/vnd.example.events":{"itemSchema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},"batch":{"post":{"requestBody":{"required":true,"content":{"application/x-ndjson":{"schema":{"type":"array","items":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}}}},"responses":{"204":{"description":"OK"}}}},"denied":{"post":{"requestBody":{"required":true,"content":{"application/json":{"schema":false}}},"responses":{"204":{"description":"OK"}}}}}
 }`))
 	if err != nil {
 		t.Fatal(err)
@@ -591,6 +591,25 @@ func TestGeneratedWebhookRouterStreamsSequentialBodies(t *testing.T) {
 	directory := t.TempDir()
 	source := filepath.Join(directory, "source")
 	writeTargetArtifacts(t, source, artifacts)
+	webhookSource, err := os.ReadFile(filepath.Join(source, "server", "webhooks.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(webhookSource), "itemEncoding:") {
+		t.Fatal("generated inbound stream plan omitted itemEncoding")
+	}
+	if !strings.Contains(string(webhookSource), "x-frame") {
+		sourceText := string(webhookSource)
+		index := strings.Index(sourceText, "itemEncoding:")
+		end := index + 400
+		if index < 0 {
+			index = 0
+		}
+		if end > len(sourceText) {
+			end = len(sourceText)
+		}
+		t.Fatalf("generated inbound stream plan omitted itemEncoding headers: %q", sourceText[index:end])
+	}
 	if err := os.WriteFile(filepath.Join(source, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -620,6 +639,10 @@ const streamCodecs = {
     async *decode(frames) { for await (const frame of frames) yield typeof frame.event_id === "string" ? { ...frame, event_id: "adapted-" + frame.event_id } : frame; },
     async *encode(items) { yield* items; },
   } },
+  "multipart/mixed": { adapter: {
+    async *decode(frames) { for await (const frame of frames) yield typeof frame.frame_id === "string" ? frame : { frame_id: frame.wrong }; },
+    async *encode(items) { yield* items; },
+  } },
   "application/vnd.example.events": {
     protocol: {
       async *decode(reader) { const decoder = new TextDecoder(); let pending = ""; while (true) { const chunk = await reader.read(1024); if (chunk === null) break; pending += decoder.decode(chunk, { stream: true }); let newline; while ((newline = pending.indexOf("\n")) >= 0) { const line = pending.slice(0, newline); pending = pending.slice(newline + 1); if (line !== "") yield JSON.parse(line); } } if (pending !== "") yield JSON.parse(pending); },
@@ -631,7 +654,7 @@ const streamCodecs = {
     },
   },
 };
-const router = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, frames: { POST: async ({ body }) => { for await (const item of body) seen.push(item.frame_id); return { status: 204 }; } }, custom: { POST: async ({ body }) => { seen.push(body.event_id); return { status: 204 }; } }, customStream: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, denied: { POST: async () => ({ status: 204 }) } }, { routes: { events: "/events", frames: "/frames", custom: "/custom", customStream: "/custom-stream", denied: "/denied" }, codecs, streamCodecs, maxStreamFrameBytes: 1024 });
+const router = createWebhookRouter({ events: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, frames: { POST: async ({ body }) => { for await (const item of body) seen.push(item.frame_id); return { status: 204 }; } }, custom: { POST: async ({ body }) => { seen.push(body.event_id); return { status: 204 }; } }, customStream: { POST: async ({ body }) => { for await (const item of body) seen.push(item.event_id); return { status: 204 }; } }, batch: { POST: async ({ body }) => { seen.push(body.map((item) => item.event_id).join("|")); return { status: 204 }; } }, denied: { POST: async () => ({ status: 204 }) } }, { routes: { events: "/events", frames: "/frames", custom: "/custom", customStream: "/custom-stream", batch: "/batch", denied: "/denied" }, codecs, streamCodecs, maxStreamFrameBytes: 1024 });
 const encoder = new TextEncoder();
 const valid = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode('{"event_id":"one"}\n{"ev')); controller.enqueue(encoder.encode('ent_id":"two"}\n')); controller.close(); } });
 const validResponse = await router.fetch(new Request("https://host.test/events", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: valid, duplex: "half" }));
@@ -652,18 +675,213 @@ for (const chunks of [[boundedMultipartBody], [boundedMultipartBody.slice(0, 50)
   const response = await bounded.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: chunkedBody(chunks), duplex: "half" }));
   if (response.status !== 400) throw new Error("oversized completed inbound multipart frame was accepted for chunk partition");
 }
-const multipartBody = "--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"one\"}\r\n--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"two\"}\r\n--frames--\r\n";
+const missingMultipartHeaderBody = "--frames\r\ncontent-type: application/json\r\n\r\n{\"frame_id\":\"one\"}\r\n--frames--\r\n";
+const missingMultipartHeaderResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: missingMultipartHeaderBody }));
+if (missingMultipartHeaderResponse.status !== 400) throw new Error("missing required inbound multipart item header was accepted");
+const multipartBody = "--frames\r\ncontent-type: application/json\r\nx-frame: first\r\n\r\n{\"frame_id\":\"one\"}\r\n--frames\r\ncontent-type: application/json\r\nx-frame: second\r\n\r\n{\"frame_id\":\"two\"}\r\n--frames--\r\n";
 const multipartResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: multipartBody }));
 if (multipartResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two") throw new Error("inbound multipart stream was not decoded");
+const repairedMultipartBody = "--frames\r\ncontent-type: application/json\r\nx-frame: repaired\r\n\r\n{\"wrong\":\"fixed\"}\r\n--frames--\r\n";
+const repairedMultipartResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: repairedMultipartBody }));
+if (repairedMultipartResponse.status !== 204 || seen.at(-1) !== "fixed") throw new Error("inbound multipart adapter did not run before item-schema validation");
 const customResponse = await router.fetch(new Request("https://host.test/custom", { method: "POST", headers: { "content-type": "application/vnd.example.event" }, body: '{"event_id":"three"}' }));
-if (customResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,three") throw new Error("custom inbound body was not decoded");
+if (customResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,fixed,three") throw new Error("custom inbound body was not decoded");
 const customStreamResponse = await router.fetch(new Request("https://host.test/custom-stream", { method: "POST", headers: { "content-type": "application/vnd.example.events" }, body: '{"event_id":"four"}\n{"event_id":"five"}\n' }));
-if (customStreamResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,three,custom-four,custom-five") throw new Error("custom inbound stream protocol/adapter was not decoded");
+if (customStreamResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,fixed,three,custom-four,custom-five") throw new Error("custom inbound stream protocol/adapter was not decoded");
+const batchResponse = await router.fetch(new Request("https://host.test/batch", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: '{"event_id":"six"}\n{"event_id":"seven"}\n' }));
+if (batchResponse.status !== 204 || seen.at(-1) !== "adapted-six|adapted-seven") throw new Error("complete inbound sequential body was not decoded through the stream adapter");
+let abortedBodyCancels = 0;
+const hangingRouter = createWebhookRouter({
+  customStream: { POST: async ({ body }) => { for await (const _ of body) { } return { status: 204 }; } },
+}, {
+  routes: { customStream: "/custom-stream" },
+  streamCodecs: {
+    "application/vnd.example.events": { protocol: {
+      async *decode() { await new Promise(() => undefined); yield { event_id: "never" }; },
+      encode() { throw new Error("encode not used"); },
+    } },
+  },
+});
+const abortController = new AbortController();
+const hangingBody = new ReadableStream({ cancel() { abortedBodyCancels++; } });
+const abortedRequest = new Request("https://host.test/custom-stream", {
+  method: "POST",
+  headers: { "content-type": "application/vnd.example.events" },
+  body: hangingBody,
+  signal: abortController.signal,
+  duplex: "half",
+});
+const abortedPending = hangingRouter.fetch(abortedRequest);
+await Promise.resolve();
+abortController.abort("stop");
+const abortedStatus = await Promise.race([
+  abortedPending.then((response) => response.status),
+  new Promise((resolve) => setTimeout(() => resolve("timeout"), 250)),
+]);
+if (abortedStatus === "timeout") throw new Error("aborted inbound custom stream did not settle");
+if (abortedBodyCancels !== 1) throw new Error("aborted inbound custom stream body was not cancelled exactly once: " + abortedBodyCancels);
 const deniedResponse = await router.fetch(new Request("https://host.test/denied", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }));
 if (deniedResponse.status !== 400) throw new Error("false inbound schema accepted a body");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute generated inbound stream server: %v\n%s", err, output)
+	}
+}
+
+func TestGeneratedWebhookRouterPreservesSSELastEventID(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Inbound SSE","version":"1"},
+  "paths":{},
+  "webhooks":{"events":{"post":{
+    "requestBody":{"required":true,"content":{"text/event-stream":{"itemSchema":{
+      "type":"object",
+      "required":["data"],
+      "properties":{"data":{"type":"string"},"id":{"type":"string"}}
+    }}}},
+    "responses":{"204":{"description":"OK"}}
+  }}}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addons, err := registry.Resolve([]string{"server"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := (Generator{}).Generate(document, addons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	source := filepath.Join(directory, "source")
+	writeTargetArtifacts(t, source, artifacts)
+	if err := os.WriteFile(filepath.Join(source, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "tsconfig.json"), []byte(serverTSConfig), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tsc := filepath.Join("..", "..", "..", "test", "typescript", "node_modules", "typescript", "lib", "tsc.js")
+	if _, err := os.Stat(tsc); err != nil {
+		t.Skipf("TypeScript compiler unavailable for inbound SSE test: %v", err)
+	}
+	if output, err := exec.Command("node", tsc, "--project", filepath.Join(source, "tsconfig.json")).CombinedOutput(); err != nil {
+		t.Fatalf("compile generated inbound SSE server: %v\n%s", err, output)
+	}
+	outputDirectory := filepath.Join(directory, "output")
+	if err := os.WriteFile(filepath.Join(outputDirectory, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	script := `
+import { pathToFileURL } from "node:url";
+const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href);
+const seen = [];
+const router = createWebhookRouter({
+  events: { POST: async ({ body }) => {
+    for await (const event of body) seen.push((event.id ?? "missing") + ":" + event.data);
+    return { status: 204 };
+  } },
+}, { routes: { events: "/events" } });
+const wire =
+  "id: one\ndata: first\n\n" +
+  "data: inherited\n\n" +
+  "id\ndata: reset\n\n" +
+  "data: after\n\n";
+const response = await router.fetch(new Request("https://host.test/events", {
+  method: "POST",
+  headers: { "content-type": "text/event-stream" },
+  body: wire,
+}));
+if (response.status !== 204) throw new Error("inbound SSE request failed: " + response.status);
+if (seen.join(",") !== "one:first,one:inherited,:reset,:after")
+  throw new Error("inbound SSE last-event-id state changed: " + seen.join(","));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute generated inbound SSE server: %v\n%s", err, output)
+	}
+}
+
+func TestGeneratedWebhookRouterDecodesCompleteMultipartSequentialBody(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Inbound complete multipart","version":"1"},
+  "paths":{},
+  "webhooks":{"bundle":{"post":{
+    "requestBody":{"required":true,"content":{"multipart/mixed":{
+      "schema":{"type":"array","prefixItems":[
+        {"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}},
+        {"type":"string"}
+      ]},
+      "prefixEncoding":[
+        {"contentType":"application/json","headers":{"X-First":{"required":true,"schema":{"type":"string"}}}},
+        {"contentType":"text/plain"}
+      ]
+    }}},
+    "responses":{"204":{"description":"OK"}}
+  }}}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	addons, err := registry.Resolve([]string{"server"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := (Generator{}).Generate(document, addons)
+	if err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	source := filepath.Join(directory, "source")
+	writeTargetArtifacts(t, source, artifacts)
+	if err := os.WriteFile(filepath.Join(source, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "tsconfig.json"), []byte(serverTSConfig), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	tsc := filepath.Join("..", "..", "..", "test", "typescript", "node_modules", "typescript", "lib", "tsc.js")
+	if _, err := os.Stat(tsc); err != nil {
+		t.Skipf("TypeScript compiler unavailable for inbound complete multipart test: %v", err)
+	}
+	if output, err := exec.Command("node", tsc, "--project", filepath.Join(source, "tsconfig.json")).CombinedOutput(); err != nil {
+		t.Fatalf("compile generated inbound complete multipart server: %v\n%s", err, output)
+	}
+	outputDirectory := filepath.Join(directory, "output")
+	if err := os.WriteFile(filepath.Join(outputDirectory, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	script := `
+import { pathToFileURL } from "node:url";
+const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href);
+let seen;
+const router = createWebhookRouter({
+  bundle: { POST: async ({ body }) => { seen = body; return { status: 204 }; } },
+}, { routes: { bundle: "/bundle" } });
+const wire =
+  "--bundle\r\ncontent-type: application/json\r\nx-first: yes\r\n\r\n{\"event_id\":\"one\"}\r\n" +
+  "--bundle\r\ncontent-type: text/plain\r\n\r\nready\r\n" +
+  "--bundle--\r\n";
+const response = await router.fetch(new Request("https://host.test/bundle", {
+  method: "POST",
+  headers: { "content-type": "multipart/mixed; boundary=bundle" },
+  body: wire,
+}));
+if (response.status !== 204) throw new Error("complete multipart inbound failed: " + response.status + " " + await response.text());
+if (JSON.stringify(seen) !== JSON.stringify([{ event_id: "one" }, "ready"]))
+  throw new Error("complete multipart inbound decoded incorrectly: " + JSON.stringify(seen));
+`
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute generated inbound complete multipart server: %v\n%s", err, output)
 	}
 }
 

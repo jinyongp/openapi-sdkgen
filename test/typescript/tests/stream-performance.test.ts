@@ -12,7 +12,15 @@ const operation = (contentType: string, itemSchema: WireSchema): OperationDefini
   method: "GET",
   path: "/events",
   envelope: "",
-  responses: [{ status: "200", contentType, schema: {}, itemSchema }],
+  responses: [
+    {
+      status: "200",
+      contentType,
+      schema: {},
+      itemSchema,
+      streamFraming: contentType === "text/event-stream" ? "sse" : "line-delimited-json",
+    },
+  ],
   outputSchemas: {},
 });
 

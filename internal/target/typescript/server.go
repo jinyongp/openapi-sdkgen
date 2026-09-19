@@ -730,13 +730,11 @@ func inboundBodyPlan(document *ir.Document, mediaType string, media map[string]a
 	booleanSchema, isBooleanSchema := schemaValue.(bool)
 	schemaIsFalse := isBooleanSchema && !booleanSchema
 	binary := isBinaryMedia(mediaType, schema) && !schemaIsFalse
-	stream := isStreamMediaType(mediaType) || media["itemSchema"] != nil
+	itemSchema, hasItemSchema := media["itemSchema"]
+	streamPlan := ir.StreamPlanForMediaType(mediaType, mediaTypeHasSequentialShape(media))
+	stream := hasItemSchema
 	value := "ArrayBuffer"
 	if stream {
-		itemSchema, exists := media["itemSchema"]
-		if !exists {
-			return "", "", fmt.Errorf("%s/requestBody/content/%s: sequential stream requires itemSchema", path, mediaType)
-		}
 		var err error
 		value, err = schemaTypeForScope(document, itemSchema, projectionInput, typeRenderContract)
 		if err != nil {
@@ -762,20 +760,34 @@ func inboundBodyPlan(document *ir.Document, mediaType string, media map[string]a
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/schema: %w", path, mediaType, err)
 	}
-	itemContentType := ""
-	if itemEncoding, _ := media["itemEncoding"].(map[string]any); itemEncoding != nil {
-		itemContentType, _ = itemEncoding["contentType"].(string)
-	}
 	if stream {
 		value = "AsyncIterable<" + value + ">"
 	}
-	plan := "{ contentType: " + quoteTS(mediaType) + ", binary: " + fmt.Sprint(binary) + ", stream: " + fmt.Sprint(stream) + ", itemContentType: " + quoteTS(itemContentType) + ", schema: " + schemaSource + ", wireSchema: " + wireSchema + " }"
+	streamFraming := ""
+	if streamPlan.IsStreaming() {
+		streamFraming = ", streamFraming: " + quoteTS(string(streamPlan.Framing))
+	}
+	plan := "{ contentType: " + quoteTS(mediaType) + ", binary: " + fmt.Sprint(binary) + ", stream: " + fmt.Sprint(stream) + streamFraming + ", schema: " + schemaSource + ", wireSchema: " + wireSchema + " }"
 	encodings, err := requestBodyWireEncodings(document, media)
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/encoding: %w", path, mediaType, err)
 	}
 	if encodings != "" {
 		plan = strings.TrimSuffix(plan, " }") + ", encoding: " + encodings + " }"
+	}
+	prefixEncoding, err := positionalMultipartWireEncodings(document, media["prefixEncoding"])
+	if err != nil {
+		return "", "", fmt.Errorf("%s/requestBody/content/%s/prefixEncoding: %w", path, mediaType, err)
+	}
+	if prefixEncoding != "" {
+		plan = strings.TrimSuffix(plan, " }") + ", prefixEncoding: " + prefixEncoding + " }"
+	}
+	itemEncoding, err := positionalMultipartWireEncoding(document, media["itemEncoding"])
+	if err != nil {
+		return "", "", fmt.Errorf("%s/requestBody/content/%s/itemEncoding: %w", path, mediaType, err)
+	}
+	if itemEncoding != "" {
+		plan = strings.TrimSuffix(plan, " }") + ", itemEncoding: " + itemEncoding + " }"
 	}
 	return value, plan, nil
 }

@@ -500,8 +500,13 @@ func readMediaTypes(document map[string]any, value any, pointer string, streamEl
 		}
 		stream := StreamPlan{Framing: StreamFramingNone}
 		_, hasItemSchema := resolved["itemSchema"]
+		_, hasPrefixEncoding := resolved["prefixEncoding"]
+		_, hasItemEncoding := resolved["itemEncoding"]
 		if streamEligible {
-			stream = StreamPlanForMediaType(contentType, hasItemSchema)
+			stream = StreamPlanForMediaType(
+				contentType,
+				hasItemSchema || hasPrefixEncoding || hasItemEncoding,
+			)
 		}
 		result = append(result, MediaType{
 			ContentType: contentType,

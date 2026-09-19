@@ -541,6 +541,9 @@ func operationRequestWireBodies(document *ir.Document, operation ir.Operation) (
 		if _, exists := media.Raw["schema"]; exists {
 			entry += ", schemaDeclared: true"
 		}
+		if media.Stream.IsStreaming() {
+			entry += ", streamFraming: " + quoteTS(string(media.Stream.Framing))
+		}
 		if _, exists := media.Raw["itemSchema"]; exists {
 			itemDescriptor, err := wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionInput)
 			if err != nil {
@@ -744,6 +747,12 @@ func operationResponseWireBodies(document *ir.Document, operation ir.Operation) 
 				}
 			}
 			entry := "{ status: " + quoteTS(response.Status) + ", contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+			if _, exists := media.Raw["schema"]; exists {
+				entry += ", schemaDeclared: true"
+			}
+			if media.Stream.IsStreaming() {
+				entry += ", streamFraming: " + quoteTS(string(media.Stream.Framing))
+			}
 			if _, exists := media.Raw["itemSchema"]; exists {
 				itemDescriptor, err := wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionOutput)
 				if err != nil {

@@ -7,6 +7,7 @@ import {
   type MediaCodec,
   type StreamCodec,
   type StreamContext,
+  type StreamFraming,
   type StreamProtocol,
   type StreamReader,
   type WireEncodingDefinition,
@@ -1340,10 +1341,12 @@ export interface InboundBodyPlan {
   readonly contentType: string;
   readonly binary: boolean;
   readonly stream: boolean;
-  readonly itemContentType?: string | undefined;
+  readonly streamFraming?: StreamFraming | undefined;
   readonly schema?: InboundSchema | undefined;
   readonly wireSchema?: WireSchema | undefined;
   readonly encoding?: readonly WireEncodingDefinition[] | undefined;
+  readonly prefixEncoding?: readonly WireEncodingDefinition[] | undefined;
+  readonly itemEncoding?: WireEncodingDefinition | undefined;
 }
 /** Body contract selected from an OpenAPI Request Body Object. */
 export interface InboundBodyOptions {
@@ -1427,6 +1430,20 @@ async function decodeSelectedInboundBody(
       return emptyInboundStream();
     }
     return decodeInboundStreamBody(
+      request.body,
+      rawContentType,
+      contentType,
+      request.signal,
+      options,
+    );
+  }
+  if (options.streamFraming !== undefined) {
+    if (request.body === null) {
+      if (options.required)
+        throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
+      return undefined;
+    }
+    return decodeInboundCompleteSequentialBody(
       request.body,
       rawContentType,
       contentType,
@@ -1582,16 +1599,6 @@ function isGeneratedInboundMediaType(
   );
 }
 
-function isGeneratedInboundStreamMediaType(contentType: string): boolean {
-  return (
-    contentType.startsWith("multipart/") ||
-    contentType.includes("ndjson") ||
-    contentType.includes("jsonl") ||
-    contentType.includes("json-seq") ||
-    contentType.includes("event-stream")
-  );
-}
-
 export function normalizeInboundMediaCodecs(
   codecs: Readonly<Record<string, MediaCodec<unknown>>> | undefined,
 ): ReadonlyMap<string, MediaCodec<unknown>> {
@@ -1651,22 +1658,7 @@ async function* decodeInboundStreamBody(
   signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
 ): AsyncIterable<unknown> {
-  const maxFrameBytes = resolveInboundStreamFrameBytes(options.maxStreamFrameBytes);
-  const context: StreamContext = { contentType: rawContentType, maxFrameBytes, signal };
-  const codec = inboundStreamCodec(options.streamCodecs, contentType);
-  const frames =
-    codec?.protocol === undefined
-      ? decodeInboundBuiltInStreamFrames(
-          body,
-          rawContentType,
-          contentType,
-          options.schema,
-          options.schemas,
-          options.itemContentType,
-          maxFrameBytes,
-        )
-      : decodeInboundCustomProtocol(body, codec.protocol, context);
-  const items = codec?.adapter === undefined ? frames : codec.adapter.decode(frames, context);
+  const { items } = decodeInboundProtocolItems(body, rawContentType, contentType, signal, options);
   let count = 0;
   try {
     for await (const value of items) {
@@ -1682,29 +1674,104 @@ async function* decodeInboundStreamBody(
   }
 }
 
+async function decodeInboundCompleteSequentialBody(
+  body: ReadableStream<Uint8Array>,
+  rawContentType: string,
+  contentType: string,
+  signal: AbortSignal,
+  options: InboundBodyOptions & InboundBodyPlan,
+): Promise<unknown> {
+  const { items } = decodeInboundProtocolItems(body, rawContentType, contentType, signal, options);
+  const values: unknown[] = [];
+  try {
+    for await (const value of items) values.push(value);
+    validateInboundWireValue(values, options.wireSchema, options.wireSchemas, "request body");
+    return decodeInboundWireValue(values, options.wireSchema, options.wireSchemas);
+  } catch (error) {
+    if (error instanceof InboundRequestError) throw error;
+    throw new InboundRequestError(new Response("Invalid request body", { status: 400 }));
+  }
+}
+
+interface InboundProtocolDecodeOptions {
+  readonly rawContentType: string;
+  readonly streamFraming: StreamFraming | undefined;
+  readonly schema: InboundSchema | undefined;
+  readonly schemas: InboundSchemas;
+  readonly complete: boolean;
+  readonly prefixEncoding: readonly WireEncodingDefinition[] | undefined;
+  readonly itemEncoding: WireEncodingDefinition | undefined;
+  readonly wireSchema: WireSchema | undefined;
+  readonly wireSchemas: WireSchemas | undefined;
+  readonly codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined;
+  readonly maxFrameBytes: number;
+  readonly signal: AbortSignal;
+}
+
+function decodeInboundProtocolItems(
+  body: ReadableStream<Uint8Array>,
+  rawContentType: string,
+  contentType: string,
+  signal: AbortSignal,
+  options: InboundBodyOptions & InboundBodyPlan,
+): { readonly items: AsyncIterable<unknown> } {
+  const maxFrameBytes = resolveInboundStreamFrameBytes(options.maxStreamFrameBytes);
+  const context: StreamContext & { readonly signal: AbortSignal } = {
+    contentType: rawContentType,
+    maxFrameBytes,
+    signal,
+  };
+  const codec = inboundStreamCodec(options.streamCodecs, contentType);
+  const frames =
+    codec?.protocol === undefined
+      ? decodeInboundBuiltInStreamFrames(body, {
+          rawContentType,
+          streamFraming: options.streamFraming,
+          schema: options.schema,
+          schemas: options.schemas,
+          complete: options.stream !== true,
+          prefixEncoding: options.stream === true ? undefined : options.prefixEncoding,
+          itemEncoding: options.itemEncoding,
+          wireSchema: options.wireSchema,
+          wireSchemas: options.wireSchemas,
+          codecs: options.codecs,
+          maxFrameBytes,
+          signal,
+        })
+      : decodeInboundCustomProtocol(body, codec.protocol, context);
+  return {
+    items: codec?.adapter === undefined ? frames : codec.adapter.decode(frames, context),
+  };
+}
+
 async function* decodeInboundCustomProtocol(
   body: ReadableStream<Uint8Array>,
   protocol: StreamProtocol<unknown>,
-  context: StreamContext,
+  context: StreamContext & { readonly signal: AbortSignal },
 ): AsyncIterable<unknown> {
-  const reader = createInboundMediaStreamReader(body, context.maxFrameBytes);
+  const reader = createInboundMediaStreamReader(body, context.maxFrameBytes, context.signal);
   const frames = protocol.decode(reader, context);
   const iterator = frames[Symbol.asyncIterator]();
   try {
     while (true) {
-      const next = await iterator.next();
+      const next = await awaitInboundAbortable(Promise.resolve(iterator.next()), context.signal);
       if (next.done) return;
       yield next.value;
     }
   } finally {
-    await reader.cancel(context.signal?.reason);
-    await iterator.return?.().catch(() => undefined);
+    await reader.cancel(context.signal.reason);
+    if (iterator.return !== undefined) {
+      const close = Promise.resolve(iterator.return());
+      if (context.signal.aborted) void close.catch(() => undefined);
+      else await close.catch(() => undefined);
+    }
   }
 }
 
 function createInboundMediaStreamReader(
   body: ReadableStream<Uint8Array>,
   maximum: number,
+  signal: AbortSignal,
 ): StreamReader {
   const reader = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
@@ -1724,7 +1791,7 @@ function createInboundMediaStreamReader(
       if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > maximum)
         throw new TypeError("stream protocol read exceeds maxStreamFrameBytes");
       while (pending.byteLength === 0 && !done) {
-        const next = await reader.read();
+        const next = await awaitInboundAbortable(reader.read(), signal);
         done = next.done;
         if (next.value !== undefined) pending = next.value;
       }
@@ -1740,39 +1807,48 @@ function createInboundMediaStreamReader(
   };
 }
 
+function awaitInboundAbortable<Value>(value: Promise<Value>, signal: AbortSignal): Promise<Value> {
+  if (signal.aborted) {
+    void value.catch(() => undefined);
+    return Promise.reject(signal.reason);
+  }
+  return new Promise((resolve, reject) => {
+    const onAbort = (): void => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    value.then(
+      (result) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(result);
+      },
+      (cause) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(cause);
+      },
+    );
+  });
+}
+
 async function* emptyInboundStream(): AsyncIterable<unknown> {
   return;
 }
 
 async function* decodeInboundBuiltInStreamFrames(
   body: ReadableStream<Uint8Array>,
-  rawContentType: string,
-  contentType: string,
-  schema: InboundSchema | undefined,
-  schemas: InboundSchemas,
-  itemContentType: string | undefined,
-  maxFrameBytes: number,
+  options: InboundProtocolDecodeOptions,
 ): AsyncIterable<unknown> {
-  if (!isGeneratedInboundStreamMediaType(contentType))
+  const { streamFraming, maxFrameBytes, signal } = options;
+  if (streamFraming === undefined || streamFraming === "custom")
     throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
-  if (contentType.startsWith("multipart/")) {
-    yield* decodeInboundMultipartStream(
-      body,
-      rawContentType,
-      schema,
-      schemas,
-      false,
-      itemContentType,
-      undefined,
-      undefined,
-      maxFrameBytes,
-    );
+  if (streamFraming === "multipart") {
+    yield* decodeInboundMultipartStream(body, options);
     return;
   }
-  if (contentType.includes("event-stream")) {
-    yield* decodeInboundSSEStreamFrames(body, maxFrameBytes);
+  if (streamFraming === "sse") {
+    yield* decodeInboundSSEStreamFrames(body, maxFrameBytes, signal);
     return;
   }
+  if (streamFraming !== "line-delimited-json" && streamFraming !== "json-sequence")
+    throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
 
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -1794,9 +1870,9 @@ async function* decodeInboundBuiltInStreamFrames(
   };
   try {
     while (true) {
-      const next = await reader.read();
+      const next = await awaitInboundAbortable(reader.read(), signal);
       pending += decoder.decode(next.value, { stream: !next.done });
-      if (contentType.includes("json-seq")) {
+      if (streamFraming === "json-sequence") {
         const records = pending.split("\u001e");
         pending = records.pop() ?? "";
         for (const record of records) {
@@ -1819,7 +1895,7 @@ async function* decodeInboundBuiltInStreamFrames(
     if (pending.trim() !== "") yield parse(pending.trim().replace(/^\u001e/, ""), pending);
   } finally {
     try {
-      await reader.cancel();
+      await reader.cancel(signal.reason);
     } finally {
       reader.releaseLock();
     }
@@ -1835,6 +1911,7 @@ interface InboundSSELine {
 async function* decodeInboundSSEStreamFrames(
   body: ReadableStream<Uint8Array>,
   maxFrameBytes: number,
+  signal: AbortSignal,
 ): AsyncIterable<unknown> {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
@@ -1846,7 +1923,7 @@ async function* decodeInboundSSEStreamFrames(
   let data = "";
   let hasData = false;
   let event: string | undefined;
-  let id: string | undefined;
+  let lastEventID: string | undefined;
   let retry: number | undefined;
 
   const assertFrameBytes = (byteLength: number): void => {
@@ -1859,7 +1936,6 @@ async function* decodeInboundSSEStreamFrames(
     data = "";
     hasData = false;
     event = undefined;
-    id = undefined;
     retry = undefined;
   };
   const dispatch = (): unknown | undefined => {
@@ -1871,7 +1947,7 @@ async function* decodeInboundSSEStreamFrames(
       data: data.slice(0, -1),
     };
     if (event !== undefined) result.event = event;
-    if (id !== undefined) result.id = id;
+    if (lastEventID !== undefined) result.id = lastEventID;
     if (retry !== undefined) result.retry = retry;
     reset();
     return result;
@@ -1888,7 +1964,7 @@ async function* decodeInboundSSEStreamFrames(
     } else if (field === "event") {
       event = value;
     } else if (field === "id") {
-      if (!value.includes("\u0000")) id = value;
+      if (!value.includes("\u0000")) lastEventID = value;
     } else if (field === "retry" && /^[0-9]+$/.test(value)) {
       const parsed = Number(value);
       if (Number.isFinite(parsed)) retry = parsed;
@@ -1897,7 +1973,7 @@ async function* decodeInboundSSEStreamFrames(
 
   try {
     while (true) {
-      const next = await reader.read();
+      const next = await awaitInboundAbortable(reader.read(), signal);
       let decoded = decoder.decode(next.value, { stream: !next.done });
       if (firstText && decoded !== "") {
         if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
@@ -1926,7 +2002,7 @@ async function* decodeInboundSSEStreamFrames(
     }
   } finally {
     try {
-      await reader.cancel();
+      await reader.cancel(signal.reason);
     } finally {
       reader.releaseLock();
     }
@@ -1951,18 +2027,26 @@ function takeInboundSSELine(source: string, eof: boolean): InboundSSELine | unde
   return undefined;
 }
 
-async function* decodeInboundMultipartStream(
-  body: ReadableStream<Uint8Array>,
-  contentType: string,
+function inboundSequenceItemSchema(
   schema: InboundSchema | undefined,
   schemas: InboundSchemas,
-  required: boolean,
-  itemContentType: string | undefined,
-  wireSchema: WireSchema | undefined,
-  wireSchemas: WireSchemas | undefined,
-  maxFrameBytes: number,
+  index: number,
+): InboundSchema | undefined {
+  if (schema === undefined) return undefined;
+  const resolved = resolveInboundSchema(schema, schemas);
+  if (typeof resolved === "boolean") return undefined;
+  const descriptor = inboundSchemaRecord(resolved);
+  const prefixItems = Array.isArray(descriptor["prefixItems"]) ? descriptor["prefixItems"] : [];
+  const candidate = prefixItems[index] ?? descriptor["items"];
+  return isInboundSchema(candidate) ? resolveInboundSchema(candidate, schemas) : undefined;
+}
+
+async function* decodeInboundMultipartStream(
+  body: ReadableStream<Uint8Array>,
+  options: InboundProtocolDecodeOptions,
 ): AsyncIterable<unknown> {
-  const match = /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType);
+  const { rawContentType, maxFrameBytes, signal } = options;
+  const match = /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(rawContentType);
   const boundary = match?.[1] ?? match?.[2];
   if (boundary === undefined || boundary === "")
     throw new InboundRequestError(new Response("Invalid multipart boundary", { status: 400 }));
@@ -1976,7 +2060,7 @@ async function* decodeInboundMultipartStream(
   let count = 0;
   try {
     while (!closed) {
-      const next = await reader.read();
+      const next = await awaitInboundAbortable(reader.read(), signal);
       if (next.value !== undefined) pending = appendInboundBytes(pending, next.value);
       while (!closed) {
         if (!started) {
@@ -2008,15 +2092,20 @@ async function* decodeInboundMultipartStream(
           );
         const part = pending.slice(0, index);
         pending = pending.slice(after + 2);
-        yield decodeInboundMultipartPart(
-          part,
-          schema,
-          schemas,
-          itemContentType,
-          wireSchema,
-          wireSchemas,
+        const frameSchema = options.complete
+          ? inboundSequenceItemSchema(options.schema, options.schemas, count)
+          : options.schema;
+        const frameEncoding = options.complete
+          ? (options.prefixEncoding?.[count] ?? options.itemEncoding)
+          : options.itemEncoding;
+        yield await decodeInboundMultipartPart(part, {
+          schema: frameSchema,
+          schemas: options.schemas,
+          itemEncoding: frameEncoding,
+          wireSchemas: options.wireSchemas,
+          codecs: options.codecs,
           maxFrameBytes,
-        );
+        });
         count++;
         if (closing) closed = true;
       }
@@ -2033,26 +2122,29 @@ async function* decodeInboundMultipartStream(
     }
     if (!closed)
       throw new InboundRequestError(new Response("Invalid multipart body", { status: 400 }));
-    if (required && count === 0)
-      throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
   } finally {
     try {
-      await reader.cancel();
+      await reader.cancel(signal.reason);
     } finally {
       reader.releaseLock();
     }
   }
 }
 
-function decodeInboundMultipartPart(
+interface InboundMultipartPartDecodeOptions {
+  readonly schema: InboundSchema | undefined;
+  readonly schemas: InboundSchemas;
+  readonly itemEncoding: WireEncodingDefinition | undefined;
+  readonly wireSchemas: WireSchemas | undefined;
+  readonly codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined;
+  readonly maxFrameBytes: number;
+}
+
+async function decodeInboundMultipartPart(
   part: Uint8Array,
-  schema: InboundSchema | undefined,
-  schemas: InboundSchemas,
-  itemContentType: string | undefined,
-  wireSchema: WireSchema | undefined,
-  wireSchemas: WireSchemas | undefined,
-  maxFrameBytes: number,
-): unknown {
+  options: InboundMultipartPartDecodeOptions,
+): Promise<unknown> {
+  const { schema, schemas, itemEncoding, wireSchemas, codecs, maxFrameBytes } = options;
   const split = findInboundBytes(part, new Uint8Array([13, 10, 13, 10]));
   if (split < 0)
     throw new InboundRequestError(new Response("Invalid multipart part", { status: 400 }));
@@ -2061,13 +2153,16 @@ function decodeInboundMultipartPart(
       new Response("Multipart headers exceed stream limit", { status: 400 }),
     );
   const headers = parseInboundMultipartHeaders(new TextDecoder().decode(part.slice(0, split)));
+  await validateInboundMultipartEncodingHeaders(headers, itemEncoding, wireSchemas, codecs);
   const bytes = part.slice(split + 4);
   if (bytes.byteLength > maxFrameBytes)
     throw new InboundRequestError(
       new Response("Multipart frame exceeds maxStreamFrameBytes", { status: 400 }),
     );
   const rawContentType =
-    headers.get("content-type") ?? itemContentType?.split(",", 1)[0]?.trim() ?? "text/plain";
+    headers.get("content-type") ??
+    itemEncoding?.contentType?.split(",", 1)[0]?.trim() ??
+    "text/plain";
   const normalized = rawContentType.split(";", 1)[0]!.trim().toLowerCase();
   let value: unknown;
   if (normalized === "application/json" || normalized.endsWith("+json")) {
@@ -2082,8 +2177,8 @@ function decodeInboundMultipartPart(
         new TextDecoder().decode(bytes),
         schema,
         schemas,
-        wireSchema,
-        wireSchemas,
+        undefined,
+        undefined,
       );
     } catch {
       throw new InboundRequestError(new Response("Invalid multipart XML item", { status: 400 }));
@@ -2091,8 +2186,39 @@ function decodeInboundMultipartPart(
   } else if (isInboundBinaryMedia(normalized, schema)) {
     return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   } else value = new TextDecoder().decode(bytes);
-  validateInboundWireValue(value, wireSchema, wireSchemas, "multipart item");
-  return decodeInboundWireValue(value, wireSchema, wireSchemas);
+  return value;
+}
+
+async function validateInboundMultipartEncodingHeaders(
+  headers: Headers,
+  encoding: WireEncodingDefinition | undefined,
+  wireSchemas: WireSchemas | undefined,
+  codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
+): Promise<void> {
+  const schemas = wireSchemas ?? {};
+  for (const header of encoding?.headers ?? []) {
+    const raw = headers.get(header.name);
+    if (raw === null) {
+      if (header.required)
+        throw new InboundRequestError(
+          new Response(`Missing required multipart header ${header.name}`, { status: 400 }),
+        );
+      continue;
+    }
+    const decoded =
+      header.contentType === undefined
+        ? decodeInboundParameterValue(raw, {}, {}, header.schema, schemas)
+        : await decodeInboundFormContent(
+            raw,
+            {},
+            {},
+            header.schema,
+            schemas,
+            header.contentType,
+            codecs,
+          );
+    validateInboundWireValue(decoded, header.schema, schemas, `multipart header ${header.name}`);
+  }
 }
 
 function isInboundBinaryMedia(contentType: string, schema: InboundSchema | undefined): boolean {

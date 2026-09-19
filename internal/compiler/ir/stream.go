@@ -3,9 +3,10 @@ package ir
 import "strings"
 
 // StreamPlanForMediaType normalizes one request/response media representation
-// into the framing contract consumed by targets. itemSchema presence marks an
-// otherwise unknown media type as a custom sequential protocol.
-func StreamPlanForMediaType(contentType string, hasItemSchema bool) StreamPlan {
+// into the framing contract consumed by targets. sequential marks Media Type
+// Objects that declare itemSchema or positional multipart encoding; for an
+// otherwise unknown media type it selects a custom sequential protocol.
+func StreamPlanForMediaType(contentType string, sequential bool) StreamPlan {
 	mediaType := strings.ToLower(strings.TrimSpace(contentType))
 	if index := strings.IndexByte(mediaType, ';'); index >= 0 {
 		mediaType = strings.TrimSpace(mediaType[:index])
@@ -20,7 +21,7 @@ func StreamPlanForMediaType(contentType string, hasItemSchema bool) StreamPlan {
 	if mediaType == "application/json-seq" || strings.HasSuffix(mediaType, "+json-seq") {
 		return StreamPlan{Framing: StreamFramingJSONSequence}
 	}
-	if hasItemSchema {
+	if sequential {
 		if strings.HasPrefix(mediaType, "multipart/") {
 			return StreamPlan{Framing: StreamFramingMultipart}
 		}
