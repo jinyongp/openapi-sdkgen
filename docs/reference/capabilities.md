@@ -7,6 +7,24 @@ used feature safely, the command reports the OpenAPI location and stops.
 This page summarizes the main public capability groups. For generation
 workflows and flags, use the [CLI reference](./cli.md).
 
+## Supported OpenAPI versions
+
+| OpenAPI | SDK generation | Sequential media |
+| --- | --- | --- |
+| 3.0.x | Supported | Known sequential content types can use an ordinary `schema` as a complete buffered value. |
+| 3.1.x | Supported | Same complete-value support as 3.0.x, with the 3.1 JSON Schema model. |
+| 3.2.x | Supported | Adds Media Type Object `itemSchema`, `prefixEncoding`, and `itemEncoding`; these enable typed incremental streams and positional/streaming multipart. |
+
+The generator therefore supports all three OpenAPI 3.x version lines. The
+operation-level [`.stream()`](./client-api.md#links-and-streams) capability and
+incremental [`StreamSource<T>`](./typescript-types.md#stream-types)
+inputs require OpenAPI 3.2 `itemSchema`. OpenAPI 3.0 and 3.1 documents can still
+use built-in SSE, NDJSON/JSON Lines, and JSON Sequence framing for complete
+`schema` values when those media types are declared.
+
+The 3.2-only fields come from the
+[OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object).
+
 ## Client requests and responses
 
 The TypeScript target generates types and executable client behavior for:
@@ -37,8 +55,10 @@ Credential acquisition remains application-owned. See
 ## Links, pagination, and streams
 
 OpenAPI Link Objects become typed follow-up call helpers under `$links`.
-OpenAPI 3.2 responses with `itemSchema` add a typed `.stream(...)` capability
-to the generated operation, route, and resource surfaces. The call returns
+Across supported OpenAPI versions, known sequential media with a complete
+`schema` use the built-in framing pipeline for buffered calls. OpenAPI 3.2
+responses with `itemSchema` additionally expose a typed `.stream(...)`
+capability on the generated operation, route, and resource surfaces. The call returns
 `OperationStream<T>`; incremental request bodies accept `StreamSource<T>`.
 
 Built-in sequential protocols cover SSE, NDJSON/JSON Lines, JSON Sequence, and

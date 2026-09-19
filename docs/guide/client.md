@@ -122,8 +122,12 @@ If a required runtime expression cannot be resolved, the call fails.
 
 ## Consume streaming responses
 
-An operation with an OpenAPI 3.2 `itemSchema` exposes `.stream(...)` on its
-operation, exact-route, and generated resource call surfaces.
+An operation with an OpenAPI 3.2
+[`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)
+exposes [`.stream(...)`](../reference/client-api.md#links-and-streams) on its
+operation, exact-route, and generated resource call surfaces. See
+[OpenAPI support](../reference/capabilities.md#supported-openapi-versions) for
+the 3.0/3.1/3.2 version split.
 
 ```ts
 const stream = api.$operations.watchTodos.stream({
@@ -135,8 +139,9 @@ for await (const event of stream) {
 }
 ```
 
-`.stream()` returns an `OperationStream<T>`. It starts lazily, preserves Fetch
-backpressure, and owns one response body. Use `stream.response` when status,
+`.stream()` returns an
+[`OperationStream<T>`](../reference/typescript-types.md#stream-types).
+It starts lazily, preserves Fetch backpressure, and owns one response body. Use `stream.response` when status,
 headers, content type, or request metadata are needed after the response opens.
 
 ```ts
@@ -154,8 +159,10 @@ reconnect policy stays in application code.
 
 ## Send streaming request bodies
 
-An OpenAPI 3.2 request body with `itemSchema` accepts `StreamSource<T>`, so an
-async iterable and a Web `ReadableStream` use the same generated input type.
+An OpenAPI 3.2 request body with `itemSchema` accepts
+[`StreamSource<T>`](../reference/typescript-types.md#stream-types),
+so an async iterable and a Web `ReadableStream` use the same generated input
+type.
 
 ```ts
 async function* todoEvents() {

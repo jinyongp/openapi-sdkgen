@@ -8,6 +8,25 @@ openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고 문서에 선언�
 이 페이지는 주요 공개 capability를 요약합니다. 실제 생성 흐름과 flag는
 [CLI 레퍼런스](./cli.md)를 참고하세요.
 
+## 지원 OpenAPI 버전
+
+| OpenAPI | SDK 생성 | Sequential media |
+| --- | --- | --- |
+| 3.0.x | 지원 | 알려진 sequential content type에 일반 `schema`를 선언하면 complete buffered value로 처리할 수 있습니다. |
+| 3.1.x | 지원 | 3.0.x와 같은 complete-value 처리를 지원하며 3.1 JSON Schema 모델을 사용합니다. |
+| 3.2.x | 지원 | Media Type Object의 `itemSchema`, `prefixEncoding`, `itemEncoding`을 사용해 typed incremental stream과 positional/streaming multipart를 표현할 수 있습니다. |
+
+따라서 생성기 전체가 OpenAPI 3.2에만 한정되는 것은 아닙니다. Operation의
+[`.stream()`](./client-api.md#link와-스트림)과 incremental
+[`StreamSource<T>`](./typescript-types.md#스트림-타입) 입력은 OpenAPI 3.2
+`itemSchema`가 필요합니다. OpenAPI 3.0과 3.1 문서도 SSE, NDJSON/JSON Lines,
+JSON Sequence content type에 일반 `schema`를 선언하면 built-in framing으로
+complete value를 처리할 수 있습니다.
+
+3.2 전용 필드는
+[OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)에
+정의되어 있습니다.
+
 ## Client 요청과 응답
 
 TypeScript target은 다음 내용을 타입과 실행 가능한 client 동작으로 생성합니다.
@@ -38,8 +57,10 @@ Credential 획득은 애플리케이션이 담당합니다.
 ## Link, pagination, stream
 
 OpenAPI Link Object는 `$links` 아래의 타입 안전 후속 호출 helper로 생성됩니다.
-OpenAPI 3.2 response에 `itemSchema`가 있으면 생성된 operation, route,
-resource 호출에 `.stream(...)`이 추가됩니다. 반환 타입은
+지원하는 모든 OpenAPI 버전에서 complete `schema`가 있는 알려진 sequential
+media는 buffered 호출 시 built-in framing pipeline을 사용합니다. OpenAPI 3.2
+response에 `itemSchema`가 있으면 생성된 operation, route, resource 호출에
+`.stream(...)`이 추가됩니다. 반환 타입은
 `OperationStream<T>`이며 incremental request body에는 `StreamSource<T>`를
 사용합니다.
 

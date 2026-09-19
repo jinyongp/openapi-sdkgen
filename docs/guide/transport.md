@@ -164,25 +164,36 @@ stream calls where applicable.
 
 ## Streaming behavior
 
-OpenAPI 3.2 sequential media use the same operation-centric API as other calls.
+openapi-sdkgen supports OpenAPI 3.0.x, 3.1.x, and 3.2.x. For known sequential
+content types, a normal `schema` can describe the complete buffered value on
+all supported version lines. OpenAPI 3.2 adds the Media Type Object
+[`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object),
+which enables typed incremental calls through
+[`.stream()`](../reference/client-api.md#links-and-streams).
+
 An operation with `itemSchema` exposes `.stream()`, which returns
-`OperationStream<T>`. Built-in framing covers Server-Sent Events, NDJSON/JSON
-Lines, JSON Sequence, and streaming multipart.
+[`OperationStream<T>`](../reference/typescript-types.md#stream-types).
+Built-in framing covers Server-Sent Events, NDJSON/JSON Lines, JSON Sequence,
+and streaming multipart. The exact version split is listed in
+[OpenAPI support](../reference/capabilities.md#supported-openapi-versions).
 
-Incremental request bodies accept `StreamSource<T>`, so callers can provide an
-`AsyncIterable<T>` or a Web `ReadableStream<T>`. A sequential media type with
-`schema` accepts its complete application value; when both `schema` and
-`itemSchema` are present, both complete and incremental request modes are
-available.
+Incremental request bodies accept
+[`StreamSource<T>`](../reference/typescript-types.md#stream-types),
+so callers can provide an `AsyncIterable<T>` or a Web `ReadableStream<T>`.
+A sequential media type with `schema` accepts its complete application value;
+when both `schema` and `itemSchema` are present, both complete and incremental
+request modes are available.
 
-Use `maxStreamFrameBytes` on the client or one request to bound a wire frame,
-record, or multipart part before application adaptation.
+Use
+[`maxStreamFrameBytes`](../reference/client-api.md#links-and-streams) on the
+client or one request to bound a wire frame, record, or multipart part before
+application adaptation.
 
 ### Adapt a built-in protocol
 
-`StreamAdapter<Frame, Item>` handles application semantics layered on standard
-framing. For example, an application can map Todo SSE data without reimplementing
-the SSE parser:
+[`StreamAdapter<Frame, Item>`](../reference/typescript-types.md#stream-types)
+handles application semantics layered on standard framing. For example, an
+application can map Todo SSE data without reimplementing the SSE parser:
 
 ```ts
 import type { ServerSentEvent, StreamAdapter } from "./generated/api";
@@ -212,12 +223,95 @@ const api = createClient({
 A request can override that client default with `streamCodec`. Adapter output is
 then validated and projected through the operation's declared `itemSchema`.
 
+### Bridge an AI event stream to AI SDK UI
+
+AI APIs often layer application events such as text deltas or tool-input deltas
+over SSE. Keep that provider or application protocol in a
+[`StreamAdapter`](../reference/typescript-types.md#stream-types),
+then bridge the typed generated stream at the application boundary.
+
+This example maps JSON-in-SSE to the `itemSchema` type generated for an
+operation named `generate`, then forwards text deltas into the AI SDK UI message
+stream protocol:
+
+```ts
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from "ai";
+import {
+  createClient,
+  type OperationStreamItem,
+  type ServerSentEvent,
+  type StreamAdapter,
+} from "./generated/api";
+
+type AiEvent = OperationStreamItem<"generate">;
+
+const aiAdapter: StreamAdapter<ServerSentEvent, AiEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.data === "[DONE]") return;
+      yield JSON.parse(event.data) as AiEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { data: JSON.stringify(item) };
+    }
+  },
+};
+
+const api = createClient({
+  baseURL,
+  streamCodecs: {
+    "text/event-stream": { adapter: aiAdapter },
+  },
+});
+
+export async function POST() {
+  const upstream = api.$operations.generate.stream({
+    body: { prompt: "Summarize the release notes." },
+  });
+
+  const stream = createUIMessageStream({
+    async execute({ writer }) {
+      const id = "answer";
+      writer.write({ type: "text-start", id });
+
+      for await (const event of upstream) {
+        if (event.type === "text-delta") {
+          writer.write({ type: "text-delta", id, delta: event.text });
+        }
+      }
+
+      writer.write({ type: "text-end", id });
+    },
+    onError: () => "Upstream generation failed",
+  });
+
+  return createUIMessageStreamResponse({ stream });
+}
+```
+
+Tool calls, reasoning, sources, and custom data remain application-level mapping
+decisions. openapi-sdkgen only owns HTTP framing, adapter composition, generated
+types, validation, and lifecycle. See the AI SDK references for
+[`createUIMessageStream`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream)
+and
+[`createUIMessageStreamResponse`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response).
+
+The Playground includes an **AI event stream** OpenAPI 3.2 example. Open it
+directly at [Playground → AI event stream](../playground.md?example=ai-event-stream).
+
 ### Define custom framing
 
-`StreamProtocol<Frame>` owns byte framing for a custom sequential media type.
-Its bounded `StreamReader` and `StreamContext.maxFrameBytes` keep framing under
-the same cancellation and size limits as built-in protocols. A `StreamCodec`
-can combine a custom protocol with an optional adapter.
+[`StreamProtocol<Frame>`](../reference/typescript-types.md#stream-types)
+owns byte framing for a custom sequential media type. Its bounded `StreamReader`
+and `StreamContext.maxFrameBytes` keep framing under the same cancellation and
+size limits as built-in protocols. A
+[`StreamCodec`](../reference/typescript-types.md#stream-types) can
+combine a custom protocol with an optional adapter.
 
 Stopping iteration, calling `abort()`, cancelling `toReadableStream()`, an
 external `AbortSignal`, or a timeout releases the underlying body. Generated

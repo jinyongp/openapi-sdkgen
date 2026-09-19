@@ -125,8 +125,13 @@ Link 호출 인자를 지정하면 Link Object에서 유도한 값보다 해당 
 
 ## 스트리밍 응답 읽기
 
-OpenAPI 3.2 `itemSchema`가 있는 operation에는 operation, exact route, 생성된
-resource 호출에 `.stream(...)`이 추가됩니다.
+OpenAPI 3.2
+[`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)가 있는
+operation에는 operation, exact route, 생성된 resource 호출에
+[`.stream(...)`](../reference/client-api.md#link와-스트림)이 추가됩니다. OpenAPI
+3.0/3.1/3.2의 차이는
+[OpenAPI 지원 범위](../reference/capabilities.md#지원-openapi-버전)에서 확인할 수
+있습니다.
 
 ```ts
 const stream = api.$operations.watchTodos.stream({
@@ -138,7 +143,9 @@ for await (const event of stream) {
 }
 ```
 
-`.stream()`은 `OperationStream<T>`를 반환합니다. 요청은 실제 순회나
+`.stream()`은
+[`OperationStream<T>`](../reference/typescript-types.md#스트림-타입)을
+반환합니다. 요청은 실제 순회나
 `stream.response` 접근 시 시작되고 Fetch backpressure를 유지합니다.
 `stream.response`에서는 status, header, content type, request metadata를
 확인할 수 있습니다.
@@ -158,7 +165,8 @@ replay와 reconnect 정책은 애플리케이션에서 관리합니다.
 
 ## 스트리밍 request body 전송
 
-OpenAPI 3.2 request body에 `itemSchema`가 있으면 `StreamSource<T>`를
+OpenAPI 3.2 request body에 `itemSchema`가 있으면
+[`StreamSource<T>`](../reference/typescript-types.md#스트림-타입)를
 사용합니다. Async iterable과 Web `ReadableStream`을 같은 생성 타입으로
 전달할 수 있습니다.
 

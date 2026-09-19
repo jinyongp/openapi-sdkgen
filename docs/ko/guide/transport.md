@@ -165,26 +165,37 @@ const todos = await api.todos.list(
 
 ## 스트리밍 동작
 
-OpenAPI 3.2 sequential media는 다른 operation과 같은 호출 구조를 사용합니다.
-`itemSchema`가 있는 operation에는 `.stream()`이 추가되고
-`OperationStream<T>`를 반환합니다. SSE, NDJSON/JSON Lines, JSON Sequence,
-streaming multipart framing은 기본으로 처리합니다.
+openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x를 모두 지원합니다. 알려진
+sequential content type에 일반 `schema`를 선언하면 세 버전 모두 complete
+buffered value로 처리할 수 있습니다. OpenAPI 3.2의 Media Type Object에는
+[`itemSchema`](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)가
+추가되며, 이를 사용하면 [`.stream()`](../reference/client-api.md#link와-스트림)
+기반 typed incremental 호출을 생성합니다.
 
-Incremental request body는 `StreamSource<T>`를 사용하므로
-`AsyncIterable<T>`와 Web `ReadableStream<T>`을 모두 전달할 수 있습니다.
-Sequential media에 `schema`가 있으면 complete application value를 사용할 수
-있고, `schema`와 `itemSchema`가 함께 있으면 complete와 incremental 입력을
-모두 지원합니다.
-
-`maxStreamFrameBytes`는 application adapter 적용 전의 wire frame, record,
-multipart part 크기를 제한합니다. client 기본값과 개별 요청 옵션에서 설정할 수
+`itemSchema`가 있는 operation의 `.stream()`은
+[`OperationStream<T>`](../reference/typescript-types.md#스트림-타입)을
+반환합니다. SSE, NDJSON/JSON Lines, JSON Sequence, streaming multipart
+framing은 기본으로 처리합니다. 버전별 차이는
+[OpenAPI 지원 범위](../reference/capabilities.md#지원-openapi-버전)에 정리되어
 있습니다.
+
+Incremental request body는
+[`StreamSource<T>`](../reference/typescript-types.md#스트림-타입)를
+사용하므로 `AsyncIterable<T>`와 Web `ReadableStream<T>`을 모두 전달할 수
+있습니다. Sequential media에 `schema`가 있으면 complete application value를
+사용할 수 있고, `schema`와 `itemSchema`가 함께 있으면 complete와 incremental
+입력을 모두 지원합니다.
+
+[`maxStreamFrameBytes`](../reference/client-api.md#link와-스트림)는 application
+adapter 적용 전의 wire frame, record, multipart part 크기를 제한합니다. client
+기본값과 개별 요청 옵션에서 설정할 수 있습니다.
 
 ### 기본 protocol에 adapter 적용
 
-`StreamAdapter<Frame, Item>`는 표준 framing 위에 application semantics를
-적용합니다. 예를 들어 Todo SSE의 `data`를 application event로 변환하면서
-SSE parser는 그대로 재사용할 수 있습니다.
+[`StreamAdapter<Frame, Item>`](../reference/typescript-types.md#스트림-타입)는
+표준 framing 위에 application semantics를 적용합니다. 예를 들어 Todo SSE의
+`data`를 application event로 변환하면서 SSE parser는 그대로 재사용할 수
+있습니다.
 
 ```ts
 import type {
@@ -218,13 +229,97 @@ const api = createClient({
 Adapter가 만든 값은 operation의 `itemSchema` 검증과 property projection을
 거칩니다.
 
+### AI event stream을 AI SDK UI로 연결
+
+AI API는 text delta나 tool-input delta 같은 application event를 SSE 위에
+전송하는 경우가 많습니다. 이런 provider/application protocol은
+[`StreamAdapter`](../reference/typescript-types.md#스트림-타입)에 두고,
+생성된 typed stream을 애플리케이션 경계에서 AI SDK UI stream으로 연결할 수
+있습니다.
+
+아래 예시는 `generate` operation의 `itemSchema`로 생성된 타입에 JSON-in-SSE를
+매핑한 뒤 text delta를 AI SDK UI message stream으로 전달합니다.
+
+```ts
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from "ai";
+import {
+  createClient,
+  type OperationStreamItem,
+  type ServerSentEvent,
+  type StreamAdapter,
+} from "./generated/api";
+
+type AiEvent = OperationStreamItem<"generate">;
+
+const aiAdapter: StreamAdapter<ServerSentEvent, AiEvent> = {
+  async *decode(events) {
+    for await (const event of events) {
+      if (event.data === "[DONE]") return;
+      yield JSON.parse(event.data) as AiEvent;
+    }
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      yield { data: JSON.stringify(item) };
+    }
+  },
+};
+
+const api = createClient({
+  baseURL,
+  streamCodecs: {
+    "text/event-stream": { adapter: aiAdapter },
+  },
+});
+
+export async function POST() {
+  const upstream = api.$operations.generate.stream({
+    body: { prompt: "릴리스 노트를 요약해줘." },
+  });
+
+  const stream = createUIMessageStream({
+    async execute({ writer }) {
+      const id = "answer";
+      writer.write({ type: "text-start", id });
+
+      for await (const event of upstream) {
+        if (event.type === "text-delta") {
+          writer.write({ type: "text-delta", id, delta: event.text });
+        }
+      }
+
+      writer.write({ type: "text-end", id });
+    },
+    onError: () => "Upstream generation failed",
+  });
+
+  return createUIMessageStreamResponse({ stream });
+}
+```
+
+Tool call, reasoning, source, custom data를 어떤 AI SDK UI part로 변환할지는
+애플리케이션이 결정합니다. openapi-sdkgen은 HTTP framing, adapter composition,
+생성 타입, validation, lifecycle을 담당합니다. AI SDK 쪽 API는
+[`createUIMessageStream`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream)과
+[`createUIMessageStreamResponse`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/create-ui-message-stream-response)
+레퍼런스를 참고하세요.
+
+Playground에도 **AI event stream** OpenAPI 3.2 예제를 추가했습니다.
+[Playground → AI event stream](../playground.md?example=ai-event-stream)에서 바로
+열 수 있습니다.
+
 ### 사용자 정의 framing
 
-사용자 정의 sequential media의 byte framing은 `StreamProtocol<Frame>`로
+사용자 정의 sequential media의 byte framing은
+[`StreamProtocol<Frame>`](../reference/typescript-types.md#스트림-타입)로
 정의합니다. Protocol에는 bounded `StreamReader`와
 `StreamContext.maxFrameBytes`가 전달되며 built-in protocol과 같은 취소·크기
-제한을 적용받습니다. `StreamCodec`은 protocol과 선택적인 adapter를 함께
-구성합니다.
+제한을 적용받습니다.
+[`StreamCodec`](../reference/typescript-types.md#스트림-타입)은 protocol과
+선택적인 adapter를 함께 구성합니다.
 
 순회를 끝내거나 `abort()`를 호출하거나 `toReadableStream()`을 cancel하면
 underlying body를 해제합니다. 외부 `AbortSignal`과 timeout도 같은 lifecycle을

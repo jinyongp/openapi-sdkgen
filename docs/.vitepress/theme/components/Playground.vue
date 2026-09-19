@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useData } from "vitepress";
 import CodeViewer from "./CodeViewer.vue";
 import FileTree from "./FileTree.vue";
+import { playgroundExamples, type PlaygroundExample } from "../playground/examples";
 import { codeThemes, type CodeTheme } from "../playground/highlight";
 import { readPlaygroundPreferences, writePlaygroundPreferences } from "../playground/preferences";
 import { buildArtifactTree, findArtifact } from "../playground/tree";
@@ -15,6 +16,8 @@ const translations = {
     heading: "SDK Playground",
     description: "Load an OpenAPI document and inspect generated source in your browser.",
     target: "Target",
+    examples: "Examples",
+    yourDocument: "Your document",
     document: "OpenAPI document",
     dropFile: "Drop a JSON or YAML file",
     chooseFile: "or choose from your computer",
@@ -47,7 +50,7 @@ const translations = {
     stopped: "Generation stopped",
     warning: "Generated with warnings",
     emptyTitle: "Generated source appears here",
-    emptyDescription: "Choose a file or paste a public OpenAPI URL to begin.",
+    emptyDescription: "Choose an example, a file, or a public OpenAPI URL to begin.",
     emptyDocument: "OpenAPI document is empty.",
     tooLarge: "OpenAPI document must be 64 MiB or smaller.",
     noFiles: "Generator returned no files.",
@@ -66,6 +69,8 @@ const translations = {
     heading: "SDK 플레이그라운드",
     description: "OpenAPI 문서를 불러와 브라우저에서 생성된 소스를 확인하세요.",
     target: "대상",
+    examples: "예제",
+    yourDocument: "내 문서",
     document: "OpenAPI 문서",
     dropFile: "JSON 또는 YAML 파일을 놓으세요",
     chooseFile: "또는 컴퓨터에서 파일 선택",
@@ -98,7 +103,7 @@ const translations = {
     stopped: "생성 중단",
     warning: "경고와 함께 생성됨",
     emptyTitle: "생성된 소스가 여기에 표시됩니다",
-    emptyDescription: "파일을 선택하거나 공개 OpenAPI URL을 입력하세요.",
+    emptyDescription: "예제를 선택하거나 파일 또는 공개 OpenAPI URL을 사용하세요.",
     emptyDocument: "OpenAPI 문서가 비어 있습니다.",
     tooLarge: "OpenAPI 문서는 64 MiB 이하여야 합니다.",
     noFiles: "생성된 파일이 없습니다.",
@@ -150,6 +155,10 @@ onMounted(() => {
   if (preferences.codeTheme) colorTheme.value = preferences.codeTheme;
   expandedPaths.value = new Set(preferences.expandedPaths);
   preferencesReady = true;
+
+  const exampleID = new URLSearchParams(window.location.search).get("example");
+  const example = playgroundExamples.find((candidate) => candidate.id === exampleID);
+  if (example !== undefined) void loadExample(example);
 });
 
 watch([colorTheme, expandedPaths], () => {
@@ -316,7 +325,29 @@ function handleDrop(event: DragEvent) {
   void loadFile(event.dataTransfer?.files[0]);
 }
 
+function exampleTitle(example: PlaygroundExample): string {
+  return lang.value === "ko-KR" ? example.title.ko : example.title.en;
+}
+
+function exampleDescription(example: PlaygroundExample): string {
+  return lang.value === "ko-KR" ? example.description.ko : example.description.en;
+}
+
+async function loadExample(example: PlaygroundExample) {
+  const locationURL = new URL(window.location.href);
+  locationURL.searchParams.set("example", example.id);
+  window.history.replaceState({}, "", locationURL);
+
+  await runGeneration(
+    example.document,
+    `${exampleTitle(example)} · OpenAPI ${example.version}`,
+  );
+}
+
 function startOver() {
+  const locationURL = new URL(window.location.href);
+  locationURL.searchParams.delete("example");
+  window.history.replaceState({}, "", locationURL);
   sourceLabel.value = "";
   artifacts.value = [];
   selectedPath.value = "";
@@ -358,7 +389,26 @@ function toggleDirectory(path: string) {
             <option value="typescript">TypeScript</option>
           </select>
 
-          <p class="field-label input-label">{{ copy.document }}</p>
+          <p class="field-label input-label">{{ copy.examples }}</p>
+          <div class="example-list">
+            <button
+              v-for="example in playgroundExamples"
+              :key="example.id"
+              class="example-item"
+              type="button"
+              :disabled="loading"
+              @click="loadExample(example)"
+            >
+              <span class="example-heading">
+                <strong>{{ exampleTitle(example) }}</strong>
+                <small>OpenAPI {{ example.version }}</small>
+              </span>
+              <span>{{ exampleDescription(example) }}</span>
+            </button>
+          </div>
+
+          <div class="separator source-separator"><span>{{ copy.yourDocument }}</span></div>
+          <p class="field-label">{{ copy.document }}</p>
           <button
             class="drop-zone"
             :class="{ dragging }"
@@ -522,6 +572,15 @@ function toggleDirectory(path: string) {
 .input-label { margin-top: 24px; }
 select, .url-form input, .auth-fields input { width: 100%; height: 42px; border: 1px solid var(--vp-c-divider); border-radius: 9px; color: var(--vp-c-text-1); background: var(--vp-c-bg); font: inherit; }
 select { padding: 0 12px; }
+.example-list { display: grid; gap: 8px; }
+.example-item { display: grid; width: 100%; gap: 4px; padding: 11px 12px; border: 1px solid var(--vp-c-divider); border-radius: 10px; color: var(--vp-c-text-2); background: var(--vp-c-bg); cursor: pointer; font: inherit; text-align: left; transition: .15s ease; }
+.example-item:hover { border-color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 5%, var(--vp-c-bg)); }
+.example-item:disabled { opacity: .55; cursor: wait; }
+.example-item > span:last-child { font-size: 11px; line-height: 1.4; }
+.example-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.example-heading strong { color: var(--vp-c-text-1); font-size: 13px; }
+.example-heading small { flex: 0 0 auto; color: var(--vp-c-brand-1); font-size: 10px; font-weight: 700; }
+.source-separator { margin-top: 24px; }
 .drop-zone { display: flex; width: 100%; min-height: 185px; align-items: center; justify-content: center; flex-direction: column; gap: 6px; border: 1.5px dashed var(--vp-c-divider); border-radius: 12px; color: var(--vp-c-text-2); background: var(--vp-c-bg); cursor: pointer; transition: .15s ease; }
 .drop-zone:hover, .drop-zone.dragging { border-color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 6%, var(--vp-c-bg)); }
 .drop-zone strong { color: var(--vp-c-text-1); font-size: 14px; }

@@ -3,6 +3,7 @@ package typescript
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1510,9 +1511,11 @@ if (accepts.join(",") !== "application/json,application/x-ndjson") throw new Err
 	}
 }
 
-func TestGeneratedCompleteSequentialResponseUsesStreamProtocol(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(`{
-  "openapi":"3.2.0",
+func TestGeneratedCompleteSequentialResponseUsesStreamProtocolAcrossVersionLines(t *testing.T) {
+	for _, version := range []string{"3.0.4", "3.1.2", "3.2.0"} {
+		t.Run(version, func(t *testing.T) {
+			document, err := sdkgen.Compile([]byte(fmt.Sprintf(`{
+  "openapi":%q,
   "info":{"title":"Buffered sequential response","version":"1"},
   "paths":{"/events":{"get":{
     "operationId":"listEvents",
@@ -1520,17 +1523,17 @@ func TestGeneratedCompleteSequentialResponseUsesStreamProtocol(t *testing.T) {
       "schema":{"type":"array","items":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}}
     }}}}
   }}}
-}`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	probe := `import { createClient } from "./index.js"
+}`, version)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			probe := `import { createClient } from "./index.js"
 declare const api: ReturnType<typeof createClient>
 const raw = await api.$operations.listEvents.raw()
 raw.data.map((event) => event.event_id)
 `
-	output := compileTypeScriptArtifactsWithProbe(t, document, "complete-sequential.probe.ts", probe)
-	script := `
+			output := compileTypeScriptArtifactsWithProbe(t, document, "complete-sequential.probe.ts", probe)
+			script := `
 import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 const api = createClient({
@@ -1544,8 +1547,10 @@ const events = await api.$operations.listEvents();
 if (events.map((event) => event.event_id).join(",") !== "one,two")
   throw new Error("complete sequential response did not use the built-in stream protocol");
 `
-	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute complete sequential response runtime test: %v\n%s", err, output)
+			if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+				t.Fatalf("execute complete sequential response runtime test: %v\n%s", err, output)
+			}
+		})
 	}
 }
 
