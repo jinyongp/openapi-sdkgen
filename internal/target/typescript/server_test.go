@@ -592,6 +592,11 @@ const chunkedOversized = new ReadableStream({ start(controller) { controller.enq
 const chunkedRequest = new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: chunkedOversized, duplex: "half" });
 if (chunkedRequest.headers.has("content-length")) throw new Error("chunked body unexpectedly has Content-Length");
 if ((await limited.fetch(chunkedRequest)).status !== 413) throw new Error("oversized body without Content-Length was accepted");
+const nonClosingOversized = new ReadableStream({
+  start(controller) { controller.enqueue(encoder.encode("helloo")); },
+});
+const nonClosingRequest = new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: nonClosingOversized, duplex: "half" });
+if ((await limited.fetch(nonClosingRequest)).status !== 413) throw new Error("oversized non-closing body was not rejected immediately");
 if ((await limited.fetch(new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain", "content-length": "1" }, body: "helloo" }))).status !== 413) throw new Error("misleading Content-Length bypassed maxBodyBytes");
 const defaultLimited = createWebhookRouter({ binaryReceived: { POST: async () => ({ status: 204 }) } }, { routes: { binaryReceived: "/binary" } });
 if ((await defaultLimited.fetch(new Request("https://host.test/binary", { method: "POST", headers: { "content-type": "application/pdf", "content-length": String(8 * 1024 * 1024 + 1) }, body: new Uint8Array([1]) }))).status !== 413) throw new Error("default maxBodyBytes was not enforced");
