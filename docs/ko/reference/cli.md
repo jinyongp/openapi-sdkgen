@@ -179,7 +179,9 @@ HTTPS 입력에 추가로 신뢰할 PEM CA를 지정합니다. 기존 certificat
 적용됩니다.
 
 Mapping된 header, client certificate, private CA는 루트 OpenAPI origin에 묶인
-보호 credential이며 same-origin 요청에만 적용됩니다.
+보호 credential입니다. 루트 redirect는 정확히 같은 origin(scheme, host, port)
+안에서만 허용되며 보호 transport 설정도 same-origin 요청에만 적용됩니다.
+Cross-origin 원격 참조는 별도의 `--allow-remote-ref` 정책을 사용합니다.
 
 ## TypeScript server add-on
 

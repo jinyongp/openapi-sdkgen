@@ -167,8 +167,10 @@ mapping은 여러 번 지정할 수 있으며 `https://` 루트 입력에서만 
 `Proxy-Authorization` 같은 transport 관리 header도 CLI가 거부합니다.
 
 mTLS 또는 사설 CA가 필요하면 [`--tls-client-cert`, `--tls-client-key`, `--tls-ca-file`](../reference/cli.md#authenticated-http-input)을 사용합니다. Client certificate와 key는 함께 지정해야 합니다.
-이 credential과 header mapping은 루트 OpenAPI origin에 묶이며 same-origin
-요청에만 적용됩니다.
+루트 OpenAPI URL은 사용자가 지정한 정확한 origin(scheme, host, port) 안에서만
+신뢰됩니다. Redirect도 그 origin을 벗어날 수 없으므로 cross-origin redirect에
+의존하지 말고 최종 canonical URL을 직접 사용합니다. Credential과 header
+mapping도 같은 경계에 묶이며 same-origin 요청에만 적용됩니다.
 
 ## 원격 `$ref`를 재현 가능하게 사용
 

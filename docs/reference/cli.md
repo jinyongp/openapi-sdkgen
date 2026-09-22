@@ -172,8 +172,10 @@ Supply a PEM client certificate and private key together for HTTPS input.
 Add PEM certificate authorities for the HTTPS input. This extends the certificate trust set while preserving normal TLS verification.
 
 Mapped headers, client certificates, and private CA settings are protected input
-credentials scoped to the root OpenAPI origin. Only same-origin requests receive
-them.
+credentials scoped to the root OpenAPI origin. Root redirects must remain on
+that exact origin (scheme, host, and port), and only same-origin requests receive
+the protected transport settings. Cross-origin remote references use the separate
+`--allow-remote-ref` policy.
 
 ## TypeScript server add-on
 

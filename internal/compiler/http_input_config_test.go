@@ -388,8 +388,10 @@ func (failingWriter) Write([]byte) (int, error) {
 	return 0, fmt.Errorf("write failed")
 }
 
-func TestUnprotectedHTTPInputCanFollowCrossOriginRedirect(t *testing.T) {
+func TestUnprotectedHTTPInputRejectsCrossOriginRedirectBeforeDial(t *testing.T) {
+	crossOriginCalled := false
 	crossOrigin := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		crossOriginCalled = true
 		_, _ = response.Write([]byte("openapi: 3.2.0\ninfo: {title: Example, version: '1'}\npaths: {}\n"))
 	}))
 	defer crossOrigin.Close()
@@ -397,8 +399,33 @@ func TestUnprotectedHTTPInputCanFollowCrossOriginRedirect(t *testing.T) {
 		http.Redirect(response, request, crossOrigin.URL, http.StatusFound)
 	}))
 	defer root.Close()
-	if _, err := loadInputSource(root.URL, CompileOptions{}); err != nil {
-		t.Fatalf("unprotected cross-origin redirect: %v", err)
+
+	_, err := loadInputSource(root.URL, CompileOptions{})
+	if err == nil || !strings.Contains(err.Error(), "redirect leaves the OpenAPI input origin") {
+		t.Fatalf("unprotected cross-origin redirect error = %v", err)
+	}
+	if crossOriginCalled {
+		t.Fatal("unprotected cross-origin redirect opened a request")
+	}
+}
+
+func TestHTTPInputRedirectPolicyRejectsSchemeChanges(t *testing.T) {
+	root, err := url.Parse("https://example.test/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	config := &httpInputConfig{}
+	client, err := config.newClient(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	downgrade, err := url.Parse("http://example.test/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := &http.Request{URL: downgrade}
+	if err := client.CheckRedirect(request, []*http.Request{{URL: root}}); err == nil || !strings.Contains(err.Error(), "redirect leaves the OpenAPI input origin") {
+		t.Fatalf("HTTPS downgrade redirect error = %v", err)
 	}
 }
 

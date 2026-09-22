@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	defaultOpenAPIInputAccept      = "application/json, application/yaml, text/yaml, */*;q=0.1"
-	errHTTPInputRedirectLimit      = errors.New("OpenAPI input redirect limit exceeded")
-	errProtectedHTTPRedirectOrigin = errors.New("protected HTTP redirect leaves the OpenAPI input origin")
-	errHTTPSProxyPrivateTLS        = errors.New("HTTPS proxy cannot be used with --tls-client-cert, --tls-client-key, or --tls-ca-file; configure NO_PROXY for the input origin")
+	defaultOpenAPIInputAccept  = "application/json, application/yaml, text/yaml, */*;q=0.1"
+	errHTTPInputRedirectLimit  = errors.New("OpenAPI input redirect limit exceeded")
+	errHTTPInputRedirectOrigin = errors.New("HTTP redirect leaves the OpenAPI input origin")
+	errHTTPSProxyPrivateTLS    = errors.New("HTTPS proxy cannot be used with --tls-client-cert, --tls-client-key, or --tls-ca-file; configure NO_PROXY for the input origin")
 )
 
 type httpInputConfig struct {
@@ -243,11 +243,9 @@ func (config *httpInputConfig) newClient(inputURL *url.URL) (*http.Client, error
 		if len(via) >= remoteReferenceRedirect {
 			return errHTTPInputRedirectLimit
 		}
-		if config.protected {
-			redirectOrigin, err := inputURLOrigin(request.URL)
-			if err != nil || redirectOrigin != origin {
-				return errProtectedHTTPRedirectOrigin
-			}
+		redirectOrigin, err := inputURLOrigin(request.URL)
+		if err != nil || redirectOrigin != origin {
+			return errHTTPInputRedirectOrigin
 		}
 		return nil
 	}
@@ -255,8 +253,8 @@ func (config *httpInputConfig) newClient(inputURL *url.URL) (*http.Client, error
 }
 
 func sanitizeHTTPClientError(err error, config *httpInputConfig) error {
-	if errors.Is(err, errProtectedHTTPRedirectOrigin) {
-		return errProtectedHTTPRedirectOrigin
+	if errors.Is(err, errHTTPInputRedirectOrigin) {
+		return errHTTPInputRedirectOrigin
 	}
 	if errors.Is(err, errHTTPInputRedirectLimit) {
 		return errHTTPInputRedirectLimit

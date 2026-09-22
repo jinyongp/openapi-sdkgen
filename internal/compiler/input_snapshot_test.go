@@ -75,11 +75,16 @@ func TestAcquireInputSnapshotReportsFinalRedirectURLAndFetchesOnce(t *testing.T)
 	requests := 0
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		requests++
-		if request.URL.Path == "/root/openapi.json" {
+		switch request.URL.Path {
+		case "/root/openapi.json":
 			http.Redirect(response, request, "/final/openapi.json", http.StatusFound)
-			return
+		case "/final/openapi.json":
+			_, _ = response.Write([]byte(`{"openapi":"3.2.0","info":{"title":"Redirected","version":"1"},"paths":{},"components":{"schemas":{"Thing":{"$ref":"./schema.json#/Thing"}}}}`))
+		case "/final/schema.json":
+			_, _ = response.Write([]byte(`{"Thing":{"type":"string"}}`))
+		default:
+			http.NotFound(response, request)
 		}
-		_, _ = response.Write([]byte(`{"openapi":"3.2.0","info":{"title":"Redirected","version":"1"},"paths":{}}`))
 	}))
 	defer server.Close()
 
@@ -95,6 +100,18 @@ func TestAcquireInputSnapshotReportsFinalRedirectURLAndFetchesOnce(t *testing.T)
 	}
 	if strings.Contains(snapshot.Input, "secret") || snapshot.Input != server.URL+"/root/openapi.json" {
 		t.Fatalf("snapshot input display leaked query data: %q", snapshot.Input)
+	}
+
+	if _, err := CompileInputWithOptions("-", CompileOptions{
+		InputReader:   strings.NewReader(string(snapshot.Data)),
+		InputBase:     snapshot.EffectiveBase,
+		RefLockPath:   filepath.Join(t.TempDir(), "references.lock"),
+		UpdateRefLock: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if requests != 3 {
+		t.Fatalf("HTTP requests after relative reference = %d, want 3", requests)
 	}
 }
 

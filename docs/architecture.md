@@ -55,11 +55,15 @@ The compiler owns input acquisition and reference policy. Inputs may come from a
 local file, `file:` URL, HTTP(S) URL, or standard input. Relative local
 references are resolved within the permitted input root. Remote-reference network access requires an explicit trust policy.
 
-Remote references use an exact HTTPS-origin allowlist, integrity lock, bounded
-fetching, a content-addressed cache, and offline mode. Credential-bearing root requests keep credentials scoped to the trusted origin
-and same-origin redirects.
-Protected cache entries require owner-only protection on platforms where that
-policy can be enforced.
+Root HTTP(S) inputs trust the exact origin selected by the user. Root redirects
+must remain on that origin (scheme, host, and port); they do not transfer trust
+to another origin. Credential-bearing root requests keep credentials scoped to
+the same boundary. Same-origin references may reuse the root transport policy.
+
+Cross-origin remote references use a separate exact HTTPS-origin allowlist,
+public-address validation, integrity lock, bounded fetching, a content-addressed
+cache, and offline mode. Protected cache entries require owner-only protection
+on platforms where that policy can be enforced.
 
 Custom required JSON Schema vocabularies are compile-time extensions. Each
 extension is registered from a trusted local manifest, integrity tracked, and

@@ -195,7 +195,11 @@ network fetches. Use [`--ref-lock <path>`](../reference/cli.md#remote-ref-option
 location, including URL/stdin workflows that cannot derive one from a local
 input filename.
 
-Authentication configured for the root OpenAPI URL is scoped to that origin.
+The root OpenAPI URL is trusted only at its exact original origin (scheme, host,
+and port). Redirects must stay on that origin, so use the final canonical root
+URL rather than relying on a cross-origin redirect. Authentication configured
+for the root URL is scoped to the same boundary. Cross-origin remote references
+remain separately authorized through `--allow-remote-ref`.
 
 ## Generate inbound Webhook and Callback code
 
