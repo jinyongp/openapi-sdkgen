@@ -181,7 +181,7 @@ paths:
 	}
 }
 
-func TestProtectedHTTPInputSettingsApplyOnlyToSameOriginReferences(t *testing.T) {
+func TestProtectedHTTPSInputSettingsApplyOnlyToSameOriginReferences(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows fails protected same-origin reference caching before persistence")
 	}
@@ -206,7 +206,7 @@ paths:
             application/json:
               schema: {$ref: schemas.yaml#/Thing}
 `)
-	root := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	root := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
 		case "/openapi.yaml":
 			_, _ = response.Write(document)
@@ -223,12 +223,14 @@ paths:
 		}
 	}))
 	defer root.Close()
+	rootCAPath, _, _ := writeTLSServerCredentials(t, root)
 	directory := t.TempDir()
 	compiled, err := CompileInputWithOptions(root.URL+"/openapi.yaml", CompileOptions{
 		HTTPHeaderEnv: []string{
 			"Authorization=SDKGEN_HTTP_TOKEN",
 			"Accept=SDKGEN_HTTP_TOKEN",
 		},
+		TLSCAFile:     rootCAPath,
 		RefLockPath:   filepath.Join(directory, "same-origin.lock"),
 		UpdateRefLock: true,
 	})
@@ -244,12 +246,14 @@ paths:
 	}))
 	defer crossOrigin.Close()
 	crossDocument := strings.Replace(string(document), "schemas.yaml", crossOrigin.URL+"/schemas.yaml", 1)
-	crossRoot := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+	crossRoot := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
 		_, _ = response.Write([]byte(crossDocument))
 	}))
 	defer crossRoot.Close()
+	crossRootCAPath, _, _ := writeTLSServerCredentials(t, crossRoot)
 	compiled, err = CompileInputWithOptions(crossRoot.URL+"/openapi.yaml", CompileOptions{
 		HTTPHeaderEnv:         []string{"Authorization=SDKGEN_HTTP_TOKEN"},
+		TLSCAFile:             crossRootCAPath,
 		RemoteRefAllowlist:    []string{crossOrigin.URL},
 		RefLockPath:           filepath.Join(directory, "cross-origin.lock"),
 		UpdateRefLock:         true,

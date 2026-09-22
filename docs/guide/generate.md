@@ -162,8 +162,10 @@ OPENAPI_TOKEN='Bearer example-token' \
 ```
 
 The environment variable contains the complete header value, including `Bearer`
-when the scheme requires it. Header mappings may be repeated. The CLI rejects
-transport-controlled headers such as `Host`, `Cookie`, and `Proxy-Authorization`.
+when the scheme requires it. Header mappings may be repeated and require an
+`https://` root input; plaintext `http://` inputs are rejected before a request
+is opened. The CLI also rejects transport-controlled headers such as `Host`,
+`Cookie`, and `Proxy-Authorization`.
 
 For mTLS or a private CA, use [`--tls-client-cert`, `--tls-client-key`, and `--tls-ca-file`](../reference/cli.md#authenticated-http-s-input). Provide the client certificate and key together. Mapped headers, client certificates, and private CA settings are scoped to the root
 OpenAPI origin. Only same-origin requests receive them.

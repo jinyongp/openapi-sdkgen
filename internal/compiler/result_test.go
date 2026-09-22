@@ -59,7 +59,7 @@ func TestCompileResultSeparatesExpectedDiagnosticsFromInternalErrors(t *testing.
 	}
 }
 
-func TestCompileInputResultCollectsTransportWarningWithoutWriting(t *testing.T) {
+func TestCompileInputResultRejectsPlaintextHeaderTransport(t *testing.T) {
 	t.Setenv("SDKGEN_TOKEN", "secret")
 	result, err := CompileInputResultWithOptions("-", CompileOptions{
 		InputReader:   strings.NewReader(`{"openapi":"3.1.0","info":{"title":"Input","version":"1"},"paths":{}}`),
@@ -69,11 +69,12 @@ func TestCompileInputResultCollectsTransportWarningWithoutWriting(t *testing.T) 
 	if err != nil {
 		t.Fatalf("internal error = %v", err)
 	}
-	if result.Document == nil || len(result.Diagnostics) != 1 {
+	if result.Document != nil || !diagnostic.HasErrors(result.Diagnostics) {
 		t.Fatalf("result = %#v", result)
 	}
-	if got := result.Diagnostics[0]; got.Code != "SDKGEN-W101" || got.Severity != diagnostic.SeverityWarning {
-		t.Fatalf("warning = %#v", got)
+	report := diagnostic.RenderHuman(result.Diagnostics, result.SkippedPhases)
+	if !strings.Contains(report, "--http-header-env requires an HTTPS OpenAPI input") || strings.Contains(report, "secret") {
+		t.Fatalf("report = %s", report)
 	}
 }
 

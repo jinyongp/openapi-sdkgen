@@ -2,7 +2,6 @@ package sdkgen
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -19,8 +18,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"openapi-sdkgen/internal/diagnostic"
 )
 
 func TestHTTPHeaderEnvValidation(t *testing.T) {
@@ -177,9 +174,8 @@ func TestHTTPInputAcquisitionErrorsRedactURLQuery(t *testing.T) {
 	})
 }
 
-func TestHTTPStatusReasonCannotLeakHeaderValue(t *testing.T) {
-	const secret = "credential-sentinel"
-	t.Setenv("SDKGEN_HTTP_TOKEN", secret)
+func TestHTTPStatusReasonCannotLeakResponseText(t *testing.T) {
+	const secret = "response-reason-sentinel"
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -193,23 +189,14 @@ func TestHTTPStatusReasonCannotLeakHeaderValue(t *testing.T) {
 			return
 		}
 		defer connection.Close()
-		request, err := http.ReadRequest(bufio.NewReader(connection))
-		if err != nil {
+		if _, err := http.ReadRequest(bufio.NewReader(connection)); err != nil {
 			serverDone <- err
-			return
-		}
-		if got := request.Header.Get("Authorization"); got != secret {
-			serverDone <- fmt.Errorf("Authorization = %q", got)
 			return
 		}
 		_, err = fmt.Fprintf(connection, "HTTP/1.1 499 %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", secret)
 		serverDone <- err
 	}()
-	var warnings bytes.Buffer
-	_, err = loadInputSource("http://"+listener.Addr().String(), CompileOptions{
-		HTTPHeaderEnv:     []string{"Authorization=SDKGEN_HTTP_TOKEN"},
-		HTTPWarningWriter: &warnings,
-	})
+	_, err = loadInputSource("http://"+listener.Addr().String(), CompileOptions{})
 	if err == nil || !strings.Contains(err.Error(), "unexpected HTTP status 499") || strings.Contains(err.Error(), secret) {
 		t.Fatalf("HTTP status error = %v", err)
 	}
@@ -235,53 +222,50 @@ func TestHTTPInputSettingsRejectNonHTTPInputs(t *testing.T) {
 	}
 }
 
-func TestHTTPInputHeaderWarningIsSecretFreeAndOptional(t *testing.T) {
+func TestHTTPInputHeaderMappingsRequireHTTPSBeforeDial(t *testing.T) {
 	const secret = "credential-sentinel"
 	t.Setenv("SDKGEN_HTTP_TOKEN", secret)
-	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	called := false
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		called = true
+	}))
+	defer server.Close()
+
+	_, err := loadInputSource(server.URL, CompileOptions{
+		HTTPHeaderEnv: []string{"Authorization=SDKGEN_HTTP_TOKEN"},
+	})
+	if err == nil || !strings.Contains(err.Error(), "--http-header-env requires an HTTPS OpenAPI input") || strings.Contains(err.Error(), secret) {
+		t.Fatalf("plaintext header mapping error = %v", err)
+	}
+	if called {
+		t.Fatal("plaintext header mapping opened a request")
+	}
+}
+
+func TestHTTPSInputHeaderMappingsRemainSupported(t *testing.T) {
+	const secret = "credential-sentinel"
+	t.Setenv("SDKGEN_HTTP_TOKEN", secret)
+	called := false
+	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		called = true
 		if got := request.Header.Get("Authorization"); got != secret {
 			t.Errorf("Authorization = %q", got)
 		}
 		_, _ = response.Write([]byte("openapi: 3.2.0\ninfo: {title: Example, version: '1'}\npaths: {}\n"))
 	}))
 	defer server.Close()
+	caPath, _, _ := writeTLSServerCredentials(t, server)
 
-	collector := &diagnostic.Collector{}
-	if _, err := loadInputSource(server.URL, CompileOptions{
-		HTTPHeaderEnv: []string{"Authorization=SDKGEN_HTTP_TOKEN"},
-		diagnostics:   collector,
-	}); err != nil {
-		t.Fatal(err)
-	}
-	values := collector.Diagnostics()
-	if len(values) != 1 || values[0].Code != "SDKGEN-W101" {
-		t.Fatalf("warnings = %#v", values)
-	}
-	if strings.Contains(diagnostic.RenderHuman(values, nil), secret) {
-		t.Fatalf("warning leaked secret: %#v", values)
-	}
-	if _, err := loadInputSource(server.URL, CompileOptions{HTTPHeaderEnv: []string{"Authorization=SDKGEN_HTTP_TOKEN"}}); err != nil {
-		t.Fatalf("nil diagnostic collector failed: %v", err)
-	}
-}
-
-func TestDeprecatedHTTPWarningWriterIsNotUsed(t *testing.T) {
-	t.Setenv("SDKGEN_HTTP_TOKEN", "credential-sentinel")
-	called := false
-	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
-		called = true
-		_, _ = response.Write([]byte("openapi: 3.2.0\ninfo: {title: Example, version: '1'}\npaths: {}\n"))
-	}))
-	defer server.Close()
 	_, err := loadInputSource(server.URL, CompileOptions{
 		HTTPHeaderEnv:     []string{"Authorization=SDKGEN_HTTP_TOKEN"},
+		TLSCAFile:         caPath,
 		HTTPWarningWriter: failingWriter{},
 	})
 	if err != nil {
-		t.Fatalf("input error = %v", err)
+		t.Fatalf("HTTPS input error = %v", err)
 	}
 	if !called {
-		t.Fatal("request did not proceed")
+		t.Fatal("HTTPS request did not proceed")
 	}
 }
 
@@ -348,7 +332,7 @@ func TestHTTPInputTLSSettingsRejectHTTPBeforeDial(t *testing.T) {
 	}
 }
 
-func TestProtectedHTTPInputRedirectsStayOnOrigin(t *testing.T) {
+func TestProtectedHTTPSInputRedirectsStayOnOrigin(t *testing.T) {
 	const token = "credential-sentinel"
 	t.Setenv("SDKGEN_HTTP_TOKEN", token)
 	crossOriginCalled := false
@@ -356,7 +340,7 @@ func TestProtectedHTTPInputRedirectsStayOnOrigin(t *testing.T) {
 		crossOriginCalled = true
 	}))
 	defer crossOrigin.Close()
-	root := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	root := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
 		case "/same-origin":
 			http.Redirect(response, request, "/final", http.StatusFound)
@@ -376,10 +360,14 @@ func TestProtectedHTTPInputRedirectsStayOnOrigin(t *testing.T) {
 		}
 	}))
 	defer root.Close()
-	options := CompileOptions{HTTPHeaderEnv: []string{
-		"Authorization=SDKGEN_HTTP_TOKEN",
-		"Accept=SDKGEN_HTTP_TOKEN",
-	}}
+	caPath, _, _ := writeTLSServerCredentials(t, root)
+	options := CompileOptions{
+		HTTPHeaderEnv: []string{
+			"Authorization=SDKGEN_HTTP_TOKEN",
+			"Accept=SDKGEN_HTTP_TOKEN",
+		},
+		TLSCAFile: caPath,
+	}
 	if _, err := loadInputSource(root.URL+"/same-origin", options); err != nil {
 		t.Fatalf("same-origin redirect: %v", err)
 	}

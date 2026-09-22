@@ -162,8 +162,9 @@ OPENAPI_TOKEN='Bearer example-token' \
 ```
 
 환경 변수에는 인증 scheme을 포함한 완성된 header 값을 넣습니다. Header
-mapping은 여러 번 지정할 수 있습니다. `Host`, `Cookie`, `Proxy-Authorization`
-같은 transport 관리 header는 CLI가 거부합니다.
+mapping은 여러 번 지정할 수 있으며 `https://` 루트 입력에서만 허용됩니다.
+`http://` 입력은 요청을 보내기 전에 오류로 거부합니다. `Host`, `Cookie`,
+`Proxy-Authorization` 같은 transport 관리 header도 CLI가 거부합니다.
 
 mTLS 또는 사설 CA가 필요하면 [`--tls-client-cert`, `--tls-client-key`, `--tls-ca-file`](../reference/cli.md#authenticated-http-input)을 사용합니다. Client certificate와 key는 함께 지정해야 합니다.
 이 credential과 header mapping은 루트 OpenAPI origin에 묶이며 same-origin

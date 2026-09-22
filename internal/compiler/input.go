@@ -11,8 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"openapi-sdkgen/internal/diagnostic"
 )
 
 const (
@@ -74,7 +72,7 @@ func loadInputSource(input string, options CompileOptions) (inputSource, error) 
 			if err != nil {
 				return inputSource{}, err
 			}
-			if err := validateHTTPInputTransport(base.effective, base.remoteBase, config); err != nil {
+			if err := validateHTTPInputTransport(base.remoteBase, config); err != nil {
 				return inputSource{}, err
 			}
 			source.httpConfig = config
@@ -154,7 +152,7 @@ func loadHTTPInput(value *url.URL, offline bool, config *httpInputConfig) (input
 		return inputSource{}, errors.New("HTTP(S) OpenAPI input must not contain credentials or a fragment")
 	}
 	display := sanitizedHTTPDocumentURL(value)
-	if err := validateHTTPInputTransport(display, value, config); err != nil {
+	if err := validateHTTPInputTransport(value, config); err != nil {
 		return inputSource{}, err
 	}
 	client, err := config.newClient(value)
@@ -195,19 +193,12 @@ func sanitizedHTTPDocumentURL(value *url.URL) string {
 	return sanitized.String()
 }
 
-func validateHTTPInputTransport(display string, value *url.URL, config *httpInputConfig) error {
+func validateHTTPInputTransport(value *url.URL, config *httpInputConfig) error {
 	if !strings.EqualFold(value.Scheme, "https") && config.privateTLS {
 		return errors.New("--tls-client-cert, --tls-client-key, and --tls-ca-file require an HTTPS OpenAPI input")
 	}
-	if strings.EqualFold(value.Scheme, "http") && config.hasHeaderMappings && config.diagnostics != nil {
-		config.diagnostics.Add(diagnostic.Diagnostic{
-			Severity: diagnostic.SeverityWarning,
-			Code:     "SDKGEN-W101",
-			Phase:    diagnostic.PhaseInput,
-			Location: diagnostic.Location{Source: sanitizedHTTPDocumentURL(value), Pointer: "#"},
-			Message:  "--http-header-env sends request headers over unencrypted HTTP",
-			Hint:     "Use HTTPS to protect request headers.",
-		})
+	if strings.EqualFold(value.Scheme, "http") && config.hasHeaderMappings {
+		return errors.New("--http-header-env requires an HTTPS OpenAPI input")
 	}
 	return nil
 }

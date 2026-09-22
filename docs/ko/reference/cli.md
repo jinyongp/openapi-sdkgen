@@ -166,8 +166,8 @@ header 값을 가져야 합니다. 같은 header를 중복 지정하면 오류�
 `Cookie`, connection 관리 header, proxy authorization 등 transport가 관리하는
 header는 설정할 수 없습니다.
 
-Mapping된 credential을 암호화되지 않은 `http://` 루트 입력에 보내면 경고를
-출력합니다.
+Mapping된 request header는 `https://` 루트 입력에서만 사용할 수 있습니다.
+`http://` 입력에 `--http-header-env`를 지정하면 요청을 보내기 전에 오류로 거부합니다.
 
 ### `--tls-client-cert <path>`, `--tls-client-key <path>`
 

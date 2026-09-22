@@ -58,7 +58,7 @@ type CompileOptions struct {
 	SchemaExtensionManifests []string
 	// HTTPHeaderEnv maps outbound HTTP request header names to environment
 	// variable names. Each value has the form Header-Name=ENV_VAR and is valid
-	// for an HTTP(S) input or stdin with an HTTP(S) InputBase.
+	// only for an HTTPS input or stdin with an HTTPS InputBase.
 	HTTPHeaderEnv []string
 	// TLSClientCert and TLSClientKey provide an optional client certificate for
 	// an HTTPS input or stdin with an HTTPS InputBase. They must be supplied together.

@@ -98,11 +98,11 @@ func TestAcquireInputSnapshotReportsFinalRedirectURLAndFetchesOnce(t *testing.T)
 	}
 }
 
-func TestCompileStdinHTTPBaseReusesTrustedTransportForRelativeReferences(t *testing.T) {
+func TestCompileStdinHTTPSBaseReusesTrustedTransportForRelativeReferences(t *testing.T) {
 	const token = "snapshot-token"
 	t.Setenv("SDKGEN_SNAPSHOT_TOKEN", token)
 	requests := 0
-	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		requests++
 		if request.URL.Path != "/final/schema.json" {
 			t.Errorf("reference path = %q", request.URL.Path)
@@ -113,6 +113,7 @@ func TestCompileStdinHTTPBaseReusesTrustedTransportForRelativeReferences(t *test
 		_, _ = response.Write([]byte(`{"Thing":{"type":"string"}}`))
 	}))
 	defer server.Close()
+	caPath, _, _ := writeTLSServerCredentials(t, server)
 
 	document := `{
 	  "openapi":"3.2.0",
@@ -124,6 +125,7 @@ func TestCompileStdinHTTPBaseReusesTrustedTransportForRelativeReferences(t *test
 		InputReader:       strings.NewReader(document),
 		InputBase:         server.URL + "/final/openapi.json",
 		HTTPHeaderEnv:     []string{"Authorization=SDKGEN_SNAPSHOT_TOKEN"},
+		TLSCAFile:         caPath,
 		HTTPWarningWriter: &strings.Builder{},
 		RefLockPath:       filepath.Join(t.TempDir(), "references.lock"),
 		UpdateRefLock:     true,

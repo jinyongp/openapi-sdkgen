@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -241,7 +242,7 @@ func TestGenerateDoesNotPersistHTTPHeaderCredentialSentinel(t *testing.T) {
 	const sentinel = "credential-sentinel"
 	t.Setenv("SDKGEN_CREDENTIAL_SENTINEL", sentinel)
 	var successfulRequests int
-	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if got := request.Header.Get("Authorization"); got != sentinel {
 			t.Errorf("Authorization = %q", got)
 		}
@@ -269,6 +270,10 @@ paths:
 	}))
 	defer server.Close()
 	directory := t.TempDir()
+	caPath := filepath.Join(directory, "ca.pem")
+	if err := os.WriteFile(caPath, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.TLS.Certificates[0].Certificate[0]}), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	output := filepath.Join(directory, "generated")
 	lock := filepath.Join(directory, "refs.lock")
 	previousError := standardError
@@ -278,6 +283,7 @@ paths:
 	args := []string{
 		"generate", "--input", server.URL + "/openapi.yaml",
 		"--http-header-env", "Authorization=SDKGEN_CREDENTIAL_SENTINEL",
+		"--tls-ca-file", caPath,
 		"--ref-lock", lock, "--update-ref-lock",
 		"--target", "typescript", "--output", output,
 	}
@@ -296,6 +302,7 @@ paths:
 	err := run([]string{
 		"generate", "--input", server.URL + "/missing.yaml",
 		"--http-header-env", "Authorization=SDKGEN_CREDENTIAL_SENTINEL",
+		"--tls-ca-file", caPath,
 		"--target", "typescript", "--output", failedOutput,
 	})
 	if err == nil {

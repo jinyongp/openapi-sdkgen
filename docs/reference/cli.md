@@ -160,8 +160,8 @@ non-empty valid header value. Duplicate header names are rejected. `Host`,
 `Cookie`, connection-management headers, proxy authorization, and other
 unsafe transport-controlled headers cannot be mapped.
 
-The CLI warns when mapped credentials are sent to an unencrypted `http://`
-root input.
+Mapped request headers require an `https://` root input. The CLI rejects
+`--http-header-env` before opening a request when the root input uses `http://`.
 
 ### `--tls-client-cert <path>` and `--tls-client-key <path>`
 
