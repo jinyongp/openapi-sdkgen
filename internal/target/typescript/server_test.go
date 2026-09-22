@@ -346,6 +346,12 @@ if (JSON.stringify(seen) !== JSON.stringify([{ body: { id: "order-1" }, operatio
 if ((await endpoint.fetch(new Request("https://host.test/callback", { method: "GET" }))).status !== 405) throw new Error("wrong callback method was accepted");
 if ((await endpoint.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "text/plain" }, body: "bad" }))).status !== 415) throw new Error("bad callback media type was accepted");
 if ((await endpoint.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: "{}" }))).status !== 400) throw new Error("schema-invalid callback was accepted");
+const limitedCallbacks = codecs.createCallbackHandlers({ callbacks: { createOrder: { orderStatus: { "{$request.body#/callbackURL}": { POST: async () => ({ status: 204 }) } } } } }, {
+  codecs: { "application/vnd.example.callback": { async decodeInbound(request) { return JSON.parse(await request.text()); } } },
+  authenticate: () => undefined,
+  maxBodyBytes: 5,
+});
+if ((await limitedCallbacks.callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: JSON.stringify({ id: "order-1" }) }))).status !== 413) throw new Error("oversized callback body was accepted");
 if ((await codecs.createCallbackHandlers({}).callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: "{}" }))).status !== 404) throw new Error("missing callback handler was accepted");
 const denied = codecs.createCallbackHandlers({ callbacks: { createOrder: { orderStatus: { "{$request.body#/callbackURL}": { POST: async () => ({ status: 204 }) } } } } }, { authenticate: () => new Response("Unauthorized", { status: 401 }) });
 if ((await denied.callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: JSON.stringify({ id: "order-1" }) }))).status !== 401) throw new Error("callback authentication response was ignored");
@@ -562,6 +568,33 @@ if ((await router.fetch(new Request("https://host.test/multi", { method: "POST",
 if ((await router.fetch(new Request("https://host.test/multi", { method: "POST", headers: { "content-type": "text/plain" }, body: "text" }))).status !== 204) throw new Error("text multi body rejected");
 if ((await router.fetch(new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: "no" }))).status !== 400) throw new Error("invalid text body accepted");
 if (JSON.stringify(seen) !== JSON.stringify([{ name: "widget", count: 2, enabled: true, tags: ["one", "two"], meta: { source: "form" } }, "hello", "   ", { name: "A B" }, { name: "widget", meta: { source: "multipart" }, custom: { source: "custom" } }, { bytes: 3 }, "json", "text"])) throw new Error("inbound bodies were not decoded");
+
+const limited = createWebhookRouter({
+  formReceived: { POST: async () => ({ status: 204 }) },
+  textReceived: { POST: async () => ({ status: 204 }) },
+  multipartReceived: { POST: async () => ({ status: 204 }) },
+  binaryReceived: { POST: async () => ({ status: 204 }) },
+  multiReceived: { POST: async () => ({ status: 204 }) },
+}, {
+  routes: { formReceived: "/form", textReceived: "/text", multipartReceived: "/multipart", binaryReceived: "/binary", multiReceived: "/multi" },
+  codecs: { "application/vnd.example.part": { decodeParameter: (value) => JSON.parse(value) } },
+  maxBodyBytes: 5,
+});
+if ((await limited.fetch(new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: "hello" }))).status !== 204) throw new Error("body exactly at maxBodyBytes was rejected");
+if ((await limited.fetch(new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: "helloo" }))).status !== 413) throw new Error("oversized text body was accepted");
+if ((await limited.fetch(new Request("https://host.test/binary", { method: "POST", headers: { "content-type": "application/pdf" }, body: new Uint8Array(6) }))).status !== 413) throw new Error("oversized binary body was accepted");
+if ((await limited.fetch(new Request("https://host.test/multi", { method: "POST", headers: { "content-type": "application/json" }, body: '{"event_id":"json"}' }))).status !== 413) throw new Error("oversized JSON body was accepted");
+if ((await limited.fetch(new Request("https://host.test/form", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "name=widget&count=2&enabled=true&tags=one&meta=%7B%7D" }))).status !== 413) throw new Error("oversized form body was accepted");
+const oversizedMultipart = new FormData(); oversizedMultipart.set("name", "widget"); oversizedMultipart.set("meta", new Blob(['{"source":"multipart"}'], { type: "application/json" })); oversizedMultipart.set("custom", new Blob(['{"source":"custom"}'], { type: "application/vnd.example.part" }));
+if ((await limited.fetch(new Request("https://host.test/multipart", { method: "POST", body: oversizedMultipart }))).status !== 413) throw new Error("oversized multipart body was accepted");
+const encoder = new TextEncoder();
+const chunkedOversized = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode("helloo")); controller.close(); } });
+const chunkedRequest = new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain" }, body: chunkedOversized, duplex: "half" });
+if (chunkedRequest.headers.has("content-length")) throw new Error("chunked body unexpectedly has Content-Length");
+if ((await limited.fetch(chunkedRequest)).status !== 413) throw new Error("oversized body without Content-Length was accepted");
+if ((await limited.fetch(new Request("https://host.test/text", { method: "POST", headers: { "content-type": "text/plain", "content-length": "1" }, body: "helloo" }))).status !== 413) throw new Error("misleading Content-Length bypassed maxBodyBytes");
+const defaultLimited = createWebhookRouter({ binaryReceived: { POST: async () => ({ status: 204 }) } }, { routes: { binaryReceived: "/binary" } });
+if ((await defaultLimited.fetch(new Request("https://host.test/binary", { method: "POST", headers: { "content-type": "application/pdf", "content-length": String(8 * 1024 * 1024 + 1) }, body: new Uint8Array([1]) }))).status !== 413) throw new Error("default maxBodyBytes was not enforced");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(outputDirectory, "server", "webhooks.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute generated inbound media server: %v\n%s", err, output)
@@ -631,8 +664,9 @@ func TestGeneratedWebhookRouterStreamsSequentialBodies(t *testing.T) {
 import { pathToFileURL } from "node:url";
 const { createWebhookRouter } = await import(pathToFileURL(process.argv[1]).href);
 const seen = [];
+let customCodecCalls = 0;
 const codecs = {
-  "application/vnd.example.event": { async decodeInbound(request) { return JSON.parse(await request.text()); } },
+  "application/vnd.example.event": { async decodeInbound(request) { customCodecCalls++; return JSON.parse(await request.text()); } },
 };
 const streamCodecs = {
   "application/x-ndjson": { adapter: {
@@ -685,7 +719,34 @@ const repairedMultipartBody = "--frames\r\ncontent-type: application/json\r\nx-f
 const repairedMultipartResponse = await router.fetch(new Request("https://host.test/frames", { method: "POST", headers: { "content-type": "multipart/mixed; boundary=frames" }, body: repairedMultipartBody }));
 if (repairedMultipartResponse.status !== 204 || seen.at(-1) !== "fixed") throw new Error("inbound multipart adapter did not run before item-schema validation");
 const customResponse = await router.fetch(new Request("https://host.test/custom", { method: "POST", headers: { "content-type": "application/vnd.example.event" }, body: '{"event_id":"three"}' }));
-if (customResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,fixed,three") throw new Error("custom inbound body was not decoded");
+if (customResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,fixed,three" || customCodecCalls !== 1) throw new Error("custom inbound body was not decoded");
+
+const boundedComplete = createWebhookRouter({
+  custom: { POST: async () => ({ status: 204 }) },
+  batch: { POST: async () => ({ status: 204 }) },
+}, {
+  routes: { custom: "/custom", batch: "/batch" },
+  codecs,
+  streamCodecs,
+  maxBodyBytes: 8,
+  maxStreamFrameBytes: 1024,
+});
+if ((await boundedComplete.fetch(new Request("https://host.test/custom", { method: "POST", headers: { "content-type": "application/vnd.example.event" }, body: '{"event_id":"oversized"}' }))).status !== 413) throw new Error("oversized custom codec body was accepted");
+if (customCodecCalls !== 1) throw new Error("custom codec ran before maxBodyBytes rejection");
+if ((await boundedComplete.fetch(new Request("https://host.test/batch", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: '{"event_id":"oversized"}\n' }))).status !== 413) throw new Error("oversized complete sequential body was accepted");
+
+let streamedWithSmallBodyLimit = 0;
+const streamBodyLimitIndependent = createWebhookRouter({
+  customStream: { POST: async ({ body }) => { for await (const _ of body) streamedWithSmallBodyLimit++; return { status: 204 }; } },
+}, {
+  routes: { customStream: "/custom-stream" },
+  streamCodecs,
+  maxBodyBytes: 1,
+  maxStreamFrameBytes: 1024,
+});
+const independentStreamResponse = await streamBodyLimitIndependent.fetch(new Request("https://host.test/custom-stream", { method: "POST", headers: { "content-type": "application/vnd.example.events" }, body: '{"event_id":"streamed"}\n' }));
+if (independentStreamResponse.status !== 204 || streamedWithSmallBodyLimit !== 1) throw new Error("maxBodyBytes incorrectly limited a streaming request body");
+
 const customStreamResponse = await router.fetch(new Request("https://host.test/custom-stream", { method: "POST", headers: { "content-type": "application/vnd.example.events" }, body: '{"event_id":"four"}\n{"event_id":"five"}\n' }));
 if (customStreamResponse.status !== 204 || seen.join(",") !== "adapted-one,adapted-two,one,two,fixed,three,custom-four,custom-five") throw new Error("custom inbound stream protocol/adapter was not decoded");
 const batchResponse = await router.fetch(new Request("https://host.test/batch", { method: "POST", headers: { "content-type": "application/x-ndjson" }, body: '{"event_id":"six"}\n{"event_id":"seven"}\n' }));

@@ -130,6 +130,27 @@ const response =
 The runtime expression remains part of the OpenAPI contract, while your application
 chooses the deployment URL that receives the callback.
 
+## Bound complete inbound bodies
+
+Generated Webhook and Callback handlers cap each complete inbound request body at
+8 MiB by default. Set `maxBodyBytes` when the application has a different
+payload contract:
+
+```ts
+const router = createWebhookRouter(handlers, {
+  routes: {
+    todoCompleted: "/webhooks/todos/completed",
+  },
+  maxBodyBytes: 4 * 1024 * 1024,
+});
+```
+
+The limit applies while the body stream is consumed, so an absent or misleading
+`Content-Length` cannot bypass it. Oversized JSON, text, binary, URL-encoded,
+multipart, custom complete media, and complete sequential bodies return
+`413 Payload Too Large`. Streaming bodies with `itemSchema` are not subject to
+this total-body limit; use `maxStreamFrameBytes` for their per-frame bound.
+
 ## Customize inbound streams
 
 For an OpenAPI 3.2 inbound body with `itemSchema`, the generated handler receives

@@ -50,6 +50,7 @@ interface WebhookRouterOptions {
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
   readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
+  readonly maxBodyBytes?: number;
   readonly maxStreamFrameBytes?: number;
 }
 ```
@@ -58,7 +59,12 @@ interface WebhookRouterOptions {
 - `authenticate` lets the host accept or reject an inbound request.
 - `codecs` handles declared custom complete media values.
 - `streamCodecs` configures inbound sequential protocols/adapters by media type.
+- `maxBodyBytes` limits one complete inbound request body. The default is 8 MiB.
+  JSON, text, binary, URL-encoded, multipart, custom complete media, and complete
+  sequential bodies return `413 Payload Too Large` when the actual bytes exceed
+  the limit. `Content-Length` is only an early-rejection hint.
 - `maxStreamFrameBytes` limits one inbound wire frame before adaptation.
+  Streaming request bodies are not capped by `maxBodyBytes`.
 
 For stream codec types and ordering, see [Streaming API](./streaming.md).
 
@@ -101,12 +107,13 @@ interface CallbackHandlerOptions {
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
   readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
+  readonly maxBodyBytes?: number;
   readonly maxStreamFrameBytes?: number;
 }
 ```
 
-`streamCodecs` and `maxStreamFrameBytes` use the same inbound stream model as
-Webhook handlers. See [Streaming API](./streaming.md).
+`maxBodyBytes`, `streamCodecs`, and `maxStreamFrameBytes` use the same inbound
+body/stream model as Webhook handlers. See [Streaming API](./streaming.md).
 
 ## Authentication
 

@@ -129,6 +129,28 @@ const response =
 Runtime expression은 OpenAPI 계약에 그대로 유지되고, callback 수신 URL은
 애플리케이션에서 정합니다.
 
+## Complete inbound body 크기 제한
+
+Generated Webhook과 Callback handler는 complete inbound request body 하나를
+기본 8 MiB로 제한합니다. 애플리케이션의 payload 계약이 다르면
+`maxBodyBytes`를 지정합니다.
+
+```ts
+const router = createWebhookRouter(handlers, {
+  routes: {
+    todoCompleted: "/webhooks/todos/completed",
+  },
+  maxBodyBytes: 4 * 1024 * 1024,
+});
+```
+
+실제 body stream을 소비하면서 byte 수를 검사하므로 `Content-Length`가 없거나
+잘못돼 있어도 제한을 우회할 수 없습니다. JSON, text, binary, URL-encoded,
+multipart, custom complete media, complete sequential body가 제한을 넘으면
+`413 Payload Too Large`를 반환합니다. `itemSchema`가 있는 streaming body에는
+전체 body 제한을 적용하지 않고 `maxStreamFrameBytes`의 frame 단위 제한을
+사용합니다.
+
 ## Inbound stream 사용자 정의
 
 OpenAPI 3.2 inbound body에 `itemSchema`가 있으면 생성된 handler는 request

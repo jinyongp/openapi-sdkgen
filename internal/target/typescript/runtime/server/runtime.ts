@@ -1361,6 +1361,8 @@ export interface InboundBodyOptions {
   readonly codecs?: ReadonlyMap<string, MediaCodec<unknown>> | undefined;
   /** Stream protocol/adapter overrides for inbound sequential media. */
   readonly streamCodecs?: ReadonlyMap<string, StreamCodec> | undefined;
+  /** Maximum total bytes accepted for one complete inbound request body. */
+  readonly maxBodyBytes?: number | undefined;
   /** Maximum byte count a custom inbound stream protocol may request in one read. */
   readonly maxStreamFrameBytes?: number | undefined;
 }
@@ -1417,12 +1419,6 @@ async function decodeSelectedInboundBody(
   options: InboundBodyOptions & InboundBodyPlan,
 ): Promise<unknown> {
   let value: unknown;
-  if (options.binary === true) {
-    const bytes = await request.arrayBuffer();
-    if (bytes.byteLength === 0 && options.required)
-      throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
-    return bytes;
-  }
   if (options.stream === true) {
     if (request.body === null) {
       if (options.required)
@@ -1437,17 +1433,25 @@ async function decodeSelectedInboundBody(
       options,
     );
   }
+
+  const completeRequest = await boundedCompleteInboundRequest(request, options.maxBodyBytes);
+  if (options.binary === true) {
+    const bytes = await completeRequest.arrayBuffer();
+    if (bytes.byteLength === 0 && options.required)
+      throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
+    return bytes;
+  }
   if (options.streamFraming !== undefined) {
-    if (request.body === null) {
+    if (completeRequest.body === null) {
       if (options.required)
         throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
       return undefined;
     }
     return decodeInboundCompleteSequentialBody(
-      request.body,
+      completeRequest.body,
       rawContentType,
       contentType,
-      request.signal,
+      completeRequest.signal,
       options,
     );
   }
@@ -1456,14 +1460,14 @@ async function decodeSelectedInboundBody(
     if (codec?.decodeInbound === undefined)
       throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
     try {
-      value = await codec.decodeInbound(request, { contentType });
+      value = await codec.decodeInbound(completeRequest, { contentType });
     } catch {
       throw new InboundRequestError(new Response("Invalid request body", { status: 400 }));
     }
   } else if (contentType === "multipart/form-data") {
     let form: FormData;
     try {
-      form = await request.formData();
+      form = await completeRequest.formData();
     } catch {
       throw new InboundRequestError(new Response("Invalid multipart form", { status: 400 }));
     }
@@ -1496,7 +1500,7 @@ async function decodeSelectedInboundBody(
       options.codecs,
     );
   } else {
-    const text = await request.text();
+    const text = await completeRequest.text();
     const missing = contentType === "text/plain" ? text === "" : text.trim() === "";
     if (missing) {
       if (options.required)
@@ -1620,6 +1624,68 @@ function inboundMediaCodec(
 ): MediaCodec<unknown> | undefined {
   if (codecs === undefined) return undefined;
   return codecs.get(normalizeInboundMediaType(contentType));
+}
+
+function resolveInboundBodyBytes(value: number | undefined): number {
+  const resolved = value ?? 8 * 1024 * 1024;
+  if (!Number.isSafeInteger(resolved) || resolved <= 0)
+    throw new TypeError("maxBodyBytes must be a positive safe integer");
+  return resolved;
+}
+
+function inboundBodyTooLargeError(): InboundRequestError {
+  return new InboundRequestError(
+    new Response("Request body exceeds maxBodyBytes", { status: 413 }),
+  );
+}
+
+function inboundContentLengthExceedsLimit(value: string | null, maxBytes: number): boolean {
+  if (value === null || !/^\d+$/.test(value)) return false;
+  const normalized = value.replace(/^0+/, "") || "0";
+  const limit = String(maxBytes);
+  return (
+    normalized.length > limit.length || (normalized.length === limit.length && normalized > limit)
+  );
+}
+
+async function boundedCompleteInboundRequest(
+  request: Request,
+  configuredMaxBytes: number | undefined,
+): Promise<Request> {
+  const maxBytes = resolveInboundBodyBytes(configuredMaxBytes);
+  if (inboundContentLengthExceedsLimit(request.headers.get("content-length"), maxBytes))
+    throw inboundBodyTooLargeError();
+  if (request.body === null) return request;
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const next = await reader.read();
+      if (next.done) break;
+      if (next.value.byteLength > maxBytes - totalBytes) {
+        throw inboundBodyTooLargeError();
+      }
+      totalBytes += next.value.byteLength;
+      chunks.push(next.value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new Request(request.url, {
+    method: request.method,
+    headers: request.headers,
+    body: bytes,
+    signal: request.signal,
+  });
 }
 
 function resolveInboundStreamFrameBytes(value: number | undefined): number {

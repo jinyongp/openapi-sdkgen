@@ -48,6 +48,7 @@ interface WebhookRouterOptions {
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
   readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
+  readonly maxBodyBytes?: number;
   readonly maxStreamFrameBytes?: number;
 }
 ```
@@ -56,7 +57,12 @@ interface WebhookRouterOptions {
 - `authenticate`: inbound request를 host가 허용하거나 거부합니다.
 - `codecs`: 선언된 custom complete media value를 처리합니다.
 - `streamCodecs`: media type별 inbound sequential protocol/adapter를 설정합니다.
+- `maxBodyBytes`: complete inbound request body 하나의 전체 크기를 제한합니다.
+  기본값은 8 MiB입니다. JSON, text, binary, URL-encoded, multipart, custom complete
+  media, complete sequential body가 실제 byte limit을 넘으면 `413 Payload Too Large`를
+  반환합니다. `Content-Length`는 조기 거부에만 사용합니다.
 - `maxStreamFrameBytes`: adaptation 전 inbound wire frame 하나의 크기를 제한합니다.
+  Streaming request body에는 `maxBodyBytes` 전체 제한을 적용하지 않습니다.
 
 Stream codec 타입과 처리 순서는 [스트리밍 API](./streaming.md)를 참고하세요.
 
@@ -99,12 +105,13 @@ interface CallbackHandlerOptions {
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
   readonly streamCodecs?: Readonly<Record<string, StreamCodec>>;
+  readonly maxBodyBytes?: number;
   readonly maxStreamFrameBytes?: number;
 }
 ```
 
-`streamCodecs`와 `maxStreamFrameBytes`는 Webhook과 같은 inbound stream
-모델을 사용합니다. [스트리밍 API](./streaming.md)를 참고하세요.
+`maxBodyBytes`, `streamCodecs`, `maxStreamFrameBytes`는 Webhook과 같은
+inbound body/stream 모델을 사용합니다. [스트리밍 API](./streaming.md)를 참고하세요.
 
 ## 인증
 
