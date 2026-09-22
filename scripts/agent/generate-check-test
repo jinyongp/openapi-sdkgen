@@ -505,13 +505,53 @@ fi
 assert_contains "$stdin_transport_output" "only valid with an HTTP(S) OpenAPI input"
 assert_clean_temporary_root
 
+plaintext_url_file="$test_root/plaintext.url"
+plaintext_count_file="$test_root/plaintext.count"
+"$test_root/testserver" \
+  --input "$relative_root/openapi.json" \
+  --required-header "Authorization=secret" \
+  --url-output "$plaintext_url_file" \
+  --count-output "$plaintext_count_file" &
+server_pid=$!
+for _ in $(seq 1 100); do
+  [[ -s "$plaintext_url_file" ]] && break
+  sleep 0.01
+done
+[[ -s "$plaintext_url_file" ]] || fail "plaintext HTTP fixture did not start"
+plaintext_url="$(cat "$plaintext_url_file")"
+set +e
+plaintext_output="$(
+  TMPDIR="$test_tmp" \
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 \
+  SDKGEN_GENERATE_CHECK_ACQUIRE_BIN="$test_root/snapshot" \
+  SDKGEN_GENERATE_CHECK_GENERATOR_BIN="$test_root/openapi-sdkgen" \
+  GENERATE_CHECK_TEST_AUTH=secret \
+  "$ROOT/scripts/agent/generate-check" "$plaintext_url" typescript -- \
+    --http-header-env Authorization=GENERATE_CHECK_TEST_AUTH 2>&1
+)"
+plaintext_status=$?
+set -e
+if ((plaintext_status == 0)); then
+  fail "plaintext HTTP input accepted mapped request headers"
+fi
+assert_contains "$plaintext_output" "--http-header-env requires an HTTPS OpenAPI input"
+if [[ -s "$plaintext_count_file" ]]; then
+  fail "plaintext mapped-header rejection opened a network request"
+fi
+kill "$server_pid" 2>/dev/null || true
+wait "$server_pid" 2>/dev/null || true
+server_pid=""
+assert_clean_temporary_root
+
 redirect_url_file="$test_root/redirect.url"
 redirect_count_file="$test_root/redirect.count"
+redirect_ca_file="$test_root/redirect-ca.pem"
 "$test_root/testserver" \
   --input "$relative_root/openapi.json" \
   --reference "$relative_root/schemas/item.json" \
   --required-header "Authorization=secret" \
   --redirect \
+  --tls-ca-output "$redirect_ca_file" \
   --url-output "$redirect_url_file" \
   --count-output "$redirect_count_file" &
 server_pid=$!
@@ -519,7 +559,8 @@ for _ in $(seq 1 100); do
   [[ -s "$redirect_url_file" ]] && break
   sleep 0.01
 done
-[[ -s "$redirect_url_file" ]] || fail "redirect HTTP fixture did not start"
+[[ -s "$redirect_url_file" ]] || fail "redirect HTTPS fixture did not start"
+[[ -s "$redirect_ca_file" ]] || fail "redirect HTTPS fixture did not write its CA"
 redirect_url="$(cat "$redirect_url_file")"
 reference_lock="$test_root/remote.lock"
 redirect_output="$(
@@ -530,10 +571,11 @@ redirect_output="$(
   GENERATE_CHECK_TEST_AUTH=secret \
   "$ROOT/scripts/agent/generate-check" "$redirect_url" typescript -- \
     --http-header-env Authorization=GENERATE_CHECK_TEST_AUTH \
+    --tls-ca-file "$redirect_ca_file" \
     --ref-lock "$reference_lock" \
     --update-ref-lock
 )"
-assert_contains "$redirect_output" '"effectiveBase": "http://'
+assert_contains "$redirect_output" '"effectiveBase": "https://'
 assert_contains "$redirect_output" "/contracts/openapi.json"
 assert_contains "$redirect_output" "generation exit: 0"
 assert_contains "$redirect_output" "typecheck exit: 0"
@@ -553,6 +595,7 @@ missing_lock_output="$(
   GENERATE_CHECK_TEST_AUTH=secret \
   "$ROOT/scripts/agent/generate-check" "$redirect_url" typescript -- \
     --http-header-env Authorization=GENERATE_CHECK_TEST_AUTH \
+    --tls-ca-file "$redirect_ca_file" \
     --ref-lock "$missing_lock" 2>&1
 )"
 missing_lock_status=$?

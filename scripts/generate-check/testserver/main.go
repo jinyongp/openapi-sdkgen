@@ -1,15 +1,23 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 func main() {
@@ -20,6 +28,7 @@ func main() {
 	reference := flags.String("reference", "", "optional relative reference response body file")
 	requiredHeader := flags.String("required-header", "", "optional required Header=Value")
 	redirect := flags.Bool("redirect", false, "publish a same-origin redirecting root URL")
+	tlsCAOutput := flags.String("tls-ca-output", "", "optional CA PEM output; enables HTTPS")
 	flags.Parse(os.Args[1:])
 	if *input == "" || *urlOutput == "" || *countOutput == "" {
 		panic(errors.New("--input, --url-output, and --count-output are required"))
@@ -45,6 +54,22 @@ func main() {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
+	}
+	serveListener := listener
+	scheme := "http"
+	if *tlsCAOutput != "" {
+		certificate, caPEM, err := localTLSCertificate()
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(*tlsCAOutput, caPEM, 0o600); err != nil {
+			panic(err)
+		}
+		serveListener = tls.NewListener(listener, &tls.Config{
+			MinVersion:   tls.VersionTLS12,
+			Certificates: []tls.Certificate{certificate},
+		})
+		scheme = "https"
 	}
 	var requests atomic.Int64
 	handler := http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
@@ -86,10 +111,46 @@ func main() {
 	if *redirect {
 		rootPath = "/redirect/openapi.json"
 	}
-	if err := os.WriteFile(*urlOutput, []byte(fmt.Sprintf("http://%s%s", listener.Addr(), rootPath)), 0o600); err != nil {
+	if err := os.WriteFile(*urlOutput, []byte(fmt.Sprintf("%s://%s%s", scheme, listener.Addr(), rootPath)), 0o600); err != nil {
 		panic(err)
 	}
-	if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+	if err := server.Serve(serveListener); !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
 	}
+}
+
+func localTLSCertificate() (tls.Certificate, []byte, error) {
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	serialLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serial, err := rand.Int(rand.Reader, serialLimit)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	now := time.Now()
+	template := &x509.Certificate{
+		SerialNumber: serial,
+		NotBefore:    now.Add(-time.Minute),
+		NotAfter:     now.Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	certificatePEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	privateKeyDER, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privateKeyDER})
+	certificate, err := tls.X509KeyPair(certificatePEM, privateKeyPEM)
+	if err != nil {
+		return tls.Certificate{}, nil, err
+	}
+	return certificate, certificatePEM, nil
 }
