@@ -153,7 +153,8 @@ func loadHTTPInput(value *url.URL, offline bool, config *httpInputConfig) (input
 	if value.User != nil || value.Fragment != "" {
 		return inputSource{}, errors.New("HTTP(S) OpenAPI input must not contain credentials or a fragment")
 	}
-	if err := validateHTTPInputTransport(value.String(), value, config); err != nil {
+	display := sanitizedHTTPDocumentURL(value)
+	if err := validateHTTPInputTransport(display, value, config); err != nil {
 		return inputSource{}, err
 	}
 	client, err := config.newClient(value)
@@ -162,16 +163,16 @@ func loadHTTPInput(value *url.URL, offline bool, config *httpInputConfig) (input
 	}
 	request, err := http.NewRequest(http.MethodGet, value.String(), nil)
 	if err != nil {
-		return inputSource{}, fmt.Errorf("create OpenAPI input request: %w", err)
+		return inputSource{}, fmt.Errorf("create OpenAPI input request for %s: %s", display, sanitizeDiagnosticCause(err.Error()))
 	}
 	config.applyHeaders(request)
 	response, err := client.Do(request)
 	if err != nil {
-		return inputSource{}, fmt.Errorf("fetch OpenAPI input %s: %w", value, sanitizeHTTPClientError(err, config))
+		return inputSource{}, fmt.Errorf("fetch OpenAPI input %s: %w", display, sanitizeHTTPClientError(err, config))
 	}
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return inputSource{}, fmt.Errorf("fetch OpenAPI input %s: unexpected HTTP status %s", value, safeHTTPStatus(response.StatusCode))
+		return inputSource{}, fmt.Errorf("fetch OpenAPI input %s: unexpected HTTP status %s", display, safeHTTPStatus(response.StatusCode))
 	}
 	data, err := readInput(response.Body, "HTTP OpenAPI input")
 	if err != nil {

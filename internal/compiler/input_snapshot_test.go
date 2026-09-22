@@ -1,6 +1,7 @@
 package sdkgen
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -50,6 +51,23 @@ func TestAcquireInputSnapshotReadsLocalRootOnceAndKeepsExactBytes(t *testing.T) 
 	info, _ := document.Raw["info"].(map[string]any)
 	if info["title"] != "Original" {
 		t.Fatalf("compiled title = %v, want Original", info["title"])
+	}
+}
+
+func TestAcquireInputSnapshotErrorsRedactHTTPQuery(t *testing.T) {
+	const secret = "snapshot-query-secret"
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = AcquireInputSnapshot("http://"+address+"/openapi.json?token="+secret, CompileOptions{})
+	if err == nil || strings.Contains(err.Error(), secret) {
+		t.Fatalf("snapshot error leaked query: %v", err)
 	}
 }
 

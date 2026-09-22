@@ -125,6 +125,58 @@ func TestHTTPInputPreflightRejectsInvalidSettingsBeforeDial(t *testing.T) {
 	}
 }
 
+func TestHTTPInputAcquisitionErrorsRedactURLQuery(t *testing.T) {
+	const secret = "query-secret-sentinel"
+
+	t.Run("status", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+			response.WriteHeader(http.StatusServiceUnavailable)
+		}))
+		defer server.Close()
+
+		_, err := loadInputSource(server.URL+"/openapi.json?token="+secret, CompileOptions{})
+		if err == nil || strings.Contains(err.Error(), secret) {
+			t.Fatalf("status error leaked query: %v", err)
+		}
+	})
+
+	t.Run("fetch", func(t *testing.T) {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		address := listener.Addr().String()
+		if err := listener.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = loadInputSource("http://"+address+"/openapi.json?token="+secret, CompileOptions{})
+		if err == nil || strings.Contains(err.Error(), secret) {
+			t.Fatalf("fetch error leaked query: %v", err)
+		}
+	})
+
+	t.Run("redirect", func(t *testing.T) {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		address := listener.Addr().String()
+		if err := listener.Close(); err != nil {
+			t.Fatal(err)
+		}
+		server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+			http.Redirect(response, request, "http://"+address+"/final.json?token="+secret, http.StatusFound)
+		}))
+		defer server.Close()
+
+		_, err = loadInputSource(server.URL+"/openapi.json", CompileOptions{})
+		if err == nil || strings.Contains(err.Error(), secret) {
+			t.Fatalf("redirect error leaked query: %v", err)
+		}
+	})
+}
+
 func TestHTTPStatusReasonCannotLeakHeaderValue(t *testing.T) {
 	const secret = "credential-sentinel"
 	t.Setenv("SDKGEN_HTTP_TOKEN", secret)

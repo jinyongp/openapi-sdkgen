@@ -265,7 +265,7 @@ func sanitizeHTTPClientError(err error, config *httpInputConfig) error {
 		return errHTTPSProxyPrivateTLS
 	}
 	if config == nil || !config.protected {
-		return err
+		return sanitizeHTTPTransportError(err)
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return errors.New("protected HTTP request timed out")
@@ -275,6 +275,23 @@ func sanitizeHTTPClientError(err error, config *httpInputConfig) error {
 		return errors.New("protected HTTPS certificate verification failed")
 	}
 	return errors.New("protected HTTP request failed")
+}
+
+func sanitizeHTTPTransportError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if value, ok := err.(*url.Error); ok {
+		sanitized := *value
+		sanitized.URL = diagnostic.SafeSourceDisplay(value.URL)
+		sanitized.Err = sanitizeHTTPTransportError(value.Err)
+		return &sanitized
+	}
+	message := sanitizeDiagnosticCause(err.Error())
+	if message == err.Error() {
+		return err
+	}
+	return errors.New(message)
 }
 
 func safeHTTPStatus(code int) string {
