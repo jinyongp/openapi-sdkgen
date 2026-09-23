@@ -37,6 +37,7 @@ var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
 	{source: "callables.ts", path: "internal/runtime/callables.ts"},
 	{source: "pagination.ts", path: "internal/runtime/pagination.ts"},
 	{source: "codecs.ts", path: "internal/runtime/codecs.ts"},
+	{source: "streaming.ts", path: "internal/runtime/streaming.ts"},
 	{source: "http.ts", path: "internal/runtime/http.ts"},
 	{source: "constants.ts", path: "internal/runtime/constants.ts"},
 }

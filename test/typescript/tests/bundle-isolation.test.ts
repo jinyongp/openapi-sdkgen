@@ -155,6 +155,7 @@ describe("generated public entry bundle isolation", () => {
       "internal/runtime/http.ts",
       "internal/runtime/objects.ts",
       "internal/runtime/operation.ts",
+      "internal/runtime/streaming.ts",
       "internal/schemas/isolation-mode.ts",
       "internal/schemas/isolation-record.ts",
       "internal/schemas/isolation-rejected-error.ts",
