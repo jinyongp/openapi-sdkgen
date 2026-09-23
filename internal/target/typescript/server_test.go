@@ -352,6 +352,24 @@ const limitedCallbacks = codecs.createCallbackHandlers({ callbacks: { createOrde
   maxBodyBytes: 5,
 });
 if ((await limitedCallbacks.callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: JSON.stringify({ id: "order-1" }) }))).status !== 413) throw new Error("oversized callback body was accepted");
+let metadataSeen;
+const metadataCallbacks = codecs.createCallbackHandlers({ callbacks: { createOrder: { orderStatus: { "{$request.body#/callbackURL}": { POST: async () => ({ status: 204 }) } } } } }, {
+  codecs: { "application/vnd.example.callback": { async decodeInbound(request) {
+    metadataSeen = [request.cache, request.credentials, request.redirect];
+    return JSON.parse(await request.text());
+  } } },
+  authenticate: () => undefined,
+});
+const metadataRequest = new Request("https://host.test/callback", {
+  method: "POST",
+  headers: { "content-type": "application/vnd.example.callback" },
+  body: JSON.stringify({ id: "order-1" }),
+  cache: "no-store",
+  credentials: "include",
+  redirect: "manual",
+});
+const metadataResponse = await metadataCallbacks.callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(metadataRequest);
+if (metadataResponse.status !== 204 || JSON.stringify(metadataSeen) !== JSON.stringify(["no-store", "include", "manual"])) throw new Error("bounded request metadata result " + metadataResponse.status + " " + JSON.stringify(metadataSeen));
 if ((await codecs.createCallbackHandlers({}).callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: "{}" }))).status !== 404) throw new Error("missing callback handler was accepted");
 const denied = codecs.createCallbackHandlers({ callbacks: { createOrder: { orderStatus: { "{$request.body#/callbackURL}": { POST: async () => ({ status: 204 }) } } } } }, { authenticate: () => new Response("Unauthorized", { status: 401 }) });
 if ((await denied.callbacks.createOrder.orderStatus["{$request.body#/callbackURL}"].POST.fetch(new Request("https://host.test/callback", { method: "POST", headers: { "content-type": "application/vnd.example.callback" }, body: JSON.stringify({ id: "order-1" }) }))).status !== 401) throw new Error("callback authentication response was ignored");

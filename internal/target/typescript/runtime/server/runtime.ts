@@ -1684,6 +1684,14 @@ async function boundedCompleteInboundRequest(
     method: request.method,
     headers: request.headers,
     body: bytes,
+    cache: request.cache,
+    credentials: request.credentials,
+    integrity: request.integrity,
+    keepalive: request.keepalive,
+    mode: request.mode,
+    redirect: request.redirect,
+    referrer: request.referrer,
+    referrerPolicy: request.referrerPolicy,
     signal: request.signal,
   });
 }
