@@ -2289,6 +2289,56 @@ describe("generated runtime", () => {
     ).resolves.toEqual([{ value: 1 }]);
   });
 
+  it("decodes SSE identically across deterministic byte chunk partitions", async () => {
+    const wire =
+      'data: {"value":"🌍"}\n\n' +
+      'data: {"value":"한글"}\n\n' +
+      'data: {"value":"split-boundary"}\n\n';
+    const bytes = new TextEncoder().encode(wire);
+    const expected = [{ value: "🌍" }, { value: "한글" }, { value: "split-boundary" }];
+    const definition = operation({
+      method: "GET",
+      path: "/events",
+      responses: [
+        {
+          status: "200",
+          contentType: "text/event-stream",
+          schema: {},
+          itemSchema: { types: ["object"] },
+        },
+      ],
+      outputSchemas: {},
+    });
+
+    for (let seed = 0; seed < 32; seed += 1) {
+      let state = seed + 1;
+      const chunks: Uint8Array[] = [];
+      for (let offset = 0; offset < bytes.length;) {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        const size = seed === 0 ? 1 : 1 + (state % 17);
+        const end = Math.min(bytes.length, offset + size);
+        chunks.push(bytes.slice(offset, end));
+        offset = end;
+      }
+
+      const request = createRequest({
+        baseURL: "https://api.example.test",
+        fetch: async () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                for (const chunk of chunks) controller.enqueue(chunk);
+                controller.close();
+              },
+            }),
+            { headers: { "content-type": "text/event-stream" } },
+          ),
+      });
+
+      await expect(collect(request.stream(definition))).resolves.toEqual(expected);
+    }
+  });
+
   it("parses raw SSE event objects across arbitrary UTF-8 and line boundaries with an adapter", async () => {
     const wire =
       "\uFEFF: ignored comment\r\n" +
