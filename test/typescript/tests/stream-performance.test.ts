@@ -4,6 +4,11 @@ import type { WireSchema } from "../fixtures/generated/client/internal/runtime/c
 import { createRequest } from "../fixtures/generated/client/internal/runtime/http.js";
 import type { OperationDefinition } from "../fixtures/generated/client/internal/runtime/operation.js";
 
+import {
+  streamPerformanceBaseline,
+  type StreamPerformanceMetric,
+} from "./stream-performance-baseline.js";
+
 const perfIt = process.env.OPENAPI_SDKGEN_STREAM_PERF === "1" ? it : it.skip;
 
 const operation = (contentType: string, itemSchema: WireSchema): OperationDefinition => ({
@@ -36,8 +41,54 @@ const measure = async (run: () => Promise<void>): Promise<number> => {
   return performance.now() - started;
 };
 
-const expectWithin = (name: string, milliseconds: number, limit = 10_000): void => {
-  expect(milliseconds, `${name} took ${milliseconds.toFixed(1)}ms`).toBeLessThan(limit);
+const median = (values: readonly number[]): number => {
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)]!;
+};
+
+const measureMedian = async (run: () => Promise<void>): Promise<number> => {
+  await run();
+  const samples: number[] = [];
+  for (let index = 0; index < streamPerformanceBaseline.sampleCount; index += 1) {
+    samples.push(await measure(run));
+  }
+  return median(samples);
+};
+
+const expectWithinBaseline = async (
+  name: StreamPerformanceMetric,
+  run: () => Promise<void>,
+): Promise<number> => {
+  const milliseconds = await measureMedian(run);
+  const baseline = streamPerformanceBaseline.workloads[name].wallMilliseconds;
+  const limit = baseline * (1 + streamPerformanceBaseline.regressionThresholdPercent / 100);
+  const status =
+    milliseconds <= limit && milliseconds <= streamPerformanceBaseline.catastrophicLimitMilliseconds
+      ? "pass"
+      : "fail";
+  console.log(
+    `STREAM_PERF name=${name} baseline_ms=${baseline.toFixed(1)} median_ms=${milliseconds.toFixed(1)} limit_ms=${limit.toFixed(1)} catastrophic_ms=${streamPerformanceBaseline.catastrophicLimitMilliseconds.toFixed(1)} status=${status}`,
+  );
+  expect(milliseconds, `${name} took ${milliseconds.toFixed(1)}ms`).toBeLessThanOrEqual(limit);
+  expect(
+    milliseconds,
+    `${name} exceeded catastrophic limit ${streamPerformanceBaseline.catastrophicLimitMilliseconds}ms`,
+  ).toBeLessThanOrEqual(streamPerformanceBaseline.catastrophicLimitMilliseconds);
+  return milliseconds;
+};
+
+const expectRelativeOverhead = (
+  name: string,
+  candidateMilliseconds: number,
+  baselineMilliseconds: number,
+): void => {
+  const limit =
+    baselineMilliseconds * streamPerformanceBaseline.relativeOverhead.multiplier +
+    streamPerformanceBaseline.relativeOverhead.slackMilliseconds;
+  expect(
+    candidateMilliseconds,
+    `${name} ${candidateMilliseconds.toFixed(1)}ms vs baseline ${baselineMilliseconds.toFixed(1)}ms`,
+  ).toBeLessThanOrEqual(limit);
 };
 
 const objectItemSchema = {
@@ -49,17 +100,29 @@ const objectItemSchema = {
   additionalProperties: false,
 } as const;
 
-const sseItemSchema = {
-  types: ["object"],
-  required: ["data"],
-  properties: {
-    data: { property: "data", schema: { types: ["string"] } },
-    event: { property: "event", schema: { types: ["string"] } },
-  },
-  additionalProperties: false,
+const integerItemSchema = {
+  types: ["integer"],
 } as const;
 
 describe("stream runtime performance acceptance", () => {
+  it("defines a complete checked-in performance policy", () => {
+    const expectedMetrics: StreamPerformanceMetric[] = [
+      "adapter-pass-through",
+      "many-small-ndjson",
+      "many-small-sse",
+      "near-limit-frames",
+      "one-byte-chunks",
+      "operation-stream-readable",
+    ];
+    expect(Object.keys(streamPerformanceBaseline.workloads).sort()).toEqual(expectedMetrics.sort());
+    expect(streamPerformanceBaseline.sampleCount).toBeGreaterThanOrEqual(3);
+    expect(streamPerformanceBaseline.sampleCount % 2).toBe(1);
+    expect(streamPerformanceBaseline.regressionThresholdPercent).toBeGreaterThan(0);
+    expect(streamPerformanceBaseline.catastrophicLimitMilliseconds).toBeGreaterThan(0);
+    expect(streamPerformanceBaseline.relativeOverhead.multiplier).toBeGreaterThan(1);
+    expect(streamPerformanceBaseline.relativeOverhead.slackMilliseconds).toBeGreaterThanOrEqual(0);
+  });
+
   perfIt("decodes many small NDJSON and SSE frames", async () => {
     const count = 2_000;
     const ndjson = Array.from({ length: count }, (_, index) => `{"value":${index}}\n`).join("");
@@ -77,19 +140,16 @@ describe("stream runtime performance acceptance", () => {
       fetch: async () => new Response(sse, { headers: { "content-type": "text/event-stream" } }),
     });
 
-    const ndjsonMilliseconds = await measure(async () => {
+    await expectWithinBaseline("many-small-ndjson", async () => {
       expect(
         await collect(ndjsonRequest.stream(operation("application/x-ndjson", objectItemSchema))),
       ).toBe(count);
     });
-    const sseMilliseconds = await measure(async () => {
-      expect(await collect(sseRequest.stream(operation("text/event-stream", sseItemSchema)))).toBe(
-        count,
-      );
+    await expectWithinBaseline("many-small-sse", async () => {
+      expect(
+        await collect(sseRequest.stream(operation("text/event-stream", integerItemSchema))),
+      ).toBe(count);
     });
-
-    expectWithin("many-small-ndjson", ndjsonMilliseconds);
-    expectWithin("many-small-sse", sseMilliseconds);
   });
 
   perfIt("handles adversarial one-byte transport chunks", async () => {
@@ -110,13 +170,11 @@ describe("stream runtime performance acceptance", () => {
         ),
     });
 
-    const milliseconds = await measure(async () => {
+    await expectWithinBaseline("one-byte-chunks", async () => {
       expect(
         await collect(request.stream(operation("application/x-ndjson", objectItemSchema))),
       ).toBe(count);
     });
-
-    expectWithin("one-byte-chunks", milliseconds);
   });
 
   perfIt("keeps near-limit frames bounded", async () => {
@@ -138,13 +196,11 @@ describe("stream runtime performance acceptance", () => {
         new Response(wire, { headers: { "content-type": "application/x-ndjson" } }),
     });
 
-    const milliseconds = await measure(async () => {
+    await expectWithinBaseline("near-limit-frames", async () => {
       expect(await collect(request.stream(operation("application/x-ndjson", itemSchema)))).toBe(
         count,
       );
     });
-
-    expectWithin("near-limit-frames", milliseconds);
   });
 
   perfIt("bounds adapter pass-through overhead", async () => {
@@ -172,18 +228,14 @@ describe("stream runtime performance acceptance", () => {
       fetch: makeFetch(),
     });
 
-    const plainMilliseconds = await measure(async () => {
+    const plainMilliseconds = await measureMedian(async () => {
       expect(await collect(plain.stream(definition))).toBe(count);
     });
-    const adaptedMilliseconds = await measure(async () => {
+    const adaptedMilliseconds = await expectWithinBaseline("adapter-pass-through", async () => {
       expect(await collect(adapted.stream(definition))).toBe(count);
     });
 
-    expectWithin("adapter-pass-through", adaptedMilliseconds);
-    expect(
-      adaptedMilliseconds,
-      `adapter ${adaptedMilliseconds.toFixed(1)}ms vs plain ${plainMilliseconds.toFixed(1)}ms`,
-    ).toBeLessThan(plainMilliseconds * 10 + 1_000);
+    expectRelativeOverhead("adapter", adaptedMilliseconds, plainMilliseconds);
   });
 
   perfIt("bounds OperationStream Web ReadableStream interop overhead", async () => {
@@ -196,24 +248,23 @@ describe("stream runtime performance acceptance", () => {
         new Response(wire, { headers: { "content-type": "application/x-ndjson" } }),
     });
 
-    const iterationMilliseconds = await measure(async () => {
+    const iterationMilliseconds = await measureMedian(async () => {
       expect(await collect(request.stream(definition))).toBe(count);
     });
-    const readableMilliseconds = await measure(async () => {
-      const reader = request.stream(definition).toReadableStream().getReader();
-      let received = 0;
-      while (true) {
-        const next = await reader.read();
-        if (next.done) break;
-        received++;
-      }
-      expect(received).toBe(count);
-    });
+    const readableMilliseconds = await expectWithinBaseline(
+      "operation-stream-readable",
+      async () => {
+        const reader = request.stream(definition).toReadableStream().getReader();
+        let received = 0;
+        while (true) {
+          const next = await reader.read();
+          if (next.done) break;
+          received++;
+        }
+        expect(received).toBe(count);
+      },
+    );
 
-    expectWithin("operation-stream-readable", readableMilliseconds);
-    expect(
-      readableMilliseconds,
-      `readable ${readableMilliseconds.toFixed(1)}ms vs iteration ${iterationMilliseconds.toFixed(1)}ms`,
-    ).toBeLessThan(iterationMilliseconds * 10 + 1_000);
+    expectRelativeOverhead("readable", readableMilliseconds, iterationMilliseconds);
   });
 });
