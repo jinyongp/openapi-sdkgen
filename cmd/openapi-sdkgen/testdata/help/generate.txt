@@ -3,6 +3,10 @@ Generate application SDK source from an OpenAPI document.
 Usage:
   openapi-sdkgen generate [options]
 
+Configuration:
+  --config <path>                 Load generation settings from an explicit TOML file;
+                                  CLI flags override
+
 Required:
   --input <source>                OpenAPI file, file:// URL, HTTP(S) URL, or -
   --target <name>                 SDK target (available: typescript)

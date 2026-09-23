@@ -83,6 +83,7 @@ type cliApplication struct {
 }
 
 type generateFlagValues struct {
+	config            *string
 	input             *string
 	inputBase         *string
 	targetName        *string
@@ -250,6 +251,13 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if *values.help {
 		return writeGenerateHelpWithFlags(registries, flags)
 	}
+	if *values.config != "" {
+		config, base, err := loadGenerateProjectConfig(*values.config)
+		if err != nil {
+			return generateUsageError(err.Error())
+		}
+		applyGenerateProjectConfig(config, base, values, visitedGenerateFlags(flags.Flags))
+	}
 	if flags.Flags.NArg() != 0 {
 		return generateUsageError(fmt.Sprintf("unexpected arguments: %s", strings.Join(flags.Flags.Args(), " ")))
 	}
@@ -392,7 +400,8 @@ func newCLIRegistries() (cliRegistries, error) {
 
 func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFlagValues) {
 	const (
-		requiredGroup = iota
+		configurationGroup = iota
+		requiredGroup
 		generationGroup
 		inputGroup
 		remoteReferenceGroup
@@ -401,6 +410,7 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 	)
 	flags := newCommandFlagSet(
 		"generate",
+		"Configuration",
 		"Required",
 		"Generation",
 		"Input",
@@ -409,6 +419,10 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		"Options",
 	)
 	values := &generateFlagValues{}
+	values.config = flags.String(configurationGroup, helpOption{
+		Name: "config", Metavariable: "path",
+		Summary: "Load generation settings from an explicit TOML file; CLI flags override",
+	}, "")
 	values.input = flags.String(requiredGroup, helpOption{
 		Name: "input", Metavariable: "source",
 		Summary: "OpenAPI file, file:// URL, HTTP(S) URL, or -",
