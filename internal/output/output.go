@@ -265,7 +265,7 @@ func PublishArtifacts(path string, artifacts []generator.Artifact, incremental b
 	}
 	defer publisher.Rollback()
 	publisher.generation = generation
-	publisher.parallelWrites = true
+	publisher.parallelWrites = !incremental
 	for _, artifact := range artifacts {
 		if err := publisher.WriteArtifact(artifact); err != nil {
 			return err
@@ -285,7 +285,7 @@ func StreamArtifacts(path string, incremental bool, generation *Generation, emit
 	}
 	defer publisher.Rollback()
 	publisher.generation = generation
-	publisher.parallelWrites = true
+	publisher.parallelWrites = !incremental
 	if err := emit(publisher); err != nil {
 		stage := StageEmit
 		if writeErr := publisher.finishStagedWrites(); writeErr != nil {

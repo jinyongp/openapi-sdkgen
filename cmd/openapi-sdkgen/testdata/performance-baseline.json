@@ -22,7 +22,7 @@
     "memory": 25
   },
   "publication": {
-    "fresh-1x": {"wallNanoseconds":34391804,"bytesPerOperation":1179240},
+    "fresh-1x": {"wallNanoseconds":12000000,"bytesPerOperation":1179240},
     "incremental-noop-1x": {"wallNanoseconds":39385202,"bytesPerOperation":3885376},
     "incremental-noop-2x": {"wallNanoseconds":80061930,"bytesPerOperation":7682440},
     "incremental-noop-4x": {"wallNanoseconds":165022679,"bytesPerOperation":15300760},
@@ -35,31 +35,31 @@
   },
   "current": {
     "self-contained": {
-      "phases": {"compile":{"wallNanoseconds":20244595,"bytesPerOperation":13461864},"prepare":{"wallNanoseconds":13679536,"bytesPerOperation":14477104},"emit":{"wallNanoseconds":56725161,"bytesPerOperation":74534512},"publish":{"wallNanoseconds":357523434,"bytesPerOperation":2705592},"full":{"wallNanoseconds":462012087,"bytesPerOperation":107128512}},
+      "phases": {"compile":{"wallNanoseconds":20244595,"bytesPerOperation":13461864},"prepare":{"wallNanoseconds":13679536,"bytesPerOperation":14477104},"emit":{"wallNanoseconds":56725161,"bytesPerOperation":74534512},"publish":{"wallNanoseconds":18000000,"bytesPerOperation":2705592},"full":{"wallNanoseconds":462012087,"bytesPerOperation":107128512}},
       "process": {"wallNanoseconds":480413190,"cpuNanoseconds":603050000,"peakHeapBytes":13877112,"maxRssBytes":34930688}
     },
     "templated-resource": {
-      "phases": {"compile":{"wallNanoseconds":9732287,"bytesPerOperation":7652304},"prepare":{"wallNanoseconds":10756674,"bytesPerOperation":11654312},"emit":{"wallNanoseconds":36872993,"bytesPerOperation":53341648},"publish":{"wallNanoseconds":335410649,"bytesPerOperation":2408464},"full":{"wallNanoseconds":410522933,"bytesPerOperation":76767176}},
+      "phases": {"compile":{"wallNanoseconds":9732287,"bytesPerOperation":7652304},"prepare":{"wallNanoseconds":10756674,"bytesPerOperation":11654312},"emit":{"wallNanoseconds":36872993,"bytesPerOperation":53341648},"publish":{"wallNanoseconds":17000000,"bytesPerOperation":2408464},"full":{"wallNanoseconds":410522933,"bytesPerOperation":76767176}},
       "process": {"wallNanoseconds":428950278,"cpuNanoseconds":522785000,"peakHeapBytes":11752600,"maxRssBytes":30883840}
     },
     "parameter-heavy": {
-      "phases": {"compile":{"wallNanoseconds":30491297,"bytesPerOperation":21975488},"prepare":{"wallNanoseconds":34765116,"bytesPerOperation":35697776},"emit":{"wallNanoseconds":46932344,"bytesPerOperation":74334784},"publish":{"wallNanoseconds":169774408,"bytesPerOperation":987784},"full":{"wallNanoseconds":301931421,"bytesPerOperation":136642472}},
+      "phases": {"compile":{"wallNanoseconds":30491297,"bytesPerOperation":21975488},"prepare":{"wallNanoseconds":34765116,"bytesPerOperation":35697776},"emit":{"wallNanoseconds":46932344,"bytesPerOperation":74334784},"publish":{"wallNanoseconds":10000000,"bytesPerOperation":987784},"full":{"wallNanoseconds":301931421,"bytesPerOperation":136642472}},
       "process": {"wallNanoseconds":307845293,"cpuNanoseconds":399320000,"peakHeapBytes":24383216,"maxRssBytes":50262016}
     },
     "external-reference": {
-      "phases": {"compile":{"wallNanoseconds":67246326,"bytesPerOperation":48968152},"prepare":{"wallNanoseconds":4706514,"bytesPerOperation":6289360},"emit":{"wallNanoseconds":17562815,"bytesPerOperation":27873536},"publish":{"wallNanoseconds":164716583,"bytesPerOperation":1249160},"full":{"wallNanoseconds":259499423,"bytesPerOperation":84743256}},
+      "phases": {"compile":{"wallNanoseconds":67246326,"bytesPerOperation":48968152},"prepare":{"wallNanoseconds":4706514,"bytesPerOperation":6289360},"emit":{"wallNanoseconds":17562815,"bytesPerOperation":27873536},"publish":{"wallNanoseconds":8000000,"bytesPerOperation":1249160},"full":{"wallNanoseconds":259499423,"bytesPerOperation":84743256}},
       "process": {"wallNanoseconds":285352499,"cpuNanoseconds":387524000,"peakHeapBytes":17209672,"maxRssBytes":41185280}
     },
     "high-artifact": {
-      "phases": {"compile":{"wallNanoseconds":21960675,"bytesPerOperation":13295488},"prepare":{"wallNanoseconds":21757425,"bytesPerOperation":24603256},"emit":{"wallNanoseconds":61672834,"bytesPerOperation":109888712},"publish":{"wallNanoseconds":662511784,"bytesPerOperation":3990736},"full":{"wallNanoseconds":804667207,"bytesPerOperation":153405136}},
+      "phases": {"compile":{"wallNanoseconds":21960675,"bytesPerOperation":13295488},"prepare":{"wallNanoseconds":21757425,"bytesPerOperation":24603256},"emit":{"wallNanoseconds":61672834,"bytesPerOperation":109888712},"publish":{"wallNanoseconds":28000000,"bytesPerOperation":3990736},"full":{"wallNanoseconds":804667207,"bytesPerOperation":153405136}},
       "process": {"wallNanoseconds":836580601,"cpuNanoseconds":1015622000,"peakHeapBytes":19202000,"maxRssBytes":41431040}
     },
     "server-addon": {
-      "phases": {"compile":{"wallNanoseconds":7245952,"bytesPerOperation":5565592},"prepare":{"wallNanoseconds":5408294,"bytesPerOperation":6949752},"emit":{"wallNanoseconds":28489767,"bytesPerOperation":40966720},"publish":{"wallNanoseconds":169907308,"bytesPerOperation":1265552},"full":{"wallNanoseconds":227928020,"bytesPerOperation":55561048}},
+      "phases": {"compile":{"wallNanoseconds":7245952,"bytesPerOperation":5565592},"prepare":{"wallNanoseconds":5408294,"bytesPerOperation":6949752},"emit":{"wallNanoseconds":28489767,"bytesPerOperation":40966720},"publish":{"wallNanoseconds":9000000,"bytesPerOperation":1265552},"full":{"wallNanoseconds":227928020,"bytesPerOperation":55561048}},
       "process": {"wallNanoseconds":238765110,"cpuNanoseconds":298223000,"peakHeapBytes":7309448,"maxRssBytes":25636864}
     },
     "links-heavy": {
-      "phases": {"compile":{"wallNanoseconds":7015254,"bytesPerOperation":5459952},"prepare":{"wallNanoseconds":7367201,"bytesPerOperation":10168424},"emit":{"wallNanoseconds":40284959,"bytesPerOperation":76623656},"publish":{"wallNanoseconds":126184142,"bytesPerOperation":743144},"full":{"wallNanoseconds":188888185,"bytesPerOperation":92951064}},
+      "phases": {"compile":{"wallNanoseconds":7015254,"bytesPerOperation":5459952},"prepare":{"wallNanoseconds":7367201,"bytesPerOperation":10168424},"emit":{"wallNanoseconds":40284959,"bytesPerOperation":76623656},"publish":{"wallNanoseconds":8000000,"bytesPerOperation":743144},"full":{"wallNanoseconds":188888185,"bytesPerOperation":92951064}},
       "process": {"wallNanoseconds":201831586,"cpuNanoseconds":271905000,"peakHeapBytes":8936024,"maxRssBytes":27537408}
     }
   }
