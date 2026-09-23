@@ -166,7 +166,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 	}
 
-	var output bytes.Buffer
+	var output strings.Builder
+	output.Grow(len(bodySource) + 4096)
 	callableImports := "bindOperation, type RequestFunction"
 	if hasStream {
 		callableImports = "bindOperation, bindStreamOperation, type RequestFunction"
@@ -425,11 +426,16 @@ type operationSchemaReference struct {
 	replacement string
 }
 
+type operationSchemaReferenceKey struct {
+	name   string
+	export string
+}
+
 func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string) (string, error) {
 	const namespace = "ContractSchemas"
 	const referencePrefix = namespace + ".Component"
 	var occurrences []operationSchemaReference
-	counts := make(map[string]int)
+	counts := make(map[operationSchemaReferenceKey]int)
 	search := 0
 	for search < len(source) {
 		relative := strings.Index(source[search:], referencePrefix)
@@ -467,20 +473,20 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 			search = nameEnd + 1
 			continue
 		}
-		key := name + "\x00" + export
+		key := operationSchemaReferenceKey{name: name, export: export}
 		counts[key]++
 		occurrences = append(occurrences, operationSchemaReference{start: start, end: nameEnd + 1, name: name, export: export})
 		search = nameEnd + 1
 	}
 
 	imports := make([]string, 0)
-	replacements := make(map[string]string, len(counts))
+	replacements := make(map[operationSchemaReferenceKey]string, len(counts))
 	for _, schema := range plan.schemas {
 		if !schema.publicProjection {
 			continue
 		}
 		for _, export := range []string{"Input", "Output"} {
-			key := schema.name + "\x00" + export
+			key := operationSchemaReferenceKey{name: schema.name, export: export}
 			count := counts[key]
 			if count == 0 {
 				continue
@@ -505,7 +511,7 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 		output.WriteString(source[cursor:occurrence.start])
 		replacement := occurrence.replacement
 		if replacement == "" {
-			replacement = replacements[occurrence.name+"\x00"+occurrence.export]
+			replacement = replacements[operationSchemaReferenceKey{name: occurrence.name, export: occurrence.export}]
 		}
 		output.WriteString(replacement)
 		cursor = occurrence.end
