@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+
+fuzz_time="${FUZZ_TIME:-3s}"
+if ! [[ "$fuzz_time" =~ ^[1-9][0-9]*(ms|s|m)$ ]]; then
+  echo "FUZZ_TIME must be a positive duration such as 500ms, 3s, or 1m: $fuzz_time" >&2
+  exit 2
+fi
+
+run_fuzz() {
+  local label="$1"
+  local package="$2"
+  local target="$3"
+  agent_run "$label" go test "$package" -run='^$' -fuzz="^$target$" -fuzztime="$fuzz_time"
+}
+
+run_fuzz "fuzz source display" ./internal/diagnostic FuzzSafeSourceDisplay
+run_fuzz "fuzz artifact path" ./internal/output FuzzSafeArtifactPath
+run_fuzz "fuzz JSON Pointer token" ./internal/compiler FuzzJSONPointerTokenRoundTrip
+run_fuzz "fuzz remote reference URL syntax" ./internal/compiler FuzzRemoteReferenceURLSyntax
+
+agent_note "ok bounded fuzz"

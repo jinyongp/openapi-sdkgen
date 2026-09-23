@@ -26,6 +26,9 @@ vuln:
 vuln-test:
     bash ./scripts/agent/vuln-test
 
+fuzz:
+    bash ./scripts/agent/fuzz
+
 test:
     ./scripts/agent/test
 
