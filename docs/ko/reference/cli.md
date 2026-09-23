@@ -21,8 +21,8 @@ openapi-sdkgen --version
 openapi-sdkgen generate [options]
 ```
 
-`--input`과 `--target`은 필수입니다. 일반 생성은 `--output`을 요구하고,
-`--check`는 `--output` 없이도 실행할 수 있습니다.
+`--input`과 `--target`은 `--config`에서 제공하지 않는 한 필수입니다. 일반
+생성은 `--output`을 요구하고, `--check`는 `--output` 없이도 실행할 수 있습니다.
 
 <span id="core-options"></span>
 
@@ -30,6 +30,7 @@ openapi-sdkgen generate [options]
 
 | 옵션 | 의미 |
 | --- | --- |
+| `--config <path>` | 반복 생성 설정을 명시적인 TOML 파일 하나에서 읽음. 같은 설정의 CLI flag가 우선 |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, 3.2.x JSON/YAML 입력. 로컬 경로, `file://` URL, HTTP(S) URL, stdin을 뜻하는 `-` |
 | `--target typescript` | TypeScript target 생성 |
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 managed output 검증 |
@@ -40,6 +41,89 @@ openapi-sdkgen generate [options]
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
 `--output`은 디렉터리 경로를 받으며 stdout 출력 모드는 제공하지 않습니다.
+
+<span id="project-configuration"></span>
+
+## 프로젝트 설정 파일
+
+같은 생성 설정을 프로젝트에서 반복해서 사용한다면 `--config <path>`로 TOML
+파일을 명시적으로 읽을 수 있습니다.
+
+```toml
+source = "./openapi.yaml"
+target = "typescript"
+output = "./src/generated/api"
+addons = ["server"]
+incremental = true
+diagnostics_format = "human"
+
+[input]
+tls_ca_file = "./certs/internal-ca.pem"
+
+[input.headers_from_env]
+Authorization = "OPENAPI_TOKEN"
+
+[references]
+allow = ["https://schemas.example.com"]
+lock = "./openapi.refs.lock"
+
+[schema]
+extensions = ["./schema-extensions/example.json"]
+```
+
+```sh
+openapi-sdkgen generate --config ./openapi-sdkgen.toml
+```
+
+Config에서 지원하는 key는 전체 CLI surface를 그대로 복제하지 않고 반복 설정에 필요한
+범위로 제한합니다.
+
+| Config key | 대응 CLI |
+| --- | --- |
+| `source` | `--input` |
+| `target` | `--target` |
+| `output` | `--output` |
+| `addons` | 반복 가능한 `--with` |
+| `incremental` | `--incremental` |
+| `diagnostics_format` | `--diagnostics-format` |
+| `input.base` | `--input-base` |
+| `input.headers_from_env` | 반복 가능한 `--http-header-env` |
+| `input.tls_client_cert` | `--tls-client-cert` |
+| `input.tls_client_key` | `--tls-client-key` |
+| `input.tls_ca_file` | `--tls-ca-file` |
+| `references.allow` | 반복 가능한 `--allow-remote-ref` |
+| `references.lock` | `--ref-lock` |
+| `references.offline` | `--offline` |
+| `schema.extensions` | 반복 가능한 `--schema-extension` |
+
+설정 파일은 자동 탐색하지 않습니다. 현재 디렉터리, 상위 디렉터리, 홈
+디렉터리, 전역 설정 위치를 검색하지 않으며 반드시 `--config`로 지정해야 합니다.
+`--config`를 사용하지 않는 기존 CLI-only 호출의 동작은 그대로 유지됩니다.
+
+설정 파일 안의 상대 로컬 경로는 프로세스의 현재 디렉터리가 아니라 **설정 파일이
+있는 디렉터리**를 기준으로 해석합니다. 로컬 OpenAPI 입력, output, input base,
+TLS certificate/key/CA, reference lock, schema-extension manifest가 이 규칙을
+따릅니다. HTTP(S) URL, `file://` URL, stdin `-`은 기존 source 의미를
+그대로 사용합니다.
+
+같은 설정이 CLI에도 있으면 CLI가 우선합니다. 반복 가능한 옵션은 CLI에서 한 번이라도
+명시하면 config 값에 추가하는 대신 **config 목록 전체를 대체**합니다. add-on,
+remote-reference origin, schema extension, HTTP header 환경 변수 mapping에 같은
+규칙을 적용합니다. `--offline=false`처럼 명시한 boolean 값도 config 값을
+override합니다.
+
+HTTP header credential은 secret 값이 아니라 **환경 변수 이름만** config에
+기록합니다.
+
+```toml
+[input.headers_from_env]
+Authorization = "OPENAPI_TOKEN"
+```
+
+실제 token은 환경 변수에 보관합니다. `--check`, `--update-ref-lock`,
+`--help`는 실행 시점의 동작을 바꾸는 옵션이므로 config에 넣지 않고 CLI에서만
+사용합니다. 알 수 없는 TOML key는 오류로 처리해 오타가 조용히 무시되지 않게
+합니다.
 
 <span id="fresh-incremental-and-check-modes"></span>
 

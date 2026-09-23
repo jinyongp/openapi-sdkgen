@@ -21,13 +21,14 @@ CLI.
 openapi-sdkgen generate [options]
 ```
 
-`--input` and `--target` are required. Normal generation also requires `--output`;
-check mode makes `--output` optional.
+`--input` and `--target` are required unless they are supplied by `--config`.
+Normal generation also requires `--output`; check mode makes `--output` optional.
 
 ### Core options
 
 | Option | Meaning |
 | --- | --- |
+| `--config <path>` | Load repeated generation settings from one explicit TOML file; CLI flags override matching config values |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON/YAML source: local path, `file://` URL, HTTP(S) URL, or `-` for stdin |
 | `--target typescript` | Generate the TypeScript target |
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
@@ -38,6 +39,85 @@ check mode makes `--output` optional.
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
 directory path; standard output is not a supported generation destination.
+
+## Project configuration
+
+Use `--config <path>` when a project repeatedly uses the same generation
+settings:
+
+```toml
+source = "./openapi.yaml"
+target = "typescript"
+output = "./src/generated/api"
+addons = ["server"]
+incremental = true
+diagnostics_format = "human"
+
+[input]
+tls_ca_file = "./certs/internal-ca.pem"
+
+[input.headers_from_env]
+Authorization = "OPENAPI_TOKEN"
+
+[references]
+allow = ["https://schemas.example.com"]
+lock = "./openapi.refs.lock"
+
+[schema]
+extensions = ["./schema-extensions/example.json"]
+```
+
+```sh
+openapi-sdkgen generate --config ./openapi-sdkgen.toml
+```
+
+Supported config keys are intentionally narrower than the complete CLI surface:
+
+| Config key | CLI equivalent |
+| --- | --- |
+| `source` | `--input` |
+| `target` | `--target` |
+| `output` | `--output` |
+| `addons` | repeatable `--with` |
+| `incremental` | `--incremental` |
+| `diagnostics_format` | `--diagnostics-format` |
+| `input.base` | `--input-base` |
+| `input.headers_from_env` | repeatable `--http-header-env` |
+| `input.tls_client_cert` | `--tls-client-cert` |
+| `input.tls_client_key` | `--tls-client-key` |
+| `input.tls_ca_file` | `--tls-ca-file` |
+| `references.allow` | repeatable `--allow-remote-ref` |
+| `references.lock` | `--ref-lock` |
+| `references.offline` | `--offline` |
+| `schema.extensions` | repeatable `--schema-extension` |
+
+Configuration loading is explicit. The CLI does not search the current directory,
+parent directories, the home directory, or a global config location. Without
+`--config`, existing CLI-only behavior is unchanged.
+
+Relative local paths in the config are resolved from the config file directory,
+not from the process working directory. This applies to the local OpenAPI source,
+output directory, input base, TLS certificate/key/CA files, reference lock, and
+schema-extension manifests. HTTP(S) URLs, `file://` URLs, and stdin `-` keep
+their normal source semantics.
+
+CLI flags override config values. For repeatable options, one or more explicit
+CLI occurrences replace the complete config list instead of appending to it.
+This rule applies to add-ons, remote-reference origins, schema extensions, and
+HTTP header environment mappings. Explicit boolean values such as
+`--offline=false` also override config booleans.
+
+The config file can map HTTP header names only to **environment-variable names**.
+It does not accept a credential value field. Keep the secret in the environment:
+
+```toml
+[input.headers_from_env]
+Authorization = "OPENAPI_TOKEN"
+```
+
+`--check`, `--update-ref-lock`, and `--help` remain CLI-only execution
+controls. Unknown TOML keys are rejected so misspelled settings cannot be
+silently ignored.
 
 ## Fresh, incremental, and check modes
 
