@@ -10,8 +10,16 @@ pnpm dlx openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-The package contains precompiled executables for macOS, Linux, and Windows on
-arm64 and x64. Go is not required by consumers.
+The npm package is a small JavaScript launcher. On the first run of a package
+version, it downloads only the matching macOS, Linux, or Windows executable from
+that exact version's GitHub Release, verifies it against the release SHA-256
+checksums, and stores the verified executable in the user cache. Later runs reuse
+the verified cache entry, so they do not require network access. Go is not
+required by consumers.
+
+Set `OPENAPI_SDKGEN_CACHE_DIR` to override the cache root, for example in an
+isolated CI environment. The launcher never follows a moving `latest` release;
+the npm package version and GitHub Release tag must match exactly.
 
 For command reference and generated SDK usage, see the
 [project documentation](https://jinyongp.github.io/openapi-sdkgen/).

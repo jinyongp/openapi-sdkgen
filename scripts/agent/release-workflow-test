@@ -147,14 +147,11 @@ if [[ "$parallel_publish_jobs" != "2" ]]; then
   exit 1
 fi
 
-if ! grep -Eq 'NPM_PACKAGE_BUILD_JOBS' "$npm_package" || ! grep -Eq 'go build .*&$' "$npm_package" || ! grep -Eq 'wait "\$\{build_pids\[\$index\]\}"' "$npm_package"; then
-  echo "npm package builds must use bounded parallel workers" >&2
-  exit 1
-fi
-if ! grep -Fq -- '-X main.version=$version' "$npm_package"; then
-  echo "npm package builds must inject the package version" >&2
-  exit 1
-fi
+reject_file_pattern "$npm_package" 'go build' 'npm package script'
+reject_file_pattern "$npm_package" 'NPM_PACKAGE_BUILD_JOBS' 'npm package script'
+require_file_pattern "$npm_package" 'cp -R "\$ROOT/npm/\."' 'npm package script'
+require_file_pattern "$npm_check" 'launcher-test\.mjs' 'npm package check'
+require_file_pattern "$npm_check" 'contains bundled native platform binaries' 'npm package check'
 if ! grep -Fq -- '-X main.version=#{version}' "$homebrew_formula"; then
   echo "Homebrew builds must inject the formula version" >&2
   exit 1

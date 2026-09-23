@@ -58,8 +58,10 @@ the full validation and generation path.
 
 ## Install
 
-The npm package includes precompiled binaries for macOS, Linux, and Windows on
-arm64 and x64, so the CLI runs directly in Node-based projects.
+The npm package keeps a single launcher for macOS, Linux, and Windows on arm64
+and x64. On first execution it downloads only the matching executable from the
+exact same-version GitHub Release, verifies its SHA-256 checksum, and caches the
+verified binary for later offline runs.
 
 ```sh
 pnpm dlx openapi-sdkgen generate --help
