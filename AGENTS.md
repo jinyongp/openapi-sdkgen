@@ -18,6 +18,8 @@ just agent ci
 just agent fmt
 just agent fmt-check
 just agent vet
+just agent vuln
+just agent vuln-test
 just agent test
 just agent build
 just agent mod-tidy

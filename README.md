@@ -134,6 +134,24 @@ Runnable examples:
 - [Advanced client](examples/typescript-advanced-app)
 - [OpenAPI capabilities](examples/typescript-openapi-capabilities-app)
 
+## Dependency vulnerability audit
+
+Repository maintainers can run an explicit dependency audit with:
+
+```sh
+just agent vuln
+```
+
+The command pins `govulncheck v1.8.0` for call-aware Go analysis and
+`OSV-Scanner v2.6.0` for the tracked Go manifest and pnpm lockfiles. The
+scanners query their public vulnerability databases, so the audit requires
+network access unless the pinned tools and their required data are already
+available. Scanner installation or execution failures are reported separately
+from discovered vulnerabilities.
+
+This audit is intentionally opt-in. It is not part of `just agent check`,
+ordinary CI, or release publication.
+
 ## License
 
 [Apache License 2.0](LICENSE)
