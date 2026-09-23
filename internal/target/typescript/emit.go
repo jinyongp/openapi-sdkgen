@@ -473,7 +473,10 @@ func generatedIndexSource(enumsSource []byte) []byte {
 }
 
 func generatedSource(source []byte) []byte {
-	return append([]byte(generatedFileHeader), source...)
+	result := make([]byte, len(generatedFileHeader)+len(source))
+	copy(result, generatedFileHeader)
+	copy(result[len(generatedFileHeader):], source)
+	return result
 }
 
 func validateSourceExportSymbols(modules map[string][]byte) error {

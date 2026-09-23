@@ -120,11 +120,20 @@ func runtimeObjectExpression(properties []runtimeProperty) string {
 	sort.SliceStable(sorted, func(left, right int) bool {
 		return sorted[left].key < sorted[right].key
 	})
-	entries := make([]string, 0, len(sorted))
-	for _, property := range sorted {
-		entries = append(entries, "["+quoteTS(property.key)+", "+property.value+"]")
+	var output strings.Builder
+	output.WriteString("/* @__PURE__ */ Object.fromEntries([")
+	for index, property := range sorted {
+		if index > 0 {
+			output.WriteString(", ")
+		}
+		output.WriteByte('[')
+		output.WriteString(quoteTS(property.key))
+		output.WriteString(", ")
+		output.WriteString(property.value)
+		output.WriteByte(']')
 	}
-	return "/* @__PURE__ */ Object.fromEntries([" + strings.Join(entries, ", ") + "])"
+	output.WriteString("])")
+	return output.String()
 }
 
 // runtimeJSONExpression renders JSON data as deterministic JavaScript source.
@@ -143,21 +152,30 @@ func runtimeJSONExpression(value any) (string, error) {
 		}
 		return runtimeObjectExpression(properties), nil
 	case map[string]map[string]any:
-		values := make(map[string]any, len(typed))
+		properties := make([]runtimeProperty, 0, len(typed))
 		for key, item := range typed {
-			values[key] = item
+			rendered, err := runtimeJSONExpression(item)
+			if err != nil {
+				return "", fmt.Errorf("JSON property %q: %w", key, err)
+			}
+			properties = append(properties, runtimeProperty{key: key, value: rendered})
 		}
-		return runtimeJSONExpression(values)
+		return runtimeObjectExpression(properties), nil
 	case []any:
-		items := make([]string, 0, len(typed))
+		var output strings.Builder
+		output.WriteByte('[')
 		for index, item := range typed {
 			rendered, err := runtimeJSONExpression(item)
 			if err != nil {
 				return "", fmt.Errorf("JSON item %d: %w", index, err)
 			}
-			items = append(items, rendered)
+			if index > 0 {
+				output.WriteString(", ")
+			}
+			output.WriteString(rendered)
 		}
-		return "[" + strings.Join(items, ", ") + "]", nil
+		output.WriteByte(']')
+		return output.String(), nil
 	default:
 		data, err := json.Marshal(value)
 		if err != nil {
