@@ -8,6 +8,7 @@ import {
 import { isRecord } from "./objects.js";
 import type { ServerSentEvent } from "./request.js";
 
+/** Internal response-stream decoding options shared by HTTP framing implementations. */
 export interface StreamDecodeOptions {
   readonly contentType: string;
   readonly streamFraming: StreamFraming | undefined;
@@ -17,6 +18,7 @@ export interface StreamDecodeOptions {
   readonly multipartFrames?: () => AsyncIterable<unknown>;
 }
 
+/** Decodes one response body through built-in or custom stream framing and adapters. */
 export async function* decodeResponseStreamItems(
   body: ReadableStream<Uint8Array>,
   options: StreamDecodeOptions,
@@ -341,6 +343,7 @@ function takeSSELine(source: string, eof: boolean): SSELine | undefined {
   return undefined;
 }
 
+/** Parses one JSON stream item and normalizes invalid input as a TypeError. */
 export function parseStreamJSON(value: string): unknown {
   try {
     return JSON.parse(value);

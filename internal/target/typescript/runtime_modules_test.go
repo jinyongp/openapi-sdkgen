@@ -50,6 +50,7 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 		"internal/runtime/pagination.ts",
 		"internal/runtime/request.ts",
 		"internal/runtime/security.ts",
+		"internal/runtime/streaming.ts",
 		"internal/runtime/transport.ts",
 	}
 	if paths := sortedRuntimePaths(first); strings.Join(paths, "\n") != strings.Join(expected, "\n") {
