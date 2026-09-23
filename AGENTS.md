@@ -59,6 +59,7 @@ VitePress uses normal user-facing commands, not `scripts/agent` wrappers:
 
 ```txt
 just docs install
+just docs validate
 just docs dev
 just docs build
 just docs preview

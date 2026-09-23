@@ -10,6 +10,10 @@ lock:
     corepack pnpm@12.4.1 --dir docs clean --lockfile
     corepack pnpm@12.4.1 --dir docs install --lockfile-only
 
+validate:
+    corepack pnpm@12.4.1 --dir docs run docs:validate
+    corepack pnpm@12.4.1 --dir docs run docs:validate:test
+
 dev:
     corepack pnpm@12.4.1 --dir docs run docs:dev
 

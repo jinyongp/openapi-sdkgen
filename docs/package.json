@@ -9,8 +9,10 @@
   },
   "scripts": {
     "playground:build": "node ./scripts/build-playground.mjs",
-    "docs:dev": "node ./scripts/build-playground.mjs && vitepress dev .",
-    "docs:build": "node ./scripts/build-playground.mjs && vitepress build .",
+    "docs:validate": "node ./scripts/validate-locales.mjs",
+    "docs:validate:test": "node ./scripts/validate-locales-test.mjs",
+    "docs:dev": "node ./scripts/validate-locales.mjs && node ./scripts/build-playground.mjs && vitepress dev .",
+    "docs:build": "node ./scripts/validate-locales.mjs && node ./scripts/build-playground.mjs && vitepress build .",
     "docs:preview": "vitepress preview ."
   },
   "devDependencies": {
