@@ -127,6 +127,7 @@ Full guides and reference documentation:
 - [Generated server API](docs/reference/server-api.md)
 - [Streaming API](docs/reference/streaming.md)
 - [Supported OpenAPI capabilities](docs/reference/capabilities.md)
+- [Security policy](SECURITY.md)
 
 Runnable examples:
 
