@@ -2,5 +2,5 @@
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
 
-agent_run "Go race detector" go test -race ./internal/compiler/...
+agent_run "Go race detector" go test -race ./internal/compiler
 agent_note "ok race detector"

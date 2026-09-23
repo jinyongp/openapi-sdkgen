@@ -169,6 +169,22 @@ TypeScript stream tests also replay SSE data across deterministic byte chunk
 partitions, including splits inside multi-byte UTF-8 characters. Fuzzing is
 opt-in and is not part of ordinary CI or release publication.
 
+## Go race detection
+
+Concurrent in-process compiler state can be checked with:
+
+```sh
+just agent race
+```
+
+The race tier instruments `internal/compiler`, including concurrent tests
+for decoded source caching and remote-reference source/error state. It is
+deliberately scoped to Go memory races. A passing run does not prove the logical
+correctness of process-level advisory file locking, publication rollback, or
+other multi-process behavior; those remain covered by their integration tests.
+
+The race tier is opt-in and is not part of ordinary CI or release publication.
+
 ## License
 
 [Apache License 2.0](LICENSE)
