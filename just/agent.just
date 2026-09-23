@@ -20,6 +20,12 @@ fmt-check:
 vet:
     ./scripts/agent/vet
 
+vuln:
+    bash ./scripts/agent/vuln
+
+vuln-test:
+    bash ./scripts/agent/vuln-test
+
 test:
     ./scripts/agent/test
 

@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+
+test_root="$(mktemp -d "$ROOT/.tmp/vuln-test.XXXXXX")"
+cleanup() {
+  rm -rf "$test_root"
+}
+trap cleanup EXIT
+
+gov="$test_root/govulncheck"
+osv="$test_root/osv-scanner"
+osv_args="$test_root/osv-args"
+
+cat >"$gov" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${FAKE_GOV_MODE:-clean}" in
+  clean)
+    printf '%s\n' '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"govulncheck"}},"results":[]}]}'
+    ;;
+  findings)
+    printf '%s\n' '{"version":"2.1.0","runs":[{"tool":{"driver":{"name":"govulncheck"}},"results":[{"ruleId":"GO-TEST-0001","message":{"text":"fixture reachable vulnerability"}}]}]}'
+    ;;
+  invalid)
+    printf '%s\n' 'not-json'
+    ;;
+  fail)
+    echo "fixture govulncheck setup failure" >&2
+    exit 9
+    ;;
+  *)
+    echo "unknown FAKE_GOV_MODE" >&2
+    exit 9
+    ;;
+esac
+EOF
+
+cat >"$osv" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$@" >"${FAKE_OSV_ARGS:?}"
+case "${FAKE_OSV_MODE:-clean}" in
+  clean)
+    exit 0
+    ;;
+  findings)
+    echo "fixture OSV vulnerability"
+    exit 1
+    ;;
+  fail)
+    echo "fixture osv-scanner execution failure" >&2
+    exit 127
+    ;;
+  *)
+    echo "unknown FAKE_OSV_MODE" >&2
+    exit 127
+    ;;
+esac
+EOF
+chmod +x "$gov" "$osv"
+
+run_case() {
+  local expected_status="$1"
+  local gov_mode="$2"
+  local osv_mode="$3"
+  local expected_text="$4"
+  local output
+  set +e
+  output="$(
+    FAKE_GOV_MODE="$gov_mode" \
+      FAKE_OSV_MODE="$osv_mode" \
+      FAKE_OSV_ARGS="$osv_args" \
+      OPENAPI_SDKGEN_TEST_GOVULNCHECK_BIN="$gov" \
+      OPENAPI_SDKGEN_TEST_OSV_SCANNER_BIN="$osv" \
+      bash "$ROOT/scripts/agent/vuln" 2>&1
+  )"
+  local status=$?
+  set -e
+  if [[ "$status" != "$expected_status" ]]; then
+    echo "vuln test expected exit $expected_status, got $status" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+  fi
+  if [[ "$output" != *"$expected_text"* ]]; then
+    echo "vuln test output missing: $expected_text" >&2
+    printf '%s\n' "$output" >&2
+    exit 1
+  fi
+}
+
+run_case 0 clean clean "ok vulnerability audit"
+
+while IFS= read -r lockfile; do
+  if ! grep -Fqx "$ROOT/$lockfile" "$osv_args"; then
+    echo "OSV scanner arguments missed tracked lockfile: $lockfile" >&2
+    exit 1
+  fi
+done < <(git -C "$ROOT" ls-files '*pnpm-lock.yaml')
+if ! grep -Fqx "$ROOT/go.mod" "$osv_args"; then
+  echo "OSV scanner arguments missed go.mod" >&2
+  exit 1
+fi
+
+run_case 1 findings clean "GO-TEST-0001"
+run_case 1 clean findings "fixture OSV vulnerability"
+run_case 2 fail clean "govulncheck execution failed"
+run_case 2 invalid clean "report could not be interpreted"
+run_case 2 clean fail "osv-scanner failed with exit code 127"
+
+if ! grep -Fq 'GOVULNCHECK_VERSION="v1.8.0"' "$ROOT/scripts/agent/vuln"; then
+  echo "govulncheck version pin drifted" >&2
+  exit 1
+fi
+if ! grep -Fq 'OSV_SCANNER_VERSION="v2.6.0"' "$ROOT/scripts/agent/vuln"; then
+  echo "OSV-Scanner version pin drifted" >&2
+  exit 1
+fi
+
+agent_note "ok vulnerability audit contract"
