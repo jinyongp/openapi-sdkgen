@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+cd "$ROOT"
+
+benchtime="${1:-3x}"
+count="${2:-5}"
+if ! [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+  echo "performance publication count must be a positive integer: $count" >&2
+  exit 2
+fi
+
+perf_dir="$ROOT/.tmp/perf-publication"
+binary="$perf_dir/openapi-sdkgen.test"
+log="$perf_dir/bench.log"
+mkdir -p "$perf_dir"
+
+agent_run "build publication performance test binary" go test -c -o "$binary" ./cmd/openapi-sdkgen
+if ! "$binary" \
+  -test.run '^$' \
+  -test.bench '^BenchmarkArtifactPublication/(fresh-1x|incremental-noop-1x|incremental-one-change-1x|incremental-stale-1x)$' \
+  -test.benchmem \
+  -test.benchtime "$benchtime" \
+  -test.count "$count" >"$log" 2>&1; then
+  echo "failed publication performance benchmarks"
+  tail -n "$TAIL_LINES" "$log" || true
+  exit 1
+fi
+
+rg '^BenchmarkArtifactPublication/' "$log"
+agent_note "ok publication performance benchmark"

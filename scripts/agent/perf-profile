@@ -9,8 +9,8 @@ binary="$profile_dir/openapi-sdkgen.test"
 cpu_profile="$profile_dir/cpu.pprof"
 heap_profile="$profile_dir/heap.pprof"
 profile_log="$profile_dir/profile.log"
-workload="${PERF_PROFILE_WORKLOAD:-self-contained}"
-phase="${PERF_PROFILE_PHASE:-emit}"
+workload="${1:-${PERF_PROFILE_WORKLOAD:-self-contained}}"
+phase="${2:-${PERF_PROFILE_PHASE:-emit}}"
 mkdir -p "$profile_dir"
 
 agent_run "build performance profile binary" go test -c -o "$binary" ./cmd/openapi-sdkgen

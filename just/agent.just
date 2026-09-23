@@ -66,8 +66,11 @@ coverage:
 perf:
     ./scripts/agent/perf
 
-perf-profile:
-    ./scripts/agent/perf-profile
+perf-profile workload='self-contained' phase='emit':
+    ./scripts/agent/perf-profile {{quote(workload)}} {{quote(phase)}}
+
+perf-publication benchtime='3x' count='5':
+    bash ./scripts/agent/perf-publication {{quote(benchtime)}} {{quote(count)}}
 
 perf-acceptance:
     ./scripts/agent/perf-acceptance
