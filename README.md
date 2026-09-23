@@ -152,6 +152,23 @@ from discovered vulnerabilities.
 This audit is intentionally opt-in. It is not part of `just agent check`,
 ordinary CI, or release publication.
 
+## Bounded fuzzing
+
+Parser and trust-boundary fuzz targets can be exercised with:
+
+```sh
+just agent fuzz
+```
+
+The command fuzzes source-display redaction, generated artifact paths, JSON
+Pointer token handling, and remote-reference URL syntax without performing DNS
+or HTTP requests. Each target runs for 3 seconds by default. Set `FUZZ_TIME`
+to another positive duration such as `10s` or `1m` for a longer local run.
+
+TypeScript stream tests also replay SSE data across deterministic byte chunk
+partitions, including splits inside multi-byte UTF-8 characters. Fuzzing is
+opt-in and is not part of ordinary CI or release publication.
+
 ## License
 
 [Apache License 2.0](LICENSE)
