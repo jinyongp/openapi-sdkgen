@@ -20,8 +20,11 @@ type config struct {
 		GOARCH  []string `yaml:"goarch"`
 	} `yaml:"builds"`
 	Archives []struct {
-		Formats   []string `yaml:"formats"`
-		Overrides []struct {
+		ID           string   `yaml:"id"`
+		IDs          []string `yaml:"ids"`
+		NameTemplate string   `yaml:"name_template"`
+		Formats      []string `yaml:"formats"`
+		Overrides    []struct {
 			GOOS    string   `yaml:"goos"`
 			Formats []string `yaml:"formats"`
 		} `yaml:"format_overrides"`
@@ -54,8 +57,24 @@ func TestReleaseConfigurationMatchesSupportedBinaryContract(t *testing.T) {
 	if !slices.Equal(build.GOOS, []string{"darwin", "linux", "windows"}) || !slices.Equal(build.GOARCH, []string{"amd64", "arm64"}) {
 		t.Fatalf("platforms = %#v", build)
 	}
-	if len(value.Archives) != 1 || !slices.Equal(value.Archives[0].Formats, []string{"tar.gz"}) || len(value.Archives[0].Overrides) != 1 || value.Archives[0].Overrides[0].GOOS != "windows" || !slices.Equal(value.Archives[0].Overrides[0].Formats, []string{"zip"}) {
+	if len(value.Archives) != 2 {
 		t.Fatalf("archives = %#v", value.Archives)
+	}
+	archive := value.Archives[0]
+	if archive.ID != "default" ||
+		!slices.Equal(archive.Formats, []string{"tar.gz"}) ||
+		len(archive.Overrides) != 1 ||
+		archive.Overrides[0].GOOS != "windows" ||
+		!slices.Equal(archive.Overrides[0].Formats, []string{"zip"}) {
+		t.Fatalf("default archive = %#v", archive)
+	}
+	npmBinary := value.Archives[1]
+	if npmBinary.ID != "npm-binary" ||
+		!slices.Equal(npmBinary.IDs, []string{"openapi-sdkgen"}) ||
+		npmBinary.NameTemplate != "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ .ArtifactExt }}" ||
+		!slices.Equal(npmBinary.Formats, []string{"binary"}) ||
+		len(npmBinary.Overrides) != 0 {
+		t.Fatalf("npm binary archive = %#v", npmBinary)
 	}
 	if value.Checksum.NameTemplate != "checksums.txt" {
 		t.Fatalf("checksum = %#v", value.Checksum)
