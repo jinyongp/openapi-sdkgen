@@ -133,12 +133,18 @@ jobs:
       - name: Prepare GoReleaser config
         run: |
           cp release-tools/.goreleaser.yaml "$RUNNER_TEMP/goreleaser.yaml"
+          cp release-tools/scripts/release/prepare-assets.py "$RUNNER_TEMP/prepare-release-assets.py"
           rm -rf release-tools
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           distribution: goreleaser
           version: "v2.17.0"
           args: release --clean --skip=publish --config ${{ runner.temp }}/goreleaser.yaml
+      - name: Prepare releaseway assets
+        run: |
+          python3 "$RUNNER_TEMP/prepare-release-assets.py" \
+            --dist dist \
+            --version "${{ needs.validate-release.outputs.version }}"
       - name: Publish immutable GitHub Release
         uses: releaseway/actions@49c543357d96884d0e5a683c45d45ebd50a8b612 # v0.1.4
         with:

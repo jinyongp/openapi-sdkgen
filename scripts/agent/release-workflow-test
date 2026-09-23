@@ -12,6 +12,7 @@ release_check="$ROOT/scripts/release/check.sh"
 npm_package="$ROOT/scripts/npm/package.sh"
 npm_check="$ROOT/scripts/npm/check.sh"
 homebrew_formula="$ROOT/.github/homebrew/formula.yml"
+release_asset_prep="$ROOT/scripts/release/prepare-assets.py"
 releaseway_actions_sha="49c543357d96884d0e5a683c45d45ebd50a8b612"
 homebrew_actions_sha="c035d14050bca1e2028a6368823797d36c9cdbc5"
 
@@ -63,6 +64,8 @@ require_text "needs: [validate-release, publish-github-release]"
 
 require_text "uses: releaseway/actions@${releaseway_actions_sha} # v0.1.4"
 require_text "args: release --clean --skip=publish --config"
+require_text "Prepare releaseway assets"
+require_text "prepare-release-assets.py"
 require_text 'prerelease: ${{ contains(needs.validate-release.outputs.tag, '\''-'\'') && '\''true'\'' || '\''false'\'' }}'
 require_text 'generate-notes: "true"'
 require_text "dist/checksums.txt"
@@ -146,6 +149,79 @@ if ! grep -Fq -- '-X main.version=#{version}' "$homebrew_formula"; then
   echo "Homebrew builds must inject the formula version" >&2
   exit 1
 fi
+
+asset_test_root="$(mktemp -d "${TMPDIR:-/tmp}/openapi-sdkgen-release-assets.XXXXXX")"
+trap 'rm -rf "$asset_test_root"' EXIT
+asset_test_dist="$asset_test_root/dist"
+mkdir -p "$asset_test_dist"
+version="9.8.7"
+
+cat >"$asset_test_dist/artifacts.json" <<EOF
+[
+  {"type":"Binary","goos":"darwin","goarch":"amd64","path":"$asset_test_dist/darwin-amd64/openapi-sdkgen","extra":{"ID":"openapi-sdkgen"}},
+  {"type":"Binary","goos":"darwin","goarch":"arm64","path":"$asset_test_dist/darwin-arm64/openapi-sdkgen","extra":{"ID":"openapi-sdkgen"}},
+  {"type":"Binary","goos":"linux","goarch":"amd64","path":"$asset_test_dist/linux-amd64/openapi-sdkgen","extra":{"ID":"openapi-sdkgen"}},
+  {"type":"Binary","goos":"linux","goarch":"arm64","path":"$asset_test_dist/linux-arm64/openapi-sdkgen","extra":{"ID":"openapi-sdkgen"}},
+  {"type":"Binary","goos":"windows","goarch":"amd64","path":"$asset_test_dist/windows-amd64/openapi-sdkgen.exe","extra":{"ID":"openapi-sdkgen"}},
+  {"type":"Binary","goos":"windows","goarch":"arm64","path":"$asset_test_dist/windows-arm64/openapi-sdkgen.exe","extra":{"ID":"openapi-sdkgen"}}
+]
+EOF
+
+for platform in darwin-amd64 darwin-arm64 linux-amd64 linux-arm64 windows-amd64 windows-arm64; do
+  mkdir -p "$asset_test_dist/$platform"
+  case "$platform" in
+    windows-*) binary="openapi-sdkgen.exe" ;;
+    *) binary="openapi-sdkgen" ;;
+  esac
+  printf '%s\n' "$platform" >"$asset_test_dist/$platform/$binary"
+done
+
+for goos in darwin linux; do
+  for goarch in amd64 arm64; do
+    printf '%s\n' "$goos/$goarch archive" >"$asset_test_dist/openapi-sdkgen_${version}_${goos}_${goarch}.tar.gz"
+  done
+done
+for goarch in amd64 arm64; do
+  printf '%s\n' "windows/$goarch archive" >"$asset_test_dist/openapi-sdkgen_${version}_windows_${goarch}.zip"
+done
+
+python3 "$release_asset_prep" --dist "$asset_test_dist" --version "$version"
+
+python3 - "$asset_test_dist" "$version" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+
+dist = Path(sys.argv[1])
+version = sys.argv[2]
+expected = {
+    f"openapi-sdkgen_{version}_{goos}_{goarch}{suffix}"
+    for goos, suffix in (("darwin", ""), ("linux", ""), ("windows", ".exe"))
+    for goarch in ("amd64", "arm64")
+}
+expected.update(
+    {
+        f"openapi-sdkgen_{version}_{goos}_{goarch}{suffix}"
+        for goos, suffix in (("darwin", ".tar.gz"), ("linux", ".tar.gz"), ("windows", ".zip"))
+        for goarch in ("amd64", "arm64")
+    }
+)
+lines = (dist / "checksums.txt").read_text().splitlines()
+if len(lines) != len(expected):
+    raise SystemExit(f"unexpected checksum line count: {len(lines)}")
+seen = set()
+for line in lines:
+    digest, name = line.split("  ", 1)
+    path = dist / name
+    if name not in expected or not path.is_file():
+        raise SystemExit(f"unexpected release checksum entry: {name}")
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != actual:
+        raise SystemExit(f"checksum mismatch for {name}")
+    seen.add(name)
+if seen != expected:
+    raise SystemExit(f"missing release assets: {sorted(expected - seen)}")
+PY
 
 npm_pack_count="$(grep -Ec '^[[:space:]]*npm pack ' "$npm_check")"
 if [[ "$npm_pack_count" != "1" ]]; then
