@@ -10,6 +10,10 @@ pnpm dlx openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
+The npm launcher requires Node.js 22 or newer. This requirement applies only to
+the npm launcher; generated SDK source has its own runtime compatibility
+contract.
+
 The npm package is a small JavaScript launcher. On the first run of a package
 version, it downloads only the matching macOS, Linux, or Windows executable from
 that exact version's GitHub Release, verifies it against the release SHA-256

@@ -58,9 +58,11 @@ the full validation and generation path.
 
 ## Install
 
-The npm package keeps a single launcher for macOS, Linux, and Windows on arm64
-and x64. On first execution it downloads only the matching executable from the
-exact same-version GitHub Release, verifies its SHA-256 checksum, and caches the
+The npm launcher requires Node.js 22 or newer; this does not impose a Node 22
+requirement on generated SDK source. The package keeps a single launcher for
+macOS, Linux, and Windows on arm64 and x64. On first execution it downloads only
+the matching executable from the exact same-version GitHub Release, verifies its
+SHA-256 checksum, and caches the
 verified binary for later offline runs.
 
 ```sh

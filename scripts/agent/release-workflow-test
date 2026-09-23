@@ -3,6 +3,8 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
 
 workflow="$ROOT/.github/workflows/release.yml"
+ci_workflow="$ROOT/.github/workflows/ci.yml"
+npm_manifest="$ROOT/npm/package.json"
 homebrew_check="$ROOT/.github/workflows/homebrew.yml"
 homebrew_auto_merge="$ROOT/.github/workflows/auto-merge-homebrew-tap.yml"
 dependabot="$ROOT/.github/dependabot.yml"
@@ -101,6 +103,12 @@ if grep -Eq 'target_commitish:' "$goreleaser"; then
 fi
 require_pattern 'contents: write'
 reject_pattern 'just agent'
+require_file_pattern "$npm_manifest" '"node": ">=22"' 'npm package manifest'
+require_file_pattern "$ci_workflow" 'npm-launcher-node22:' 'CI workflow'
+require_file_pattern "$ci_workflow" 'node-version: "22\.23\.2"' 'CI workflow'
+require_file_pattern "$ci_workflow" 'node-version: "24\.21\.0"' 'CI workflow'
+require_file_pattern "$ci_workflow" 'just agent npm-package 0\.0\.0-node22\.0' 'CI workflow'
+require_file_pattern "$ci_workflow" 'just agent npm-package-check \.tmp/npm-package' 'CI workflow'
 require_release_check_pattern 'run typecheck'
 require_release_check_pattern 'run_step "TypeScript test coverage"'
 require_release_check_pattern 'go env GOCACHE'
