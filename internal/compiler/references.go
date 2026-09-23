@@ -234,7 +234,18 @@ func inputURLOrigin(value *url.URL) (string, error) {
 	if value == nil || (strings.ToLower(value.Scheme) != "http" && strings.ToLower(value.Scheme) != "https") || value.Host == "" || value.User != nil {
 		return "", errors.New("must be an unauthenticated HTTP(S) URL")
 	}
-	return strings.ToLower(value.Scheme) + "://" + strings.ToLower(value.Host), nil
+	scheme := strings.ToLower(value.Scheme)
+	host := strings.ToLower(value.Hostname())
+	port := value.Port()
+	if scheme == "https" && port == "443" || scheme == "http" && port == "80" {
+		port = ""
+	}
+	if port != "" {
+		host = net.JoinHostPort(host, port)
+	} else if strings.Contains(host, ":") {
+		host = "[" + host + "]"
+	}
+	return scheme + "://" + host, nil
 }
 
 func canonicalRemoteOrigin(value string) (string, error) {

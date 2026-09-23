@@ -429,6 +429,29 @@ func TestHTTPInputRedirectPolicyRejectsSchemeChanges(t *testing.T) {
 	}
 }
 
+func TestHTTPInputRedirectPolicyTreatsDefaultPortsAsSameOrigin(t *testing.T) {
+	for _, raw := range []string{
+		"https://example.test:443/final.yaml",
+		"http://example.test:80/final.yaml",
+	} {
+		t.Run(raw, func(t *testing.T) {
+			redirect, err := url.Parse(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			root := &url.URL{Scheme: redirect.Scheme, Host: "example.test", Path: "/openapi.yaml"}
+			config := &httpInputConfig{}
+			client, err := config.newClient(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := client.CheckRedirect(&http.Request{URL: redirect}, []*http.Request{{URL: root}}); err != nil {
+				t.Fatalf("default-port same-origin redirect rejected: %v", err)
+			}
+		})
+	}
+}
+
 func TestHTTPSInputSupportsAdditionalCAAndClientCertificate(t *testing.T) {
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if len(request.TLS.PeerCertificates) == 0 {
