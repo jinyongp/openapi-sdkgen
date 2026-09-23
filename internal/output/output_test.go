@@ -43,6 +43,25 @@ func TestPublishArtifactsRollsBackPathConflict(t *testing.T) {
 	}
 }
 
+func TestPublishArtifactsRollsBackAsyncPathConflict(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "output")
+	err := PublishArtifacts(path, []generator.Artifact{
+		{Path: "nested/client.ts", Data: []byte("export {}\n")},
+		{Path: "nested", Data: []byte("not a directory\n")},
+	}, false, nil)
+	if err == nil || !strings.Contains(err.Error(), "generated artifact") {
+		t.Fatalf("publish error = %v", err)
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("partial output stat error = %v", err)
+	}
+	matches, err := filepath.Glob(filepath.Join(root, ".openapi-sdkgen-output-*"))
+	if err != nil || len(matches) != 0 {
+		t.Fatalf("staging directories = %v, %v", matches, err)
+	}
+}
+
 func TestIncrementalPublicationPreservesOwnershipBoundaries(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "generated")
 	initial := []generator.Artifact{

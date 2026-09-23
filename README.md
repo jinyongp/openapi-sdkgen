@@ -178,9 +178,10 @@ Concurrent in-process compiler state can be checked with:
 just agent race
 ```
 
-The race tier instruments `internal/compiler`, including concurrent tests
-for decoded source caching and remote-reference source/error state. It is
-deliberately scoped to Go memory races. A passing run does not prove the logical
+The race tier instruments `internal/compiler` and `internal/output`,
+including concurrent tests for decoded source caching, remote-reference
+source/error state, and bounded publication workers. It is deliberately scoped
+to Go memory races. A passing run does not prove the logical
 correctness of process-level advisory file locking, publication rollback, or
 other multi-process behavior; those remain covered by their integration tests.
 

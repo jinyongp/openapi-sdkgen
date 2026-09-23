@@ -140,6 +140,8 @@ type Target interface {
 
 // ArtifactSink accepts one validated artifact at a time. Implementations may
 // write directly to a rollback-safe staging area instead of retaining bytes.
+// After WriteArtifact returns nil, ownership of artifact.Data belongs to the
+// sink; emitters must not mutate or reuse that byte slice.
 type ArtifactSink interface {
 	WriteArtifact(Artifact) error
 }

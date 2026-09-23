@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"openapi-sdkgen/internal/generator"
 )
@@ -74,6 +75,16 @@ type Manifest struct {
 // ManifestName is the reserved managed-output manifest path.
 const ManifestName = ".openapi-sdkgen-manifest.json"
 
+const (
+	stagingWorkerCount = 4
+	stagingQueueDepth  = stagingWorkerCount * 2
+)
+
+type stagedArtifactWrite struct {
+	path string
+	data []byte
+}
+
 // Publisher stages artifacts and atomically commits them to one output tree.
 type Publisher struct {
 	output             string
@@ -85,9 +96,18 @@ type Publisher struct {
 	generation         *Generation
 	previousGeneration *Generation
 	incremental        bool
+	parallelWrites     bool
 	lock               *outputLock
 	committed          bool
 	failure            error
+	writeStart         sync.Once
+	writeFinish        sync.Once
+	writeFailure       sync.Once
+	writeJobs          chan stagedArtifactWrite
+	writeFailed        chan struct{}
+	writeWG            sync.WaitGroup
+	writeErrMu         sync.Mutex
+	writeErr           error
 }
 
 // Checker compares emitted artifacts with one managed output without writing.
@@ -245,6 +265,7 @@ func PublishArtifacts(path string, artifacts []generator.Artifact, incremental b
 	}
 	defer publisher.Rollback()
 	publisher.generation = generation
+	publisher.parallelWrites = true
 	for _, artifact := range artifacts {
 		if err := publisher.WriteArtifact(artifact); err != nil {
 			return err
@@ -264,9 +285,13 @@ func StreamArtifacts(path string, incremental bool, generation *Generation, emit
 	}
 	defer publisher.Rollback()
 	publisher.generation = generation
+	publisher.parallelWrites = true
 	if err := emit(publisher); err != nil {
 		stage := StageEmit
-		if publisher.failure != nil {
+		if writeErr := publisher.finishStagedWrites(); writeErr != nil {
+			stage = StagePublish
+			err = writeErr
+		} else if publisher.failure != nil {
 			stage = StagePublish
 			err = publisher.failure
 		}
@@ -384,6 +409,52 @@ func NewPublisher(path string, incremental bool) (*Publisher, error) {
 	}, nil
 }
 
+func (publisher *Publisher) startStagingWorkers() {
+	publisher.writeStart.Do(func() {
+		publisher.writeJobs = make(chan stagedArtifactWrite, stagingQueueDepth)
+		publisher.writeFailed = make(chan struct{})
+		publisher.writeWG.Add(stagingWorkerCount)
+		for range stagingWorkerCount {
+			go func() {
+				defer publisher.writeWG.Done()
+				for job := range publisher.writeJobs {
+					if publisher.stagingError() != nil {
+						continue
+					}
+					if err := writeStagedFile(job.path, job.data); err != nil {
+						publisher.recordStagingError(publicationFailure(err))
+					}
+				}
+			}()
+		}
+	})
+}
+
+func (publisher *Publisher) recordStagingError(err error) {
+	publisher.writeFailure.Do(func() {
+		publisher.writeErrMu.Lock()
+		publisher.writeErr = err
+		publisher.writeErrMu.Unlock()
+		close(publisher.writeFailed)
+	})
+}
+
+func (publisher *Publisher) stagingError() error {
+	publisher.writeErrMu.Lock()
+	defer publisher.writeErrMu.Unlock()
+	return publisher.writeErr
+}
+
+func (publisher *Publisher) finishStagedWrites() error {
+	publisher.writeFinish.Do(func() {
+		if publisher.writeJobs != nil {
+			close(publisher.writeJobs)
+			publisher.writeWG.Wait()
+		}
+	})
+	return publisher.stagingError()
+}
+
 // WriteArtifact stages one validated artifact.
 func (publisher *Publisher) WriteArtifact(artifact generator.Artifact) error {
 	cleanPath, err := SafeArtifactPath(artifact.Path)
@@ -401,6 +472,13 @@ func (publisher *Publisher) WriteArtifact(artifact generator.Artifact) error {
 		publisher.failure = err
 		return err
 	}
+	for parent := filepath.Dir(cleanPath); parent != "."; parent = filepath.Dir(parent) {
+		if publisher.seen[parent] {
+			err := publicationFailure(fmt.Errorf("create artifact directory %s: generated artifact %q conflicts with generated file %q", filepath.Join(publisher.staging, parent), cleanPath, parent))
+			publisher.failure = err
+			return err
+		}
+	}
 	publisher.seen[cleanPath] = true
 	hash := artifactContentHash(artifact.Data)
 	publisher.hashes[cleanPath] = hash
@@ -417,8 +495,27 @@ func (publisher *Publisher) WriteArtifact(artifact generator.Artifact) error {
 		}
 		publisher.directories[directory] = true
 	}
-	if err := writeStagedFile(path, artifact.Data); err != nil {
-		err = publicationFailure(err)
+	if !publisher.parallelWrites {
+		if err := writeStagedFile(path, artifact.Data); err != nil {
+			err = publicationFailure(err)
+			publisher.failure = err
+			return err
+		}
+		return nil
+	}
+	if err := publisher.stagingError(); err != nil {
+		publisher.failure = err
+		return err
+	}
+	publisher.startStagingWorkers()
+	select {
+	case <-publisher.writeFailed:
+		err := publisher.stagingError()
+		publisher.failure = err
+		return err
+	case publisher.writeJobs <- stagedArtifactWrite{path: path, data: artifact.Data}:
+	}
+	if err := publisher.stagingError(); err != nil {
 		publisher.failure = err
 		return err
 	}
@@ -427,6 +524,10 @@ func (publisher *Publisher) WriteArtifact(artifact generator.Artifact) error {
 
 // Commit atomically publishes all staged artifacts.
 func (publisher *Publisher) Commit() error {
+	if err := publisher.finishStagedWrites(); err != nil {
+		publisher.failure = err
+		return err
+	}
 	if publisher.incremental {
 		return publisher.commitIncremental()
 	}
@@ -443,6 +544,7 @@ func (publisher *Publisher) Commit() error {
 // Rollback removes uncommitted staging state and releases the incremental lock.
 func (publisher *Publisher) Rollback() {
 	if publisher != nil && !publisher.committed {
+		_ = publisher.finishStagedWrites()
 		_ = os.RemoveAll(publisher.staging)
 		publisher.releaseLock()
 	}
