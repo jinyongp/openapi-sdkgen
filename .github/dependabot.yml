@@ -5,13 +5,15 @@ updates:
     schedule:
       interval: weekly
     groups:
-      homebrew-tap:
+      releaseway:
         patterns:
-          - jinyongp/homebrew-tap/.github/workflows/publish-formula.yml
-          - jinyongp/homebrew-tap/.github/workflows/auto-merge-homebrew-tap.yml
+          - releaseway/actions
+          - releaseway/homebrew-actions/.github/workflows/check.yml
+          - releaseway/homebrew-actions/.github/workflows/publish.yml
       github-actions:
         patterns:
           - "*"
         exclude-patterns:
-          - jinyongp/homebrew-tap/.github/workflows/publish-formula.yml
-          - jinyongp/homebrew-tap/.github/workflows/auto-merge-homebrew-tap.yml
+          - releaseway/actions
+          - releaseway/homebrew-actions/.github/workflows/check.yml
+          - releaseway/homebrew-actions/.github/workflows/publish.yml

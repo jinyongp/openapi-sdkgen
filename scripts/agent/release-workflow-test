@@ -6,20 +6,33 @@ workflow="$ROOT/.github/workflows/release.yml"
 ci_workflow="$ROOT/.github/workflows/ci.yml"
 npm_manifest="$ROOT/npm/package.json"
 homebrew_check="$ROOT/.github/workflows/homebrew.yml"
-homebrew_auto_merge="$ROOT/.github/workflows/auto-merge-homebrew-tap.yml"
 dependabot="$ROOT/.github/dependabot.yml"
 goreleaser="$ROOT/.goreleaser.yaml"
 release_check="$ROOT/scripts/release/check.sh"
 npm_package="$ROOT/scripts/npm/package.sh"
 npm_check="$ROOT/scripts/npm/check.sh"
 homebrew_formula="$ROOT/.github/homebrew/formula.yml"
-homebrew_tap_sha="5d4694353a9ed933fe0be9055ca64b7eef53e4f0"
-homebrew_tap_release='automation-v1\.5\.0'
+releaseway_actions_sha="49c543357d96884d0e5a683c45d45ebd50a8b612"
+homebrew_actions_sha="c035d14050bca1e2028a6368823797d36c9cdbc5"
+
+require_file_text() {
+  local file="$1" text="$2" label="$3"
+  if ! grep -Fq -- "$text" "$file"; then
+    echo "$label is missing required contract: $text" >&2
+    exit 1
+  fi
+}
+
+reject_file_text() {
+  local file="$1" text="$2" label="$3"
+  if grep -Fq -- "$text" "$file"; then
+    echo "$label contains forbidden contract: $text" >&2
+    exit 1
+  fi
+}
 
 require_file_pattern() {
-  local file="$1"
-  local pattern="$2"
-  local label="$3"
+  local file="$1" pattern="$2" label="$3"
   if ! grep -Eq "$pattern" "$file"; then
     echo "$label is missing required contract: $pattern" >&2
     exit 1
@@ -27,139 +40,108 @@ require_file_pattern() {
 }
 
 reject_file_pattern() {
-  local file="$1"
-  local pattern="$2"
-  local label="$3"
+  local file="$1" pattern="$2" label="$3"
   if grep -Eq "$pattern" "$file"; then
     echo "$label contains forbidden contract: $pattern" >&2
     exit 1
   fi
 }
 
-require_pattern() {
-  require_file_pattern "$workflow" "$1" "release workflow"
-}
+require_text() { require_file_text "$workflow" "$1" "release workflow"; }
+reject_text() { reject_file_text "$workflow" "$1" "release workflow"; }
 
-reject_pattern() {
-  reject_file_pattern "$workflow" "$1" "release workflow"
-}
+require_text "workflow_dispatch:"
+require_text "run-name: Release"
+require_text "group: openapi-sdkgen-release"
+require_text "Validate release tag"
+require_text "Verify immutable tag target"
+require_text "Build npm package"
+require_text "scripts/npm/package.sh"
+require_text "scripts/npm/publish.sh"
+require_text '$GITHUB_WORKSPACE/.tmp/npm-package'
+require_text "needs: [validate-release, publish-github-release]"
 
-reject_release_check_pattern() {
-  local pattern="$1"
-  if grep -Eq "$pattern" "$release_check"; then
-    echo "release check contains forbidden contract: $pattern" >&2
-    exit 1
-  fi
-}
+require_text "uses: releaseway/actions@${releaseway_actions_sha} # v0.1.4"
+require_text "args: release --clean --skip=publish --config"
+require_text 'prerelease: ${{ contains(needs.validate-release.outputs.tag, '\''-'\'') && '\''true'\'' || '\''false'\'' }}'
+require_text 'generate-notes: "true"'
+require_text "dist/checksums.txt"
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64.tar.gz'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64.tar.gz'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64.tar.gz'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64.tar.gz'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.zip'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.zip'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.exe'
+require_text 'dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.exe'
+reject_text 'https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG'
+reject_file_text "$goreleaser" "replace_existing_artifacts:" "GoReleaser config"
+require_file_text "$goreleaser" "main.version={{ .Version }}" "GoReleaser config"
+require_file_text "$goreleaser" "id: npm-binary" "GoReleaser config"
+require_file_text "$goreleaser" "formats: [binary]" "GoReleaser config"
+require_file_text "$goreleaser" "ArtifactExt" "GoReleaser config"
+reject_file_text "$goreleaser" "target_commitish:" "GoReleaser config"
 
-require_goreleaser_pattern() {
-  local pattern="$1"
-  if ! grep -Eq "$pattern" "$goreleaser"; then
-    echo "GoReleaser config is missing required release contract: $pattern" >&2
-    exit 1
-  fi
-}
+require_text "uses: releaseway/homebrew-actions/.github/workflows/publish.yml@${homebrew_actions_sha} # v0.1.0"
+require_text "tap-repository: jinyongp/homebrew-tap"
+require_text 'commit: ${{ needs.validate-release.outputs.commit }}'
+require_text 'version: ${{ needs.validate-release.outputs.version }}'
+require_text 'tap_deploy_key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}'
+reject_text "jinyongp/homebrew-tap/.github/workflows/publish-formula.yml"
+reject_file_pattern "$workflow" '^[[:space:]]+deploy_key:' "release workflow"
 
-require_release_check_pattern() {
-  local pattern="$1"
-  if ! grep -Eq "$pattern" "$release_check"; then
-    echo "release check is missing required contract: $pattern" >&2
-    exit 1
-  fi
-}
-
-require_pattern 'workflow_dispatch:'
-require_pattern 'run-name: Release'
-require_pattern 'group: openapi-sdkgen-release'
-require_pattern 'Validate release tag'
-require_pattern 'Verify immutable tag target'
-require_pattern 'Build npm package'
-require_pattern 'scripts/npm/package\.sh'
-require_pattern 'scripts/npm/publish\.sh'
-require_pattern '\$GITHUB_WORKSPACE/\.tmp/npm-package'
-require_pattern "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}"
-require_pattern 'formula: openapi-sdkgen'
-require_pattern 'repository: \$\{\{ github\.repository \}\}'
-require_pattern 'ref: \$\{\{ needs\.validate-release\.outputs\.commit \}\}'
-require_pattern 'version: \$\{\{ needs\.validate-release\.outputs\.tag \}\}'
-require_pattern 'deploy_key: \$\{\{ secrets\.HOMEBREW_TAP_DEPLOY_KEY \}\}'
-require_pattern 'Publish GitHub Release'
-require_pattern 'release-tools/\.goreleaser\.yaml'
-require_goreleaser_pattern 'replace_existing_artifacts: true'
-require_goreleaser_pattern 'main\.version=\{\{ \.Version \}\}'
-require_goreleaser_pattern 'id: npm-binary'
-require_goreleaser_pattern 'formats: \[binary\]'
-require_goreleaser_pattern 'ArtifactExt'
-require_pattern 'needs: \[validate-release, publish-github-release\]'
-require_pattern 'openapi-sdkgen_\$\{version\}_darwin_amd64'
-require_pattern 'openapi-sdkgen_\$\{version\}_darwin_arm64'
-require_pattern 'openapi-sdkgen_\$\{version\}_linux_amd64'
-require_pattern 'openapi-sdkgen_\$\{version\}_linux_arm64'
-require_pattern 'openapi-sdkgen_\$\{version\}_windows_amd64\.exe'
-require_pattern 'openapi-sdkgen_\$\{version\}_windows_arm64\.exe'
-if grep -Eq 'target_commitish:' "$goreleaser"; then
-  echo "GoReleaser must not override the target of an existing release tag" >&2
-  exit 1
-fi
-require_pattern 'contents: write'
-reject_pattern 'just agent'
-require_file_pattern "$npm_manifest" '"node": ">=22"' 'npm package manifest'
-require_file_pattern "$ci_workflow" 'npm-launcher-node22:' 'CI workflow'
-require_file_pattern "$ci_workflow" 'node-version: "22\.23\.2"' 'CI workflow'
-require_file_pattern "$ci_workflow" 'node-version: "24\.21\.0"' 'CI workflow'
-require_file_pattern "$ci_workflow" 'just agent npm-package 0\.0\.0-node22\.0' 'CI workflow'
-require_file_pattern "$ci_workflow" 'just agent npm-package-check \.tmp/npm-package' 'CI workflow'
-require_release_check_pattern 'run typecheck'
-require_release_check_pattern 'run_step "TypeScript test coverage"'
-require_release_check_pattern 'go env GOCACHE'
-require_release_check_pattern 'go env GOMODCACHE'
-require_release_check_pattern 'SECONDS'
-reject_release_check_pattern 'run test'
-reject_release_check_pattern 'run conformance'
-reject_pattern 'Verify npm package'
-reject_pattern 'scripts/npm/check\.sh'
-reject_pattern 'Verify release inputs'
-reject_pattern 'Run release checks'
-reject_pattern 'scripts/release/check\.sh'
-reject_pattern 'uses: \./tap/actions/publish/formula'
-reject_pattern 'scripts/commit-formula\.sh'
-reject_pattern 'scripts/push-formula\.sh'
-reject_pattern 'scripts/resolve-source-inputs\.sh'
-reject_pattern 'brew tap '
-
-require_file_pattern "$homebrew_check" 'pull_request:' 'Homebrew check workflow'
-require_file_pattern "$homebrew_check" "uses: jinyongp/homebrew-tap/\\.github/workflows/publish-formula\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}" 'Homebrew check workflow'
-require_file_pattern "$homebrew_check" 'formula: openapi-sdkgen' 'Homebrew check workflow'
-require_file_pattern "$homebrew_check" 'dry-run: true' 'Homebrew check workflow'
-require_file_pattern "$homebrew_check" 'validation-mode: spec' 'Homebrew check workflow'
-reject_file_pattern "$homebrew_check" '^[[:space:]]*secrets:' 'Homebrew check workflow'
-
-require_file_pattern "$homebrew_auto_merge" 'pull_request_target:' 'Homebrew auto-merge workflow'
-require_file_pattern "$homebrew_auto_merge" 'contents: write' 'Homebrew auto-merge workflow'
-require_file_pattern "$homebrew_auto_merge" 'pull-requests: write' 'Homebrew auto-merge workflow'
-require_file_pattern "$homebrew_auto_merge" 'statuses: write' 'Homebrew auto-merge workflow'
-require_file_pattern "$homebrew_auto_merge" "uses: jinyongp/homebrew-tap/\\.github/workflows/auto-merge-homebrew-tap\\.yml@${homebrew_tap_sha} # ${homebrew_tap_release}" 'Homebrew auto-merge workflow'
-reject_file_pattern "$homebrew_auto_merge" 'actions/checkout' 'Homebrew auto-merge workflow'
-reject_file_pattern "$homebrew_auto_merge" '^[[:space:]]*steps:' 'Homebrew auto-merge workflow'
-reject_file_pattern "$homebrew_auto_merge" '^[[:space:]]*run:' 'Homebrew auto-merge workflow'
-
-require_file_pattern "$dependabot" 'package-ecosystem: github-actions' 'Dependabot config'
-require_file_pattern "$dependabot" 'homebrew-tap:' 'Dependabot config'
-require_file_pattern "$dependabot" 'jinyongp/homebrew-tap/\.github/workflows/publish-formula\.yml' 'Dependabot config'
-require_file_pattern "$dependabot" 'jinyongp/homebrew-tap/\.github/workflows/auto-merge-homebrew-tap\.yml' 'Dependabot config'
-require_file_pattern "$dependabot" 'exclude-patterns:' 'Dependabot config'
-
-parallel_publish_jobs="$(grep -Ec '^[[:space:]]+needs: validate-release$' "$workflow")"
-if [[ "$parallel_publish_jobs" != "2" ]]; then
-  echo "GitHub Release and Homebrew jobs must start directly after tag validation, found $parallel_publish_jobs" >&2
+require_file_text "$homebrew_check" "pull_request:" "Homebrew check workflow"
+require_file_text "$homebrew_check" "uses: releaseway/homebrew-actions/.github/workflows/check.yml@${homebrew_actions_sha} # v0.1.0" "Homebrew check workflow"
+require_file_text "$homebrew_check" "tap-repository: jinyongp/homebrew-tap" "Homebrew check workflow"
+reject_file_text "$homebrew_check" "secrets:" "Homebrew check workflow"
+if [[ -e "$ROOT/.github/workflows/auto-merge-homebrew-tap.yml" ]]; then
+  echo "obsolete Homebrew auto-merge workflow must be removed" >&2
   exit 1
 fi
 
-reject_file_pattern "$npm_package" 'go build' 'npm package script'
-reject_file_pattern "$npm_package" 'NPM_PACKAGE_BUILD_JOBS' 'npm package script'
-require_file_pattern "$npm_package" 'cp -R "\$ROOT/npm/\."' 'npm package script'
-require_file_pattern "$npm_check" 'launcher-test\.mjs' 'npm package check'
-require_file_pattern "$npm_check" 'contains bundled native platform binaries' 'npm package check'
+require_file_text "$dependabot" "package-ecosystem: github-actions" "Dependabot config"
+require_file_text "$dependabot" "releaseway:" "Dependabot config"
+require_file_text "$dependabot" "releaseway/actions" "Dependabot config"
+require_file_text "$dependabot" "releaseway/homebrew-actions/.github/workflows/check.yml" "Dependabot config"
+require_file_text "$dependabot" "releaseway/homebrew-actions/.github/workflows/publish.yml" "Dependabot config"
+reject_file_text "$dependabot" "jinyongp/homebrew-tap/.github/workflows/" "Dependabot config"
+
+direct_release_jobs="$(grep -Ec '^[[:space:]]+needs: validate-release$' "$workflow")"
+if [[ "$direct_release_jobs" != "1" ]]; then
+  echo "only the GitHub Release job may start directly after tag validation, found $direct_release_jobs" >&2
+  exit 1
+fi
+
+require_file_text "$npm_manifest" '"node": ">=22"' "npm package manifest"
+require_file_text "$ci_workflow" "npm-launcher-node22:" "CI workflow"
+require_file_text "$ci_workflow" 'node-version: "22.23.2"' "CI workflow"
+require_file_text "$ci_workflow" 'node-version: "24.21.0"' "CI workflow"
+require_file_text "$ci_workflow" "just agent npm-package 0.0.0-node22.0" "CI workflow"
+require_file_text "$ci_workflow" "just agent npm-package-check .tmp/npm-package" "CI workflow"
+require_file_text "$release_check" "run typecheck" "release check"
+require_file_text "$release_check" 'run_step "TypeScript test coverage"' "release check"
+require_file_text "$release_check" "go env GOCACHE" "release check"
+require_file_text "$release_check" "go env GOMODCACHE" "release check"
+require_file_text "$release_check" "SECONDS" "release check"
+reject_file_text "$release_check" "run test" "release check"
+reject_file_text "$release_check" "run conformance" "release check"
+reject_text "Verify npm package"
+reject_text "scripts/npm/check.sh"
+reject_text "Verify release inputs"
+reject_text "Run release checks"
+reject_text "scripts/release/check.sh"
+reject_text "just agent"
+
+reject_file_text "$npm_package" "go build" "npm package script"
+reject_file_text "$npm_package" "NPM_PACKAGE_BUILD_JOBS" "npm package script"
+require_file_text "$npm_package" 'cp -R "$ROOT/npm/."' "npm package script"
+require_file_text "$npm_check" "launcher-test.mjs" "npm package check"
+require_file_text "$npm_check" "contains bundled native platform binaries" "npm package check"
+require_file_pattern "$homebrew_formula" '^name: openapi-sdkgen$' "Homebrew Formula spec"
 if ! grep -Fq -- '-X main.version=#{version}' "$homebrew_formula"; then
   echo "Homebrew builds must inject the formula version" >&2
   exit 1

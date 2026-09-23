@@ -1,3 +1,4 @@
+name: openapi-sdkgen
 desc: Generate application SDK source from OpenAPI documents
 homepage: https://jinyongp.github.io/openapi-sdkgen/
 license: Apache-2.0

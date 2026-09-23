@@ -35,10 +35,6 @@ archives:
 checksum:
   name_template: checksums.txt
 
-release:
-  mode: keep-existing
-  replace_existing_artifacts: true
-
 retry:
   attempts: 5
   delay: 5s

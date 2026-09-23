@@ -99,17 +99,16 @@ jobs:
 
   publish-homebrew:
     name: Publish Homebrew formula
-    needs: validate-release
-    uses: jinyongp/homebrew-tap/.github/workflows/publish-formula.yml@5d4694353a9ed933fe0be9055ca64b7eef53e4f0 # automation-v1.5.0
+    needs: [validate-release, publish-github-release]
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@c035d14050bca1e2028a6368823797d36c9cdbc5 # v0.1.0
     permissions:
       contents: read
     with:
-      formula: openapi-sdkgen
-      repository: ${{ github.repository }}
-      ref: ${{ needs.validate-release.outputs.commit }}
-      version: ${{ needs.validate-release.outputs.tag }}
+      tap-repository: jinyongp/homebrew-tap
+      commit: ${{ needs.validate-release.outputs.commit }}
+      version: ${{ needs.validate-release.outputs.version }}
     secrets:
-      deploy_key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+      tap_deploy_key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
 
   publish-github-release:
     name: Publish GitHub Release
@@ -128,132 +127,36 @@ jobs:
           path: release-tools
       - name: Verify immutable tag target
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24.21.0"
-          package-manager-cache: false
-      - id: existing-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.validate-release.outputs.tag }}
-          COMMIT: ${{ needs.validate-release.outputs.commit }}
-        run: |
-          set -euo pipefail
-          status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")"
-          case "$status" in
-            200)
-              release="$(curl --fail-with-body --silent \
-                --header 'Accept: application/vnd.github+json' \
-                --header "Authorization: Bearer $GITHUB_TOKEN" \
-                "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")"
-              release_state="$(RELEASE="$release" TAG="$TAG" COMMIT="$COMMIT" node <<'NODE'
-          const release = JSON.parse(process.env.RELEASE);
-          if (release.tag_name !== process.env.TAG) {
-            throw new Error(`existing GitHub Release has tag ${release.tag_name}, not ${process.env.TAG}`);
-          }
-          if (![process.env.TAG, "main", process.env.COMMIT].includes(release.target_commitish)) {
-            throw new Error(`existing GitHub Release has an unexpected target: ${release.target_commitish}`);
-          }
-          const version = process.env.TAG.slice(1);
-          const required = [
-            "checksums.txt",
-            `openapi-sdkgen_${version}_darwin_amd64.tar.gz`,
-            `openapi-sdkgen_${version}_darwin_arm64.tar.gz`,
-            `openapi-sdkgen_${version}_linux_amd64.tar.gz`,
-            `openapi-sdkgen_${version}_linux_arm64.tar.gz`,
-            `openapi-sdkgen_${version}_windows_amd64.zip`,
-            `openapi-sdkgen_${version}_windows_arm64.zip`,
-            `openapi-sdkgen_${version}_darwin_amd64`,
-            `openapi-sdkgen_${version}_darwin_arm64`,
-            `openapi-sdkgen_${version}_linux_amd64`,
-            `openapi-sdkgen_${version}_linux_arm64`,
-            `openapi-sdkgen_${version}_windows_amd64.exe`,
-            `openapi-sdkgen_${version}_windows_arm64.exe`,
-          ];
-          const assets = new Map(release.assets.map((asset) => [asset.name, asset]));
-          for (const filename of required) {
-            if (assets.get(filename) === undefined) {
-              process.stdout.write("incomplete");
-              process.exit(0);
-            }
-          }
-          process.stdout.write(`complete ${assets.get("checksums.txt").browser_download_url}`);
-          NODE
-              )"
-              case "$release_state" in
-                incomplete) echo 'exists=false' >> "$GITHUB_OUTPUT" ;;
-                complete\ *)
-                  echo 'exists=true' >> "$GITHUB_OUTPUT"
-                  echo "checksums_url=${release_state#complete }" >> "$GITHUB_OUTPUT"
-                  ;;
-                *) echo "could not validate existing GitHub Release for $TAG" >&2; exit 1 ;;
-              esac
-              ;;
-            404) echo 'exists=false' >> "$GITHUB_OUTPUT" ;;
-            *) echo "could not query GitHub Release for $TAG (HTTP $status)" >&2; exit 1 ;;
-          esac
-      - name: Verify existing GitHub Release checksums
-        if: steps.existing-release.outputs.exists == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.validate-release.outputs.tag }}
-          CHECKSUMS_URL: ${{ steps.existing-release.outputs.checksums_url }}
-        run: |
-          set -euo pipefail
-          release="$(curl --fail-with-body --silent \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")"
-          checksums="$(curl --fail-with-body --location --silent "$CHECKSUMS_URL")"
-          RELEASE="$release" CHECKSUMS="$checksums" TAG="$TAG" node <<'NODE'
-          const release = JSON.parse(process.env.RELEASE);
-          const checksums = new Map(
-            process.env.CHECKSUMS.trim().split(/\n+/).map((line) => {
-              const [digest, filename] = line.trim().split(/\s+/, 2);
-              return [filename, digest];
-            }),
-          );
-          const version = process.env.TAG.slice(1);
-          const required = [
-            `openapi-sdkgen_${version}_darwin_amd64.tar.gz`,
-            `openapi-sdkgen_${version}_darwin_arm64.tar.gz`,
-            `openapi-sdkgen_${version}_linux_amd64.tar.gz`,
-            `openapi-sdkgen_${version}_linux_arm64.tar.gz`,
-            `openapi-sdkgen_${version}_windows_amd64.zip`,
-            `openapi-sdkgen_${version}_windows_arm64.zip`,
-            `openapi-sdkgen_${version}_darwin_amd64`,
-            `openapi-sdkgen_${version}_darwin_arm64`,
-            `openapi-sdkgen_${version}_linux_amd64`,
-            `openapi-sdkgen_${version}_linux_arm64`,
-            `openapi-sdkgen_${version}_windows_amd64.exe`,
-            `openapi-sdkgen_${version}_windows_arm64.exe`,
-          ];
-          const assets = new Map(release.assets.map((asset) => [asset.name, asset]));
-          for (const filename of required) {
-            const digest = checksums.get(filename);
-            const asset = assets.get(filename);
-            if (digest === undefined || asset === undefined || asset.digest !== `sha256:${digest}`) {
-              throw new Error(`existing GitHub Release asset checksum mismatch: ${filename}`);
-            }
-          }
-          NODE
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        if: steps.existing-release.outputs.exists != 'true'
         with:
           go-version: "1.27.0"
       - name: Prepare GoReleaser config
-        if: steps.existing-release.outputs.exists != 'true'
         run: |
           cp release-tools/.goreleaser.yaml "$RUNNER_TEMP/goreleaser.yaml"
           rm -rf release-tools
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
-        if: steps.existing-release.outputs.exists != 'true'
         with:
           distribution: goreleaser
           version: "v2.17.0"
-          args: release --clean --config ${{ runner.temp }}/goreleaser.yaml
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: release --clean --skip=publish --config ${{ runner.temp }}/goreleaser.yaml
+      - name: Publish immutable GitHub Release
+        uses: releaseway/actions@49c543357d96884d0e5a683c45d45ebd50a8b612 # v0.1.4
+        with:
+          tag: ${{ needs.validate-release.outputs.tag }}
+          commit: ${{ needs.validate-release.outputs.commit }}
+          prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
+          generate-notes: "true"
+          assets: |
+            dist/checksums.txt
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64.tar.gz
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64.tar.gz
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64.tar.gz
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64.tar.gz
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.zip
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.zip
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.exe
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.exe

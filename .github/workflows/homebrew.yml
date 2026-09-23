@@ -8,8 +8,6 @@ permissions:
 
 jobs:
   homebrew:
-    uses: jinyongp/homebrew-tap/.github/workflows/publish-formula.yml@5d4694353a9ed933fe0be9055ca64b7eef53e4f0 # automation-v1.5.0
+    uses: releaseway/homebrew-actions/.github/workflows/check.yml@c035d14050bca1e2028a6368823797d36c9cdbc5 # v0.1.0
     with:
-      formula: openapi-sdkgen
-      dry-run: true
-      validation-mode: spec
+      tap-repository: jinyongp/homebrew-tap
