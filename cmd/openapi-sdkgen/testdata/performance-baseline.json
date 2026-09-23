@@ -51,7 +51,7 @@
       "process": {"wallNanoseconds":285352499,"cpuNanoseconds":387524000,"peakHeapBytes":17209672,"maxRssBytes":41185280}
     },
     "high-artifact": {
-      "phases": {"compile":{"wallNanoseconds":21960675,"bytesPerOperation":13295488},"prepare":{"wallNanoseconds":21757425,"bytesPerOperation":24603256},"emit":{"wallNanoseconds":61672834,"bytesPerOperation":109888712},"publish":{"wallNanoseconds":28000000,"bytesPerOperation":3990736},"full":{"wallNanoseconds":804667207,"bytesPerOperation":153405136}},
+      "phases": {"compile":{"wallNanoseconds":21960675,"bytesPerOperation":13295488},"prepare":{"wallNanoseconds":21757425,"bytesPerOperation":24603256},"emit":{"wallNanoseconds":61672834,"bytesPerOperation":95000000},"publish":{"wallNanoseconds":28000000,"bytesPerOperation":3990736},"full":{"wallNanoseconds":804667207,"bytesPerOperation":153405136}},
       "process": {"wallNanoseconds":836580601,"cpuNanoseconds":1015622000,"peakHeapBytes":19202000,"maxRssBytes":41431040}
     },
     "server-addon": {
