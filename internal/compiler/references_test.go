@@ -15,8 +15,83 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 )
+
+func TestRemoteReferenceResolverConcurrentState(t *testing.T) {
+	t.Run("source snapshots", func(t *testing.T) {
+		resolver := &remoteReferenceResolver{}
+		const workers = 32
+		var ready sync.WaitGroup
+		var done sync.WaitGroup
+		start := make(chan struct{})
+		ready.Add(workers * 2)
+		done.Add(workers * 2)
+
+		for index := range workers {
+			go func() {
+				defer done.Done()
+				ready.Done()
+				<-start
+				resolver.rememberSource("schema.json", []byte{byte(index)})
+			}()
+			go func() {
+				defer done.Done()
+				ready.Done()
+				<-start
+				for range workers {
+					snapshot := resolver.sourceSnapshot()
+					if data := snapshot["schema.json"]; len(data) != 0 {
+						data[0] ^= 0xff
+					}
+				}
+			}()
+		}
+		ready.Wait()
+		close(start)
+		done.Wait()
+
+		snapshot := resolver.sourceSnapshot()
+		if len(snapshot["schema.json"]) != 1 {
+			t.Fatalf("source snapshot = %#v", snapshot)
+		}
+	})
+
+	t.Run("errors", func(t *testing.T) {
+		resolver := &remoteReferenceResolver{}
+		const workers = 32
+		var ready sync.WaitGroup
+		var done sync.WaitGroup
+		start := make(chan struct{})
+		ready.Add(workers * 2)
+		done.Add(workers * 2)
+
+		for range workers {
+			go func() {
+				defer done.Done()
+				ready.Done()
+				<-start
+				_, _ = resolver.handle("://invalid")
+			}()
+			go func() {
+				defer done.Done()
+				ready.Done()
+				<-start
+				for range workers {
+					_ = resolver.firstError()
+				}
+			}()
+		}
+		ready.Wait()
+		close(start)
+		done.Wait()
+
+		if resolver.firstError() == nil {
+			t.Fatal("concurrent resolver errors were not recorded")
+		}
+	})
+}
 
 func TestRemoteReferenceResolverRequiresExactHTTPSOrigins(t *testing.T) {
 	for _, origin := range []string{"http://schemas.example.test", "https://schemas.example.test/path", "https://user@schemas.example.test", "https://schemas.example.test?x=1"} {

@@ -29,6 +29,9 @@ vuln-test:
 fuzz:
     bash ./scripts/agent/fuzz
 
+race:
+    bash ./scripts/agent/race
+
 test:
     ./scripts/agent/test
 
