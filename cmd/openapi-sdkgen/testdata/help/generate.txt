@@ -17,7 +17,7 @@ Generation:
 
 Input:
   --input-base <source>           Base location for relative references from stdin
-  --http-header-env <header=env>  Read an input request header from an environment
+  --http-header-env <header=env>  Read an HTTPS input request header from an environment
                                   variable (repeatable)
   --tls-client-cert <path>        PEM client certificate for an HTTPS input
   --tls-client-key <path>         PEM private key for an HTTPS input

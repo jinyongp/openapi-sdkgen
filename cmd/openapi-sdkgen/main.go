@@ -436,7 +436,7 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 	}, "")
 	flags.Var(inputGroup, helpOption{
 		Name: "http-header-env", Metavariable: "header=env",
-		Summary:    "Read an input request header from an environment variable",
+		Summary:    "Read an HTTPS input request header from an environment variable",
 		Repeatable: true,
 	}, &values.httpHeaderEnv)
 	values.tlsClientCert = flags.String(inputGroup, helpOption{
