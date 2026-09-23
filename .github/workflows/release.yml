@@ -69,7 +69,7 @@ jobs:
 
   publish-npm:
     name: Publish npm package
-    needs: validate-release
+    needs: [validate-release, publish-github-release]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -169,6 +169,12 @@ jobs:
             `openapi-sdkgen_${version}_linux_arm64.tar.gz`,
             `openapi-sdkgen_${version}_windows_amd64.zip`,
             `openapi-sdkgen_${version}_windows_arm64.zip`,
+            `openapi-sdkgen_${version}_darwin_amd64`,
+            `openapi-sdkgen_${version}_darwin_arm64`,
+            `openapi-sdkgen_${version}_linux_amd64`,
+            `openapi-sdkgen_${version}_linux_arm64`,
+            `openapi-sdkgen_${version}_windows_amd64.exe`,
+            `openapi-sdkgen_${version}_windows_arm64.exe`,
           ];
           const assets = new Map(release.assets.map((asset) => [asset.name, asset]));
           for (const filename of required) {
@@ -221,6 +227,12 @@ jobs:
             `openapi-sdkgen_${version}_linux_arm64.tar.gz`,
             `openapi-sdkgen_${version}_windows_amd64.zip`,
             `openapi-sdkgen_${version}_windows_arm64.zip`,
+            `openapi-sdkgen_${version}_darwin_amd64`,
+            `openapi-sdkgen_${version}_darwin_arm64`,
+            `openapi-sdkgen_${version}_linux_amd64`,
+            `openapi-sdkgen_${version}_linux_arm64`,
+            `openapi-sdkgen_${version}_windows_amd64.exe`,
+            `openapi-sdkgen_${version}_windows_arm64.exe`,
           ];
           const assets = new Map(release.assets.map((asset) => [asset.name, asset]));
           for (const filename of required) {

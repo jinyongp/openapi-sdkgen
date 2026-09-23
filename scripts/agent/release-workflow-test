@@ -85,6 +85,16 @@ require_pattern 'Publish GitHub Release'
 require_pattern 'release-tools/\.goreleaser\.yaml'
 require_goreleaser_pattern 'replace_existing_artifacts: true'
 require_goreleaser_pattern 'main\.version=\{\{ \.Version \}\}'
+require_goreleaser_pattern 'id: npm-binary'
+require_goreleaser_pattern 'formats: \[binary\]'
+require_goreleaser_pattern 'ArtifactExt'
+require_pattern 'needs: \[validate-release, publish-github-release\]'
+require_pattern 'openapi-sdkgen_\$\{version\}_darwin_amd64'
+require_pattern 'openapi-sdkgen_\$\{version\}_darwin_arm64'
+require_pattern 'openapi-sdkgen_\$\{version\}_linux_amd64'
+require_pattern 'openapi-sdkgen_\$\{version\}_linux_arm64'
+require_pattern 'openapi-sdkgen_\$\{version\}_windows_amd64\.exe'
+require_pattern 'openapi-sdkgen_\$\{version\}_windows_arm64\.exe'
 if grep -Eq 'target_commitish:' "$goreleaser"; then
   echo "GoReleaser must not override the target of an existing release tag" >&2
   exit 1
@@ -132,8 +142,8 @@ require_file_pattern "$dependabot" 'jinyongp/homebrew-tap/\.github/workflows/aut
 require_file_pattern "$dependabot" 'exclude-patterns:' 'Dependabot config'
 
 parallel_publish_jobs="$(grep -Ec '^[[:space:]]+needs: validate-release$' "$workflow")"
-if [[ "$parallel_publish_jobs" != "3" ]]; then
-  echo "all three publish jobs must start after tag validation, found $parallel_publish_jobs" >&2
+if [[ "$parallel_publish_jobs" != "2" ]]; then
+  echo "GitHub Release and Homebrew jobs must start directly after tag validation, found $parallel_publish_jobs" >&2
   exit 1
 fi
 
