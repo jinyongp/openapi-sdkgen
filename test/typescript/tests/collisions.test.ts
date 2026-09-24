@@ -267,6 +267,9 @@ describe("exact identity collision fixture", () => {
       throw new Error(`unexpected path ${path}`);
     });
     const api = createClient({ baseURL: "https://api.example.test", fetch });
+    expect(Object.getPrototypeOf(api.$routes)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(api.$operations)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(api.$links)).toBe(Object.prototype);
 
     const raw = await api.$operations["get-pet"].raw({
       path: { "foo-bar": "pet/one" },

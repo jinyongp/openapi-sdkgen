@@ -44,9 +44,10 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 		t.Fatalf("link factory imports = %d, want one source factory:\n%s", got, registry)
 	}
 	for _, expected := range []string{
-		`const completed = Object.create(null) as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
-		`const operations: Record<string, unknown> = Object.create(null)`,
-		`completed["GET /events"] =`,
+		`import { defineOwnDataProperty } from "../runtime/objects.js"`,
+		`const completed = {} as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
+		`const operations: Record<string, unknown> = {}`,
+		`defineOwnDataProperty(completed as Record<string, unknown>, "GET /events",`,
 		`["links", __sdkgen_`,
 		`["stream", __sdkgen_`,
 		`routes: completed`,
@@ -57,6 +58,12 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 	}
 	if strings.Contains(registry, "GET /hidden") || strings.Contains(registry, "getHidden") {
 		t.Fatalf("hidden operation entered callable registry:\n%s", registry)
+	}
+	getSource := strings.Index(registry, `defineOwnDataProperty(operations, "getSource",`)
+	listEvents := strings.Index(registry, `defineOwnDataProperty(operations, "listEvents",`)
+	postTarget := strings.Index(registry, `defineOwnDataProperty(operations, "postTarget",`)
+	if getSource < 0 || listEvents < 0 || postTarget < 0 || !(getSource < listEvents && listEvents < postTarget) {
+		t.Fatalf("operation registry assignment order is not key-stable:\n%s", registry)
 	}
 	if strings.Contains(client, "bindOperation<") || strings.Contains(client, "createPaginator<") || strings.Contains(client, `route: "GET /events"`) {
 		t.Fatalf("client composition retained an inline operation binding or definition:\n%s", client)

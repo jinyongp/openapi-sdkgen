@@ -3,6 +3,7 @@ package typescript
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -21,6 +22,10 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	if err != nil {
 		return nil, err
 	}
+	objects, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/objects.ts")
+	if err != nil {
+		return nil, err
+	}
 	routes, err := plan.relativeModuleSpecifier(artifact, plan.fixed["route-index"])
 	if err != nil {
 		return nil, err
@@ -29,6 +34,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	var output bytes.Buffer
 	fmt.Fprintf(&output, "import { assignCallableProperties, type RequestFunction } from %s\n", quoteTS(callables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(codecs))
+	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
 	fmt.Fprintf(&output, "import type { Routes } from %s\n", quoteTS(routes))
 
 	type factoryNames struct {
@@ -130,7 +136,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", stablePrivateIdentifier("stream-value", route), names.stream)
 		}
 	}
-	output.WriteString("  const completed = Object.create(null) as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
+	output.WriteString("  const completed = {} as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
@@ -162,20 +168,35 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			fmt.Fprintf(&output, "  const %s = %s as Routes[%s][\"call\"]\n", operationValueName(route), value, quoteTS(route))
 		}
 	}
-	output.WriteString("  const operations: Record<string, unknown> = Object.create(null)\n")
-	output.WriteString("  const linkCalls: Record<string, unknown> = Object.create(null)\n")
+	output.WriteString("  const operations: Record<string, unknown> = {}\n")
+	output.WriteString("  const linkCalls: Record<string, unknown> = {}\n")
+	routeValues := make([]runtimeProperty, 0, len(manifest.Operations))
+	operationValues := make([]runtimeProperty, 0, len(manifest.Operations))
+	linkValues := make([]runtimeProperty, 0, len(links))
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
 		}
 		route := manifestRouteKey(operation)
-		fmt.Fprintf(&output, "  completed[%s] = %s\n", quoteTS(route), operationValueName(route))
+		routeValues = append(routeValues, runtimeProperty{key: route, value: operationValueName(route)})
 		if operation.OperationID != "" {
-			fmt.Fprintf(&output, "  operations[%s] = %s\n", quoteTS(operation.OperationID), operationValueName(route))
+			operationValues = append(operationValues, runtimeProperty{key: operation.OperationID, value: operationValueName(route)})
 			if factories[route].links != "" {
-				fmt.Fprintf(&output, "  linkCalls[%s] = %s\n", quoteTS(operation.OperationID), operationLinksValueName(route))
+				linkValues = append(linkValues, runtimeProperty{key: operation.OperationID, value: operationLinksValueName(route)})
 			}
 		}
+	}
+	for _, values := range [][]runtimeProperty{routeValues, operationValues, linkValues} {
+		sort.SliceStable(values, func(left, right int) bool { return values[left].key < values[right].key })
+	}
+	for _, property := range routeValues {
+		fmt.Fprintf(&output, "  defineOwnDataProperty(completed as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)
+	}
+	for _, property := range operationValues {
+		fmt.Fprintf(&output, "  defineOwnDataProperty(operations, %s, %s)\n", quoteTS(property.key), property.value)
+	}
+	for _, property := range linkValues {
+		fmt.Fprintf(&output, "  defineOwnDataProperty(linkCalls, %s, %s)\n", quoteTS(property.key), property.value)
 	}
 	output.WriteString("  return {\n")
 	output.WriteString("    routes: completed,\n")
