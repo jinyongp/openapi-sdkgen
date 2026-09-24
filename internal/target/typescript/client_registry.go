@@ -130,7 +130,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", stablePrivateIdentifier("stream-value", route), names.stream)
 		}
 	}
-	output.WriteString("  const completed = {} as { [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
+	output.WriteString("  const completed = Object.create(null) as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
@@ -162,27 +162,25 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			fmt.Fprintf(&output, "  const %s = %s as Routes[%s][\"call\"]\n", operationValueName(route), value, quoteTS(route))
 		}
 	}
-	routeValues := make([]runtimeProperty, 0)
-	operationValues := make([]runtimeProperty, 0)
-	linkValues := make([]runtimeProperty, 0)
+	output.WriteString("  const operations: Record<string, unknown> = Object.create(null)\n")
+	output.WriteString("  const linkCalls: Record<string, unknown> = Object.create(null)\n")
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
 		}
 		route := manifestRouteKey(operation)
-		routeValues = append(routeValues, runtimeProperty{key: route, value: operationValueName(route)})
+		fmt.Fprintf(&output, "  completed[%s] = %s\n", quoteTS(route), operationValueName(route))
 		if operation.OperationID != "" {
-			operationValues = append(operationValues, runtimeProperty{key: operation.OperationID, value: operationValueName(route)})
+			fmt.Fprintf(&output, "  operations[%s] = %s\n", quoteTS(operation.OperationID), operationValueName(route))
 			if factories[route].links != "" {
-				linkValues = append(linkValues, runtimeProperty{key: operation.OperationID, value: operationLinksValueName(route)})
+				fmt.Fprintf(&output, "  linkCalls[%s] = %s\n", quoteTS(operation.OperationID), operationLinksValueName(route))
 			}
 		}
 	}
-	fmt.Fprintf(&output, "  Object.assign(completed, %s)\n", runtimeObjectExpression(routeValues))
 	output.WriteString("  return {\n")
-	fmt.Fprintf(&output, "    routes: completed,\n")
-	fmt.Fprintf(&output, "    operations: %s as CallableRegistry[\"operations\"],\n", runtimeObjectExpression(operationValues))
-	fmt.Fprintf(&output, "    links: %s as CallableRegistry[\"links\"],\n", runtimeObjectExpression(linkValues))
+	output.WriteString("    routes: completed,\n")
+	output.WriteString("    operations: operations as CallableRegistry[\"operations\"],\n")
+	output.WriteString("    links: linkCalls as CallableRegistry[\"links\"],\n")
 	output.WriteString("  }\n")
 	output.WriteString("}\n")
 	return output.Bytes(), nil

@@ -187,11 +187,16 @@ export function bindPathOperation<
   Options extends RequestOptions = RequestOptions,
   Raw = RawResponse<Output>,
 >(
-  operation: InputOperationCall<FullInput, Output, Options, Raw>,
+  operation: Pick<InputOperationCall<FullInput, Output, Options, Raw>, "raw">,
   path: Readonly<Record<string, unknown>>,
   hasInput: boolean,
   inputOptional = false,
 ): OperationCall<Input, Output, Options, Raw> {
+  // Generated exact calls remain callable at runtime even when their public
+  // decoded-call signature is intentionally hidden (for example, an operation
+  // with no successful buffered response). Resource binding only requires the
+  // public raw capability at its boundary, then restores that generated runtime invariant.
+  const callable = operation as InputOperationCall<FullInput, Output, Options, Raw>;
   const mergeInput = (input: Input | undefined): FullInput =>
     ({
       ...(isRecord(input) ? input : {}),
@@ -201,24 +206,24 @@ export function bindPathOperation<
     ? inputOptional
       ? (...args: readonly unknown[]) => {
           const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
-          return operation(mergeInput(input), ...operationOptionsArguments(options));
+          return callable(mergeInput(input), ...operationOptionsArguments(options));
         }
       : (input: Input, ...options: OperationOptionsArguments<Options>) =>
-          operation(mergeInput(input), ...options)
+          callable(mergeInput(input), ...options)
     : (...options: OperationOptionsArguments<Options>) =>
-        operation(mergeInput(undefined), ...options);
+        callable(mergeInput(undefined), ...options);
   const raw = hasInput
     ? inputOptional
       ? (...args: readonly unknown[]) => {
           const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
-          return operation.raw(mergeInput(input), ...operationOptionsArguments(options));
+          return callable.raw(mergeInput(input), ...operationOptionsArguments(options));
         }
       : (input: Input, ...options: OperationOptionsArguments<Options>) =>
-          operation.raw(mergeInput(input), ...options)
+          callable.raw(mergeInput(input), ...options)
     : (...options: OperationOptionsArguments<Options>) =>
-        operation.raw(mergeInput(undefined), ...options);
+        callable.raw(mergeInput(undefined), ...options);
   const sourceStream = (
-    operation as InputOperationCall<FullInput, Output, Options, Raw> & {
+    callable as InputOperationCall<FullInput, Output, Options, Raw> & {
       readonly stream?: (...args: readonly unknown[]) => unknown;
     }
   ).stream;

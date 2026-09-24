@@ -580,7 +580,7 @@ func TestSourceArtifactsGenerateNestedResourceTree(t *testing.T) {
 		`readonly post: ResourceCall<"POST /auth/login">`,
 		`export type ExactCall = (`,
 		`readonly "login": "POST /auth/login"`,
-		`export type OperationSource = keyof OperationRoutes | OperationMethod<keyof Routes> | ResourceCall<keyof Routes>`,
+		`export type OperationSource = keyof OperationRoutes | OperationTypeIdentity<keyof Routes, OperationSurface>`,
 		`export type OperationInput<Source extends OperationSource> =`,
 		`export type OperationOutput<Source extends OperationSource> =`,
 		`export type OperationStreamItem<Source extends OperationSource> =`,

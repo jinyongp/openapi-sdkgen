@@ -12,7 +12,7 @@ declare const operationTypeBrand: unique symbol;
 
 /** Internal operation identity used to keep exact and resource calls distinct. */
 export interface OperationTypeIdentity<Route, Surface extends OperationSurface> {
-  readonly [operationTypeBrand]?: {
+  readonly [operationTypeBrand]: {
     readonly route: Route;
     readonly surface: Surface;
   };

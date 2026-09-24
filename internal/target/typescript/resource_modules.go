@@ -301,8 +301,9 @@ func emitResourceModuleMemberValue(output *bytes.Buffer, document *ir.Document, 
 func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Document, plan *semanticModulePlan, artifact string, operation ManifestOperation) error {
 	route := manifestRouteKey(operation)
 	call := "registry.routes[" + quoteTS(route) + "]"
+	resourceCall := "ResourceCall<" + quoteTS(route) + ">"
 	if len(operation.PathParameterOrder) == 0 {
-		output.WriteString(call)
+		output.WriteString(call + " as unknown as " + resourceCall)
 		return nil
 	}
 	path, exists := plan.operationByRoute[route]
@@ -322,7 +323,7 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	if hasInput {
 		inputOptional = !operation.prepared.resourceInputRequired
 	}
-	fmt.Fprintf(output, "bindPathOperation<import(%s).Input, import(%s).ResourceInput, import(%s).Output, import(%s).Options, import(%s).RawResponse>(%s, { %s }, %t, %t)", quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), call, strings.Join(values, ", "), hasInput, inputOptional)
+	fmt.Fprintf(output, "bindPathOperation<import(%s).Input, import(%s).ResourceInput, import(%s).Output, import(%s).Options, import(%s).RawResponse>(%s, { %s }, %t, %t) as unknown as %s", quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), call, strings.Join(values, ", "), hasInput, inputOptional, resourceCall)
 	return nil
 }
 

@@ -20,7 +20,7 @@ func TestSourceArtifactsPreservesNormalizationEquivalentOperationIDs(t *testing.
 	source := clientSemanticSource(artifacts)
 	for operationID, routeKey := range map[string]string{"get-pet": "GET /pets/modern", "get_pet": "GET /pets/legacy"} {
 		if !strings.Contains(source, "readonly "+quoteTS(operationID)+": Routes["+quoteTS(routeKey)+"]") ||
-			!strings.Contains(source, `["`+operationID+`", __sdkgen_`) {
+			!strings.Contains(source, "operations["+quoteTS(operationID)+"] = __sdkgen_") {
 			t.Fatalf("exact operation %q missing:\n%s", operationID, source)
 		}
 	}

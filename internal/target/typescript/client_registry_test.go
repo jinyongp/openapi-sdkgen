@@ -44,8 +44,9 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 		t.Fatalf("link factory imports = %d, want one source factory:\n%s", got, registry)
 	}
 	for _, expected := range []string{
-		`const completed = {} as { [Route in keyof Routes]: Routes[Route]["call"] }`,
-		`Object.assign(completed,`,
+		`const completed = Object.create(null) as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
+		`const operations: Record<string, unknown> = Object.create(null)`,
+		`completed["GET /events"] =`,
 		`["links", __sdkgen_`,
 		`["stream", __sdkgen_`,
 		`routes: completed`,
