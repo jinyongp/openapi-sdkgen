@@ -42,10 +42,34 @@ func TestPrepareAccumulatesIndependentTargetSupportDiagnostics(t *testing.T) {
 		t.Fatal(err)
 	}
 	report := diagnostic.RenderHuman(values, nil)
-	for _, code := range []string{"SDKGEN-E501", "SDKGEN-E502", "SDKGEN-E503", "SDKGEN-E504", "SDKGEN-E505", "SDKGEN-E508"} {
+	for _, code := range []string{"SDKGEN-E501", "SDKGEN-E502", "SDKGEN-E503", "SDKGEN-E505", "SDKGEN-E508"} {
 		if !strings.Contains(report, code) {
 			t.Fatalf("target preflight missing %s:\n%s", code, report)
 		}
+	}
+	if strings.Contains(report, "SDKGEN-E504") {
+		t.Fatalf("ordinary path resource collision remained a target diagnostic:\n%s", report)
+	}
+}
+
+func TestPrepareAcceptsOrdinaryTemplatedPathCollisionWithServerAddon(t *testing.T) {
+	document := &ir.Document{Operations: []ir.Operation{
+		pathOperation("deleteByID", "DELETE", "/users/{id}", "id", map[string]any{"type": "integer"}),
+		pathOperation("getByName", "GET", "/users/{name}", "name", map[string]any{"type": "string"}),
+	}}
+	if _, err := (Generator{}).Generate(document, generator.Options{}); err != nil {
+		t.Fatalf("client generation rejected ordinary path collision: %v", err)
+	}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serverOptions, err := registry.Resolve([]string{"server"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (Generator{}).Generate(document, serverOptions); err != nil {
+		t.Fatalf("server add-on rejected ordinary path collision: %v", err)
 	}
 }
 

@@ -744,9 +744,6 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 	if len(capabilities) != 0 {
 		fixedMembers = capabilities[0]
 	}
-	if err := validateTemplatedResourcePaths(document); err != nil {
-		return nil, err
-	}
 	root := newResourceNode()
 	for _, item := range manifest.Operations {
 		if item.Visibility != "public" {
@@ -849,35 +846,6 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 	resolveResourceNodeCollisions(root, fixedMembers)
 	pruneEmptyResourceNodes(root)
 	return root, nil
-}
-
-func validateTemplatedResourcePaths(document *ir.Document) error {
-	paths := make(map[string]string)
-	rawPaths, _ := document.Raw["paths"].(map[string]any)
-	sourcePaths := make([]string, 0, len(rawPaths))
-	for path := range rawPaths {
-		if !strings.HasPrefix(path, "/") {
-			continue
-		}
-		sourcePaths = append(sourcePaths, path)
-	}
-	if len(sourcePaths) == 0 {
-		for _, operation := range document.Operations {
-			sourcePaths = append(sourcePaths, operation.Path)
-		}
-	}
-	sort.Strings(sourcePaths)
-	for _, path := range sourcePaths {
-		shape := regexp.MustCompile(`\{[^{}]+\}`).ReplaceAllString(path, "{}")
-		if shape == path {
-			continue
-		}
-		if previous, exists := paths[shape]; exists && previous != path {
-			return fmt.Errorf("OpenAPI paths %q and %q have identical templated shape %q; path parameter names do not distinguish paths", previous, path, shape)
-		}
-		paths[shape] = path
-	}
-	return nil
 }
 
 func validateOperationIdentities(document *ir.Document) error {

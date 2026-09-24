@@ -411,28 +411,6 @@ func TestBuildResourceTreePrunesEmptyBranchesAfterParameterCollision(t *testing.
 	}
 }
 
-func TestTemplatedResourcePathValidationPreservesRawPathShape(t *testing.T) {
-	if err := validateTemplatedResourcePaths(&ir.Document{Raw: map[string]any{"paths": map[string]any{
-		"/users/{id}":    map[string]any{},
-		"/users/{name}/": map[string]any{},
-	}}}); err != nil {
-		t.Fatalf("trailing-slash-distinct paths were rejected: %v", err)
-	}
-	err := validateTemplatedResourcePaths(&ir.Document{Raw: map[string]any{"paths": map[string]any{
-		"/files/{id}.json":   map[string]any{},
-		"/files/{name}.json": map[string]any{},
-	}}})
-	if err == nil || !strings.Contains(err.Error(), "identical templated shape") {
-		t.Fatalf("embedded-template collision error = %v", err)
-	}
-	if err := validateTemplatedResourcePaths(&ir.Document{Raw: map[string]any{"paths": map[string]any{
-		"x-{id}":   map[string]any{},
-		"x-{name}": map[string]any{},
-	}}}); err != nil {
-		t.Fatalf("templated Paths extensions were treated as URL paths: %v", err)
-	}
-}
-
 func TestEmbeddedPathTemplateFallsBackToExactRoute(t *testing.T) {
 	operation := pathOperation("getJSONFile", "GET", "/files/{id}.json", "id", map[string]any{"type": "string"})
 	document := &ir.Document{
@@ -675,18 +653,29 @@ func TestBuildResourceTreeOmitsIncompatibleSharedParameterPosition(t *testing.T)
 	}
 }
 
-func TestBuildResourceTreeRejectsIdenticalTemplatedPathShapes(t *testing.T) {
+func TestBuildResourceTreeFallsBackForIdenticalTemplatedPathShapes(t *testing.T) {
 	document := &ir.Document{Operations: []ir.Operation{
-		pathOperation("getByID", "GET", "/users/{id}", "id", map[string]any{"type": "string"}),
+		pathOperation("deleteByID", "DELETE", "/users/{id}", "id", map[string]any{"type": "integer"}),
 		pathOperation("getByName", "GET", "/users/{name}", "name", map[string]any{"type": "string"}),
 	}}
-	_, err := buildManifest(document)
-	if err == nil || !strings.Contains(err.Error(), "identical templated shape") {
-		t.Fatalf("error = %v", err)
+	manifest, err := buildManifest(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := manifestCalls(manifest)
+	for _, id := range []string{"deleteByID", "getByName"} {
+		if !strings.HasPrefix(calls[id], `api.$operations["`+id+`"]`) {
+			t.Fatalf("%s call = %q", id, calls[id])
+		}
+	}
+	for _, operation := range manifest.Operations {
+		if operation.ResourceSegments != nil {
+			t.Fatalf("operation %q retained resource segments %#v", operation.OperationID, operation.ResourceSegments)
+		}
 	}
 }
 
-func TestBuildResourceTreeRejectsEmptyConflictingTemplatedPathItem(t *testing.T) {
+func TestBuildResourceTreeIgnoresEmptyConflictingTemplatedPathItem(t *testing.T) {
 	document := &ir.Document{
 		Raw: map[string]any{"paths": map[string]any{
 			"/users/{id}":   map[string]any{"get": map[string]any{"operationId": "getUser"}},
@@ -694,9 +683,12 @@ func TestBuildResourceTreeRejectsEmptyConflictingTemplatedPathItem(t *testing.T)
 		}},
 		Operations: []ir.Operation{pathOperation("getUser", "GET", "/users/{id}", "id", map[string]any{"type": "string"})},
 	}
-	_, err := buildManifest(document)
-	if err == nil || !strings.Contains(err.Error(), "identical templated shape") {
-		t.Fatalf("error = %v", err)
+	manifest, err := buildManifest(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if call := manifestCalls(manifest)["getUser"]; call != "api.users(id).get()" {
+		t.Fatalf("call = %q", call)
 	}
 }
 

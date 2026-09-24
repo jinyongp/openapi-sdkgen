@@ -2,15 +2,12 @@ package typescript
 
 import (
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
 )
-
-var pathTemplatePattern = regexp.MustCompile(`\{[^{}]+\}`)
 
 func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	document := plan.document
@@ -60,7 +57,6 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 		))
 	}
 	result = append(result, operationIdentityDiagnostics(document)...)
-	result = append(result, templatedResourcePathDiagnostics(document)...)
 	result = append(result, securityPreparationDiagnostics(document)...)
 	result = append(result, cookieSecurityOwnershipDiagnostics(document)...)
 	return diagnostic.Sort(result)
@@ -166,49 +162,6 @@ func operationIdentityDiagnostics(document *ir.Document) []diagnostic.Diagnostic
 		} else {
 			seenIDs[operation.OperationID] = identityOccurrence{pointer: idPointer}
 		}
-	}
-	return result
-}
-
-func templatedResourcePathDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
-	rawPaths, _ := document.Raw["paths"].(map[string]any)
-	paths := sortedAnyKeys(rawPaths)
-	if len(paths) == 0 {
-		seen := make(map[string]bool)
-		for _, operation := range document.Operations {
-			if !seen[operation.Path] {
-				paths = append(paths, operation.Path)
-				seen[operation.Path] = true
-			}
-		}
-	}
-	seenShapes := make(map[string]string)
-	var result []diagnostic.Diagnostic
-	for _, path := range paths {
-		if !strings.HasPrefix(path, "/") {
-			continue
-		}
-		shape := pathTemplatePattern.ReplaceAllString(path, "{}")
-		if shape == path {
-			continue
-		}
-		previous, exists := seenShapes[shape]
-		if !exists {
-			seenShapes[shape] = path
-			continue
-		}
-		pointer := "#/paths/" + escapePointerToken(path)
-		value := sourceTargetDiagnostic(
-			document,
-			pointer,
-			"SDKGEN-E504",
-			fmt.Sprintf("Paths %q and %q have the same templated resource shape %q.", previous, path, shape),
-			"Use one resource path shape; changing only path-parameter names does not create a distinct route.",
-		)
-		previousLocation, _ := extensionDiagnosticLocation(document, "#/paths/"+escapePointerToken(previous))
-		value.Related = append(value.Related, previousLocation)
-		value.Related = sortTargetLocations(value.Related)
-		result = append(result, value)
 	}
 	return result
 }
