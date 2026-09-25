@@ -606,7 +606,9 @@ function hasCachedValidation(
     context.validatedObjects
       .get(value)
       ?.get(schema)
-      ?.has(validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType)) ?? false
+      ?.has(
+        validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType),
+      ) ?? false
   );
 }
 
@@ -893,7 +895,18 @@ function validateWireValueWithContext(
   context: ValidationContext,
   ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
 ): void {
-  if (hasCachedValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType)) return;
+  if (
+    hasCachedValidation(
+      context,
+      value,
+      schema,
+      direction,
+      options,
+      dynamicScope,
+      ignoreContentMediaType,
+    )
+  )
+    return;
   assertFiniteJSONNumbers(value, context.finiteSeen);
   const scope = extendDynamicScope(dynamicScope, schema);
   if (schema.boolean === false) throw new TypeError("schema is false");
@@ -1089,11 +1102,27 @@ function validateWireValueWithContext(
         );
       }
     }
-    cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
+    cacheValidation(
+      context,
+      value,
+      schema,
+      direction,
+      options,
+      dynamicScope,
+      ignoreContentMediaType,
+    );
     return;
   }
   if (!isRecord(value)) {
-    cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
+    cacheValidation(
+      context,
+      value,
+      schema,
+      direction,
+      options,
+      dynamicScope,
+      ignoreContentMediaType,
+    );
     return;
   }
   if (schema.minProperties !== undefined && Object.keys(value).length < schema.minProperties)

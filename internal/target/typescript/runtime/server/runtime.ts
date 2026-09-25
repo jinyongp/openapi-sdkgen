@@ -109,7 +109,9 @@ export async function decodeInboundParameters(
       definition.allowEmptyValue !== true
     )
       throw new InboundRequestError(
-        new Response("Empty query parameter " + definition.name + " is not allowed", { status: 400 }),
+        new Response("Empty query parameter " + definition.name + " is not allowed", {
+          status: 400,
+        }),
       );
     if (
       definition.contentType === undefined &&

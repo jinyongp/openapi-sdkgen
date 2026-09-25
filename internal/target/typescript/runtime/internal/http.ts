@@ -3364,9 +3364,7 @@ function assertQueryEmptyValueAllowed(
     parameter.style === "form" &&
     parameter.allowEmptyValue !== true
   )
-    throw new TypeError(
-      `Empty query parameter ${parameter.name} requires allowEmptyValue: true`,
-    );
+    throw new TypeError(`Empty query parameter ${parameter.name} requires allowEmptyValue: true`);
 }
 
 function appendQueryValue(
