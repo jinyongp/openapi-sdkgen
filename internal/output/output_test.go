@@ -62,6 +62,62 @@ func TestPublishArtifactsRollsBackAsyncPathConflict(t *testing.T) {
 	}
 }
 
+func TestPublisherRollsBackActualStagedWriteFailure(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	publisher, err := NewPublisher(output, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staging := publisher.StagingPath()
+	blocked := filepath.Join(staging, "blocked.ts")
+	if err := os.Mkdir(blocked, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err = publisher.WriteArtifact(generator.Artifact{Path: "blocked.ts", Data: []byte("export {}\n")})
+	if err == nil || !IsPublicationError(err) || !strings.Contains(err.Error(), "create generated artifact") {
+		t.Fatalf("write error = %v", err)
+	}
+	publisher.Rollback()
+	if _, err := os.Stat(output); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("partial output stat error = %v", err)
+	}
+	if _, err := os.Stat(staging); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("staging stat error = %v", err)
+	}
+}
+
+func TestPublisherRollsBackActualCommitRenameFailure(t *testing.T) {
+	root := t.TempDir()
+	output := filepath.Join(root, "output")
+	publisher, err := NewPublisher(output, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staging := publisher.StagingPath()
+	if err := publisher.WriteArtifact(generator.Artifact{Path: "client.ts", Data: []byte("export {}\n")}); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(output, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(output, "user.txt")
+	if err := os.WriteFile(sentinel, []byte("keep\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err = publisher.Commit()
+	if err == nil || !IsPublicationError(err) || !strings.Contains(err.Error(), "publish generated output") {
+		t.Fatalf("commit error = %v", err)
+	}
+	publisher.Rollback()
+	if got, err := os.ReadFile(sentinel); err != nil || string(got) != "keep\n" {
+		t.Fatalf("external output changed: %q, %v", got, err)
+	}
+	if _, err := os.Stat(staging); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("staging stat error = %v", err)
+	}
+}
+
 func TestIncrementalPublicationPreservesOwnershipBoundaries(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "generated")
 	initial := []generator.Artifact{
