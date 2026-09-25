@@ -30,7 +30,7 @@ type compatibilitySession struct {
 
 func newCompatibilitySession(root any, policy compatibility.Policy) *compatibilitySession {
 	if policy == nil {
-		policy = compatibility.NoopPolicy{}
+		policy = compatibility.ConsumerPolicy{}
 	}
 	var version openapidoc.VersionLine
 	if object, ok := root.(map[string]any); ok {
@@ -50,27 +50,38 @@ func (session *compatibilitySession) effectiveValueInContext(source string, valu
 		return value, false, nil
 	}
 	session.registerSourceContext(source, root)
-	effective, omitted, changed, err := session.walk(source, value, nil, root)
+	effective, omitted, changed, err := session.walk(source, value, value, nil, root)
 	if err != nil {
 		return nil, false, err
 	}
 	if omitted {
-		return nil, true, fmt.Errorf("compatibility policy cannot omit the OpenAPI entry document")
+		if root == "" || root == openapiwalk.ObjectOpenAPI {
+			return nil, true, fmt.Errorf("compatibility policy cannot omit the OpenAPI entry document")
+		}
+		// A referenced reusable-object source may be ignored as a whole. Expose
+		// an empty object to the controlled loader so the referencing occurrence
+		// becomes semantically inert while exact source bytes remain in provenance.
+		return map[string]any{}, true, nil
 	}
 	return effective, changed, nil
 }
 
-func (session *compatibilitySession) walk(source string, value any, path []string, root openapiwalk.ObjectContext) (any, bool, bool, error) {
+func (session *compatibilitySession) walk(source string, sourceRoot, value any, path []string, root openapiwalk.ObjectContext) (any, bool, bool, error) {
 	object := openapiwalk.ObjectContextAt(path)
 	if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
 		object = root
 	}
-	result := session.policy.Apply(compatibility.Context{
+	context := compatibility.Context{
 		Version: session.version,
 		Object:  object,
 		Source:  source,
 		Pointer: sourceJSONPointer(path),
-	}, value)
+	}
+	if classified, ok := session.resolveToClassify(context, sourceRoot, value); ok {
+		session.record(classified)
+		return nil, true, true, nil
+	}
+	result := session.policy.Apply(context, value)
 	session.record(result)
 	if result.Omit {
 		return nil, true, true, nil
@@ -91,7 +102,7 @@ func (session *compatibilitySession) walk(source string, value any, path []strin
 			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
 				continue
 			}
-			effective, omitted, childChanged, err := session.walk(source, child, append(path, name), root)
+			effective, omitted, childChanged, err := session.walk(source, sourceRoot, child, append(path, name), root)
 			if err != nil {
 				return nil, false, false, err
 			}
@@ -117,7 +128,7 @@ func (session *compatibilitySession) walk(source string, value any, path []strin
 	case []any:
 		var copied []any
 		for index, child := range typed {
-			effective, omitted, childChanged, err := session.walk(source, child, append(path, fmt.Sprint(index)), root)
+			effective, omitted, childChanged, err := session.walk(source, sourceRoot, child, append(path, fmt.Sprint(index)), root)
 			if err != nil {
 				return nil, false, false, err
 			}
@@ -146,6 +157,45 @@ func (session *compatibilitySession) walk(source string, value any, path []strin
 		}
 	}
 	return current, false, changed, nil
+}
+
+func (session *compatibilitySession) resolveToClassify(context compatibility.Context, sourceRoot, value any) (compatibility.Result, bool) {
+	if context.Object != openapiwalk.ObjectParameter {
+		return compatibility.Result{}, false
+	}
+	object, ok := value.(map[string]any)
+	if !ok {
+		return compatibility.Result{}, false
+	}
+	if reference, _ := object["$ref"].(string); reference == "" {
+		return compatibility.Result{}, false
+	}
+	current := value
+	visited := make(map[string]bool)
+	for {
+		candidate, ok := current.(map[string]any)
+		if !ok {
+			return compatibility.Result{}, false
+		}
+		reference, _ := candidate["$ref"].(string)
+		if reference == "" {
+			break
+		}
+		if !strings.HasPrefix(reference, "#") || visited[reference] {
+			return compatibility.Result{}, false
+		}
+		visited[reference] = true
+		resolved, found := resolveLocalReference(sourceRoot, reference)
+		if !found {
+			return compatibility.Result{}, false
+		}
+		current = resolved
+	}
+	result := session.policy.Apply(context, current)
+	if !result.Omit {
+		return compatibility.Result{}, false
+	}
+	return result, true
 }
 
 type omittedArrayValue struct{}

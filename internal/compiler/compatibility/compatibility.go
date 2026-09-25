@@ -1,9 +1,9 @@
 // Package compatibility defines target-neutral OpenAPI compatibility decisions.
 //
 // Policy application is deliberately separate from OpenAPI parsing, reference
-// transport, IR lowering, and target capability checks. The initial policy is
-// a no-op so the pipeline can adopt the contract before semantic rules are
-// enabled.
+// transport, IR lowering, and target capability checks. ConsumerPolicy carries
+// reviewed source semantics; NoopPolicy remains available for identity proofs
+// and focused pipeline tests.
 package compatibility
 
 import (
@@ -70,8 +70,8 @@ type Context struct {
 }
 
 // Rule is the stable machine-readable identity and classification for one
-// compatibility behavior. Executable match/transform functions are introduced
-// only when semantic rules are enabled.
+// compatibility behavior. Executable policies use these identities without
+// coupling rule classification to compiler transport or target state.
 type Rule struct {
 	ID          string
 	Versions    []openapidoc.VersionLine

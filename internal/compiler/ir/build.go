@@ -170,8 +170,8 @@ func escapeJSONPointerToken(value string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(value, "~", "~0"), "/", "~1")
 }
 
-// ResolvePathItem resolves a local OpenAPI Path Item reference and applies
-// sibling overrides. Path Item references may target any local JSON Pointer.
+// ResolvePathItem resolves a local OpenAPI Path Item reference and preserves
+// only non-conflicting siblings. Path Item references may target any local JSON Pointer.
 func ResolvePathItem(document, pathItem map[string]any) (map[string]any, error) {
 	resolved, err := resolvePathItem(document, pathItem, make(map[string]bool))
 	if err != nil {
@@ -187,6 +187,17 @@ type ReferenceError struct {
 
 func (value *ReferenceError) Error() string { return value.err.Error() }
 func (value *ReferenceError) Unwrap() error { return value.err }
+
+// PathItemConflictError reports a field defined by both a referenced Path Item
+// and the local Path Item occurrence. OpenAPI leaves that result undefined.
+type PathItemConflictError struct {
+	Reference string
+	Field     string
+}
+
+func (value *PathItemConflictError) Error() string {
+	return fmt.Sprintf("path item reference %q conflicts on field %q", value.Reference, value.Field)
+}
 
 // IsReferenceError reports whether an IR build failure belongs to reference
 // resolution rather than general OpenAPI validation.
@@ -238,9 +249,13 @@ func resolvePathItem(document, pathItem map[string]any, resolving map[string]boo
 		merged[key] = value
 	}
 	for key, value := range pathItem {
-		if key != "$ref" {
-			merged[key] = value
+		if key == "$ref" {
+			continue
 		}
+		if _, conflict := resolved[key]; conflict {
+			return nil, &PathItemConflictError{Reference: reference, Field: key}
+		}
+		merged[key] = value
 	}
 	return merged, nil
 }

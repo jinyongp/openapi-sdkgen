@@ -162,6 +162,20 @@ func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) 
 			if err == nil {
 				continue
 			}
+			var conflict *ir.PathItemConflictError
+			if errors.As(err, &conflict) {
+				field := strings.ReplaceAll(strings.ReplaceAll(conflict.Field, "~", "~0"), "/", "~1")
+				result = append(result, diagnostic.Diagnostic{
+					Severity: diagnostic.SeverityError,
+					Code:     "SDKGEN-E120",
+					Phase:    diagnostic.PhaseReferences,
+					Location: diagnostic.Location{Source: source, Pointer: sourceJSONPointer([]string{"paths", path, conflict.Field})},
+					Related:  []diagnostic.Location{{Source: source, Pointer: strings.TrimSuffix(conflict.Reference, "/") + "/" + field}},
+					Message:  "Conflicting Path Item fields have undefined OpenAPI semantics.",
+					Cause:    sanitizeDiagnosticCause(err.Error()),
+				})
+				continue
+			}
 			if _, found := resolveLocalReference(document, reference); !found {
 				continue
 			}

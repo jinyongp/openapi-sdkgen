@@ -442,7 +442,7 @@ func TestBuildResolvesLocalPathItemReferences(t *testing.T) {
 		},
 		"components": map[string]any{
 			"pathItems": map[string]any{
-				"Item": map[string]any{"get": operation, "summary": "Shared"},
+				"Item": map[string]any{"get": operation},
 			},
 		},
 	}}

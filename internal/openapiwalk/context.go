@@ -8,18 +8,22 @@ import "strings"
 type ObjectContext string
 
 const (
-	ObjectUnknown     ObjectContext = "unknown"
-	ObjectOpenAPI     ObjectContext = "openapi"
-	ObjectInfo        ObjectContext = "info"
-	ObjectPathItem    ObjectContext = "path-item"
-	ObjectOperation   ObjectContext = "operation"
-	ObjectParameter   ObjectContext = "parameter"
-	ObjectRequestBody ObjectContext = "request-body"
-	ObjectResponse    ObjectContext = "response"
-	ObjectHeader      ObjectContext = "header"
-	ObjectMediaType   ObjectContext = "media-type"
-	ObjectEncoding    ObjectContext = "encoding"
-	ObjectSchema      ObjectContext = "schema"
+	ObjectUnknown        ObjectContext = "unknown"
+	ObjectOpenAPI        ObjectContext = "openapi"
+	ObjectInfo           ObjectContext = "info"
+	ObjectPathItem       ObjectContext = "path-item"
+	ObjectOperation      ObjectContext = "operation"
+	ObjectParameter      ObjectContext = "parameter"
+	ObjectRequestBody    ObjectContext = "request-body"
+	ObjectResponse       ObjectContext = "response"
+	ObjectHeader         ObjectContext = "header"
+	ObjectLink           ObjectContext = "link"
+	ObjectCallback       ObjectContext = "callback"
+	ObjectExample        ObjectContext = "example"
+	ObjectSecurityScheme ObjectContext = "security-scheme"
+	ObjectMediaType      ObjectContext = "media-type"
+	ObjectEncoding       ObjectContext = "encoding"
+	ObjectSchema         ObjectContext = "schema"
 )
 
 // ObjectContextAt classifies common OpenAPI object locations from an RFC 6901
@@ -45,6 +49,14 @@ func ObjectContextAt(path []string) ObjectContext {
 			return ObjectResponse
 		case "headers":
 			return ObjectHeader
+		case "links":
+			return ObjectLink
+		case "callbacks":
+			return ObjectCallback
+		case "examples":
+			return ObjectExample
+		case "securitySchemes":
+			return ObjectSecurityScheme
 		case "content":
 			return ObjectMediaType
 		case "encoding":
