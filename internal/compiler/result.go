@@ -40,12 +40,15 @@ func CompileResult(data []byte) (Result, error) {
 	var effective any
 	var sourceMetadata []byte
 	var err error
-	options := CompileOptions{}
+	options := CompileOptions{diagnostics: collector}
 	if decodeErr == nil {
 		sourceMetadata, err = encodeSourceMetadata(decoded)
 		if err == nil {
 			effective, _, err = prepareCompatibilityValue("in-memory OpenAPI document", decoded, &options)
 		}
+	}
+	if collector.HasErrors() {
+		return compatibilitySourceScanResult(collector), nil
 	}
 	if err == nil && decodeErr == nil {
 		collector.Extend(reservedExtensionDiagnosticsValue(effective, "in-memory OpenAPI document"))
@@ -106,6 +109,9 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	effective, changed, err := prepareCompatibilityValue(source.display, decoded, &options)
 	if err != nil {
 		return Result{}, err
+	}
+	if collector.HasErrors() {
+		return compatibilitySourceScanResult(collector), nil
 	}
 	effectiveData := source.data
 	if changed {
@@ -193,6 +199,18 @@ func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) 
 		})
 	}
 	return result
+}
+
+func compatibilitySourceScanResult(collector *diagnostic.Collector) Result {
+	reason := "compatibility policy rejected source before reference traversal"
+	return Result{
+		Diagnostics: diagnostic.Sort(collector.Diagnostics()),
+		SkippedPhases: []diagnostic.SkippedPhase{
+			{Phase: diagnostic.PhaseReferences, Reason: reason},
+			{Phase: diagnostic.PhaseNormalize, Reason: reason},
+			{Phase: diagnostic.PhaseIR, Reason: reason},
+		},
+	}
 }
 
 func reservedSourceScanResult(collector *diagnostic.Collector) Result {

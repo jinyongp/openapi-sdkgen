@@ -12,6 +12,7 @@ import (
 func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	document := plan.document
 	var result []diagnostic.Diagnostic
+	result = append(result, methodCapabilityDiagnostics(document)...)
 	for _, feature := range unsupportedSchemasForTarget(document) {
 		result = append(result, unsupportedFeatureDiagnostic(
 			document,
@@ -60,6 +61,42 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	result = append(result, securityPreparationDiagnostics(document)...)
 	result = append(result, cookieSecurityOwnershipDiagnostics(document)...)
 	return diagnostic.Sort(result)
+}
+
+func methodCapabilityDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
+	var result []diagnostic.Diagnostic
+	for _, operation := range document.Operations {
+		method := strings.ToUpper(strings.TrimSpace(operation.Method))
+		pointer := operation.Pointer
+		if pointer == "" {
+			pointer = "#/paths/" + escapePointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
+		}
+		switch method {
+		case "CONNECT", "TRACE", "TRACK":
+			result = append(result, sourceTargetDiagnostic(
+				document,
+				pointer,
+				"SDKGEN-E511",
+				fmt.Sprintf("The TypeScript Fetch target cannot issue %s requests.", method),
+				"Use a transport with explicit support for this method or change the operation method.",
+			))
+			continue
+		}
+		if (method == "GET" || method == "HEAD") && requestBodyRequiresFetchPayload(operation.RequestBody) {
+			result = append(result, sourceTargetDiagnostic(
+				document,
+				pointer+"/requestBody",
+				"SDKGEN-E511",
+				fmt.Sprintf("The TypeScript Fetch target cannot send a request body with %s.", method),
+				"Remove the request body for this target or use a transport with explicit body support.",
+			))
+		}
+	}
+	return result
+}
+
+func requestBodyRequiresFetchPayload(body *ir.RequestBody) bool {
+	return body != nil && (body.Required || len(body.Content) != 0)
 }
 
 func unsupportedFeatureDiagnostic(document *ir.Document, feature, code, message, hint string) diagnostic.Diagnostic {

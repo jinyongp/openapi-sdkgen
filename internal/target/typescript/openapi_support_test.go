@@ -535,7 +535,7 @@ func TestSourceArtifactsGenerateOpenAPI32QueryAndAdditionalOperations(t *testing
 }
 
 func TestSourceArtifactsGenerateEveryStandardHTTPMethod(t *testing.T) {
-	methods := []string{"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+	methods := []string{"get", "put", "post", "delete", "options", "head", "patch"}
 	paths := make(map[string]any, len(methods))
 	for _, method := range methods {
 		paths["/"+method] = map[string]any{method: map[string]any{

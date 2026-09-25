@@ -14,6 +14,7 @@ const (
 	RuleResponseContentType = "COMP-RESP-001"
 	RuleEncodingHeaders     = "COMP-ENC-001"
 	RuleEncodingFields      = "COMP-ENC-002"
+	RuleRequestBody30       = "COMP-BODY-001"
 )
 
 // ConsumerPolicy applies target-neutral OpenAPI consumer semantics that can be
@@ -41,6 +42,10 @@ func (ConsumerPolicy) Apply(context Context, value any) Result {
 		}
 	case openapiwalk.ObjectEncoding:
 		return applyEncodingRule(context, object)
+	case openapiwalk.ObjectRequestBody:
+		if result, applied := applyRequestBodyRule(context, object); applied {
+			return result
+		}
 	}
 	if result, applied := applyReferenceObjectRule(context, object); applied {
 		return result
@@ -102,6 +107,146 @@ func isReservedHeaderParameter(object map[string]any) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func applyRequestBodyRule(context Context, object map[string]any) (Result, bool) {
+	if context.Version != openapidoc.Version30 {
+		return Result{}, false
+	}
+	method, ok := requestBodyMethod(context.Pointer)
+	if !ok {
+		return Result{}, false
+	}
+	switch method {
+	case "get", "head", "delete", "options", "trace":
+	default:
+		return Result{}, false
+	}
+	if !requestBodyPotentiallyMeaningful(object) {
+		return omit(context, object, RuleRequestBody30, ImpactWire), true
+	}
+	if method == "delete" {
+		return compatibilityFindingResult(
+			context,
+			object,
+			RuleRequestBody30,
+			ActionPreserveExtension,
+			DispositionIgnored,
+			"OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+			false,
+		), true
+	}
+	return compatibilityFindingResult(
+		context,
+		object,
+		RuleRequestBody30,
+		ActionReject,
+		DispositionIgnored,
+		"OpenAPI 3.0 request body is potentially meaningful on a method whose payload semantics are not portable.",
+		true,
+	), true
+}
+
+func requestBodyMethod(pointer string) (string, bool) {
+	tokens, ok := pointerTokens(pointer)
+	if !ok || len(tokens) < 2 || tokens[len(tokens)-1] != "requestBody" {
+		return "", false
+	}
+	return strings.ToLower(tokens[len(tokens)-2]), true
+}
+
+func requestBodyPotentiallyMeaningful(object map[string]any) bool {
+	if reference, _ := object["$ref"].(string); reference != "" {
+		return true
+	}
+	if required, _ := object["required"].(bool); required {
+		return true
+	}
+	content, _ := object["content"].(map[string]any)
+	for _, rawMedia := range content {
+		media, ok := rawMedia.(map[string]any)
+		if !ok {
+			return true
+		}
+		if encoding, ok := media["encoding"].(map[string]any); ok && len(encoding) != 0 {
+			return true
+		}
+		if schema, exists := media["schema"]; exists && !requestBodySchemaStructurallyEmpty(schema) {
+			return true
+		}
+	}
+	return false
+}
+
+func requestBodySchemaStructurallyEmpty(value any) bool {
+	schema, ok := value.(map[string]any)
+	if !ok {
+		return value == nil
+	}
+	for key, raw := range schema {
+		switch key {
+		case "title", "description", "example", "examples", "deprecated", "readOnly", "writeOnly":
+			continue
+		case "type":
+			if raw == "object" {
+				continue
+			}
+			return false
+		case "properties":
+			properties, ok := raw.(map[string]any)
+			if ok && len(properties) == 0 {
+				continue
+			}
+			return false
+		case "required":
+			required, ok := raw.([]any)
+			if ok && len(required) == 0 {
+				continue
+			}
+			return false
+		case "additionalProperties":
+			if allowed, ok := raw.(bool); ok && !allowed {
+				continue
+			}
+			return false
+		case "nullable":
+			if nullable, ok := raw.(bool); ok && !nullable {
+				continue
+			}
+			return false
+		default:
+			if strings.HasPrefix(key, "x-") {
+				continue
+			}
+			return false
+		}
+	}
+	return true
+}
+
+func compatibilityFindingResult(context Context, value any, rule string, action Action, disposition NormativeDisposition, message string, reject bool) Result {
+	return Result{
+		Value:  value,
+		Reject: reject,
+		Findings: []Finding{{
+			RuleID:      rule,
+			Conformance: ConformanceConforming,
+			Disposition: disposition,
+			Action:      action,
+			Impact:      ImpactWire,
+			Source:      context.Source,
+			Pointer:     context.Pointer,
+			Message:     message,
+		}},
+		Ledger: []LedgerEntry{{
+			RuleID:  rule,
+			Action:  action,
+			Impact:  ImpactWire,
+			Source:  context.Source,
+			Pointer: context.Pointer,
+			Version: context.Version,
+		}},
 	}
 }
 

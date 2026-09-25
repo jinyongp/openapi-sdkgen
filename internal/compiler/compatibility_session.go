@@ -12,6 +12,7 @@ import (
 
 	"openapi-sdkgen/internal/compiler/compatibility"
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
+	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
@@ -83,6 +84,9 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 	}
 	result := session.policy.Apply(context, value)
 	session.record(result)
+	if result.Reject {
+		return result.Value, false, result.Changed, nil
+	}
 	if result.Omit {
 		return nil, true, true, nil
 	}
@@ -318,9 +322,47 @@ func (session *compatibilitySession) evidence() ([]compatibility.Finding, []comp
 	return append([]compatibility.Finding(nil), session.findings...), append([]compatibility.LedgerEntry(nil), session.ledger...)
 }
 
+func compatibilityDiagnostics(session *compatibilitySession) []diagnostic.Diagnostic {
+	findings, _ := session.evidence()
+	result := make([]diagnostic.Diagnostic, 0, len(findings))
+	for _, finding := range findings {
+		severity := diagnostic.SeverityWarning
+		code := "SDKGEN-W140"
+		hint := "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+		if finding.Action == compatibility.ActionReject {
+			severity = diagnostic.SeverityError
+			code = "SDKGEN-E140"
+			hint = "Remove the unsupported request-body construct or use a method with portable payload semantics."
+		}
+		result = append(result, diagnostic.Diagnostic{
+			Severity: severity,
+			Code:     code,
+			Phase:    diagnostic.PhaseOpenAPI,
+			Location: diagnostic.Location{Source: finding.Source, Pointer: finding.Pointer},
+			Message:  finding.Message,
+			Hint:     hint,
+		})
+	}
+	return diagnostic.Sort(result)
+}
+
 func prepareCompatibilityValue(source string, value any, options *CompileOptions) (any, bool, error) {
 	if options.compatibilitySession == nil {
 		options.compatibilitySession = newCompatibilitySession(value, options.compatibilityPolicy)
 	}
-	return options.compatibilitySession.effectiveValue(source, value)
+	effective, changed, err := options.compatibilitySession.effectiveValue(source, value)
+	if err != nil {
+		return nil, false, err
+	}
+	values := compatibilityDiagnostics(options.compatibilitySession)
+	if options.diagnostics != nil {
+		options.diagnostics.Extend(values)
+		return effective, changed, nil
+	}
+	for _, value := range values {
+		if value.Severity == diagnostic.SeverityError {
+			return nil, changed, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", value.Message, safeInputDisplay(value.Location.Source), value.Location.Pointer))
+		}
+	}
+	return effective, changed, nil
 }

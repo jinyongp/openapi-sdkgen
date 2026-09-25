@@ -113,6 +113,9 @@ type Result struct {
 	// Omit removes this occurrence from the effective semantic view. It does not
 	// remove it from source metadata or provenance.
 	Omit bool
+	// Reject stops semantic traversal at this occurrence. The finding remains
+	// available for an OpenAPI-level blocking diagnostic.
+	Reject bool
 	// Changed reports that Value differs semantically from the source occurrence.
 	// It lets the compiler retain exact source bytes for no-op paths.
 	Changed bool
@@ -124,7 +127,7 @@ type Policy interface {
 }
 
 // NoopPolicy preserves the exact value and produces no findings or ledger
-// entries. It is the required pipeline baseline before semantic rules land.
+// entries. It remains useful for identity and transport-isolation tests.
 type NoopPolicy struct{}
 
 func (NoopPolicy) Apply(_ Context, value any) Result {

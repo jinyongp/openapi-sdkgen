@@ -67,6 +67,9 @@ func ObjectContextAt(path []string) ObjectContext {
 			return ObjectOperation
 		}
 	}
+	if path[len(path)-1] == "requestBody" {
+		return ObjectRequestBody
+	}
 	if isOperationToken(path[len(path)-1]) {
 		return ObjectOperation
 	}
