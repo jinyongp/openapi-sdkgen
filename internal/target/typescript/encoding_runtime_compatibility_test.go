@@ -3,6 +3,7 @@ package typescript
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
@@ -39,6 +40,9 @@ func TestOpenAPI32EncodingIgnoresEntriesWithoutInstanceValues(t *testing.T) {
 }`))
 	if err != nil {
 		t.Fatal(err)
+	}
+	if metadata := string(document.SourceMetadataJSON); !strings.Contains(metadata, `"unused"`) || !strings.Contains(metadata, `"application/vnd.missing"`) {
+		t.Fatalf("source metadata lost ignored encoding entries: %s", metadata)
 	}
 	output := compileTypeScriptArtifacts(t, document)
 	script := `

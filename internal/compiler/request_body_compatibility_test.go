@@ -1,6 +1,7 @@
 package sdkgen
 
 import (
+	"strings"
 	"testing"
 
 	"openapi-sdkgen/internal/diagnostic"
@@ -23,6 +24,9 @@ func TestCompatibilityIgnoresEmptyOAS30RequestBodies(t *testing.T) {
 	}
 	if result.Document == nil || len(result.Diagnostics) != 0 {
 		t.Fatalf("compile result = %#v", result)
+	}
+	if metadata := string(result.Document.SourceMetadataJSON); !strings.Contains(metadata, `"requestBody"`) || !strings.Contains(metadata, `"emptyGet"`) {
+		t.Fatalf("source metadata lost ignored request bodies: %s", metadata)
 	}
 	for _, operation := range result.Document.Operations {
 		if operation.RequestBody != nil {

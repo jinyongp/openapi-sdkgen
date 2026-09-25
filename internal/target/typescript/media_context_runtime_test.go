@@ -3,6 +3,7 @@ package typescript
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
@@ -46,6 +47,9 @@ func TestMediaRootIgnoresContradictoryContentMediaTypeWithoutWeakeningNestedSche
 }`))
 	if err != nil {
 		t.Fatal(err)
+	}
+	if metadata := string(document.SourceMetadataJSON); !strings.Contains(metadata, `"contentMediaType":"application/json"`) {
+		t.Fatalf("source metadata lost contextual contentMediaType: %s", metadata)
 	}
 	output := compileTypeScriptArtifacts(t, document)
 	script := `

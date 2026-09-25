@@ -19,11 +19,17 @@ type featureManifest struct {
 }
 
 type manifestFeature struct {
-	ID         string             `json:"id"`
-	Versions   []string           `json:"versions"`
-	State      string             `json:"state"`
-	Evidence   string             `json:"evidence"`
-	Conditions []featureCondition `json:"conditions"`
+	ID                   string             `json:"id"`
+	Versions             []string           `json:"versions"`
+	State                string             `json:"state"`
+	Evidence             string             `json:"evidence"`
+	Rule                 string             `json:"rule,omitempty"`
+	NormativeDisposition string             `json:"normativeDisposition,omitempty"`
+	CompatibilityAction  string             `json:"compatibilityAction,omitempty"`
+	Conformance          string             `json:"conformance,omitempty"`
+	SemanticImpact       string             `json:"semanticImpact,omitempty"`
+	Proof                map[string]string  `json:"proof,omitempty"`
+	Conditions           []featureCondition `json:"conditions"`
 }
 
 type featureCondition struct {
@@ -186,7 +192,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 	if err := json.Unmarshal(contents, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.SchemaVersion != 1 || len(manifest.States) != 3 {
+	if manifest.SchemaVersion != 2 || len(manifest.States) != 3 {
 		t.Fatalf("unexpected feature manifest header: %#v", manifest)
 	}
 	if !sameStrings(manifest.Targets, []string{"typescript"}) {
@@ -194,6 +200,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 	}
 	root := filepath.Join("..", "..", "..")
 	seen := make(map[string]manifestFeature, len(manifest.Features))
+	seenRules := make(map[string]bool)
 	for _, feature := range manifest.Features {
 		if feature.ID == "" || seen[feature.ID].ID != "" {
 			t.Errorf("manifest feature ID must be unique: %#v", feature)
@@ -213,6 +220,10 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 			}
 		}
 		assertMatrixEvidence(t, root, feature.Evidence, feature.ID)
+		validateCompatibilityFeature(t, root, feature)
+		if feature.Rule != "" {
+			seenRules[feature.Rule] = true
+		}
 		for _, condition := range feature.Conditions {
 			if !containsString(manifest.Targets, condition.Target) {
 				t.Errorf("manifest feature %q has invalid conditional target %q", feature.ID, condition.Target)
@@ -234,9 +245,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 	// without an explicit inventory-review update.
 	manifestContracts := make([]string, 0, len(manifest.Features))
 	for _, feature := range manifest.Features {
-		manifestContracts = append(manifestContracts, strings.Join([]string{
-			feature.ID, feature.State, strings.Join(feature.Versions, ","), feature.Evidence,
-		}, "\t"))
+		manifestContracts = append(manifestContracts, manifestFeatureContract(feature))
 		for _, condition := range feature.Conditions {
 			if condition.Scope != "" && condition.Scope != "inbound-only" {
 				t.Errorf("manifest feature %s has unsupported condition scope %q", feature.ID, condition.Scope)
@@ -247,8 +256,22 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		}
 	}
 	sort.Strings(manifestContracts)
-	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "d52947b000291eb9566b56993886a661711f0cb10c07aaa9ac749fdfa95a3439" {
+	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "38449497c890331aedbc42e1e098b1bacec8d51f9c555dc671ecb35c7e01cc06" {
 		t.Errorf("manifest feature/evidence contract changed: %s", got)
+	}
+
+	for _, rule := range []string{
+		"COMP-REF-001", "COMP-REF-002", "COMP-REF-003",
+		"COMP-PARAM-001", "COMP-PARAM-002",
+		"COMP-BODY-001", "COMP-METHOD-001", "COMP-RESP-001",
+		"COMP-ENC-001", "COMP-ENC-002", "COMP-ENC-003",
+		"COMP-VERSION-001", "COMP-VERSION-002",
+		"COMP-SCHEMA-001", "COMP-SCHEMA-002", "COMP-SCHEMA-003", "COMP-SCHEMA-004", "COMP-SCHEMA-005",
+		"COMP-SCHEMA-007", "COMP-SCHEMA-008",
+	} {
+		if !seenRules[rule] {
+			t.Errorf("manifest misses executable compatibility rule %q", rule)
+		}
 	}
 
 	for _, suffix := range []string{
@@ -308,6 +331,87 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 	} {
 		if _, exists := seen[id]; !exists {
 			t.Errorf("manifest misses OpenAPI object feature %q", id)
+		}
+	}
+}
+
+func manifestFeatureContract(feature manifestFeature) string {
+	proofKeys := make([]string, 0, len(feature.Proof))
+	for kind := range feature.Proof {
+		proofKeys = append(proofKeys, kind)
+	}
+	sort.Strings(proofKeys)
+	proof := make([]string, 0, len(proofKeys))
+	for _, kind := range proofKeys {
+		proof = append(proof, kind+"="+feature.Proof[kind])
+	}
+	return strings.Join([]string{
+		feature.ID,
+		feature.State,
+		strings.Join(feature.Versions, ","),
+		feature.Evidence,
+		feature.Rule,
+		feature.NormativeDisposition,
+		feature.CompatibilityAction,
+		feature.Conformance,
+		feature.SemanticImpact,
+		strings.Join(proof, ","),
+	}, "\t")
+}
+
+func validateCompatibilityFeature(t *testing.T, root string, feature manifestFeature) {
+	t.Helper()
+	if feature.Rule == "" {
+		if feature.NormativeDisposition != "" || feature.CompatibilityAction != "" || feature.Conformance != "" || feature.SemanticImpact != "" || len(feature.Proof) != 0 {
+			t.Errorf("manifest feature %q has compatibility fields without a rule", feature.ID)
+		}
+		return
+	}
+	if feature.NormativeDisposition == "" || feature.CompatibilityAction == "" || feature.Conformance == "" || feature.SemanticImpact == "" || len(feature.Proof) == 0 {
+		t.Errorf("compatibility feature %q is incomplete: %#v", feature.ID, feature)
+		return
+	}
+	if !containsString([]string{"defined", "ignored", "undefined", "implementation-defined", "not-defined", "invalid"}, feature.NormativeDisposition) {
+		t.Errorf("compatibility feature %q has invalid normative disposition %q", feature.ID, feature.NormativeDisposition)
+	}
+	if !containsString([]string{"preserve", "ignore", "normalize", "preserve-extension", "reject"}, feature.CompatibilityAction) {
+		t.Errorf("compatibility feature %q has invalid action %q", feature.ID, feature.CompatibilityAction)
+	}
+	if !containsString([]string{"conforming", "nonconforming"}, feature.Conformance) {
+		t.Errorf("compatibility feature %q has invalid conformance %q", feature.ID, feature.Conformance)
+	}
+	if !containsString([]string{"annotation", "validation", "wire", "routing", "security", "reference", "dialect", "metadata-only"}, feature.SemanticImpact) {
+		t.Errorf("compatibility feature %q has invalid semantic impact %q", feature.ID, feature.SemanticImpact)
+	}
+	for kind, evidence := range feature.Proof {
+		if !containsString([]string{"compile", "type", "runtime", "reference-io", "metadata", "equivalence", "target-error"}, kind) {
+			t.Errorf("compatibility feature %q has invalid proof kind %q", feature.ID, kind)
+			continue
+		}
+		assertMatrixEvidence(t, root, evidence, feature.ID+" proof "+kind)
+	}
+	switch feature.CompatibilityAction {
+	case "ignore":
+		if feature.State != "metadata" && feature.State != "generated" {
+			t.Errorf("ignore compatibility feature %q must use metadata or generated state, got %q", feature.ID, feature.State)
+		}
+		if feature.Proof["metadata"] == "" || (feature.Proof["compile"] == "" && feature.Proof["runtime"] == "") {
+			t.Errorf("ignore compatibility feature %q requires metadata proof plus compile or runtime proof", feature.ID)
+		}
+		if feature.SemanticImpact == "reference" && feature.Proof["reference-io"] == "" {
+			t.Errorf("reference-affecting ignore feature %q requires reference-io proof", feature.ID)
+		}
+	case "normalize":
+		if feature.State != "generated" || feature.Proof["equivalence"] == "" || feature.Proof["metadata"] == "" {
+			t.Errorf("normalize compatibility feature %q requires generated state plus equivalence and metadata proof", feature.ID)
+		}
+	case "preserve-extension":
+		if feature.State != "generated" || feature.Proof["runtime"] == "" || feature.Proof["compile"] == "" {
+			t.Errorf("preserve-extension feature %q requires generated state plus compile and runtime proof", feature.ID)
+		}
+	case "reject":
+		if feature.State != "error" || (feature.Proof["compile"] == "" && feature.Proof["target-error"] == "") {
+			t.Errorf("reject compatibility feature %q requires error state and compile or target-error proof", feature.ID)
 		}
 	}
 }
