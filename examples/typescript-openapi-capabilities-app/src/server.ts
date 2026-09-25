@@ -10,7 +10,7 @@ const items = [
   { id: "item-1", name: "First item", status: "draft" },
   { id: "item-2", name: "Second item", status: "published" },
 ];
-const expectedVerbMethods = ["GET", "PUT", "POST", "DELETE", "OPTIONS", "HEAD", "PATCH", "QUERY", "PURGE", "TRACE"];
+const expectedVerbMethods = ["GET", "PUT", "POST", "DELETE", "OPTIONS", "HEAD", "PATCH", "QUERY", "PURGE"];
 let nextVerbMethod = 0;
 
 const readBody = async (request: IncomingMessage): Promise<Buffer> => {

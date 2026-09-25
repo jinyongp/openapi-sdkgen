@@ -14,8 +14,9 @@ conformance suite.
 ## Covered generated behavior
 
 - Resource-oriented calls and the exact-operation `$operations` surface.
-- Every generated HTTP method: `GET`, `PUT`, `POST`, `DELETE`, `OPTIONS`,
-  `HEAD`, `PATCH`, `TRACE`, `QUERY`, and a custom `PURGE` operation.
+- Every Fetch-capable generated HTTP method used by this example: `GET`, `PUT`,
+  `POST`, `DELETE`, `OPTIONS`, `HEAD`, `PATCH`, `QUERY`, and a custom `PURGE`
+  operation. Fetch-forbidden methods such as `TRACE` fail target preflight.
 - Path, query, header, cookie, and JSON-content parameters, including label,
   matrix, form, deep-object, space-delimited, and pipe-delimited styles.
 - JSON, text, binary, URL-encoded form, and multipart request/response codecs.

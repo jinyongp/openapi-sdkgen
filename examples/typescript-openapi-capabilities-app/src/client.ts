@@ -1,5 +1,3 @@
-import { request as httpRequest } from "node:http";
-
 import {
   createClient,
   isErrorCategory,
@@ -82,9 +80,9 @@ assert(binaryBytes.join(",") === "4,5,6", "binary response decoder changed");
 // Component Path Item references become the same resource-oriented API surface.
 await api.status.get();
 
-// OpenAPI 3.2 adds QUERY and arbitrary additional operations. All methods except
-// TRACE run through standard Fetch. Browsers forbid TRACE, so consumers that need
-// it provide an explicit transport implementation for that one operation.
+// OpenAPI 3.2 adds QUERY and arbitrary additional operations. This example
+// exercises only methods the generated Fetch target can issue; Fetch-forbidden
+// methods such as TRACE are rejected during target preflight.
 await api.$operations.getVerb();
 await api.$operations.putVerb();
 await api.$operations.postVerb();
@@ -94,33 +92,6 @@ await api.$operations.headVerb();
 await api.$operations.patchVerb();
 await api.$operations.queryVerb();
 await api.$operations.purgeVerb();
-
-const traceFetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-  const url = new URL(input instanceof Request ? input.url : input.toString());
-  const method = init?.method ?? (input instanceof Request ? input.method : "GET");
-  assert(method === "TRACE", "trace transport must only serve TRACE calls");
-  return await new Promise<Response>((resolve, reject) => {
-    const request = httpRequest(
-      url,
-      { method, headers: Object.fromEntries(new Headers(init?.headers)) },
-      (response) => {
-        const chunks: Buffer[] = [];
-        response.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
-        response.on("end", () =>
-          resolve(
-            new Response(response.statusCode === 204 || response.statusCode === 205 || response.statusCode === 304 ? null : Buffer.concat(chunks), {
-              status: response.statusCode ?? 500,
-              headers: response.headers as HeadersInit,
-            }),
-          ),
-        );
-      },
-    );
-    request.once("error", reject);
-    request.end();
-  });
-}) as typeof fetch;
-await createClient({ baseURL: apiBaseURL, fetch: traceFetch }).$operations.traceVerb();
 
 // Root Webhook names are not URLs. The host supplies its route and authentication
 // policy; the generated Fetch router validates the JSON contract and calls its handler.

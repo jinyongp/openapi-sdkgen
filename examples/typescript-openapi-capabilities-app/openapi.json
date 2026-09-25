@@ -133,7 +133,6 @@
       "options": { "operationId": "optionsVerb", "security": [], "responses": { "204": { "description": "OK" } } },
       "head": { "operationId": "headVerb", "security": [], "responses": { "204": { "description": "OK" } } },
       "patch": { "operationId": "patchVerb", "security": [], "responses": { "204": { "description": "OK" } } },
-      "trace": { "operationId": "traceVerb", "security": [], "responses": { "204": { "description": "OK" } } },
       "query": { "operationId": "queryVerb", "security": [], "responses": { "204": { "description": "OK" } } },
       "additionalOperations": {
         "PURGE": { "operationId": "purgeVerb", "security": [], "responses": { "204": { "description": "OK" } } }
