@@ -9,10 +9,9 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func TestRequestInputSectionRejectsUnknownSuffix(t *testing.T) {
-	operationName := operationTypeName("GET /widgets")
-	if _, err := requestInputSection(operationName, operationName+"UnsupportedInput"); err == nil || !strings.Contains(err.Error(), "supported request section suffix") {
-		t.Fatalf("requestInputSection error = %v, want unsupported suffix diagnostic", err)
+func TestRequestInputSectionRejectsUnknownSection(t *testing.T) {
+	if _, err := requestInputSection(operationInputSection("unsupported")); err == nil || !strings.Contains(err.Error(), "unsupported operation input section") {
+		t.Fatalf("requestInputSection error = %v, want unsupported section diagnostic", err)
 	}
 }
 

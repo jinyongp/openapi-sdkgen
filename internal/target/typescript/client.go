@@ -12,31 +12,6 @@ import (
 	"openapi-sdkgen/internal/compiler/naming"
 )
 
-type requestInputSectionDescriptor struct {
-	suffix             string
-	sectionKey         string
-	publicHelperSuffix string
-	parameterLocation  bool
-}
-
-var requestInputSectionDescriptors = []requestInputSectionDescriptor{
-	{suffix: "PathInput", sectionKey: "path", publicHelperSuffix: "Path", parameterLocation: true},
-	{suffix: "QueryInput", sectionKey: "query", publicHelperSuffix: "Query", parameterLocation: true},
-	{suffix: "QuerystringInput", sectionKey: "querystring", publicHelperSuffix: "Querystring", parameterLocation: true},
-	{suffix: "HeaderInput", sectionKey: "header", publicHelperSuffix: "Headers", parameterLocation: true},
-	{suffix: "CookieInput", sectionKey: "cookie", publicHelperSuffix: "Cookies", parameterLocation: true},
-	{suffix: "BodyInput", sectionKey: "body", publicHelperSuffix: "Body"},
-}
-
-func requestInputSection(operationName, inputType string) (requestInputSectionDescriptor, error) {
-	for _, descriptor := range requestInputSectionDescriptors {
-		if inputType == operationName+descriptor.suffix {
-			return descriptor, nil
-		}
-	}
-	return requestInputSectionDescriptor{}, fmt.Errorf("operation input type %q does not have a supported request section suffix", inputType)
-}
-
 func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation ir.Operation, item ManifestOperation) error {
 	operationName := operationTypeName(operationRouteKey(operation))
 	if err := emitOperationOptions(output, operationName, operation, item); err != nil {
@@ -83,17 +58,17 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 		fmt.Fprintf(output, "/**\n * %s\n *\n * Type: %s\n */\n", sanitizeComment(bodyDescription), jsDocTypeReference(bodyType))
 		fmt.Fprintf(output, "type %sBodyInput = %s\n\n", operationName, bodyType)
 	}
-	if len(item.InputTypes) > 0 {
+	if len(item.InputSections) > 0 {
 		fmt.Fprintf(output, "/** Complete input for `%s` (`%s %s`). */\n", operation.OperationID, operation.Method, operation.Path)
 		fmt.Fprintf(output, "interface %sInput {\n", operationName)
-		for _, inputType := range item.InputTypes {
-			field := strings.TrimPrefix(inputType, operationName)
-			field = strings.TrimSuffix(field, "Input")
-			property, err := aggregateInputProperty(field)
+		for _, section := range item.InputSections {
+			descriptor, err := requestInputSection(section)
 			if err != nil {
 				return err
 			}
-			required := item.prepared.inputFieldRequired(field)
+			inputType := operationName + descriptor.suffix
+			property := descriptor.inputProperty
+			required := item.prepared.inputFieldRequired(section)
 			optional := "?"
 			valueType := inputType
 			if required {
@@ -101,14 +76,14 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 			} else {
 				valueType += " | undefined"
 			}
-			fmt.Fprintf(output, "  /** Generated %s input. See %s. */\n", strings.ToLower(field), jsDocTypeReference(inputType))
+			fmt.Fprintf(output, "  /** Generated %s input. See %s. */\n", string(section), jsDocTypeReference(inputType))
 			fmt.Fprintf(output, "  readonly %s%s: %s\n", property, optional, valueType)
 		}
 		output.WriteString("}\n\n")
 	}
 	if len(item.PathParameterOrder) > 0 {
 		resourceInput := "never"
-		if len(item.InputTypes) > 1 {
+		if item.InputSections.hasInput(true) {
 			resourceInput = "Omit<" + operationName + "Input, \"path\">"
 		}
 		fmt.Fprintf(output, "/** Input remaining after the resource path is bound for `%s`. */\n", operation.OperationID)
@@ -135,7 +110,7 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 	routeKey := operationRouteKey(operation)
 	quotedRoute := quoteTS(routeKey)
 	inputType := "never"
-	if len(item.InputTypes) > 0 {
+	if len(item.InputSections) > 0 {
 		inputType = "RouteInput<" + quotedRoute + ">"
 	}
 	buffered, err := operationHasBufferedSuccess(document, operation)
@@ -155,7 +130,7 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 		resourceInput := inputType
 		if len(item.PathParameterOrder) > 0 {
 			resourceInput = "RouteResourceInput<" + quotedRoute + ">"
-			if len(item.InputTypes) <= 1 {
+			if !item.InputSections.hasInput(true) {
 				resourceInput = "never"
 			}
 		}
@@ -283,55 +258,12 @@ func emitCallSignature(output *bytes.Buffer, inputType string, inputOptional boo
 	fmt.Fprintf(output, "  (input%s: %s, options%s: %s): Promise<%s>\n", inputMarker, inputType, optional, optionsType, resultType)
 }
 
-func aggregateInputProperty(field string) (string, error) {
-	switch field {
-	case "Header":
-		return "headerParams", nil
-	case "Cookie":
-		return "cookieParams", nil
-	default:
-		return naming.Property(field)
-	}
-}
-
-func aggregateInputRequired(document *ir.Document, operation ir.Operation, field string) (bool, error) {
-	if field == "Body" {
-		body, err := operationRequestBody(document, operation)
-		if err != nil {
-			return false, err
-		}
-		return body != nil && body.Required, nil
-	}
-	location := strings.ToLower(field)
-	parameters, err := clientParametersIn(document, operation, location)
+func operationInputRequired(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList, omitPath bool) (bool, error) {
+	prepared, err := prepareOperation(document, operation)
 	if err != nil {
 		return false, err
 	}
-	for _, parameter := range parameters {
-		if parameter.Required {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func operationInputRequired(document *ir.Document, operation ir.Operation, inputTypes []string, omitPath bool) (bool, error) {
-	operationName := operationTypeName(operationRouteKey(operation))
-	for _, inputType := range inputTypes {
-		field := strings.TrimPrefix(inputType, operationName)
-		field = strings.TrimSuffix(field, "Input")
-		if omitPath && field == "Path" {
-			continue
-		}
-		required, err := aggregateInputRequired(document, operation, field)
-		if err != nil {
-			return false, err
-		}
-		if required {
-			return true, nil
-		}
-	}
-	return false, nil
+	return prepared.clientInputRequired(document, operation, inputSections, omitPath)
 }
 
 func emitParameterType(output *bytes.Buffer, document *ir.Document, operation ir.Operation, typeName, location string) error {
@@ -1054,7 +986,7 @@ func findOperation(document *ir.Document, identity string) ir.Operation {
 }
 
 func operationInputAlias(operation ManifestOperation) string {
-	if len(operation.InputTypes) == 0 {
+	if len(operation.InputSections) == 0 {
 		return "never"
 	}
 	return operationTypeName(manifestRouteKey(operation)) + "Input"

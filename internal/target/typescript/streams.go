@@ -94,7 +94,7 @@ func streamOptionsType(stream generatedStream) string {
 func streamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
 	_ = document
 	inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
-	return streamFunctionTypeForInput(stream, inputType, len(stream.Plan.InputTypes) > 0, stream.Plan.prepared.inputRequired), nil
+	return streamFunctionTypeForInput(stream, inputType, len(stream.Plan.InputSections) > 0, stream.Plan.prepared.inputRequired), nil
 }
 
 func resourceStreamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
@@ -102,7 +102,7 @@ func resourceStreamFunctionType(document *ir.Document, stream generatedStream) (
 	if len(stream.Plan.PathParameterOrder) == 0 {
 		return streamFunctionType(document, stream)
 	}
-	hasInput := len(stream.Plan.InputTypes) > 1
+	hasInput := stream.Plan.InputSections.hasInput(true)
 	inputType := operationSlotType(operationRouteKey(stream.Operation), "resourceInput")
 	return streamFunctionTypeForInput(stream, inputType, hasInput, stream.Plan.prepared.resourceInputRequired), nil
 }

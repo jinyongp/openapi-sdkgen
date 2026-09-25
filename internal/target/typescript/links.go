@@ -121,7 +121,7 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 				}
 				result = append(result, generatedLink{
 					SourceOperation: source, Status: status, Name: name, TargetOperation: target, Definition: definition, ServerURL: serverURL,
-					SourceHasInput: len(sourcePlan.InputTypes) != 0, TargetHasInput: len(targetPlan.InputTypes) != 0,
+					SourceHasInput: len(sourcePlan.InputSections) != 0, TargetHasInput: len(targetPlan.InputSections) != 0,
 					TargetOptionsRequired: targetPlan.optionsRequired,
 				})
 			}
@@ -441,24 +441,27 @@ func linkStatusProperty(status string) (string, error) {
 	return "", fmt.Errorf("unsupported Link response status %q", status)
 }
 
-func emitLinkValues(output *bytes.Buffer, document *ir.Document, links []generatedLink) error {
-	if len(links) == 0 {
-		return nil
-	}
-	groups := make([]generatedLinkGroup, 0)
-	for _, source := range linkSourceOperations(links) {
-		groups = append(groups, linkGroupsForSource(links, operationRouteKey(source))...)
-	}
-	return emitLinkValuesForGroups(output, document, links, groups)
-}
+// linkTargetReference resolves a semantic route in the emitting artifact's scope.
+// A private identifier is never used as a placeholder for later text replacement.
+type linkTargetReference func(route string) (string, error)
 
-func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links []generatedLink, groups []generatedLinkGroup) error {
+func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links []generatedLink, groups []generatedLinkGroup, targetReference linkTargetReference) error {
+	if targetReference == nil {
+		return fmt.Errorf("missing Link target reference resolver")
+	}
 	for _, link := range links {
 		name, err := generatedLinkVariableName(link)
 		if err != nil {
 			return err
 		}
-		targetProperty := operationValueName(operationRouteKey(link.TargetOperation))
+		targetRoute := operationRouteKey(link.TargetOperation)
+		targetProperty, err := targetReference(targetRoute)
+		if err != nil {
+			return fmt.Errorf("Link target %q: %w", targetRoute, err)
+		}
+		if targetProperty == "" {
+			return fmt.Errorf("Link target %q has an empty reference", targetRoute)
+		}
 		targetHasInput := link.TargetHasInput
 		targetInput := operationSlotType(operationRouteKey(link.TargetOperation), "input")
 		targetOptions := operationSlotType(operationRouteKey(link.TargetOperation), "options")

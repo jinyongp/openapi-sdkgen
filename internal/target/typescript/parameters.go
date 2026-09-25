@@ -75,31 +75,26 @@ func prepareOperation(document *ir.Document, operation ir.Operation) (preparedOp
 	return prepared, nil
 }
 
-func (prepared preparedOperation) clientInputRequired(document *ir.Document, operation ir.Operation, inputTypes []string, omitPath bool) (bool, error) {
-	operationName := operationTypeName(operationRouteKey(operation))
-	for _, inputType := range inputTypes {
-		field := strings.TrimSuffix(strings.TrimPrefix(inputType, operationName), "Input")
-		if omitPath && field == "Path" {
+func (prepared preparedOperation) clientInputRequired(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList, omitPath bool) (bool, error) {
+	for _, section := range inputSections {
+		if _, err := requestInputSection(section); err != nil {
+			return false, err
+		}
+		if omitPath && section == inputSectionPath {
 			continue
 		}
-		if field == "Body" {
-			if prepared.bodyRequired {
-				return true, nil
-			}
-			continue
-		}
-		if prepared.requiredByLocation[strings.ToLower(field)] {
+		if prepared.inputFieldRequired(section) {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (prepared preparedOperation) inputFieldRequired(field string) bool {
-	if field == "Body" {
+func (prepared preparedOperation) inputFieldRequired(section operationInputSection) bool {
+	if section == inputSectionBody {
 		return prepared.bodyRequired
 	}
-	return prepared.requiredByLocation[strings.ToLower(field)]
+	return prepared.requiredByLocation[string(section)]
 }
 
 type requestHeaderPolicy uint8

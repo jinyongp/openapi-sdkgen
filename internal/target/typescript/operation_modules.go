@@ -91,7 +91,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 
 	operationName := operationTypeName(module.routeKey)
 	inputType := "never"
-	if len(item.InputTypes) > 0 {
+	if len(item.InputSections) > 0 {
 		inputType = operationName + "Input"
 	}
 	resourceInputType := inputType
@@ -201,12 +201,12 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	output.WriteString(bodySource)
 
 	output.WriteString("export interface RequestInputs {\n")
-	for _, input := range item.InputTypes {
-		descriptor, err := requestInputSection(operationName, input)
+	for _, section := range item.InputSections {
+		descriptor, err := requestInputSection(section)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  readonly %s: %s\n", descriptor.sectionKey, input)
+		fmt.Fprintf(&output, "  readonly %s: %s\n", descriptor.sectionKey, operationName+descriptor.suffix)
 	}
 	output.WriteString("}\n\n")
 	fmt.Fprintf(&output, "export type Input = %s\n", inputType)
@@ -247,7 +247,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	hasInput := len(item.InputTypes) > 0
+	hasInput := len(item.InputSections) > 0
 	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")
 	output.WriteString("export function bindBase(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): BaseCall {\n")
@@ -318,14 +318,16 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	output.WriteString("/** Creates this operation's response-link container. */\n")
 	output.WriteString("export function bindLinks(targets: LinkTargets): Links {\n")
 	var body bytes.Buffer
-	if err := emitLinkValuesForGroups(&body, document, links, groups); err != nil {
+	targetReference := func(route string) (string, error) {
+		if !targets[route] {
+			return "", fmt.Errorf("operation %q has no declared Link target %q", module.routeKey, route)
+		}
+		return "targets[" + quoteTS(route) + "]", nil
+	}
+	if err := emitLinkValuesForGroups(&body, document, links, groups, targetReference); err != nil {
 		return nil, err
 	}
-	bodySource := body.String()
-	for route := range targets {
-		bodySource = strings.ReplaceAll(bodySource, operationValueName(route), "targets["+quoteTS(route)+"]")
-	}
-	bodySource, err := localizeOperationTypeSource(bodySource, module, plan)
+	bodySource, err := localizeOperationTypeSource(body.String(), module, plan)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +513,12 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 		output.WriteString(source[cursor:occurrence.start])
 		replacement := occurrence.replacement
 		if replacement == "" {
-			replacement = replacements[operationSchemaReferenceKey{name: occurrence.name, export: occurrence.export}]
+			key := operationSchemaReferenceKey{name: occurrence.name, export: occurrence.export}
+			var exists bool
+			replacement, exists = replacements[key]
+			if !exists {
+				return "", fmt.Errorf("operation %q has no planned schema reference for %q projection %q", module.routeKey, key.name, key.export)
+			}
 		}
 		output.WriteString(replacement)
 		cursor = occurrence.end

@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "unit": "C2",
+  "baselineRevision": "9a80e261de03add22bd435a21cecefcd05a9a89c",
+  "binarySha256": {
+    "baseline": "f4cfe0276a1f043d32695ba04586a3ec67d07cf2db96cfc8fb7ec19871404a03",
+    "candidate": "d04178beca0843d2572146c044579488963ba8d70db6f652bd1934565fa12f13"
+  },
+  "report": {
+    "path": ".tmp/preimplementation/run-4vdozh/report.json",
+    "sha256": "259483daa2c47ec9ab3875e2d3f2a80deb24c048a4df1ca97e2da4ebb98d279c",
+    "status": "review"
+  },
+  "correctness": "pass",
+  "performanceDecision": "not-measured; one-pair diagnostic only",
+  "fixtures": [
+    {
+      "id": "contract",
+      "fileCount": 51,
+      "typescriptBytes": 404173,
+      "treeSha256": "bc8d91616989065a014e9169e34196dbc002c9ffe63df77de3b97e0281e7932e",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "collisions",
+      "fileCount": 64,
+      "typescriptBytes": 760364,
+      "treeSha256": "2985c5b3920cfd91d28c625727aa1b6b8401face136ec8a83d2055d4babc4315",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "bundle-isolation",
+      "fileCount": 37,
+      "typescriptBytes": 328998,
+      "treeSha256": "c3871672b2695947a1b71489bca31497788a53ca3e3666d8e3de78e147d5198e",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "transport-native-headers",
+      "fileCount": 53,
+      "typescriptBytes": 571930,
+      "treeSha256": "6b6b8b9eadb1466c747aff47afdf508a1be0b857bae6b0d5d29147ec429d9e60",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "baseline-oas30",
+      "fileCount": 33,
+      "typescriptBytes": 307860,
+      "treeSha256": "3186922377ba9e088b8161aa18b596f2f33760e453e3d822c0ab1c27c0106ed6",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "baseline-oas31",
+      "fileCount": 41,
+      "typescriptBytes": 466033,
+      "treeSha256": "9eef1daebabef6dfd1469ecc422127548f336bc60d4f1d88b5a91f0db159f2d9",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "baseline-oas32",
+      "fileCount": 36,
+      "typescriptBytes": 321184,
+      "treeSha256": "016ba04fae4e87b8dcce1baaa30dcd5797bcdabd80cb8e6bff389186471139db",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "representation",
+      "fileCount": 41,
+      "typescriptBytes": 346889,
+      "treeSha256": "3a1545ca69dee984084d4878bf4664a32b3110d22165a5659d356aa7d8befa5b",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "lifecycle",
+      "fileCount": 36,
+      "typescriptBytes": 325278,
+      "treeSha256": "b8946c7fad80d751b50ed45a558695225a01745eb8f7eee176f4ebef87ffa125",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "github",
+      "fileCount": 2858,
+      "typescriptBytes": 42752679,
+      "treeSha256": "bd0ef27440ac3208fb8c9562a6a5603a4ee73f4033e49b6129dba51af781edff",
+      "byteIdentical": true,
+      "contract": "pass"
+    },
+    {
+      "id": "stripe",
+      "fileCount": 2753,
+      "typescriptBytes": 32083911,
+      "treeSha256": "8971ed0e1618bfe77f4f01e49caf6c2a1710680e3072373976816e1945cc563b",
+      "byteIdentical": true,
+      "contract": "pass"
+    }
+  ]
+}

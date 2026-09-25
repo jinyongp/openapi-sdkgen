@@ -318,7 +318,7 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	for index, parameter := range operation.PathParameterOrder {
 		values = append(values, quoteTS(parameter)+": bound["+fmt.Sprint(index)+"]")
 	}
-	hasInput := len(operation.InputTypes) > 1
+	hasInput := operation.InputSections.hasInput(true)
 	inputOptional := false
 	if hasInput {
 		inputOptional = !operation.prepared.resourceInputRequired

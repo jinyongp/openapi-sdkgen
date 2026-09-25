@@ -131,10 +131,10 @@ func TestSourceArtifactsProjectEnvironmentControlledHeadersAsOptionalClientInput
 					break
 				}
 			}
-			if len(oauth.InputTypes) != 2 ||
-				!strings.HasSuffix(oauth.InputTypes[0], "HeaderInput") ||
-				!strings.HasSuffix(oauth.InputTypes[1], "BodyInput") {
-				t.Fatalf("oauth input types = %v, want header and body input", oauth.InputTypes)
+			if len(oauth.InputSections) != 2 ||
+				oauth.InputSections[0] != inputSectionHeader ||
+				oauth.InputSections[1] != inputSectionBody {
+				t.Fatalf("oauth input types = %v, want header and body input", oauth.InputSections)
 			}
 
 			artifacts, err := SourceArtifacts(document)

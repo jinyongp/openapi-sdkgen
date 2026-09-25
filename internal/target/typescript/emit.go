@@ -151,23 +151,23 @@ type Manifest struct {
 }
 
 type ManifestOperation struct {
-	RouteKey           string   `json:"routeKey"`
-	OperationID        string   `json:"operationID"`
-	Summary            string   `json:"summary,omitempty"`
-	Description        string   `json:"description,omitempty"`
-	Method             string   `json:"method"`
-	Path               string   `json:"path"`
-	CallExpression     string   `json:"callExpression"`
-	ResourceSegments   []string `json:"resourceSegments"`
-	PathParameterOrder []string `json:"pathParameterOrder"`
-	InputTypes         []string `json:"inputTypes"`
-	OutputType         string   `json:"outputType"`
-	ErrorType          string   `json:"errorType"`
-	Envelope           string   `json:"envelope,omitempty"`
-	Pagination         string   `json:"pagination,omitempty"`
-	Auth               string   `json:"auth"`
-	Visibility         string   `json:"visibility"`
-	Deprecated         bool     `json:"deprecated"`
+	RouteKey           string                    `json:"routeKey"`
+	OperationID        string                    `json:"operationID"`
+	Summary            string                    `json:"summary,omitempty"`
+	Description        string                    `json:"description,omitempty"`
+	Method             string                    `json:"method"`
+	Path               string                    `json:"path"`
+	CallExpression     string                    `json:"callExpression"`
+	ResourceSegments   []string                  `json:"resourceSegments"`
+	PathParameterOrder []string                  `json:"pathParameterOrder"`
+	InputSections      operationInputSectionList `json:"inputSections"`
+	OutputType         string                    `json:"outputType"`
+	ErrorType          string                    `json:"errorType"`
+	Envelope           string                    `json:"envelope,omitempty"`
+	Pagination         string                    `json:"pagination,omitempty"`
+	Auth               string                    `json:"auth"`
+	Visibility         string                    `json:"visibility"`
+	Deprecated         bool                      `json:"deprecated"`
 	outputExpression   typeExpression
 	errorExpression    typeExpression
 	rawResponse        typeExpression
@@ -302,7 +302,7 @@ func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, li
 			continue
 		}
 		operation := item.compiled
-		item.CallExpression = exactOperationCall(document, operation, item.InputTypes)
+		item.CallExpression = exactOperationCall(document, operation, item.InputSections)
 		item.ResourceSegments = nil
 	}
 	return tree, reachable, nil
@@ -581,7 +581,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			failures = append(failures, fmt.Errorf("operation %s output: %w", operationLabel(operation), err))
 			operationFailed = true
 		}
-		inputTypes, inputErr := operationInputTypesFromPrepared(document, operation, prepared)
+		inputSections, inputErr := operationInputSectionsFromPrepared(document, operation, prepared)
 		if inputErr != nil {
 			failures = append(failures, fmt.Errorf("operation %s input: %w", operationLabel(operation), inputErr))
 			operationFailed = true
@@ -621,7 +621,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 		var segments []string
 		if inputErr == nil {
 			var callErr error
-			callExpression, segments, callErr = operationCallFromPrepared(document, operation, inputTypes, prepared)
+			callExpression, segments, callErr = operationCallFromPrepared(document, operation, inputSections, prepared)
 			if callErr != nil {
 				failures = append(failures, fmt.Errorf("operation %s call expression: %w", operationLabel(operation), callErr))
 				operationFailed = true
@@ -630,12 +630,12 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 		if operationFailed {
 			continue
 		}
-		prepared.inputRequired, err = prepared.clientInputRequired(document, operation, inputTypes, false)
+		prepared.inputRequired, err = prepared.clientInputRequired(document, operation, inputSections, false)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("operation %s input requirement: %w", operationLabel(operation), err))
 			continue
 		}
-		prepared.resourceInputRequired, err = prepared.clientInputRequired(document, operation, inputTypes, true)
+		prepared.resourceInputRequired, err = prepared.clientInputRequired(document, operation, inputSections, true)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("operation %s resource input requirement: %w", operationLabel(operation), err))
 			continue
@@ -654,7 +654,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 			CallExpression:     callExpression,
 			ResourceSegments:   segments,
 			PathParameterOrder: append([]string{}, operation.PathParameterOrder...),
-			InputTypes:         append([]string{}, inputTypes...),
+			InputSections:      append(operationInputSectionList{}, inputSections...),
 			OutputType:         outputExpression.render(typeRenderLocal),
 			ErrorType:          errorExpression.render(typeRenderLocal),
 			Envelope:           operation.Envelope,
@@ -695,7 +695,7 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 		item := &manifest.Operations[index]
 		if item.Visibility == "public" && !reachable[item.RouteKey] {
 			operation := item.compiled
-			item.CallExpression = exactOperationCall(document, operation, item.InputTypes)
+			item.CallExpression = exactOperationCall(document, operation, item.InputSections)
 			item.ResourceSegments = nil
 		}
 	}
@@ -735,17 +735,17 @@ func (operation ManifestOperation) renderError(scope typeRenderScope) string {
 	return operation.errorExpression.render(scope)
 }
 
-func operationCall(document *ir.Document, operation ir.Operation, inputTypes []string) (string, []string, error) {
+func operationCall(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList) (string, []string, error) {
 	prepared, err := prepareOperation(document, operation)
 	if err != nil {
 		return "", nil, err
 	}
-	return operationCallFromPrepared(document, operation, inputTypes, prepared)
+	return operationCallFromPrepared(document, operation, inputSections, prepared)
 }
 
-func operationCallFromPrepared(document *ir.Document, operation ir.Operation, inputTypes []string, prepared preparedOperation) (string, []string, error) {
+func operationCallFromPrepared(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList, prepared preparedOperation) (string, []string, error) {
 	if hasDuplicateStrings(operation.PathParameterOrder) {
-		return exactOperationCall(document, operation, inputTypes), nil, nil
+		return exactOperationCall(document, operation, inputSections), nil, nil
 	}
 	pathBindings := prepared.pathBindings
 	parts := resourcePathParts(operation.Path)
@@ -754,39 +754,39 @@ func operationCallFromPrepared(document *ir.Document, operation ir.Operation, in
 	for _, part := range parts {
 		name, parameterPart, supported := resourcePathPart(part)
 		if !supported {
-			return exactOperationCall(document, operation, inputTypes), nil, nil
+			return exactOperationCall(document, operation, inputSections), nil, nil
 		}
 		if parameterPart {
 			binding := pathBindings[name]
 			if binding == "" {
-				return exactOperationCall(document, operation, inputTypes), nil, nil
+				return exactOperationCall(document, operation, inputSections), nil, nil
 			}
 			chain += "(" + binding + ")"
 			continue
 		}
 		property, err := naming.Property(part)
 		if err != nil {
-			return exactOperationCall(document, operation, inputTypes), nil, nil
+			return exactOperationCall(document, operation, inputSections), nil, nil
 		}
 		segments = append(segments, property)
 		chain += "." + property
 	}
 	terminal, err := resourceTerminalName(operation, parts)
 	if err != nil {
-		return exactOperationCall(document, operation, inputTypes), nil, nil
+		return exactOperationCall(document, operation, inputSections), nil, nil
 	}
 	if operation.Visibility == "internal" {
-		return exactOperationCall(document, operation, inputTypes), segments, nil
+		return exactOperationCall(document, operation, inputSections), segments, nil
 	}
-	return chain + "." + terminal + callInput(operation, inputTypes, len(operation.PathParameterOrder) > 0, operation.PathParameterOrder, pathBindings), segments, nil
+	return chain + "." + terminal + callInput(operation, inputSections, len(operation.PathParameterOrder) > 0, operation.PathParameterOrder, pathBindings), segments, nil
 }
 
-func exactOperationCall(document *ir.Document, operation ir.Operation, inputTypes []string) string {
+func exactOperationCall(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList) string {
 	pathBindings, _ := operationPathBindings(document, operation)
 	if operation.OperationID != "" {
-		return "api.$operations[" + quoteTS(operation.OperationID) + "]" + callInput(operation, inputTypes, false, operation.PathParameterOrder, pathBindings)
+		return "api.$operations[" + quoteTS(operation.OperationID) + "]" + callInput(operation, inputSections, false, operation.PathParameterOrder, pathBindings)
 	}
-	return "api.$routes[" + quoteTS(operationRouteKey(operation)) + "]" + callInput(operation, inputTypes, false, operation.PathParameterOrder, pathBindings)
+	return "api.$routes[" + quoteTS(operationRouteKey(operation)) + "]" + callInput(operation, inputSections, false, operation.PathParameterOrder, pathBindings)
 }
 
 func resourcePathParts(path string) []string {
@@ -876,11 +876,11 @@ func operationPathBindings(document *ir.Document, operation ir.Operation) (map[s
 	return result, nil
 }
 
-func callInput(operation ir.Operation, inputTypes []string, pathBound bool, pathParameters []string, pathBindings map[string]string) string {
+func callInput(operation ir.Operation, inputSections operationInputSectionList, pathBound bool, pathParameters []string, pathBindings map[string]string) string {
 	var fields []string
-	for _, inputType := range inputTypes {
-		switch {
-		case strings.HasSuffix(inputType, "PathInput"):
+	for _, section := range inputSections {
+		switch section {
+		case inputSectionPath:
 			if pathBound {
 				continue
 			}
@@ -898,15 +898,15 @@ func callInput(operation ir.Operation, inputTypes []string, pathBound bool, path
 				values = append(values, quoteTS(parameter)+": "+binding)
 			}
 			fields = append(fields, "path: { "+strings.Join(values, ", ")+" }")
-		case strings.HasSuffix(inputType, "QueryInput"):
+		case inputSectionQuery:
 			fields = append(fields, "query")
-		case strings.HasSuffix(inputType, "QuerystringInput"):
+		case inputSectionQuerystring:
 			fields = append(fields, "querystring")
-		case strings.HasSuffix(inputType, "HeaderInput"):
+		case inputSectionHeader:
 			fields = append(fields, "headerParams")
-		case strings.HasSuffix(inputType, "CookieInput"):
+		case inputSectionCookie:
 			fields = append(fields, "cookieParams")
-		case strings.HasSuffix(inputType, "BodyInput"):
+		case inputSectionBody:
 			fields = append(fields, "body")
 		}
 	}

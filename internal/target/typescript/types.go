@@ -1062,38 +1062,37 @@ func findItemsSchema(document *ir.Document, schema map[string]any, seen map[stri
 	return nil
 }
 
-func operationInputTypes(document *ir.Document, operation ir.Operation) ([]string, error) {
+func operationInputSections(document *ir.Document, operation ir.Operation) (operationInputSectionList, error) {
 	prepared, err := prepareOperation(document, operation)
 	if err != nil {
 		return nil, err
 	}
-	return operationInputTypesFromPrepared(document, operation, prepared)
+	return operationInputSectionsFromPrepared(document, operation, prepared)
 }
 
-func operationInputTypesFromPrepared(document *ir.Document, operation ir.Operation, prepared preparedOperation) ([]string, error) {
-	var result []string
-	name := operationTypeName(operationRouteKey(operation))
+func operationInputSectionsFromPrepared(document *ir.Document, operation ir.Operation, prepared preparedOperation) (operationInputSectionList, error) {
+	var result operationInputSectionList
 	if len(prepared.clientParametersByLocation["path"]) > 0 {
-		result = append(result, name+"PathInput")
+		result = append(result, inputSectionPath)
 	}
 	if len(prepared.clientParametersByLocation["query"]) > 0 || operation.Pagination != "" || len(operation.SortParameters) > 0 {
-		result = append(result, name+"QueryInput")
+		result = append(result, inputSectionQuery)
 	}
 	if len(prepared.clientParametersByLocation["querystring"]) > 0 {
-		result = append(result, name+"QuerystringInput")
+		result = append(result, inputSectionQuerystring)
 	}
 	if len(prepared.clientParametersByLocation["header"]) > 0 {
-		result = append(result, name+"HeaderInput")
+		result = append(result, inputSectionHeader)
 	}
 	if len(prepared.clientParametersByLocation["cookie"]) > 0 {
-		result = append(result, name+"CookieInput")
+		result = append(result, inputSectionCookie)
 	}
 	body, err := operationRequestBody(document, operation)
 	if err != nil {
 		return nil, err
 	}
 	if body != nil {
-		result = append(result, name+"BodyInput")
+		result = append(result, inputSectionBody)
 	}
 	return result, nil
 }

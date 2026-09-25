@@ -46,9 +46,27 @@ Subsequent optimizations compare B-prime against B-prime plus the optimization.
 Original B-to-B-prime changes are intentional correctness fixes and are not
 silently normalized out of comparison results.
 
+## C2 — semantic sections and explicit references
+
+The C2 implementation stores typed input-section presence rather than generated
+TypeScript name strings. Presence, requiredness and bound-path subtraction remain
+separate. Header/cookie public properties and helper slots retain their distinct
+mappings. Operation-local spelling is still the historical long form in this unit.
+
+Link targets now resolve directly in the owner module; emitted private names are
+not placeholders in a string-replacement pass. Schema reference replay reports a
+missing exact projection instead of emitting an empty replacement.
+
+Validation: new mapping/requiredness/optional-body/pagination/reference-negative
+tests, `just agent test`, and full `just agent ci` passed (Go coverage 83.0%).
+The eleven fixture/corpus outputs contain 6,003 managed files and are all
+byte-identical to B-prime. Their runtime contract comparisons also passed.
+`evidence/c2-equivalence.json` records the per-case tree hashes and source report.
+The one-pair comparison is not a performance measurement; its raw review flag is
+retained rather than relabelled as a performance pass.
+
 ## Remaining implementation
 
-C2 semantic sections/direct reference ownership, C3 fixed operation type names,
-C4 scoped property construction, C5/C6 scoped aliases and C7 integrated validation
-remain pending at this baseline checkpoint. Production optimizer code has not
-been applied by copying the archived prototype files.
+C3 fixed operation type names, C4 scoped property construction, C5/C6 scoped
+aliases and C7 integrated validation remain pending. Production changes are
+implemented and tested by work unit, not installed from archived prototype files.
