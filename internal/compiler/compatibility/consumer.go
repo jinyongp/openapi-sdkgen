@@ -8,15 +8,20 @@ import (
 )
 
 const (
-	RuleReference30Siblings  = "COMP-REF-001"
-	RuleReference31Fields    = "COMP-REF-002"
-	RuleReservedHeader       = "COMP-PARAM-001"
-	RuleResponseContentType  = "COMP-RESP-001"
-	RuleEncodingHeaders      = "COMP-ENC-001"
-	RuleEncodingFields       = "COMP-ENC-002"
-	RuleRequestBody30        = "COMP-BODY-001"
-	RuleVersion30Metadata    = "COMP-VERSION-001"
-	RuleVersionPre32Metadata = "COMP-VERSION-002"
+	RuleReference30Siblings   = "COMP-REF-001"
+	RuleReference31Fields     = "COMP-REF-002"
+	RuleReservedHeader        = "COMP-PARAM-001"
+	RuleResponseContentType   = "COMP-RESP-001"
+	RuleEncodingHeaders       = "COMP-ENC-001"
+	RuleEncodingFields        = "COMP-ENC-002"
+	RuleRequestBody30         = "COMP-BODY-001"
+	RuleVersion30Metadata     = "COMP-VERSION-001"
+	RuleVersionPre32Metadata  = "COMP-VERSION-002"
+	RuleSchemaBoolean30       = "COMP-SCHEMA-001"
+	RuleSchemaConst30         = "COMP-SCHEMA-002"
+	RuleSchemaNullableTypes30 = "COMP-SCHEMA-003"
+	RuleSchemaExclusive30     = "COMP-SCHEMA-004"
+	RuleSchemaKeywords30      = "COMP-SCHEMA-005"
 )
 
 // ConsumerPolicy applies target-neutral OpenAPI consumer semantics that can be
@@ -24,6 +29,11 @@ const (
 type ConsumerPolicy struct{}
 
 func (ConsumerPolicy) Apply(context Context, value any) Result {
+	if context.Object == openapiwalk.ObjectSchema && context.Version == openapidoc.Version30 {
+		if result, applied := applyOpenAPI30SchemaRule(context, value); applied {
+			return result
+		}
+	}
 	object, ok := value.(map[string]any)
 	if !ok {
 		return Result{Value: value}
@@ -91,6 +101,199 @@ func isReferenceObjectContext(object openapiwalk.ObjectContext) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+func applyOpenAPI30SchemaRule(context Context, value any) (Result, bool) {
+	if allowed, ok := value.(bool); ok {
+		if allowed {
+			return schemaCompatibilityResult(context, map[string]any{}, RuleSchemaBoolean30, ActionNormalize, "OpenAPI 3.0 boolean true schema is normalized to an empty Schema Object.", false), true
+		}
+		return schemaCompatibilityResult(context, value, RuleSchemaBoolean30, ActionReject, "OpenAPI 3.0 boolean false schema has no proved equivalent lowering.", true), true
+	}
+	object, ok := value.(map[string]any)
+	if !ok {
+		return Result{}, false
+	}
+
+	current := object
+	changed := false
+	var findings []Finding
+	var ledger []LedgerEntry
+	copyObject := func() {
+		if changed {
+			return
+		}
+		current = make(map[string]any, len(object))
+		for key, item := range object {
+			current[key] = item
+		}
+		changed = true
+	}
+	record := func(rule string, action Action, pointer, message string) {
+		findings = append(findings, Finding{
+			RuleID:      rule,
+			Conformance: ConformanceNonconforming,
+			Disposition: DispositionNotDefined,
+			Action:      action,
+			Impact:      ImpactValidation,
+			Source:      context.Source,
+			Pointer:     pointer,
+			Message:     message,
+		})
+		ledger = append(ledger, LedgerEntry{
+			RuleID:  rule,
+			Action:  action,
+			Impact:  ImpactValidation,
+			Source:  context.Source,
+			Pointer: pointer,
+			Version: context.Version,
+		})
+	}
+
+	if types, isArray := object["type"].([]any); isArray {
+		nonNull, valid := nullableOpenAPI30Type(types)
+		if !valid || object["nullable"] == true {
+			return schemaCompatibilityResult(context, value, RuleSchemaNullableTypes30, ActionReject, "OpenAPI 3.0 type array is outside the proved nullable two-type normalization.", true), true
+		}
+		copyObject()
+		current["type"] = nonNull
+		current["nullable"] = true
+		record(RuleSchemaNullableTypes30, ActionNormalize, context.Pointer+"/type", "Nullable two-type array is normalized to OpenAPI 3.0 nullable semantics.")
+	}
+
+	if constant, exists := object["const"]; exists {
+		if _, hasEnum := object["enum"]; hasEnum {
+			return schemaCompatibilityResult(context, value, RuleSchemaConst30, ActionReject, "OpenAPI 3.0 const combined with enum is outside the proved normalization.", true), true
+		}
+		copyObject()
+		delete(current, "const")
+		current["enum"] = []any{constant}
+		record(RuleSchemaConst30, ActionNormalize, context.Pointer+"/const", "const is normalized to an equivalent single-value enum for OpenAPI 3.0.")
+	}
+
+	for _, pair := range []struct {
+		exclusive string
+		bound     string
+	}{
+		{exclusive: "exclusiveMinimum", bound: "minimum"},
+		{exclusive: "exclusiveMaximum", bound: "maximum"},
+	} {
+		raw, exists := object[pair.exclusive]
+		if !exists {
+			continue
+		}
+		if _, isBoolean := raw.(bool); isBoolean {
+			continue
+		}
+		if !isJSONNumber(raw) {
+			return schemaCompatibilityResult(context, value, RuleSchemaExclusive30, ActionReject, "OpenAPI 3.0 numeric exclusive bound is not representable by the proved lowering.", true), true
+		}
+		if _, hasBound := object[pair.bound]; hasBound {
+			return schemaCompatibilityResult(context, value, RuleSchemaExclusive30, ActionReject, "OpenAPI 3.0 numeric exclusive bound combined with an existing bound requires explicit bound algebra.", true), true
+		}
+		copyObject()
+		current[pair.bound] = raw
+		current[pair.exclusive] = true
+		record(RuleSchemaExclusive30, ActionNormalize, context.Pointer+"/"+pair.exclusive, "Numeric exclusive bound is normalized to the equivalent OpenAPI 3.0 bound plus boolean exclusive flag.")
+	}
+
+	for _, key := range []string{"$comment", "examples"} {
+		if _, exists := object[key]; !exists {
+			continue
+		}
+		copyObject()
+		delete(current, key)
+		record(RuleSchemaKeywords30, ActionIgnore, context.Pointer+"/"+key, key+" is not defined by OpenAPI 3.0 and is ignored for generated semantics.")
+	}
+
+	for key := range object {
+		if !openAPI31SchemaKeyword(key) || key == "const" || key == "$comment" || key == "examples" {
+			continue
+		}
+		return schemaCompatibilityResult(context, value, RuleSchemaKeywords30, ActionReject, "JSON Schema keyword "+key+" has no proved OpenAPI 3.0 equivalent.", true), true
+	}
+
+	if !changed {
+		return Result{}, false
+	}
+	return Result{Value: current, Findings: findings, Ledger: ledger, Changed: true}, true
+}
+
+func nullableOpenAPI30Type(values []any) (string, bool) {
+	if len(values) != 2 {
+		return "", false
+	}
+	var nonNull string
+	nulls := 0
+	for _, raw := range values {
+		value, ok := raw.(string)
+		if !ok {
+			return "", false
+		}
+		if value == "null" {
+			nulls++
+			continue
+		}
+		switch value {
+		case "array", "boolean", "integer", "number", "object", "string":
+		default:
+			return "", false
+		}
+		if nonNull != "" {
+			return "", false
+		}
+		nonNull = value
+	}
+	return nonNull, nulls == 1 && nonNull != ""
+}
+
+func isJSONNumber(value any) bool {
+	switch value.(type) {
+	case int, int8, int16, int32, int64,
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func openAPI31SchemaKeyword(key string) bool {
+	switch key {
+	case "$anchor", "$comment", "$defs", "$dynamicAnchor", "$dynamicRef", "$id", "$schema", "$vocabulary",
+		"const", "contains", "contentEncoding", "contentMediaType", "contentSchema", "dependentRequired", "dependentSchemas",
+		"else", "examples", "if", "maxContains", "minContains", "patternProperties", "prefixItems", "propertyNames", "then",
+		"unevaluatedItems", "unevaluatedProperties":
+		return true
+	default:
+		return false
+	}
+}
+
+func schemaCompatibilityResult(context Context, value any, rule string, action Action, message string, reject bool) Result {
+	return Result{
+		Value:   value,
+		Reject:  reject,
+		Changed: action == ActionNormalize || action == ActionIgnore,
+		Findings: []Finding{{
+			RuleID:      rule,
+			Conformance: ConformanceNonconforming,
+			Disposition: DispositionNotDefined,
+			Action:      action,
+			Impact:      ImpactValidation,
+			Source:      context.Source,
+			Pointer:     context.Pointer,
+			Message:     message,
+		}},
+		Ledger: []LedgerEntry{{
+			RuleID:  rule,
+			Action:  action,
+			Impact:  ImpactValidation,
+			Source:  context.Source,
+			Pointer: context.Pointer,
+			Version: context.Version,
+		}},
 	}
 }
 
