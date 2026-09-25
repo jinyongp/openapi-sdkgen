@@ -837,7 +837,10 @@ func (wire *wireRenderContext) inboundParameterDefinitions(document *ir.Document
 		if err != nil {
 			return "", "", fmt.Errorf("%s/parameters/%s: encode wire schema: %w", path, parameter.Name, err)
 		}
-		entry := "{ location: " + quoteTS(parameter.Location) + ", name: " + quoteTS(parameter.Name) + ", property: " + quoteTS(parameter.Property) + ", style: " + quoteTS(parameter.Style) + ", explode: " + fmt.Sprint(parameter.Explode) + ", allowReserved: " + fmt.Sprint(parameter.AllowReserved) + ", allowEmptyValue: " + fmt.Sprint(parameter.AllowEmptyValue) + ", required: " + fmt.Sprint(parameter.Required) + ", schema: " + schema + ", wireSchema: " + wireSchema
+		entry := "{ location: " + quoteTS(parameter.Location) + ", name: " + quoteTS(parameter.Name) + ", property: " + quoteTS(parameter.Property) + ", style: " + quoteTS(parameter.Style) + ", explode: " + fmt.Sprint(parameter.Explode) + ", allowReserved: " + fmt.Sprint(parameter.AllowReserved) + ", required: " + fmt.Sprint(parameter.Required) + ", schema: " + schema + ", wireSchema: " + wireSchema
+		if parameter.AllowEmptyValue {
+			entry += ", allowEmptyValue: true"
+		}
 		if parameter.ContentType != "" {
 			entry += ", contentType: " + quoteTS(parameter.ContentType)
 		}

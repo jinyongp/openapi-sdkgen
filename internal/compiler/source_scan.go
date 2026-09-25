@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v4"
@@ -154,25 +155,45 @@ func scanLocalReferenceValue(value any, directory, root string, visited map[stri
 type externalReferenceOccurrence struct {
 	Reference string
 	Context   openapiwalk.ObjectContext
-	Path      []string
 }
 
-func collectExternalReferences(value any, path []string, result *[]string) {
-	var occurrences []externalReferenceOccurrence
-	collectExternalReferenceOccurrences(value, path, &occurrences)
-	for _, occurrence := range occurrences {
-		*result = append(*result, occurrence.Reference)
+func hasExternalReference(value any, path []string) bool {
+	if path == nil {
+		path = make([]string, 0, 64)
 	}
+	switch typed := value.(type) {
+	case map[string]any:
+		if reference, _ := typed["$ref"].(string); reference != "" && !strings.HasPrefix(reference, "#") {
+			return true
+		}
+		for name, child := range typed {
+			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
+				continue
+			}
+			if hasExternalReference(child, append(path, name)) {
+				return true
+			}
+		}
+	case []any:
+		for index, child := range typed {
+			if hasExternalReference(child, append(path, strconv.Itoa(index))) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func collectExternalReferenceOccurrences(value any, path []string, result *[]externalReferenceOccurrence) {
+	if path == nil {
+		path = make([]string, 0, 64)
+	}
 	switch typed := value.(type) {
 	case map[string]any:
 		if reference, _ := typed["$ref"].(string); reference != "" && !strings.HasPrefix(reference, "#") {
 			*result = append(*result, externalReferenceOccurrence{
 				Reference: reference,
 				Context:   openapiwalk.ObjectContextAt(path),
-				Path:      append([]string(nil), path...),
 			})
 		}
 		for name, child := range typed {
@@ -183,7 +204,7 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 		}
 	case []any:
 		for index, child := range typed {
-			collectExternalReferenceOccurrences(child, append(path, fmt.Sprint(index)), result)
+			collectExternalReferenceOccurrences(child, append(path, strconv.Itoa(index)), result)
 		}
 	}
 }

@@ -102,7 +102,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 			return Result{}, fmt.Errorf("internal source registry failure: %w", err)
 		}
 	}
-	sourceMetadata, err := encodeSourceMetadata(decoded)
+	sourceMetadata, err := sourceMetadataFromOwnedInput(source.data, decoded)
 	if err != nil {
 		return Result{}, err
 	}
@@ -134,7 +134,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	}
 	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
 	result := resultFromCompile(document, err, source.display, collector)
-	if result.Document != nil && source.filePath != "" && externalReferenceCount(effective) == 0 && len(options.SchemaExtensionManifests) == 0 {
+	if result.Document != nil && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
 	}

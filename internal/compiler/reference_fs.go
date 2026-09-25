@@ -2,14 +2,19 @@ package sdkgen
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
+
+	libopenapiindex "github.com/pb33f/libopenapi/index"
 )
 
 // referenceSourceFS exposes only containment-validated reference files and reads
@@ -18,6 +23,15 @@ import (
 type referenceSourceFS struct {
 	files map[string]referenceFSFile
 	dirs  map[string][]fs.DirEntry
+
+	indexedFS *libopenapiindex.LocalFS
+	rolodex   *libopenapiindex.Rolodex
+	indexing  sync.Map
+}
+
+type referenceIndexState struct {
+	done chan struct{}
+	err  error
 }
 
 type referenceFSFile struct {
@@ -81,6 +95,15 @@ func newReferenceSourceFS(root string, filters []string, cache *decodedSourceCac
 			result.dirs[directory] = append(result.dirs[directory], entries[name])
 		}
 	}
+	indexedFS, err := libopenapiindex.NewLocalFSWithConfig(&libopenapiindex.LocalFSConfig{
+		BaseDirectory: root,
+		FileFilters:   filters,
+		DirFS:         result,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("prepare OpenAPI reference source filesystem: %w", err)
+	}
+	result.indexedFS = indexedFS
 	return result, nil
 }
 
@@ -101,6 +124,80 @@ func ensureReferenceFSParents(children map[string]map[string]fs.DirEntry, name s
 		children[parent][base] = fs.FileInfoToDirEntry(referenceFSInfo{name: base, mode: fs.ModeDir | 0o555})
 		current = parent
 	}
+}
+
+func (filesystem *referenceSourceFS) GetFiles() map[string]libopenapiindex.RolodexFile {
+	return nil
+}
+
+func (filesystem *referenceSourceFS) SetRolodex(rolodex *libopenapiindex.Rolodex) {
+	filesystem.rolodex = rolodex
+	if filesystem.indexedFS != nil {
+		filesystem.indexedFS.SetRolodex(rolodex)
+	}
+}
+
+func (filesystem *referenceSourceFS) SetLogger(logger *slog.Logger) {
+	if filesystem.indexedFS != nil {
+		filesystem.indexedFS.SetLogger(logger)
+	}
+}
+
+func (filesystem *referenceSourceFS) OpenWithContext(ctx context.Context, name string) (fs.File, error) {
+	if filesystem.indexedFS == nil {
+		return filesystem.Open(name)
+	}
+	opened, err := filesystem.indexedFS.OpenWithContext(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	file, ok := opened.(*libopenapiindex.LocalFile)
+	if !ok || filesystem.rolodex == nil {
+		return opened, nil
+	}
+	fullPath := file.GetFullPath()
+	stateValue, loaded := filesystem.indexing.LoadOrStore(fullPath, &referenceIndexState{done: make(chan struct{})})
+	state := stateValue.(*referenceIndexState)
+	if loaded {
+		if libopenapiindex.IsFileBeingIndexed(ctx, fullPath) {
+			return file, nil
+		}
+		select {
+		case <-state.done:
+			if state.err != nil {
+				return nil, state.err
+			}
+			return file, nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	defer close(state.done)
+
+	if file.GetIndex() == nil {
+		config := filesystem.rolodex.GetConfig()
+		if config == nil {
+			state.err = fmt.Errorf("OpenAPI reference rolodex has no index configuration")
+			return nil, state.err
+		}
+		copied := *config
+		copied.SpecAbsolutePath = fullPath
+		copied.AvoidBuildIndex = true
+		copied.SpecInfo = nil
+		copied.Rolodex = filesystem.rolodex
+		indexingCtx := libopenapiindex.AddIndexingFile(ctx, fullPath)
+		idx, indexErr := file.IndexWithContext(indexingCtx, &copied)
+		if indexErr != nil {
+			state.err = indexErr
+			return nil, state.err
+		}
+		if idx != nil {
+			libopenapiindex.NewResolver(idx)
+			idx.BuildIndex()
+			filesystem.rolodex.AddIndex(idx)
+		}
+	}
+	return file, nil
 }
 
 func (filesystem *referenceSourceFS) Open(name string) (fs.File, error) {

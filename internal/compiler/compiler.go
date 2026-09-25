@@ -85,7 +85,7 @@ func compileInput(source inputSource, project bool, options CompileOptions) (*ir
 }
 
 func compileInputValue(source inputSource, value any, project bool, options CompileOptions) (*ir.Document, error) {
-	sourceMetadata, err := encodeSourceMetadata(value)
+	sourceMetadata, err := sourceMetadataFromOwnedInput(source.data, value)
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, err)
 	}
@@ -170,7 +170,7 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
 	}
-	hasExternalReferences := externalReferenceCount(value) != 0
+	hasExternalReferences := hasExternalReference(value, nil)
 	if !hasExternalReferences {
 		// The structured result path already validates reserved keywords,
 		// references, version features, and every generator-consumed shape. Avoid
@@ -527,12 +527,6 @@ func hasRelativeExternalReferenceValue(document any) bool {
 		return false
 	}
 	return visit(document, nil)
-}
-
-func externalReferenceCount(document any) int {
-	var references []string
-	collectExternalReferences(document, nil, &references)
-	return len(references)
 }
 
 func resolveContainedReference(reference, directory, root string, allowRemote bool) (string, error) {

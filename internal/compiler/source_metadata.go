@@ -18,9 +18,22 @@ func encodeSourceMetadata(value any) ([]byte, error) {
 	return data, nil
 }
 
+// sourceMetadataFromOwnedInput reuses valid JSON bytes loaded by the compiler.
+// Generated metadata decodes this buffer before deterministic emission, so JSON
+// whitespace/key order is not part of the public contract. YAML still needs a
+// JSON representation of the decoded entry source.
+func sourceMetadataFromOwnedInput(data []byte, value any) ([]byte, error) {
+	if json.Valid(data) {
+		return data, nil
+	}
+	return encodeSourceMetadata(value)
+}
+
 func attachSourceMetadata(document *ir.Document, data []byte) {
 	if document == nil {
 		return
 	}
-	document.SourceMetadataJSON = append(document.SourceMetadataJSON[:0], data...)
+	// encodeSourceMetadata returns a fresh compiler-owned buffer. Transfer that
+	// ownership to the IR instead of copying the full entry document again.
+	document.SourceMetadataJSON = data
 }

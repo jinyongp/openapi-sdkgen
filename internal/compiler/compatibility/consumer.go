@@ -28,6 +28,89 @@ const (
 // proven lossless before IR construction.
 type ConsumerPolicy struct{}
 
+// ConsumerPolicyMayApply cheaply identifies occurrences that can be changed or
+// diagnosed by ConsumerPolicy. It lets the compiler avoid constructing JSON
+// pointers and compatibility contexts for the overwhelmingly common no-op
+// nodes while keeping the policy itself authoritative for the final decision.
+func ConsumerPolicyMayApply(version openapidoc.VersionLine, object openapiwalk.ObjectContext, value any) bool {
+	if object == openapiwalk.ObjectSchema {
+		if version != openapidoc.Version30 {
+			return false
+		}
+		if _, ok := value.(bool); ok {
+			return true
+		}
+		schema, ok := value.(map[string]any)
+		if !ok {
+			return false
+		}
+		if _, ok := schema["type"].([]any); ok {
+			return true
+		}
+		for _, key := range []string{"exclusiveMinimum", "exclusiveMaximum"} {
+			if raw, exists := schema[key]; exists {
+				if _, valid30 := raw.(bool); !valid30 {
+					return true
+				}
+			}
+		}
+		for key := range schema {
+			if openAPI31SchemaKeyword(key) {
+				return true
+			}
+		}
+		return false
+	}
+	objectValue, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	reference, _ := objectValue["$ref"].(string)
+	hasReference := reference != ""
+	switch object {
+	case openapiwalk.ObjectParameter:
+		return hasReference || isReservedHeaderParameter(objectValue)
+	case openapiwalk.ObjectHeader, openapiwalk.ObjectEncoding:
+		// Header name/ownership and Encoding media context are structural and
+		// therefore require the source path even when the object has no $ref.
+		return true
+	case openapiwalk.ObjectRequestBody:
+		return hasReference || version == openapidoc.Version30
+	case openapiwalk.ObjectResponse:
+		_, hasSummary := objectValue["summary"]
+		return hasReference || (version != openapidoc.Version32 && hasSummary)
+	case openapiwalk.ObjectExample:
+		_, hasData := objectValue["dataValue"]
+		_, hasSerialized := objectValue["serializedValue"]
+		return hasReference || (version != openapidoc.Version32 && (hasData || hasSerialized))
+	case openapiwalk.ObjectSecurityScheme:
+		_, hasDeprecated := objectValue["deprecated"]
+		return hasReference || (version != openapidoc.Version32 && hasDeprecated)
+	case openapiwalk.ObjectLink, openapiwalk.ObjectCallback, openapiwalk.ObjectMediaType:
+		return hasReference
+	case openapiwalk.ObjectInfo:
+		_, hasSummary := objectValue["summary"]
+		return version == openapidoc.Version30 && hasSummary
+	case openapiwalk.ObjectUnknown:
+		if version == openapidoc.Version30 {
+			if _, exists := objectValue["identifier"]; exists {
+				return true
+			}
+		}
+		if version != openapidoc.Version32 {
+			if name, ok := objectValue["name"].(string); ok && name != "" {
+				return true
+			}
+			for _, key := range []string{"summary", "parent", "kind"} {
+				if _, exists := objectValue[key]; exists {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (ConsumerPolicy) Apply(context Context, value any) Result {
 	if context.Object == openapiwalk.ObjectSchema && context.Version == openapidoc.Version30 {
 		if result, applied := applyOpenAPI30SchemaRule(context, value); applied {

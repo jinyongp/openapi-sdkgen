@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-
-	"go.yaml.in/yaml/v4"
 
 	"openapi-sdkgen/internal/compiler/compatibility"
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
@@ -20,13 +19,21 @@ import (
 // Referenced OpenAPI objects inherit this version line; Schema dialect/resource
 // semantics remain handled by the compiler schema layer.
 type compatibilitySession struct {
-	version openapidoc.VersionLine
-	policy  compatibility.Policy
+	version        openapidoc.VersionLine
+	policy         compatibility.Policy
+	consumerPolicy bool
+	noopPolicy     bool
 
-	mu       sync.Mutex
-	findings []compatibility.Finding
-	ledger   []compatibility.LedgerEntry
-	contexts map[string]map[openapiwalk.ObjectContext]struct{}
+	mu               sync.Mutex
+	findings         []compatibility.Finding
+	ledger           []compatibility.LedgerEntry
+	contexts         map[string]map[openapiwalk.ObjectContext]struct{}
+	effectiveSources map[compatibilitySourceKey]decodedSource
+}
+
+type compatibilitySourceKey struct {
+	source  string
+	context openapiwalk.ObjectContext
 }
 
 func newCompatibilitySession(root any, policy compatibility.Policy) *compatibilitySession {
@@ -39,7 +46,16 @@ func newCompatibilitySession(root any, policy compatibility.Policy) *compatibili
 			version, _ = openapidoc.DetectVersionLine(declared)
 		}
 	}
-	return &compatibilitySession{version: version, policy: policy, contexts: make(map[string]map[openapiwalk.ObjectContext]struct{})}
+	_, consumerPolicy := policy.(compatibility.ConsumerPolicy)
+	_, noopPolicy := policy.(compatibility.NoopPolicy)
+	return &compatibilitySession{
+		version:          version,
+		policy:           policy,
+		consumerPolicy:   consumerPolicy,
+		noopPolicy:       noopPolicy,
+		contexts:         make(map[string]map[openapiwalk.ObjectContext]struct{}),
+		effectiveSources: make(map[compatibilitySourceKey]decodedSource),
+	}
 }
 
 func (session *compatibilitySession) effectiveValue(source string, value any) (any, bool, error) {
@@ -51,7 +67,16 @@ func (session *compatibilitySession) effectiveValueInContext(source string, valu
 		return value, false, nil
 	}
 	session.registerSourceContext(source, root)
-	effective, omitted, changed, err := session.walk(source, value, value, nil, root)
+	if session.noopPolicy {
+		return value, false, nil
+	}
+	// OpenAPI 3.1+ Schema Objects use native JSON Schema semantics. Consumer
+	// compatibility rules do not apply inside a source whose root is already a
+	// Schema Object, so avoid recursively walking external schema resources.
+	if session.consumerPolicy && root == openapiwalk.ObjectSchema && session.version != openapidoc.Version30 {
+		return value, false, nil
+	}
+	effective, omitted, changed, err := session.walk(source, value, value, make([]string, 0, 64), root)
 	if err != nil {
 		return nil, false, err
 	}
@@ -68,41 +93,63 @@ func (session *compatibilitySession) effectiveValueInContext(source string, valu
 }
 
 func (session *compatibilitySession) walk(source string, sourceRoot, value any, path []string, root openapiwalk.ObjectContext) (any, bool, bool, error) {
-	object := openapiwalk.ObjectContextAt(path)
-	if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
-		object = root
+	current := value
+	changed := false
+	applyPolicy := true
+	var object openapiwalk.ObjectContext
+	objectResolved := false
+	if session.consumerPolicy {
+		switch value.(type) {
+		case map[string]any, bool:
+			object = openapiwalk.ObjectContextAt(path)
+			if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
+				object = root
+			}
+			objectResolved = true
+			// OpenAPI 3.1+ Schema subtrees already use native JSON Schema
+			// semantics and contain no ConsumerPolicy-owned OpenAPI objects.
+			// Prune them wholesale instead of walking every nested schema node.
+			if object == openapiwalk.ObjectSchema && session.version != openapidoc.Version30 {
+				return value, false, false, nil
+			}
+			applyPolicy = compatibility.ConsumerPolicyMayApply(session.version, object, value)
+		default:
+			applyPolicy = false
+		}
 	}
-	context := compatibility.Context{
-		Version: session.version,
-		Object:  object,
-		Source:  source,
-		Pointer: sourceJSONPointer(path),
+	if applyPolicy {
+		if !objectResolved {
+			object = openapiwalk.ObjectContextAt(path)
+			if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
+				object = root
+			}
+		}
+		context := compatibility.Context{
+			Version: session.version,
+			Object:  object,
+			Source:  source,
+			Pointer: sourceJSONPointer(path),
+		}
+		if classified, ok := session.resolveToClassify(context, sourceRoot, value); ok {
+			session.record(classified)
+			return nil, true, true, nil
+		}
+		result := session.policy.Apply(context, value)
+		session.record(result)
+		if result.Reject {
+			return result.Value, false, result.Changed, nil
+		}
+		if result.Omit {
+			return nil, true, true, nil
+		}
+		current = result.Value
+		changed = result.Changed
 	}
-	if classified, ok := session.resolveToClassify(context, sourceRoot, value); ok {
-		session.record(classified)
-		return nil, true, true, nil
-	}
-	result := session.policy.Apply(context, value)
-	session.record(result)
-	if result.Reject {
-		return result.Value, false, result.Changed, nil
-	}
-	if result.Omit {
-		return nil, true, true, nil
-	}
-	current := result.Value
-	changed := result.Changed
 
 	switch typed := current.(type) {
 	case map[string]any:
-		names := make([]string, 0, len(typed))
-		for name := range typed {
-			names = append(names, name)
-		}
-		sort.Strings(names)
 		var copied map[string]any
-		for _, name := range names {
-			child := typed[name]
+		for name, child := range typed {
 			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
 				continue
 			}
@@ -132,7 +179,7 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 	case []any:
 		var copied []any
 		for index, child := range typed {
-			effective, omitted, childChanged, err := session.walk(source, sourceRoot, child, append(path, fmt.Sprint(index)), root)
+			effective, omitted, childChanged, err := session.walk(source, sourceRoot, child, append(path, strconv.Itoa(index)), root)
 			if err != nil {
 				return nil, false, false, err
 			}
@@ -215,22 +262,42 @@ func (session *compatibilitySession) record(result compatibility.Result) {
 }
 
 func (session *compatibilitySession) effectiveSource(source string, input decodedSource, context openapiwalk.ObjectContext) (decodedSource, error) {
+	if session == nil {
+		return input, nil
+	}
+	if context == "" {
+		context = openapiwalk.ObjectUnknown
+	}
+	key := compatibilitySourceKey{source: source, context: context}
+	session.mu.Lock()
+	cached, exists := session.effectiveSources[key]
+	session.mu.Unlock()
+	if exists {
+		return cached, nil
+	}
+
 	effective, changed, err := session.effectiveValueInContext(source, input.value, context)
 	if err != nil {
 		return decodedSource{}, err
 	}
-	if !changed {
-		return input, nil
+	result := input
+	if changed {
+		data, err := json.Marshal(effective)
+		if err != nil {
+			return decodedSource{}, fmt.Errorf("encode effective OpenAPI source %s: %w", source, err)
+		}
+		// effective is already the decoded semantic view. Keep it rather than
+		// decoding the just-encoded JSON into a second tree.
+		result = decodedSource{data: data, value: effective}
 	}
-	data, err := json.Marshal(effective)
-	if err != nil {
-		return decodedSource{}, fmt.Errorf("encode effective OpenAPI source %s: %w", source, err)
+	session.mu.Lock()
+	if existing, ok := session.effectiveSources[key]; ok {
+		result = existing
+	} else {
+		session.effectiveSources[key] = result
 	}
-	var normalized any
-	if err := yaml.Unmarshal(data, &normalized); err != nil {
-		return decodedSource{}, fmt.Errorf("decode effective OpenAPI source %s: %w", source, err)
-	}
-	return decodedSource{data: data, value: normalized}, nil
+	session.mu.Unlock()
+	return result, nil
 }
 
 func (session *compatibilitySession) registerSourceContext(source string, context openapiwalk.ObjectContext) {

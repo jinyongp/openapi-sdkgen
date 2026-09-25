@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"go.yaml.in/yaml/v4"
 )
 
 type decodedSource struct {
@@ -38,10 +36,10 @@ func (cache *decodedSourceCache) remember(path string, source decodedSource) err
 	if _, exists := cache.sources[resolved]; exists {
 		return nil
 	}
-	cache.sources[resolved] = decodedSource{
-		data:  append([]byte(nil), source.data...),
-		value: source.value,
-	}
+	// remember is used only with bytes already owned by the compiler input
+	// loader. Treat that buffer as immutable and share it with the per-compile
+	// cache instead of retaining a second full source copy.
+	cache.sources[resolved] = source
 	return nil
 }
 
@@ -51,8 +49,8 @@ func (cache *decodedSourceCache) load(path string) (decodedSource, error) {
 		if err != nil {
 			return decodedSource{}, err
 		}
-		var value any
-		if err := yaml.Unmarshal(data, &value); err != nil {
+		value, err := decodeInputValue(data, nil)
+		if err != nil {
 			return decodedSource{}, err
 		}
 		return decodedSource{data: data, value: value}, nil
@@ -66,8 +64,8 @@ func (cache *decodedSourceCache) load(path string) (decodedSource, error) {
 	if err != nil {
 		return decodedSource{}, err
 	}
-	var value any
-	if err := yaml.Unmarshal(data, &value); err != nil {
+	value, err := decodeInputValue(data, nil)
+	if err != nil {
 		return decodedSource{}, err
 	}
 	source := decodedSource{data: data, value: value}

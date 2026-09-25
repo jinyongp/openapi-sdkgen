@@ -1074,9 +1074,11 @@ func (wire *wireRenderContext) operationDefinition(document *ir.Document, irOper
 				"style: " + quoteTS(parameter.Style),
 				fmt.Sprintf("explode: %t", parameter.Explode),
 				fmt.Sprintf("allowReserved: %t", parameter.AllowReserved),
-				fmt.Sprintf("allowEmptyValue: %t", parameter.AllowEmptyValue),
 				fmt.Sprintf("required: %t", parameter.Required),
 				"schema: " + descriptor,
+			}
+			if parameter.AllowEmptyValue {
+				fields = append(fields, "allowEmptyValue: true")
 			}
 			if parameter.ContentType != "" {
 				fields = append(fields, "contentType: "+quoteTS(parameter.ContentType))
