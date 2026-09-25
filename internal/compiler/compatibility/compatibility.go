@@ -110,6 +110,12 @@ type Result struct {
 	Value    any
 	Findings []Finding
 	Ledger   []LedgerEntry
+	// Omit removes this occurrence from the effective semantic view. It does not
+	// remove it from source metadata or provenance.
+	Omit bool
+	// Changed reports that Value differs semantically from the source occurrence.
+	// It lets the compiler retain exact source bytes for no-op paths.
+	Changed bool
 }
 
 // Policy transforms one decoded value into its effective semantic view.

@@ -85,11 +85,30 @@ func compileInput(source inputSource, project bool, options CompileOptions) (*ir
 }
 
 func compileInputValue(source inputSource, value any, project bool, options CompileOptions) (*ir.Document, error) {
-	data := source.data
 	sourceMetadata, err := encodeSourceMetadata(value)
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, err)
 	}
+	if options.sourceCache != nil && source.filePath != "" {
+		if err := options.sourceCache.remember(source.filePath, decodedSource{data: source.data, value: value}); err != nil {
+			return nil, phaseError(diagnostic.PhaseReferences, fmt.Errorf("snapshot OpenAPI entry source: %w", err))
+		}
+	}
+	effective, changed, err := prepareCompatibilityValue(source.display, value, &options)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, err)
+	}
+	data := source.data
+	if changed {
+		data, err = json.Marshal(effective)
+		if err != nil {
+			return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("encode effective OpenAPI input: %w", err))
+		}
+	}
+	return compilePreparedInputValue(source, sourceMetadata, data, effective, project, options)
+}
+
+func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, value any, project bool, options CompileOptions) (*ir.Document, error) {
 	if findings := reservedExtensionDiagnosticsValue(value, source.display); len(findings) != 0 {
 		location := diagnostic.NewSourceRegistry([]string{findings[0].Location.Source}).Display(findings[0].Location.Source)
 		return nil, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", findings[0].Message, location, findings[0].Location.Pointer))
@@ -105,6 +124,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 			return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("normalize OpenAPI remote references: %w", err))
 		}
 	}
+	registerRemoteReferenceContexts(options.compatibilitySession, value, "")
 	if project && (len(options.RemoteRefAllowlist) != 0 || len(options.SchemaExtensionManifests) != 0 || options.UpdateRefLock || options.Offline || options.RefLockPath != "") {
 		return nil, phaseError(diagnostic.PhaseInput, errors.New("project compilation does not support remote references or schema extensions"))
 	}
@@ -173,7 +193,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	var fileFilter []string
 	if !project && source.fileBase != "" {
 		var err error
-		fileFilter, err = validatedReferenceFileFilter(source, value, remoteResolver != nil, options.sourceCache)
+		fileFilter, err = validatedReferenceFileFilter(source, value, remoteResolver != nil, options.sourceCache, options.compatibilitySession)
 		if err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
@@ -188,6 +208,13 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 		AllowRemoteReferences:  remoteResolver != nil,
 		FileFilter:             fileFilter,
 		SkipMetadataCollection: true,
+	}
+	if source.fileBase != "" && hasLocalReferenceDependencies(source, fileFilter) {
+		localFS, err := newReferenceSourceFS(source.fileBase, fileFilter, options.sourceCache, options.compatibilitySession)
+		if err != nil {
+			return nil, phaseError(diagnostic.PhaseReferences, err)
+		}
+		bundlerConfiguration.LocalFS = localFS
 	}
 	if remoteResolver != nil {
 		bundlerConfiguration.RemoteURLHandler = remoteResolver.handle
@@ -319,7 +346,7 @@ func rejectEscapingFileReferencesWithRemote(path, root string, allowRemote bool)
 	if err != nil {
 		return fmt.Errorf("resolve OpenAPI input directory: %w", err)
 	}
-	return inspectReferenceFile(path, resolvedRoot, make(map[string]bool), allowRemote, nil)
+	return inspectReferenceFile(path, resolvedRoot, make(map[string]bool), allowRemote, nil, nil, openapiwalk.ObjectUnknown)
 }
 
 func rejectEscapingFileReferenceData(data []byte, root string, allowRemote bool) error {
@@ -330,7 +357,23 @@ func rejectEscapingFileReferenceData(data []byte, root string, allowRemote bool)
 	return inspectReferenceData(data, resolvedRoot, resolvedRoot, make(map[string]bool), allowRemote)
 }
 
-func validatedReferenceFileFilter(source inputSource, document any, allowRemote bool, cache *decodedSourceCache) ([]string, error) {
+func hasLocalReferenceDependencies(source inputSource, filters []string) bool {
+	root := ""
+	if source.filePath != "" {
+		if relative, err := filepath.Rel(source.fileBase, source.filePath); err == nil {
+			root = filepath.ToSlash(relative)
+		}
+	}
+	for _, filter := range filters {
+		if filter == ".openapi-sdkgen-no-local-references" || filter == root {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func validatedReferenceFileFilter(source inputSource, document any, allowRemote bool, cache *decodedSourceCache, session *compatibilitySession) ([]string, error) {
 	root, err := filepath.EvalSymlinks(source.fileBase)
 	if err != nil {
 		return nil, fmt.Errorf("resolve OpenAPI input directory: %w", err)
@@ -348,7 +391,7 @@ func validatedReferenceFileFilter(source inputSource, document any, allowRemote 
 		visited[resolved] = true
 		directory = filepath.Dir(resolved)
 	}
-	if err := inspectReferenceValue(document, directory, root, visited, allowRemote, cache); err != nil {
+	if err := inspectReferenceValue(document, directory, root, visited, allowRemote, cache, session); err != nil {
 		return nil, err
 	}
 	filters := make([]string, 0, len(visited))
@@ -368,7 +411,7 @@ func validatedReferenceFileFilter(source inputSource, document any, allowRemote 
 	return filters, nil
 }
 
-func inspectReferenceFile(path, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache) error {
+func inspectReferenceFile(path, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache, session *compatibilitySession, context openapiwalk.ObjectContext) error {
 	resolvedPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
 		return fmt.Errorf("resolve OpenAPI reference file %s: %w", path, err)
@@ -376,6 +419,7 @@ func inspectReferenceFile(path, root string, visited map[string]bool, allowRemot
 	if err := requireContainedPath(resolvedPath, root); err != nil {
 		return err
 	}
+	session.registerSourceContext(resolvedPath, context)
 	if visited[resolvedPath] {
 		return nil
 	}
@@ -384,7 +428,11 @@ func inspectReferenceFile(path, root string, visited map[string]bool, allowRemot
 	if err != nil {
 		return fmt.Errorf("read OpenAPI reference file %s: %w", resolvedPath, err)
 	}
-	return inspectReferenceValue(source.value, filepath.Dir(resolvedPath), root, visited, allowRemote, cache)
+	effective, err := session.effectiveSource(resolvedPath, source, context)
+	if err != nil {
+		return err
+	}
+	return inspectReferenceValue(effective.value, filepath.Dir(resolvedPath), root, visited, allowRemote, cache, session)
 }
 
 func inspectReferenceData(data []byte, directory, root string, visited map[string]bool, allowRemote bool) error {
@@ -392,23 +440,26 @@ func inspectReferenceData(data []byte, directory, root string, visited map[strin
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return fmt.Errorf("inspect OpenAPI references: %w", err)
 	}
-	return inspectReferenceValue(document, directory, root, visited, allowRemote, nil)
+	return inspectReferenceValue(document, directory, root, visited, allowRemote, nil, nil)
 }
 
-func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache) error {
+func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache, session *compatibilitySession) error {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
 		case map[string]any:
 			if reference, _ := typed["$ref"].(string); reference != "" {
+				context := openapiwalk.ObjectContextAt(path)
 				target, err := resolveContainedReference(reference, directory, root, allowRemote)
 				if err != nil {
 					return err
 				}
 				if target != "" {
-					if err := inspectReferenceFile(target, root, visited, allowRemote, cache); err != nil {
+					if err := inspectReferenceFile(target, root, visited, allowRemote, cache, session, context); err != nil {
 						return err
 					}
+				} else if source := externalReferenceSource(reference); source != "" {
+					session.registerSourceContext(source, context)
 				}
 			}
 			for name, item := range typed {
@@ -429,6 +480,14 @@ func inspectReferenceValue(document any, directory, root string, visited map[str
 		return nil
 	}
 	return visit(document, nil)
+}
+
+func externalReferenceSource(reference string) string {
+	source, _, _ := strings.Cut(reference, "#")
+	if source == "" || !strings.Contains(source, "://") {
+		return ""
+	}
+	return source
 }
 
 func hasRelativeExternalReference(data []byte) bool {
@@ -551,7 +610,12 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, err)
 	}
-	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
+	options := CompileOptions{}
+	effective, _, err := prepareCompatibilityValue("in-memory OpenAPI document", raw, &options)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, err)
+	}
+	model, err := compileValue(effective, source, true, options, nil)
 	if err == nil {
 		attachSourceMetadata(model, sourceMetadata)
 	}

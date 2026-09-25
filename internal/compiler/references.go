@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"openapi-sdkgen/internal/compiler/compatibility"
 	"openapi-sdkgen/internal/diagnostic"
 )
 
@@ -71,8 +72,10 @@ type CompileOptions struct {
 	// compiler result diagnostics are authoritative.
 	HTTPWarningWriter io.Writer
 
-	diagnostics *diagnostic.Collector
-	sourceCache *decodedSourceCache
+	diagnostics          *diagnostic.Collector
+	sourceCache          *decodedSourceCache
+	compatibilityPolicy  compatibility.Policy
+	compatibilitySession *compatibilitySession
 
 	// Tests may replace the remote transport and DNS resolver without exposing
 	// those hooks through the CLI contract.
@@ -160,6 +163,7 @@ type remoteReferenceResolver struct {
 	trustedClient *http.Client
 	trustedConfig *httpInputConfig
 	diagnostics   *diagnostic.Collector
+	compatibility *compatibilitySession
 	lookup        hostLookup
 	mu            sync.Mutex
 	errs          []error
@@ -211,7 +215,7 @@ func newRemoteReferenceResolver(options CompileOptions, lock *referenceLock, cac
 	if options.remoteReferenceLookup != nil {
 		lookup = options.remoteReferenceLookup
 	}
-	resolver := &remoteReferenceResolver{origins: origins, trustedOrigin: trustedOrigin, lock: lock, update: options.UpdateRefLock, offline: options.Offline, cache: cache, diagnostics: options.diagnostics, lookup: lookup, sources: make(map[string][]byte)}
+	resolver := &remoteReferenceResolver{origins: origins, trustedOrigin: trustedOrigin, lock: lock, update: options.UpdateRefLock, offline: options.Offline, cache: cache, diagnostics: options.diagnostics, compatibility: options.compatibilitySession, lookup: lookup, sources: make(map[string][]byte)}
 	resolver.client = secureRemoteHTTPClient(resolver)
 	if options.remoteReferenceClient != nil {
 		resolver.client = options.remoteReferenceClient
@@ -425,7 +429,11 @@ func (r *remoteReferenceResolver) fetch(rawURL string) (*http.Response, error) {
 	if len(body) > remoteReferenceMaxBytes {
 		return nil, fmt.Errorf("remote reference %s exceeds %d byte limit", u.String(), remoteReferenceMaxBytes)
 	}
-	if err := r.scanRemoteSource(body, key); err != nil {
+	effectiveBody, err := r.effectiveRemoteBody(body, key)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.scanRemoteSource(effectiveBody, key); err != nil {
 		return nil, err
 	}
 	r.rememberSource(key, body)
@@ -445,8 +453,8 @@ func (r *remoteReferenceResolver) fetch(rawURL string) (*http.Response, error) {
 	if err := r.cacheBody(encoded, body, protectedCache); err != nil {
 		return nil, err
 	}
-	response.Body = io.NopCloser(bytes.NewReader(body))
-	response.ContentLength = int64(len(body))
+	response.Body = io.NopCloser(bytes.NewReader(effectiveBody))
+	response.ContentLength = int64(len(effectiveBody))
 	return response, nil
 }
 
@@ -475,7 +483,11 @@ func (r *remoteReferenceResolver) fetchCached(key string) (*http.Response, error
 	if hex.EncodeToString(actual[:]) != digest {
 		return nil, fmt.Errorf("cached remote reference %s digest does not match the reference lock", key)
 	}
-	if err := r.scanRemoteSource(data, key); err != nil {
+	effectiveData, err := r.effectiveRemoteBody(data, key)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.scanRemoteSource(effectiveData, key); err != nil {
 		return nil, err
 	}
 	r.rememberSource(key, data)
@@ -483,8 +495,8 @@ func (r *remoteReferenceResolver) fetchCached(key string) (*http.Response, error
 		StatusCode:    http.StatusOK,
 		Status:        "200 OK",
 		Header:        http.Header{"Content-Type": []string{"application/json"}},
-		Body:          io.NopCloser(bytes.NewReader(data)),
-		ContentLength: int64(len(data)),
+		Body:          io.NopCloser(bytes.NewReader(effectiveData)),
+		ContentLength: int64(len(effectiveData)),
 	}, nil
 }
 
@@ -505,6 +517,29 @@ func (r *remoteReferenceResolver) sourceSnapshot() map[string][]byte {
 		result[source] = append([]byte(nil), data...)
 	}
 	return result
+}
+
+func (r *remoteReferenceResolver) effectiveRemoteBody(data []byte, source string) ([]byte, error) {
+	if r.compatibility == nil {
+		return data, nil
+	}
+	value, err := decodeInputValue(data, nil)
+	if err != nil {
+		return nil, fmt.Errorf("decode remote OpenAPI reference %s: %w", source, err)
+	}
+	effective, changed, err := r.compatibility.effectiveValueInContext(source, value, r.compatibility.sourceContext(source))
+	if err != nil {
+		return nil, err
+	}
+	registerRemoteReferenceContexts(r.compatibility, effective, source)
+	if !changed {
+		return data, nil
+	}
+	encoded, err := json.Marshal(effective)
+	if err != nil {
+		return nil, fmt.Errorf("encode effective remote OpenAPI reference %s: %w", source, err)
+	}
+	return encoded, nil
 }
 
 func (r *remoteReferenceResolver) scanRemoteSource(data []byte, source string) error {

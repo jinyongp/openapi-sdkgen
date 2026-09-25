@@ -2,6 +2,7 @@ package sdkgen
 
 import (
 	"os"
+	"path/filepath"
 	"sync"
 
 	"go.yaml.in/yaml/v4"
@@ -22,6 +23,26 @@ type decodedSourceCache struct {
 
 func newDecodedSourceCache() *decodedSourceCache {
 	return &decodedSourceCache{sources: make(map[string]decodedSource)}
+}
+
+func (cache *decodedSourceCache) remember(path string, source decodedSource) error {
+	if cache == nil || path == "" {
+		return nil
+	}
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return err
+	}
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+	if _, exists := cache.sources[resolved]; exists {
+		return nil
+	}
+	cache.sources[resolved] = decodedSource{
+		data:  append([]byte(nil), source.data...),
+		value: source.value,
+	}
+	return nil
 }
 
 func (cache *decodedSourceCache) load(path string) (decodedSource, error) {

@@ -3,6 +3,7 @@ package sdkgen
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -36,29 +37,34 @@ type ReusableInput struct {
 func CompileResult(data []byte) (Result, error) {
 	collector := &diagnostic.Collector{}
 	decoded, decodeErr := decodeInputValue(data, nil)
+	var effective any
+	var sourceMetadata []byte
+	var err error
+	options := CompileOptions{}
 	if decodeErr == nil {
-		collector.Extend(reservedExtensionDiagnosticsValue(decoded, "in-memory OpenAPI document"))
+		sourceMetadata, err = encodeSourceMetadata(decoded)
+		if err == nil {
+			effective, _, err = prepareCompatibilityValue("in-memory OpenAPI document", decoded, &options)
+		}
+	}
+	if err == nil && decodeErr == nil {
+		collector.Extend(reservedExtensionDiagnosticsValue(effective, "in-memory OpenAPI document"))
 	}
 	if collector.HasErrors() {
 		return reservedSourceScanResult(collector), nil
 	}
-	if decodeErr == nil {
-		collector.Extend(pathItemReferenceDiagnostics(decoded, "in-memory OpenAPI document", false))
-		collector.Extend(unresolvedLocalReferenceDiagnostics(decoded, "in-memory OpenAPI document"))
+	if err == nil && decodeErr == nil {
+		collector.Extend(pathItemReferenceDiagnostics(effective, "in-memory OpenAPI document", false))
+		collector.Extend(unresolvedLocalReferenceDiagnostics(effective, "in-memory OpenAPI document"))
 	}
 	if collector.HasErrors() {
 		return referenceSourceScanResult(collector), nil
 	}
 	var document *ir.Document
-	var err error
 	if decodeErr != nil {
 		err = phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", decodeErr))
-	} else {
-		var sourceMetadata []byte
-		sourceMetadata, err = encodeSourceMetadata(decoded)
-		if err == nil {
-			document, err = compileValue(decoded, false, false, CompileOptions{}, nil)
-		}
+	} else if err == nil {
+		document, err = compileValue(effective, false, false, options, nil)
 		if err == nil {
 			attachSourceMetadata(document, sourceMetadata)
 		}
@@ -88,21 +94,41 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if err != nil {
 		return resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err)), source.display, collector), nil
 	}
-	collector.Extend(reservedExtensionDiagnosticsValue(decoded, source.display))
-	if err := scanLocalReferenceDocumentsValue(source, decoded, collector, options.sourceCache); err != nil {
+	if source.filePath != "" {
+		if err := options.sourceCache.remember(source.filePath, decodedSource{data: source.data, value: decoded}); err != nil {
+			return Result{}, fmt.Errorf("internal source registry failure: %w", err)
+		}
+	}
+	sourceMetadata, err := encodeSourceMetadata(decoded)
+	if err != nil {
+		return Result{}, err
+	}
+	effective, changed, err := prepareCompatibilityValue(source.display, decoded, &options)
+	if err != nil {
+		return Result{}, err
+	}
+	effectiveData := source.data
+	if changed {
+		effectiveData, err = json.Marshal(effective)
+		if err != nil {
+			return Result{}, fmt.Errorf("encode effective OpenAPI input: %w", err)
+		}
+	}
+	collector.Extend(reservedExtensionDiagnosticsValue(effective, source.display))
+	if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
 		return Result{}, fmt.Errorf("internal source registry failure: %w", err)
 	}
 	if collector.HasErrors() {
 		return reservedSourceScanResult(collector), nil
 	}
-	collector.Extend(pathItemReferenceDiagnostics(decoded, source.display, true))
-	collector.Extend(unresolvedLocalReferenceDiagnostics(decoded, source.display))
+	collector.Extend(pathItemReferenceDiagnostics(effective, source.display, true))
+	collector.Extend(unresolvedLocalReferenceDiagnostics(effective, source.display))
 	if collector.HasErrors() {
 		return referenceSourceScanResult(collector), nil
 	}
-	document, err := compileInputValue(source, decoded, false, options)
+	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
 	result := resultFromCompile(document, err, source.display, collector)
-	if result.Document != nil && source.filePath != "" && externalReferenceCount(decoded) == 0 && len(options.SchemaExtensionManifests) == 0 {
+	if result.Document != nil && source.filePath != "" && externalReferenceCount(effective) == 0 && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
 	}

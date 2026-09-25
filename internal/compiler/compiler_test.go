@@ -207,6 +207,61 @@ paths:
 	}
 }
 
+func TestCompileFileCombinesCachedLocalAndAllowlistedRemoteReferences(t *testing.T) {
+	directory := t.TempDir()
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/schema.yaml" {
+			http.NotFound(response, request)
+			return
+		}
+		_, _ = response.Write([]byte("Thing:\n  type: object\n  properties:\n    id: {type: string}\n"))
+	}))
+	defer remote.Close()
+
+	if err := os.MkdirAll(filepath.Join(directory, "paths"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.1.2
+info: {title: Mixed references, version: "1"}
+paths:
+  /things:
+    $ref: paths/things.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, "paths", "things.yaml"), []byte(`get:
+  operationId: listThings
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "`+remote.URL+`/schema.yaml#/Thing"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	document, err := CompileFileWithOptions(root, CompileOptions{
+		RemoteRefAllowlist:    []string{remote.URL},
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Operations) != 1 || document.Operations[0].OperationID != "listThings" {
+		t.Fatalf("operations = %#v", document.Operations)
+	}
+	if metadata := string(document.SourceMetadataJSON); !strings.Contains(metadata, `"paths/things.yaml"`) || strings.Contains(metadata, remote.URL) {
+		t.Fatalf("entry source metadata changed: %s", metadata)
+	}
+}
+
 func TestProtectedHTTPSInputSettingsApplyOnlyToSameOriginReferences(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows fails protected same-origin reference caching before persistence")
