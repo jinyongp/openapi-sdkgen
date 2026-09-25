@@ -1,6 +1,8 @@
 package typescript
 
 import (
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
@@ -59,5 +61,43 @@ func TestOpenAPI30SchemaNormalizationsMatchEquivalentTargetSemantics(t *testing.
 				t.Fatalf("wire descriptor differs:\ncandidate: %s\nequivalent: %s", candidateWire, equivalentWire)
 			}
 		})
+	}
+}
+
+func TestOpenAPI30BooleanFalseNormalizationRejectsRequestAndResponseRuntimeValues(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Boolean false compatibility","version":"1"},
+  "paths":{
+    "/input":{"post":{"operationId":"denyInput","requestBody":{"required":true,"content":{"application/json":{"schema":false}}},"responses":{"204":{"description":"OK"}}}},
+    "/output":{"get":{"operationId":"denyOutput","responses":{"200":{"description":"OK","content":{"application/json":{"schema":false}}}}}}
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+let fetched = 0;
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async (input) => {
+    fetched++;
+    if (new URL(String(input)).pathname === "/output")
+      return new Response(JSON.stringify("invalid"), { status: 200, headers: { "content-type": "application/json" } });
+    return new Response(null, { status: 204 });
+  },
+});
+let inputRejected = false;
+try { await api.$operations.denyInput({ body: "invalid" }); } catch { inputRejected = true; }
+if (!inputRejected || fetched !== 0) throw new Error("normalized false request schema reached fetch");
+let outputRejected = false;
+try { await api.$operations.denyOutput(); } catch { outputRejected = true; }
+if (!outputRejected || fetched !== 1) throw new Error("normalized false response schema accepted a value");
+`
+	if result, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute boolean false compatibility runtime test: %v\n%s", err, result)
 	}
 }

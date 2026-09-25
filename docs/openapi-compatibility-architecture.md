@@ -535,17 +535,17 @@ does not gate them, and `false` is currently lowered to `never`.
 
 This is a confirmed conformance gap.
 
-Normalization candidates are not symmetric:
+Both boolean forms now have proved OAS 3.0-compatible normalizations:
 
-- `true → {}` produces the same current public type (`unknown`) and is a
-  candidate for a proved normalization;
-- `false → {not:{}}` does **not** currently preserve target semantics:
-  current TypeScript lowers `false` to `never` but `not: {}` to
-  `unknown`.
+- `true → {}` preserves the public `unknown` type and unconstrained wire
+  semantics;
+- `false → {not:{}}` preserves the public `never` type after the target
+  recognizes an exact negated-empty schema as unsatisfiable, and the generated
+  runtime rejects both request and response values.
 
-Therefore boolean schemas must not receive one blanket normalization rule.
-Until target `not` semantics prove equivalence, OAS 3.0 `false` must remain
-reject.
+The original source boolean remains intact in source metadata. The pinned GitHub
+and Cloudflare corpora provide additional real-world coverage for boolean
+subschemas such as `additionalProperties: false`.
 
 #### COMP-SCHEMA-002 — OAS 3.1 `const` in a 3.0 document
 
@@ -764,7 +764,7 @@ the OAS normative disposition.
 
 | Corpus | Frozen identity / baseline | Compatibility footprint found by this investigation | Required post-change interpretation |
 | --- | --- | --- | --- |
-| GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header; no audited Reference siblings, reserved request headers, path mismatch, later Schema keyword, type array, boolean Schema, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; dropping them would break real API calls. Corpus must remain full-generation/strict-TypeScript successful. |
+| GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header, and boolean Schema occurrences including `additionalProperties: false`; no audited Reference siblings, reserved request headers, path mismatch, general type array, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; boolean schemas use the proved COMP-SCHEMA-001 normalizations. Corpus must remain full-generation/strict-TypeScript successful. |
 | Stripe SDK spec | SHA-256 `2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6`, 4,518,735 B, OAS 3.0.0 | 265 optional empty GET form bodies, 32 DELETE bodies of which seven are meaningful; no other audited mismatch | Empty GET/DELETE artifacts are lossless ignores; seven meaningful DELETE bodies require `preserve-extension`. Corpus must remain successful. |
 | GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Reference siblings are lossless ignores. Meaningful HEAD bodies are reject candidates because the Fetch target cannot provide a portable HEAD-body contract. Path mismatches remain reject. GitLab must not be claimed fully supported merely because the first false blocker is removed. |
 | Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, two reserved request-header Parameters, two response `Content-Type` Headers | DELETE bodies can be compatibility extensions if runtime proof passes; reserved/response headers are ignores; meaningful GET body is a reject candidate. This may expose a compatibility diagnostic before the previously recorded undeclared-security `SDKGEN-E508` boundary. Both causes must remain independently testable. |
@@ -1085,8 +1085,8 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-009 | Encoding applicability | multipart, urlencoded, JSON, response, Content-Type-header, style/explode/allowReserved precedence fixtures | ignored/no-effect fields do not reach target unsupported validation or runtime plans; applicable fields retain wire behavior |
 | VAL-COMP-010 | Reference I/O visibility | inline ignored nodes plus local/remote reusable-object occurrences; missing local ref, disallowed remote ref, allowed remote ref with counting handler, lock/cache probes | nested refs reachable only after an `ignore` action cause zero file/network fetches and zero lock/cache entries; an outer reference needed to classify its own occurrence may resolve once under existing trust policy; preserved/extended content retains existing allowlist/lock/offline behavior |
 | VAL-COMP-011 | External documents, version context, and source fidelity | local/file-URL/HTTP(S)/stdin/in-memory root inputs; local and remote multi-document fixtures with non-entry documents, complete-document parsing, nested refs, entry OAS 3.0/3.1/3.2 lines, standalone/embedded Schema `$schema` cases, entry-source metadata assertions across normalization/bundling, and prototype-sensitive metadata keys (`__proto__`, `constructor`) | every production compiler entry path populates source-facing metadata; OpenAPI Object semantics inherit the entry OAS line; referenced roots do not silently switch OAS versions; Schema dialect/resource rules remain independent where specified; exact fetched bytes remain integrity/provenance input; generated metadata reflects the decoded entry source, preserves prototype-safe own data properties and the existing useful TypeScript readonly/literal contract, and does not retain a second decoded tree for the plan lifetime; only synthetic manually-built IR may use the documented Raw fallback |
-| VAL-COMP-012 | Narrow schema normalization | A/B fixtures for approved `const`, nullable two-type union, numeric exclusive bound, and boolean-`true` candidate | public types, runtime validation, request serialization, response decoding, and wire descriptors are equivalent; source-facing metadata remains the original decoded construct rather than the normalized replacement |
-| VAL-COMP-013 | Schema reject boundaries | boolean-`false`, general type arrays, dialect/reference keywords, unproved JSON Schema assertions under OAS 3.0 | precise reject; no silent partial lowering |
+| VAL-COMP-012 | Narrow schema normalization | A/B fixtures for approved `const`, nullable two-type union, numeric exclusive bound, and boolean `true`/`false` candidates | public types, runtime validation, request serialization, response decoding, and wire descriptors are equivalent; source-facing metadata remains the original decoded construct rather than the normalized replacement |
+| VAL-COMP-013 | Schema reject boundaries | general type arrays, dialect/reference keywords, and unproved JSON Schema assertions under OAS 3.0 | precise reject; no silent partial lowering |
 | VAL-COMP-014 | Version-aware media/schema | 3.0 vs 3.1/3.2 `format: binary`, contentEncoding/contentMediaType contradictions, XML context fixtures | generated wire semantics follow the declared OAS line/context; legacy annotations do not accidentally control 3.1+ wire behavior |
 | VAL-COMP-015 | Manifest v2 | feature-matrix/manifest tests through `just agent test` and `just agent conformance`; direct `allowEmptyValue` true/false/absent/n-a runtime fixtures; audit of every `metadata` evidence path that currently relies on external-ref bundling | every compatibility rule has executable proof; `generated` cannot be supported by acceptance-only evidence; `metadata` evidence names an actual generated surface and does not assume external documents are folded into entry-source `openapi.document`; `allowEmptyValue` state is retained only if wire behavior is directly proved, otherwise corrected |
 | VAL-COMP-016 | Diagnostics | human + JSON-v2 diagnostic fixtures for silent normative ignore, safe nonconforming ignore/normalize, preserve-extension, OpenAPI reject, and Fetch-method target reject; baseline fixtures for pre-existing diagnostic fields; CLI exit-code assertions | report `schemaVersion` is 2; compatibility findings expose structural `rule`/`action`; `SDKGEN-W140` warnings remain exit 0, `SDKGEN-E140` OpenAPI rejects and `SDKGEN-E511` target-method rejects are nonzero; pre-existing diagnostic fields/values remain stable aside from the versioned additive contract; unrelated diagnostics omit rule/action; target appears only for target failure; human/JSON ordering and sanitization remain deterministic; docs/release notes call out the versioned JSON schema change |
