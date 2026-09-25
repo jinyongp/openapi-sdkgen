@@ -59,6 +59,7 @@ export interface InboundParameterDefinition {
   readonly style: string;
   readonly explode: boolean;
   readonly allowReserved: boolean;
+  readonly allowEmptyValue?: boolean;
   readonly required: boolean;
   readonly contentType?: string | undefined;
   readonly schema: InboundSchema;
@@ -98,6 +99,18 @@ export async function decodeInboundParameters(
             : definition.location === "querystring"
               ? url.search.slice(1)
               : url.searchParams.getAll(definition.name);
+    if (
+      definition.location === "query" &&
+      definition.contentType === undefined &&
+      definition.style === "form" &&
+      Array.isArray(raw) &&
+      raw.length === 1 &&
+      raw[0] === "" &&
+      definition.allowEmptyValue !== true
+    )
+      throw new InboundRequestError(
+        new Response("Empty query parameter " + definition.name + " is not allowed", { status: 400 }),
+      );
     if (
       definition.contentType === undefined &&
       definition.location === "query" &&

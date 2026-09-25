@@ -22,6 +22,7 @@ type operationParameter struct {
 	Required              bool
 	Deprecated            bool
 	AllowReserved         bool
+	AllowEmptyValue       bool
 	EnvironmentControlled bool
 	ContentType           string
 	Schema                any
@@ -167,6 +168,7 @@ func operationParameters(document *ir.Document, operation ir.Operation) ([]opera
 			Required:              parameter.Required,
 			Deprecated:            parameter.Deprecated,
 			AllowReserved:         parameter.AllowReserved,
+			AllowEmptyValue:       parameter.AllowEmptyValue,
 			EnvironmentControlled: headerPolicy == requestHeaderEnvironmentControlled,
 			ContentType:           parameter.ContentType,
 			Schema:                parameter.Schema,
@@ -327,6 +329,7 @@ func syntheticOperationParameters(document *ir.Document, operation ir.Operation)
 				Required:              boolValue(raw, "required"),
 				Deprecated:            boolValue(raw, "deprecated"),
 				AllowReserved:         boolValue(raw, "allowReserved"),
+				AllowEmptyValue:       location == "query" && contentType == "" && style == "form" && boolValue(raw, "allowEmptyValue"),
 				EnvironmentControlled: headerPolicy == requestHeaderEnvironmentControlled,
 				ContentType:           contentType,
 				Schema:                schema,

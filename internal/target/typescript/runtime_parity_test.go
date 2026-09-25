@@ -3815,7 +3815,7 @@ await invalid.$operations.getPayload().then(() => { throw new Error("invalid dec
 	}
 }
 
-func TestRuntimeValidatesXMLSchemaContentSchema(t *testing.T) {
+func TestRuntimeIgnoresContentMediaTypeThatContradictsMediaTypeObject(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.1.0",
   "info": {"title": "XML content schema", "version": "1"},
@@ -3855,11 +3855,11 @@ import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 const valid = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response(JSON.stringify("<payload><code>OK</code></payload>"), { status: 200, headers: { "content-type": "application/json" } }) });
 if (await valid.$operations.getPayload() !== "<payload><code>OK</code></payload>") throw new Error("XML content schema changed the outer string");
-const invalid = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response(JSON.stringify("<payload></payload>"), { status: 200, headers: { "content-type": "application/json" } }) });
-await invalid.$operations.getPayload().then(() => { throw new Error("invalid XML content was accepted"); }, (error) => { if (error.code !== "RESPONSE_DECODE_FAILED") throw error; });
+const contradictory = createClient({ baseURL: "https://api.example.test", fetch: async () => new Response(JSON.stringify("<payload></payload>"), { status: 200, headers: { "content-type": "application/json" } }) });
+if (await contradictory.$operations.getPayload() !== "<payload></payload>") throw new Error("contradictory contentMediaType changed the outer string");
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript XML contentSchema runtime test: %v\n%s", err, output)
+		t.Fatalf("execute contentMediaType precedence runtime test: %v\n%s", err, output)
 	}
 }
 

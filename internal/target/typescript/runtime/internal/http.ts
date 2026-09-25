@@ -3160,6 +3160,7 @@ async function appendQueryParameter(
   components: WireSchemas,
   codecs: ReadonlyMap<string, MediaCodec<unknown>>,
 ): Promise<void> {
+  assertQueryEmptyValueAllowed(value, parameter);
   if (parameter?.contentType !== undefined) {
     appendQueryValue(
       query,
@@ -3237,6 +3238,7 @@ function appendQuerySync(
       continue;
     }
     const name = parameter?.name ?? property;
+    assertQueryEmptyValueAllowed(value, parameter);
     if (parameter?.contentType !== undefined) {
       appendQueryValue(
         result,
@@ -3348,6 +3350,23 @@ function appendQuerystringSync(
       ),
     ),
   });
+}
+
+function assertQueryEmptyValueAllowed(
+  value: unknown,
+  parameter: ParameterDefinition | undefined,
+): void {
+  if (
+    value === "" &&
+    parameter !== undefined &&
+    parameter.location === "query" &&
+    parameter.contentType === undefined &&
+    parameter.style === "form" &&
+    parameter.allowEmptyValue !== true
+  )
+    throw new TypeError(
+      `Empty query parameter ${parameter.name} requires allowEmptyValue: true`,
+    );
 }
 
 function appendQueryValue(

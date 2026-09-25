@@ -117,19 +117,20 @@ type Operation struct {
 // application, and content-media resolution. Raw is retained for extensions
 // and lossless metadata that are intentionally outside the common HTTP IR.
 type Parameter struct {
-	Name          string
-	Description   string
-	Location      string
-	Style         string
-	Explode       bool
-	Required      bool
-	Deprecated    bool
-	AllowReserved bool
-	ContentType   string
-	Content       []MediaType
-	Schema        any
-	Raw           map[string]any
-	Pointer       string
+	Name            string
+	Description     string
+	Location        string
+	Style           string
+	Explode         bool
+	Required        bool
+	Deprecated      bool
+	AllowReserved   bool
+	AllowEmptyValue bool
+	ContentType     string
+	Content         []MediaType
+	Schema          any
+	Raw             map[string]any
+	Pointer         string
 }
 
 // MediaType is one normalized request/response media representation. Common

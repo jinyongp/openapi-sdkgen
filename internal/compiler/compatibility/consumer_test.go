@@ -191,9 +191,18 @@ func TestConsumerPolicyAppliesEncodingFieldApplicability(t *testing.T) {
 		Version: openapidoc.Version31,
 		Object:  openapiwalk.ObjectEncoding,
 		Pointer: "#/paths/~1items/post/requestBody/content/application~1x-www-form-urlencoded/encoding/value",
-	}, map[string]any{"headers": map[string]any{"x-part": map[string]any{}}, "style": "form"})
-	if got := urlencoded.Value.(map[string]any); !urlencoded.Changed || got["headers"] != nil || got["style"] != "form" {
+	}, map[string]any{"headers": map[string]any{"x-part": map[string]any{}}, "contentType": "application/json", "style": "form"})
+	if got := urlencoded.Value.(map[string]any); !urlencoded.Changed || got["headers"] != nil || got["contentType"] != nil || got["style"] != "form" {
 		t.Fatalf("urlencoded = %#v", urlencoded)
+	}
+
+	multipart31 := policy.Apply(Context{
+		Version: openapidoc.Version31,
+		Object:  openapiwalk.ObjectEncoding,
+		Pointer: "#/paths/~1items/post/requestBody/content/multipart~1form-data/encoding/file",
+	}, map[string]any{"contentType": "application/json", "explode": false, "allowReserved": true})
+	if got := multipart31.Value.(map[string]any); !multipart31.Changed || got["contentType"] != nil || got["explode"] != false || got["allowReserved"] != nil {
+		t.Fatalf("multipart 3.1 = %#v", multipart31)
 	}
 
 	multipart30 := policy.Apply(Context{

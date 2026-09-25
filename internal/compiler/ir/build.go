@@ -415,19 +415,20 @@ func readOperationParameters(document, pathItem, operation map[string]any, pathP
 				schema = content[0].Schema
 			}
 			parameter := Parameter{
-				Name:          name,
-				Description:   stringValue(resolved, "description"),
-				Location:      location,
-				Style:         style,
-				Explode:       explode,
-				Required:      boolValue(resolved, "required"),
-				Deprecated:    boolValue(resolved, "deprecated"),
-				AllowReserved: boolValue(resolved, "allowReserved"),
-				ContentType:   contentType,
-				Content:       content,
-				Schema:        schema,
-				Raw:           resolved,
-				Pointer:       pointer,
+				Name:            name,
+				Description:     stringValue(resolved, "description"),
+				Location:        location,
+				Style:           style,
+				Explode:         explode,
+				Required:        boolValue(resolved, "required"),
+				Deprecated:      boolValue(resolved, "deprecated"),
+				AllowReserved:   boolValue(resolved, "allowReserved"),
+				AllowEmptyValue: location == "query" && contentType == "" && style == "form" && boolValue(resolved, "allowEmptyValue"),
+				ContentType:     contentType,
+				Content:         content,
+				Schema:          schema,
+				Raw:             resolved,
+				Pointer:         pointer,
 			}
 			key := location + "\x00" + name
 			if resultIndex, exists := indices[key]; exists {

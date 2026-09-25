@@ -48,6 +48,56 @@ func (wire *wireRenderContext) wireSchemaDescriptorForDocument(document *ir.Docu
 	return wire.wireSchemaDescriptorScoped(value, direction, schemaRequiresFormatAssertion(value), legacyNullable)
 }
 
+func (wire *wireRenderContext) wireMediaSchemaDescriptorForDocument(document *ir.Document, value any, direction projection, mediaType string) (string, error) {
+	descriptor, err := wire.wireSchemaDescriptorForDocument(document, value, direction)
+	if err != nil {
+		return "", err
+	}
+	if mediaRootContentMediaTypeConflicts(document, value, mediaType) {
+		descriptor = mergeWireSchemaDescriptors(descriptor, "{ ignoreContentMediaType: true }")
+	}
+	return descriptor, nil
+}
+
+func mediaRootContentMediaTypeConflicts(document *ir.Document, value any, mediaType string) bool {
+	if document == nil || (document.OpenAPIVersionLine != "3.1" && document.OpenAPIVersionLine != "3.2") {
+		return false
+	}
+	schema, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	contentMediaType, _ := schema["contentMediaType"].(string)
+	if contentMediaType == "" {
+		resolved := resolveSchemaReference(document, schema, make(map[string]bool))
+		contentMediaType, _ = resolved["contentMediaType"].(string)
+	}
+	return contentMediaType != "" && !declaredMediaTypeMatches(mediaType, contentMediaType)
+}
+
+func declaredMediaTypeMatches(declared, nested string) bool {
+	declared = strings.ToLower(strings.TrimSpace(strings.Split(declared, ";")[0]))
+	nested = strings.ToLower(strings.TrimSpace(strings.Split(nested, ";")[0]))
+	if declared == nested {
+		return true
+	}
+	parts := strings.SplitN(declared, "/", 2)
+	nestedParts := strings.SplitN(nested, "/", 2)
+	if len(parts) != 2 || len(nestedParts) != 2 {
+		return false
+	}
+	if parts[0] != "*" && parts[0] != nestedParts[0] {
+		return false
+	}
+	if parts[1] == "*" {
+		return true
+	}
+	if strings.HasPrefix(parts[1], "*+") {
+		return strings.HasSuffix(nestedParts[1], strings.TrimPrefix(parts[1], "*"))
+	}
+	return false
+}
+
 const formatAssertionVocabulary = "https://json-schema.org/draft/2020-12/vocab/format-assertion"
 
 // schemaRequiresFormatAssertion recognizes the standard assertion vocabulary.
@@ -534,9 +584,9 @@ func (wire *wireRenderContext) operationRequestWireBodies(document *ir.Document,
 		booleanSchema, isBooleanSchema := media.Schema.(bool)
 		schemaIsFalse := isBooleanSchema && !booleanSchema
 		descriptor := "{}"
-		if schemaIsFalse || !isBinaryMedia(media.ContentType, schemaObject) {
+		if schemaIsFalse || !isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 			var err error
-			descriptor, err = wire.wireSchemaDescriptorForDocument(document, media.Schema, projectionInput)
+			descriptor, err = wire.wireMediaSchemaDescriptorForDocument(document, media.Schema, projectionInput, media.ContentType)
 			if err != nil {
 				return "", false, err
 			}
@@ -744,8 +794,8 @@ func (wire *wireRenderContext) operationResponseWireBodies(document *ir.Document
 			booleanSchema, isBooleanSchema := media.Schema.(bool)
 			schemaIsFalse := isBooleanSchema && !booleanSchema
 			descriptor := "{}"
-			if schemaIsFalse || !isBinaryMedia(media.ContentType, schemaObject) {
-				descriptor, err = wire.wireSchemaDescriptorForDocument(document, media.Schema, projectionOutput)
+			if schemaIsFalse || !isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
+				descriptor, err = wire.wireMediaSchemaDescriptorForDocument(document, media.Schema, projectionOutput, media.ContentType)
 				if err != nil {
 					return "", false, err
 				}

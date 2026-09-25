@@ -712,7 +712,7 @@ func operationOutputTypeForScope(document *ir.Document, operation ir.Operation, 
 				continue
 			}
 			schema, _ := media.Schema.(map[string]any)
-			if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schema) {
+			if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schema) {
 				result = append(result, "ReadableStream<Uint8Array>")
 				continue
 			}
@@ -784,7 +784,7 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 			if !hasItemSchema && media.Schema != nil {
 				if media.Schema == false {
 					valueType = "never"
-				} else if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schemaObject) {
+				} else if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
 				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
 					valueType = "string"
@@ -893,7 +893,7 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 				schema := media.Schema
 				if schema == false {
 					valueType = "never"
-				} else if !media.Stream.IsStreaming() && isBinaryMedia(media.ContentType, schemaObject) {
+				} else if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
 				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
 					valueType = "string"
@@ -920,13 +920,29 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 }
 
 func isBinaryMedia(mediaType string, schema map[string]any) bool {
+	return isBinaryMediaForVersion("", mediaType, schema)
+}
+
+func isBinaryMediaForDocument(document *ir.Document, mediaType string, schema map[string]any) bool {
+	version := ""
+	if document != nil {
+		version = document.OpenAPIVersionLine
+	}
+	return isBinaryMediaForVersion(version, mediaType, schema)
+}
+
+func isBinaryMediaForVersion(version, mediaType string, schema map[string]any) bool {
 	mediaType = strings.ToLower(mediaType)
 	if strings.HasPrefix(mediaType, "text/") || isJSONMediaType(mediaType) || strings.Contains(mediaType, "xml") {
 		return false
 	}
 	format, _ := schema["format"].(string)
 	contentEncoding, _ := schema["contentEncoding"].(string)
-	return format == "binary" || contentEncoding == "binary" || mediaType == "application/octet-stream"
+	legacyFormatBinary := version == "" || version == "3.0"
+	contentEncodingBinary := version == "" || version == "3.1" || version == "3.2"
+	return legacyFormatBinary && strings.EqualFold(format, "binary") ||
+		contentEncodingBinary && strings.EqualFold(contentEncoding, "binary") ||
+		mediaType == "application/octet-stream"
 }
 
 func isTextMedia(mediaType string) bool {

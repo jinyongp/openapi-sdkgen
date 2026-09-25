@@ -137,6 +137,8 @@ export interface WireSchema {
   readonly contentEncoding?: string;
   /** Media type of string content validated by contentSchema. */
   readonly contentMediaType?: string;
+  /** Ignore contentMediaType for this media-root occurrence while preserving nested schema semantics. */
+  readonly ignoreContentMediaType?: true;
   /** Schema applied to decoded string content without changing the outer value. */
   readonly contentSchema?: WireSchema;
 }
@@ -584,9 +586,10 @@ function validationCacheKey(
   direction: "encode" | "decode",
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
+  ignoreContentMediaType: boolean,
 ): string {
   const scope = dynamicScope.map((schema) => schemaIdentity(context, schema)).join(",");
-  return `${direction}:${options.unknownProperties}:${scope}`;
+  return `${direction}:${options.unknownProperties}:${ignoreContentMediaType ? "ignore-content-media" : "content-media"}:${scope}`;
 }
 
 function hasCachedValidation(
@@ -596,13 +599,14 @@ function hasCachedValidation(
   direction: "encode" | "decode",
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
+  ignoreContentMediaType: boolean,
 ): boolean {
   if (typeof value !== "object" || value === null) return false;
   return (
     context.validatedObjects
       .get(value)
       ?.get(schema)
-      ?.has(validationCacheKey(context, direction, options, dynamicScope)) ?? false
+      ?.has(validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType)) ?? false
   );
 }
 
@@ -613,6 +617,7 @@ function cacheValidation(
   direction: "encode" | "decode",
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
+  ignoreContentMediaType: boolean,
 ): void {
   if (typeof value !== "object" || value === null) return;
   let schemas = context.validatedObjects.get(value);
@@ -625,7 +630,7 @@ function cacheValidation(
     keys = new Set<string>();
     schemas.set(schema, keys);
   }
-  keys.add(validationCacheKey(context, direction, options, dynamicScope));
+  keys.add(validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType));
 }
 
 function extendDynamicScope(scope: DynamicScope, schema: WireSchema): DynamicScope {
@@ -670,6 +675,7 @@ function transformWireValueWithContext(
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
   context: ValidationContext,
+  ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
 ): unknown {
   const scope = extendDynamicScope(dynamicScope, schema);
   validateWireValueWithContext(
@@ -680,6 +686,7 @@ function transformWireValueWithContext(
     options,
     dynamicScope,
     context,
+    ignoreContentMediaType,
   );
   if (value === null || value === undefined) return value;
   const dynamicTarget = resolveDynamicReference(schema, scope);
@@ -693,6 +700,7 @@ function transformWireValueWithContext(
       options,
       scope,
       context,
+      ignoreContentMediaType,
     );
   if (schema.reference !== undefined) {
     const referenced = components[schema.reference];
@@ -705,6 +713,7 @@ function transformWireValueWithContext(
         options,
         scope,
         context,
+        ignoreContentMediaType,
       );
   }
   if (Array.isArray(transformed)) {
@@ -882,8 +891,9 @@ function validateWireValueWithContext(
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
   context: ValidationContext,
+  ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
 ): void {
-  if (hasCachedValidation(context, value, schema, direction, options, dynamicScope)) return;
+  if (hasCachedValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType)) return;
   assertFiniteJSONNumbers(value, context.finiteSeen);
   const scope = extendDynamicScope(dynamicScope, schema);
   if (schema.boolean === false) throw new TypeError("schema is false");
@@ -898,6 +908,7 @@ function validateWireValueWithContext(
       options,
       scope,
       context,
+      ignoreContentMediaType,
     );
   }
   if (schema.reference !== undefined) {
@@ -911,6 +922,7 @@ function validateWireValueWithContext(
         options,
         scope,
         context,
+        ignoreContentMediaType,
       );
   }
   if (schema.types !== undefined && !schema.types.some((type) => valueMatchesType(value, type))) {
@@ -1001,9 +1013,9 @@ function validateWireValueWithContext(
   }
   for (const branch of schema.allOf ?? [])
     validateWireValueWithContext(value, branch, components, direction, options, scope, context);
-  if (schema.contentSchema !== undefined && typeof value === "string") {
+  if (!ignoreContentMediaType && schema.contentSchema !== undefined && typeof value === "string") {
     validateWireValueWithContext(
-      decodeSchemaContent(value, schema, components),
+      decodeSchemaContent(value, schema, components, ignoreContentMediaType),
       schema.contentSchema,
       components,
       direction,
@@ -1077,11 +1089,11 @@ function validateWireValueWithContext(
         );
       }
     }
-    cacheValidation(context, value, schema, direction, options, dynamicScope);
+    cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
     return;
   }
   if (!isRecord(value)) {
-    cacheValidation(context, value, schema, direction, options, dynamicScope);
+    cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
     return;
   }
   if (schema.minProperties !== undefined && Object.keys(value).length < schema.minProperties)
@@ -1227,7 +1239,7 @@ function validateWireValueWithContext(
       );
     }
   }
-  cacheValidation(context, value, schema, direction, options, dynamicScope);
+  cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
 }
 
 /** Implements the standard JSON Schema 2020-12 format-assertion registry. Unknown formats remain application-defined annotations. */
@@ -1368,7 +1380,12 @@ function matchesWireURITemplate(value: string): boolean {
   return depth === 0;
 }
 
-function decodeSchemaContent(value: string, schema: WireSchema, components: WireSchemas): unknown {
+function decodeSchemaContent(
+  value: string,
+  schema: WireSchema,
+  components: WireSchemas,
+  ignoreContentMediaType = false,
+): unknown {
   let decoded = value;
   const encoding = schema.contentEncoding?.toLowerCase();
   if (encoding === "base64" || encoding === "base64url") {
@@ -1391,7 +1408,7 @@ function decodeSchemaContent(value: string, schema: WireSchema, components: Wire
   ) {
     throw new TypeError(`unsupported contentEncoding ${schema.contentEncoding}`);
   }
-  const mediaType = schema.contentMediaType;
+  const mediaType = ignoreContentMediaType ? undefined : schema.contentMediaType;
   if (mediaType === undefined || mediaType === "" || mediaType.toLowerCase().startsWith("text/"))
     return decoded;
   if (isJSONMediaType(mediaType)) {

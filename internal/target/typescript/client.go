@@ -567,7 +567,7 @@ func requestBodyIRMediaValueTypeForScope(document *ir.Document, media ir.MediaTy
 	if media.Schema == false {
 		return "never", nil
 	}
-	if isBinaryMedia(media.ContentType, schemaObject) {
+	if isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 		return "BinaryBody", nil
 	}
 	return schemaTypeForScope(document, media.Schema, projectionInput, scope)
@@ -641,7 +641,7 @@ func requestBodyMediaValueTypeForScope(document *ir.Document, mediaType string, 
 	if schema == false {
 		return "never", nil
 	}
-	if isBinaryMedia(mediaType, schemaObject) {
+	if isBinaryMediaForDocument(document, mediaType, schemaObject) {
 		return "BinaryBody", nil
 	}
 	return schemaTypeForScope(document, schema, projectionInput, scope)
@@ -834,6 +834,7 @@ func resourceParameterSignature(document *ir.Document, parameter operationParame
 		parameter.Style,
 		strconv.FormatBool(parameter.Explode),
 		strconv.FormatBool(parameter.AllowReserved),
+		strconv.FormatBool(parameter.AllowEmptyValue),
 		parameter.ContentType,
 		wireSchema,
 	}, "\x00"), nil
@@ -1073,6 +1074,7 @@ func (wire *wireRenderContext) operationDefinition(document *ir.Document, irOper
 				"style: " + quoteTS(parameter.Style),
 				fmt.Sprintf("explode: %t", parameter.Explode),
 				fmt.Sprintf("allowReserved: %t", parameter.AllowReserved),
+				fmt.Sprintf("allowEmptyValue: %t", parameter.AllowEmptyValue),
 				fmt.Sprintf("required: %t", parameter.Required),
 				"schema: " + descriptor,
 			}

@@ -17,7 +17,7 @@ func TestServerAddOnAcceptsBinaryInboundBodies(t *testing.T) {
   "info": {"title": "Webhook", "version": "1"},
   "paths": {},
   "webhooks": {"orderCreated": {"post": {
-    "requestBody": {"content": {"application/pdf": {"schema": {"type": "string", "format": "binary"}}}},
+    "requestBody": {"content": {"application/pdf": {"schema": {"type": "string", "contentEncoding": "binary"}}}},
     "responses": {"204": {"description": "Accepted"}}
   }}}
 }`))
@@ -45,7 +45,7 @@ func TestGeneratedWebhookRouterDecodesTextAndFormBodies(t *testing.T) {
     "textReceived": {"post":{"requestBody":{"required":true,"content":{"text/plain":{"schema":{"type":"string","minLength":3}}}},"responses":{"204":{"description":"OK"}}}},
     "xmlReceived": {"post":{"requestBody":{"required":true,"content":{"application/xml":{"schema":{"type":"object","required":["name"],"properties":{"name":{"type":"string"}}}}}},"responses":{"204":{"description":"OK"}}}},
     "multipartReceived": {"post":{"requestBody":{"required":true,"content":{"multipart/form-data":{"schema":{"type":"object","required":["name","meta","custom"],"properties":{"name":{"type":"string"},"meta":{"type":"object","required":["source"],"properties":{"source":{"type":"string"}}},"custom":{"type":"object","required":["source"],"properties":{"source":{"type":"string"}}}}},"encoding":{"meta":{"contentType":"application/json"},"custom":{"contentType":"application/vnd.example.part"}}}}},"responses":{"204":{"description":"OK"}}}},
-    "binaryReceived": {"post":{"requestBody":{"required":true,"content":{"application/pdf":{"schema":{"type":"string","format":"binary"}}}},"responses":{"204":{"description":"OK"}}}},
+    "binaryReceived": {"post":{"requestBody":{"required":true,"content":{"application/pdf":{"schema":{"type":"string","contentEncoding":"binary"}}}},"responses":{"204":{"description":"OK"}}}},
     "multiReceived": {"post":{"requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["event_id"],"properties":{"event_id":{"type":"string"}}}},"text/plain":{"schema":{"type":"string"}}}},"responses":{"204":{"description":"OK"}}}}
   }
 }`))

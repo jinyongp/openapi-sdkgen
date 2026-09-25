@@ -382,7 +382,7 @@ func (wire *wireRenderContext) inboundResponseDefinition(document *ir.Document, 
 			schema, _ := media.Schema.(map[string]any)
 			booleanSchema, isBooleanSchema := media.Schema.(bool)
 			schemaIsFalse := isBooleanSchema && !booleanSchema
-			binary := isBinaryMedia(mediaType, schema) && !schemaIsFalse
+			binary := isBinaryMediaForDocument(document, mediaType, schema) && !schemaIsFalse
 			bodyType := "ArrayBuffer | Blob | ArrayBufferView"
 			if schemaIsFalse || isJSONMediaType(mediaType) || strings.Contains(strings.ToLower(mediaType), "xml") {
 				bodyType, err = schemaTypeForScope(document, media.Schema, projectionOutput, typeRenderContract)
@@ -408,7 +408,7 @@ func (wire *wireRenderContext) inboundResponseDefinition(document *ir.Document, 
 			values = append(values, "{ readonly status: "+statusType+contentType+headerField+"; readonly body: "+bodyType+" }")
 			plan := "{ status: " + quoteTS(status) + ", contentType: " + quoteTS(mediaType)
 			if hasSchema && !binary {
-				descriptor, descriptorErr := wire.wireSchemaDescriptorForDocument(document, schemaValue, projectionOutput)
+				descriptor, descriptorErr := wire.wireMediaSchemaDescriptorForDocument(document, schemaValue, projectionOutput, mediaType)
 				if descriptorErr != nil {
 					return "", "", fmt.Errorf("%s/responses/%s/content/%s/schema: %w", path, status, mediaType, descriptorErr)
 				}
@@ -749,7 +749,7 @@ func (wire *wireRenderContext) inboundBodyPlan(document *ir.Document, mediaType 
 	}
 	booleanSchema, isBooleanSchema := schemaValue.(bool)
 	schemaIsFalse := isBooleanSchema && !booleanSchema
-	binary := isBinaryMedia(mediaType, schema) && !schemaIsFalse
+	binary := isBinaryMediaForDocument(document, mediaType, schema) && !schemaIsFalse
 	itemSchema, hasItemSchema := media["itemSchema"]
 	streamPlan := ir.StreamPlanForMediaType(mediaType, mediaTypeHasSequentialShape(media))
 	stream := hasItemSchema
@@ -776,7 +776,7 @@ func (wire *wireRenderContext) inboundBodyPlan(document *ir.Document, mediaType 
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/schema: encode validator schema: %w", path, mediaType, err)
 	}
-	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, schemaValue, projectionInput)
+	wireSchema, err := wire.wireMediaSchemaDescriptorForDocument(document, schemaValue, projectionInput, mediaType)
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/schema: %w", path, mediaType, err)
 	}
@@ -837,7 +837,7 @@ func (wire *wireRenderContext) inboundParameterDefinitions(document *ir.Document
 		if err != nil {
 			return "", "", fmt.Errorf("%s/parameters/%s: encode wire schema: %w", path, parameter.Name, err)
 		}
-		entry := "{ location: " + quoteTS(parameter.Location) + ", name: " + quoteTS(parameter.Name) + ", property: " + quoteTS(parameter.Property) + ", style: " + quoteTS(parameter.Style) + ", explode: " + fmt.Sprint(parameter.Explode) + ", allowReserved: " + fmt.Sprint(parameter.AllowReserved) + ", required: " + fmt.Sprint(parameter.Required) + ", schema: " + schema + ", wireSchema: " + wireSchema
+		entry := "{ location: " + quoteTS(parameter.Location) + ", name: " + quoteTS(parameter.Name) + ", property: " + quoteTS(parameter.Property) + ", style: " + quoteTS(parameter.Style) + ", explode: " + fmt.Sprint(parameter.Explode) + ", allowReserved: " + fmt.Sprint(parameter.AllowReserved) + ", allowEmptyValue: " + fmt.Sprint(parameter.AllowEmptyValue) + ", required: " + fmt.Sprint(parameter.Required) + ", schema: " + schema + ", wireSchema: " + wireSchema
 		if parameter.ContentType != "" {
 			entry += ", contentType: " + quoteTS(parameter.ContentType)
 		}

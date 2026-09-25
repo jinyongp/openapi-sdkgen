@@ -572,6 +572,14 @@ func applyEncodingRule(context Context, object map[string]any) Result {
 			remove["explode"] = true
 		}
 	}
+	if context.Version != openapidoc.Version30 {
+		_, hasStyle := object["style"]
+		_, hasExplode := object["explode"]
+		_, hasAllowReserved := object["allowReserved"]
+		if hasStyle || hasExplode || hasAllowReserved {
+			remove["contentType"] = true
+		}
+	}
 	filtered, changed := removeObjectFields(object, remove)
 	if !changed {
 		return Result{Value: object}

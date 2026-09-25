@@ -79,6 +79,8 @@ export interface ParameterDefinition {
   readonly explode: boolean;
   /** Preserve RFC 3986 reserved characters in a query value. */
   readonly allowReserved?: boolean;
+  /** Permit an explicit zero-length form query value. Defaults to false. */
+  readonly allowEmptyValue?: boolean;
   /** Whether the parameter must be present before the request is sent. Defaults to false. */
   readonly required?: boolean;
   /** Media type for a content-based parameter. */

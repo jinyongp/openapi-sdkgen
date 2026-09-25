@@ -297,7 +297,7 @@ func validateEnvelopeRepresentations(document *ir.Document, operation ir.Operati
 			_, exists := media.Raw["schema"]
 			schema, schemaIsObject := media.Schema.(map[string]any)
 			resolvedSchema := resolveSchemaReference(document, schema, make(map[string]bool))
-			if !exists || !schemaIsObject || media.Schema == false || !schemaCanDescribeObject(resolvedSchema) || isBinaryMedia(media.ContentType, schema) || isTextMedia(media.ContentType) || len(envelopeDataSchema(document, schema, make(map[string]bool))) == 0 {
+			if !exists || !schemaIsObject || media.Schema == false || !schemaCanDescribeObject(resolvedSchema) || isBinaryMediaForDocument(document, media.ContentType, schema) || isTextMedia(media.ContentType) || len(envelopeDataSchema(document, schema, make(map[string]bool))) == 0 {
 				incompatible = append(incompatible, response.Status+" "+media.ContentType)
 			}
 		}
