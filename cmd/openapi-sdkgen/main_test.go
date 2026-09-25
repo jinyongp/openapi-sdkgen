@@ -373,7 +373,7 @@ func TestGenerateDoesNotPublishOutputWhenStandardInputIsEmptyOrOversized(t *test
 		want   string
 	}{
 		{name: "empty", reader: strings.NewReader(""), want: "empty"},
-		{name: "oversized", reader: &repeatingInput{remaining: 64<<20 + 1}, want: "exceeds"},
+		{name: "oversized", reader: &repeatingInput{remaining: 128<<20 + 1}, want: "exceeds"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			directory := t.TempDir()

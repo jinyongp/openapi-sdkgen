@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	inputMaxBytes = 64 << 20
+	inputMaxBytes = 128 << 20
 	inputTimeout  = 30 * time.Second
 )
 
