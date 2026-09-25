@@ -20,28 +20,6 @@ func TestComponentProjectionTypeExpressionRendersBothScopes(t *testing.T) {
 	}
 }
 
-func TestPlannedIdentityPreservesExactKeyAndStablePrivateIdentifier(t *testing.T) {
-	first := planIdentity(identityExactPublic, "parameter", "foo-bar")
-	second := planIdentity(identityExactPublic, "parameter", "foo_bar")
-	repeated := planIdentity(identityExactPublic, "parameter", "foo-bar")
-
-	if got, want := first.typeKey(), `"foo-bar"`; got != want {
-		t.Fatalf("type key = %q, want %q", got, want)
-	}
-	if got, want := first.bracket("Operations"), `Operations["foo-bar"]`; got != want {
-		t.Fatalf("bracket access = %q, want %q", got, want)
-	}
-	if first.privateIdentifier == second.privateIdentifier {
-		t.Fatalf("normalization-equivalent identities share private identifier %q", first.privateIdentifier)
-	}
-	if first.privateIdentifier != repeated.privateIdentifier {
-		t.Fatalf("private identifier is not deterministic: %q != %q", first.privateIdentifier, repeated.privateIdentifier)
-	}
-	if !strings.HasPrefix(first.privateIdentifier, "__sdkgen_fooBar_") {
-		t.Fatalf("private identifier = %q", first.privateIdentifier)
-	}
-}
-
 func TestStablePrivateIdentifierIsInjectiveAcrossRoleAndSourceBoundaries(t *testing.T) {
 	values := []string{
 		stablePrivateIdentifier("a", "b\x00c"),

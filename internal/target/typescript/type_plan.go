@@ -63,38 +63,6 @@ func (expression typeExpression) render(scope typeRenderScope) string {
 	return expression.local
 }
 
-type identityClass string
-
-const (
-	identityExactPublic identityClass = "exact-public"
-	identityResource    identityClass = "resource-convenience"
-	identityPrivate     identityClass = "private"
-)
-
-// plannedIdentity separates an OpenAPI source identity from the private
-// identifier used by generated implementation code.
-type plannedIdentity struct {
-	source            string
-	class             identityClass
-	privateIdentifier string
-}
-
-func planIdentity(class identityClass, role, source string) plannedIdentity {
-	return plannedIdentity{
-		source:            source,
-		class:             class,
-		privateIdentifier: stablePrivateIdentifier(role, source),
-	}
-}
-
-func (identity plannedIdentity) typeKey() string {
-	return quoteTS(identity.source)
-}
-
-func (identity plannedIdentity) bracket(base string) string {
-	return base + "[" + quoteTS(identity.source) + "]"
-}
-
 func stablePrivateIdentifier(role, source string) string {
 	base, err := naming.Property(source)
 	if err != nil || base == "" {
