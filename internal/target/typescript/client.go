@@ -1003,20 +1003,8 @@ func paginationFunctionType(operation ManifestOperation, itemType string, option
 	return "(input: PaginateInput<RouteInput<" + routeKey + ">, " + quoteTS(operation.Pagination) + ", " + quoteTS(cursor) + ", " + quoteTS(offset) + ">, options" + optionsMarker + ": RouteOptions<" + routeKey + ">) => AsyncIterable<" + itemType + ">"
 }
 
-func operationValueName(operationID string) string {
-	return stablePrivateIdentifier("operation-value", operationID)
-}
-
 func operationSlotType(routeKey, slot string) string {
 	return "Routes[" + quoteTS(routeKey) + "][" + quoteTS(slot) + "]"
-}
-
-func operationBaseValueName(operationID string) string {
-	return stablePrivateIdentifier("operation-base-value", operationID)
-}
-
-func operationPaginationValueName(operationID string) string {
-	return stablePrivateIdentifier("operation-pagination-value", operationID)
 }
 
 func hasVisibleInputSchemas(document *ir.Document) bool {

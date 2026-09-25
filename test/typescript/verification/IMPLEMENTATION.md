@@ -286,9 +286,126 @@ logs and bundled probes remained in place; input corpora and frozen binaries wer
 not removed. Archive hashes and exact recovery paths are embedded in C5 evidence.
 The successful rerun retained the original space and correctness thresholds.
 
+## C6 — checked aggregate identifiers
+
+C5 was committed as `c99b70f`. C6 replaces the remaining aggregate registry,
+schema-wire, enum and server private aliases with explicitly planned names.
+Semantic keys remain exact and are never replaced by compact tokens.
+
+The canonical identity encoder preserves domain, field count, byte lengths and
+individual decoded field bytes. Callback origin, source, component, callback
+name, expression and method remain separate fields. SHA-256/Base32 chooses only
+an emitted spelling: prefix collisions extend deterministically; a forced full
+digest collision switches to injective canonical-payload encoding. Final
+reservations include derived `Context`, `Response`, `Handlers` and
+`PathParameters` declarations. An entity shares one token across its requested
+roles, and names resolve only after the artifact plan freezes.
+
+Registry, schema-wire and enum owners reject duplicate declarations. Registry
+planning also rejects a missing or mismatched compiled operation. Server names
+are assigned on an emission-local copy, without mutating reusable prepared
+callback/webhook definitions. Historical callback ordering is retained separately
+from exact lexical identity. Protected Link leaf function names and all existing
+public keys, exports, prototypes and callable reflection remain unchanged.
+
+### C6 unit evidence
+
+Pinned measured binary SHA-256:
+`094b4d9dc37e668ac1fd97bd16c5d2fcb7dc2f4ecc412df355b61b9983c3d25c`.
+Evidence: `evidence/c6-aggregate-identifiers.json`, including raw reports, source
+hashes, benchmark samples and bounded failure history.
+
+- Integrated `just agent ci` passed (`SXj0SrORYSNbgR19`), Go coverage 83.4%.
+- Runtime `run-MgnasE` passed all 12 correctness comparisons, but its early
+  timings overlapped an independent review CI. Those samples remain historical.
+  Authoritative runtime recheck `run-7XozBH` was run without other scheduled
+  CPU-heavy verification: all 12 cases passed with 10 A/A and 20 A/B pairs each,
+  no timing-review flags, and three independent pairs for each of four finite
+  lifetime profiles. Generated-tree hashes and public contracts match the first
+  run. This does not claim a globally idle host or cold filesystem.
+- `artifacts-839asX` passed all 12 strict/source/declaration consumers and
+  bundle/helper checks. Its single timing pair is correctness evidence only.
+- Migration `run-a40bhP` passed 32 checks across four fixtures: distinct identity,
+  fresh equality, no-op content/mtime preservation, diagnostic rollback, user
+  edits and new helper file/directory/symlink conflicts.
+- Forced prefix/full collisions, derived reservations, fallback reservations,
+  invalid/late requests, request permutation, owner isolation, exact source
+  fields, long keys, repeated generation and unrelated-entity locality passed.
+  The large unit test resolves 100,000 entities to 300,000 distinct bindings.
+
+The enum regression originally pinned an incidental long private alias. It now
+checks that the exact enum key references the actual declared constructor result
+and value array, while retaining all enum-value/order/type assertions. An
+unformatted concurrently added test interrupted one early CI run; ownership was
+coordinated and the final formatted integration passed. Neither earlier failure
+was relabelled as a pass.
+
+### C6 size and measured costs
+
+| Corpus | B-prime TS bytes | C5 TS bytes | C6 TS bytes | C6-only bytes removed | C6 declaration bytes |
+| ------ | ---------------: | ----------: | ----------: | --------------------: | -------------------: |
+| GitHub |       42,752,679 |  36,442,803 |  34,947,005 |             1,495,798 |           19,221,075 |
+| Stripe |       32,083,911 |  28,332,704 |  27,348,623 |               984,081 |           15,757,873 |
+
+For these two corpora C6 declaration bytes and minified client hashes are
+unchanged from C5. This unit's additional gain is generated source size, not new
+bundle tree shaking or additional declaration reduction. C2-C6 cumulative source
+reductions versus B-prime are approximately 18.26% and 14.76%.
+
+Ten independent paired processes in `run-5S5cWC` measured cumulative C2-C6 costs:
+
+| Metric                                |           GitHub B-prime -> C6 |           Stripe B-prime -> C6 |
+| ------------------------------------- | -----------------------------: | -----------------------------: |
+| Fresh CLI median wall ms              |         1,320.719 -> 1,245.173 |             996.665 -> 934.119 |
+| Strict compiler median wall ms        |         3,140.122 -> 2,551.258 |         3,399.704 -> 2,122.185 |
+| Strict compiler median peak RSS bytes | 1,980,792,832 -> 1,443,082,240 | 2,571,952,128 -> 1,268,496,384 |
+| Generator median peak RSS bytes       |     241,633,280 -> 243,535,872 |     161,957,888 -> 162,441,216 |
+
+Generator RSS is slightly higher in this run; do not claim every memory metric
+improved. Raw paired differences, CPU samples and ordinary consumer costs are
+preserved. Timings are not C6-only attribution and are not cross-machine promises.
+Existing C4 Brotli/small-client fixed costs remain recorded; aggregate renaming
+has not erased them.
+
+`just agent identifier-perf` now covers both local and aggregate allocators.
+The aggregate probe uses three bindings per entity; key encoding is prepared
+before timing. Five samples of three iterations yielded 1.569 ms / 1,862,922
+allocated bytes for 1,000 entities, 17.617 ms / 22,426,640 bytes for 10,000 and
+243.220 ms / 198,394,144 bytes for 100,000. These totals include request, hash,
+freeze and resolution, not full generation or peak RSS. Local and aggregate
+workloads have different role counts and must not be compared as equivalent work.
+
+### Additional review and space recovery
+
+A fixed independent review snapshot passed Go tests and full CI at the same
+backend/test source hashes. Its exact compiled-operation ownership finding was
+verified with an actual negative control: a Go source overlay removing only the
+new guard fails `TestRegistryIdentifiersRequireExactCompiledOwner`; the guarded
+source passes. The bounded review receipt is embedded in C6 evidence and does not
+replace producer acceptance or C7.
+
+C5 comparisons require identical input hashes. In particular the aliases row uses
+its strengthened input from `c5-local-aliases-followup.json` (375,042 -> 371,331
+source bytes), not the older main C5 row. All twelve minified hashes are identical
+to their matching C5 inputs.
+
+Before the uncontended runtime recheck, 36,480 generated TS/JS/map files from this
+session's completed `artifacts-839asX` copy were compressed into
+`.tmp/verification-archives/c6-artifacts-1790319026835.jsonl.gz`.
+Archive SHA-256: `1dcc0edf8cd3b6de6808ad66063df3305e61c1a49b247a7f2889fed8ac1e2dcc`.
+Every archived record was decoded, length/hash checked and compared with its
+original before the corresponding working copy was removed. Only this invocation's
+372,018,900 reproducible source bytes were removed; all reports, configurations,
+manifests, logs, original inputs and frozen binaries remain. The receipt records
+repository-relative paths and base64 content in compressed JSONL, so those copies
+are recoverable. The raw-file receipt and archive identity are linked from the
+durable C6 evidence. This cleanup did not lower a space or correctness threshold.
+
 ## Remaining implementation
 
-C5 has passed its unit-local validation; its commit is recorded in the central
-workstream ledger. C6 aggregate/server/enum tokens and C7 integrated validation
-remain pending. The full 97-row matrix still requires one final integrated
-candidate. No push, release or overall workstream completion is implied.
+C6 unit-local checks are passing; its final commit and existing performance-gate
+receipt are recorded in the central workstream and evidence. C7 remains pending:
+remove only superseded scaffolding and close the applicable 97-check matrix
+against one final integrated candidate, including full phase allocations,
+publication fault injection, packaging and unresolved matrix-specific checks.
+No push, release or overall workstream completion is implied.

@@ -328,7 +328,6 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 		`function __sdkgen_createEnumValues(values: readonly unknown[]): object`,
 		`const enumValues = Object.create(null)`,
 		`Object.defineProperty(enumValues, Symbol.iterator`,
-		`["Status", __sdkgen_status_`,
 		`readonly "foo-bar": "foo-bar"`,
 		`readonly "__proto__": "__proto__"`,
 		`readonly "map": "map"`,
@@ -341,6 +340,10 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 		if !strings.Contains(generated, expected) {
 			t.Fatalf("enum values missing %q:\n%s", expected, source)
 		}
+	}
+	recordBinding, valuesBinding := generatedEnumBindings(t, generated)
+	if !strings.Contains(generated, `["Status", `+recordBinding+`]`) || !strings.Contains(generated, "const "+valuesBinding+" = [") {
+		t.Fatalf("exact enum key does not resolve to its declared value record:\n%s", generated)
 	}
 	if !strings.Contains(generated, `, ["x", "y"], "foo-bar"] as const`) {
 		t.Fatalf("enum values do not use const inference:\n%s", source)

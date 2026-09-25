@@ -13,6 +13,7 @@ type webhookDefinition struct {
 	name               string
 	property           string
 	typeName           string
+	definitionSymbol   string
 	operationID        string
 	method             string
 	bodyType           string
@@ -34,6 +35,8 @@ type callbackDefinition struct {
 	componentName      string
 	callbackName       string
 	typeName           string
+	definitionSymbol   string
+	endpointSymbol     string
 	expression         string
 	operationID        string
 	method             string
@@ -172,10 +175,9 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 				if security == nil {
 					security = rootSecurityValue(document)
 				}
-				identity := sourceRouteKey + "\x00" + componentName + "\x00" + name + "\x00" + expression + "\x00" + method
 				result = append(result, callbackDefinition{
 					name: appendOpenAPIPointer(path, name), sourceRouteKey: sourceRouteKey, sourceOperationID: sourceOperationID, componentName: componentName, callbackName: name,
-					typeName: stablePrivateIdentifier("callback-type", identity), expression: expression, operationID: operationID, method: method,
+					expression: expression, operationID: operationID, method: method,
 					bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType,
 					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties,
 				})
@@ -300,11 +302,11 @@ func callbackAccess(root string, callback callbackDefinition, routeKeys bool) st
 }
 
 func callbackDefinitionSymbol(callback callbackDefinition) string {
-	return stablePrivateIdentifier("callback-definition", callbackIdentity(callback))
+	return callback.definitionSymbol
 }
 
 func callbackEndpointSymbol(callback callbackDefinition) string {
-	return stablePrivateIdentifier("callback-endpoint", callbackIdentity(callback))
+	return callback.endpointSymbol
 }
 
 func callbackRootField(callback callbackDefinition, routeKeys bool) string {
@@ -451,6 +453,11 @@ func inboundResponseHeaderValuesType(document *ir.Document, response map[string]
 }
 
 func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byte, error) {
+	planned, err := planCallbackIdentifiers(callbacks)
+	if err != nil {
+		return nil, err
+	}
+	callbacks = planned
 	wire := newWireRenderContext(wirePropertiesConstructed)
 	for _, definition := range callbacks {
 		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
@@ -635,7 +642,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		}
 		methodName := method
 		result = append(result, webhookDefinition{
-			name: name, property: name, typeName: stablePrivateIdentifier("webhook-type", name+"\x00"+methodName), operationID: operationID,
+			name: name, property: name, operationID: operationID,
 			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties,
 		})
 	}
@@ -923,6 +930,11 @@ func emitInboundSecuritySchemes(output *bytes.Buffer, document *ir.Document) err
 }
 
 func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, error) {
+	planned, err := planWebhookIdentifiers(webhooks)
+	if err != nil {
+		return nil, err
+	}
+	webhooks = planned
 	wire := newWireRenderContext(wirePropertiesConstructed)
 	for _, definition := range webhooks {
 		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
@@ -1039,7 +1051,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 }
 
 func webhookDefinitionSymbol(webhook webhookDefinition) string {
-	return stablePrivateIdentifier("webhook-definition", webhook.name+"\x00"+webhook.method)
+	return webhook.definitionSymbol
 }
 
 func webhookHandlerProperties(webhooks []webhookDefinition) []string {

@@ -282,6 +282,10 @@ func emitSchemaIndex(document *ir.Document, plan *semanticModulePlan) ([]byte, e
 }
 
 func emitSchemaWireRegistry(plan *semanticModulePlan) ([]byte, error) {
+	names, err := planSchemaWireIdentifiers(plan)
+	if err != nil {
+		return nil, err
+	}
 	var output bytes.Buffer
 	output.WriteString("import type { WireSchemas } from \"../runtime/codecs.js\"\n")
 	inputProperties := make([]runtimeProperty, 0, len(plan.schemas))
@@ -296,12 +300,12 @@ func emitSchemaWireRegistry(plan *semanticModulePlan) ([]byte, error) {
 		}
 		imports := make([]string, 0, 2)
 		if schema.inputWire {
-			identifier := stablePrivateIdentifier("schema-input-wire", schema.name)
+			identifier := names[schema.name].input
 			imports = append(imports, "inputWireSchema as "+identifier)
 			inputProperties = append(inputProperties, runtimeProperty{key: schema.name, value: identifier})
 		}
 		if schema.outputWire {
-			identifier := stablePrivateIdentifier("schema-output-wire", schema.name)
+			identifier := names[schema.name].output
 			imports = append(imports, "outputWireSchema as "+identifier)
 			outputProperties = append(outputProperties, runtimeProperty{key: schema.name, value: identifier})
 		}

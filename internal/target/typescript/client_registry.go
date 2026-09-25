@@ -37,13 +37,6 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
 	fmt.Fprintf(&output, "import type { Routes } from %s\n", quoteTS(routes))
 
-	type factoryNames struct {
-		base       string
-		pagination string
-		links      string
-		stream     string
-	}
-	factories := make(map[string]factoryNames)
 	operationsByRoute := make(map[string]ir.Operation, len(document.Operations))
 	for _, operation := range document.Operations {
 		operationsByRoute[operationRouteKey(operation)] = operation
@@ -55,6 +48,10 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	streamsByRoute := make(map[string]bool, len(streams))
 	for _, stream := range streams {
 		streamsByRoute[operationRouteKey(stream.Operation)] = true
+	}
+	factories, err := planRegistryIdentifiers(artifact, manifest, operationsByRoute, linksBySource, streamsByRoute)
+	if err != nil {
+		return nil, err
 	}
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
@@ -69,21 +66,17 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		if err != nil {
 			return nil, err
 		}
-		names := factoryNames{base: stablePrivateIdentifier("base-factory", route)}
+		names := factories[route]
 		imports := []string{"bindBase as " + names.base}
 		if operationsByRoute[route].PaginationPlan != nil {
-			names.pagination = stablePrivateIdentifier("pagination-factory", route)
 			imports = append(imports, "bindPagination as "+names.pagination)
 		}
 		if linksBySource[route] {
-			names.links = stablePrivateIdentifier("links-factory", route)
 			imports = append(imports, "bindLinks as "+names.links)
 		}
 		if streamsByRoute[route] {
-			names.stream = stablePrivateIdentifier("stream-factory", route)
 			imports = append(imports, "bindStream as "+names.stream)
 		}
-		factories[route] = names
 		fmt.Fprintf(&output, "import { %s } from %s\n", strings.Join(imports, ", "), quoteTS(specifier))
 	}
 	output.WriteByte('\n')
@@ -127,13 +120,13 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		}
 		route := manifestRouteKey(operation)
 		names := factories[route]
-		base := operationBaseValueName(route)
+		base := factories[route].baseValue
 		fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", base, names.base)
 		if names.pagination != "" {
-			fmt.Fprintf(&output, "  const %s = %s(%s)\n", operationPaginationValueName(route), names.pagination, base)
+			fmt.Fprintf(&output, "  const %s = %s(%s)\n", factories[route].paginationValue, names.pagination, base)
 		}
 		if names.stream != "" {
-			fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", stablePrivateIdentifier("stream-value", route), names.stream)
+			fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", factories[route].streamValue, names.stream)
 		}
 	}
 	output.WriteString("  const completed = {} as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
@@ -143,7 +136,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		}
 		route := manifestRouteKey(operation)
 		if factories[route].links != "" {
-			fmt.Fprintf(&output, "  const %s = %s(completed)\n", operationLinksValueName(route), factories[route].links)
+			fmt.Fprintf(&output, "  const %s = %s(completed)\n", factories[route].linksValue, factories[route].links)
 		}
 	}
 	for _, operation := range manifest.Operations {
@@ -153,19 +146,19 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		route := manifestRouteKey(operation)
 		properties := make([]runtimeProperty, 0, 3)
 		if factories[route].pagination != "" {
-			properties = append(properties, runtimeProperty{key: "paginate", value: operationPaginationValueName(route)})
+			properties = append(properties, runtimeProperty{key: "paginate", value: factories[route].paginationValue})
 		}
 		if factories[route].links != "" {
-			properties = append(properties, runtimeProperty{key: "links", value: operationLinksValueName(route)})
+			properties = append(properties, runtimeProperty{key: "links", value: factories[route].linksValue})
 		}
 		if factories[route].stream != "" {
-			properties = append(properties, runtimeProperty{key: "stream", value: stablePrivateIdentifier("stream-value", route)})
+			properties = append(properties, runtimeProperty{key: "stream", value: factories[route].streamValue})
 		}
-		value := operationBaseValueName(route)
+		value := factories[route].baseValue
 		if len(properties) > 0 {
-			fmt.Fprintf(&output, "  const %s = assignCallableProperties(%s, %s) as unknown as Routes[%s][\"call\"]\n", operationValueName(route), value, runtimeObjectExpression(properties), quoteTS(route))
+			fmt.Fprintf(&output, "  const %s = assignCallableProperties(%s, %s) as unknown as Routes[%s][\"call\"]\n", factories[route].value, value, runtimeObjectExpression(properties), quoteTS(route))
 		} else {
-			fmt.Fprintf(&output, "  const %s = %s as Routes[%s][\"call\"]\n", operationValueName(route), value, quoteTS(route))
+			fmt.Fprintf(&output, "  const %s = %s as Routes[%s][\"call\"]\n", factories[route].value, value, quoteTS(route))
 		}
 	}
 	output.WriteString("  const operations: Record<string, unknown> = {}\n")
@@ -178,11 +171,11 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 			continue
 		}
 		route := manifestRouteKey(operation)
-		routeValues = append(routeValues, runtimeProperty{key: route, value: operationValueName(route)})
+		routeValues = append(routeValues, runtimeProperty{key: route, value: factories[route].value})
 		if operation.OperationID != "" {
-			operationValues = append(operationValues, runtimeProperty{key: operation.OperationID, value: operationValueName(route)})
+			operationValues = append(operationValues, runtimeProperty{key: operation.OperationID, value: factories[route].value})
 			if factories[route].links != "" {
-				linkValues = append(linkValues, runtimeProperty{key: operation.OperationID, value: operationLinksValueName(route)})
+				linkValues = append(linkValues, runtimeProperty{key: operation.OperationID, value: factories[route].linksValue})
 			}
 		}
 	}
@@ -205,8 +198,4 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	output.WriteString("  }\n")
 	output.WriteString("}\n")
 	return output.Bytes(), nil
-}
-
-func operationLinksValueName(route string) string {
-	return stablePrivateIdentifier("operation-links-value", route)
 }

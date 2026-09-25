@@ -33,6 +33,9 @@ func emitEnums(document *ir.Document) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := planEnumIdentifiers(plans); err != nil {
+		return nil, err
+	}
 	var output bytes.Buffer
 	for _, plan := range plans {
 		if plan.hasJSONRecord {
@@ -209,8 +212,6 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 		}
 		plans = append(plans, enumValuesPlan{
 			name:           schemaName,
-			valuesBinding:  stablePrivateIdentifier("component-enum-values", schemaName),
-			enumBinding:    stablePrivateIdentifier("component-enum", schemaName),
 			renderedValues: rendered,
 			valueType:      valueType,
 			members:        enumStringMembers(values),

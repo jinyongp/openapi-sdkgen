@@ -91,7 +91,7 @@ func TestInputSectionPlannerKeepsOptionalBodyAndSyntheticQuery(t *testing.T) {
 
 func TestLinkTargetReferencesDoNotRewriteLiteralValues(t *testing.T) {
 	const route = "GET /target"
-	legacyName := operationValueName(route)
+	legacyName := stablePrivateIdentifier("operation-value", route)
 	link := generatedLink{
 		SourceOperation: ir.Operation{Method: "GET", Path: "/source"},
 		TargetOperation: ir.Operation{Method: "GET", Path: "/target"},
