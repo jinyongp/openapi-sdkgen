@@ -1,0 +1,91 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Inline descriptor lifecycle",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/inline": {
+      "post": {
+        "operationId": "echoInline",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["value"],
+                "properties": {
+                  "value": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "nested": {
+                    "type": "object",
+                    "properties": {
+                      "flag": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Echo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["value"],
+                  "properties": {
+                    "value": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "nested": {
+                      "type": "object",
+                      "properties": {
+                        "flag": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "events",
+        "responses": {
+          "200": {
+            "description": "Frames",
+            "content": {
+              "application/x-ndjson": {
+                "itemSchema": {
+                  "type": "object",
+                  "required": ["value"],
+                  "properties": {
+                    "value": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Internal representation boundary",
+    "version": "1.0.0",
+    "description": "Opaque source text __sdkgen_Input must not be rewritten."
+  },
+  "paths": {
+    "/ping": {
+      "get": {
+        "operationId": "ping",
+        "responses": { "204": { "description": "No body or schema" } }
+      }
+    },
+    "/empty": {
+      "get": {
+        "operationId": "empty",
+        "responses": {
+          "200": {
+            "description": "Empty object",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": {}, "additionalProperties": false }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/records/{id}": {
+      "post": {
+        "operationId": "echo-record",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Node" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Recursive exact-key record",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Node" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Leaf": {
+        "type": "object",
+        "required": ["value"],
+        "properties": { "value": { "type": "integer", "minimum": 0 }, "forbidden": false },
+        "additionalProperties": false
+      },
+      "Node": {
+        "type": "object",
+        "required": ["label", "left", "right"],
+        "properties": {
+          "label": { "type": "string" },
+          "left": { "$ref": "#/components/schemas/Leaf" },
+          "right": { "$ref": "#/components/schemas/Leaf" },
+          "next": { "$ref": "#/components/schemas/Node" },
+          "__proto__": { "type": "string" },
+          "constructor": { "type": "string" },
+          "prototype": { "type": "string" },
+          "foo-bar": { "type": "string" },
+          "foo_bar": { "type": "string" },
+          "1": { "type": "string" },
+          "01": { "type": "string" },
+          "": { "type": "string" },
+          "é": { "type": "string" },
+          "e\u0301": { "type": "string" },
+          "a\u0000b": { "type": "string" },
+          "opaque": {
+            "const": {
+              "property": "schema",
+              "schema": "__sdkgen_Input",
+              "p": false,
+              "s": 0,
+              "__proto__": null
+            }
+          },
+          "nullable": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

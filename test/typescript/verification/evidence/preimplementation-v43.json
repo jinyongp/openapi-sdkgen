@@ -1,0 +1,3637 @@
+{
+  "version": 1,
+  "productionImplemented": false,
+  "baselineRevision": "883c41bd1f39ce4d2cac92ca852dc881b6c29b68",
+  "binarySha256": {
+    "baseline": "66d280ee676713aceed81ae5d4a7a1ee6bf554070531932a2d1ae6f348e2b42d",
+    "candidate": "64a02582d8a82258c5a6ca71b8ab42133de303166eb91eb107e7ab55b5e830a7"
+  },
+  "sourceReports": {
+    "runtime": {
+      "path": ".tmp/preimplementation/run-nWuLsA/report.json",
+      "sha256": "a1608feaddd7f42fff27a159278efa6834f03f77e205b33197e8f1a8fa2f66cd"
+    },
+    "artifacts": {
+      "path": ".tmp/preimplementation/run-nWuLsA/artifacts-8d4Wio/report.json",
+      "sha256": "f65e1b8a3e6c603104f3d1b27a94d25fb1493afa75c7653926e606ce4b23cbbd"
+    },
+    "cost": {
+      "path": ".tmp/representation-measure/run-NXbFkP/report.json",
+      "sha256": "c45390d161979b8f987778262d9ed46f0baf83133cceb591bef9ce0706dae4fb"
+    },
+    "migration": {
+      "path": ".tmp/representation-migration/run-eiS4fd/report.json",
+      "sha256": "cec5ea8eecd0d80ceadc074ff61700d23aa5e944cc2565123f143af417ea2293"
+    }
+  },
+  "runtime": {
+    "status": "pass",
+    "policy": {
+      "pairs": 20,
+      "aaPairs": 10,
+      "memoryPairs": 3,
+      "freshProcesses": true,
+      "intermediateGCInTiming": false,
+      "memorySeparate": true,
+      "absoluteFloorMs": {
+        "importMs": 2,
+        "firstClientMs": 0.25,
+        "importThroughFirstClientMs": 2,
+        "repeatedClientMs": 0.25
+      },
+      "relativeReviewPercent": 5,
+      "noiseMultiplier": 2,
+      "retentionLateGrowthReviewBytes": 1048576,
+      "note": "Review flags are not silently waived; A/A noise and absolute floors accompany every timing comparison."
+    },
+    "environment": {
+      "node": "v24.21.0",
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+      "logicalCPUs": 16,
+      "vite": "8.3.0",
+      "lockfileSha256": "4e103a83880b5e0ff263c4425feca3cd5d4d52c5711921e82cf3ee8f8b1a5636"
+    },
+    "fixtures": [
+      {
+        "id": "contract",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "6bc93fe2349e13681c1fc97ec07da6bb3fc3cd8ad85dae4ac3e5a5a8670028cb",
+            "nodes": 22
+          },
+          "moduleExportCount": 51,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 4,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 9.757123999999994,
+              "candidate": 10.371582,
+              "pairedDelta": 0.5334845000000001,
+              "pairedPercent": 5.4708247777408126,
+              "minDelta": -2.3693080000000037,
+              "maxDelta": 7.813797000000001,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 8.951510499999998,
+              "candidate": 9.105960000000003,
+              "pairedDelta": 0.07319849999999661,
+              "pairedPercent": 0.8251767144995759,
+              "minDelta": -3.5803510000000074,
+              "maxDelta": 3.2222899999999868,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.6681744999999992,
+              "candidate": 0.6989474999999956,
+              "pairedDelta": 0.01609550000000226,
+              "pairedPercent": 2.294046363866298,
+              "minDelta": -0.23237000000000307,
+              "maxDelta": 0.3502430000000061,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.6029859999999978,
+              "candidate": 0.6877265000000001,
+              "pairedDelta": 0.07755699999999877,
+              "pairedPercent": 12.841786579469572,
+              "minDelta": -0.4989750000000015,
+              "maxDelta": 0.24203400000000386,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 10.421029999999998,
+              "candidate": 11.052646000000003,
+              "pairedDelta": 0.5427720000000029,
+              "pairedPercent": 5.210469953762209,
+              "minDelta": -2.3636479999999978,
+              "maxDelta": 7.880812999999996,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 9.602124,
+              "candidate": 9.723313000000001,
+              "pairedDelta": 0.13692749999999876,
+              "pairedPercent": 1.3117685340373386,
+              "minDelta": -3.435136000000007,
+              "maxDelta": 3.3647539999999907,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2.4983060000000137,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.03542150000000177,
+              "candidate": 0.05629649999999842,
+              "pairedDelta": 0.0010919999999963181,
+              "pairedPercent": 2.166008296905342,
+              "minDelta": -0.02048900000001197,
+              "maxDelta": 0.02755200000000002,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.036163500000004234,
+              "candidate": 0.03578800000000726,
+              "pairedDelta": -0.0013775000000002535,
+              "pairedPercent": -3.9623214147970987,
+              "minDelta": -0.025007000000002222,
+              "maxDelta": 0.030528000000003885,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "collisions",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "833fef023620d7094711630e66d7630ed03475c4f098e9a12ec3ea09761fe0bd",
+            "nodes": 39
+          },
+          "moduleExportCount": 64,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isEnumValue",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 5,
+          "plainWebhookMaps": {
+            "error": "TypeError",
+            "message": "template.startsWith is not a function"
+          },
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 11.404723000000004,
+              "candidate": 11.069134000000009,
+              "pairedDelta": -0.04178450000000211,
+              "pairedPercent": -0.39004123187179607,
+              "minDelta": -3.2362949999999984,
+              "maxDelta": 3.699156000000002,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 10.257444000000003,
+              "candidate": 12.081638999999996,
+              "pairedDelta": 0.20449249999999353,
+              "pairedPercent": 1.9654481849092575,
+              "minDelta": -3.260290999999995,
+              "maxDelta": 5.432337999999994,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.7810980000000001,
+              "candidate": 0.7277634999999947,
+              "pairedDelta": -0.030999500000007174,
+              "pairedPercent": -4.001753083402088,
+              "minDelta": -0.21537499999999454,
+              "maxDelta": 0.3865210000000019,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.6032270000000004,
+              "candidate": 0.6438939999999995,
+              "pairedDelta": 0.017157499999999715,
+              "pairedPercent": 2.70699785581201,
+              "minDelta": -0.06514300000000617,
+              "maxDelta": 0.3003890000000027,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.28889700000000573,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 12.300248,
+              "candidate": 11.8440415,
+              "pairedDelta": 0.07135899999999751,
+              "pairedPercent": 0.6222151984187962,
+              "minDelta": -3.4034809999999993,
+              "maxDelta": 3.6551219999999915,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 10.899234,
+              "candidate": 12.731428999999999,
+              "pairedDelta": 0.22352299999999659,
+              "pairedPercent": 2.056666707938637,
+              "minDelta": -3.2396320000000003,
+              "maxDelta": 5.521677000000004,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.03602850000000046,
+              "candidate": 0.034525500000000875,
+              "pairedDelta": 0.00017550000000454702,
+              "pairedPercent": 0.3669358064361805,
+              "minDelta": -0.033862999999996646,
+              "maxDelta": 0.025527999999994222,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.032497000000002885,
+              "candidate": 0.03196049999999673,
+              "pairedDelta": -0.0010570000000029722,
+              "pairedPercent": -3.215313919787277,
+              "minDelta": -0.010710999999993476,
+              "maxDelta": 0.02171099999999626,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "bundle-isolation",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "87deca986c2000cb3d5fa64aaa22054ae94c42e288dbb86513e7de4a0507b7f0",
+            "nodes": 6
+          },
+          "moduleExportCount": 37,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isEnumValue",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 0,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 5.755373500000001,
+              "candidate": 5.5478355000000015,
+              "pairedDelta": 0.03486600000000095,
+              "pairedPercent": 0.661452720827016,
+              "minDelta": -3.677430000000008,
+              "maxDelta": 3.1665040000000033,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.650764500000001,
+              "candidate": 5.5507300000000015,
+              "pairedDelta": 0.12982600000000488,
+              "pairedPercent": 2.3367537754742207,
+              "minDelta": -3.435563000000002,
+              "maxDelta": 3.5745739999999984,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.273261999999999,
+              "candidate": 0.2900039999999997,
+              "pairedDelta": 0.0024095000000059486,
+              "pairedPercent": 0.7492001291305062,
+              "minDelta": -0.0533009999999976,
+              "maxDelta": 0.06618500000000438,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.270467,
+              "candidate": 0.2696805000000033,
+              "pairedDelta": -0.00024099999999549482,
+              "pairedPercent": -0.08931115637926812,
+              "minDelta": -0.08487000000000222,
+              "maxDelta": 0.05921199999999516,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 6.050136499999997,
+              "candidate": 5.853955000000003,
+              "pairedDelta": 0.03302250000000484,
+              "pairedPercent": 0.5866285562653006,
+              "minDelta": -3.687929000000004,
+              "maxDelta": 3.2013789999999958,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.917444,
+              "candidate": 5.819063500000002,
+              "pairedDelta": 0.08329800000000276,
+              "pairedPercent": 1.4426885932477207,
+              "minDelta": -3.4906970000000044,
+              "maxDelta": 3.6019560000000013,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.009758500000000225,
+              "candidate": 0.009884000000003113,
+              "pairedDelta": 0.0005465000000022258,
+              "pairedPercent": 5.671580031375035,
+              "minDelta": -0.0024140000000016926,
+              "maxDelta": 0.01927599999999785,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.009482999999999464,
+              "candidate": 0.009878999999997973,
+              "pairedDelta": 0.0004710000000009984,
+              "pairedPercent": 5.26770517034848,
+              "minDelta": -0.0026240000000044006,
+              "maxDelta": 0.0034059999999982438,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "transport-native-headers",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "7671ff76c7b6597597d83a1e8c302dd422c0c27d2b28def9f3ca5b6e0a2f7858",
+            "nodes": 39
+          },
+          "moduleExportCount": 53,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 0,
+          "plainWebhookMaps": {
+            "status": 404
+          },
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 8.640845999999996,
+              "candidate": 9.251464000000002,
+              "pairedDelta": -0.08076250000000229,
+              "pairedPercent": -0.5684002411759648,
+              "minDelta": -3.5448689999999985,
+              "maxDelta": 3.4046629999999993,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 8.960131999999998,
+              "candidate": 8.7863985,
+              "pairedDelta": 0.2392530000000015,
+              "pairedPercent": 2.4522022498799645,
+              "minDelta": -3.7834899999999934,
+              "maxDelta": 6.262621000000003,
+              "pairs": 20
+            },
+            "noiseFloorMs": 4.333806999999993,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.5987580000000037,
+              "candidate": 0.645937,
+              "pairedDelta": 0.029135000000000133,
+              "pairedPercent": 4.726013299318832,
+              "minDelta": -0.01857500000000556,
+              "maxDelta": 0.09230499999999608,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.636574999999997,
+              "candidate": 0.635372499999999,
+              "pairedDelta": 0.0013269999999963034,
+              "pairedPercent": 0.21776971007686496,
+              "minDelta": -0.21755100000000027,
+              "maxDelta": 0.16837999999999909,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 9.238266500000002,
+              "candidate": 9.915104500000002,
+              "pairedDelta": -0.06392050000000182,
+              "pairedPercent": -0.42174286100417624,
+              "minDelta": -3.51361,
+              "maxDelta": 3.4969679999999954,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 9.673156499999994,
+              "candidate": 9.477540999999999,
+              "pairedDelta": 0.2964714999999991,
+              "pairedPercent": 3.2139055388560656,
+              "minDelta": -3.782207999999997,
+              "maxDelta": 6.2014759999999995,
+              "pairs": 20
+            },
+            "noiseFloorMs": 4.293380999999997,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.038864000000003784,
+              "candidate": 0.03864300000000043,
+              "pairedDelta": -0.0003355000000020425,
+              "pairedPercent": -0.8840184145521734,
+              "minDelta": -0.005619999999993297,
+              "maxDelta": 0.013034999999995023,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.03956999999999766,
+              "candidate": 0.038728500000001276,
+              "pairedDelta": -0.0011219999999987351,
+              "pairedPercent": -2.915567453842854,
+              "minDelta": -0.022331999999998686,
+              "maxDelta": 0.015858999999998957,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "baseline-oas30",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "d1bd2b0a274f1286b7b49e9f4f41bbf42247a69cd328937f73ab9c42fc201270",
+            "nodes": 5
+          },
+          "moduleExportCount": 33,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 1,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 5.0414410000000025,
+              "candidate": 4.898781,
+              "pairedDelta": -0.10589600000000132,
+              "pairedPercent": -2.1400256566443066,
+              "minDelta": -3.3069599999999966,
+              "maxDelta": 3.3822520000000083,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.0057050000000025,
+              "candidate": 5.273180500000002,
+              "pairedDelta": 0.2248410000000014,
+              "pairedPercent": 4.691247921192732,
+              "minDelta": -3.292687000000001,
+              "maxDelta": 3.669044999999997,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.2899635000000025,
+              "candidate": 0.2892170000000007,
+              "pairedDelta": -0.00035000000000096065,
+              "pairedPercent": -0.1183176599837632,
+              "minDelta": -0.0421789999999973,
+              "maxDelta": 0.10484800000000405,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.29564399999999935,
+              "candidate": 0.3079975000000026,
+              "pairedDelta": 0.010555000000000092,
+              "pairedPercent": 3.5501517863594234,
+              "minDelta": -0.0460470000000015,
+              "maxDelta": 0.10623099999999397,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 5.329936500000002,
+              "candidate": 5.186640499999999,
+              "pairedDelta": -0.1035710000000023,
+              "pairedPercent": -1.9768879473972656,
+              "minDelta": -3.3076409999999967,
+              "maxDelta": 3.3883730000000014,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.316137000000001,
+              "candidate": 5.573133500000001,
+              "pairedDelta": 0.29022799999999904,
+              "pairedPercent": 5.7890468705138804,
+              "minDelta": -3.232323000000008,
+              "maxDelta": 3.6229979999999955,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.00789450000000258,
+              "candidate": 0.007388999999999868,
+              "pairedDelta": -0.00031949999999625334,
+              "pairedPercent": -4.125418136417452,
+              "minDelta": -0.0026349999999979445,
+              "maxDelta": 0.001181999999992911,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.007443999999999562,
+              "candidate": 0.009167500000000217,
+              "pairedDelta": 0.001738000000003126,
+              "pairedPercent": 23.348372475280712,
+              "minDelta": -0.0005910000000000082,
+              "maxDelta": 0.0028359999999949537,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "baseline-oas31",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "a6b459ce2d9acad3a9e88504b48db85341f4cd6f5dddff9dde5b685c6a9bedb6",
+            "nodes": 17
+          },
+          "moduleExportCount": 41,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 2,
+          "plainWebhookMaps": {
+            "status": 404
+          },
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 9.063233500000003,
+              "candidate": 6.0744679999999995,
+              "pairedDelta": -0.45957349999999764,
+              "pairedPercent": -4.678508702138146,
+              "minDelta": -3.613139000000004,
+              "maxDelta": 4.460467999999999,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 6.149770999999998,
+              "candidate": 6.401104,
+              "pairedDelta": 0.34601499999999774,
+              "pairedPercent": 5.909475644984575,
+              "minDelta": -2.909487999999996,
+              "maxDelta": 4.867383000000004,
+              "pairs": 20
+            },
+            "noiseFloorMs": 4.094973000000003,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.8317345000000032,
+              "candidate": 0.7619624999999992,
+              "pairedDelta": -0.07263200000000225,
+              "pairedPercent": -8.634669555517526,
+              "minDelta": -0.4501630000000034,
+              "maxDelta": 0.5742420000000052,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.8093170000000001,
+              "candidate": 0.3932840000000013,
+              "pairedDelta": -0.3905740000000044,
+              "pairedPercent": -47.95767407665356,
+              "minDelta": -0.635432999999999,
+              "maxDelta": 0.012053000000001646,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 9.885179500000003,
+              "candidate": 6.696987,
+              "pairedDelta": -0.7121870000000001,
+              "pairedPercent": -6.789685161448123,
+              "minDelta": -3.8268539999999973,
+              "maxDelta": 5.034710000000004,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 6.834799500000003,
+              "candidate": 6.813594999999999,
+              "pairedDelta": 0.015355000000003116,
+              "pairedPercent": 0.2303913175173644,
+              "minDelta": -3.317089000000003,
+              "maxDelta": 4.4854799999999955,
+              "pairs": 20
+            },
+            "noiseFloorMs": 4.242803000000002,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.01389599999999902,
+              "candidate": 0.013746500000003437,
+              "pairedDelta": -0.00021999999999877673,
+              "pairedPercent": -1.482014951081162,
+              "minDelta": -0.00258500000000339,
+              "maxDelta": 0.002623999999997295,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.013936499999999796,
+              "candidate": 0.014968499999998386,
+              "pairedDelta": 0.0012114999999965903,
+              "pairedPercent": 8.766999076590364,
+              "minDelta": -0.0012930000000039854,
+              "maxDelta": 0.0043780000000026575,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "baseline-oas32",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "b2e7fc0a574fdf19bcdf6406e9d16a9b17c57df35a1c550477f6da8c77684835",
+            "nodes": 10
+          },
+          "moduleExportCount": 36,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 2,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 6.969890999999997,
+              "candidate": 5.355018999999999,
+              "pairedDelta": -0.2580859999999987,
+              "pairedPercent": -4.22526847971072,
+              "minDelta": -3.5726799999999983,
+              "maxDelta": 0.46687400000000423,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.3429980000000015,
+              "candidate": 5.537224999999999,
+              "pairedDelta": 0.13909349999999776,
+              "pairedPercent": 2.6922250628224176,
+              "minDelta": -2.783770000000004,
+              "maxDelta": 3.8026920000000004,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.3720490000000005,
+              "candidate": 0.3935845000000029,
+              "pairedDelta": -0.00753400000000326,
+              "pairedPercent": -2.0308014581569998,
+              "minDelta": -0.06226799999999599,
+              "maxDelta": 0.13089800000000196,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.36849750000000014,
+              "candidate": 0.3764780000000023,
+              "pairedDelta": 0.003521499999997957,
+              "pairedPercent": 0.9915646154427304,
+              "minDelta": -0.2514160000000061,
+              "maxDelta": 0.20868500000000267,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 7.398742500000001,
+              "candidate": 5.790346000000003,
+              "pairedDelta": -0.29050750000000036,
+              "pairedPercent": -4.39693038323769,
+              "minDelta": -3.6294189999999986,
+              "maxDelta": 0.5381690000000035,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.713569500000002,
+              "candidate": 5.896044,
+              "pairedDelta": 0.13232550000000032,
+              "pairedPercent": 2.356451640909163,
+              "minDelta": -2.822092000000005,
+              "maxDelta": 3.8077619999999968,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.015905499999998796,
+              "candidate": 0.014577500000001464,
+              "pairedDelta": -0.0008820000000007155,
+              "pairedPercent": -5.807785340466115,
+              "minDelta": -0.007914999999997008,
+              "maxDelta": 0.00157199999999591,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.015003499999998837,
+              "candidate": 0.020809499999998593,
+              "pairedDelta": 0.005199999999998539,
+              "pairedPercent": 33.494164877172096,
+              "minDelta": -0.003986999999995078,
+              "maxDelta": 0.02301299999999884,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": []
+      },
+      {
+        "id": "representation",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "2f8cb7628d23bb230200f9e0558cf8b014efafbba7736e163245b4f538d0d32c",
+            "nodes": 12
+          },
+          "moduleExportCount": 41,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 3,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 6.645433000000004,
+              "candidate": 6.6756995,
+              "pairedDelta": 0.16205599999999976,
+              "pairedPercent": 2.5267571019952917,
+              "minDelta": -3.4585249999999945,
+              "maxDelta": 3.1805439999999905,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 6.622509999999998,
+              "candidate": 6.952649500000003,
+              "pairedDelta": 0.25805099999999825,
+              "pairedPercent": 4.044501831334413,
+              "minDelta": -3.6459500000000062,
+              "maxDelta": 3.3697619999999944,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.3643995000000011,
+              "candidate": 0.36239100000000235,
+              "pairedDelta": -0.0020290000000002806,
+              "pairedPercent": -0.5472603762042283,
+              "minDelta": -0.14739999999999753,
+              "maxDelta": 0.35620500000000277,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.36687900000000084,
+              "candidate": 0.36196999999999946,
+              "pairedDelta": -0.007429000000001906,
+              "pairedPercent": -2.0372655159165367,
+              "minDelta": -0.07873900000000589,
+              "maxDelta": 0.06713800000000703,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 7.076784500000002,
+              "candidate": 7.0371685000000035,
+              "pairedDelta": 0.10789300000000068,
+              "pairedPercent": 1.6327945919568598,
+              "minDelta": -3.462924000000001,
+              "maxDelta": 3.5367489999999933,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 6.998856999999997,
+              "candidate": 7.325009000000001,
+              "pairedDelta": 0.20389399999999824,
+              "pairedPercent": 2.9955211451244135,
+              "minDelta": -3.639277000000007,
+              "maxDelta": 3.4369000000000014,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.009317999999996829,
+              "candidate": 0.008862000000000592,
+              "pairedDelta": -0.00011049999999457327,
+              "pairedPercent": -1.0917195481341904,
+              "minDelta": -0.004898999999994658,
+              "maxDelta": 0.0008819999999971628,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.009112500000000523,
+              "candidate": 0.009202500000000668,
+              "pairedDelta": 0.000025499999999567535,
+              "pairedPercent": 0.27539755687419065,
+              "minDelta": -0.001502999999999588,
+              "maxDelta": 0.00263500000000505,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": [
+          {
+            "baselineLateGrowth": 31808,
+            "candidateLateGrowth": 25120,
+            "requestHelperCalls": 0,
+            "constructionCalls": 0
+          },
+          {
+            "baselineLateGrowth": 25120,
+            "candidateLateGrowth": -10400,
+            "requestHelperCalls": 0,
+            "constructionCalls": 0
+          },
+          {
+            "baselineLateGrowth": 25120,
+            "candidateLateGrowth": -10432,
+            "requestHelperCalls": 0,
+            "constructionCalls": 0
+          }
+        ],
+        "leaf": {
+          "baseline": {
+            "files": ["internal/schemas/node.js"],
+            "shape": {
+              "version": 2,
+              "digest": "48002d9fdfef32d1a987bec514528254b9a53aecb678ec1739702723808ab6ba",
+              "nodes": 105
+            }
+          },
+          "candidate": {
+            "files": ["internal/schemas/node.js"],
+            "shape": {
+              "version": 2,
+              "digest": "48002d9fdfef32d1a987bec514528254b9a53aecb678ec1739702723808ab6ba",
+              "nodes": 105
+            }
+          },
+          "status": "pass"
+        }
+      },
+      {
+        "id": "lifecycle",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "f9d3987ec37bb1b3b2958bbf78707d91ce97441ddac97a779ec143ca4e20a8ef",
+            "nodes": 10
+          },
+          "moduleExportCount": 36,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 2,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 5.274263000000001,
+              "candidate": 5.154185999999999,
+              "pairedDelta": 0.043347499999995875,
+              "pairedPercent": 0.8086441932077526,
+              "minDelta": -0.44451000000000107,
+              "maxDelta": 0.678916000000001,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.235654999999998,
+              "candidate": 5.352891500000002,
+              "pairedDelta": 0.1452024999999999,
+              "pairedPercent": 2.789388788039071,
+              "minDelta": -0.7433170000000118,
+              "maxDelta": 2.2886669999999967,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 0.400568499999995,
+              "candidate": 0.41355250000000154,
+              "pairedDelta": 0.008936499999997238,
+              "pairedPercent": 2.266994555780244,
+              "minDelta": -0.07910999999999291,
+              "maxDelta": 0.14109699999999492,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.4087885,
+              "candidate": 0.545848000000003,
+              "pairedDelta": 0.09655749999999941,
+              "pairedPercent": 23.432404637362946,
+              "minDelta": -0.0013719999999963761,
+              "maxDelta": 0.3036340000000024,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 5.707748500000001,
+              "candidate": 5.580393000000001,
+              "pairedDelta": 0.054498500000001115,
+              "pairedPercent": 0.9486289492959932,
+              "minDelta": -0.4940259999999981,
+              "maxDelta": 0.7261950000000041,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.653024500000001,
+              "candidate": 5.871385500000002,
+              "pairedDelta": 0.2530974999999991,
+              "pairedPercent": 4.5475938780406455,
+              "minDelta": -0.7046440000000089,
+              "maxDelta": 2.380119999999998,
+              "pairs": 20
+            },
+            "noiseFloorMs": 2,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 0.0217160000000014,
+              "candidate": 0.02399050000000358,
+              "pairedDelta": 0.00030999999999892225,
+              "pairedPercent": 1.4753456609507332,
+              "minDelta": -0.018324999999990155,
+              "maxDelta": 0.008645999999998821,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 0.02135049999999694,
+              "candidate": 0.018996000000001345,
+              "pairedDelta": -0.0028709999999989577,
+              "pairedPercent": -13.181794233784377,
+              "minDelta": -0.008275999999995065,
+              "maxDelta": 0.002233999999994296,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.25,
+            "review": false
+          }
+        },
+        "memory": [
+          {
+            "baselineLateGrowth": 29336,
+            "candidateLateGrowth": 39752,
+            "requestHelperCalls": 0,
+            "constructionCalls": 1452
+          },
+          {
+            "baselineLateGrowth": 29336,
+            "candidateLateGrowth": 39776,
+            "requestHelperCalls": 0,
+            "constructionCalls": 1452
+          },
+          {
+            "baselineLateGrowth": 20672,
+            "candidateLateGrowth": 39728,
+            "requestHelperCalls": 0,
+            "constructionCalls": 1452
+          }
+        ]
+      },
+      {
+        "id": "github",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "0bcbcbbeacf13e87f2070b24797102c605d29f58b7531095fdcd894c77149c3e",
+            "nodes": 2539
+          },
+          "moduleExportCount": 2858,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isEnumValue",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 1,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 305.0119725,
+              "candidate": 291.34586,
+              "pairedDelta": -10.30558849999997,
+              "pairedPercent": -3.3724597636067664,
+              "minDelta": -37.901587000000006,
+              "maxDelta": 61.022982999999954,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 296.535949,
+              "candidate": 291.6137315,
+              "pairedDelta": 2.157600500000001,
+              "pairedPercent": 0.7462243533704505,
+              "minDelta": -25.358028000000047,
+              "maxDelta": 55.63920400000001,
+              "pairs": 20
+            },
+            "noiseFloorMs": 25.890064999999993,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 41.40719999999996,
+              "candidate": 39.963746000000015,
+              "pairedDelta": -3.2500034999999627,
+              "pairedPercent": -7.50066100412487,
+              "minDelta": -5.479274999999973,
+              "maxDelta": 1.1586219999999798,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 40.19473350000001,
+              "candidate": 38.2388225,
+              "pairedDelta": -1.5714264999999727,
+              "pairedPercent": -3.8652579215994853,
+              "minDelta": -6.67559899999992,
+              "maxDelta": 14.844961000000069,
+              "pairs": 20
+            },
+            "noiseFloorMs": 6.5000069999999255,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 347.4880735,
+              "candidate": 329.278384,
+              "pairedDelta": -13.400148000000002,
+              "pairedPercent": -3.854333805443039,
+              "minDelta": -41.64348899999999,
+              "maxDelta": 55.54370799999998,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 336.294109,
+              "candidate": 329.03749400000004,
+              "pairedDelta": -0.5562634999999716,
+              "pairedPercent": -0.16081914870135772,
+              "minDelta": -26.02281499999998,
+              "maxDelta": 57.855016999999975,
+              "pairs": 20
+            },
+            "noiseFloorMs": 32.39007199999992,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 5.6317544999999996,
+              "candidate": 5.643709000000001,
+              "pairedDelta": -0.003712000000007265,
+              "pairedPercent": -0.05125460595998277,
+              "minDelta": -0.7507530000000315,
+              "maxDelta": 0.8530649999999582,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 5.649187999999981,
+              "candidate": 5.4892495,
+              "pairedDelta": -0.1903465000000324,
+              "pairedPercent": -3.4173294104458183,
+              "minDelta": -1.5611850000000231,
+              "maxDelta": 0.8735320000000684,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.30115800000004356,
+            "review": false
+          }
+        },
+        "memory": [
+          {
+            "baselineLateGrowth": -10176,
+            "candidateLateGrowth": -14752,
+            "requestHelperCalls": 0,
+            "constructionCalls": 187066
+          },
+          {
+            "baselineLateGrowth": -14656,
+            "candidateLateGrowth": -14752,
+            "requestHelperCalls": 0,
+            "constructionCalls": 187066
+          },
+          {
+            "baselineLateGrowth": -2352,
+            "candidateLateGrowth": -14752,
+            "requestHelperCalls": 0,
+            "constructionCalls": 187066
+          }
+        ]
+      },
+      {
+        "id": "stripe",
+        "contracts": {
+          "status": "pass",
+          "fingerprint": {
+            "version": 2,
+            "digest": "34e94e33a83cf41c331c9966bcae0092c1de25a4d7767af2df6e2fbbcb1523e4",
+            "nodes": 1446
+          },
+          "moduleExportCount": 2753,
+          "rootExports": [
+            "APIError",
+            "Enums",
+            "SortDirection",
+            "TransportErrorCode",
+            "createClient",
+            "getErrorCode",
+            "getRequestID",
+            "isAPIError",
+            "isErrorCategory",
+            "isErrorCode"
+          ],
+          "requests": 1,
+          "permittedInternalAdditions": [
+            {
+              "module": "internal/runtime/wire-properties.js",
+              "export": "wireProperties"
+            },
+            {
+              "module": "internal/runtime/callables.js",
+              "export": "createWireProperties"
+            }
+          ]
+        },
+        "timing": {
+          "importMs": {
+            "aa": {
+              "baseline": 265.60355100000004,
+              "candidate": 261.393229,
+              "pairedDelta": -6.325116499999979,
+              "pairedPercent": -2.362582537354835,
+              "minDelta": -62.62443700000006,
+              "maxDelta": 31.37845900000002,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 262.44842250000005,
+              "candidate": 264.111356,
+              "pairedDelta": 3.876657499999965,
+              "pairedPercent": 1.4770688221032224,
+              "minDelta": -75.94285500000001,
+              "maxDelta": 104.71563300000003,
+              "pairs": 20
+            },
+            "noiseFloorMs": 15.388762999999926,
+            "review": false
+          },
+          "firstClientMs": {
+            "aa": {
+              "baseline": 46.8420515,
+              "candidate": 46.44258049999996,
+              "pairedDelta": 0.08871499999997923,
+              "pairedPercent": 0.19029660882142752,
+              "minDelta": -3.0190640000000144,
+              "maxDelta": 1.1635689999999954,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 46.43999050000002,
+              "candidate": 40.31451899999999,
+              "pairedDelta": -5.487868499999962,
+              "pairedPercent": -11.910160236552747,
+              "minDelta": -10.370757999999967,
+              "maxDelta": 3.1998009999999795,
+              "pairs": 20
+            },
+            "noiseFloorMs": 1.5383219999999937,
+            "review": false
+          },
+          "importThroughFirstClientMs": {
+            "aa": {
+              "baseline": 311.513338,
+              "candidate": 308.70838100000003,
+              "pairedDelta": -6.672683999999975,
+              "pairedPercent": -2.154069853933377,
+              "minDelta": -62.05703700000004,
+              "maxDelta": 31.519203999999945,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 309.7298935,
+              "candidate": 304.86705300000006,
+              "pairedDelta": -2.797506999999996,
+              "pairedPercent": -0.8829877862548463,
+              "minDelta": -80.31420899999995,
+              "maxDelta": 105.61944500000004,
+              "pairs": 20
+            },
+            "noiseFloorMs": 15.634650999999963,
+            "review": false
+          },
+          "repeatedClientMs": {
+            "aa": {
+              "baseline": 8.50410549999998,
+              "candidate": 8.578521499999994,
+              "pairedDelta": -0.040970000000015716,
+              "pairedPercent": -0.4711131136126756,
+              "minDelta": -0.7617230000000177,
+              "maxDelta": 0.3351640000000202,
+              "pairs": 10
+            },
+            "ab": {
+              "baseline": 8.821995499999986,
+              "candidate": 8.669706999999988,
+              "pairedDelta": -0.21885650000004375,
+              "pairedPercent": -2.5455485801101183,
+              "minDelta": -2.885391000000027,
+              "maxDelta": 0.5752420000000029,
+              "pairs": 20
+            },
+            "noiseFloorMs": 0.33679800000004434,
+            "review": false
+          }
+        },
+        "memory": [
+          {
+            "baselineLateGrowth": 17488,
+            "candidateLateGrowth": 4144,
+            "requestHelperCalls": 0,
+            "constructionCalls": 886204
+          },
+          {
+            "baselineLateGrowth": 10440,
+            "candidateLateGrowth": 4144,
+            "requestHelperCalls": 0,
+            "constructionCalls": 886204
+          },
+          {
+            "baselineLateGrowth": 12304,
+            "candidateLateGrowth": 4144,
+            "requestHelperCalls": 0,
+            "constructionCalls": 886204
+          }
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "status": "review",
+    "baselineBlockers": ["collisions", "transport-native-headers", "baseline-oas32", "lifecycle"],
+    "fixtures": [
+      {
+        "id": "contract",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 403963,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 51,
+              "bytes": 134760
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 92889,
+              "gzipBytes": 25047,
+              "brotliBytes": 21823,
+              "modules": 32,
+              "sha256": "a7cb4a837233ce3aed125fe694b9f3aea5a96a701dc439499159c9b06634e315"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 135308,
+              "files": 52
+            }
+          },
+          "candidate": {
+            "sourceBytes": 391093,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 52,
+              "bytes": 121486
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 92378,
+              "gzipBytes": 25098,
+              "brotliBytes": 21848,
+              "modules": 33,
+              "sha256": "1f1d7dc5d411d1e667c16b44fd8a405174464a9dd90ebea59830444ae8f2d65b"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 122034,
+              "files": 53
+            }
+          }
+        }
+      },
+      {
+        "id": "collisions",
+        "status": "baseline-blocked",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 755444,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.\ninternal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 64,
+              "bytes": 232669
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 97674,
+              "gzipBytes": 25897,
+              "brotliBytes": 22528,
+              "modules": 42,
+              "sha256": "ecf0a3b8bad672d760c7300f3244403aea922d008f3645fc6c8a4ae93ffef911"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 233217,
+              "files": 65
+            }
+          },
+          "candidate": {
+            "sourceBytes": 742580,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.\ninternal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 65,
+              "bytes": 223123
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 97674,
+              "gzipBytes": 25897,
+              "brotliBytes": 22528,
+              "modules": 42,
+              "sha256": "ecf0a3b8bad672d760c7300f3244403aea922d008f3645fc6c8a4ae93ffef911"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 223671,
+              "files": 66
+            }
+          }
+        }
+      },
+      {
+        "id": "bundle-isolation",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 328788,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 37,
+              "bytes": 82960
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 84949,
+              "gzipBytes": 23414,
+              "brotliBytes": 20391,
+              "modules": 17,
+              "sha256": "a2fad0c7223d1a55ee362f869584c3fb3c7ada1a71620b9131b2993b439fd3c4"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 83508,
+              "files": 38
+            }
+          },
+          "candidate": {
+            "sourceBytes": 328229,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 38,
+              "bytes": 81572
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 84949,
+              "gzipBytes": 23414,
+              "brotliBytes": 20391,
+              "modules": 17,
+              "sha256": "a2fad0c7223d1a55ee362f869584c3fb3c7ada1a71620b9131b2993b439fd3c4"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 82120,
+              "files": 39
+            }
+          }
+        }
+      },
+      {
+        "id": "transport-native-headers",
+        "status": "baseline-blocked",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 570589,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 53,
+              "bytes": 169141
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 95349,
+              "gzipBytes": 25278,
+              "brotliBytes": 22038,
+              "modules": 31,
+              "sha256": "6e70fbbbcde1e0a14c7714079be80df4cdac35c119e0fdce9ee5a075fb74b2ef"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 169689,
+              "files": 54
+            }
+          },
+          "candidate": {
+            "sourceBytes": 558870,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 54,
+              "bytes": 156127
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 95349,
+              "gzipBytes": 25278,
+              "brotliBytes": 22038,
+              "modules": 31,
+              "sha256": "6e70fbbbcde1e0a14c7714079be80df4cdac35c119e0fdce9ee5a075fb74b2ef"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 156675,
+              "files": 55
+            }
+          }
+        }
+      },
+      {
+        "id": "baseline-oas30",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 307650,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 33,
+              "bytes": 71677
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 83700,
+              "gzipBytes": 23119,
+              "brotliBytes": 20231,
+              "modules": 13,
+              "sha256": "9f2caab8de250dc8bc9b8578425dd50577fdcbe2ab721334f57d8c53235deb80"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 72225,
+              "files": 34
+            }
+          },
+          "candidate": {
+            "sourceBytes": 308063,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 34,
+              "bytes": 71377
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 83874,
+              "gzipBytes": 23198,
+              "brotliBytes": 20286,
+              "modules": 14,
+              "sha256": "34c42210cb0963cc36115d7b24b1c9d0f77767490121c53195f57f8d4fc79aac"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 71925,
+              "files": 35
+            }
+          }
+        }
+      },
+      {
+        "id": "baseline-oas31",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 465823,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 41,
+              "bytes": 101147
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 86865,
+              "gzipBytes": 24116,
+              "brotliBytes": 21066,
+              "modules": 19,
+              "sha256": "5692cbf10d775fe4b0f0c86c5dfaf2a94f26561db110d9581661f27a1e2d8ed1"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 101695,
+              "files": 42
+            }
+          },
+          "candidate": {
+            "sourceBytes": 464297,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 42,
+              "bytes": 98623
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 87044,
+              "gzipBytes": 24196,
+              "brotliBytes": 21153,
+              "modules": 20,
+              "sha256": "c80dbed78f9225a615d4278a485132653891e33ba1886ce0895382179a23ec62"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 99171,
+              "files": 43
+            }
+          }
+        }
+      },
+      {
+        "id": "baseline-oas32",
+        "status": "baseline-blocked",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 320974,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 36,
+              "bytes": 80531
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 84981,
+              "gzipBytes": 23413,
+              "brotliBytes": 20453,
+              "modules": 16,
+              "sha256": "80814494ee50746bc016117f8b8f65ed3a16471bd4cef01ad90427bf544ee453"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 81079,
+              "files": 37
+            }
+          },
+          "candidate": {
+            "sourceBytes": 319531,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 37,
+              "bytes": 78298
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 84981,
+              "gzipBytes": 23413,
+              "brotliBytes": 20453,
+              "modules": 16,
+              "sha256": "80814494ee50746bc016117f8b8f65ed3a16471bd4cef01ad90427bf544ee453"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 78846,
+              "files": 38
+            }
+          }
+        }
+      },
+      {
+        "id": "representation",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 346679,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 41,
+              "bytes": 96799
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 88248,
+              "gzipBytes": 23927,
+              "brotliBytes": 20883,
+              "modules": 21,
+              "sha256": "b165e25f5e0101029c7692e894fcd670b89ef154cf1064c6eb358b981726412f"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 97347,
+              "files": 42
+            }
+          },
+          "candidate": {
+            "sourceBytes": 343877,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 42,
+              "bytes": 93078
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 88248,
+              "gzipBytes": 23927,
+              "brotliBytes": 20883,
+              "modules": 21,
+              "sha256": "b165e25f5e0101029c7692e894fcd670b89ef154cf1064c6eb358b981726412f"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 93626,
+              "files": 43
+            }
+          }
+        }
+      },
+      {
+        "id": "lifecycle",
+        "status": "baseline-blocked",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 325068,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 36,
+              "bytes": 82675
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 85843,
+              "gzipBytes": 23486,
+              "brotliBytes": 20495,
+              "modules": 16,
+              "sha256": "3c1869deef7d1e5d2343c471ec6a72066430639f333d596efbeb44ef035cd451"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 83223,
+              "files": 37
+            }
+          },
+          "candidate": {
+            "sourceBytes": 323586,
+            "strictStatus": "failed",
+            "strictDiagnostics": "internal/client/registry.ts: error TS2345: Argument of type '__sdkgen_Private' is not assignable to parameter of type '(...args: never[]) => unknown'.\n  Type '__sdkgen_Private' provides no match for the signature '(...args: never[]): unknown'.",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 37,
+              "bytes": 80649
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 85752,
+              "gzipBytes": 23554,
+              "brotliBytes": 20537,
+              "modules": 17,
+              "sha256": "69cdd82a19ded25e16fedbf9ebe08dfc446cbbfc53d473237eb393986e298a1e"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 81197,
+              "files": 38
+            }
+          }
+        }
+      },
+      {
+        "id": "github",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 42752469,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 2858,
+              "bytes": 25148686
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 2583041,
+              "gzipBytes": 217267,
+              "brotliBytes": 140153,
+              "modules": 2838,
+              "sha256": "f142abae478e58d7765e02e0cf6f7a36c0a61609cf323739961db7fc508384df"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 25149234,
+              "files": 2859
+            }
+          },
+          "candidate": {
+            "sourceBytes": 37157721,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 2859,
+              "bytes": 19567347
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 2489155,
+              "gzipBytes": 212187,
+              "brotliBytes": 140602,
+              "modules": 2839,
+              "sha256": "e9ab3b047f95872b6a9fc1fbe9b0dfe7fdb3052537b3b49f4f0a9d8e26f9f050"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 19567895,
+              "files": 2860
+            }
+          }
+        }
+      },
+      {
+        "id": "stripe",
+        "status": "pass",
+        "variants": {
+          "baseline": {
+            "sourceBytes": 32083701,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 2753,
+              "bytes": 18962839
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "not-applicable",
+              "reason": "baseline has no helper"
+            },
+            "bundle": {
+              "minifiedBytes": 3592758,
+              "gzipBytes": 319393,
+              "brotliBytes": 159833,
+              "modules": 2733,
+              "sha256": "75022ee0942230e017c7b0be7412a4c4b2cae6f272e63c6006a4be6366cdbf6f"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 18963387,
+              "files": 2754
+            }
+          },
+          "candidate": {
+            "sourceBytes": 29150527,
+            "strictStatus": "pass",
+            "strictDiagnostics": "",
+            "sourceConsumer": "pass",
+            "declarations": {
+              "files": 2754,
+              "bytes": 16423802
+            },
+            "declarationConsumer": "pass",
+            "helperContract": {
+              "status": "pass",
+              "checks": [
+                "exact own keys, descriptors, order and ordinary prototype",
+                "empty maps and duplicate last-write preserve insertion order",
+                "child identities shared, wrappers fresh within and across calls",
+                "frozen arrays and child schemas remain unchanged",
+                "opaque values are passed by identity and are not compacted",
+                "absent, undefined, false, null, zero and empty constraints survive",
+                "an inherited setter is never invoked",
+                "deterministic adversarial map vectors preserve exact identity",
+                "required and closed-object validation matches the original runtime",
+                "manual nonidentity WireProperty mappings still encode and decode",
+                "recursive references retain baseline graph semantics"
+              ],
+              "adversarialVectors": 128
+            },
+            "bundle": {
+              "minifiedBytes": 3114441,
+              "gzipBytes": 287243,
+              "brotliBytes": 161320,
+              "modules": 2734,
+              "sha256": "26f1824eeddc34420fc903ad0e4b0000053d3b6b46a3747cfad26614b4da19cd"
+            },
+            "rawDeclarationsIncludingProbe": {
+              "bytes": 16424350,
+              "files": 2755
+            }
+          }
+        }
+      }
+    ]
+  },
+  "cost": {
+    "version": 1,
+    "status": "pass",
+    "pairs": 10,
+    "node": "v24.21.0",
+    "baseline": "66d280ee676713aceed81ae5d4a7a1ee6bf554070531932a2d1ae6f348e2b42d",
+    "candidate": "64a02582d8a82258c5a6ca71b8ab42133de303166eb91eb107e7ab55b5e830a7",
+    "runtimeReport": ".tmp/preimplementation/run-nWuLsA/report.json",
+    "runtimeReportSha256": "a1608feaddd7f42fff27a159278efa6834f03f77e205b33197e8f1a8fa2f66cd",
+    "artifactReportSha256": "f65e1b8a3e6c603104f3d1b27a94d25fb1493afa75c7653926e606ce4b23cbbd",
+    "method": "GNU time per child, paired independent processes, one unmeasured generation warmup, local input and warm filesystem, build/network excluded",
+    "finalProductionApproval": false,
+    "fixtures": [
+      {
+        "id": "github",
+        "generation": [
+          {
+            "baseline": {
+              "wallMs": 1321.4385659999998,
+              "cpuMs": 2219.9999999999995,
+              "peakRssBytes": 258723840
+            },
+            "candidate": {
+              "wallMs": 1229.136179000001,
+              "cpuMs": 2040,
+              "peakRssBytes": 250359808
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1250.2228840000007,
+              "cpuMs": 2090,
+              "peakRssBytes": 241303552
+            },
+            "baseline": {
+              "wallMs": 1294.0660580000003,
+              "cpuMs": 2190,
+              "peakRssBytes": 246853632
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1290.5277769999993,
+              "cpuMs": 2170,
+              "peakRssBytes": 242667520
+            },
+            "candidate": {
+              "wallMs": 1247.3446659999972,
+              "cpuMs": 2110,
+              "peakRssBytes": 226701312
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1355.3332499999997,
+              "cpuMs": 2280,
+              "peakRssBytes": 243310592
+            },
+            "baseline": {
+              "wallMs": 1384.3686919999964,
+              "cpuMs": 2330,
+              "peakRssBytes": 230821888
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1304.8500030000068,
+              "cpuMs": 2190,
+              "peakRssBytes": 241008640
+            },
+            "candidate": {
+              "wallMs": 1312.0366589999976,
+              "cpuMs": 2190,
+              "peakRssBytes": 229965824
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1261.4988840000005,
+              "cpuMs": 2120,
+              "peakRssBytes": 242667520
+            },
+            "baseline": {
+              "wallMs": 1286.5211619999973,
+              "cpuMs": 2190,
+              "peakRssBytes": 239472640
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1375.369945999999,
+              "cpuMs": 2300,
+              "peakRssBytes": 259497984
+            },
+            "candidate": {
+              "wallMs": 1272.8602060000048,
+              "cpuMs": 2150,
+              "peakRssBytes": 256266240
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1236.7226979999978,
+              "cpuMs": 2100,
+              "peakRssBytes": 226869248
+            },
+            "baseline": {
+              "wallMs": 1283.9246540000022,
+              "cpuMs": 2190,
+              "peakRssBytes": 244867072
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1294.6413199999952,
+              "cpuMs": 2220,
+              "peakRssBytes": 221667328
+            },
+            "candidate": {
+              "wallMs": 1237.2817099999957,
+              "cpuMs": 2090,
+              "peakRssBytes": 241815552
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1284.9806499999977,
+              "cpuMs": 2170,
+              "peakRssBytes": 240443392
+            },
+            "baseline": {
+              "wallMs": 1507.9326909999945,
+              "cpuMs": 2540,
+              "peakRssBytes": 254496768
+            }
+          }
+        ],
+        "strict": [
+          {
+            "baseline": {
+              "wallMs": 3741.273284,
+              "cpuMs": 12360,
+              "peakRssBytes": 1968701440
+            },
+            "candidate": {
+              "wallMs": 2773.9614699999984,
+              "cpuMs": 9250,
+              "peakRssBytes": 1382178816
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2452.1020640000006,
+              "cpuMs": 9100,
+              "peakRssBytes": 1373892608
+            },
+            "baseline": {
+              "wallMs": 3175.508031999998,
+              "cpuMs": 10820,
+              "peakRssBytes": 1998196736
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3053.0257870000023,
+              "cpuMs": 10590,
+              "peakRssBytes": 1994981376
+            },
+            "candidate": {
+              "wallMs": 2491.6920819999978,
+              "cpuMs": 9390,
+              "peakRssBytes": 1472274432
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2544.867972,
+              "cpuMs": 9390,
+              "peakRssBytes": 1456480256
+            },
+            "baseline": {
+              "wallMs": 3103.417763000005,
+              "cpuMs": 11370.000000000002,
+              "peakRssBytes": 1896849408
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3064.567544000005,
+              "cpuMs": 10680,
+              "peakRssBytes": 1990803456
+            },
+            "candidate": {
+              "wallMs": 2512.385908000004,
+              "cpuMs": 8990,
+              "peakRssBytes": 1440141312
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2534.8206250000003,
+              "cpuMs": 9360,
+              "peakRssBytes": 1449603072
+            },
+            "baseline": {
+              "wallMs": 3209.3753890000007,
+              "cpuMs": 10950,
+              "peakRssBytes": 1985179648
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3164.269677000004,
+              "cpuMs": 11190,
+              "peakRssBytes": 1966469120
+            },
+            "candidate": {
+              "wallMs": 2623.9513709999956,
+              "cpuMs": 9330,
+              "peakRssBytes": 1554857984
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2474.6149989999976,
+              "cpuMs": 8850,
+              "peakRssBytes": 1422360576
+            },
+            "baseline": {
+              "wallMs": 3208.165025999988,
+              "cpuMs": 11260,
+              "peakRssBytes": 1989623808
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3122.4141750000126,
+              "cpuMs": 10760,
+              "peakRssBytes": 1999343616
+            },
+            "candidate": {
+              "wallMs": 2473.8076119999896,
+              "cpuMs": 9030,
+              "peakRssBytes": 1438650368
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2661.17723500001,
+              "cpuMs": 9240,
+              "peakRssBytes": 1435279360
+            },
+            "baseline": {
+              "wallMs": 3593.334673000005,
+              "cpuMs": 12140,
+              "peakRssBytes": 1980432384
+            }
+          }
+        ],
+        "consumer": [
+          {
+            "baseline": {
+              "wallMs": 431.72084800000084,
+              "cpuMs": 2780.0000000000005,
+              "peakRssBytes": 482816000
+            },
+            "candidate": {
+              "wallMs": 442.87351300000046,
+              "cpuMs": 2770,
+              "peakRssBytes": 482037760
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 355.3817519999975,
+              "cpuMs": 2140,
+              "peakRssBytes": 493060096
+            },
+            "baseline": {
+              "wallMs": 381.0310509999981,
+              "cpuMs": 2400.0000000000005,
+              "peakRssBytes": 495091712
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 416.72759999999835,
+              "cpuMs": 2340,
+              "peakRssBytes": 495067136
+            },
+            "candidate": {
+              "wallMs": 386.8889620000009,
+              "cpuMs": 2469.9999999999995,
+              "peakRssBytes": 482668544
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 369.6668589999972,
+              "cpuMs": 2190,
+              "peakRssBytes": 492273664
+            },
+            "baseline": {
+              "wallMs": 362.28852200000256,
+              "cpuMs": 2110,
+              "peakRssBytes": 489058304
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 383.28148299999884,
+              "cpuMs": 2320.0000000000005,
+              "peakRssBytes": 491921408
+            },
+            "candidate": {
+              "wallMs": 352.7367559999984,
+              "cpuMs": 2130,
+              "peakRssBytes": 483008512
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 366.443346,
+              "cpuMs": 2140,
+              "peakRssBytes": 485765120
+            },
+            "baseline": {
+              "wallMs": 397.37871799999994,
+              "cpuMs": 2440,
+              "peakRssBytes": 483237888
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 384.7411779999966,
+              "cpuMs": 2320,
+              "peakRssBytes": 474185728
+            },
+            "candidate": {
+              "wallMs": 396.43717999999353,
+              "cpuMs": 2510,
+              "peakRssBytes": 483090432
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 391.6829149999976,
+              "cpuMs": 2190,
+              "peakRssBytes": 506925056
+            },
+            "baseline": {
+              "wallMs": 398.237341,
+              "cpuMs": 2360,
+              "peakRssBytes": 493649920
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 406.53052200000093,
+              "cpuMs": 2580,
+              "peakRssBytes": 479068160
+            },
+            "candidate": {
+              "wallMs": 371.44300400000066,
+              "cpuMs": 2310,
+              "peakRssBytes": 481525760
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 446.3463829999964,
+              "cpuMs": 2410,
+              "peakRssBytes": 466857984
+            },
+            "baseline": {
+              "wallMs": 480.5000199999922,
+              "cpuMs": 2470,
+              "peakRssBytes": 495927296
+            }
+          }
+        ],
+        "summary": {
+          "generation": {
+            "wallMs": {
+              "baseline": 1299.745661500001,
+              "candidate": 1255.8608840000006,
+              "pairedDelta": -45.52256500000203,
+              "pairedPercent": -3.5321986090656123,
+              "minDelta": -222.95204099999683,
+              "maxDelta": 7.186655999990762,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 2205,
+              "candidate": 2115,
+              "pairedDelta": -95,
+              "pairedPercent": -4.337899543378998,
+              "minDelta": -370,
+              "maxDelta": 0,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 243767296,
+              "candidate": 241559552,
+              "pairedDelta": -6957056,
+              "pairedPercent": -2.740565624426222,
+              "minDelta": -17997824,
+              "maxDelta": 20148224,
+              "pairs": 10
+            }
+          },
+          "strict": {
+            "wallMs": {
+              "baseline": 3169.888854500001,
+              "candidate": 2523.603266500002,
+              "pairedDelta": -661.5806635000117,
+              "pairedPercent": -20.895427744496473,
+              "minDelta": -967.3118140000015,
+              "maxDelta": -540.3183060000083,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 11070,
+              "candidate": 9245,
+              "pairedDelta": -1795,
+              "pairedPercent": -16.35002541435363,
+              "minDelta": -3110,
+              "maxDelta": -1200,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 1987401728,
+              "candidate": 1439395840,
+              "pairedDelta": -547907584,
+              "pairedPercent": -27.593633277680297,
+              "minDelta": -624304128,
+              "maxDelta": -411611136,
+              "pairs": 10
+            }
+          },
+          "consumer": {
+            "wallMs": {
+              "baseline": 397.8080295,
+              "candidate": 379.1659830000008,
+              "pairedDelta": -27.743968499999028,
+              "pairedPercent": -6.91974375366738,
+              "minDelta": -35.08751800000027,
+              "maxDelta": 11.696001999996952,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 2380,
+              "candidate": 2250,
+              "pairedDelta": -115,
+              "pairedPercent": -4.816269814039664,
+              "minDelta": -300,
+              "maxDelta": 190,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 490489856,
+              "candidate": 483049472,
+              "pairedDelta": 839680,
+              "pairedPercent": 0.17590409859966627,
+              "minDelta": -29069312,
+              "maxDelta": 13275136,
+              "pairs": 10
+            }
+          }
+        }
+      },
+      {
+        "id": "stripe",
+        "generation": [
+          {
+            "baseline": {
+              "wallMs": 1077.3926940000092,
+              "cpuMs": 2050,
+              "peakRssBytes": 173531136
+            },
+            "candidate": {
+              "wallMs": 1069.3711509999994,
+              "cpuMs": 2060,
+              "peakRssBytes": 166825984
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1093.124410000004,
+              "cpuMs": 2120,
+              "peakRssBytes": 169070592
+            },
+            "baseline": {
+              "wallMs": 1122.721556000004,
+              "cpuMs": 2150,
+              "peakRssBytes": 170115072
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1070.6401059999916,
+              "cpuMs": 2050,
+              "peakRssBytes": 171728896
+            },
+            "candidate": {
+              "wallMs": 1112.3369860000093,
+              "cpuMs": 2060,
+              "peakRssBytes": 157114368
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 1097.9693660000048,
+              "cpuMs": 2030.0000000000002,
+              "peakRssBytes": 158384128
+            },
+            "baseline": {
+              "wallMs": 1074.2215480000013,
+              "cpuMs": 2030.0000000000002,
+              "peakRssBytes": 164057088
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1016.6248619999969,
+              "cpuMs": 1980,
+              "peakRssBytes": 157667328
+            },
+            "candidate": {
+              "wallMs": 974.6721579999721,
+              "cpuMs": 1890.0000000000002,
+              "peakRssBytes": 178704384
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 956.5558500000043,
+              "cpuMs": 1849.9999999999998,
+              "peakRssBytes": 155955200
+            },
+            "baseline": {
+              "wallMs": 1024.7942919999768,
+              "cpuMs": 1970,
+              "peakRssBytes": 160808960
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 1046.3467050000036,
+              "cpuMs": 1980,
+              "peakRssBytes": 159084544
+            },
+            "candidate": {
+              "wallMs": 969.544785999984,
+              "cpuMs": 1869.9999999999998,
+              "peakRssBytes": 169775104
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 970.2626509999973,
+              "cpuMs": 1870,
+              "peakRssBytes": 162000896
+            },
+            "baseline": {
+              "wallMs": 988.552452999982,
+              "cpuMs": 1910,
+              "peakRssBytes": 173006848
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 973.3863999999885,
+              "cpuMs": 1900,
+              "peakRssBytes": 186155008
+            },
+            "candidate": {
+              "wallMs": 957.9497480000136,
+              "cpuMs": 1859.9999999999998,
+              "peakRssBytes": 157286400
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 947.5948130000033,
+              "cpuMs": 1849.9999999999998,
+              "peakRssBytes": 157913088
+            },
+            "baseline": {
+              "wallMs": 991.5024039999989,
+              "cpuMs": 1910,
+              "peakRssBytes": 156762112
+            }
+          }
+        ],
+        "strict": [
+          {
+            "baseline": {
+              "wallMs": 4018.8501579999865,
+              "cpuMs": 14840,
+              "peakRssBytes": 2580729856
+            },
+            "candidate": {
+              "wallMs": 2292.0788849999954,
+              "cpuMs": 7580,
+              "peakRssBytes": 1267757056
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2302.74193199999,
+              "cpuMs": 7600,
+              "peakRssBytes": 1266851840
+            },
+            "baseline": {
+              "wallMs": 3866.5744390000036,
+              "cpuMs": 15170,
+              "peakRssBytes": 2485350400
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3720.881288999997,
+              "cpuMs": 14740,
+              "peakRssBytes": 2508615680
+            },
+            "candidate": {
+              "wallMs": 2379.089923000007,
+              "cpuMs": 8080,
+              "peakRssBytes": 1232576512
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2289.049220000001,
+              "cpuMs": 7680,
+              "peakRssBytes": 1242472448
+            },
+            "baseline": {
+              "wallMs": 3790.7339349999966,
+              "cpuMs": 14110,
+              "peakRssBytes": 2571657216
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3288.3385750000016,
+              "cpuMs": 13629.999999999998,
+              "peakRssBytes": 2512769024
+            },
+            "candidate": {
+              "wallMs": 2071.1062460000103,
+              "cpuMs": 7250,
+              "peakRssBytes": 1236623360
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2060.314480000001,
+              "cpuMs": 7270.000000000001,
+              "peakRssBytes": 1270681600
+            },
+            "baseline": {
+              "wallMs": 3383.7310469999793,
+              "cpuMs": 14530.000000000002,
+              "peakRssBytes": 2477240320
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3317.8343640000094,
+              "cpuMs": 12910,
+              "peakRssBytes": 2570489856
+            },
+            "candidate": {
+              "wallMs": 2121.6638649999804,
+              "cpuMs": 7230,
+              "peakRssBytes": 1271963648
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2077.6592730000266,
+              "cpuMs": 7110,
+              "peakRssBytes": 1237557248
+            },
+            "baseline": {
+              "wallMs": 3398.240727000026,
+              "cpuMs": 13410,
+              "peakRssBytes": 2537680896
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 3260.908431000018,
+              "cpuMs": 12910,
+              "peakRssBytes": 2544521216
+            },
+            "candidate": {
+              "wallMs": 2100.4399490000214,
+              "cpuMs": 7120,
+              "peakRssBytes": 1274912768
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 2040.3501830000023,
+              "cpuMs": 7170,
+              "peakRssBytes": 1242890240
+            },
+            "baseline": {
+              "wallMs": 3451.6378300000215,
+              "cpuMs": 13459.999999999998,
+              "peakRssBytes": 2534174720
+            }
+          }
+        ],
+        "consumer": [
+          {
+            "baseline": {
+              "wallMs": 404.37224099999,
+              "cpuMs": 2260,
+              "peakRssBytes": 446971904
+            },
+            "candidate": {
+              "wallMs": 432.193511999998,
+              "cpuMs": 2430,
+              "peakRssBytes": 440033280
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 384.5332609999896,
+              "cpuMs": 1980,
+              "peakRssBytes": 439582720
+            },
+            "baseline": {
+              "wallMs": 454.9495770000067,
+              "cpuMs": 2240,
+              "peakRssBytes": 480108544
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 455.19465499999933,
+              "cpuMs": 2280,
+              "peakRssBytes": 448991232
+            },
+            "candidate": {
+              "wallMs": 394.4390759999951,
+              "cpuMs": 2120,
+              "peakRssBytes": 424194048
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 376.8621589999966,
+              "cpuMs": 2140,
+              "peakRssBytes": 433483776
+            },
+            "baseline": {
+              "wallMs": 390.67694000000483,
+              "cpuMs": 2110.0000000000005,
+              "peakRssBytes": 457125888
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 403.3288959999918,
+              "cpuMs": 2460,
+              "peakRssBytes": 471650304
+            },
+            "candidate": {
+              "wallMs": 356.3246870000148,
+              "cpuMs": 2180,
+              "peakRssBytes": 431796224
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 370.30707899999106,
+              "cpuMs": 2310,
+              "peakRssBytes": 466370560
+            },
+            "baseline": {
+              "wallMs": 368.6425309999904,
+              "cpuMs": 2280,
+              "peakRssBytes": 441356288
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 368.68097300000954,
+              "cpuMs": 2190,
+              "peakRssBytes": 465793024
+            },
+            "candidate": {
+              "wallMs": 363.35203400001046,
+              "cpuMs": 2250,
+              "peakRssBytes": 441143296
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 351.58752699999604,
+              "cpuMs": 2139.9999999999995,
+              "peakRssBytes": 423473152
+            },
+            "baseline": {
+              "wallMs": 350.06471999999485,
+              "cpuMs": 2020,
+              "peakRssBytes": 460558336
+            }
+          },
+          {
+            "baseline": {
+              "wallMs": 366.3197030000156,
+              "cpuMs": 2300,
+              "peakRssBytes": 456691712
+            },
+            "candidate": {
+              "wallMs": 350.5894140000164,
+              "cpuMs": 2100,
+              "peakRssBytes": 425160704
+            }
+          },
+          {
+            "candidate": {
+              "wallMs": 356.8026950000203,
+              "cpuMs": 2080,
+              "peakRssBytes": 430407680
+            },
+            "baseline": {
+              "wallMs": 371.26302800001577,
+              "cpuMs": 2380,
+              "peakRssBytes": 463740928
+            }
+          }
+        ],
+        "summary": {
+          "generation": {
+            "wallMs": {
+              "baseline": 1035.5704984999902,
+              "candidate": 972.4674044999847,
+              "pairedDelta": -23.94347399999242,
+              "pairedPercent": -2.243178230529308,
+              "minDelta": -76.80191900001955,
+              "maxDelta": 41.6968800000177,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 1980,
+              "candidate": 1880,
+              "pairedDelta": -40.000000000000114,
+              "pairedPercent": -2.0997519977955403,
+              "minDelta": -120.00000000000023,
+              "maxDelta": 10,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 167086080,
+              "candidate": 160192512,
+              "pairedDelta": -5263360,
+              "pairedPercent": -3.238128767462584,
+              "minDelta": -28868608,
+              "maxDelta": 21037056,
+              "pairs": 10
+            }
+          },
+          "strict": {
+            "wallMs": {
+              "baseline": 3424.9392785000236,
+              "candidate": 2111.051907000001,
+              "pairedDelta": -1332.6039664999844,
+              "pairedPercent": -38.98595094441872,
+              "minDelta": -1726.7712729999912,
+              "maxDelta": -1160.4684819999966,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 13870,
+              "candidate": 7260,
+              "pairedDelta": -6404.999999999999,
+              "pairedPercent": -46.76978280800479,
+              "minDelta": -7570,
+              "maxDelta": -5680,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 2535927808,
+              "candidate": 1254871040,
+              "pairedDelta": -1283715072,
+              "pairedPercent": -50.82634851595921,
+              "minDelta": -1329184768,
+              "maxDelta": -1206558720,
+              "pairs": 10
+            }
+          },
+          "consumer": {
+            "wallMs": {
+              "baseline": 380.9699840000103,
+              "candidate": 366.82955650000076,
+              "pairedDelta": -14.137557000001834,
+              "pairedPercent": -3.7155081313443583,
+              "minDelta": -70.4163160000171,
+              "maxDelta": 27.821271000007982,
+              "pairs": 10
+            },
+            "cpuMs": {
+              "baseline": 2270,
+              "candidate": 2140,
+              "pairedDelta": -65.00000000000023,
+              "pairedPercent": -2.8508771929824595,
+              "minDelta": -300,
+              "maxDelta": 170,
+              "pairs": 10
+            },
+            "peakRssBytes": {
+              "baseline": 458842112,
+              "candidate": 432640000,
+              "pairedDelta": -28164096,
+              "pairedPercent": -6.213543808533756,
+              "minDelta": -40525824,
+              "maxDelta": 25014272,
+              "pairs": 10
+            }
+          }
+        }
+      }
+    ]
+  },
+  "migration": {
+    "version": 1,
+    "status": "pass",
+    "binarySha256": {
+      "baseline": "66d280ee676713aceed81ae5d4a7a1ee6bf554070531932a2d1ae6f348e2b42d",
+      "candidate": "64a02582d8a82258c5a6ca71b8ab42133de303166eb91eb107e7ab55b5e830a7"
+    },
+    "finalProductionApproval": false,
+    "fixtures": [
+      {
+        "id": "collisions",
+        "input": {
+          "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/collisions.openapi.json",
+          "sha256": "1520ccee4e2278e8b7fe4f5a2adcb0038fb5f2cf734dc9c28e3dea7d08cc4157",
+          "bytes": 12448,
+          "operations": 6,
+          "schemas": 15
+        },
+        "checks": [
+          "distinct generator identity invalidates old output reuse",
+          "fresh and incremental managed outputs are byte-identical",
+          "same-version no-op preserves content and nanosecond mtimes",
+          "diagnostic failure preserves the complete prior managed output",
+          "edited managed source is refused and preserved",
+          "new helper file conflict is refused without partial publication",
+          "new helper directory conflict is refused without partial publication",
+          "new helper symlink conflict is refused without partial publication"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "representation",
+        "input": {
+          "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/representation.openapi.json",
+          "sha256": "f4cc5e3bedefc9712e33c7e21e504c2d0d68abf5a2986156939bf512bb564c84",
+          "bytes": 2722,
+          "operations": 3,
+          "schemas": 2
+        },
+        "checks": [
+          "distinct generator identity invalidates old output reuse",
+          "fresh and incremental managed outputs are byte-identical",
+          "same-version no-op preserves content and nanosecond mtimes",
+          "diagnostic failure preserves the complete prior managed output",
+          "edited managed source is refused and preserved",
+          "new helper file conflict is refused without partial publication",
+          "new helper directory conflict is refused without partial publication",
+          "new helper symlink conflict is refused without partial publication"
+        ],
+        "status": "pass"
+      },
+      {
+        "id": "lifecycle",
+        "input": {
+          "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/lifecycle.openapi.json",
+          "sha256": "e4de3b2bd8a7ec6cd9208bbd77202951da266444dd0830513559f284f9e1c956",
+          "bytes": 2292,
+          "operations": 2,
+          "schemas": 0
+        },
+        "checks": [
+          "distinct generator identity invalidates old output reuse",
+          "fresh and incremental managed outputs are byte-identical",
+          "same-version no-op preserves content and nanosecond mtimes",
+          "diagnostic failure preserves the complete prior managed output",
+          "edited managed source is refused and preserved",
+          "new helper file conflict is refused without partial publication",
+          "new helper directory conflict is refused without partial publication",
+          "new helper symlink conflict is refused without partial publication"
+        ],
+        "status": "pass"
+      }
+    ]
+  },
+  "declarationAccounting": {
+    "version": 2,
+    "reason": "Original artifact report included the auxiliary consumer.d.ts. Raw report remains immutable; managed counts are recomputed from the generated manifest and emitted files.",
+    "corrections": [
+      {
+        "fixture": "contract",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 135308,
+          "files": 52
+        },
+        "managed": {
+          "files": 51,
+          "bytes": 134760
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "contract",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 122034,
+          "files": 53
+        },
+        "managed": {
+          "files": 52,
+          "bytes": 121486
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "collisions",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 233217,
+          "files": 65
+        },
+        "managed": {
+          "files": 64,
+          "bytes": 232669
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "collisions",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 223671,
+          "files": 66
+        },
+        "managed": {
+          "files": 65,
+          "bytes": 223123
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "bundle-isolation",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 83508,
+          "files": 38
+        },
+        "managed": {
+          "files": 37,
+          "bytes": 82960
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "bundle-isolation",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 82120,
+          "files": 39
+        },
+        "managed": {
+          "files": 38,
+          "bytes": 81572
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "transport-native-headers",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 169689,
+          "files": 54
+        },
+        "managed": {
+          "files": 53,
+          "bytes": 169141
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "transport-native-headers",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 156675,
+          "files": 55
+        },
+        "managed": {
+          "files": 54,
+          "bytes": 156127
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas30",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 72225,
+          "files": 34
+        },
+        "managed": {
+          "files": 33,
+          "bytes": 71677
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas30",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 71925,
+          "files": 35
+        },
+        "managed": {
+          "files": 34,
+          "bytes": 71377
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas31",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 101695,
+          "files": 42
+        },
+        "managed": {
+          "files": 41,
+          "bytes": 101147
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas31",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 99171,
+          "files": 43
+        },
+        "managed": {
+          "files": 42,
+          "bytes": 98623
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas32",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 81079,
+          "files": 37
+        },
+        "managed": {
+          "files": 36,
+          "bytes": 80531
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "baseline-oas32",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 78846,
+          "files": 38
+        },
+        "managed": {
+          "files": 37,
+          "bytes": 78298
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "representation",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 97347,
+          "files": 42
+        },
+        "managed": {
+          "files": 41,
+          "bytes": 96799
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "representation",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 93626,
+          "files": 43
+        },
+        "managed": {
+          "files": 42,
+          "bytes": 93078
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "lifecycle",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 83223,
+          "files": 37
+        },
+        "managed": {
+          "files": 36,
+          "bytes": 82675
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "lifecycle",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 81197,
+          "files": 38
+        },
+        "managed": {
+          "files": 37,
+          "bytes": 80649
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "github",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 25149234,
+          "files": 2859
+        },
+        "managed": {
+          "files": 2858,
+          "bytes": 25148686
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "github",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 19567895,
+          "files": 2860
+        },
+        "managed": {
+          "files": 2859,
+          "bytes": 19567347
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "stripe",
+        "variant": "baseline",
+        "previous": {
+          "bytes": 18963387,
+          "files": 2754
+        },
+        "managed": {
+          "files": 2753,
+          "bytes": 18962839
+        },
+        "excludedAuxiliaryBytes": 548
+      },
+      {
+        "fixture": "stripe",
+        "variant": "candidate",
+        "previous": {
+          "bytes": 16424350,
+          "files": 2755
+        },
+        "managed": {
+          "files": 2754,
+          "bytes": 16423802
+        },
+        "excludedAuxiliaryBytes": 548
+      }
+    ]
+  }
+}

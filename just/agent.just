@@ -60,6 +60,22 @@ generate-check-test:
 conformance:
     ./scripts/agent/conformance
 
+[positional-arguments]
+representation-check *args:
+    bash ./scripts/agent/representation-check "$@"
+
+[positional-arguments]
+representation-artifacts *args:
+    bash ./scripts/agent/representation-artifacts "$@"
+
+[positional-arguments]
+representation-migration *args:
+    bash ./scripts/agent/representation-migration "$@"
+
+[positional-arguments]
+representation-measure *args:
+    bash ./scripts/agent/representation-measure "$@"
+
 coverage:
     ./scripts/agent/coverage
 

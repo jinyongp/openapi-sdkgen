@@ -31,6 +31,10 @@ just agent generate INPUT OUTPUT [TARGET]
 just agent generate-check INPUT [TARGET] [-- GENERATOR_OPTIONS...]
 just agent generate-check-test
 just agent conformance
+just agent representation-check --baseline BINARY --candidate BINARY [OPTIONS]
+just agent representation-artifacts --report REPORT [OPTIONS]
+just agent representation-migration --baseline BINARY --candidate BINARY [OPTIONS]
+just agent representation-measure --report REPORT --artifacts REPORT [OPTIONS]
 just agent perf
 just agent perf-profile
 just agent perf-acceptance

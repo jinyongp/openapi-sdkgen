@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "local": [
+    {
+      "id": "contract",
+      "input": "contract.openapi.json",
+      "output": "client",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["path-query-header-body", "pagination", "envelope", "binary"],
+      "scenario": "contract"
+    },
+    {
+      "id": "collisions",
+      "input": "collisions.openapi.json",
+      "output": "collisions",
+      "addons": ["server"],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": [
+        "exact-identities",
+        "prototype-keys",
+        "links",
+        "callbacks",
+        "webhooks",
+        "enums"
+      ],
+      "scenario": "collisions"
+    },
+    {
+      "id": "bundle-isolation",
+      "input": "bundle-isolation.openapi.json",
+      "output": "bundle-isolation",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["optional-runtime-isolation", "stream"],
+      "scenario": "surface"
+    },
+    {
+      "id": "transport-native-headers",
+      "input": "transport-native-headers.openapi.json",
+      "output": "transport-native-headers",
+      "addons": ["server"],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["security", "headers", "custom-codecs", "inbound"],
+      "scenario": "surface"
+    },
+    {
+      "id": "baseline-oas30",
+      "input": "baseline-oas30.openapi.json",
+      "output": "baseline-oas30",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["openapi-3.0", "minimal", "idless-root"],
+      "scenario": "oas30"
+    },
+    {
+      "id": "baseline-oas31",
+      "input": "baseline-oas31.openapi.json",
+      "output": "baseline-oas31",
+      "addons": ["server"],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["openapi-3.1", "idless-links", "callbacks"],
+      "scenario": "oas31"
+    },
+    {
+      "id": "baseline-oas32",
+      "input": "baseline-oas32.openapi.json",
+      "output": "baseline-oas32",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["openapi-3.2", "query-method", "ndjson"],
+      "scenario": "oas32"
+    },
+    {
+      "id": "representation",
+      "input": "representation.openapi.json",
+      "output": "representation",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation", "lifetime"],
+      "characteristics": [
+        "recursive-schema",
+        "shared-schema",
+        "opaque-values",
+        "exact-properties",
+        "empty-shape",
+        "client-isolation"
+      ],
+      "scenario": "representation"
+    },
+    {
+      "id": "diagnostics",
+      "input": "diagnostics.openapi.json",
+      "output": "diagnostics",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["negative-generation", "atomic-no-output"],
+      "expectedFailure": {
+        "golden": "diagnostics.report.txt",
+        "contains": [
+          "OpenAPI SDK generation: 4 error(s), 1 warning(s)",
+          "SDKGEN-E505",
+          "SDKGEN-E600",
+          "SDKGEN-E611",
+          "SDKGEN-E650",
+          "SDKGEN-W620",
+          "Source:",
+          "at:",
+          "hint:"
+        ]
+      }
+    },
+    {
+      "id": "lifecycle",
+      "input": "lifecycle.openapi.json",
+      "output": "lifecycle",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation", "lifetime"],
+      "characteristics": [
+        "inline-schemas",
+        "nested-descriptors",
+        "stream-frames",
+        "client-isolation"
+      ],
+      "scenario": "lifecycle"
+    }
+  ],
+  "external": [
+    {
+      "id": "github",
+      "profiles": ["preimplementation", "large", "lifetime"],
+      "characteristics": ["large-operation-count", "rest"],
+      "scenario": "github",
+      "sha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "repository": "github/rest-api-description",
+      "revision": "4377b4f4845badf28d13464dfb3042c6cf0e3a1f",
+      "path": "descriptions/api.github.com/api.github.com.2022-11-28.json",
+      "operations": 1221,
+      "schemas": 989
+    },
+    {
+      "id": "stripe",
+      "profiles": ["preimplementation", "large", "lifetime"],
+      "characteristics": ["schema-heavy", "large"],
+      "scenario": "stripe",
+      "sha256": "2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6",
+      "repository": "stripe/openapi",
+      "path": "latest/openapi.spec3.json",
+      "operations": 626,
+      "schemas": 1614
+    }
+  ]
+}
