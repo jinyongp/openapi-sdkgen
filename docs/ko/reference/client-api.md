@@ -217,5 +217,7 @@ openapi.version;
 openapi.versionLine;
 ```
 
-`openapi.document`에서 SDK 생성에 사용한 OpenAPI 파일의 내용을 확인할 수
-있습니다.
+`openapi.document`에는 생성 입력으로 전달한 entry OpenAPI 문서를 디코딩한
+내용이 그대로 포함됩니다. Compatibility normalization은 이 메타데이터를
+재작성하지 않으며, 외부 reference 문서는 `openapi.document`에 합쳐지지 않고
+별도의 reference/provenance 입력으로 유지됩니다.

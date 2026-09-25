@@ -97,8 +97,11 @@ openapi-sdkgen generate \
 ```
 
 The report contains `schemaVersion`, severity counts, diagnostics, and skipped
-pipeline phases. Diagnostic source names are sanitized before rendering; URL credentials, queries,
-and fragments are removed from the report.
+pipeline phases. The current JSON contract is `schemaVersion: 2`; compatibility
+diagnostics can include additive `rule` and `action` fields. Tooling that persists
+or parses diagnostic JSON should branch on `schemaVersion` rather than assuming
+the previous envelope. Diagnostic source names are sanitized before rendering;
+URL credentials, queries, and fragments are removed from the report.
 
 Exit status reports the result: zero means the requested check succeeded; a
 non-zero status reports generation diagnostics, drift, or an operational error.

@@ -214,4 +214,7 @@ openapi.version;
 openapi.versionLine;
 ```
 
-`openapi.document` contains the OpenAPI content used to generate the SDK.
+`openapi.document` contains the decoded entry OpenAPI document exactly as supplied
+for generation. Compatibility normalization does not rewrite this metadata, and
+external reference documents are not folded into `openapi.document`; they remain
+separate reference/provenance inputs.

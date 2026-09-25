@@ -183,8 +183,10 @@ openapi-sdkgen generate \
 ```
 
 JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 phase가
-포함됩니다. Diagnostic report는 stderr에 기록되며, 생성 artifact는 요청한
-경우에만 output 디렉터리에 기록됩니다.
+포함됩니다. 현재 envelope는 `schemaVersion: 2`이며 compatibility diagnostic에는
+additive `rule`, `action` 필드가 포함될 수 있습니다. Diagnostic JSON 소비자는
+`schemaVersion`으로 분기해야 합니다. Diagnostic report는 stderr에 기록되며,
+생성 artifact는 요청한 경우에만 output 디렉터리에 기록됩니다.
 
 <span id="input-source-options"></span>
 
