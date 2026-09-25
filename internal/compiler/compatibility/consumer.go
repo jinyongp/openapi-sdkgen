@@ -8,13 +8,15 @@ import (
 )
 
 const (
-	RuleReference30Siblings = "COMP-REF-001"
-	RuleReference31Fields   = "COMP-REF-002"
-	RuleReservedHeader      = "COMP-PARAM-001"
-	RuleResponseContentType = "COMP-RESP-001"
-	RuleEncodingHeaders     = "COMP-ENC-001"
-	RuleEncodingFields      = "COMP-ENC-002"
-	RuleRequestBody30       = "COMP-BODY-001"
+	RuleReference30Siblings  = "COMP-REF-001"
+	RuleReference31Fields    = "COMP-REF-002"
+	RuleReservedHeader       = "COMP-PARAM-001"
+	RuleResponseContentType  = "COMP-RESP-001"
+	RuleEncodingHeaders      = "COMP-ENC-001"
+	RuleEncodingFields       = "COMP-ENC-002"
+	RuleRequestBody30        = "COMP-BODY-001"
+	RuleVersion30Metadata    = "COMP-VERSION-001"
+	RuleVersionPre32Metadata = "COMP-VERSION-002"
 )
 
 // ConsumerPolicy applies target-neutral OpenAPI consumer semantics that can be
@@ -48,6 +50,9 @@ func (ConsumerPolicy) Apply(context Context, value any) Result {
 		}
 	}
 	if result, applied := applyReferenceObjectRule(context, object); applied {
+		return result
+	}
+	if result, applied := applyVersionedMetadataRule(context, object); applied {
 		return result
 	}
 	return Result{Value: value}
@@ -87,6 +92,98 @@ func isReferenceObjectContext(object openapiwalk.ObjectContext) bool {
 	default:
 		return false
 	}
+}
+
+func applyVersionedMetadataRule(context Context, object map[string]any) (Result, bool) {
+	if context.Version == "" {
+		return Result{}, false
+	}
+	if context.Version == openapidoc.Version30 {
+		switch context.Pointer {
+		case "#/info":
+			if result, applied := ignoreNonconformingFields(context, object, RuleVersion30Metadata, ImpactAnnotation, "summary"); applied {
+				return result, true
+			}
+		case "#/info/license":
+			if result, applied := ignoreNonconformingFields(context, object, RuleVersion30Metadata, ImpactMetadataOnly, "identifier"); applied {
+				return result, true
+			}
+		}
+	}
+	if context.Version == openapidoc.Version32 {
+		return Result{}, false
+	}
+	if context.Object == openapiwalk.ObjectSecurityScheme {
+		if result, applied := ignoreNonconformingFields(context, object, RuleVersionPre32Metadata, ImpactAnnotation, "deprecated"); applied {
+			return result, true
+		}
+	}
+	if context.Object == openapiwalk.ObjectExample {
+		if result, applied := ignoreNonconformingFields(context, object, RuleVersionPre32Metadata, ImpactMetadataOnly, "dataValue", "serializedValue"); applied {
+			return result, true
+		}
+	}
+	if context.Object == openapiwalk.ObjectResponse {
+		if result, applied := ignoreNonconformingFields(context, object, RuleVersionPre32Metadata, ImpactAnnotation, "summary"); applied {
+			return result, true
+		}
+	}
+	tokens, ok := pointerTokens(context.Pointer)
+	if !ok || len(tokens) == 0 {
+		return Result{}, false
+	}
+	if tokens[len(tokens)-1] == "server" || (len(tokens) >= 2 && tokens[len(tokens)-2] == "servers") {
+		if result, applied := ignoreNonconformingFields(context, object, RuleVersionPre32Metadata, ImpactAnnotation, "name"); applied {
+			return result, true
+		}
+	}
+	if len(tokens) >= 2 && tokens[len(tokens)-2] == "tags" {
+		if result, applied := ignoreNonconformingFields(context, object, RuleVersionPre32Metadata, ImpactAnnotation, "summary", "parent", "kind"); applied {
+			return result, true
+		}
+	}
+	return Result{}, false
+}
+
+func ignoreNonconformingFields(context Context, object map[string]any, rule string, impact SemanticImpact, fields ...string) (Result, bool) {
+	var filtered map[string]any
+	var findings []Finding
+	var ledger []LedgerEntry
+	for _, field := range fields {
+		if _, exists := object[field]; !exists {
+			continue
+		}
+		if filtered == nil {
+			filtered = make(map[string]any, len(object))
+			for key, value := range object {
+				filtered[key] = value
+			}
+		}
+		delete(filtered, field)
+		pointer := context.Pointer + "/" + field
+		findings = append(findings, Finding{
+			RuleID:      rule,
+			Conformance: ConformanceNonconforming,
+			Disposition: DispositionNotDefined,
+			Action:      ActionIgnore,
+			Impact:      impact,
+			Source:      context.Source,
+			Pointer:     pointer,
+			Message:     field + " is not defined by the declared OpenAPI version and is ignored for generated semantics.",
+		})
+		ledger = append(ledger, LedgerEntry{
+			RuleID:  rule,
+			Action:  ActionIgnore,
+			Impact:  impact,
+			Source:  context.Source,
+			Pointer: pointer,
+			Version: context.Version,
+		})
+	}
+	if filtered == nil {
+		return Result{}, false
+	}
+	return Result{Value: filtered, Findings: findings, Ledger: ledger, Changed: true}, true
 }
 
 func isReservedHeaderParameter(object map[string]any) bool {

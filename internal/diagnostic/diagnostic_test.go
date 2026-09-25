@@ -97,7 +97,7 @@ func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
 	if err := json.Unmarshal([]byte(first), &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.SchemaVersion != 1 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+	if report.SchemaVersion != 2 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
 		t.Fatalf("report header = %#v", report)
 	}
 	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E001" || report.Diagnostics[1].Code != "SDKGEN-W002" {
@@ -105,6 +105,36 @@ func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
 	}
 	if len(report.SkippedPhases) != 2 || report.SkippedPhases[0].Phase != PhaseIR || report.SkippedPhases[1].Phase != PhaseEmit {
 		t.Fatalf("skipped phases = %#v", report.SkippedPhases)
+	}
+}
+
+func TestDiagnosticV2RendersCompatibilityRuleAndAction(t *testing.T) {
+	values := []Diagnostic{{
+		Severity: SeverityWarning,
+		Code:     "SDKGEN-W140",
+		Phase:    PhaseOpenAPI,
+		Location: Location{Source: "openapi.yaml", Pointer: "#/info/summary"},
+		Rule:     "COMP-VERSION-001",
+		Action:   "ignore",
+		Message:  "summary is ignored",
+	}}
+	rendered, err := RenderJSON(values, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report Report
+	if err := json.Unmarshal([]byte(rendered), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.SchemaVersion != 2 || len(report.Diagnostics) != 1 ||
+		report.Diagnostics[0].Rule != "COMP-VERSION-001" || report.Diagnostics[0].Action != "ignore" {
+		t.Fatalf("report = %#v", report)
+	}
+	human := RenderHuman(values, nil)
+	for _, want := range []string{"rule: COMP-VERSION-001", "action: ignore"} {
+		if !strings.Contains(human, want) {
+			t.Fatalf("human report missing %q:\n%s", want, human)
+		}
 	}
 }
 

@@ -109,6 +109,73 @@ func TestConsumerPolicyDistinguishesResponseAndEncodingHeaders(t *testing.T) {
 	}
 }
 
+func TestConsumerPolicyIgnoresNonconformingVersionedMetadataWithFindings(t *testing.T) {
+	policy := ConsumerPolicy{}
+	tests := []struct {
+		name    string
+		context Context
+		input   map[string]any
+		field   string
+		rule    string
+	}{
+		{
+			name:    "3.0 info summary",
+			context: Context{Version: openapidoc.Version30, Object: openapiwalk.ObjectInfo, Pointer: "#/info"},
+			input:   map[string]any{"title": "Example", "summary": "later"},
+			field:   "summary",
+			rule:    RuleVersion30Metadata,
+		},
+		{
+			name:    "3.0 license identifier",
+			context: Context{Version: openapidoc.Version30, Object: openapiwalk.ObjectUnknown, Pointer: "#/info/license"},
+			input:   map[string]any{"name": "MIT", "identifier": "MIT"},
+			field:   "identifier",
+			rule:    RuleVersion30Metadata,
+		},
+		{
+			name:    "3.1 server name",
+			context: Context{Version: openapidoc.Version31, Object: openapiwalk.ObjectUnknown, Pointer: "#/servers/0"},
+			input:   map[string]any{"url": "/", "name": "production"},
+			field:   "name",
+			rule:    RuleVersionPre32Metadata,
+		},
+		{
+			name:    "3.1 response summary",
+			context: Context{Version: openapidoc.Version31, Object: openapiwalk.ObjectResponse, Pointer: "#/paths/~1items/get/responses/200"},
+			input:   map[string]any{"description": "OK", "summary": "Items"},
+			field:   "summary",
+			rule:    RuleVersionPre32Metadata,
+		},
+		{
+			name:    "3.1 security deprecated",
+			context: Context{Version: openapidoc.Version31, Object: openapiwalk.ObjectSecurityScheme, Pointer: "#/components/securitySchemes/legacy"},
+			input:   map[string]any{"type": "apiKey", "deprecated": true},
+			field:   "deprecated",
+			rule:    RuleVersionPre32Metadata,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := policy.Apply(test.context, test.input)
+			effective, ok := result.Value.(map[string]any)
+			if !ok || !result.Changed {
+				t.Fatalf("result = %#v", result)
+			}
+			if _, exists := effective[test.field]; exists {
+				t.Fatalf("%s survived = %#v", test.field, effective)
+			}
+			if len(result.Findings) != 1 || len(result.Ledger) != 1 {
+				t.Fatalf("evidence = findings %#v ledger %#v", result.Findings, result.Ledger)
+			}
+			finding := result.Findings[0]
+			if finding.RuleID != test.rule || finding.Conformance != ConformanceNonconforming ||
+				finding.Disposition != DispositionNotDefined || finding.Action != ActionIgnore {
+				t.Fatalf("finding = %#v", finding)
+			}
+		})
+	}
+}
+
 func TestConsumerPolicyAppliesEncodingFieldApplicability(t *testing.T) {
 	policy := ConsumerPolicy{}
 	jsonResult := policy.Apply(Context{

@@ -607,8 +607,21 @@ var openAPI31SchemaKeywords = map[string]bool{
 	"unevaluatedItems": true, "unevaluatedProperties": true,
 }
 
+type VersionFeatureError struct {
+	Pointer string
+	Detail  string
+}
+
+func (value *VersionFeatureError) Error() string {
+	return fmt.Sprintf("OpenAPI version feature at %s: %s", value.Pointer, value.Detail)
+}
+
+func (value *VersionFeatureError) DiagnosticPointer() string   { return value.Pointer }
+func (value *VersionFeatureError) CompatibilityRule() string   { return "COMP-VERSION-003" }
+func (value *VersionFeatureError) CompatibilityAction() string { return "reject" }
+
 func versionFeatureError(path, detail string) error {
-	return fmt.Errorf("OpenAPI version feature at %s: %s", path, detail)
+	return &VersionFeatureError{Pointer: path, Detail: detail}
 }
 
 func pointer(parts ...string) string { return pointerFrom("#", parts...) }

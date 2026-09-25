@@ -51,6 +51,8 @@ type Diagnostic struct {
 	Target    string     `json:"target,omitempty"`
 	Route     string     `json:"route,omitempty"`
 	Operation string     `json:"operation,omitempty"`
+	Rule      string     `json:"rule,omitempty"`
+	Action    string     `json:"action,omitempty"`
 	Message   string     `json:"message"`
 	Hint      string     `json:"hint,omitempty"`
 	Cause     string     `json:"cause,omitempty"`
@@ -160,6 +162,12 @@ func Sort(values []Diagnostic) []Diagnostic {
 		if left.Operation != right.Operation {
 			return left.Operation < right.Operation
 		}
+		if left.Rule != right.Rule {
+			return left.Rule < right.Rule
+		}
+		if left.Action != right.Action {
+			return left.Action < right.Action
+		}
 		if left.Message != right.Message {
 			return left.Message < right.Message
 		}
@@ -176,7 +184,7 @@ func NewReport(values []Diagnostic, skipped []SkippedPhase) Report {
 	values = SanitizeSources(values)
 	skipped = normalizeSkipped(skipped)
 	return Report{
-		SchemaVersion: 1,
+		SchemaVersion: 2,
 		Counts:        Count(values),
 		Diagnostics:   append([]Diagnostic{}, values...),
 		SkippedPhases: append([]SkippedPhase{}, skipped...),
@@ -227,6 +235,12 @@ func RenderHuman(values []Diagnostic, skipped []SkippedPhase) string {
 		}
 		if value.Operation != "" {
 			fmt.Fprintf(&output, "\n  operation: %s", value.Operation)
+		}
+		if value.Rule != "" {
+			fmt.Fprintf(&output, "\n  rule: %s", value.Rule)
+		}
+		if value.Action != "" {
+			fmt.Fprintf(&output, "\n  action: %s", value.Action)
 		}
 		for _, related := range value.Related {
 			fmt.Fprintf(&output, "\n  related: %s%s", related.Source, related.Pointer)

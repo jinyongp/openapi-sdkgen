@@ -242,14 +242,25 @@ func resultFromCompile(document *ir.Document, err error, source string, collecto
 	result := Result{Document: document}
 	if err != nil {
 		phase, code, message := classifyCompileError(err)
-		collector.Add(diagnostic.Diagnostic{
+		value := diagnostic.Diagnostic{
 			Severity: diagnostic.SeverityError,
 			Code:     code,
 			Phase:    phase,
 			Location: diagnostic.Location{Source: safeInputDisplay(source), Pointer: "#"},
 			Message:  message,
 			Cause:    sanitizeDiagnosticCause(err.Error()),
-		})
+		}
+		var compatibilityError interface {
+			DiagnosticPointer() string
+			CompatibilityRule() string
+			CompatibilityAction() string
+		}
+		if errors.As(err, &compatibilityError) {
+			value.Location.Pointer = compatibilityError.DiagnosticPointer()
+			value.Rule = compatibilityError.CompatibilityRule()
+			value.Action = compatibilityError.CompatibilityAction()
+		}
+		collector.Add(value)
 		result.Document = nil
 		result.SkippedPhases = skippedAfter(phase)
 	}

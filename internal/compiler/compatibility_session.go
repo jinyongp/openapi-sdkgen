@@ -332,13 +332,15 @@ func compatibilityDiagnostics(session *compatibilitySession) []diagnostic.Diagno
 		if finding.Action == compatibility.ActionReject {
 			severity = diagnostic.SeverityError
 			code = "SDKGEN-E140"
-			hint = "Remove the unsupported request-body construct or use a method with portable payload semantics."
+			hint = "Remove or rewrite the construct so its semantics are valid for the declared OpenAPI version."
 		}
 		result = append(result, diagnostic.Diagnostic{
 			Severity: severity,
 			Code:     code,
 			Phase:    diagnostic.PhaseOpenAPI,
 			Location: diagnostic.Location{Source: finding.Source, Pointer: finding.Pointer},
+			Rule:     finding.RuleID,
+			Action:   string(finding.Action),
 			Message:  finding.Message,
 			Hint:     hint,
 		})
