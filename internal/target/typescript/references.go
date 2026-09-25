@@ -84,8 +84,8 @@ func resolveComponentObjectRecursive(document *ir.Document, object map[string]an
 	for key, value := range resolved {
 		merged[key] = value
 	}
-	for key, value := range object {
-		if key != "$ref" {
+	for _, key := range []string{"summary", "description"} {
+		if value, exists := object[key]; exists {
 			merged[key] = value
 		}
 	}

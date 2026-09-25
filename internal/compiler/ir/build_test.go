@@ -126,7 +126,7 @@ func TestBuildNormalizesOperationRequestContracts(t *testing.T) {
 	if got := operation.Parameters[2]; got.Name != "limit" || got.Required || got.Style != "form" || got.Explode || !got.AllowReserved || got.Schema.(map[string]any)["type"] != "number" {
 		t.Fatalf("operation override parameter = %#v", got)
 	}
-	if operation.RequestBody == nil || !operation.RequestBody.Required || operation.RequestBody.Description != "Operation payload" || operation.RequestBody.Pointer != "#/components/requestBodies/Payload" {
+	if operation.RequestBody == nil || operation.RequestBody.Required || operation.RequestBody.Description != "Operation payload" || operation.RequestBody.Pointer != "#/components/requestBodies/Payload" {
 		t.Fatalf("request body = %#v", operation.RequestBody)
 	}
 	if got := operation.RequestBody.Content; len(got) != 2 || got[0].ContentType != "application/json" || got[1].ContentType != "text/plain" {

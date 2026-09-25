@@ -7,7 +7,7 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func TestResolveComponentObjectResolvesChainsAndAppliesSiblingOverrides(t *testing.T) {
+func TestResolveComponentObjectResolvesChainsAndAppliesReferenceAnnotations(t *testing.T) {
 	document := &ir.Document{Raw: map[string]any{"components": map[string]any{
 		"requestBodies": map[string]any{
 			"Base":  map[string]any{"description": "base", "content": map[string]any{}},
@@ -17,12 +17,16 @@ func TestResolveComponentObjectResolvesChainsAndAppliesSiblingOverrides(t *testi
 	resolved, err := resolveComponentObject(document, map[string]any{
 		"$ref":        "#/components/requestBodies/Alias",
 		"description": "operation override",
+		"required":    true,
 	}, "requestBodies")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if resolved["description"] != "operation override" {
 		t.Fatalf("resolved description = %#v", resolved["description"])
+	}
+	if _, exists := resolved["required"]; exists {
+		t.Fatalf("non-Reference sibling survived resolution: %#v", resolved)
 	}
 	if _, ok := resolved["content"].(map[string]any); !ok {
 		t.Fatalf("resolved content = %#v", resolved["content"])

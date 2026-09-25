@@ -576,8 +576,8 @@ func resolveReusableComponent(document, object map[string]any, component string,
 	for key, value := range resolved {
 		merged[key] = value
 	}
-	for key, value := range object {
-		if key != "$ref" {
+	for _, key := range []string{"summary", "description"} {
+		if value, exists := object[key]; exists {
 			merged[key] = value
 		}
 	}
