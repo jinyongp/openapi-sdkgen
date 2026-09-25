@@ -122,6 +122,22 @@
         "client-isolation"
       ],
       "scenario": "lifecycle"
+    },
+    {
+      "id": "aliases",
+      "input": "aliases.openapi.json",
+      "output": "aliases",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": [
+        "local-alias-ownership",
+        "normalization-collisions",
+        "projection-replay",
+        "recursive-projections",
+        "private-looking-data",
+        "link-stream-coexistence"
+      ],
+      "scenario": "aliases"
     }
   ],
   "external": [

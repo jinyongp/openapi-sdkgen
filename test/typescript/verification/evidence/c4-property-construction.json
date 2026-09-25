@@ -681,12 +681,7 @@
       "fixtures": [
         {
           "id": "contract",
-          "characteristics": [
-            "path-query-header-body",
-            "pagination",
-            "envelope",
-            "binary"
-          ],
+          "characteristics": ["path-query-header-body", "pagination", "envelope", "binary"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/contract.openapi.json",
             "sha256": "8c0e293570ab095fded03a9fd3d126c877684043fa4ad4dbdf1b60698f79720c",
@@ -1857,10 +1852,7 @@
         },
         {
           "id": "bundle-isolation",
-          "characteristics": [
-            "optional-runtime-isolation",
-            "stream"
-          ],
+          "characteristics": ["optional-runtime-isolation", "stream"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/bundle-isolation.openapi.json",
             "sha256": "8cca286104586f62f1de0578987cb620aa954df2b9ebf4cf4ae696c9c6113c91",
@@ -2441,12 +2433,7 @@
         },
         {
           "id": "transport-native-headers",
-          "characteristics": [
-            "security",
-            "headers",
-            "custom-codecs",
-            "inbound"
-          ],
+          "characteristics": ["security", "headers", "custom-codecs", "inbound"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/transport-native-headers.openapi.json",
             "sha256": "3e595fc6d9215ca495031bff77c4132029c7538b93c43e97ec01058617663e43",
@@ -3029,11 +3016,7 @@
         },
         {
           "id": "baseline-oas30",
-          "characteristics": [
-            "openapi-3.0",
-            "minimal",
-            "idless-root"
-          ],
+          "characteristics": ["openapi-3.0", "minimal", "idless-root"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/baseline-oas30.openapi.json",
             "sha256": "a1f68d7006697c0def61c39677b95783707b98dab488e53a01d856f6f2e8ee7d",
@@ -3613,11 +3596,7 @@
         },
         {
           "id": "baseline-oas31",
-          "characteristics": [
-            "openapi-3.1",
-            "idless-links",
-            "callbacks"
-          ],
+          "characteristics": ["openapi-3.1", "idless-links", "callbacks"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/baseline-oas31.openapi.json",
             "sha256": "84372a592a6be74fbe774d7ec3e32db656d9ed7149ed04bb4f6e0ec6041d61ed",
@@ -4200,11 +4179,7 @@
         },
         {
           "id": "baseline-oas32",
-          "characteristics": [
-            "openapi-3.2",
-            "query-method",
-            "ndjson"
-          ],
+          "characteristics": ["openapi-3.2", "query-method", "ndjson"],
           "input": {
             "path": "/workspace/openapi-sdkgen/test/typescript/fixtures/baseline-oas32.openapi.json",
             "sha256": "6cd4e300cd7f95ecaed82cf38d2a57f87e7c9f9c2ceb96f5cc0dc81f429ef6bb",
@@ -5285,14 +5260,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8507936,
-                "heaps": [
-                  8572104,
-                  8583840,
-                  8542696,
-                  8555272,
-                  8555632,
-                  8567232
-                ],
+                "heaps": [8572104, 8583840, 8542696, 8555272, 8555632, 8567232],
                 "lateGrowthBytes": -16608,
                 "rss": 71733248,
                 "clientsDiscarded": 240,
@@ -5304,14 +5272,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8513728,
-                "heaps": [
-                  8586208,
-                  8547784,
-                  8548792,
-                  8553176,
-                  8561304,
-                  8572904
-                ],
+                "heaps": [8586208, 8547784, 8548792, 8553176, 8561304, 8572904],
                 "lateGrowthBytes": 25120,
                 "rss": 71700480,
                 "clientsDiscarded": 240,
@@ -5325,14 +5286,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8513728,
-                "heaps": [
-                  8586208,
-                  8547784,
-                  8549904,
-                  8554688,
-                  8561304,
-                  8572904
-                ],
+                "heaps": [8586208, 8547784, 8549904, 8554688, 8561304, 8572904],
                 "lateGrowthBytes": 25120,
                 "rss": 71786496,
                 "clientsDiscarded": 240,
@@ -5344,14 +5298,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8507232,
-                "heaps": [
-                  8571840,
-                  8541760,
-                  8546384,
-                  8547544,
-                  8555376,
-                  8566664
-                ],
+                "heaps": [8571840, 8541760, 8546384, 8547544, 8555376, 8566664],
                 "lateGrowthBytes": 24904,
                 "rss": 71168000,
                 "clientsDiscarded": 240,
@@ -5365,14 +5312,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8507384,
-                "heaps": [
-                  8572136,
-                  8568832,
-                  8588448,
-                  8588568,
-                  8555176,
-                  8566776
-                ],
+                "heaps": [8572136, 8568832, 8588448, 8588568, 8555176, 8566776],
                 "lateGrowthBytes": -2056,
                 "rss": 71954432,
                 "clientsDiscarded": 240,
@@ -5384,14 +5324,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8503792,
-                "heaps": [
-                  8523576,
-                  8582976,
-                  8594024,
-                  8553136,
-                  8561304,
-                  8572904
-                ],
+                "heaps": [8523576, 8582976, 8594024, 8553136, 8561304, 8572904],
                 "lateGrowthBytes": -10072,
                 "rss": 72089600,
                 "clientsDiscarded": 240,
@@ -5401,9 +5334,7 @@
           ],
           "leaf": {
             "baseline": {
-              "files": [
-                "internal/schemas/node.js"
-              ],
+              "files": ["internal/schemas/node.js"],
               "shape": {
                 "version": 2,
                 "digest": "48002d9fdfef32d1a987bec514528254b9a53aecb678ec1739702723808ab6ba",
@@ -5411,9 +5342,7 @@
               }
             },
             "candidate": {
-              "files": [
-                "internal/schemas/node.js"
-              ],
+              "files": ["internal/schemas/node.js"],
               "shape": {
                 "version": 2,
                 "digest": "48002d9fdfef32d1a987bec514528254b9a53aecb678ec1739702723808ab6ba",
@@ -6015,14 +5944,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8774144,
-                "heaps": [
-                  8798512,
-                  8796480,
-                  8805120,
-                  8814832,
-                  8825792,
-                  8825792
-                ],
+                "heaps": [8798512, 8796480, 8805120, 8814832, 8825792, 8825792],
                 "lateGrowthBytes": 29312,
                 "rss": 68083712,
                 "clientsDiscarded": 240,
@@ -6034,14 +5956,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 1452,
                 "initialHeap": 8782248,
-                "heaps": [
-                  8805312,
-                  8802040,
-                  8820936,
-                  8831008,
-                  8842232,
-                  8842232
-                ],
+                "heaps": [8805312, 8802040, 8820936, 8831008, 8842232, 8842232],
                 "lateGrowthBytes": 40192,
                 "rss": 68014080,
                 "clientsDiscarded": 240,
@@ -6055,14 +5970,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 1452,
                 "initialHeap": 8782200,
-                "heaps": [
-                  8805264,
-                  8811912,
-                  8820504,
-                  8830256,
-                  8841216,
-                  8841216
-                ],
+                "heaps": [8805264, 8811912, 8820504, 8830256, 8841216, 8841216],
                 "lateGrowthBytes": 29304,
                 "rss": 67985408,
                 "clientsDiscarded": 240,
@@ -6074,14 +5982,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8774072,
-                "heaps": [
-                  8798728,
-                  8796696,
-                  8805576,
-                  8823696,
-                  8826320,
-                  8826320
-                ],
+                "heaps": [8798728, 8796696, 8805576, 8823696, 8826320, 8826320],
                 "lateGrowthBytes": 29624,
                 "rss": 67928064,
                 "clientsDiscarded": 240,
@@ -6095,14 +5996,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 8774192,
-                "heaps": [
-                  8798560,
-                  8796528,
-                  8805192,
-                  8823744,
-                  8826368,
-                  8826368
-                ],
+                "heaps": [8798560, 8796528, 8805192, 8823744, 8826368, 8826368],
                 "lateGrowthBytes": 29840,
                 "rss": 68182016,
                 "clientsDiscarded": 240,
@@ -6114,14 +6008,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 1452,
                 "initialHeap": 8782200,
-                "heaps": [
-                  8805264,
-                  8809632,
-                  8827392,
-                  8830256,
-                  8841216,
-                  8841216
-                ],
+                "heaps": [8805264, 8809632, 8827392, 8830256, 8841216, 8841216],
                 "lateGrowthBytes": 31584,
                 "rss": 68218880,
                 "clientsDiscarded": 240,
@@ -6223,10 +6110,7 @@
         },
         {
           "id": "github",
-          "characteristics": [
-            "large-operation-count",
-            "rest"
-          ],
+          "characteristics": ["large-operation-count", "rest"],
           "input": {
             "path": "/workspace/openapi-sdkgen/.tmp/github-rest-api-description/descriptions/api.github.com/api.github.com.2022-11-28.json",
             "sha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
@@ -6721,14 +6605,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 35468584,
-                "heaps": [
-                  40226208,
-                  40223184,
-                  40215456,
-                  40215080,
-                  40213568,
-                  40208528
-                ],
+                "heaps": [40226208, 40223184, 40215456, 40215080, 40213568, 40208528],
                 "lateGrowthBytes": -14656,
                 "rss": 251666432,
                 "clientsDiscarded": 240,
@@ -6740,14 +6617,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 187066,
                 "initialHeap": 35186912,
-                "heaps": [
-                  39603000,
-                  39599608,
-                  39591824,
-                  39592552,
-                  39584856,
-                  39584856
-                ],
+                "heaps": [39603000, 39599608, 39591824, 39592552, 39584856, 39584856],
                 "lateGrowthBytes": -14752,
                 "rss": 261136384,
                 "clientsDiscarded": 240,
@@ -6761,14 +6631,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 187066,
                 "initialHeap": 35178896,
-                "heaps": [
-                  39614784,
-                  39611392,
-                  39603608,
-                  39604336,
-                  39596640,
-                  39596640
-                ],
+                "heaps": [39614784, 39611392, 39603608, 39604336, 39596640, 39596640],
                 "lateGrowthBytes": -14752,
                 "rss": 260739072,
                 "clientsDiscarded": 240,
@@ -6780,14 +6643,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 35476384,
-                "heaps": [
-                  40211952,
-                  40202936,
-                  40201368,
-                  40200992,
-                  40195000,
-                  40200584
-                ],
+                "heaps": [40211952, 40202936, 40201368, 40200992, 40195000, 40200584],
                 "lateGrowthBytes": -2352,
                 "rss": 252825600,
                 "clientsDiscarded": 240,
@@ -6801,14 +6657,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 35478184,
-                "heaps": [
-                  40213840,
-                  40210888,
-                  40202056,
-                  40210032,
-                  40202376,
-                  40202232
-                ],
+                "heaps": [40213840, 40210888, 40202056, 40210032, 40202376, 40202232],
                 "lateGrowthBytes": -8656,
                 "rss": 251678720,
                 "clientsDiscarded": 240,
@@ -6820,14 +6669,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 187066,
                 "initialHeap": 35178560,
-                "heaps": [
-                  39614448,
-                  39611056,
-                  39603272,
-                  39604000,
-                  39596304,
-                  39596304
-                ],
+                "heaps": [39614448, 39611056, 39603272, 39604000, 39596304, 39596304],
                 "lateGrowthBytes": -14752,
                 "rss": 261799936,
                 "clientsDiscarded": 240,
@@ -6929,10 +6771,7 @@
         },
         {
           "id": "stripe",
-          "characteristics": [
-            "schema-heavy",
-            "large"
-          ],
+          "characteristics": ["schema-heavy", "large"],
           "input": {
             "path": "/workspace/openapi-sdkgen/.tmp/stripe-openapi/latest/openapi.spec3.json",
             "sha256": "2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6",
@@ -7426,14 +7265,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 40696064,
-                "heaps": [
-                  50133824,
-                  50113352,
-                  50118736,
-                  50115656,
-                  50129752,
-                  50130184
-                ],
+                "heaps": [50133824, 50113352, 50118736, 50115656, 50129752, 50130184],
                 "lateGrowthBytes": 16832,
                 "rss": 254693376,
                 "clientsDiscarded": 240,
@@ -7445,14 +7277,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 886204,
                 "initialHeap": 38445256,
-                "heaps": [
-                  45528920,
-                  45528400,
-                  45520600,
-                  45522544,
-                  45532544,
-                  45532544
-                ],
+                "heaps": [45528920, 45528400, 45520600, 45522544, 45532544, 45532544],
                 "lateGrowthBytes": 4144,
                 "rss": 326266880,
                 "clientsDiscarded": 240,
@@ -7466,14 +7291,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 886204,
                 "initialHeap": 38445296,
-                "heaps": [
-                  45528960,
-                  45528440,
-                  45520640,
-                  45522584,
-                  45532584,
-                  45532584
-                ],
+                "heaps": [45528960, 45528440, 45520640, 45522584, 45532584, 45532584],
                 "lateGrowthBytes": 4144,
                 "rss": 326295552,
                 "clientsDiscarded": 240,
@@ -7485,14 +7303,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 40696240,
-                "heaps": [
-                  50133880,
-                  50113528,
-                  50121408,
-                  50115832,
-                  50125832,
-                  50131144
-                ],
+                "heaps": [50133880, 50113528, 50121408, 50115832, 50125832, 50131144],
                 "lateGrowthBytes": 17616,
                 "rss": 255619072,
                 "clientsDiscarded": 240,
@@ -7506,14 +7317,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 0,
                 "initialHeap": 40696184,
-                "heaps": [
-                  50128616,
-                  50113472,
-                  50116616,
-                  50122400,
-                  50127952,
-                  50131856
-                ],
+                "heaps": [50128616, 50113472, 50116616, 50122400, 50127952, 50131856],
                 "lateGrowthBytes": 18384,
                 "rss": 254615552,
                 "clientsDiscarded": 240,
@@ -7525,14 +7329,7 @@
                 "requestHelperCalls": 0,
                 "constructionCalls": 886204,
                 "initialHeap": 38444552,
-                "heaps": [
-                  45528216,
-                  45527696,
-                  45519896,
-                  45521840,
-                  45531840,
-                  45531840
-                ],
+                "heaps": [45528216, 45527696, 45519896, 45521840, 45531840, 45531840],
                 "lateGrowthBytes": 4144,
                 "rss": 326557696,
                 "clientsDiscarded": 240,

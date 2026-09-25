@@ -80,6 +80,28 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	}
 
 	childIdentities := resourceChildIdentities(module.identity, module.node)
+	names := newLocalIdentifierPlan(module.path)
+	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindPathOperation", "Surface", "build", "registry", "bound", "members"); err != nil {
+		return nil, err
+	}
+	for _, node := range append([]*resourceNode{module.node}, resourceChildNodes(module.node)...) {
+		if node.parameterChild != nil && node.parameterChild.parameter.Binding != "" {
+			if err := names.reserve(node.parameterChild.parameter.Binding); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
+		if paths[identity] == "" {
+			return nil, fmt.Errorf("resource child %q has no module owner", identity)
+		}
+		if err := names.request(resourceBuilderIdentifierKey(identity)); err != nil {
+			return nil, err
+		}
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
 	needsAssign := module.node.parameterChild != nil
 	needsPath := false
 	for name, operation := range module.node.operations {
@@ -110,7 +132,11 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "import { build as %s } from %s\n", resourceBuilderName(identity), quoteTS(specifier))
+		alias, err := names.resolve(resourceBuilderIdentifierKey(identity))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "import { build as %s } from %s\n", alias, quoteTS(specifier))
 	}
 	output.WriteByte('\n')
 
@@ -164,7 +190,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	output.WriteString("  const members = {\n")
 	for _, name := range sortedResourceMemberNames(module.node) {
 		fmt.Fprintf(&output, "    %s: ", name)
-		if err := emitResourceModuleMemberValue(&output, document, plan, module, paths, childIdentities, name); err != nil {
+		if err := emitResourceModuleMemberValue(&output, document, plan, module, paths, childIdentities, names, name); err != nil {
 			return nil, err
 		}
 		output.WriteString(",\n")
@@ -180,7 +206,11 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 			return nil, err
 		}
 		identity := childIdentities["parameter"]
-		fmt.Fprintf(&output, "  return assignCallableProperties((%s: %s) => %s(registry, [...bound, %s]), members) as Surface\n", parameter.Binding, parameterType, resourceBuilderName(identity), parameter.Binding)
+		alias, err := names.resolve(resourceBuilderIdentifierKey(identity))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "  return assignCallableProperties((%s: %s) => %s(registry, [...bound, %s]), members) as Surface\n", parameter.Binding, parameterType, alias, parameter.Binding)
 	} else {
 		output.WriteString("  return members as Surface\n")
 	}
@@ -280,7 +310,7 @@ func localizeResourceParameterSchemaReferences(source string, plan *semanticModu
 	return output.String(), lookups, nil
 }
 
-func emitResourceModuleMemberValue(output *bytes.Buffer, document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string, childIdentities map[string]string, name string) error {
+func emitResourceModuleMemberValue(output *bytes.Buffer, document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string, childIdentities map[string]string, names *localIdentifierPlan, name string) error {
 	operation, hasOperation := module.node.operations[name]
 	child := module.node.children[name]
 	if hasOperation && child != nil {
@@ -288,13 +318,21 @@ func emitResourceModuleMemberValue(output *bytes.Buffer, document *ir.Document, 
 		if err := emitResourceModuleOperationValue(output, document, plan, module.path, operation); err != nil {
 			return err
 		}
-		fmt.Fprintf(output, ", %s(registry, bound))", resourceBuilderName(childIdentities["literal:"+name]))
+		alias, err := names.resolve(resourceBuilderIdentifierKey(childIdentities["literal:"+name]))
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(output, ", %s(registry, bound))", alias)
 		return nil
 	}
 	if hasOperation {
 		return emitResourceModuleOperationValue(output, document, plan, module.path, operation)
 	}
-	fmt.Fprintf(output, "%s(registry, bound)", resourceBuilderName(childIdentities["literal:"+name]))
+	alias, err := names.resolve(resourceBuilderIdentifierKey(childIdentities["literal:"+name]))
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(output, "%s(registry, bound)", alias)
 	return nil
 }
 
@@ -356,8 +394,12 @@ func resourceIdentityParts(identity string) []string {
 	return strings.Split(value, "/")
 }
 
-func resourceBuilderName(identity string) string {
-	return stablePrivateIdentifier("resource-builder", identity)
+func resourceChildNodes(node *resourceNode) []*resourceNode {
+	children := make([]*resourceNode, 0, len(node.children))
+	for _, child := range node.children {
+		children = append(children, child)
+	}
+	return children
 }
 
 func uniqueResourceChildIdentities(values map[string]string) []string {

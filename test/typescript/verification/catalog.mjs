@@ -16,6 +16,7 @@ const scenarios = new Set([
   "oas32",
   "representation",
   "lifecycle",
+  "aliases",
   "github",
   "stripe",
 ]);

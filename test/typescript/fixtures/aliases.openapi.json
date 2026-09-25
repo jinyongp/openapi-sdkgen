@@ -1,0 +1,217 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Artifact-owned alias contracts",
+    "version": "1"
+  },
+  "paths": {
+    "/aliases/{aliasID}": {
+      "post": {
+        "operationId": "echoAliases",
+        "parameters": [
+          {
+            "name": "aliasID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Envelope"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/left/{id}/details": {
+      "get": {
+        "operationId": "leftDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "empty"
+          }
+        }
+      }
+    },
+    "/right/{id}/details": {
+      "get": {
+        "operationId": "rightDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "empty"
+          }
+        }
+      }
+    },
+    "/linked-events": {
+      "get": {
+        "operationId": "linkedEvents",
+        "responses": {
+          "200": {
+            "description": "events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventValue"
+                  }
+                }
+              },
+              "application/x-ndjson": {
+                "itemSchema": {
+                  "$ref": "#/components/schemas/EventValue"
+                }
+              }
+            },
+            "links": {
+              "follow": {
+                "operationId": "leftDetails",
+                "parameters": {
+                  "id": "linked"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "foo-bar": {
+        "type": "object",
+        "required": ["kind", "value", "writeValue", "readValue"],
+        "properties": {
+          "kind": {
+            "const": "hyphen"
+          },
+          "value": {
+            "type": "string"
+          },
+          "writeValue": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "readValue": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "foo_bar": {
+        "type": "object",
+        "required": ["kind", "value"],
+        "properties": {
+          "kind": {
+            "const": "underscore"
+          },
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "é": {
+        "type": "string"
+      },
+      "é": {
+        "type": "number"
+      },
+      "Envelope": {
+        "type": "object",
+        "required": ["left", "right", "otherLeft", "otherRight"],
+        "properties": {
+          "left": {
+            "$ref": "#/components/schemas/foo-bar"
+          },
+          "right": {
+            "$ref": "#/components/schemas/foo-bar"
+          },
+          "otherLeft": {
+            "$ref": "#/components/schemas/foo_bar"
+          },
+          "otherRight": {
+            "$ref": "#/components/schemas/foo_bar"
+          },
+          "composedLeft": {
+            "$ref": "#/components/schemas/é"
+          },
+          "composedRight": {
+            "$ref": "#/components/schemas/é"
+          },
+          "decomposedLeft": {
+            "$ref": "#/components/schemas/é"
+          },
+          "decomposedRight": {
+            "$ref": "#/components/schemas/é"
+          },
+          "next": {
+            "$ref": "#/components/schemas/Envelope"
+          },
+          "__sdkgen_t_d0": {
+            "type": "string"
+          },
+          "opaque": {
+            "const": {
+              "__sdkgen_t_d0": "__sdkgen_r_d0",
+              "__proto__": "exact",
+              "property": "schema"
+            }
+          }
+        }
+      },
+      "EventValue": {
+        "type": "number"
+      }
+    }
+  }
+}

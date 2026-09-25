@@ -14,7 +14,7 @@ import (
 type operationParameter struct {
 	Name                  string
 	Property              string
-	Binding               string
+	Binding               string // Readable path-selector binding; other locations are exact data keys.
 	Description           string
 	Location              string
 	Style                 string
@@ -160,7 +160,6 @@ func operationParameters(document *ir.Document, operation ir.Operation) ([]opera
 		result = append(result, operationParameter{
 			Name:                  parameter.Name,
 			Property:              parameter.Name,
-			Binding:               stablePrivateIdentifier("operation-parameter", operationRouteKey(operation)+"\x00"+parameter.Location+"\x00"+parameter.Name),
 			Description:           parameter.Description,
 			Location:              parameter.Location,
 			Style:                 parameter.Style,
@@ -321,7 +320,6 @@ func syntheticOperationParameters(document *ir.Document, operation ir.Operation)
 			merged[key] = operationParameter{
 				Name:                  name,
 				Property:              name,
-				Binding:               stablePrivateIdentifier("operation-parameter", operationRouteKey(operation)+"\x00"+location+"\x00"+name),
 				Description:           description,
 				Location:              location,
 				Style:                 style,

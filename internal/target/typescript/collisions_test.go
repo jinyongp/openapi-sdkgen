@@ -47,7 +47,7 @@ func TestSourceArtifactsAllowsMissingOperationIDAndRejectsDuplicateExactIDs(t *t
 	}
 }
 
-func TestIDLessOperationParameterBindingsUseRouteIdentity(t *testing.T) {
+func TestIDLessOperationParametersKeepExactKeysWithoutUnusedBindings(t *testing.T) {
 	first, err := operationParameters(&ir.Document{}, ir.Operation{Method: "GET", Path: "/first", Parameters: []ir.Parameter{{Name: "query", Location: "query", Style: "form", Explode: true, Schema: map[string]any{"type": "string"}}}})
 	if err != nil {
 		t.Fatal(err)
@@ -56,8 +56,10 @@ func TestIDLessOperationParameterBindingsUseRouteIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first[0].Binding == second[0].Binding {
-		t.Fatalf("ID-less operation bindings collided: %q", first[0].Binding)
+	for _, parameters := range [][]operationParameter{first, second} {
+		if len(parameters) != 1 || parameters[0].Name != "query" || parameters[0].Property != "query" || parameters[0].Binding != "" {
+			t.Fatalf("ID-less query identity changed or an unused binding was allocated: %#v", parameters)
+		}
 	}
 }
 
@@ -126,7 +128,7 @@ func TestOperationParametersPreserveNormalizationEquivalentNames(t *testing.T) {
 			map[string]any{"name": "x_id", "in": "query", "schema": map[string]any{"type": "string"}},
 		},
 	}})
-	if err != nil || len(parameters) != 2 || parameters[0].Property != parameters[0].Name || parameters[1].Property != parameters[1].Name || parameters[0].Binding == parameters[1].Binding {
+	if err != nil || len(parameters) != 2 || parameters[0].Property != parameters[0].Name || parameters[1].Property != parameters[1].Name || parameters[0].Name == parameters[1].Name || parameters[0].Binding != "" || parameters[1].Binding != "" {
 		t.Fatalf("parameters = %#v, error = %v", parameters, err)
 	}
 }
@@ -152,16 +154,17 @@ func TestOperationParametersKeepSameExactNameSeparateByLocation(t *testing.T) {
 	if len(parameters) != 5 {
 		t.Fatalf("parameter count = %d, want 5", len(parameters))
 	}
-	bindings := map[string]bool{}
 	locations := map[string]bool{}
 	for _, parameter := range parameters {
 		if parameter.Name != "id" || parameter.Property != "id" {
 			t.Fatalf("parameter identity changed: %#v", parameter)
 		}
-		if bindings[parameter.Binding] {
-			t.Fatalf("private binding %q was reused across locations", parameter.Binding)
+		if locations[parameter.Location] {
+			t.Fatalf("parameter location %q was collapsed", parameter.Location)
 		}
-		bindings[parameter.Binding] = true
+		if (parameter.Location == "path") != (parameter.Binding != "") {
+			t.Fatalf("only path selectors require a lexical binding: %#v", parameter)
+		}
 		locations[parameter.Location] = true
 	}
 	if len(locations) != 5 {

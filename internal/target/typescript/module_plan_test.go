@@ -88,7 +88,7 @@ func TestPlanTypeReferencesUsesInlineThenSharedAlias(t *testing.T) {
 		{key: "repeat-b", modulePath: "internal/schemas/problem.ts", exportName: "Output"},
 		{key: "bound", modulePath: "internal/schemas/input.ts", exportName: "Input", requiresBinding: true},
 	}
-	planned, err := planTypeReferences(&semanticModulePlan{}, "internal/operations/users/get.ts", uses)
+	planned, err := planTypeReferences(&semanticModulePlan{}, "internal/operations/users/get.ts", uses, newLocalIdentifierPlan("internal/operations/users/get.ts"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,6 +141,7 @@ func TestOperationSchemaLocalizationKeepsProjectionContextIsolated(t *testing.T)
 	path := "internal/schemas/quoted-schema.ts"
 	plan := &semanticModulePlan{
 		schemas:            []schemaModulePlan{{name: name, path: path, publicProjection: true}},
+		schemaByName:       map[string]string{name: path},
 		schemaByQuotedName: map[string]string{quoteTS(name): name},
 		relativeSpecifiers: make(map[string]string),
 	}
@@ -149,7 +150,7 @@ func TestOperationSchemaLocalizationKeepsProjectionContextIsolated(t *testing.T)
 		"/**\n * ContractSchemas.ComponentInput<" + quoteTS(name) + ">\n */\n" +
 		"type Input = ContractSchemas.ComponentInput<" + quoteTS(name) + ">\n" +
 		"type Output = ContractSchemas.ComponentOutput<" + quoteTS(name) + ">\n"
-	got, err := localizeOperationSchemaReferences(source, module, plan, "../../schemas/index.js")
+	got, err := localizeOperationSchemaReferences(source, module, plan, "../../schemas/index.js", newLocalIdentifierPlan(module.path))
 	if err != nil {
 		t.Fatal(err)
 	}

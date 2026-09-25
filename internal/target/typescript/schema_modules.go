@@ -119,10 +119,16 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 }
 
 func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any) (renderedSchemaProjections, error) {
+	names := newLocalIdentifierPlan(schema.path)
+	if err := names.reserve("Input", "Output", "WireSchema", "WireProperty", "inputWireSchema", "outputWireSchema"); err != nil {
+		return renderedSchemaProjections{}, err
+	}
 	uses := make([]typeReferenceUse, 0)
+	var expected []schemaProjectionReference
 	sequence := 0
 	var referenceErr error
 	countReference := func(name string, direction projection) string {
+		expected = append(expected, schemaProjectionReference{name: name, direction: direction})
 		if name == schema.name {
 			if direction == projectionInput {
 				return "Input"
@@ -155,7 +161,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 	if referenceErr != nil {
 		return renderedSchemaProjections{}, referenceErr
 	}
-	planned, err := planTypeReferences(plan, schema.path, uses)
+	planned, err := planTypeReferences(plan, schema.path, uses, names)
 	if err != nil {
 		return renderedSchemaProjections{}, err
 	}
@@ -166,7 +172,14 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 
 	sequence = 0
 	referenceErr = nil
+	replay := schemaReferenceReplay{owner: schema.path, expected: expected}
 	renderReference := func(name string, direction projection) string {
+		if err := replay.observe(name, direction); err != nil {
+			if referenceErr == nil {
+				referenceErr = err
+			}
+			return "unknown" // The enclosing render fails; this is never published.
+		}
 		if name == schema.name {
 			if direction == projectionInput {
 				return "Input"
@@ -179,6 +192,16 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		if !exists {
 			if referenceErr == nil {
 				referenceErr = fmt.Errorf("component reference %q was not planned", name)
+			}
+			return "unknown"
+		}
+		exportName := "Output"
+		if direction == projectionInput {
+			exportName = "Input"
+		}
+		if reference.modulePath != plan.schemaByName[name] || reference.exportName != exportName {
+			if referenceErr == nil {
+				referenceErr = fmt.Errorf("component reference %q (%s) resolves to a different planned target in %q", name, exportName, schema.path)
 			}
 			return "unknown"
 		}
@@ -198,6 +221,9 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 	}
 	if referenceErr != nil {
 		return renderedSchemaProjections{}, referenceErr
+	}
+	if err := replay.finish(); err != nil {
+		return renderedSchemaProjections{}, err
 	}
 	if sequence != len(uses) {
 		return renderedSchemaProjections{}, fmt.Errorf("rendered %d component references, planned %d", sequence, len(uses))

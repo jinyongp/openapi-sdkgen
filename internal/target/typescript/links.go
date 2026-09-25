@@ -445,7 +445,7 @@ func linkStatusProperty(status string) (string, error) {
 // A private identifier is never used as a placeholder for later text replacement.
 type linkTargetReference func(route string) (string, error)
 
-func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links []generatedLink, groups []generatedLinkGroup, targetReference linkTargetReference) error {
+func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links []generatedLink, groups []generatedLinkGroup, targetReference linkTargetReference, names *localIdentifierPlan) error {
 	if targetReference == nil {
 		return fmt.Errorf("missing Link target reference resolver")
 	}
@@ -486,15 +486,15 @@ func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links 
 		fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => %s(mergeLinkInput(resolveLinkInput<%s>(response, %s, invocation.sourceInput), invocation.input), %s)\n", name, sourceRawResponse, invocationType, targetInput, targetOptions, sourceInput, invocationDefault, targetOutput, targetProperty, targetInput, link.Definition, options)
 	}
 	for _, group := range groups {
-		if err := emitLinkGroupValue(output, document, group); err != nil {
+		if err := emitLinkGroupValue(output, document, group, names); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group generatedLinkGroup) error {
-	variable, err := generatedLinkGroupVariableName(group)
+func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group generatedLinkGroup, names *localIdentifierPlan) error {
+	variable, err := names.resolve(linkGroupIdentifierKey(group))
 	if err != nil {
 		return err
 	}
@@ -575,29 +575,6 @@ func linkStatusCondition(status string) (string, error) {
 	return "", fmt.Errorf("unsupported Link response status %q", status)
 }
 
-func emitLinkReturnValue(output *bytes.Buffer, links []generatedLink) error {
-	if len(links) == 0 {
-		return nil
-	}
-	sources := make([]runtimeProperty, 0)
-	for _, source := range linkSourceOperations(links) {
-		if source.OperationID == "" {
-			continue
-		}
-		groups := make([]runtimeProperty, 0)
-		for _, group := range linkGroupsForSource(links, operationRouteKey(source)) {
-			variable, err := generatedLinkGroupVariableName(group)
-			if err != nil {
-				return err
-			}
-			groups = append(groups, runtimeProperty{key: group.Name, value: variable})
-		}
-		sources = append(sources, runtimeProperty{key: source.OperationID, value: runtimeObjectExpression(groups)})
-	}
-	fmt.Fprintf(output, "    $links: %s as unknown as Client[\"$links\"],\n", runtimeObjectExpression(sources))
-	return nil
-}
-
 func linkSourceOperations(links []generatedLink) []ir.Operation {
 	seen := map[string]ir.Operation{}
 	for _, link := range links {
@@ -640,17 +617,13 @@ func routeLinkGroupsType(document *ir.Document, groups []generatedLinkGroup) (st
 	return "{ " + strings.Join(members, "; ") + " }", nil
 }
 
-func routeLinksValue(links []generatedLink, routeKey string) (string, error) {
-	return routeLinkGroupsValue(linkGroupsForSource(links, routeKey))
-}
-
-func routeLinkGroupsValue(groups []generatedLinkGroup) (string, error) {
+func routeLinkGroupsValue(groups []generatedLinkGroup, names *localIdentifierPlan) (string, error) {
 	if len(groups) == 0 {
 		return "", nil
 	}
 	values := make([]runtimeProperty, 0, len(groups))
 	for _, group := range groups {
-		variable, err := generatedLinkGroupVariableName(group)
+		variable, err := names.resolve(linkGroupIdentifierKey(group))
 		if err != nil {
 			return "", err
 		}
@@ -665,8 +638,4 @@ func generatedLinkVariableName(link generatedLink) (string, error) {
 		return "", err
 	}
 	return stablePrivateIdentifier("link-value", operationRouteKey(link.SourceOperation)+"\x00"+link.Name+"\x00"+link.Status), nil
-}
-
-func generatedLinkGroupVariableName(group generatedLinkGroup) (string, error) {
-	return stablePrivateIdentifier("link-group-value", operationRouteKey(group.SourceOperation)+"\x00"+group.Name), nil
 }

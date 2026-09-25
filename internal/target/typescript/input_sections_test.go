@@ -106,22 +106,22 @@ func TestLinkTargetReferencesDoNotRewriteLiteralValues(t *testing.T) {
 			t.Fatalf("target=%q", target)
 		}
 		return "targets[" + quoteTS(target) + "]", nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 || !strings.Contains(output.String(), "return targets["+quoteTS(route)+"](invocation.options)") || !strings.Contains(output.String(), "{ value: "+quoteTS(legacyName)+" }") {
 		t.Fatalf("target binding or authored literal changed:\n%s", output.String())
 	}
-	if err := emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, nil); err == nil {
+	if err := emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, nil, nil); err == nil {
 		t.Fatal("missing resolver was accepted")
 	}
 	missing := errors.New("target not owned")
-	err = emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, func(string) (string, error) { return "", missing })
+	err = emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, func(string) (string, error) { return "", missing }, nil)
 	if !errors.Is(err, missing) {
 		t.Fatalf("target error=%v", err)
 	}
-	err = emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, func(string) (string, error) { return "", nil })
+	err = emitLinkValuesForGroups(&bytes.Buffer{}, &ir.Document{}, []generatedLink{link}, nil, func(string) (string, error) { return "", nil }, nil)
 	if err == nil {
 		t.Fatal("empty reference was accepted")
 	}
@@ -133,8 +133,8 @@ func TestSchemaReferenceReplayRejectsUnplannedProjection(t *testing.T) {
 		schemaByQuotedName: map[string]string{quoteTS("Hidden"): "Hidden"},
 	}
 	module := operationModulePlan{routeKey: "GET /source", path: "internal/operations/source/get.ts"}
-	_, err := localizeOperationSchemaReferences("type Probe = ContractSchemas.ComponentInput<\"Hidden\">\n", module, plan, "../../schemas/index.js")
-	if err == nil || !strings.Contains(err.Error(), "no planned schema reference") {
+	_, err := localizeOperationSchemaReferences("type Probe = ContractSchemas.ComponentInput<\"Hidden\">\n", module, plan, "../../schemas/index.js", newLocalIdentifierPlan(module.path))
+	if err == nil || !strings.Contains(err.Error(), "projection") {
 		t.Fatalf("error=%v, want missing exact projection diagnostic", err)
 	}
 }

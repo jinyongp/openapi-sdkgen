@@ -274,14 +274,23 @@ type typeReferenceUse struct {
 
 type plannedTypeReference struct {
 	key        string
+	modulePath string
 	specifier  string
 	exportName string
 	alias      string
 	inline     bool
 }
 
-func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses []typeReferenceUse) ([]plannedTypeReference, error) {
-	counts := make(map[string]int)
+type typeReferenceTarget struct {
+	modulePath string
+	exportName string
+}
+
+func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses []typeReferenceUse, names *localIdentifierPlan) ([]plannedTypeReference, error) {
+	if names == nil || names.owner != currentArtifact {
+		return nil, fmt.Errorf("type references for %q require the same artifact's identifier plan", currentArtifact)
+	}
+	counts := make(map[typeReferenceTarget]int)
 	seenKeys := make(map[string]bool, len(uses))
 	for _, use := range uses {
 		if use.key == "" || use.modulePath == "" || use.exportName == "" {
@@ -291,7 +300,7 @@ func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses [
 			return nil, fmt.Errorf("type reference key %q is duplicated", use.key)
 		}
 		seenKeys[use.key] = true
-		counts[use.modulePath+"\x00"+use.exportName]++
+		counts[typeReferenceTarget{modulePath: use.modulePath, exportName: use.exportName}]++
 	}
 	result := make([]plannedTypeReference, 0, len(uses))
 	for _, use := range uses {
@@ -299,13 +308,27 @@ func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses [
 		if err != nil {
 			return nil, fmt.Errorf("type reference %q: %w", use.key, err)
 		}
-		identity := use.modulePath + "\x00" + use.exportName
+		identity := typeReferenceTarget{modulePath: use.modulePath, exportName: use.exportName}
 		inline := counts[identity] == 1 && !use.requiresBinding
-		alias := ""
 		if !inline {
-			alias = stablePrivateIdentifier("type-import", identity)
+			if err := names.request(typeImportIdentifierKey(use.modulePath, use.exportName)); err != nil {
+				return nil, err
+			}
 		}
-		result = append(result, plannedTypeReference{key: use.key, specifier: specifier, exportName: use.exportName, alias: alias, inline: inline})
+		result = append(result, plannedTypeReference{key: use.key, modulePath: use.modulePath, specifier: specifier, exportName: use.exportName, inline: inline})
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	for index := range result {
+		reference := &result[index]
+		if !reference.inline {
+			alias, err := names.resolve(typeImportIdentifierKey(reference.modulePath, reference.exportName))
+			if err != nil {
+				return nil, err
+			}
+			reference.alias = alias
+		}
 	}
 	sort.Slice(result, func(left, right int) bool { return result[left].key < result[right].key })
 	return result, nil

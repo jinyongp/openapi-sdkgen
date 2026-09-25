@@ -232,7 +232,8 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if !strings.Contains(sortedSource, "type __sdkgen_QueryInput =") {
 		t.Fatalf("sort-only operation query input is missing:\n%s", clientSource)
 	}
-	if !strings.Contains(clientSource, "readonly paginate:") || !strings.Contains(clientSource, `AsyncIterable<__sdkgen_productOutput_`) || !strings.Contains(clientSource, `createPaginator<`) {
+	productAlias := generatedTypeImportAlias(t, string(artifacts["internal/operations/products/get.ts"]), "../../schemas/product.js", "Output")
+	if !strings.Contains(clientSource, "readonly paginate:") || !strings.Contains(clientSource, "AsyncIterable<"+productAlias+">") || !strings.Contains(clientSource, `createPaginator<`) {
 		t.Fatalf("pagination helper missing:\n%s", clientSource)
 	}
 	if !strings.Contains(clientSource, `readonly "Idempotency-Key": string`) || strings.Contains(clientSource, "readonly idempotencyKey") || strings.Contains(clientSource, "readonly ifMatch") {

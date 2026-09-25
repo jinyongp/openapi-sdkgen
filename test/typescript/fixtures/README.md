@@ -8,20 +8,21 @@ inside an agent shell script.
 
 ## Fixture responsibilities
 
-| Fixture                  | Primary responsibility                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| contract                 | Resource/path/query/header/body calls, pagination, envelopes and binary input.                                  |
-| collisions               | Exact and prototype-sensitive identities, Link leaves, enums, callbacks and webhooks.                           |
-| bundle-isolation         | Separation of optional runtime modules and streaming.                                                           |
-| transport-native-headers | Authentication, header boundaries, codecs and inbound contracts.                                                |
-| baseline-oas30           | Small, extension-free, ID-less root operation.                                                                  |
-| baseline-oas31           | ID-less exact-route Links and callbacks.                                                                        |
-| baseline-oas32           | QUERY method and NDJSON streaming.                                                                              |
-| representation           | Recursive/shared schemas, opaque const data, exact Unicode/control/prototype keys, validation and empty shapes. |
-| lifecycle                | Inline nested descriptors, helper construction during binding, stream frames and simultaneous-client isolation. |
-| diagnostics              | Expected generation failure, diagnostic golden and absence of published output.                                 |
-| github (external)        | Large operation-count real-world input.                                                                         |
-| stripe (external)        | Schema-heavy real-world input.                                                                                  |
+| Fixture                  | Primary responsibility                                                                                                                             |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| contract                 | Resource/path/query/header/body calls, pagination, envelopes and binary input.                                                                     |
+| collisions               | Exact and prototype-sensitive identities, Link leaves, enums, callbacks and webhooks.                                                              |
+| bundle-isolation         | Separation of optional runtime modules and streaming.                                                                                              |
+| transport-native-headers | Authentication, header boundaries, codecs and inbound contracts.                                                                                   |
+| baseline-oas30           | Small, extension-free, ID-less root operation.                                                                                                     |
+| baseline-oas31           | ID-less exact-route Links and callbacks.                                                                                                           |
+| baseline-oas32           | QUERY method and NDJSON streaming.                                                                                                                 |
+| representation           | Recursive/shared schemas, opaque const data, exact Unicode/control/prototype keys, validation and empty shapes.                                    |
+| lifecycle                | Inline nested descriptors, helper construction during binding, stream frames and simultaneous-client isolation.                                    |
+| aliases                  | Artifact-local aliases, distinct normalization/Unicode identities, input/output reference replay, resource builders and shared Link/stream owners. |
+| diagnostics              | Expected generation failure, diagnostic golden and absence of published output.                                                                    |
+| github (external)        | Large operation-count real-world input.                                                                                                            |
+| stripe (external)        | Schema-heavy real-world input.                                                                                                                     |
 
 A fixture may serve several checks. Its `characteristics` explain its purpose;
 `profiles` select consumers; `scenario` selects a reviewed local probe from

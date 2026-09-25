@@ -31,6 +31,19 @@ export function transportFor(scenario, origin = "https://example.test", token = 
     assert.equal(url.origin, origin, "client base URL leaked between instances");
     const body = await request.text();
     traces.push({ method: request.method, url: request.url, headers: [...request.headers], body });
+    if (scenario === "aliases") {
+      if (url.pathname === "/linked-events")
+        return request.headers.get("accept")?.includes("application/x-ndjson")
+          ? new Response("1\n2\n", { headers: { "content-type": "application/x-ndjson" } })
+          : Response.json([1, 2]);
+      if (!url.pathname.startsWith("/aliases/")) return new Response(null, { status: 204 });
+      const value = JSON.parse(body);
+      for (const key of ["left", "right"]) {
+        delete value[key].writeValue;
+        value[key].readValue = key;
+      }
+      return Response.json(value);
+    }
     if (scenario === "lifecycle")
       return url.pathname === "/events"
         ? new Response('{"value":1}\n{"value":2}\n', {
@@ -109,6 +122,39 @@ export function transportFor(scenario, origin = "https://example.test", token = 
 
 export async function exercise(api, scenario) {
   switch (scenario) {
+    case "aliases": {
+      const data = {
+        left: { kind: "hyphen", value: "left", writeValue: "input-left" },
+        right: { kind: "hyphen", value: "right", writeValue: "input-right" },
+        otherLeft: { kind: "underscore", value: 1 },
+        otherRight: { kind: "underscore", value: 2 },
+        composedLeft: "left",
+        composedRight: "right",
+        decomposedLeft: 1,
+        decomposedRight: 2,
+        __sdkgen_t_d0: "__sdkgen_r_d0",
+        opaque: { __sdkgen_t_d0: "__sdkgen_r_d0", ["__proto__"]: "exact", property: "schema" },
+      };
+      const value = await api.$operations.echoAliases({
+        path: { aliasID: "record/one" },
+        body: data,
+      });
+      assert.equal(value.left.readValue, "left");
+      assert.equal(value.right.readValue, "right");
+      assert.equal(value.otherLeft.value, 1);
+      assert.equal(value.decomposedLeft, 1);
+      assert.equal(value.composedLeft, "left");
+      assert.equal(value.opaque.__proto__, "exact");
+      assert.equal(value.__sdkgen_t_d0, "__sdkgen_r_d0");
+      await api.$operations.leftDetails({ path: { id: "left" } });
+      await api.$operations.rightDetails({ path: { id: "right" } });
+      const raw = await api.$operations.linkedEvents.raw();
+      await api.$operations.linkedEvents.links.follow(raw);
+      const frames = [];
+      for await (const frame of api.$operations.linkedEvents.stream()) frames.push(frame);
+      assert.deepEqual(frames, [1, 2]);
+      return { value, frames };
+    }
     case "lifecycle": {
       const data = { value: 0, nested: { flag: false } };
       const value = await api.$operations.echoInline({ body: data });

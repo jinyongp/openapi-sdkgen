@@ -3,6 +3,7 @@ package typescript
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -77,6 +78,10 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		return nil, err
 	}
 	routeHelpers, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
+	if err != nil {
+		return nil, err
+	}
+	names, err := operationLocalIdentifiers(module, item, links)
 	if err != nil {
 		return nil, err
 	}
@@ -273,13 +278,6 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		fmt.Fprintf(&output, "  return createPaginator<%s, Input, unknown, %s, %s, %s, Options, %t>((input, requestOptions) => base.raw(input, requestOptions).then((response) => response.data), %s)\n", itemType, quoteTS(operation.PaginationPlan.Mode), quoteTS(operation.PaginationPlan.Request.Cursor), quoteTS(operation.PaginationPlan.Request.Offset), item.optionsRequired, runtimePlan)
 		output.WriteString("}\n")
 	}
-	if linksType != "never" {
-		factory, err := emitOperationLinkFactory(document, plan, module, links, linkGroups)
-		if err != nil {
-			return nil, err
-		}
-		output.Write(factory)
-	}
 	if hasStream {
 		streamItemType := strings.ReplaceAll(stream.ItemType, "Contract.", "ContractSchemas.")
 		defaultAccept := "undefined"
@@ -293,14 +291,27 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	localized := strings.ReplaceAll(output.String(), "Contract.", "ContractSchemas.")
-	localized, err = localizeOperationSchemaReferences(localized, module, plan, schemaIndex)
+	localized, err = localizeOperationSchemaReferences(localized, module, plan, schemaIndex, names)
 	if err != nil {
 		return nil, err
 	}
-	return []byte(localized), nil
+	result := []byte(localized)
+	if linksType != "never" {
+		// The Link factory's types are exact operation slots. It introduces no
+		// schema import requests and resolves group bindings only after freeze.
+		factory, err := emitOperationLinkFactory(document, plan, module, links, linkGroups, names)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, factory...)
+	}
+	return result, nil
 }
 
-func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink, groups []generatedLinkGroup) ([]byte, error) {
+func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink, groups []generatedLinkGroup, names *localIdentifierPlan) ([]byte, error) {
+	if names == nil || !names.frozen || names.owner != module.path {
+		return nil, fmt.Errorf("Link factory for %q requires its frozen artifact identifier plan", module.routeKey)
+	}
 	var output bytes.Buffer
 	output.WriteString("\n/** Completed exact callables required by this operation's response links. */\n")
 	output.WriteString("export interface LinkTargets {\n")
@@ -329,15 +340,15 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 		}
 		return "targets[" + quoteTS(route) + "]", nil
 	}
-	if err := emitLinkValuesForGroups(&body, document, links, groups, targetReference); err != nil {
+	if err := emitLinkValuesForGroups(&body, document, links, groups, targetReference, names); err != nil {
 		return nil, err
 	}
 	bodySource, err := localizeOperationTypeSource(body.String(), module, plan)
 	if err != nil {
 		return nil, err
 	}
-	output.WriteString(strings.ReplaceAll(bodySource, "Contract.", "ContractSchemas."))
-	value, err := routeLinkGroupsValue(groups)
+	output.WriteString(bodySource)
+	value, err := routeLinkGroupsValue(groups, names)
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +449,10 @@ type operationSchemaReferenceKey struct {
 	export string
 }
 
-func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string) (string, error) {
+func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan) (string, error) {
+	if names == nil || names.owner != module.path {
+		return "", fmt.Errorf("operation %q requires its artifact identifier owner", module.routeKey)
+	}
 	const namespace = "ContractSchemas"
 	const referencePrefix = namespace + ".Component"
 	var occurrences []operationSchemaReference
@@ -486,30 +500,48 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 		search = nameEnd + 1
 	}
 
+	keys := make([]operationSchemaReferenceKey, 0, len(counts))
+	for key := range counts {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].name != keys[j].name {
+			return keys[i].name < keys[j].name
+		}
+		return keys[i].export < keys[j].export
+	})
+	for _, key := range keys {
+		path, exists := plan.schemaByName[key.name]
+		if !exists || path == "" {
+			return "", fmt.Errorf("operation %q has no planned %s projection for component %q", module.routeKey, key.export, key.name)
+		}
+		if counts[key] > 1 {
+			if err := names.request(typeImportIdentifierKey(path, key.export)); err != nil {
+				return "", err
+			}
+		}
+	}
+	if err := names.freeze(); err != nil {
+		return "", err
+	}
 	imports := make([]string, 0)
 	replacements := make(map[operationSchemaReferenceKey]string, len(counts))
-	for _, schema := range plan.schemas {
-		if !schema.publicProjection {
-			continue
+	for _, key := range keys {
+		path := plan.schemaByName[key.name]
+		specifier, err := plan.relativeModuleSpecifier(module.path, path)
+		if err != nil {
+			return "", err
 		}
-		for _, export := range []string{"Input", "Output"} {
-			key := operationSchemaReferenceKey{name: schema.name, export: export}
-			count := counts[key]
-			if count == 0 {
-				continue
-			}
-			specifier, err := plan.relativeModuleSpecifier(module.path, schema.path)
+		replacement := "import(" + quoteTS(specifier) + ")." + key.export
+		if counts[key] > 1 {
+			alias, err := names.resolve(typeImportIdentifierKey(path, key.export))
 			if err != nil {
 				return "", err
 			}
-			replacement := "import(" + quoteTS(specifier) + ")." + export
-			if count > 1 {
-				alias := stablePrivateIdentifier("schema-type", schema.name+"\x00"+export)
-				imports = append(imports, "import type { "+export+" as "+alias+" } from "+quoteTS(specifier))
-				replacement = alias
-			}
-			replacements[key] = replacement
+			imports = append(imports, "import type { "+key.export+" as "+alias+" } from "+quoteTS(specifier))
+			replacement = alias
 		}
+		replacements[key] = replacement
 	}
 	var output strings.Builder
 	output.Grow(len(source))

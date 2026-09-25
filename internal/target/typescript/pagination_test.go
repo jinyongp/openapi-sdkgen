@@ -27,11 +27,13 @@ func TestHermeticItemPaginationFixtureGenerates(t *testing.T) {
 		t.Fatal(err)
 	}
 	client := clientSemanticSource(artifacts)
+	itemSource := operationArtifactSource(t, artifacts, "GET /items")
+	itemAlias := generatedTypeImportAlias(t, itemSource, "../../schemas/item.js", "Output")
 	for _, expected := range []string{
 		`readonly "GET /items":`,
 		`readonly paginate:`,
 		`from "../../schemas/item.js"`,
-		`AsyncIterable<__sdkgen_itemOutput_`,
+		"AsyncIterable<" + itemAlias + ">",
 		`["response", /* @__PURE__ */ Object.fromEntries([["items", ["data"]], ["nextCursor", ["meta","pagination","nextCursor"]]])]`,
 	} {
 		if !strings.Contains(client, expected) {

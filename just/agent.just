@@ -82,6 +82,9 @@ coverage:
 perf:
     ./scripts/agent/perf
 
+identifier-perf:
+    bash ./scripts/agent/identifier-perf
+
 perf-profile workload='self-contained' phase='emit':
     ./scripts/agent/perf-profile {{quote(workload)}} {{quote(phase)}}
 

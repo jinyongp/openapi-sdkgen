@@ -155,8 +155,140 @@ The measured candidate binary is preserved at
 Its source hashes are in the durable evidence; subsequent builds need not retain
 that working `.tmp/bin` filename or binary identity.
 
+## C5 — artifact-owned local aliases
+
+C4 was committed as `9722fad`. C5 replaces schema type-import, resource-builder
+and Link-group aliases with one deterministic local plan per emitted artifact.
+The plan reserves fixed/readable/protected names, collects exact structured keys,
+freezes the result and resolves all references from that same owner. Repeated uses
+are idempotent; ownerless/late requests, unknown roles and missing lookups fail.
+No SDK-global counter, hash or mutable allocator is introduced in this unit.
+
+Named schema reference replay checks the exact schema and input/output projection,
+including self references, rather than only occurrence counts. Operation reference
+localization visits the referenced keys instead of scanning all component plans.
+A module's schema aliases and Link groups share the same frozen reservation domain;
+Link `byStatus` direct-arrow names remain unchanged. Non-path parameters no longer
+allocate unused private bindings; their exact wire properties and readable path
+selectors remain unchanged.
+
+The shared catalog now contains the `aliases` fixture. It covers repeated imports,
+normalization/Unicode-sensitive schemas, input/output projections, private-looking
+opaque data, separate resource builders and a module combining Links and streaming.
+Tests identify imported targets and owner modules, not historical alias spellings.
+Go tests include capture/reservation, permutation, frozen/missing-reference errors,
+24 parallel isolated plans, 100,000 unique keys, unrelated-entity locality and
+server-addon isolation.
+
+Twelve fixture/corpus cases passed unbundled runtime contracts and complete
+strict/source/declaration/helper/bundle checks. The runtime pilot uses one A/A and
+one A/B pair: its timing-review flags remain recorded and are not speed acceptance.
+Final CI and existing performance acceptance are recorded separately in
+`evidence/c5-local-aliases.json` before this work unit is committed.
+
+| Corpus | B-prime managed TS | C4 managed TS | C5 managed TS | C4 declarations | C5 declarations |
+| ------ | -----------------: | ------------: | ------------: | --------------: | --------------: |
+| GitHub |         42,752,679 |    37,123,103 |    36,442,803 |      19,567,705 |      19,221,075 |
+| Stripe |         32,083,911 |    29,141,861 |    28,332,704 |      16,424,160 |      15,757,873 |
+
+GitHub and Stripe minified bundles are byte-identical to C4. C5's additional
+680,300/809,157 source bytes removed are a source/declaration benefit, not new
+endpoint tree shaking. No C6 aggregate-token savings are included.
+
+The production local allocator's collection/freeze/lookup benchmark used five
+samples of three iterations per size. Medians were 0.399 ms / 529,472 allocated
+bytes for 1,000 keys; 4.487 ms / 4,386,693 bytes for 10,000; and 51.154 ms /
+36,483,978 bytes for 100,000. These are allocator-only costs, not whole-generation
+latency or peak RSS. `just agent identifier-perf` reproduces the measurement.
+
+One comparison was correctly rejected when the `aliases` input changed during
+execution; another failed the free-space precondition before generation. Both are
+preserved as non-passing attempts. Only disposable TypeScript/JavaScript outputs
+from the completed research runs `run-nt31TT` and `run-nWuLsA` were pruned to recover
+space. Their reports, manifests, configurations and logs remain, and report hashes
+were verified unchanged. The older C4 evidence file received formatting only;
+parsed JSON equality to its committed version was checked.
+
+### Independent C5 follow-up
+
+`evidence/c5-local-aliases-followup.json` preserves a second, separately identified
+validation run without overwriting the main C5 record. The final `aliases` fixture
+uses repeated `EventValue` projections in its Link/stream operation; a Go assertion
+requires the corresponding generated import alias and both factories in that owner.
+That strengthened case passed runtime, strict/source/declaration and bundle checks
+using the same frozen production binary. The earlier full twelve-case run remains
+historical, with the follow-up superseding only its `aliases` input.
+
+The independent external-corpus measurement used ten paired fresh processes.
+Its medians are cumulative C2-C5 against B-prime, not C5-only attribution:
+
+| Metric                         |           GitHub B-prime -> C5 |           Stripe B-prime -> C5 |
+| ------------------------------ | -----------------------------: | -----------------------------: |
+| Fresh CLI wall ms              |         1,520.176 -> 1,544.001 |         1,062.185 -> 1,065.594 |
+| Strict compiler wall ms        |         3,790.416 -> 3,084.084 |         4,021.306 -> 2,703.980 |
+| Strict compiler peak RSS bytes | 1,960,232,960 -> 1,438,445,568 | 2,534,785,024 -> 1,245,554,688 |
+
+Generation is essentially flat (the GitHub median is slightly slower), while
+strict checking uses less time and memory. Raw paired samples and exact input,
+compiler and binary identities are retained. These numbers must not be mixed with
+the main report's separate run or presented as a universal speed guarantee.
+
+### C5 pinned unit validation
+
+The earlier C5 pilot and shared-log measurements above are historical observations,
+not the current acceptance result. The final unit evidence is
+`evidence/c5-local-aliases.json`, bound to candidate binary SHA-256
+`14498213d00f40e7185947325ddc2602e523c6c9a30c77d273b64862c64d98e3`.
+All production source hashes were checked unchanged after the measurements.
+
+- Runtime comparison `run-w8T0l5`: all 12 positive cases, 10 A/A and 20 A/B
+  pairs each, no timing-review flags. Four lifetime profiles retained three
+  independent pairs and 240 discarded clients per process; helper-positive
+  profiles had zero additional request/frame construction calls.
+- Artifact checks `artifacts-bR7Nzi`: all 12 whole-source strict, normal source
+  and declaration consumers passed. All 11 cases shared with the C4 archive
+  retained byte-identical minified client bundles. The new aliases fixture also
+  passed source/declaration/runtime checks against B-prime.
+- Migration `run-hd9PN6`: four fixtures, including aliases, passed all 32 checks
+  for identity migration, fresh equality, no-op hashes/mtimes, diagnostic rollback,
+  user edits and unmanaged helper-file/directory/symlink conflicts.
+- Final `just agent ci`: session `lvOYxc4yKiJ4HXoW`, exit 0, Go coverage 83.3%.
+  Existing `just agent perf-acceptance`: session `qN-lGjCKhPJM8hMc`, exit 0.
+  The performance gate's historical baseline is not the same as the paired
+  B-prime corpus baseline, and its historical gains are not attributed to C5.
+
+Ten-pair independent CLI/compiler measurements in `run-mQOuXu`:
+
+| Metric                       |           GitHub B-prime -> C5 |           Stripe B-prime -> C5 |
+| ---------------------------- | -----------------------------: | -----------------------------: |
+| Fresh CLI median wall ms     |         1,440.557 -> 1,385.821 |         1,132.386 -> 1,102.260 |
+| Strict median wall ms        |         3,728.971 -> 2,959.708 |         4,139.892 -> 2,710.289 |
+| Strict median peak RSS bytes | 1,978,064,896 -> 1,437,034,496 | 2,560,512,000 -> 1,272,229,888 |
+
+These are cumulative C2-C5 costs versus corrected B-prime. Raw paired differences
+are retained and are not ratios of these separate medians. Individual slow pairs
+remain in the report; no universal speed improvement is asserted. Deterministic
+C5-only source savings relative to C4 are 680,300 and 809,157 bytes.
+
+The final allocator probe uses its own immutable invocation log
+`.tmp/perf/local-identifiers-D7T3E5.log` (session `SS05ST8wSIK__ykx`). Five
+samples of three iterations yielded medians 0.395435 ms / 529,472 allocated bytes
+for 1,000 bindings, 4.830016 ms / 4,388,514 bytes for 10,000, and 51.394997 ms /
+36,484,010 bytes for 100,000. These are collection/freeze/lookup costs, not full
+SDK generation, peak heap, or aggregate hash allocation. The wrapper now emits a
+unique log path so subsequent invocations cannot overwrite completed samples.
+
+A space preflight stopped this execution before generation. Completed B-prime,
+C2 and C3 generated copies (`run-2CCCR6`, `run-4vdozh`, `run-GRHm68`) were
+then archived under `.tmp/verification-archives`; every archived file was read
+back and SHA-256 verified before its working copy was removed. Original reports,
+logs and bundled probes remained in place; input corpora and frozen binaries were
+not removed. Archive hashes and exact recovery paths are embedded in C5 evidence.
+The successful rerun retained the original space and correctness thresholds.
+
 ## Remaining implementation
 
-C5/C6 scoped aliases and C7 integrated validation remain pending. The full 97-row
-matrix still needs one final integrated candidate. Unit-level C4 evidence is not
-final release approval. No push or release is performed by this checkpoint.
+C5 has passed its unit-local validation; its commit is recorded in the central
+workstream ledger. C6 aggregate/server/enum tokens and C7 integrated validation
+remain pending. The full 97-row matrix still requires one final integrated
+candidate. No push, release or overall workstream completion is implied.

@@ -129,3 +129,17 @@ just agent representation-measure --report .tmp/preimplementation/run-EXAMPLE/re
 ```
 
 This consumes the same pinned input/binary and compiler configurations as the correctness checks. It interleaves fresh generation, strict and consumer checks with per-child GNU time CPU/peak-RSS measurements. A generated directory belongs to the measuring invocation and is removed only after that individual run; raw measurements and command logs remain. A passing status means measurements completed, not that every performance delta meets the separate acceptance policy. This report does not include network/download/binary-build time or claim a cold filesystem.
+
+## Local identifier allocation
+
+`just agent identifier-perf` measures the production Go local allocator with 1,000,
+10,000 and 100,000 exact keys, including collection, freeze and lookup. It records
+five samples of three iterations per size with allocation statistics in
+an invocation-specific `.tmp/perf/local-identifiers-XXXXXX.log` printed by the
+command. Completed samples are never overwritten by another invocation. These are
+allocator-only measurements, not full SDK generation or aggregate-token benchmarks.
+
+The shared `aliases` fixture exercises repeated schema imports, distinct Unicode
+and normalization-sensitive names, input/output projection replay, resource
+builders and a module combining Links and streaming. Source checks select the
+owning artifact and imported target rather than assuming SDK-global private names.

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+cd "$ROOT"
+
+# Keep the allocator's scale/allocation probe separate from full CLI metrics.
+# No generated output, external corpus or production identity is modified.
+perf_dir="$ROOT/.tmp/perf"
+mkdir -p "$perf_dir"
+log="$(mktemp "$perf_dir/local-identifiers-XXXXXX.log")"
+echo "identifier benchmark log: $log"
+if ! go test ./internal/target/typescript -run '^$' -bench '^BenchmarkLocalIdentifierPlan/' -benchmem -benchtime=3x -count=5 >"$log" 2>&1; then
+  echo "failed local identifier benchmarks"
+  tail -n "$TAIL_LINES" "$log" || true
+  exit 1
+fi
+rg '^(goos:|goarch:|cpu:|BenchmarkLocalIdentifierPlan|PASS)' "$log"
+agent_note "ok local identifier benchmarks"
