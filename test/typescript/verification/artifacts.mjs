@@ -21,7 +21,8 @@ import {
   managedDeclarationStats,
   sha256,
 } from "./catalog.mjs";
-import { pairedSummary } from "./contracts.mjs";
+import { assertSameContract, graphFingerprint, pairedSummary } from "./contracts.mjs";
+import { transportFor } from "./scenarios.mjs";
 import { assertWirePropertiesContract } from "./helper-contracts.mjs";
 
 const { values } = parseArgs({
@@ -125,7 +126,7 @@ function diagnosticSignature(result, sourceRoot) {
     );
   return normalized;
 }
-async function bundle(source, fixture, variant) {
+async function bundle(source, fixture, variant, scenario) {
   const entry = resolve(output, `${fixture}-${variant}-bundle.ts`);
   writeFileSync(
     entry,
@@ -151,8 +152,13 @@ async function bundle(source, fixture, variant) {
     .filter((o) => o.type === "chunk");
   assert.equal(chunks.length, 1);
   const code = chunks[0].code;
-  writeFileSync(resolve(output, `${fixture}-${variant}.mjs`), code);
+  const bundlePath = resolve(output, `${fixture}-${variant}.mjs`);
+  writeFileSync(bundlePath, code);
+  const bundled = await import(pathToFileURL(bundlePath));
+  assert.equal(typeof bundled.createClient, "function", "bundle lost createClient export");
+  const contract = graphFingerprint(bundled.createClient(transportFor(scenario).options));
   return {
+    contract,
     minifiedBytes: Buffer.byteLength(code),
     gzipBytes: gzipSync(code).length,
     brotliBytes: brotliCompressSync(code, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } })
@@ -283,9 +289,13 @@ try {
         declarations: managedDeclarationStats(declarations, audit.files),
         declarationConsumer: "pass",
         helperContract,
-        bundle: await bundle(source, fixture.id, variant),
+        bundle: await bundle(source, fixture.id, variant, fixture.scenario),
       };
     }
+    assertSameContract(
+      row.variants.baseline.bundle.contract,
+      row.variants.candidate.bundle.contract,
+    );
     assert.equal(
       row.variants.candidate.strictSignature,
       row.variants.baseline.strictSignature,
