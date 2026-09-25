@@ -89,8 +89,74 @@ retained. The source reduction is from production fixed-name emission, not an AS
 rewrite experiment. No property-construction optimization is included in these
 measurements, and endpoint-level tree shaking is unchanged.
 
+## C4 — owner-scoped property construction
+
+C3 was committed as `cfebcf9`. C4 now uses an explicit per-owner wire render
+context through nested schemas, response headers, multipart encodings and prepared
+server definitions. The context reports actual import needs; no emitted-source
+scan, provider heuristic, count threshold or global mode switch is used.
+
+Named schema modules retain their literal wrappers under
+`Object.fromEntries<WireProperty>` and import `WireProperty` only as a type, when
+used. Inline operation/server schemas use the concrete two-array constructor.
+The tiny helper is registered in the runtime artifact inventory. `callables`
+directly re-exports the same function as `createWireProperties`; operations reuse
+that existing import edge, and servers import the tiny helper only when needed.
+No existing public export or descriptor shape changes.
+
+Checks run on this production candidate, not the archived prototype:
+
+- Final full CI passed (Go coverage 83.2%), including the additional inline-only
+  prepared-server regression. Existing performance acceptance also passed across
+  its generation/allocation/publication/process/incremental and stream gates.
+- All eleven fixture/corpus runtime contracts passed with ten A/A and twenty A/B
+  pairs each. No predeclared timing-review boundary was exceeded. Actual first
+  client, contiguous startup and repeated construction are measured separately.
+- Four lifetime profiles passed three pairs of finite 240-client discard checks.
+  Inline lifecycle positively exercised construction and added zero helper calls
+  during requests/stream frames. No late-retention or configuration-mixing flag.
+- All eleven full strict/source/declaration checks passed. The helper passed
+  eleven shared semantic checks plus 128 adversarial exact-key vectors, including
+  manual nonidentity mappings. Template and emitted-helper tests also exercise
+  array mismatch, facade identity and frozen/recursive child graphs.
+- Twenty-four migration checks passed: three fixtures, eight checks each,
+  including fresh equality, no-op nanosecond mtimes, edited files, and unmanaged
+  file/directory/symlink conflicts at the newly generated helper path.
+- The smallest and largest nonempty named schema source leaves sampled from each
+  real-world corpus produced byte-identical direct wire-schema bundles. The
+  unbundled representation leaf kept the original runtime dependency graph.
+
+All essential raw samples, reports, source checksums and binary identities are
+in `evidence/c4-property-construction.json`. Its report links distinguish runtime,
+artifact, migration and process-cost executions. The artifact run uses one pair
+for correctness/size; speed data below uses ten independent interleaved process
+pairs and per-child GNU time CPU/RSS, without build/network time.
+
+| Metric                                |           GitHub B-prime -> C4 |           Stripe B-prime -> C4 |
+| ------------------------------------- | -----------------------------: | -----------------------------: |
+| Managed TS bytes                      |       42,752,679 -> 37,123,103 |       32,083,911 -> 29,141,861 |
+| Declaration bytes                     |       25,148,896 -> 19,567,705 |       18,963,049 -> 16,424,160 |
+| Minified client bytes                 |         2,583,041 -> 2,489,156 |         3,592,758 -> 3,114,442 |
+| gzip bytes                            |             217,267 -> 212,187 |             319,393 -> 287,241 |
+| Brotli bytes                          |             140,153 -> 140,550 |             159,833 -> 161,342 |
+| Fresh CLI median wall ms              |         1,311.966 -> 1,273.730 |           1,007.486 -> 972.981 |
+| Strict compiler median wall ms        |         3,085.412 -> 2,540.557 |         3,438.022 -> 2,089.737 |
+| Strict compiler median peak RSS bytes | 1,989,801,984 -> 1,440,389,120 | 2,564,788,224 -> 1,266,049,024 |
+
+These are cumulative C2/C3/C4 versus the corrected B-prime, not C4-only speed
+attribution. Generation improvements are small and some paired samples are
+slower; normal source-consumer timing is essentially flat. Raw paired statistics
+are not ratios of the separate medians. Do not claim zero cost: Brotli grew by
+397/1,509 bytes, and small helper-using full-client fixtures retain fixed costs.
+This work does not solve endpoint selection or endpoint-level tree shaking.
+
+The measured candidate binary is preserved at
+`.tmp/implementation-checkpoints/c4/7d627797708044f3e667afb7e0b32cc7eb839e8042079a00db322624ce39b27d/openapi-sdkgen`.
+Its source hashes are in the durable evidence; subsequent builds need not retain
+that working `.tmp/bin` filename or binary identity.
+
 ## Remaining implementation
 
-C4 scoped property construction, C5/C6 scoped aliases and C7 integrated validation
-remain pending. Production changes are implemented and tested by work unit, not
-installed from archived prototype files. No final release approval is implied.
+C5/C6 scoped aliases and C7 integrated validation remain pending. The full 97-row
+matrix still needs one final integrated candidate. Unit-level C4 evidence is not
+final release approval. No push or release is performed by this checkpoint.

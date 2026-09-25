@@ -819,11 +819,12 @@ func pruneEmptyResourceNodes(node *resourceNode) {
 }
 
 func resourceParameterSignature(document *ir.Document, parameter operationParameter) (string, error) {
+	wire := newWireRenderContext(wirePropertiesLiteral)
 	inputType, err := schemaTypeForScope(document, parameter.Schema, projectionInput, typeRenderContract)
 	if err != nil {
 		return "", err
 	}
-	wireSchema, err := wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
+	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
 	if err != nil {
 		return "", err
 	}
@@ -1057,7 +1058,7 @@ func hasVisibleResponseBodies(document *ir.Document) bool {
 	return false
 }
 
-func operationDefinition(document *ir.Document, irOperation ir.Operation, operation ManifestOperation) (string, error) {
+func (wire *wireRenderContext) operationDefinition(document *ir.Document, irOperation ir.Operation, operation ManifestOperation) (string, error) {
 	var fields []string
 	fields = append(fields,
 		"route: "+quoteTS(manifestRouteKey(operation)),
@@ -1073,7 +1074,7 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 	if len(parameters) > 0 {
 		items := make([]string, 0, len(parameters))
 		for _, parameter := range parameters {
-			descriptor, err := wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
+			descriptor, err := wire.wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
 			if err != nil {
 				return "", err
 			}
@@ -1102,7 +1103,7 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 		fields = append(fields, "parameters: ["+strings.Join(items, ", ")+"]")
 		usesInputSchemas = true
 	}
-	requestBodies, hasRequestBodies, err := operationRequestWireBodies(document, irOperation)
+	requestBodies, hasRequestBodies, err := wire.operationRequestWireBodies(document, irOperation)
 	if err != nil {
 		return "", err
 	}
@@ -1120,7 +1121,7 @@ func operationDefinition(document *ir.Document, irOperation ir.Operation, operat
 	if usesInputSchemas {
 		fields = append(fields, "inputSchemas: inputSchemas")
 	}
-	responseBodies, hasResponseBodies, err := operationResponseWireBodies(document, irOperation)
+	responseBodies, hasResponseBodies, err := wire.operationResponseWireBodies(document, irOperation)
 	if err != nil {
 		return "", err
 	}

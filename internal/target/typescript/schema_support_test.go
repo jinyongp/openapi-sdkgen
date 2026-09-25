@@ -380,7 +380,7 @@ func TestSourceArtifactsAcceptsDependentSchemaAssertion(t *testing.T) {
 }
 
 func TestWireSchemaDescriptorPreservesBooleanSubschemas(t *testing.T) {
-	descriptor, err := wireSchemaDescriptor(map[string]any{
+	descriptor, err := newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptor(map[string]any{
 		"type":              "object",
 		"patternProperties": map[string]any{"^x": false},
 		"propertyNames":     false,
@@ -404,7 +404,7 @@ func TestWireSchemaDescriptorPreservesBooleanSubschemas(t *testing.T) {
 
 func TestWireSchemaDescriptorAppliesNullableOnlyToOpenAPI30TypedSchemas(t *testing.T) {
 	schema := map[string]any{"type": "string", "nullable": true}
-	descriptor, err := wireSchemaDescriptorForDocument(&ir.Document{OpenAPIVersionLine: "3.0"}, schema, projectionInput)
+	descriptor, err := newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptorForDocument(&ir.Document{OpenAPIVersionLine: "3.0"}, schema, projectionInput)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -423,9 +423,9 @@ func TestWireSchemaDescriptorAppliesNullableOnlyToOpenAPI30TypedSchemas(t *testi
 		}
 		var got string
 		if document == nil {
-			got, err = wireSchemaDescriptor(value, projectionInput)
+			got, err = newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptor(value, projectionInput)
 		} else {
-			got, err = wireSchemaDescriptorForDocument(document, value, projectionInput)
+			got, err = newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptorForDocument(document, value, projectionInput)
 		}
 		if err != nil {
 			t.Fatal(err)
@@ -437,7 +437,7 @@ func TestWireSchemaDescriptorAppliesNullableOnlyToOpenAPI30TypedSchemas(t *testi
 }
 
 func TestWireSchemaDescriptorIgnoresAnnotationOnlyDynamicReferenceSiblings(t *testing.T) {
-	descriptor, err := wireSchemaDescriptor(map[string]any{
+	descriptor, err := newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptor(map[string]any{
 		"x-sdkgen-dynamic-reference": map[string]any{"anchor": "node", "reference": "#/components/schemas/Node"},
 		"description":                "annotation only",
 	}, projectionInput)

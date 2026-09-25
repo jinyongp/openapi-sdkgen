@@ -166,11 +166,24 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 	}
 
+	wire := newWireRenderContext(wirePropertiesConstructed)
+	definition, err := wire.operationDefinition(document, operation, item)
+	if err != nil {
+		return nil, err
+	}
+	definition, err = localizeOperationTypeSource(definition, module, plan)
+	if err != nil {
+		return nil, err
+	}
+
 	var output strings.Builder
 	output.Grow(len(bodySource) + 4096)
 	callableImports := "bindOperation, type RequestFunction"
 	if hasStream {
 		callableImports = "bindOperation, bindStreamOperation, type RequestFunction"
+	}
+	if wire.usesProperties {
+		callableImports += ", createWireProperties as __sdkgen_Properties"
 	}
 	fmt.Fprintf(&output, "import { %s } from %s\n", callableImports, quoteTS(runtimeCallables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
@@ -239,14 +252,6 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	output.WriteString("  readonly stream: Stream\n")
 	output.WriteString("}\n\n")
 
-	definition, err := operationDefinition(document, operation, item)
-	if err != nil {
-		return nil, err
-	}
-	definition, err = localizeOperationTypeSource(definition, module, plan)
-	if err != nil {
-		return nil, err
-	}
 	hasInput := len(item.InputSections) > 0
 	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")

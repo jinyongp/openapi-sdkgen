@@ -10,41 +10,43 @@ import (
 )
 
 type webhookDefinition struct {
-	name         string
-	property     string
-	typeName     string
-	operationID  string
-	method       string
-	bodyType     string
-	hasBody      bool
-	bodyRequired bool
-	bodyPlans    string
-	parameters   string
-	paramsType   string
-	responseType string
-	responsePlan string
-	security     any
+	name               string
+	property           string
+	typeName           string
+	operationID        string
+	method             string
+	bodyType           string
+	hasBody            bool
+	bodyRequired       bool
+	bodyPlans          string
+	parameters         string
+	paramsType         string
+	responseType       string
+	responsePlan       string
+	security           any
+	usesWireProperties bool
 }
 
 type callbackDefinition struct {
-	name              string
-	sourceRouteKey    string
-	sourceOperationID string
-	componentName     string
-	callbackName      string
-	typeName          string
-	expression        string
-	operationID       string
-	method            string
-	bodyType          string
-	hasBody           bool
-	bodyRequired      bool
-	bodyPlans         string
-	parameters        string
-	paramsType        string
-	responseType      string
-	responsePlan      string
-	security          any
+	name               string
+	sourceRouteKey     string
+	sourceOperationID  string
+	componentName      string
+	callbackName       string
+	typeName           string
+	expression         string
+	operationID        string
+	method             string
+	bodyType           string
+	hasBody            bool
+	bodyRequired       bool
+	bodyPlans          string
+	parameters         string
+	paramsType         string
+	responseType       string
+	responsePlan       string
+	security           any
+	usesWireProperties bool
 }
 
 func emitServerArtifacts(document *ir.Document) ([]Artifact, error) {
@@ -154,9 +156,10 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 					operationID = name
 				}
 				operationPath := appendOpenAPIPointer(appendOpenAPIPointer(appendOpenAPIPointer(path, name), expression), item.key)
-				parameters, paramsType, parameterErr := inboundParameterDefinitions(document, resolvedPathItem, operation, operationPath, true)
-				body, bodyErr := inboundBodyType(document, operation, operationPath)
-				responseType, responsePlan, responseErr := inboundResponseDefinition(document, operation, operationPath)
+				wire := newWireRenderContext(wirePropertiesConstructed)
+				parameters, paramsType, parameterErr := wire.inboundParameterDefinitions(document, resolvedPathItem, operation, operationPath, true)
+				body, bodyErr := wire.inboundBodyType(document, operation, operationPath)
+				responseType, responsePlan, responseErr := wire.inboundResponseDefinition(document, operation, operationPath)
 				for _, operationErr := range []error{parameterErr, bodyErr, responseErr} {
 					if operationErr != nil {
 						failures = append(failures, operationErr)
@@ -174,7 +177,7 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 					name: appendOpenAPIPointer(path, name), sourceRouteKey: sourceRouteKey, sourceOperationID: sourceOperationID, componentName: componentName, callbackName: name,
 					typeName: stablePrivateIdentifier("callback-type", identity), expression: expression, operationID: operationID, method: method,
 					bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType,
-					responseType: responseType, responsePlan: responsePlan, security: security,
+					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties,
 				})
 			}
 		}
@@ -329,12 +332,12 @@ func callbackRuntimeTreeExpression(root *callbackTreeNode) string {
 	return runtimeObjectExpression(properties)
 }
 
-func inboundResponseType(document *ir.Document, operation map[string]any, path string) (string, error) {
-	responseType, _, err := inboundResponseDefinition(document, operation, path)
+func (wire *wireRenderContext) inboundResponseType(document *ir.Document, operation map[string]any, path string) (string, error) {
+	responseType, _, err := wire.inboundResponseDefinition(document, operation, path)
 	return responseType, err
 }
 
-func inboundResponseDefinition(document *ir.Document, operation map[string]any, path string) (string, string, error) {
+func (wire *wireRenderContext) inboundResponseDefinition(document *ir.Document, operation map[string]any, path string) (string, string, error) {
 	responses, err := operationResponses(document, ir.Operation{Pointer: path, Raw: operation})
 	if err != nil {
 		return "", "", fmt.Errorf("%s/responses: %w", path, err)
@@ -350,7 +353,7 @@ func inboundResponseDefinition(document *ir.Document, operation map[string]any, 
 		if status != "default" && !strings.ContainsAny(status, "Xx") {
 			statusType = status
 		}
-		headers, err := responseWireHeaders(document, response.Raw)
+		headers, err := wire.responseWireHeaders(document, response.Raw)
 		if err != nil {
 			return "", "", fmt.Errorf("%s/responses/%s/headers: %w", path, status, err)
 		}
@@ -403,7 +406,7 @@ func inboundResponseDefinition(document *ir.Document, operation map[string]any, 
 			values = append(values, "{ readonly status: "+statusType+contentType+headerField+"; readonly body: "+bodyType+" }")
 			plan := "{ status: " + quoteTS(status) + ", contentType: " + quoteTS(mediaType)
 			if hasSchema && !binary {
-				descriptor, descriptorErr := wireSchemaDescriptorForDocument(document, schemaValue, projectionOutput)
+				descriptor, descriptorErr := wire.wireSchemaDescriptorForDocument(document, schemaValue, projectionOutput)
 				if descriptorErr != nil {
 					return "", "", fmt.Errorf("%s/responses/%s/content/%s/schema: %w", path, status, mediaType, descriptorErr)
 				}
@@ -448,9 +451,23 @@ func inboundResponseHeaderValuesType(document *ir.Document, response map[string]
 }
 
 func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byte, error) {
+	wire := newWireRenderContext(wirePropertiesConstructed)
+	for _, definition := range callbacks {
+		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
+	}
+	var wireComponents bytes.Buffer
+	if err := wire.emitWireComponents(&wireComponents, document, "inputWireSchemas", projectionInput); err != nil {
+		return nil, err
+	}
+	if err := wire.emitWireComponents(&wireComponents, document, "outputSchemas", projectionOutput); err != nil {
+		return nil, err
+	}
 	var output bytes.Buffer
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
 	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
+	if wire.usesProperties {
+		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
+	}
 	if len(callbacks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
@@ -458,12 +475,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	if err := emitInboundSchemas(&output, document); err != nil {
 		return nil, err
 	}
-	if err := emitWireComponents(&output, document, "inputWireSchemas", projectionInput); err != nil {
-		return nil, err
-	}
-	if err := emitWireComponents(&output, document, "outputSchemas", projectionOutput); err != nil {
-		return nil, err
-	}
+	output.Write(wireComponents.Bytes())
 	if err := emitInboundSecuritySchemes(&output, document); err != nil {
 		return nil, err
 	}
@@ -601,13 +613,14 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		method := itemOperation.method
 		operation := itemOperation.operation
 		operationPath := openAPIPointer("webhooks", name, itemOperation.key)
-		parameters, paramsType, parameterErr := inboundParameterDefinitions(document, resolvedItem, operation, operationPath, true)
+		wire := newWireRenderContext(wirePropertiesConstructed)
+		parameters, paramsType, parameterErr := wire.inboundParameterDefinitions(document, resolvedItem, operation, operationPath, true)
 		operationID, _ := operation["operationId"].(string)
 		if operationID == "" {
 			operationID = name
 		}
-		body, bodyErr := inboundBodyType(document, operation, operationPath)
-		responseType, responsePlan, responseErr := inboundResponseDefinition(document, operation, operationPath)
+		body, bodyErr := wire.inboundBodyType(document, operation, operationPath)
+		responseType, responsePlan, responseErr := wire.inboundResponseDefinition(document, operation, operationPath)
 		for _, operationErr := range []error{parameterErr, bodyErr, responseErr} {
 			if operationErr != nil {
 				failures = append(failures, operationErr)
@@ -623,7 +636,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		methodName := method
 		result = append(result, webhookDefinition{
 			name: name, property: name, typeName: stablePrivateIdentifier("webhook-type", name+"\x00"+methodName), operationID: operationID,
-			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security,
+			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties,
 		})
 	}
 	return result, failures
@@ -677,7 +690,7 @@ type inboundBodyDefinition struct {
 	plans    string
 }
 
-func inboundBodyType(document *ir.Document, operation map[string]any, path string) (inboundBodyDefinition, error) {
+func (wire *wireRenderContext) inboundBodyType(document *ir.Document, operation map[string]any, path string) (inboundBodyDefinition, error) {
 	body, ok := operation["requestBody"].(map[string]any)
 	if !ok {
 		return inboundBodyDefinition{typeName: "undefined"}, nil
@@ -700,7 +713,7 @@ func inboundBodyType(document *ir.Document, operation map[string]any, path strin
 		if err != nil {
 			return inboundBodyDefinition{}, fmt.Errorf("%s/requestBody/content/%s: %w", path, mediaType, err)
 		}
-		valueType, plan, err := inboundBodyPlan(document, mediaType, media, path)
+		valueType, plan, err := wire.inboundBodyPlan(document, mediaType, media, path)
 		if err != nil {
 			return inboundBodyDefinition{}, err
 		}
@@ -718,7 +731,7 @@ func inboundBodyType(document *ir.Document, operation map[string]any, path strin
 	return inboundBodyDefinition{typeName: resultType, hasBody: true, required: required, plans: "[" + strings.Join(plans, ", ") + "]"}, nil
 }
 
-func inboundBodyPlan(document *ir.Document, mediaType string, media map[string]any, path string) (string, string, error) {
+func (wire *wireRenderContext) inboundBodyPlan(document *ir.Document, mediaType string, media map[string]any, path string) (string, string, error) {
 	schemaValue, hasSchema := media["schema"]
 	if !hasSchema {
 		schemaValue = map[string]any{}
@@ -756,7 +769,7 @@ func inboundBodyPlan(document *ir.Document, mediaType string, media map[string]a
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/schema: encode validator schema: %w", path, mediaType, err)
 	}
-	wireSchema, err := wireSchemaDescriptorForDocument(document, schemaValue, projectionInput)
+	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, schemaValue, projectionInput)
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/schema: %w", path, mediaType, err)
 	}
@@ -768,21 +781,21 @@ func inboundBodyPlan(document *ir.Document, mediaType string, media map[string]a
 		streamFraming = ", streamFraming: " + quoteTS(string(streamPlan.Framing))
 	}
 	plan := "{ contentType: " + quoteTS(mediaType) + ", binary: " + fmt.Sprint(binary) + ", stream: " + fmt.Sprint(stream) + streamFraming + ", schema: " + schemaSource + ", wireSchema: " + wireSchema + " }"
-	encodings, err := requestBodyWireEncodings(document, media)
+	encodings, err := wire.requestBodyWireEncodings(document, media)
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/encoding: %w", path, mediaType, err)
 	}
 	if encodings != "" {
 		plan = strings.TrimSuffix(plan, " }") + ", encoding: " + encodings + " }"
 	}
-	prefixEncoding, err := positionalMultipartWireEncodings(document, media["prefixEncoding"])
+	prefixEncoding, err := wire.positionalMultipartWireEncodings(document, media["prefixEncoding"])
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/prefixEncoding: %w", path, mediaType, err)
 	}
 	if prefixEncoding != "" {
 		plan = strings.TrimSuffix(plan, " }") + ", prefixEncoding: " + prefixEncoding + " }"
 	}
-	itemEncoding, err := positionalMultipartWireEncoding(document, media["itemEncoding"])
+	itemEncoding, err := wire.positionalMultipartWireEncoding(document, media["itemEncoding"])
 	if err != nil {
 		return "", "", fmt.Errorf("%s/requestBody/content/%s/itemEncoding: %w", path, mediaType, err)
 	}
@@ -796,7 +809,7 @@ func isInboundRuntimeMediaType(mediaType string, schema map[string]any) bool {
 	return isStreamMediaType(mediaType) || isJSONMediaType(mediaType) || isTextMedia(mediaType) || strings.Contains(strings.ToLower(mediaType), "xml") || strings.EqualFold(mediaType, "application/x-www-form-urlencoded") || strings.EqualFold(mediaType, "multipart/form-data") || isBinaryMedia(mediaType, schema)
 }
 
-func inboundParameterDefinitions(document *ir.Document, pathItem, operation map[string]any, path string, allowPath bool) (string, string, error) {
+func (wire *wireRenderContext) inboundParameterDefinitions(document *ir.Document, pathItem, operation map[string]any, path string, allowPath bool) (string, string, error) {
 	parameters, err := operationParameters(document, ir.Operation{Pointer: path, PathItemRaw: pathItem, Raw: operation})
 	if err != nil {
 		return "", "", fmt.Errorf("%s/parameters: %w", path, err)
@@ -813,7 +826,7 @@ func inboundParameterDefinitions(document *ir.Document, pathItem, operation map[
 		if err != nil {
 			return "", "", fmt.Errorf("%s/parameters/%s: encode schema: %w", path, parameter.Name, err)
 		}
-		wireSchema, err := wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
+		wireSchema, err := wire.wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
 		if err != nil {
 			return "", "", fmt.Errorf("%s/parameters/%s: encode wire schema: %w", path, parameter.Name, err)
 		}
@@ -910,9 +923,23 @@ func emitInboundSecuritySchemes(output *bytes.Buffer, document *ir.Document) err
 }
 
 func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, error) {
+	wire := newWireRenderContext(wirePropertiesConstructed)
+	for _, definition := range webhooks {
+		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
+	}
+	var wireComponents bytes.Buffer
+	if err := wire.emitWireComponents(&wireComponents, document, "inputWireSchemas", projectionInput); err != nil {
+		return nil, err
+	}
+	if err := wire.emitWireComponents(&wireComponents, document, "outputSchemas", projectionOutput); err != nil {
+		return nil, err
+	}
 	var output bytes.Buffer
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, matchInboundRoute, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
 	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
+	if wire.usesProperties {
+		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
+	}
 	if len(webhooks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
@@ -920,12 +947,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	if err := emitInboundSchemas(&output, document); err != nil {
 		return nil, err
 	}
-	if err := emitWireComponents(&output, document, "inputWireSchemas", projectionInput); err != nil {
-		return nil, err
-	}
-	if err := emitWireComponents(&output, document, "outputSchemas", projectionOutput); err != nil {
-		return nil, err
-	}
+	output.Write(wireComponents.Bytes())
 	if err := emitInboundSecuritySchemes(&output, document); err != nil {
 		return nil, err
 	}

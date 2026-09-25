@@ -2,6 +2,9 @@ import { isRecord } from "./objects.js";
 import type { OperationDefinition } from "./operation.js";
 import type { OperationStream, RawResponse, RequestOptions } from "./request.js";
 
+/** Shares inline descriptor construction through the existing operation import edge. */
+export { wireProperties as createWireProperties } from "./wire-properties.js";
+
 /** Low-level request executor used by generated operation bindings. */
 export interface RequestFunction {
   /**

@@ -63,16 +63,17 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 			return nil, fmt.Errorf("component %s projections: %w", schema.name, err)
 		}
 	}
+	wire := newWireRenderContext(wirePropertiesLiteral)
 	inputDescriptor := ""
 	if schema.inputWire {
-		inputDescriptor, err = wireSchemaDescriptorForDocument(document, value, projectionInput)
+		inputDescriptor, err = wire.wireSchemaDescriptorForDocument(document, value, projectionInput)
 		if err != nil {
 			return nil, fmt.Errorf("component %s input wire schema: %w", schema.name, err)
 		}
 	}
 	outputDescriptor := ""
 	if schema.outputWire {
-		outputDescriptor, err = wireSchemaDescriptorForDocument(document, value, projectionOutput)
+		outputDescriptor, err = wire.wireSchemaDescriptorForDocument(document, value, projectionOutput)
 		if err != nil {
 			return nil, fmt.Errorf("component %s output wire schema: %w", schema.name, err)
 		}
@@ -80,7 +81,11 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 
 	var output bytes.Buffer
 	if schema.inputWire || schema.outputWire {
-		output.WriteString("import type { WireSchema } from \"../runtime/codecs.js\"\n")
+		imports := "WireSchema"
+		if wire.usesProperties {
+			imports += ", WireProperty"
+		}
+		fmt.Fprintf(&output, "import type { %s } from \"../runtime/codecs.js\"\n", imports)
 	}
 	for _, declaration := range projections.imports {
 		output.WriteString(declaration)

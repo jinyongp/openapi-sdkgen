@@ -115,11 +115,11 @@ func TestOperationWireBodiesResolveReusableComponents(t *testing.T) {
 		"requestBody": map[string]any{"$ref": "#/components/requestBodies/Widget"},
 		"responses":   map[string]any{"200": map[string]any{"$ref": "#/components/responses/Widget"}},
 	}}
-	requestBodies, hasRequestBodies, err := operationRequestWireBodies(document, operation)
+	requestBodies, hasRequestBodies, err := newWireRenderContext(wirePropertiesLiteral).operationRequestWireBodies(document, operation)
 	if err != nil || !hasRequestBodies || !strings.Contains(requestBodies, `contentType: "application/json"`) || !strings.Contains(requestBodies, `"wire_name"`) {
 		t.Fatalf("request bodies = %q, %t, %v", requestBodies, hasRequestBodies, err)
 	}
-	responseBodies, hasResponseBodies, err := operationResponseWireBodies(document, operation)
+	responseBodies, hasResponseBodies, err := newWireRenderContext(wirePropertiesLiteral).operationResponseWireBodies(document, operation)
 	if err != nil || !hasResponseBodies || !strings.Contains(responseBodies, `status: "200"`) || !strings.Contains(responseBodies, `"wire_name"`) {
 		t.Fatalf("response bodies = %q, %t, %v", responseBodies, hasResponseBodies, err)
 	}

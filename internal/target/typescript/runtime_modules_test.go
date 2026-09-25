@@ -52,6 +52,7 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 		"internal/runtime/security.ts",
 		"internal/runtime/streaming.ts",
 		"internal/runtime/transport.ts",
+		"internal/runtime/wire-properties.ts",
 	}
 	if paths := sortedRuntimePaths(first); strings.Join(paths, "\n") != strings.Join(expected, "\n") {
 		t.Fatalf("runtime artifact paths = %v, want %v", paths, expected)
