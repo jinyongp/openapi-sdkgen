@@ -86,6 +86,10 @@ func compileInput(source inputSource, project bool, options CompileOptions) (*ir
 
 func compileInputValue(source inputSource, value any, project bool, options CompileOptions) (*ir.Document, error) {
 	data := source.data
+	sourceMetadata, err := encodeSourceMetadata(value)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, err)
+	}
 	if findings := reservedExtensionDiagnosticsValue(value, source.display); len(findings) != 0 {
 		location := diagnostic.NewSourceRegistry([]string{findings[0].Location.Source}).Display(findings[0].Location.Source)
 		return nil, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", findings[0].Message, location, findings[0].Location.Pointer))
@@ -157,6 +161,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 		if err != nil {
 			return nil, err
 		}
+		attachSourceMetadata(document, sourceMetadata)
 		attachDocumentProvenanceValue(document, source, document.Raw, nil, options.sourceCache)
 		if lock != nil && options.UpdateRefLock {
 			if err := writeReferenceLock(lockPath, lock); err != nil {
@@ -213,6 +218,7 @@ func compileInputValue(source inputSource, value any, project bool, options Comp
 	if remoteResolver != nil {
 		remoteSources = remoteResolver.sourceSnapshot()
 	}
+	attachSourceMetadata(document, sourceMetadata)
 	attachDocumentProvenanceValue(document, source, value, remoteSources, options.sourceCache)
 	if lock != nil && options.UpdateRefLock {
 		if err := writeReferenceLock(lockPath, lock); err != nil {
@@ -541,7 +547,14 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", err))
 	}
+	sourceMetadata, err := encodeSourceMetadata(raw)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, err)
+	}
 	model, err := compileValue(raw, source, true, CompileOptions{}, nil)
+	if err == nil {
+		attachSourceMetadata(model, sourceMetadata)
+	}
 	if err == nil && source {
 		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, model.Raw, nil, nil)
 	}

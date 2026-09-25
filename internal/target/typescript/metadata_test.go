@@ -84,3 +84,58 @@ func TestEmitMetadataPreservesDocumentationExamplesAndExtensions(t *testing.T) {
 		t.Fatalf("metadata must export one object:\n%s", source)
 	}
 }
+
+func TestEmitMetadataPrefersDecodedEntrySourceAndPreservesPrototypeSensitiveKeys(t *testing.T) {
+	document := &ir.Document{
+		OpenAPIVersion:     "3.1.2",
+		OpenAPIVersionLine: "3.1",
+		Raw: map[string]any{
+			"openapi": "3.1.2",
+			"info":    map[string]any{"title": "Effective", "version": "1"},
+			"components": map[string]any{
+				"schemas": map[string]any{"Bundled": map[string]any{"type": "string"}},
+			},
+		},
+		SourceMetadataJSON: []byte(`{"openapi":"3.1.2","info":{"title":"Source","version":"1","x-prototype":{"__proto__":"safe","constructor":"data"}},"paths":{"/thing":{"get":{"responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"./schema.yaml#/Thing"}}}}}}}}}`),
+	}
+	source, err := emitMetadata(document, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rendered := string(source)
+	for _, expected := range []string{
+		`["title", "Source"]`,
+		`["$ref", "./schema.yaml#/Thing"]`,
+		`["__proto__", "safe"]`,
+		`["constructor", "data"]`,
+		`Object.fromEntries`,
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("source metadata missing %q:\n%s", expected, rendered)
+		}
+	}
+	for _, unexpected := range []string{`["title", "Effective"]`, `["Bundled"`} {
+		if strings.Contains(rendered, unexpected) {
+			t.Fatalf("effective metadata leaked %q:\n%s", unexpected, rendered)
+		}
+	}
+}
+
+func TestEmitMetadataFallsBackToRawForSyntheticDocuments(t *testing.T) {
+	document := &ir.Document{
+		OpenAPIVersion:     "3.2.0",
+		OpenAPIVersionLine: "3.2",
+		Raw: map[string]any{
+			"openapi": "3.2.0",
+			"info":    map[string]any{"title": "Synthetic", "version": "1"},
+			"paths":   map[string]any{},
+		},
+	}
+	source, err := emitMetadata(document, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(source), `["title", "Synthetic"]`) {
+		t.Fatalf("synthetic metadata did not fall back to Raw:\n%s", source)
+	}
+}

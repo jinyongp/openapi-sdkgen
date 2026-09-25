@@ -42,6 +42,19 @@ func TestCompileInputResultMarksOnlySelfContainedLocalInputReusable(t *testing.T
 	}
 }
 
+func TestCompileResultCapturesDecodedEntrySourceMetadata(t *testing.T) {
+	result, err := CompileResult([]byte(`{"openapi":"3.1.2","info":{"title":"Structured","version":"1"},"paths":{}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || diagnostic.HasErrors(result.Diagnostics) {
+		t.Fatalf("result = %#v", result)
+	}
+	if metadata := string(result.Document.SourceMetadataJSON); !strings.Contains(metadata, `"title":"Structured"`) {
+		t.Fatalf("source metadata = %s", metadata)
+	}
+}
+
 func TestCompileResultSeparatesExpectedDiagnosticsFromInternalErrors(t *testing.T) {
 	result, err := CompileResult([]byte(`{"openapi":"3.1.0","info":{"title":"Broken","version":"1"},"paths":[]}`))
 	if err != nil {

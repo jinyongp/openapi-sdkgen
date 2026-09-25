@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -12,7 +13,17 @@ import (
 // request's transport semantics. Executable features continue to use generated
 // client code or a feature-path diagnostic.
 func emitMetadata(document *ir.Document, typescript bool) ([]byte, error) {
-	raw, err := runtimeJSONExpression(document.Raw)
+	value := any(document.Raw)
+	if len(document.SourceMetadataJSON) != 0 {
+		decoder := json.NewDecoder(bytes.NewReader(document.SourceMetadataJSON))
+		decoder.UseNumber()
+		var source any
+		if err := decoder.Decode(&source); err != nil {
+			return nil, fmt.Errorf("decode OpenAPI source metadata: %w", err)
+		}
+		value = source
+	}
+	raw, err := runtimeJSONExpression(value)
 	if err != nil {
 		return nil, fmt.Errorf("encode OpenAPI metadata: %w", err)
 	}

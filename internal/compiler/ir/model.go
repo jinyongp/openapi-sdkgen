@@ -15,6 +15,12 @@ type Document struct {
 	// for JSON Schema reference resolution.
 	Schemas map[string]Schema
 	Raw     map[string]any
+	// SourceMetadataJSON is the deterministic decoded entry-source document used
+	// by generated metadata. It is captured before reference absolutization,
+	// bundling, schema-extension lowering, or compatibility normalization. A
+	// synthetic manually-constructed Document may leave it empty and fall back
+	// to Raw at emission time.
+	SourceMetadataJSON []byte
 	// Provenance contains explicit caller overrides. Production compilation
 	// keeps this map empty and resolves source locations through ProvenanceIndex.
 	Provenance map[string]Provenance

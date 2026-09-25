@@ -55,6 +55,9 @@ paths: {}
 			if document.OpenAPIVersion != "3.2.0" {
 				t.Fatalf("version = %q", document.OpenAPIVersion)
 			}
+			if source := string(document.SourceMetadataJSON); !strings.Contains(source, `"title":"Source inputs"`) || !strings.Contains(source, `"paths":{}`) {
+				t.Fatalf("source metadata = %s", source)
+			}
 			document.Provenance = nil
 			document.ProvenanceIndex = nil
 			if expected == nil {
@@ -65,6 +68,23 @@ paths: {}
 				t.Fatal("equivalent input sources produced different compiler documents")
 			}
 		})
+	}
+}
+
+func TestCompileCapturesDecodedEntrySourceMetadata(t *testing.T) {
+	document, err := Compile([]byte(`{
+	  "openapi": "3.1.2",
+	  "info": {"title": "In memory", "version": "1", "x-prototype": {"__proto__": "safe"}},
+	  "paths": {}
+	}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	metadata := string(document.SourceMetadataJSON)
+	for _, expected := range []string{`"title":"In memory"`, `"__proto__":"safe"`} {
+		if !strings.Contains(metadata, expected) {
+			t.Fatalf("source metadata missing %q: %s", expected, metadata)
+		}
 	}
 }
 
@@ -116,6 +136,9 @@ paths:
 	if err != nil || len(compiled.Operations) != 1 {
 		t.Fatalf("file URL compilation = %#v, %v", compiled, err)
 	}
+	if metadata := string(compiled.SourceMetadataJSON); !strings.Contains(metadata, `"schemas.yaml#/Thing"`) || strings.Contains(metadata, `"components"`) {
+		t.Fatalf("file URL source metadata was normalized or bundled: %s", metadata)
+	}
 	if _, err := CompileInputWithOptions("-", CompileOptions{InputReader: strings.NewReader(string(input))}); err == nil || !strings.Contains(err.Error(), "--input-base") {
 		t.Fatalf("stdin relative reference error = %v", err)
 	}
@@ -147,6 +170,9 @@ paths:
 	})
 	if err != nil || len(compiled.Operations) != 1 {
 		t.Fatalf("URL base compilation = %#v, %v", compiled, err)
+	}
+	if metadata := string(compiled.SourceMetadataJSON); !strings.Contains(metadata, `"schemas.yaml#/Thing"`) || strings.Contains(metadata, server.URL+"/schemas.yaml") {
+		t.Fatalf("remote root source metadata was absolutized: %s", metadata)
 	}
 	compiled, err = CompileInputWithOptions(server.URL+"/openapi.yaml", CompileOptions{
 		RefLockPath: filepath.Join(directory, "remote.lock"),
