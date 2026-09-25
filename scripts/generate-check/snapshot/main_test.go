@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+func TestDecodeSnapshotRootAcceptsJSONSurrogatePairs(t *testing.T) {
+	root, err := decodeSnapshotRoot([]byte(`{"openapi":"3.0.1","info":{"title":"JSON","version":"1"},"paths":{},"x-example":"\ud83d\udc4d"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root["x-example"] != "👍" {
+		t.Fatalf("decoded surrogate pair = %#v", root["x-example"])
+	}
+}
+
 func TestCountOperationsIncludesAdditionalAndReferencedPathItems(t *testing.T) {
 	root := map[string]any{
 		"paths": map[string]any{

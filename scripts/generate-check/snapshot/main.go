@@ -107,9 +107,20 @@ func run(args []string, stdin io.Reader, warnings io.Writer) error {
 	return nil
 }
 
-func describeSnapshot(snapshot compiler.InputSnapshot) (snapshotReport, error) {
+func decodeSnapshotRoot(data []byte) (map[string]any, error) {
 	var root map[string]any
-	if err := yaml.Unmarshal(snapshot.Data, &root); err != nil {
+	if err := json.Unmarshal(data, &root); err == nil && root != nil {
+		return root, nil
+	}
+	if err := yaml.Unmarshal(data, &root); err != nil {
+		return nil, err
+	}
+	return root, nil
+}
+
+func describeSnapshot(snapshot compiler.InputSnapshot) (snapshotReport, error) {
+	root, err := decodeSnapshotRoot(snapshot.Data)
+	if err != nil {
 		return snapshotReport{}, fmt.Errorf("parse snapshot metadata: %w", err)
 	}
 	info, _ := root["info"].(map[string]any)
