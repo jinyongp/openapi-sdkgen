@@ -980,8 +980,10 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	output.WriteString("export function createWebhookRouter(handlers: WebhookHandlers, options: WebhookRouterOptions): WebhookRouter {\n")
 	output.WriteString("  const routes = options.routes\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs = normalizeInboundStreamCodecs(options.streamCodecs)\n  const registrations = new Set<string>()\n")
 	for _, webhook := range webhooks {
-		fmt.Fprintf(&output, "  if (handlers[%s]?.[%s] !== undefined) {\n", quoteTS(webhook.name), quoteTS(webhook.method))
-		fmt.Fprintf(&output, "    const path = routes[%s]\n", quoteTS(webhook.name))
+		symbol := webhookDefinitionSymbol(webhook)
+		fmt.Fprintf(&output, "  const %sHandlers = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", symbol, quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "  if (%sHandlers != null && Object.hasOwn(%sHandlers, %s) && %sHandlers[%s] !== undefined) {\n", symbol, symbol, quoteTS(webhook.method), symbol, quoteTS(webhook.method))
+		fmt.Fprintf(&output, "    const path = Object.hasOwn(routes, %s) ? routes[%s] : undefined\n", quoteTS(webhook.name), quoteTS(webhook.name))
 		fmt.Fprintf(&output, "    if (typeof path !== \"string\" || !path.startsWith(\"/\") || path.includes(\"?\") || path.includes(\"#\")) throw new TypeError(%s)\n", quoteTS("Webhook route for "+webhook.name+" must be an absolute path without query or fragment"))
 		fmt.Fprintf(&output, "    const key = %s + \" \" + path\n", quoteTS(webhook.method))
 		fmt.Fprintf(&output, "    if (registrations.has(key)) throw new TypeError(%s + key)\n", quoteTS("Duplicate generated Webhook route: "))
@@ -989,8 +991,11 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	}
 	output.WriteString("  return {\n    async fetch(request: Request): Promise<Response> {\n      const pathname = new URL(request.url).pathname\n")
 	for _, webhook := range webhooks {
-		fmt.Fprintf(&output, "      const %sPathParameters = matchInboundRoute(routes[%s], pathname)\n      if (handlers[%s]?.[%s] !== undefined && request.method === %s && %sPathParameters !== undefined) {\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.name), quoteTS(webhook.name), quoteTS(webhook.method), quoteTS(webhook.method), webhookDefinitionSymbol(webhook))
-		fmt.Fprintf(&output, "        const handler = handlers[%s]?.[%s]\n", quoteTS(webhook.name), quoteTS(webhook.method))
+		handlersSymbol := webhookDefinitionSymbol(webhook) + "Handlers"
+		fmt.Fprintf(&output, "      const %sPathParameters = matchInboundRoute(Object.hasOwn(routes, %s) ? routes[%s] : undefined, pathname)\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "      const %s = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", handlersSymbol, quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "      if (%s != null && Object.hasOwn(%s, %s) && %s[%s] !== undefined && request.method === %s && %sPathParameters !== undefined) {\n", handlersSymbol, handlersSymbol, quoteTS(webhook.method), handlersSymbol, quoteTS(webhook.method), quoteTS(webhook.method), webhookDefinitionSymbol(webhook))
+		fmt.Fprintf(&output, "        const handler = %s[%s]\n", handlersSymbol, quoteTS(webhook.method))
 		output.WriteString("        if (handler === undefined) return new Response(\"Not Found\", { status: 404 })\n")
 		symbol := webhookDefinitionSymbol(webhook)
 		fmt.Fprintf(&output, "        let params: %s\n        try { params = await decodeInboundParameters(request, %s.parameters, inputSchemas, inputWireSchemas, inboundCodecs, %sPathParameters) as %s } catch (error) { if (error instanceof InboundRequestError) return error.response; throw error }\n        const context = { request, operationID: %s.operationID, method: %s.method, path: pathname, params, security: %s.security, securityCandidates: collectInboundSecurityCandidates(request, %s.security, securitySchemes) } as Omit<%sContext, \"body\">\n", webhook.paramsType, symbol, symbol, webhook.paramsType, symbol, symbol, symbol, symbol, webhook.typeName)
