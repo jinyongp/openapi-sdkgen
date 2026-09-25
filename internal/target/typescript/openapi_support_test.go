@@ -158,20 +158,29 @@ func TestSourceArtifactsProjectEnvironmentControlledHeadersAsOptionalClientInput
 					t.Fatalf("client contains obsolete request-header policy %q:\n%s", unexpected, client)
 				}
 			}
-			managedOnlyName := operationTypeName(operationRouteKey(findOperation(document, "managedOnly")))
-			oauthName := operationTypeName(operationRouteKey(findOperation(document, "oauth")))
-			overrideName := operationTypeName(operationRouteKey(findOperation(document, "override")))
-			for _, expected := range []string{
-				`readonly headerParams?: ` + managedOnlyName + `HeaderInput | undefined`,
-				`(input?: RouteInput<"GET /managed-only">, options?: RouteOptions<"GET /managed-only">)`,
-				`readonly raw: OperationRawCall<"GET /managed-only">`,
-				`readonly headerParams?: ` + oauthName + `HeaderInput | undefined`,
-				`readonly body: ` + oauthName + `BodyInput`,
-				`(input: RouteInput<"POST /oauth">, options?: RouteOptions<"POST /oauth">)`,
-				`readonly headerParams: ` + overrideName + `HeaderInput`,
+			for _, contract := range []struct {
+				route    string
+				expected []string
+			}{
+				{"GET /managed-only", []string{
+					"readonly headerParams?: __sdkgen_HeaderInput | undefined",
+					`(input?: RouteInput<"GET /managed-only">, options?: RouteOptions<"GET /managed-only">)`,
+					`readonly raw: OperationRawCall<"GET /managed-only">`,
+				}},
+				{"POST /oauth", []string{
+					"readonly headerParams?: __sdkgen_HeaderInput | undefined",
+					"readonly body: __sdkgen_BodyInput",
+					`(input: RouteInput<"POST /oauth">, options?: RouteOptions<"POST /oauth">)`,
+				}},
+				{operationRouteKey(findOperation(document, "override")), []string{
+					"readonly headerParams: __sdkgen_HeaderInput",
+				}},
 			} {
-				if !strings.Contains(client, expected) {
-					t.Fatalf("client missing optional input contract %q:\n%s", expected, client)
+				source := operationArtifactSource(t, artifacts, contract.route)
+				for _, expected := range contract.expected {
+					if !strings.Contains(source, expected) {
+						t.Fatalf("operation %s missing contract %q:\n%s", contract.route, expected, source)
+					}
 				}
 			}
 			if metadata := string(artifactByPath(t, artifacts, "metadata.ts")); !strings.Contains(metadata, `"Origin"`) {

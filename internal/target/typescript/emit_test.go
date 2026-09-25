@@ -228,8 +228,8 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if !strings.Contains(clientSource, "POST /products") {
 		t.Fatalf("operation JSDoc missing:\n%s", clientSource)
 	}
-	sortOnlyName := operationTypeName("GET /sorted")
-	if !strings.Contains(clientSource, "type "+sortOnlyName+"QueryInput =") {
+	sortedSource := string(artifacts["internal/operations/sorted/get.ts"])
+	if !strings.Contains(sortedSource, "type __sdkgen_QueryInput =") {
 		t.Fatalf("sort-only operation query input is missing:\n%s", clientSource)
 	}
 	if !strings.Contains(clientSource, "readonly paginate:") || !strings.Contains(clientSource, `AsyncIterable<__sdkgen_productOutput_`) || !strings.Contains(clientSource, `createPaginator<`) {

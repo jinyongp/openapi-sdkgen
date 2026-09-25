@@ -961,9 +961,9 @@ func isTerminalAction(operation ir.Operation, parts []string, index int) bool {
 	return strings.Contains(operation.OperationID, strings.ToUpper(last[:1])+last[1:]) || !strings.HasPrefix(strings.ToLower(operation.OperationID), "create")
 }
 
-func operationTypeName(operationID string) string {
-	return stablePrivateIdentifier("operation-type", operationID)
-}
+// Every operation owns one module. Its private semantic type family therefore
+// needs no route-derived identity in the lexical spelling.
+const operationLocalTypePrefix = "__sdkgen_"
 
 func operationAuth(operation ir.Operation) string {
 	if operation.Parameters != nil {

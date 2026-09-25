@@ -65,8 +65,32 @@ byte-identical to B-prime. Their runtime contract comparisons also passed.
 The one-pair comparison is not a performance measurement; its raw review flag is
 retained rather than relabelled as a performance pass.
 
+## C3 — fixed operation-local type names
+
+C2 was committed as `cf006a2`. C3 now renders each operation's private type family
+under the fixed `__sdkgen_` prefix, without a route payload or redundant `op`
+marker. There is no helper accepting a route while ignoring it. Existing module
+exports and the semantic suffix family remain unchanged. Scope-sensitive tests
+select the actual owning operation module rather than concatenated SDK text.
+
+Full `just agent ci` passed with Go coverage 83.0%. All eleven fixtures/corpora
+passed unbundled runtime contract comparisons, whole-source strict typechecking,
+ordinary source consumers, declaration emission and downstream declaration
+consumers. Every minified client bundle was byte-identical to B-prime.
+
+| Corpus | B-prime managed TS bytes | C3 TS bytes | Reduction | B-prime declaration bytes | C3 declaration bytes |
+| ------ | -----------------------: | ----------: | --------: | ------------------------: | -------------------: |
+| GitHub |               42,752,679 |  37,170,840 |    13.06% |                25,148,896 |           19,567,057 |
+| Stripe |               32,083,911 |  29,544,374 |     7.92% |                18,963,049 |           16,423,512 |
+
+Evidence: `evidence/c3-local-types.json` and its referenced source/artifact reports.
+One-pair timing observations are not speed acceptance; their raw review status is
+retained. The source reduction is from production fixed-name emission, not an AST
+rewrite experiment. No property-construction optimization is included in these
+measurements, and endpoint-level tree shaking is unchanged.
+
 ## Remaining implementation
 
-C3 fixed operation type names, C4 scoped property construction, C5/C6 scoped
-aliases and C7 integrated validation remain pending. Production changes are
-implemented and tested by work unit, not installed from archived prototype files.
+C4 scoped property construction, C5/C6 scoped aliases and C7 integrated validation
+remain pending. Production changes are implemented and tested by work unit, not
+installed from archived prototype files. No final release approval is implied.

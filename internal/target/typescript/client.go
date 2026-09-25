@@ -13,7 +13,7 @@ import (
 )
 
 func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation ir.Operation, item ManifestOperation) error {
-	operationName := operationTypeName(operationRouteKey(operation))
+	operationName := operationLocalTypePrefix
 	if err := emitOperationOptions(output, operationName, operation, item); err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 }
 
 func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operation ir.Operation, item ManifestOperation) error {
-	operationName := operationTypeName(operationRouteKey(operation))
+	operationName := operationLocalTypePrefix
 	routeKey := operationRouteKey(operation)
 	quotedRoute := quoteTS(routeKey)
 	inputType := "never"
@@ -983,13 +983,6 @@ func findOperation(document *ir.Document, identity string) ir.Operation {
 		}
 	}
 	return ir.Operation{RouteKey: identity}
-}
-
-func operationInputAlias(operation ManifestOperation) string {
-	if len(operation.InputSections) == 0 {
-		return "never"
-	}
-	return operationTypeName(manifestRouteKey(operation)) + "Input"
 }
 
 func paginationFunctionType(operation ManifestOperation, itemType string, optionsRequired bool) string {

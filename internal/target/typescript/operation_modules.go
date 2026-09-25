@@ -89,7 +89,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		return nil, err
 	}
 
-	operationName := operationTypeName(module.routeKey)
+	operationName := operationLocalTypePrefix
 	inputType := "never"
 	if len(item.InputSections) > 0 {
 		inputType = operationName + "Input"

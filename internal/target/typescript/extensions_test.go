@@ -300,8 +300,8 @@ func TestEnvelopeDataProjectsOrdinaryOutputButKeepsRawBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := clientSemanticSource(artifacts)
-	if !strings.Contains(client, `type `+operationTypeName("GET /value")+`Output = string | void`) {
+	client := operationArtifactSource(t, artifacts, "GET /value")
+	if !strings.Contains(client, `type __sdkgen_Output = string | void`) {
 		t.Fatalf("projected output missing:\n%s", client)
 	}
 	if !strings.Contains(client, `readonly "meta":`) {

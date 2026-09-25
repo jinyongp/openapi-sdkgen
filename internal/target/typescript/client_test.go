@@ -33,9 +33,9 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := clientSemanticSource(artifacts)
-	interfaceBody := func(name string) string {
+	interfaceBody := func(route, name string) string {
 		t.Helper()
+		client := operationArtifactSource(t, artifacts, route)
 		start := strings.Index(client, "interface "+name)
 		if start < 0 {
 			t.Fatalf("missing interface %s:\n%s", name, client)
@@ -47,8 +47,8 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 		return client[start : start+end]
 	}
 
-	optionalName := operationTypeName("GET /optional")
-	optionalCall := interfaceBody(optionalName + "Call")
+	optionalName := operationLocalTypePrefix
+	optionalCall := interfaceBody("GET /optional", optionalName+"Call")
 	for _, expected := range []string{
 		`(options?: RouteOptions<"GET /optional">)`,
 		`(input?: RouteInput<"GET /optional">, options?: RouteOptions<"GET /optional">)`,
@@ -58,7 +58,7 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 			t.Fatalf("optional call missing %q:\n%s", expected, optionalCall)
 		}
 	}
-	optionalRawCall := interfaceBody(optionalName + "RawCall")
+	optionalRawCall := interfaceBody("GET /optional", optionalName+"RawCall")
 	for _, expected := range []string{
 		`(options?: RouteOptions<"GET /optional">)`,
 		`(input?: RouteInput<"GET /optional">, options?: RouteOptions<"GET /optional">)`,
@@ -68,30 +68,30 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 		}
 	}
 
-	requiredName := operationTypeName("POST /required")
-	if requiredCall := interfaceBody(requiredName + "Call"); strings.Contains(requiredCall, `(options?: RouteOptions<"POST /required">)`) {
+	requiredName := operationLocalTypePrefix
+	if requiredCall := interfaceBody("POST /required", requiredName+"Call"); strings.Contains(requiredCall, `(options?: RouteOptions<"POST /required">)`) {
 		t.Fatalf("required call gained options-only overload:\n%s", requiredCall)
 	}
-	if requiredRawCall := interfaceBody(requiredName + "RawCall"); strings.Contains(requiredRawCall, `(options?: RouteOptions<"POST /required">)`) {
+	if requiredRawCall := interfaceBody("POST /required", requiredName+"RawCall"); strings.Contains(requiredRawCall, `(options?: RouteOptions<"POST /required">)`) {
 		t.Fatalf("required raw call gained options-only overload:\n%s", requiredRawCall)
 	}
 
-	healthName := operationTypeName("GET /health")
-	healthCall := interfaceBody(healthName + "Call")
-	healthRawCall := interfaceBody(healthName + "RawCall")
+	healthName := operationLocalTypePrefix
+	healthCall := interfaceBody("GET /health", healthName+"Call")
+	healthRawCall := interfaceBody("GET /health", healthName+"RawCall")
 	if strings.Count(healthCall, `
   (options?: RouteOptions<"GET /health">)`) != 1 || strings.Count(healthRawCall, `
   (options?: RouteOptions<"GET /health">)`) != 1 {
 		t.Fatalf("no-input call should retain one options-only signature:\n%s", healthCall)
 	}
 
-	deleteName := operationTypeName("DELETE /accounts/{accountID}/phone")
-	deleteCall := interfaceBody(deleteName + "Call")
+	deleteName := operationLocalTypePrefix
+	deleteCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"Call")
 	if strings.Contains(deleteCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) {
 		t.Fatalf("full path call gained options-only overload:\n%s", deleteCall)
 	}
-	deleteResourceCall := interfaceBody(deleteName + "ResourceCall")
-	deleteResourceRawCall := interfaceBody(deleteName + "ResourceRawCall")
+	deleteResourceCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceCall")
+	deleteResourceRawCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceRawCall")
 	if !strings.Contains(deleteResourceCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) || !strings.Contains(deleteResourceRawCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) {
 		t.Fatalf("optional resource call missing options-only overload:\n%s", deleteResourceCall)
 	}
