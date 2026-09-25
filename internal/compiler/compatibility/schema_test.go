@@ -22,6 +22,12 @@ func TestConsumerPolicyNormalizesProvedOpenAPI30SchemaForms(t *testing.T) {
 			rules: []string{RuleSchemaBoolean30},
 		},
 		{
+			name:  "boolean false",
+			input: false,
+			want:  map[string]any{"not": map[string]any{}},
+			rules: []string{RuleSchemaBoolean30},
+		},
+		{
 			name:  "const",
 			input: map[string]any{"type": "string", "const": "ready"},
 			want:  map[string]any{"type": "string", "enum": []any{"ready"}},
@@ -86,7 +92,6 @@ func TestConsumerPolicyRejectsUnprovedOpenAPI30SchemaForms(t *testing.T) {
 		value any
 		rule  string
 	}{
-		{name: "boolean false", value: false, rule: RuleSchemaBoolean30},
 		{name: "general type array", value: map[string]any{"type": []any{"string", "integer"}}, rule: RuleSchemaNullableTypes30},
 		{name: "overlapping numeric array", value: map[string]any{"type": []any{"number", "integer", "null"}}, rule: RuleSchemaNullableTypes30},
 		{name: "const with enum", value: map[string]any{"const": "a", "enum": []any{"a", "b"}}, rule: RuleSchemaConst30},

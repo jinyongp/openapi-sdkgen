@@ -14,6 +14,7 @@ func TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata
   "paths":{},
   "components":{"schemas":{
     "Allowed":true,
+    "Denied":false,
     "State":{"type":"string","const":"ready"},
     "Optional":{"type":["string","null"],"minLength":2},
     "Positive":{"type":"number","exclusiveMinimum":2.5},
@@ -27,7 +28,7 @@ func TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata
 	if result.Document == nil {
 		t.Fatalf("result = %#v", result)
 	}
-	if len(result.Diagnostics) != 6 {
+	if len(result.Diagnostics) != 7 {
 		t.Fatalf("diagnostics = %#v", result.Diagnostics)
 	}
 	for _, value := range result.Diagnostics {
@@ -39,6 +40,11 @@ func TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata
 	schemas := result.Document.ComponentSchemas
 	if got := schemas["Allowed"]; len(got) != 0 {
 		t.Fatalf("Allowed = %#v", got)
+	}
+	if got := schemas["Denied"]; len(got) != 1 {
+		t.Fatalf("Denied = %#v", got)
+	} else if negated, ok := got["not"].(map[string]any); !ok || len(negated) != 0 {
+		t.Fatalf("Denied not = %#v", got["not"])
 	}
 	if got := schemas["State"]; got["const"] != nil || len(got["enum"].([]any)) != 1 || got["enum"].([]any)[0] != "ready" {
 		t.Fatalf("State = %#v", got)
@@ -55,6 +61,7 @@ func TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata
 	metadata := string(result.Document.SourceMetadataJSON)
 	for _, source := range []string{
 		`"Allowed":true`,
+		`"Denied":false`,
 		`"const":"ready"`,
 		`"type":["string","null"]`,
 		`"exclusiveMinimum":2.5`,
@@ -73,7 +80,6 @@ func TestCompatibilityRejectsUnprovedOpenAPI30SchemasPrecisely(t *testing.T) {
 		rule    string
 		pointer string
 	}{
-		{name: "boolean false", schema: "false", rule: "COMP-SCHEMA-001", pointer: "#/components/schemas/Value"},
 		{name: "general type array", schema: `{"type":["string","integer"]}`, rule: "COMP-SCHEMA-003", pointer: "#/components/schemas/Value"},
 		{name: "exclusive bound algebra", schema: `{"minimum":1,"exclusiveMinimum":2}`, rule: "COMP-SCHEMA-004", pointer: "#/components/schemas/Value"},
 		{name: "dialect keyword", schema: `{"$schema":"https://json-schema.org/draft/2020-12/schema"}`, rule: "COMP-SCHEMA-005", pointer: "#/components/schemas/Value"},

@@ -334,6 +334,9 @@ func schemaTypeForScope(document *ir.Document, value any, direction projection, 
 	if !ok {
 		return "unknown", nil
 	}
+	if negated, ok := schema["not"].(map[string]any); ok && len(negated) == 0 {
+		return "never", nil
+	}
 	// OpenAPI 3.0 expresses nullability independently of `type`, unlike the
 	// JSON Schema type array used by OpenAPI 3.1 and 3.2.
 	if document.OpenAPIVersionLine != "3.1" && document.OpenAPIVersionLine != "3.2" && boolValue(schema, "nullable") {

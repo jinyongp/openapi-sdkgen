@@ -13,6 +13,7 @@ func TestOpenAPI30SchemaNormalizationsMatchEquivalentTargetSemantics(t *testing.
 		equivalent string
 	}{
 		{name: "boolean true", candidate: "true", equivalent: `{}`},
+		{name: "boolean false", candidate: "false", equivalent: `{"not":{}}`},
 		{name: "const", candidate: `{"type":"string","const":"ready"}`, equivalent: `{"type":"string","enum":["ready"]}`},
 		{name: "nullable type array", candidate: `{"type":["string","null"],"minLength":2}`, equivalent: `{"type":"string","nullable":true,"minLength":2}`},
 		{name: "numeric exclusive minimum", candidate: `{"type":"number","exclusiveMinimum":2.5}`, equivalent: `{"type":"number","minimum":2.5,"exclusiveMinimum":true}`},

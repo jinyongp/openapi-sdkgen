@@ -109,7 +109,7 @@ func applyOpenAPI30SchemaRule(context Context, value any) (Result, bool) {
 		if allowed {
 			return schemaCompatibilityResult(context, map[string]any{}, RuleSchemaBoolean30, ActionNormalize, "OpenAPI 3.0 boolean true schema is normalized to an empty Schema Object.", false), true
 		}
-		return schemaCompatibilityResult(context, value, RuleSchemaBoolean30, ActionReject, "OpenAPI 3.0 boolean false schema has no proved equivalent lowering.", true), true
+		return schemaCompatibilityResult(context, map[string]any{"not": map[string]any{}}, RuleSchemaBoolean30, ActionNormalize, "OpenAPI 3.0 boolean false schema is normalized to an equivalent negated empty Schema Object.", false), true
 	}
 	object, ok := value.(map[string]any)
 	if !ok {
