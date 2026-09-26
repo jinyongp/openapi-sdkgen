@@ -548,7 +548,7 @@ func applyRequestBodyRule(context Context, object map[string]any) (Result, bool)
 		DispositionIgnored,
 		"OpenAPI 3.0 request body is potentially meaningful on a method whose payload semantics are not portable.",
 		failure.ScopeOperation,
-		failure.EffectBlock,
+		failure.EffectOmitOperation,
 		true,
 	), true
 }

@@ -13,7 +13,8 @@ import (
 func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	document := plan.document
 	var result []diagnostic.Diagnostic
-	result = append(result, methodCapabilityDiagnostics(document, plan.ownership)...)
+	result = append(result, semanticOperationRestrictionDiagnostics(plan)...)
+	result = append(result, methodCapabilityDiagnostics(plan)...)
 	for _, feature := range unsupportedSchemasForTarget(document) {
 		result = append(result, unsupportedFeatureDiagnostic(
 			document,
@@ -68,7 +69,37 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	return diagnostic.Sort(result)
 }
 
-func methodCapabilityDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
+func semanticOperationRestrictionDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
+	if plan.omittedOperations == nil {
+		plan.omittedOperations = make(map[string]bool)
+	}
+	var result []diagnostic.Diagnostic
+	for _, restriction := range plan.document.SemanticRestrictions {
+		if restriction.Scope != failure.ScopeOperation || restriction.Effect != failure.EffectOmitOperation {
+			continue
+		}
+		operation, found := plan.ownership.operationAtLocation(restriction.Location)
+		if !found {
+			result = append(result, diagnostic.Diagnostic{
+				Severity: diagnostic.SeverityError,
+				Code:     "SDKGEN-E507",
+				Phase:    diagnostic.PhaseTarget,
+				Location: diagnostic.Location{Source: restriction.Location.Source, Pointer: restriction.Location.Pointer},
+				Target:   "typescript",
+				Scope:    failure.ScopeDocument,
+				Effect:   failure.EffectBlock,
+				Message:  "The TypeScript target cannot prove the owner of an operation-scoped semantic restriction.",
+				Hint:     "Keep this construct blocking until its operation ownership can be resolved safely.",
+			})
+			continue
+		}
+		plan.omittedOperations[operationRouteKey(operation)] = true
+	}
+	return result
+}
+
+func methodCapabilityDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
+	document := plan.document
 	var result []diagnostic.Diagnostic
 	for _, operation := range document.Operations {
 		method := strings.ToUpper(strings.TrimSpace(operation.Method))
@@ -78,28 +109,40 @@ func methodCapabilityDiagnostics(document *ir.Document, ownership *sourceOwnersh
 		}
 		switch method {
 		case "CONNECT", "TRACE", "TRACK":
-			result = append(result, sourceTargetDiagnostic(
+			plan.omittedOperations[operationRouteKey(operation)] = true
+			result = append(result, operationOmissionDiagnostic(
 				document,
-				ownership,
+				plan.ownership,
 				pointer,
-				"SDKGEN-E511",
+				operation,
 				fmt.Sprintf("The TypeScript Fetch target cannot issue %s requests.", method),
-				"Use a transport with explicit support for this method or change the operation method.",
+				"This operation is omitted for the TypeScript Fetch target.",
 			))
 			continue
 		}
 		if (method == "GET" || method == "HEAD") && requestBodyRequiresFetchPayload(operation.RequestBody) {
-			result = append(result, sourceTargetDiagnostic(
+			plan.omittedOperations[operationRouteKey(operation)] = true
+			result = append(result, operationOmissionDiagnostic(
 				document,
-				ownership,
+				plan.ownership,
 				pointer+"/requestBody",
-				"SDKGEN-E511",
+				operation,
 				fmt.Sprintf("The TypeScript Fetch target cannot send a request body with %s.", method),
-				"Remove the request body for this target or use a transport with explicit body support.",
+				"This operation is omitted for the TypeScript Fetch target.",
 			))
 		}
 	}
 	return result
+}
+
+func operationOmissionDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, pointer string, operation ir.Operation, message, hint string) diagnostic.Diagnostic {
+	value := sourceTargetDiagnostic(document, ownership, pointer, "SDKGEN-W511", message, hint)
+	value.Severity = diagnostic.SeverityWarning
+	value.Scope = failure.ScopeOperation
+	value.Effect = failure.EffectOmitOperation
+	value.Route = operationRouteKey(operation)
+	value.Operation = operation.OperationID
+	return value
 }
 
 func requestBodyRequiresFetchPayload(body *ir.RequestBody) bool {

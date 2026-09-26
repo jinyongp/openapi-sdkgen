@@ -16,6 +16,7 @@ type sourceRestrictionKey struct {
 
 type sourceOwnershipIndex struct {
 	operationsByPointer  map[string]ir.Operation
+	operationsBySource   map[sourceRestrictionKey]ir.Operation
 	operationsByID       map[string]ir.Operation
 	operationsByPath     map[string]ir.Operation
 	restrictionsByPoint  map[string][]ir.SemanticRestriction
@@ -25,6 +26,7 @@ type sourceOwnershipIndex struct {
 func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 	index := &sourceOwnershipIndex{
 		operationsByPointer:  make(map[string]ir.Operation, len(document.Operations)),
+		operationsBySource:   make(map[sourceRestrictionKey]ir.Operation, len(document.Operations)),
 		operationsByID:       make(map[string]ir.Operation, len(document.Operations)),
 		operationsByPath:     make(map[string]ir.Operation, len(document.Operations)),
 		restrictionsByPoint:  make(map[string][]ir.SemanticRestriction),
@@ -36,6 +38,12 @@ func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 			pointer = "#/paths/" + escapePointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
 		}
 		index.operationsByPointer[pointer] = operation
+		if provenance, found := document.LookupProvenance(pointer); found {
+			locations := append([]ir.SourceLocation{provenance.Primary}, provenance.Related...)
+			for _, location := range locations {
+				index.operationsBySource[sourceRestrictionKey{source: location.Source, pointer: location.Pointer}] = operation
+			}
+		}
 		if operation.OperationID != "" {
 			index.operationsByID[operation.OperationID] = operation
 		}
@@ -60,6 +68,25 @@ func (index *sourceOwnershipIndex) operationAt(pointer string) (ir.Operation, bo
 		if candidate == "#" {
 			break
 		}
+	}
+	return ir.Operation{}, false
+}
+
+func (index *sourceOwnershipIndex) operationAtLocation(location ir.SourceLocation) (ir.Operation, bool) {
+	if index == nil {
+		return ir.Operation{}, false
+	}
+	for candidate := location.Pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
+		key := sourceRestrictionKey{source: location.Source, pointer: candidate}
+		if operation, exists := index.operationsBySource[key]; exists {
+			return operation, true
+		}
+		if candidate == "#" {
+			break
+		}
+	}
+	if location.Source == "" {
+		return index.operationAt(location.Pointer)
 	}
 	return ir.Operation{}, false
 }

@@ -26,6 +26,29 @@ func TestSourceOwnershipIndexFindsNestedOperationByAncestorPointer(t *testing.T)
 	}
 }
 
+func TestSourceOwnershipIndexDoesNotGuessOperationAcrossSources(t *testing.T) {
+	pointer := "#/paths/~1items/get"
+	document := &ir.Document{
+		Operations: []ir.Operation{{
+			Pointer:     pointer,
+			OperationID: "listItems",
+			Method:      "GET",
+			Path:        "/items",
+		}},
+		Provenance: map[string]ir.Provenance{
+			pointer: {Primary: ir.SourceLocation{Source: "root.yaml", Pointer: pointer}},
+		},
+	}
+	index := newSourceOwnershipIndex(document)
+	if _, found := index.operationAtLocation(ir.SourceLocation{Source: "other.yaml", Pointer: pointer + "/requestBody"}); found {
+		t.Fatal("foreign source restriction acquired local operation ownership")
+	}
+	operation, found := index.operationAtLocation(ir.SourceLocation{Source: "root.yaml", Pointer: pointer + "/requestBody"})
+	if !found || operation.OperationID != "listItems" {
+		t.Fatalf("root source operation ownership = %#v, found=%v", operation, found)
+	}
+}
+
 func TestSourceOwnershipIndexKeepsRestrictionSourceIdentity(t *testing.T) {
 	pointer := "#/paths/~1items/get/responses/200/links/follow"
 	wanted := ir.SemanticRestriction{

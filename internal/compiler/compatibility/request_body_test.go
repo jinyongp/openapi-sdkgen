@@ -59,9 +59,9 @@ func TestConsumerPolicyClassifiesOAS30RequestBodiesByMethodAndImpact(t *testing.
 				Object:  openapiwalk.ObjectRequestBody,
 				Pointer: "#/paths/~1items/" + method + "/requestBody",
 			}, meaningful)
-			if result.Omit || !result.Reject || result.Scope != failure.ScopeOperation || result.Effect != failure.EffectBlock ||
+			if result.Omit || !result.Reject || result.Scope != failure.ScopeOperation || result.Effect != failure.EffectOmitOperation ||
 				len(result.Findings) != 1 || result.Findings[0].Action != ActionReject ||
-				result.Findings[0].Scope != failure.ScopeOperation || result.Findings[0].Effect != failure.EffectBlock {
+				result.Findings[0].Scope != failure.ScopeOperation || result.Findings[0].Effect != failure.EffectOmitOperation {
 				t.Fatalf("result = %#v", result)
 			}
 		})
@@ -74,9 +74,9 @@ func TestConsumerPolicyTreatsReferencedOAS30UnsafeBodyAsMeaningfulWithoutResolut
 		Object:  openapiwalk.ObjectRequestBody,
 		Pointer: "#/paths/~1items/get/requestBody",
 	}, map[string]any{"$ref": "#/components/requestBodies/Missing"})
-	if !result.Reject || result.Scope != failure.ScopeOperation || result.Effect != failure.EffectBlock ||
+	if !result.Reject || result.Scope != failure.ScopeOperation || result.Effect != failure.EffectOmitOperation ||
 		len(result.Findings) != 1 || result.Findings[0].Action != ActionReject ||
-		result.Findings[0].Scope != failure.ScopeOperation || result.Findings[0].Effect != failure.EffectBlock {
+		result.Findings[0].Scope != failure.ScopeOperation || result.Findings[0].Effect != failure.EffectOmitOperation {
 		t.Fatalf("result = %#v", result)
 	}
 }

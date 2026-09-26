@@ -8,10 +8,11 @@ import (
 
 	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/generator"
 )
 
-func TestPrepareRejectsGETAndHEADBodiesAsFetchTargetCapabilities(t *testing.T) {
+func TestPrepareOmitsGETAndHEADBodiesAsFetchTargetCapabilities(t *testing.T) {
 	for _, version := range []string{"3.1.1", "3.2.0"} {
 		for _, method := range []string{"get", "head"} {
 			t.Run(version+"-"+method, func(t *testing.T) {
@@ -31,7 +32,8 @@ func TestPrepareRejectsGETAndHEADBodiesAsFetchTargetCapabilities(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if len(values) != 1 || values[0].Code != "SDKGEN-E511" ||
+				if len(values) != 1 || values[0].Code != "SDKGEN-W511" || values[0].Severity != diagnostic.SeverityWarning ||
+					values[0].Scope != failure.ScopeOperation || values[0].Effect != failure.EffectOmitOperation ||
 					values[0].Phase != diagnostic.PhaseTarget || values[0].Target != "typescript" ||
 					!strings.HasSuffix(values[0].Location.Pointer, "/requestBody") {
 					t.Fatalf("diagnostics = %#v", values)
@@ -62,9 +64,10 @@ func TestPrepareSeparatesFetchForbiddenMethodsFromAllowedQueryAndCustomMethods(t
 	}
 	var forbidden []string
 	for _, value := range values {
-		if value.Code == "SDKGEN-E511" {
+		if value.Code == "SDKGEN-W511" {
 			forbidden = append(forbidden, value.Operation)
-			if value.Target != "typescript" || value.Phase != diagnostic.PhaseTarget {
+			if value.Severity != diagnostic.SeverityWarning || value.Scope != failure.ScopeOperation ||
+				value.Effect != failure.EffectOmitOperation || value.Target != "typescript" || value.Phase != diagnostic.PhaseTarget {
 				t.Fatalf("diagnostic = %#v", value)
 			}
 		}
@@ -74,7 +77,7 @@ func TestPrepareSeparatesFetchForbiddenMethodsFromAllowedQueryAndCustomMethods(t
 	}
 }
 
-func TestPrepareRejectsOrdinaryTRACEWithoutBodyBeforeEmit(t *testing.T) {
+func TestPrepareOmitsOrdinaryTRACEWithoutBodyBeforeEmit(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.1.1",
   "info":{"title":"Trace","version":"1"},
@@ -90,7 +93,8 @@ func TestPrepareRejectsOrdinaryTRACEWithoutBodyBeforeEmit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(values) != 1 || values[0].Code != "SDKGEN-E511" || values[0].Operation != "traceItems" {
+	if len(values) != 1 || values[0].Code != "SDKGEN-W511" || values[0].Severity != diagnostic.SeverityWarning ||
+		values[0].Scope != failure.ScopeOperation || values[0].Effect != failure.EffectOmitOperation || values[0].Operation != "traceItems" {
 		t.Fatalf("diagnostics = %#v", values)
 	}
 }

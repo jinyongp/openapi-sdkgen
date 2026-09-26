@@ -78,17 +78,19 @@ func (Generator) SupportsAddon(addon generator.Addon) bool {
 }
 
 type sourcePlan struct {
-	document          *ir.Document
-	ownership         *sourceOwnershipIndex
-	includeServer     bool
-	manifest          *Manifest
-	modules           *semanticModulePlan
-	links             []generatedLink
-	streams           []generatedStream
-	webhooks          []webhookDefinition
-	callbacks         []callbackDefinition
-	resourceTree      *resourceNode
-	resourceReachable map[string]bool
+	document            *ir.Document
+	ownership           *sourceOwnershipIndex
+	includeServer       bool
+	omittedOperations   map[string]bool
+	reservationManifest *Manifest
+	manifest            *Manifest
+	modules             *semanticModulePlan
+	links               []generatedLink
+	streams             []generatedStream
+	webhooks            []webhookDefinition
+	callbacks           []callbackDefinition
+	resourceTree        *resourceNode
+	resourceReachable   map[string]bool
 }
 
 // Prepare validates author input for the TypeScript target.
@@ -233,11 +235,14 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	for _, manifestErr := range manifestErrors {
 		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))
 	}
-	helperManifest := manifest
+	helperManifest := filterManifestOperations(manifest, plan.omittedOperations)
 	if len(manifestErrors) != 0 {
-		helperManifest = visibilityManifest(prepared)
+		helperManifest = filterManifestOperations(visibilityManifest(prepared), plan.omittedOperations)
 	} else {
-		plan.manifest = &manifest
+		reservationManifest := manifest
+		emissionManifest := filterManifestOperations(manifest, plan.omittedOperations)
+		plan.reservationManifest = &reservationManifest
+		plan.manifest = &emissionManifest
 	}
 	links, linkFailures := generatedLinksDiagnostics(prepared, helperManifest, plan.ownership)
 	blockingLinkFailure := false
@@ -257,15 +262,14 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		plan.streams = streams
 	}
 	if len(manifestErrors) == 0 && !blockingLinkFailure && len(streamErrors) == 0 {
-		if plan.manifest != nil {
-			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, &manifest, links, streams)
+		if plan.manifest != nil && plan.reservationManifest != nil {
+			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, *plan.reservationManifest, plan.manifest, links, streams)
 			if reconcileErr != nil {
 				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, reconcileErr))
 			} else {
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
 			}
-			plan.manifest = &manifest
 		}
 	}
 	if includeServer {
@@ -276,7 +280,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		if len(webhookErrors) == 0 {
 			plan.webhooks = webhooks
 		}
-		callbacks, callbackErrors := collectCallbacksDiagnostics(prepared)
+		callbacks, callbackErrors := collectCallbacksDiagnostics(prepared, plan.omittedOperations)
 		for _, callbackErr := range callbackErrors {
 			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, plan.ownership, "callback contracts", callbackErr))
 		}
@@ -284,8 +288,8 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 			plan.callbacks = callbacks
 		}
 	}
-	if plan.manifest != nil && !diagnostic.HasErrors(diagnostics) {
-		modules, moduleErr := buildSemanticModulePlan(prepared, *plan.manifest, plan.resourceTree, includeServer)
+	if plan.manifest != nil && plan.reservationManifest != nil && !diagnostic.HasErrors(diagnostics) {
+		modules, moduleErr := buildSemanticModulePlan(prepared, *plan.reservationManifest, *plan.manifest, plan.resourceTree, includeServer)
 		if moduleErr != nil {
 			return nil, diagnostic.Sort(diagnostics), fmt.Errorf("build TypeScript semantic module plan: %w", moduleErr)
 		}
@@ -294,11 +298,29 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	return plan, diagnostic.Sort(diagnostics), nil
 }
 
-func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, links []generatedLink, streams []generatedStream) (*resourceNode, map[string]bool, error) {
-	tree, err := buildResourceTree(document, *manifest, resourceCapabilityMembers(links, streams))
+func filterManifestOperations(manifest Manifest, omitted map[string]bool) Manifest {
+	result := manifest
+	result.Operations = make([]ManifestOperation, 0, len(manifest.Operations))
+	for _, operation := range manifest.Operations {
+		if omitted[manifestRouteKey(operation)] {
+			continue
+		}
+		result.Operations = append(result.Operations, operation)
+	}
+	return result
+}
+
+func reconcileResourceCapabilities(document *ir.Document, reservations Manifest, manifest *Manifest, links []generatedLink, streams []generatedStream) (*resourceNode, map[string]bool, error) {
+	tree, err := buildResourceTree(document, reservations, resourceCapabilityMembers(links, streams))
 	if err != nil {
 		return nil, nil, err
 	}
+	eligible := make(map[string]bool, len(manifest.Operations))
+	for _, operation := range manifest.Operations {
+		eligible[manifestRouteKey(operation)] = true
+	}
+	retainEligibleResourceOperations(tree, eligible)
+	pruneEmptyResourceNodes(tree)
 	reachable := make(map[string]bool)
 	resourceOperationIDs(tree, reachable)
 	for index := range manifest.Operations {
@@ -311,6 +333,23 @@ func reconcileResourceCapabilities(document *ir.Document, manifest *Manifest, li
 		item.ResourceSegments = nil
 	}
 	return tree, reachable, nil
+}
+
+func retainEligibleResourceOperations(node *resourceNode, eligible map[string]bool) {
+	for name, operation := range node.operations {
+		if !eligible[manifestRouteKey(operation)] {
+			delete(node.operations, name)
+		}
+	}
+	if node.pagination != nil && !eligible[manifestRouteKey(*node.pagination)] {
+		node.pagination = nil
+	}
+	if node.parameterChild != nil {
+		retainEligibleResourceOperations(node.parameterChild, eligible)
+	}
+	for _, child := range node.children {
+		retainEligibleResourceOperations(child, eligible)
+	}
 }
 
 func emitSourcePlan(plan *sourcePlan) ([]Artifact, error) {

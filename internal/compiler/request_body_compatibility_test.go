@@ -96,13 +96,13 @@ func TestCompatibilityRejectsMeaningfulOAS30UnsafeBodiesBeforeReferenceResolutio
 			}
 			restriction := result.Document.SemanticRestrictions[0]
 			if restriction.RuleID != "COMP-BODY-001" || restriction.Scope != failure.ScopeOperation ||
-				restriction.Effect != failure.EffectBlock ||
+				restriction.Effect != failure.EffectOmitOperation ||
 				restriction.Location.Pointer != "#/paths/~1items/"+method+"/requestBody" {
 				t.Fatalf("restriction = %#v", restriction)
 			}
 			value := result.Diagnostics[0]
-			if value.Code != "SDKGEN-E140" || value.Phase != diagnostic.PhaseOpenAPI ||
-				value.Scope != failure.ScopeOperation || value.Effect != failure.EffectBlock ||
+			if value.Code != "SDKGEN-W140" || value.Severity != diagnostic.SeverityWarning || value.Phase != diagnostic.PhaseOpenAPI ||
+				value.Scope != failure.ScopeOperation || value.Effect != failure.EffectOmitOperation ||
 				value.Location.Pointer != "#/paths/~1items/"+method+"/requestBody" {
 				t.Fatalf("diagnostic = %#v", value)
 			}
@@ -129,15 +129,15 @@ func TestCompatibilityQuarantinedUnsafeBodyDoesNotResolveExternalReference(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Document == nil || len(result.Diagnostics) != 1 || result.ReusableInput != nil {
+	if result.Document == nil || len(result.Diagnostics) != 1 || result.ReusableInput == nil {
 		t.Fatalf("compile result = %#v", result)
 	}
 	if len(result.Document.SemanticRestrictions) != 1 {
 		t.Fatalf("semantic restrictions = %#v", result.Document.SemanticRestrictions)
 	}
 	value := result.Diagnostics[0]
-	if value.Code != "SDKGEN-E140" || value.Phase != diagnostic.PhaseOpenAPI ||
-		value.Scope != failure.ScopeOperation || value.Effect != failure.EffectBlock {
+	if value.Code != "SDKGEN-W140" || value.Severity != diagnostic.SeverityWarning || value.Phase != diagnostic.PhaseOpenAPI ||
+		value.Scope != failure.ScopeOperation || value.Effect != failure.EffectOmitOperation {
 		t.Fatalf("diagnostic = %#v", value)
 	}
 	if _, err := os.Stat(filepath.Join(directory, "missing.yaml")); !os.IsNotExist(err) {

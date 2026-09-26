@@ -86,18 +86,18 @@ func emittedServerRuntimeSource() []byte {
 }
 
 func collectCallbacks(document *ir.Document) ([]callbackDefinition, error) {
-	result, failures := collectCallbacksDiagnostics(document)
+	result, failures := collectCallbacksDiagnostics(document, nil)
 	if len(failures) != 0 {
 		return nil, failures[0]
 	}
 	return result, nil
 }
 
-func collectCallbacksDiagnostics(document *ir.Document) ([]callbackDefinition, []error) {
+func collectCallbacksDiagnostics(document *ir.Document, omitted map[string]bool) ([]callbackDefinition, []error) {
 	result := make([]callbackDefinition, 0)
 	var failures []error
 	for _, operation := range document.Operations {
-		if operation.Visibility == "hidden" {
+		if operation.Visibility == "hidden" || omitted[operationRouteKey(operation)] {
 			continue
 		}
 		callbacks, _ := operation.Raw["callbacks"].(map[string]any)

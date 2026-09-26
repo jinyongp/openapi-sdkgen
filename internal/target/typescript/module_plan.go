@@ -41,7 +41,7 @@ type resourceModulePlan struct {
 	path     string
 }
 
-func buildSemanticModulePlan(document *ir.Document, manifest Manifest, resourceTree *resourceNode, includeServer bool) (*semanticModulePlan, error) {
+func buildSemanticModulePlan(document *ir.Document, reservations Manifest, manifest Manifest, resourceTree *resourceNode, includeServer bool) (*semanticModulePlan, error) {
 	result := &semanticModulePlan{
 		fixed: map[string]string{
 			"internal-index":  "internal/index.ts",
@@ -66,7 +66,7 @@ func buildSemanticModulePlan(document *ir.Document, manifest Manifest, resourceT
 	if err := result.planSchemas(document, includeServer); err != nil {
 		return nil, err
 	}
-	if err := result.planOperations(manifest); err != nil {
+	if err := result.planOperations(reservations, manifest); err != nil {
 		return nil, err
 	}
 	if err := result.planResources(resourceTree); err != nil {
@@ -116,15 +116,15 @@ func (plan *semanticModulePlan) planSchemas(document *ir.Document, includeServer
 	return nil
 }
 
-func (plan *semanticModulePlan) planOperations(manifest Manifest) error {
+func (plan *semanticModulePlan) planOperations(reservations Manifest, manifest Manifest) error {
 	if plan.operationByRoute == nil {
 		plan.operationByRoute = make(map[string]string)
 	}
 	if plan.operationByQuotedRoute == nil {
 		plan.operationByQuotedRoute = make(map[string]string)
 	}
-	candidates := make([]artifactPathCandidate, 0, len(manifest.Operations))
-	for _, operation := range manifest.Operations {
+	candidates := make([]artifactPathCandidate, 0, len(reservations.Operations))
+	for _, operation := range reservations.Operations {
 		if operation.Visibility == "hidden" {
 			continue
 		}
@@ -135,8 +135,15 @@ func (plan *semanticModulePlan) planOperations(manifest Manifest) error {
 	if err != nil {
 		return fmt.Errorf("plan operation artifacts: %w", err)
 	}
-	routes := make([]string, 0, len(paths))
-	for route := range paths {
+	routes := make([]string, 0, len(manifest.Operations))
+	for _, operation := range manifest.Operations {
+		if operation.Visibility == "hidden" {
+			continue
+		}
+		route := manifestRouteKey(operation)
+		if _, exists := paths[route]; !exists {
+			return fmt.Errorf("emitted operation %q has no reserved artifact path", route)
+		}
 		routes = append(routes, route)
 	}
 	sort.Strings(routes)

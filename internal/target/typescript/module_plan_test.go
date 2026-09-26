@@ -33,7 +33,7 @@ func TestSemanticModulePlanSeparatesSchemaOperationAndResourceOwners(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	plan, err := buildSemanticModulePlan(document, manifest, tree, false)
+	plan, err := buildSemanticModulePlan(document, manifest, manifest, tree, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,14 +65,14 @@ func TestOperationModulePathDoesNotDependOnOperationID(t *testing.T) {
 	t.Parallel()
 	plan := &semanticModulePlan{operationByRoute: make(map[string]string)}
 	before := Manifest{Operations: []ManifestOperation{{RouteKey: "GET /users", OperationID: "before", Method: "GET", Path: "/users", Visibility: "public"}}}
-	if err := plan.planOperations(before); err != nil {
+	if err := plan.planOperations(before, before); err != nil {
 		t.Fatal(err)
 	}
 	first := plan.operationByRoute["GET /users"]
 	plan.operations = nil
 	plan.operationByRoute = make(map[string]string)
 	after := Manifest{Operations: []ManifestOperation{{RouteKey: "GET /users", OperationID: "after", Method: "GET", Path: "/users", Visibility: "public"}}}
-	if err := plan.planOperations(after); err != nil {
+	if err := plan.planOperations(after, after); err != nil {
 		t.Fatal(err)
 	}
 	if second := plan.operationByRoute["GET /users"]; second != first {
