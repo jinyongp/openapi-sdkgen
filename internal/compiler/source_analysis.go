@@ -12,11 +12,12 @@ const (
 )
 
 type sourceAnalysis struct {
-	mode         diagnostic.Mode
-	options      *CompileOptions
-	collector    *diagnostic.Collector
-	orchestrator *diagnostic.Orchestrator
-	blocked      sourceScanBoundary
+	mode          diagnostic.Mode
+	options       *CompileOptions
+	collector     *diagnostic.Collector
+	orchestrator  *diagnostic.Orchestrator
+	extraCoverage []diagnostic.AnalysisCoverage
+	blocked       sourceScanBoundary
 }
 
 func newSourceAnalysis(mode diagnostic.Mode, options *CompileOptions, collector *diagnostic.Collector) (*sourceAnalysis, error) {
@@ -107,9 +108,14 @@ func (analysis *sourceAnalysis) blockingResult() (Result, bool) {
 	return analysis.attach(result), true
 }
 
+func (analysis *sourceAnalysis) addCoverage(values ...diagnostic.AnalysisCoverage) {
+	analysis.extraCoverage = append(analysis.extraCoverage, values...)
+}
+
 func (analysis *sourceAnalysis) attach(result Result) Result {
 	result.DiagnosticMode = analysis.mode
 	result.Coverage = append(result.Coverage, analysis.orchestrator.Coverage()...)
+	result.Coverage = append(result.Coverage, analysis.extraCoverage...)
 	return result
 }
 

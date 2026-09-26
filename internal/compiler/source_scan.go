@@ -155,6 +155,7 @@ func scanLocalReferenceValue(value any, directory, root string, visited map[stri
 type externalReferenceOccurrence struct {
 	Reference string
 	Context   openapiwalk.ObjectContext
+	Pointer   string
 }
 
 func hasExternalReference(value any, path []string) bool {
@@ -194,6 +195,7 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 			*result = append(*result, externalReferenceOccurrence{
 				Reference: reference,
 				Context:   openapiwalk.ObjectContextAt(path),
+				Pointer:   sourceJSONPointer(append(path, "$ref")),
 			})
 		}
 		for name, child := range typed {

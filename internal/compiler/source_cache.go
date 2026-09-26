@@ -17,10 +17,15 @@ type decodedSource struct {
 type decodedSourceCache struct {
 	mu      sync.Mutex
 	sources map[string]decodedSource
+	metrics *compilationMetrics
 }
 
-func newDecodedSourceCache() *decodedSourceCache {
-	return &decodedSourceCache{sources: make(map[string]decodedSource)}
+func newDecodedSourceCache(metrics ...*compilationMetrics) *decodedSourceCache {
+	var value *compilationMetrics
+	if len(metrics) != 0 {
+		value = metrics[0]
+	}
+	return &decodedSourceCache{sources: make(map[string]decodedSource), metrics: value}
 }
 
 func (cache *decodedSourceCache) remember(path string, source decodedSource) error {
@@ -63,6 +68,9 @@ func (cache *decodedSourceCache) load(path string) (decodedSource, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return decodedSource{}, err
+	}
+	if cache.metrics != nil {
+		cache.metrics.ReferenceSourceDecodes++
 	}
 	value, err := decodeInputValue(data, nil)
 	if err != nil {

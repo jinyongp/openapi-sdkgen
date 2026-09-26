@@ -24,10 +24,12 @@ import (
 )
 
 type compilationMetrics struct {
-	SourceDecodes int
-	Bundles       int
-	ModelBuilds   int
-	FileFilter    []string
+	SourceDecodes                int
+	ReferenceSourceDecodes       int
+	RemoteReferenceSourceDecodes int
+	Bundles                      int
+	ModelBuilds                  int
+	FileFilter                   []string
 }
 
 func Compile(data []byte) (*ir.Document, error) {
@@ -75,7 +77,7 @@ func CompileProjectFile(path string) (*ir.Document, error) {
 
 func compileInput(source inputSource, project bool, options CompileOptions) (*ir.Document, error) {
 	if options.sourceCache == nil {
-		options.sourceCache = newDecodedSourceCache()
+		options.sourceCache = newDecodedSourceCache(options.metrics)
 	}
 	value, err := decodeInputValue(source.data, options.metrics)
 	if err != nil {
@@ -136,40 +138,13 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 	if source.stdin && source.fileBase == "" && source.remoteBase == nil && hasRelativeExternalReferenceValue(value) {
 		return nil, phaseError(diagnostic.PhaseReferences, errors.New("standard input contains a relative $ref; pass --input-base with the source document location"))
 	}
-	lockPath := options.RefLockPath
-	if lockPath == "" && source.filePath != "" {
-		lockPath = defaultReferenceLockPath(source.filePath)
+	referenceState, err := ensureReferenceResolutionState(source, &options)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseReferences, err)
 	}
-	if lockPath == "" && len(options.SchemaExtensionManifests) != 0 {
-		return nil, phaseError(diagnostic.PhaseReferences, errors.New("schema extensions with URL or stdin input require --ref-lock"))
-	}
-	var lock *referenceLock
-	shouldLoadLock := len(options.RemoteRefAllowlist) != 0 || len(options.SchemaExtensionManifests) != 0 || options.UpdateRefLock
-	if source.filePath == "" && options.RefLockPath != "" {
-		shouldLoadLock = true
-	}
-	if lockPath != "" && shouldLoadLock {
-		// A remote allowlist alone does not imply a network request. Defer a
-		// missing-lock failure until a remote document or extension is actually
-		// used, so offline documents stay reproducible without empty lockfiles.
-		var err error
-		lock, err = loadReferenceLock(lockPath, true)
-		if err != nil {
-			return nil, phaseError(diagnostic.PhaseReferences, err)
-		}
-	}
-	var remoteResolver *remoteReferenceResolver
-	if len(options.RemoteRefAllowlist) != 0 || source.remoteBase != nil {
-		cache := ""
-		if lockPath != "" {
-			cache = filepath.Join(filepath.Dir(lockPath), ".openapi-sdkgen-cache")
-		}
-		var err error
-		remoteResolver, err = newRemoteReferenceResolver(options, lock, cache, source.remoteBase, source.httpConfig)
-		if err != nil {
-			return nil, phaseError(diagnostic.PhaseReferences, err)
-		}
-	}
+	lockPath := referenceState.lockPath
+	lock := referenceState.lock
+	remoteResolver := referenceState.remote
 	hasExternalReferences := hasExternalReference(value, nil)
 	if !hasExternalReferences {
 		// The structured result path already validates reserved keywords,

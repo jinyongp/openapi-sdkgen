@@ -115,7 +115,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	options.DiagnosticMode = mode
 	collector := &diagnostic.Collector{}
 	options.diagnostics = collector
-	options.sourceCache = newDecodedSourceCache()
+	options.sourceCache = newDecodedSourceCache(options.metrics)
 	source, err := loadInputSource(input, options)
 	if err != nil {
 		return resultWithMode(resultFromCompile(nil, phaseError(diagnostic.PhaseInput, err), safeInputDisplay(input), collector), mode), nil
@@ -158,6 +158,14 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if _, err = analysis.references(source.display, func() error {
 		collector.Extend(pathItemReferenceDiagnostics(effective, source.display, true))
 		collector.Extend(unresolvedLocalReferenceDiagnostics(effective, source.display))
+		if mode == diagnostic.ModeCollect {
+			values, coverage, discoveryErr := collectReferenceGraphDiagnostics(source, effective, &options)
+			if discoveryErr != nil {
+				return discoveryErr
+			}
+			collector.Extend(values)
+			analysis.addCoverage(coverage...)
+		}
 		return nil
 	}); err != nil {
 		return Result{}, err
