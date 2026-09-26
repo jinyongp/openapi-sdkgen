@@ -38,35 +38,65 @@ func TestCompatibilityIgnoresEmptyOAS30RequestBodies(t *testing.T) {
 	}
 }
 
-func TestCompatibilityPreservesMeaningfulOAS30DeleteBodyWithWarning(t *testing.T) {
+func TestCompatibilityPreservesMeaningfulOAS30DeleteAndOptionsBodiesWithWarning(t *testing.T) {
+	for _, method := range []string{"delete", "options"} {
+		t.Run(method, func(t *testing.T) {
+			input := []byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Preserved body","version":"1"},
+  "paths":{"/items":{"` + method + `":{
+    "operationId":"preservedBody",
+    "requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}},
+    "responses":{"204":{"description":"OK"}}
+  }}}
+}`)
+			result, err := CompileResult(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Document == nil || len(result.Document.Operations) != 1 || result.Document.Operations[0].RequestBody == nil {
+				t.Fatalf("compile result = %#v", result)
+			}
+			if len(result.Diagnostics) != 1 {
+				t.Fatalf("diagnostics = %#v", result.Diagnostics)
+			}
+			value := result.Diagnostics[0]
+			if value.Severity != diagnostic.SeverityWarning || value.Code != "SDKGEN-W140" ||
+				value.Location.Pointer != "#/paths/~1items/"+method+"/requestBody" {
+				t.Fatalf("diagnostic = %#v", value)
+			}
+		})
+	}
+}
+
+func TestCompatibilityPreservedOAS30OptionsBodyStillResolvesReferences(t *testing.T) {
 	input := []byte(`{
   "openapi":"3.0.3",
-  "info":{"title":"Delete body","version":"1"},
-  "paths":{"/items":{"delete":{
-    "operationId":"deleteItem",
-    "requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}},
-    "responses":{"204":{"description":"Deleted"}}
+  "info":{"title":"OPTIONS reference","version":"1"},
+  "paths":{"/items":{"options":{
+    "operationId":"optionsItems",
+    "requestBody":{"$ref":"#/components/requestBodies/Missing"},
+    "responses":{"204":{"description":"OK"}}
   }}}
 }`)
 	result, err := CompileResult(input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Document == nil || len(result.Document.Operations) != 1 || result.Document.Operations[0].RequestBody == nil {
+	foundReferenceError := false
+	for _, value := range result.Diagnostics {
+		if value.Code == "SDKGEN-E120" {
+			foundReferenceError = true
+			break
+		}
+	}
+	if result.Document != nil || !foundReferenceError {
 		t.Fatalf("compile result = %#v", result)
-	}
-	if len(result.Diagnostics) != 1 {
-		t.Fatalf("diagnostics = %#v", result.Diagnostics)
-	}
-	value := result.Diagnostics[0]
-	if value.Severity != diagnostic.SeverityWarning || value.Code != "SDKGEN-W140" ||
-		value.Location.Pointer != "#/paths/~1items/delete/requestBody" {
-		t.Fatalf("diagnostic = %#v", value)
 	}
 }
 
 func TestCompatibilityRejectsMeaningfulOAS30UnsafeBodiesBeforeReferenceResolution(t *testing.T) {
-	for _, method := range []string{"get", "head", "options", "trace"} {
+	for _, method := range []string{"get", "head", "trace"} {
 		t.Run(method, func(t *testing.T) {
 			input := []byte(`{
   "openapi":"3.0.3",

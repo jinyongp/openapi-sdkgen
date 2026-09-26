@@ -113,6 +113,50 @@ func TestPrepareOmitsOrdinaryTRACEWithoutBodyBeforeEmit(t *testing.T) {
 	}
 }
 
+func TestOAS30FetchRuntimeSendsOPTIONSBodyExactly(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Options runtime proof","version":"1"},
+  "paths":{"/items":{"options":{
+    "operationId":"optionsItems",
+    "requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["id"],"properties":{"id":{"type":"string"}}}}}},
+    "responses":{"204":{"description":"Options"}}
+  }}}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+const seen = [];
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async (input, init) => {
+    const request = new Request(String(input), init);
+    seen.push({
+      method: request.method,
+      body: await request.text(),
+      contentType: request.headers.get("content-type"),
+      path: new URL(request.url).pathname,
+    });
+    return new Response(null, { status: 204 });
+  },
+});
+await api.$operations.optionsItems({ body: { id: "item-1" } });
+if (seen.length !== 1) throw new Error("unexpected request count: " + seen.length);
+const request = seen[0];
+if (request.method !== "OPTIONS") throw new Error("method mismatch: " + request.method);
+if (request.path !== "/items") throw new Error("path mismatch: " + request.path);
+if (request.body !== '{"id":"item-1"}') throw new Error("body mismatch: " + request.body);
+if (request.contentType !== "application/json") throw new Error("content type mismatch: " + request.contentType);
+`
+	if result, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute OPTIONS Fetch runtime proof: %v\n%s", err, result)
+	}
+}
+
 func TestOAS30MeaningfulDELETEBodyIsSentExactly(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.0.3",

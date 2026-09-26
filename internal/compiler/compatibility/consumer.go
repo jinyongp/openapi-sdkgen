@@ -529,14 +529,14 @@ func applyRequestBodyRule(context Context, object map[string]any) (Result, bool)
 	if !requestBodyPotentiallyMeaningful(object) {
 		return omit(context, object, RuleRequestBody30, ImpactWire), true
 	}
-	if method == "delete" {
+	if method == "delete" || method == "options" {
 		return compatibilityFindingResult(
 			context,
 			object,
 			RuleRequestBody30,
 			ActionPreserveExtension,
 			DispositionIgnored,
-			"OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+			"OpenAPI 3.0 "+strings.ToUpper(method)+" request body is preserved as an evidenced compatibility extension.",
 			false,
 		), true
 	}

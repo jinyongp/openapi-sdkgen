@@ -42,17 +42,21 @@ func TestConsumerPolicyClassifiesOAS30RequestBodiesByMethodAndImpact(t *testing.
 		})
 	}
 
-	deleteResult := policy.Apply(Context{
-		Version: openapidoc.Version30,
-		Object:  openapiwalk.ObjectRequestBody,
-		Pointer: "#/paths/~1items/delete/requestBody",
-	}, meaningful)
-	if deleteResult.Omit || deleteResult.Reject || len(deleteResult.Findings) != 1 ||
-		deleteResult.Findings[0].Action != ActionPreserveExtension {
-		t.Fatalf("DELETE result = %#v", deleteResult)
+	for _, method := range []string{"delete", "options"} {
+		t.Run("meaningful-preserve-"+method, func(t *testing.T) {
+			result := policy.Apply(Context{
+				Version: openapidoc.Version30,
+				Object:  openapiwalk.ObjectRequestBody,
+				Pointer: "#/paths/~1items/" + method + "/requestBody",
+			}, meaningful)
+			if result.Omit || result.Reject || len(result.Findings) != 1 ||
+				result.Findings[0].Action != ActionPreserveExtension {
+				t.Fatalf("%s result = %#v", method, result)
+			}
+		})
 	}
 
-	for _, method := range []string{"get", "head", "options", "trace"} {
+	for _, method := range []string{"get", "head", "trace"} {
 		t.Run("meaningful-"+method, func(t *testing.T) {
 			result := policy.Apply(Context{
 				Version: openapidoc.Version30,
