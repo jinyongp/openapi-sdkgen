@@ -1,5 +1,7 @@
 package ir
 
+import "openapi-sdkgen/internal/failure"
+
 type Document struct {
 	Title              string
 	ContractVersion    string
@@ -29,8 +31,23 @@ type Document struct {
 	ProvenanceIndex ProvenanceResolver
 	// ErrorCategories is populated only by a target preparation plan after
 	// validating recognized error-envelope schemas.
-	ErrorCategories    map[string]string
-	ParameterSortPlans map[string]SortParameterPlan
+	ErrorCategories      map[string]string
+	ParameterSortPlans   map[string]SortParameterPlan
+	SemanticRestrictions []SemanticRestriction
+}
+
+// SemanticRestriction records source semantics that were deliberately removed
+// from the effective IR because their owning scope cannot be generated safely.
+type SemanticRestriction struct {
+	RuleID      string
+	Conformance string
+	Disposition string
+	Action      string
+	Impact      string
+	Scope       failure.Scope
+	Effect      failure.Effect
+	Location    SourceLocation
+	Message     string
 }
 
 type SourceLocation struct {

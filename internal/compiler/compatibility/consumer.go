@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
@@ -355,9 +356,17 @@ func openAPI31SchemaKeyword(key string) bool {
 }
 
 func schemaCompatibilityResult(context Context, value any, rule string, action Action, message string, reject bool) Result {
+	scope := failure.ScopeNone
+	effect := failure.EffectNone
+	if reject {
+		scope = failure.ScopeDocument
+		effect = failure.EffectBlock
+	}
 	return Result{
 		Value:   value,
 		Reject:  reject,
+		Scope:   scope,
+		Effect:  effect,
 		Changed: action == ActionNormalize || action == ActionIgnore,
 		Findings: []Finding{{
 			RuleID:      rule,
@@ -365,6 +374,8 @@ func schemaCompatibilityResult(context Context, value any, rule string, action A
 			Disposition: DispositionNotDefined,
 			Action:      action,
 			Impact:      ImpactValidation,
+			Scope:       scope,
+			Effect:      effect,
 			Source:      context.Source,
 			Pointer:     context.Pointer,
 			Message:     message,
@@ -373,6 +384,8 @@ func schemaCompatibilityResult(context Context, value any, rule string, action A
 			RuleID:  rule,
 			Action:  action,
 			Impact:  ImpactValidation,
+			Scope:   scope,
+			Effect:  effect,
 			Source:  context.Source,
 			Pointer: context.Pointer,
 			Version: context.Version,
@@ -520,13 +533,15 @@ func applyRequestBodyRule(context Context, object map[string]any) (Result, bool)
 			false,
 		), true
 	}
-	return compatibilityFindingResult(
+	return compatibilityFindingResultWithFailure(
 		context,
 		object,
 		RuleRequestBody30,
 		ActionReject,
 		DispositionIgnored,
 		"OpenAPI 3.0 request body is potentially meaningful on a method whose payload semantics are not portable.",
+		failure.ScopeOperation,
+		failure.EffectBlock,
 		true,
 	), true
 }
@@ -609,15 +624,39 @@ func requestBodySchemaStructurallyEmpty(value any) bool {
 }
 
 func compatibilityFindingResult(context Context, value any, rule string, action Action, disposition NormativeDisposition, message string, reject bool) Result {
+	scope := failure.ScopeNone
+	effect := failure.EffectNone
+	if reject {
+		scope = failure.ScopeDocument
+		effect = failure.EffectBlock
+	}
+	return compatibilityFindingResultWithFailure(context, value, rule, action, disposition, message, scope, effect, reject)
+}
+
+func compatibilityFindingResultWithFailure(
+	context Context,
+	value any,
+	rule string,
+	action Action,
+	disposition NormativeDisposition,
+	message string,
+	scope failure.Scope,
+	effect failure.Effect,
+	reject bool,
+) Result {
 	return Result{
 		Value:  value,
 		Reject: reject,
+		Scope:  scope,
+		Effect: effect,
 		Findings: []Finding{{
 			RuleID:      rule,
 			Conformance: ConformanceConforming,
 			Disposition: disposition,
 			Action:      action,
 			Impact:      ImpactWire,
+			Scope:       scope,
+			Effect:      effect,
 			Source:      context.Source,
 			Pointer:     context.Pointer,
 			Message:     message,
@@ -626,6 +665,8 @@ func compatibilityFindingResult(context Context, value any, rule string, action 
 			RuleID:  rule,
 			Action:  action,
 			Impact:  ImpactWire,
+			Scope:   scope,
+			Effect:  effect,
 			Source:  context.Source,
 			Pointer: context.Pointer,
 			Version: context.Version,

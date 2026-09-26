@@ -84,6 +84,36 @@ func TestPrepareCompilationSkipsTargetAfterCompilerError(t *testing.T) {
 	}
 }
 
+func TestPrepareCompilationStillBlocksScopedCompilerErrorUntilTargetIsolation(t *testing.T) {
+	target := &pipelineTarget{}
+	result, err := PrepareCompilation(target, compiler.Result{
+		Document: &ir.Document{SemanticRestrictions: []ir.SemanticRestriction{{
+			RuleID: "COMP-BODY-001",
+			Scope:  failure.ScopeOperation,
+			Effect: failure.EffectBlock,
+		}}},
+		Diagnostics: []diagnostic.Diagnostic{{
+			Severity: diagnostic.SeverityError,
+			Code:     "SDKGEN-E140",
+			Phase:    diagnostic.PhaseOpenAPI,
+			Scope:    failure.ScopeOperation,
+			Effect:   failure.EffectBlock,
+			Rule:     "COMP-BODY-001",
+			Action:   "reject",
+			Message:  "operation semantics are quarantined",
+		}},
+	}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target.prepared || !diagnostic.HasErrors(result.Diagnostics) {
+		t.Fatalf("preparation = %#v, target prepared = %v", result, target.prepared)
+	}
+	if len(result.SkippedPhases) != 3 || result.SkippedPhases[0].Phase != diagnostic.PhaseTarget {
+		t.Fatalf("skipped phases = %#v", result.SkippedPhases)
+	}
+}
+
 func TestPrepareCompilationRejectsBrokenCompilerInvariant(t *testing.T) {
 	_, err := PrepareCompilation(&pipelineTarget{}, compiler.Result{}, Options{})
 	if err == nil || !strings.Contains(err.Error(), "neither a document nor an error diagnostic") {

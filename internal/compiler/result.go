@@ -47,20 +47,20 @@ func CompileResult(data []byte) (Result, error) {
 			effective, _, err = prepareCompatibilityValue("in-memory OpenAPI document", decoded, &options)
 		}
 	}
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return compatibilitySourceScanResult(collector), nil
 	}
 	if err == nil && decodeErr == nil {
 		collector.Extend(reservedExtensionDiagnosticsValue(effective, "in-memory OpenAPI document"))
 	}
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return reservedSourceScanResult(collector), nil
 	}
 	if err == nil && decodeErr == nil {
 		collector.Extend(pathItemReferenceDiagnostics(effective, "in-memory OpenAPI document", false))
 		collector.Extend(unresolvedLocalReferenceDiagnostics(effective, "in-memory OpenAPI document"))
 	}
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return referenceSourceScanResult(collector), nil
 	}
 	var document *ir.Document
@@ -110,7 +110,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if err != nil {
 		return Result{}, err
 	}
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return compatibilitySourceScanResult(collector), nil
 	}
 	effectiveData := source.data
@@ -124,17 +124,17 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
 		return Result{}, fmt.Errorf("internal source registry failure: %w", err)
 	}
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return reservedSourceScanResult(collector), nil
 	}
 	collector.Extend(pathItemReferenceDiagnostics(effective, source.display, true))
 	collector.Extend(unresolvedLocalReferenceDiagnostics(effective, source.display))
-	if collector.HasErrors() {
+	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
 		return referenceSourceScanResult(collector), nil
 	}
 	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
 	result := resultFromCompile(document, err, source.display, collector)
-	if result.Document != nil && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
+	if result.Document != nil && !diagnostic.HasErrors(result.Diagnostics) && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
 	}
@@ -199,6 +199,22 @@ func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) 
 		})
 	}
 	return result
+}
+
+func collectorHasCompilationBlockingErrors(collector *diagnostic.Collector, session *compatibilitySession) bool {
+	if collector == nil {
+		return false
+	}
+	for _, value := range collector.Diagnostics() {
+		if value.Severity != diagnostic.SeverityError {
+			continue
+		}
+		if isScopedCompatibilityRejectDiagnostic(value, session) {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func compatibilitySourceScanResult(collector *diagnostic.Collector) Result {

@@ -8,6 +8,7 @@ package compatibility
 
 import (
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
@@ -89,6 +90,8 @@ type Finding struct {
 	Disposition NormativeDisposition
 	Action      Action
 	Impact      SemanticImpact
+	Scope       failure.Scope
+	Effect      failure.Effect
 	Source      string
 	Pointer     string
 	Message     string
@@ -100,6 +103,8 @@ type LedgerEntry struct {
 	RuleID  string
 	Action  Action
 	Impact  SemanticImpact
+	Scope   failure.Scope
+	Effect  failure.Effect
 	Source  string
 	Pointer string
 	Version openapidoc.VersionLine
@@ -110,6 +115,8 @@ type Result struct {
 	Value    any
 	Findings []Finding
 	Ledger   []LedgerEntry
+	Scope    failure.Scope
+	Effect   failure.Effect
 	// Omit removes this occurrence from the effective semantic view. It does not
 	// remove it from source metadata or provenance.
 	Omit bool

@@ -10,8 +10,10 @@ import (
 	"sync"
 
 	"openapi-sdkgen/internal/compiler/compatibility"
+	"openapi-sdkgen/internal/compiler/ir"
 	openapidoc "openapi-sdkgen/internal/compiler/openapi"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
@@ -137,6 +139,9 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 		result := session.policy.Apply(context, value)
 		session.record(result)
 		if result.Reject {
+			if result.Scope != failure.ScopeNone && result.Scope != failure.ScopeDocument {
+				return nil, true, true, nil
+			}
 			return result.Value, false, result.Changed, nil
 		}
 		if result.Omit {
@@ -397,15 +402,21 @@ func compatibilityDiagnostics(session *compatibilitySession) []diagnostic.Diagno
 		code := "SDKGEN-W140"
 		hint := "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
 		if finding.Action == compatibility.ActionReject {
-			severity = diagnostic.SeverityError
-			code = "SDKGEN-E140"
-			hint = "Remove or rewrite the construct so its semantics are valid for the declared OpenAPI version."
+			if finding.Effect == failure.EffectOmitOperation || finding.Effect == failure.EffectOmitCapability {
+				hint = "The rejected semantic scope is omitted from generated target behavior."
+			} else {
+				severity = diagnostic.SeverityError
+				code = "SDKGEN-E140"
+				hint = "Remove or rewrite the construct so its semantics can be generated safely."
+			}
 		}
 		result = append(result, diagnostic.Diagnostic{
 			Severity: severity,
 			Code:     code,
 			Phase:    diagnostic.PhaseOpenAPI,
 			Location: diagnostic.Location{Source: finding.Source, Pointer: finding.Pointer},
+			Scope:    finding.Scope,
+			Effect:   finding.Effect,
 			Rule:     finding.RuleID,
 			Action:   string(finding.Action),
 			Message:  finding.Message,
@@ -413,6 +424,59 @@ func compatibilityDiagnostics(session *compatibilitySession) []diagnostic.Diagno
 		})
 	}
 	return diagnostic.Sort(result)
+}
+
+func compatibilityRestrictions(session *compatibilitySession) []ir.SemanticRestriction {
+	findings, _ := session.evidence()
+	result := make([]ir.SemanticRestriction, 0, len(findings))
+	for _, finding := range findings {
+		if finding.Action != compatibility.ActionReject ||
+			finding.Scope == failure.ScopeNone || finding.Scope == failure.ScopeDocument {
+			continue
+		}
+		result = append(result, ir.SemanticRestriction{
+			RuleID:      finding.RuleID,
+			Conformance: string(finding.Conformance),
+			Disposition: string(finding.Disposition),
+			Action:      string(finding.Action),
+			Impact:      string(finding.Impact),
+			Scope:       finding.Scope,
+			Effect:      finding.Effect,
+			Location:    ir.SourceLocation{Source: finding.Source, Pointer: finding.Pointer},
+			Message:     finding.Message,
+		})
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Location.Source != result[j].Location.Source {
+			return result[i].Location.Source < result[j].Location.Source
+		}
+		if result[i].Location.Pointer != result[j].Location.Pointer {
+			return result[i].Location.Pointer < result[j].Location.Pointer
+		}
+		return result[i].RuleID < result[j].RuleID
+	})
+	return result
+}
+
+func isScopedCompatibilityRejectDiagnostic(value diagnostic.Diagnostic, session *compatibilitySession) bool {
+	if value.Severity != diagnostic.SeverityError ||
+		value.Phase != diagnostic.PhaseOpenAPI ||
+		value.Action != string(compatibility.ActionReject) ||
+		value.Scope == failure.ScopeNone || value.Scope == failure.ScopeDocument {
+		return false
+	}
+	findings, _ := session.evidence()
+	for _, finding := range findings {
+		if finding.Action == compatibility.ActionReject &&
+			finding.Scope == value.Scope &&
+			finding.Effect == value.Effect &&
+			finding.RuleID == value.Rule &&
+			finding.Source == value.Location.Source &&
+			finding.Pointer == value.Location.Pointer {
+			return true
+		}
+	}
+	return false
 }
 
 func prepareCompatibilityValue(source string, value any, options *CompileOptions) (any, bool, error) {

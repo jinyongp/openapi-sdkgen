@@ -1,10 +1,13 @@
 package sdkgen
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 func TestCompatibilityIgnoresEmptyOAS30RequestBodies(t *testing.T) {
@@ -78,15 +81,67 @@ func TestCompatibilityRejectsMeaningfulOAS30UnsafeBodiesBeforeReferenceResolutio
 			if err != nil {
 				t.Fatal(err)
 			}
-			if result.Document != nil || len(result.Diagnostics) != 1 {
+			if result.Document == nil || len(result.Document.Operations) != 1 || len(result.Diagnostics) != 1 {
 				t.Fatalf("compile result = %#v", result)
+			}
+			if body := result.Document.Operations[0].RequestBody; body != nil {
+				t.Fatalf("quarantined request body survived = %#v", body)
+			}
+			if metadata := string(result.Document.SourceMetadataJSON); !strings.Contains(metadata, `"requestBody"`) ||
+				!strings.Contains(metadata, `"#/components/requestBodies/Missing"`) {
+				t.Fatalf("source metadata lost quarantined request body: %s", metadata)
+			}
+			if len(result.Document.SemanticRestrictions) != 1 {
+				t.Fatalf("semantic restrictions = %#v", result.Document.SemanticRestrictions)
+			}
+			restriction := result.Document.SemanticRestrictions[0]
+			if restriction.RuleID != "COMP-BODY-001" || restriction.Scope != failure.ScopeOperation ||
+				restriction.Effect != failure.EffectBlock ||
+				restriction.Location.Pointer != "#/paths/~1items/"+method+"/requestBody" {
+				t.Fatalf("restriction = %#v", restriction)
 			}
 			value := result.Diagnostics[0]
 			if value.Code != "SDKGEN-E140" || value.Phase != diagnostic.PhaseOpenAPI ||
+				value.Scope != failure.ScopeOperation || value.Effect != failure.EffectBlock ||
 				value.Location.Pointer != "#/paths/~1items/"+method+"/requestBody" {
 				t.Fatalf("diagnostic = %#v", value)
 			}
 		})
+	}
+}
+
+func TestCompatibilityQuarantinedUnsafeBodyDoesNotResolveExternalReference(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, "openapi.json")
+	input := []byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Unsafe external body","version":"1"},
+  "paths":{"/items":{"get":{
+    "operationId":"unsafeBody",
+    "requestBody":{"$ref":"./missing.yaml#/components/requestBodies/Body"},
+    "responses":{"204":{"description":"OK"}}
+  }}}
+}`)
+	if err := os.WriteFile(path, input, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileFileResultWithOptions(path, CompileOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || len(result.Diagnostics) != 1 || result.ReusableInput != nil {
+		t.Fatalf("compile result = %#v", result)
+	}
+	if len(result.Document.SemanticRestrictions) != 1 {
+		t.Fatalf("semantic restrictions = %#v", result.Document.SemanticRestrictions)
+	}
+	value := result.Diagnostics[0]
+	if value.Code != "SDKGEN-E140" || value.Phase != diagnostic.PhaseOpenAPI ||
+		value.Scope != failure.ScopeOperation || value.Effect != failure.EffectBlock {
+		t.Fatalf("diagnostic = %#v", value)
+	}
+	if _, err := os.Stat(filepath.Join(directory, "missing.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("unexpected missing reference file state: %v", err)
 	}
 }
 

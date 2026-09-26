@@ -735,6 +735,7 @@ func compileValue(raw any, source, validateModel bool, options CompileOptions, l
 		}
 		return nil, phaseError(diagnostic.PhaseIR, err)
 	}
+	model.SemanticRestrictions = compatibilityRestrictions(options.compatibilitySession)
 	return model, nil
 }
 

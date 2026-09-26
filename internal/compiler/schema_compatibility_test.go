@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 func TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata(t *testing.T) {
@@ -96,6 +97,7 @@ func TestCompatibilityRejectsUnprovedOpenAPI30SchemasPrecisely(t *testing.T) {
 			}
 			value := result.Diagnostics[0]
 			if value.Code != "SDKGEN-E140" || value.Rule != test.rule || value.Action != "reject" ||
+				value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock ||
 				value.Location.Pointer != test.pointer {
 				t.Fatalf("diagnostic = %#v", value)
 			}
