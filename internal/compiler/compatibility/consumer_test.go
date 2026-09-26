@@ -58,6 +58,36 @@ func TestConsumerPolicyFiltersReferenceObjectSiblingsByVersion(t *testing.T) {
 	}
 }
 
+func TestConsumerPolicyTreatsOAS30SchemaRefAsReferenceObject(t *testing.T) {
+	policy := ConsumerPolicy{}
+	input := map[string]any{
+		"$ref":        "#/components/schemas/Base",
+		"description": "ignored in OAS 3.0 reference object",
+		"const":       "also ignored before schema normalization",
+	}
+
+	oas30 := policy.Apply(Context{
+		Version: openapidoc.Version30,
+		Object:  openapiwalk.ObjectSchema,
+		Source:  "openapi.yaml",
+		Pointer: "#/components/schemas/Wrapper/properties/value",
+	}, input)
+	if !oas30.Changed || !reflect.DeepEqual(oas30.Value, map[string]any{"$ref": "#/components/schemas/Base"}) ||
+		len(oas30.Ledger) != 1 || oas30.Ledger[0].RuleID != RuleReference30Siblings {
+		t.Fatalf("OAS 3.0 schema reference = %#v", oas30)
+	}
+
+	oas31 := policy.Apply(Context{
+		Version: openapidoc.Version31,
+		Object:  openapiwalk.ObjectSchema,
+		Source:  "openapi.yaml",
+		Pointer: "#/components/schemas/Wrapper/properties/value",
+	}, input)
+	if oas31.Changed || oas31.Omit || oas31.Reject {
+		t.Fatalf("OAS 3.1 schema reference siblings were treated as Reference Object fields: %#v", oas31)
+	}
+}
+
 func TestConsumerPolicyIgnoresReservedHeaderParameters(t *testing.T) {
 	policy := ConsumerPolicy{}
 	for _, name := range []string{"Accept", "content-type", "AUTHORIZATION"} {

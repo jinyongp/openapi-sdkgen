@@ -58,7 +58,7 @@ func collectPlannedResourceNodes(node *resourceNode, identity string, artifactPa
 	}
 	if node.parameterChild != nil {
 		name := node.parameterChild.parameter.Name
-		segment := "by-" + safeArtifactStem(name)
+		segment := parameterArtifactStem(name)
 		segments := append(append([]string(nil), artifactParent...), segment)
 		identitySegments := append(append([]string(nil), identityParent...), "{"+name+"}")
 		collectPlannedResourceNodes(node.parameterChild, "parameter:"+strings.Join(identitySegments, "/"), segments, identitySegments, paths, result)

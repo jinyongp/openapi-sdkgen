@@ -71,6 +71,10 @@ func safeArtifactStem(source string) string {
 	return prefix + "-" + shortArtifactHash(source)
 }
 
+func parameterArtifactStem(source string) string {
+	return safeArtifactStem("by-" + source)
+}
+
 func windowsReservedArtifactStem(stem string) bool {
 	value := strings.ToLower(strings.TrimRight(stem, ". "))
 	switch value {
@@ -210,7 +214,7 @@ func operationArtifactSegments(routePath string) []string {
 	result := make([]string, 0, len(parts))
 	for _, part := range parts {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") && len(part) > 2 {
-			result = append(result, "by-"+safeArtifactStem(part[1:len(part)-1]))
+			result = append(result, parameterArtifactStem(part[1:len(part)-1]))
 			continue
 		}
 		result = append(result, safeArtifactStem(part))

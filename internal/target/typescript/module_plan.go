@@ -208,7 +208,7 @@ func collectResourceModuleCandidates(node *resourceNode, artifactParent, identit
 	}
 	if node.parameterChild != nil {
 		name := node.parameterChild.parameter.Name
-		segment := "by-" + safeArtifactStem(name)
+		segment := parameterArtifactStem(name)
 		segments := append(append([]string(nil), artifactParent...), segment)
 		identitySegments := append(append([]string(nil), identityParent...), "{"+name+"}")
 		identity := "parameter:" + strings.Join(identitySegments, "/")

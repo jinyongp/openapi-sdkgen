@@ -81,6 +81,25 @@ func TestOperationArtifactBaseUsesRouteStructureAndMethod(t *testing.T) {
 	}
 }
 
+func TestOperationArtifactBaseBoundsLongPathParameterSegments(t *testing.T) {
+	t.Parallel()
+	path := operationArtifactBase(
+		"/resources/{portableArtifactBoundaryParameterIdentifierWithDeliberatelyLongName}",
+		"GET",
+	)
+	if err := validateArtifactPath(path); err != nil {
+		t.Fatalf("long path parameter artifact is not portable: %q: %v", path, err)
+	}
+	for _, segment := range strings.Split(path, "/") {
+		if len(segment) > maxArtifactSegmentBytes {
+			t.Fatalf("artifact segment exceeds bound: %q (%d bytes)", segment, len(segment))
+		}
+	}
+	if !strings.Contains(path, "/by-portable-artifact-boundary-parameter-") {
+		t.Fatalf("long parameter lost readable prefix: %q", path)
+	}
+}
+
 func TestRelativeModuleSpecifierUsesNodeNextJSExtension(t *testing.T) {
 	t.Parallel()
 	tests := map[string]struct {

@@ -46,6 +46,9 @@ func ConsumerPolicyMayApply(version openapidoc.VersionLine, object openapiwalk.O
 		if !ok {
 			return false
 		}
+		if reference, _ := schema["$ref"].(string); reference != "" && len(schema) > 1 {
+			return true
+		}
 		if _, ok := schema["type"].([]any); ok {
 			return true
 		}
@@ -117,6 +120,11 @@ func ConsumerPolicyMayApply(version openapidoc.VersionLine, object openapiwalk.O
 
 func (ConsumerPolicy) Apply(context Context, value any) Result {
 	if context.Object == openapiwalk.ObjectSchema && context.Version == openapidoc.Version30 {
+		if object, ok := value.(map[string]any); ok {
+			if result, applied := applyReferenceObjectRule(context, object); applied {
+				return result
+			}
+		}
 		if result, applied := applyOpenAPI30SchemaRule(context, value); applied {
 			return result
 		}
@@ -161,12 +169,16 @@ func (ConsumerPolicy) Apply(context Context, value any) Result {
 
 func applyReferenceObjectRule(context Context, object map[string]any) (Result, bool) {
 	reference, _ := object["$ref"].(string)
-	if reference == "" || !isReferenceObjectContext(context.Object) {
+	if reference == "" {
+		return Result{}, false
+	}
+	schemaReference30 := context.Object == openapiwalk.ObjectSchema && context.Version == openapidoc.Version30
+	if !schemaReference30 && !isReferenceObjectContext(context.Object) {
 		return Result{}, false
 	}
 	allowed := map[string]bool{"$ref": true}
 	rule := RuleReference30Siblings
-	if context.Version == openapidoc.Version31 || context.Version == openapidoc.Version32 {
+	if !schemaReference30 && (context.Version == openapidoc.Version31 || context.Version == openapidoc.Version32) {
 		allowed["summary"] = true
 		allowed["description"] = true
 		rule = RuleReference31Fields

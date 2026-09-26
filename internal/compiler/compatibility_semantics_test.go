@@ -64,6 +64,46 @@ func TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects(t *tes
 	}
 }
 
+func TestCompatibilityOAS30SchemaReferenceSiblingsAreIgnoredBeforeVersionValidation(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		version         string
+		wantDescription bool
+	}{
+		{name: "oas30", version: "3.0.3", wantDescription: false},
+		{name: "oas31", version: "3.1.1", wantDescription: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			input := []byte(`{
+  "openapi":"` + test.version + `",
+  "info":{"title":"Schema ref siblings","version":"1"},
+  "paths":{"/item":{"get":{"operationId":"getItem","responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Wrapper"}}}}}}}},
+  "components":{"schemas":{
+    "Base":{"type":"string"},
+    "Wrapper":{"type":"object","properties":{"value":{"$ref":"#/components/schemas/Base","description":"schema reference description"}}}
+  }}
+}`)
+			result, err := CompileResult(input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(result.Diagnostics) != 0 || result.Document == nil {
+				t.Fatalf("compile result = %#v", result)
+			}
+			wrapper := result.Document.ComponentSchemas["Wrapper"]
+			properties, _ := wrapper["properties"].(map[string]any)
+			value, _ := properties["value"].(map[string]any)
+			_, hasDescription := value["description"]
+			if hasDescription != test.wantDescription {
+				t.Fatalf("effective schema value = %#v", value)
+			}
+			if metadata := string(result.Document.SourceMetadataJSON); !strings.Contains(metadata, "schema reference description") {
+				t.Fatalf("source metadata lost schema reference sibling: %s", metadata)
+			}
+		})
+	}
+}
+
 func TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences(t *testing.T) {
 	input := []byte(`{
   "openapi":"3.1.1",
