@@ -52,41 +52,49 @@ func CompileResultWithOptions(data []byte, options CompileOptions) (Result, erro
 	collector := &diagnostic.Collector{}
 	options.diagnostics = collector
 	decoded, decodeErr := decodeInputValue(data, nil)
+	if decodeErr != nil {
+		err := phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", decodeErr))
+		return resultWithMode(resultFromCompile(nil, err, "in-memory OpenAPI document", collector), mode), nil
+	}
+
+	analysis, err := newSourceAnalysis(mode, &options, collector)
+	if err != nil {
+		return Result{}, err
+	}
+	sourceMetadata, err := encodeSourceMetadata(decoded)
+	if err != nil {
+		return resultWithMode(resultFromCompile(nil, err, "in-memory OpenAPI document", collector), mode), nil
+	}
 	var effective any
-	var sourceMetadata []byte
-	var err error
-	if decodeErr == nil {
-		sourceMetadata, err = encodeSourceMetadata(decoded)
-		if err == nil {
-			effective, _, err = prepareCompatibilityValue("in-memory OpenAPI document", decoded, &options)
-		}
+	if _, err = analysis.compatibility("in-memory OpenAPI document", func() error {
+		var compatibilityErr error
+		effective, _, compatibilityErr = prepareCompatibilityValue("in-memory OpenAPI document", decoded, &options)
+		return compatibilityErr
+	}); err != nil {
+		return analysis.attach(resultFromCompile(nil, err, "in-memory OpenAPI document", collector)), nil
 	}
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(compatibilitySourceScanResult(collector), mode), nil
-	}
-	if err == nil && decodeErr == nil {
+	if _, err = analysis.reserved("in-memory OpenAPI document", func() error {
 		collector.Extend(reservedExtensionDiagnosticsValue(effective, "in-memory OpenAPI document"))
+		return nil
+	}); err != nil {
+		return Result{}, err
 	}
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(reservedSourceScanResult(collector), mode), nil
-	}
-	if err == nil && decodeErr == nil {
+	if _, err = analysis.references("in-memory OpenAPI document", func() error {
 		collector.Extend(pathItemReferenceDiagnostics(effective, "in-memory OpenAPI document", false))
 		collector.Extend(unresolvedLocalReferenceDiagnostics(effective, "in-memory OpenAPI document"))
+		return nil
+	}); err != nil {
+		return Result{}, err
 	}
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(referenceSourceScanResult(collector), mode), nil
+	if result, blocked := analysis.blockingResult(); blocked {
+		return result, nil
 	}
-	var document *ir.Document
-	if decodeErr != nil {
-		err = phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI document: %w", decodeErr))
-	} else if err == nil {
-		document, err = compileValue(effective, false, false, options, nil)
-		if err == nil {
-			attachSourceMetadata(document, sourceMetadata)
-		}
+
+	document, err := compileValue(effective, false, false, options, nil)
+	if err == nil {
+		attachSourceMetadata(document, sourceMetadata)
 	}
-	return resultWithMode(resultFromCompile(document, err, "in-memory OpenAPI document", collector), mode), nil
+	return analysis.attach(resultFromCompile(document, err, "in-memory OpenAPI document", collector)), nil
 }
 
 // CompileFileResultWithOptions compiles a file with structured diagnostics.
@@ -125,13 +133,39 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	if err != nil {
 		return Result{}, err
 	}
-	effective, changed, err := prepareCompatibilityValue(source.display, decoded, &options)
+	analysis, err := newSourceAnalysis(mode, &options, collector)
 	if err != nil {
 		return Result{}, err
 	}
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(compatibilitySourceScanResult(collector), mode), nil
+	var effective any
+	var changed bool
+	if _, err = analysis.compatibility(source.display, func() error {
+		var compatibilityErr error
+		effective, changed, compatibilityErr = prepareCompatibilityValue(source.display, decoded, &options)
+		return compatibilityErr
+	}); err != nil {
+		return Result{}, err
 	}
+	if _, err = analysis.reserved(source.display, func() error {
+		collector.Extend(reservedExtensionDiagnosticsValue(effective, source.display))
+		if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
+			return fmt.Errorf("internal source registry failure: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return Result{}, err
+	}
+	if _, err = analysis.references(source.display, func() error {
+		collector.Extend(pathItemReferenceDiagnostics(effective, source.display, true))
+		collector.Extend(unresolvedLocalReferenceDiagnostics(effective, source.display))
+		return nil
+	}); err != nil {
+		return Result{}, err
+	}
+	if result, blocked := analysis.blockingResult(); blocked {
+		return result, nil
+	}
+
 	effectiveData := source.data
 	if changed {
 		effectiveData, err = json.Marshal(effective)
@@ -139,20 +173,8 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 			return Result{}, fmt.Errorf("encode effective OpenAPI input: %w", err)
 		}
 	}
-	collector.Extend(reservedExtensionDiagnosticsValue(effective, source.display))
-	if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
-		return Result{}, fmt.Errorf("internal source registry failure: %w", err)
-	}
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(reservedSourceScanResult(collector), mode), nil
-	}
-	collector.Extend(pathItemReferenceDiagnostics(effective, source.display, true))
-	collector.Extend(unresolvedLocalReferenceDiagnostics(effective, source.display))
-	if collectorHasCompilationBlockingErrors(collector, options.compatibilitySession) {
-		return resultWithMode(referenceSourceScanResult(collector), mode), nil
-	}
 	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
-	result := resultWithMode(resultFromCompile(document, err, source.display, collector), mode)
+	result := analysis.attach(resultFromCompile(document, err, source.display, collector))
 	if result.Document != nil && !diagnostic.HasErrors(result.Diagnostics) && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
