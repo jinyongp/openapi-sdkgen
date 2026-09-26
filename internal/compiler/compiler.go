@@ -703,6 +703,11 @@ func compileValue(raw any, source, validateModel bool, options CompileOptions, l
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseOpenAPI, err)
 	}
+	if options.DiagnosticMode == diagnostic.ModeCollect {
+		if findings := ir.ValidatePrerequisites(document); len(findings) != 0 {
+			return nil, phaseError(diagnostic.PhaseIR, &irPrerequisiteValidationError{findings: findings})
+		}
+	}
 	model, err := ir.Build(document)
 	if err != nil {
 		if ir.IsReferenceError(err) {

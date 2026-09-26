@@ -43,24 +43,20 @@ func Build(document *openapidoc.Document) (*Document, error) {
 		Raw:                document.Raw,
 	}
 
-	paths := map[string]any{}
-	if value, exists := document.Raw["paths"]; exists {
-		var ok bool
-		paths, ok = value.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("OpenAPI paths must be an object")
-		}
+	paths, err := validatedPathsObject(document.Raw)
+	if err != nil {
+		return nil, err
 	}
 	pathNames := sortedKeys(paths)
 	for _, path := range pathNames {
 		if strings.HasPrefix(path, "x-") {
 			continue
 		}
-		pathItem, ok := paths[path].(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("path item %q must be an object", path)
+		pathItem, err := validatedPathItemObject(paths, path)
+		if err != nil {
+			return nil, err
 		}
-		pathItem, err := ResolvePathItem(document.Raw, pathItem)
+		pathItem, err = ResolvePathItem(document.Raw, pathItem)
 		if err != nil {
 			return nil, fmt.Errorf("path item %q: %w", path, err)
 		}
@@ -83,9 +79,9 @@ func Build(document *openapidoc.Document) (*Document, error) {
 			return nil, fmt.Errorf("OpenAPI 3.2 feature at %s: additionalOperations is not available in OpenAPI %s.x", jsonPointer("paths", path, "additionalOperations"), versionLine)
 		}
 		for _, method := range sortedKeys(additional) {
-			operation, ok := additional[method].(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("additional operation %q %q must be an object", method, path)
+			operation, err := validatedAdditionalOperationObject(additional, method, path)
+			if err != nil {
+				return nil, err
 			}
 			compiledOperation, err := buildOperation(document.Raw, path, method, jsonPointer("paths", path, "additionalOperations", method), pathItem, operation)
 			if err != nil {
@@ -670,6 +666,9 @@ func readServers(value any, pointer string) []Server {
 }
 
 func readSecurityRequirements(value any) ([]SecurityRequirement, error) {
+	if issues := securityValidationIssues(value); len(issues) != 0 {
+		return nil, issues[0].err
+	}
 	if value == nil {
 		return nil, nil
 	}

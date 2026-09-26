@@ -325,13 +325,58 @@ func referenceSourceScanResult(collector *diagnostic.Collector) Result {
 func resultFromCompile(document *ir.Document, err error, source string, collector *diagnostic.Collector) Result {
 	result := Result{Document: document}
 	if err != nil {
-		value := compileErrorDiagnostic(err, source)
-		collector.Add(value)
-		result.Document = nil
-		result.SkippedPhases = skippedAfter(value.Phase)
+		var prerequisites *irPrerequisiteValidationError
+		if errors.As(err, &prerequisites) {
+			for _, finding := range prerequisites.findings {
+				collector.Add(diagnostic.Diagnostic{
+					Severity: diagnostic.SeverityError,
+					Code:     "SDKGEN-E150",
+					Phase:    diagnostic.PhaseIR,
+					Location: diagnostic.Location{Source: safeInputDisplay(source), Pointer: finding.Pointer},
+					Message:  "Unable to build the SDK intermediate representation.",
+					Cause:    sanitizeDiagnosticCause(finding.Error()),
+				})
+			}
+			result.Document = nil
+			result.Coverage = append(result.Coverage,
+				diagnostic.AnalysisCoverage{
+					Phase:    diagnostic.PhaseIR,
+					Analyzer: "ir.prerequisite",
+					Status:   diagnostic.CoverageComplete,
+					Prerequisites: []diagnostic.CoveragePrerequisite{
+						{Name: "openapi-document", Available: true},
+					},
+				},
+				diagnostic.AnalysisCoverage{
+					Phase:    diagnostic.PhaseIR,
+					Analyzer: "ir.build",
+					Status:   diagnostic.CoverageSkipped,
+					Prerequisites: []diagnostic.CoveragePrerequisite{
+						{Name: "ir-prerequisites", Available: false, Reason: "IR prerequisite validation reported blocking diagnostics"},
+					},
+					Reason: "canonical IR construction was not attempted because IR prerequisites are invalid",
+				},
+			)
+		} else {
+			value := compileErrorDiagnostic(err, source)
+			collector.Add(value)
+			result.Document = nil
+			result.SkippedPhases = skippedAfter(value.Phase)
+		}
 	}
 	result.Diagnostics = diagnostic.Sort(collector.Diagnostics())
 	return result
+}
+
+type irPrerequisiteValidationError struct {
+	findings []ir.ValidationFinding
+}
+
+func (value *irPrerequisiteValidationError) Error() string {
+	if len(value.findings) == 0 {
+		return "IR prerequisite validation failed"
+	}
+	return value.findings[0].Error()
 }
 
 func compileErrorDiagnostic(err error, source string) diagnostic.Diagnostic {
