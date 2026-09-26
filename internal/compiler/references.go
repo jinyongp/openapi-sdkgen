@@ -35,6 +35,9 @@ const (
 // CompileOptions controls explicitly opt-in compiler capabilities. Empty
 // options preserve the offline, contained-local-reference default.
 type CompileOptions struct {
+	// DiagnosticMode controls expected-diagnostic discovery breadth. The zero
+	// value preserves the historical fail-fast behavior.
+	DiagnosticMode diagnostic.Mode
 	// InputBase supplies the document location used to resolve relative $ref
 	// values when input is read from standard input. It is ignored for file and
 	// URL input, which already provide their own location.

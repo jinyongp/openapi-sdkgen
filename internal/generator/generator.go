@@ -26,7 +26,10 @@ const (
 
 // Options are shared target options selected by the CLI.
 type Options struct {
-	addons map[Addon]struct{}
+	// DiagnosticMode must match the compiler result for one generation
+	// invocation. The zero value preserves fail-fast behavior.
+	DiagnosticMode diagnostic.Mode
+	addons         map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.

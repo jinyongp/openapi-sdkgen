@@ -154,3 +154,67 @@ func TestPrepareCompilationRecordsSkippedEmitAndPublishAfterTargetErrors(t *test
 		}
 	}
 }
+
+func TestPrepareCompilationRequiresOneDiagnosticModePerInvocation(t *testing.T) {
+	_, err := PrepareCompilation(&pipelineTarget{}, compiler.Result{
+		Document:       &ir.Document{},
+		DiagnosticMode: diagnostic.ModeCollect,
+	}, Options{})
+	if err == nil || !strings.Contains(err.Error(), "does not match target mode") {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestPrepareCompilationCarriesAnalyzerCoverage(t *testing.T) {
+	target := &pipelineTarget{}
+	result, err := PrepareCompilation(target, compiler.Result{
+		Document:       &ir.Document{},
+		DiagnosticMode: diagnostic.ModeCollect,
+		Coverage: []diagnostic.AnalysisCoverage{{
+			Phase:    diagnostic.PhaseDecode,
+			Analyzer: "source.decode",
+			Status:   diagnostic.CoverageComplete,
+		}},
+	}, Options{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.DiagnosticMode != diagnostic.ModeCollect || !target.prepared {
+		t.Fatalf("preparation = %#v, target prepared = %v", result, target.prepared)
+	}
+	if len(result.Coverage) != 2 {
+		t.Fatalf("coverage = %#v", result.Coverage)
+	}
+	targetCoverage := result.Coverage[1]
+	if targetCoverage.Phase != diagnostic.PhaseTarget ||
+		targetCoverage.Analyzer != "target.prepare" ||
+		targetCoverage.Status != diagnostic.CoverageComplete {
+		t.Fatalf("target coverage = %#v", targetCoverage)
+	}
+}
+
+func TestPrepareCompilationRecordsMissingCompilerDocumentCoverage(t *testing.T) {
+	target := &pipelineTarget{}
+	result, err := PrepareCompilation(target, compiler.Result{
+		DiagnosticMode: diagnostic.ModeCollect,
+		Diagnostics: []diagnostic.Diagnostic{{
+			Severity: diagnostic.SeverityError,
+			Code:     "SDKGEN-E100",
+			Phase:    diagnostic.PhaseInput,
+			Message:  "input error",
+		}},
+	}, Options{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if target.prepared {
+		t.Fatal("target prepared without a safe compiler document")
+	}
+	if len(result.Coverage) != 1 ||
+		result.Coverage[0].Analyzer != "target.prepare" ||
+		result.Coverage[0].Status != diagnostic.CoverageSkipped ||
+		len(result.Coverage[0].Prerequisites) != 1 ||
+		result.Coverage[0].Prerequisites[0].Available {
+		t.Fatalf("coverage = %#v", result.Coverage)
+	}
+}
