@@ -39,20 +39,35 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 		t.Fatalf("collect mode built poisoned IR: %#v", collected.Document)
 	}
 	counts := map[string]int{}
+	rules := map[string]int{}
 	for _, value := range collected.Diagnostics {
 		counts[value.Code]++
-	}
-	for _, code := range []string{"SDKGEN-E120", "SDKGEN-E140", "SDKGEN-E160"} {
-		if counts[code] != 1 {
-			t.Fatalf("diagnostics = %#v, want exactly one %s", collected.Diagnostics, code)
+		if value.Rule != "" {
+			rules[value.Rule]++
 		}
 	}
-	if len(collected.Coverage) != 3 {
-		t.Fatalf("coverage = %#v", collected.Coverage)
+	if counts["SDKGEN-E120"] != 1 || counts["SDKGEN-E160"] != 1 || counts["SDKGEN-E140"] != 2 {
+		t.Fatalf("diagnostics = %#v, want one E120, one E160, and two independently owned E140 findings", collected.Diagnostics)
 	}
+	if rules["COMP-SCHEMA-003"] != 1 || rules["COMP-VERSION-003"] != 1 {
+		t.Fatalf("diagnostic rules = %#v, want compatibility and version ownership preserved", rules)
+	}
+	coverage := map[string]diagnostic.CoverageStatus{}
 	for _, item := range collected.Coverage {
+		coverage[item.Analyzer] = item.Status
 		if item.Status != diagnostic.CoverageComplete {
 			t.Fatalf("coverage = %#v", collected.Coverage)
+		}
+	}
+	for _, analyzer := range []string{
+		"source.compatibility",
+		"source.reserved-extensions",
+		"source.local-references",
+		"source.version-identity",
+		"source.version-features",
+	} {
+		if coverage[analyzer] != diagnostic.CoverageComplete {
+			t.Fatalf("coverage = %#v, missing complete analyzer %q", collected.Coverage, analyzer)
 		}
 	}
 }

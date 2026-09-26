@@ -9,6 +9,7 @@ const (
 	sourceScanCompatibility
 	sourceScanReserved
 	sourceScanReferences
+	sourceScanVersion
 )
 
 type sourceAnalysis struct {
@@ -119,12 +120,12 @@ func (analysis *sourceAnalysis) attach(result Result) Result {
 	return result
 }
 
-func sourceAnalyzerSpec(phase diagnostic.Phase, name, source, prerequisite string) diagnostic.AnalyzerSpec {
+func sourceAnalyzerSpec(phase diagnostic.Phase, name, source string, prerequisites ...string) diagnostic.AnalyzerSpec {
 	location := &diagnostic.Location{Source: source, Pointer: "#"}
 	return diagnostic.AnalyzerSpec{
 		Phase:    phase,
 		Name:     name,
-		Requires: []string{prerequisite},
+		Requires: append([]string(nil), prerequisites...),
 		Location: location,
 	}
 }

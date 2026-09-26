@@ -86,6 +86,11 @@ func CompileResultWithOptions(data []byte, options CompileOptions) (Result, erro
 	}); err != nil {
 		return Result{}, err
 	}
+	if mode == diagnostic.ModeCollect {
+		if err := collectVersionDiagnostics(analysis, effective, "in-memory OpenAPI document"); err != nil {
+			return Result{}, err
+		}
+	}
 	if result, blocked := analysis.blockingResult(); blocked {
 		return result, nil
 	}
@@ -169,6 +174,11 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		return nil
 	}); err != nil {
 		return Result{}, err
+	}
+	if mode == diagnostic.ModeCollect {
+		if err := collectVersionDiagnostics(analysis, effective, source.display); err != nil {
+			return Result{}, err
+		}
 	}
 	if result, blocked := analysis.blockingResult(); blocked {
 		return result, nil
@@ -315,35 +325,40 @@ func referenceSourceScanResult(collector *diagnostic.Collector) Result {
 func resultFromCompile(document *ir.Document, err error, source string, collector *diagnostic.Collector) Result {
 	result := Result{Document: document}
 	if err != nil {
-		phase, code, message := classifyCompileError(err)
-		value := diagnostic.Diagnostic{
-			Severity: diagnostic.SeverityError,
-			Code:     code,
-			Phase:    phase,
-			Location: diagnostic.Location{Source: safeInputDisplay(source), Pointer: "#"},
-			Message:  message,
-			Cause:    sanitizeDiagnosticCause(err.Error()),
-		}
-		var compatibilityError interface {
-			DiagnosticPointer() string
-			CompatibilityRule() string
-			CompatibilityAction() string
-		}
-		if errors.As(err, &compatibilityError) {
-			value.Location.Pointer = compatibilityError.DiagnosticPointer()
-			value.Rule = compatibilityError.CompatibilityRule()
-			value.Action = compatibilityError.CompatibilityAction()
-			if value.Action == "reject" {
-				value.Scope = failure.ScopeDocument
-				value.Effect = failure.EffectBlock
-			}
-		}
+		value := compileErrorDiagnostic(err, source)
 		collector.Add(value)
 		result.Document = nil
-		result.SkippedPhases = skippedAfter(phase)
+		result.SkippedPhases = skippedAfter(value.Phase)
 	}
 	result.Diagnostics = diagnostic.Sort(collector.Diagnostics())
 	return result
+}
+
+func compileErrorDiagnostic(err error, source string) diagnostic.Diagnostic {
+	phase, code, message := classifyCompileError(err)
+	value := diagnostic.Diagnostic{
+		Severity: diagnostic.SeverityError,
+		Code:     code,
+		Phase:    phase,
+		Location: diagnostic.Location{Source: safeInputDisplay(source), Pointer: "#"},
+		Message:  message,
+		Cause:    sanitizeDiagnosticCause(err.Error()),
+	}
+	var compatibilityError interface {
+		DiagnosticPointer() string
+		CompatibilityRule() string
+		CompatibilityAction() string
+	}
+	if errors.As(err, &compatibilityError) {
+		value.Location.Pointer = compatibilityError.DiagnosticPointer()
+		value.Rule = compatibilityError.CompatibilityRule()
+		value.Action = compatibilityError.CompatibilityAction()
+		if value.Action == "reject" {
+			value.Scope = failure.ScopeDocument
+			value.Effect = failure.EffectBlock
+		}
+	}
+	return value
 }
 
 func displayDiagnosticSources(values []diagnostic.Diagnostic) []diagnostic.Diagnostic {
