@@ -106,5 +106,11 @@ Custom JSON Schema vocabulary extension은 schema 의미를 처리합니다.
 문서 사이트는 지원 기능을 사용하는 방법에 집중하며, generation diagnostic이
 특정 문서와 설치된 버전의 생성 가능 여부를 판정합니다.
 
+Compatibility 진단은 scope-aware입니다. `effect: omit-operation` 또는
+`effect: omit-capability` warning은 해당 surface 전체를 의도적으로 생성하지
+않으면서 나머지 안전한 SDK는 계속 생성할 수 있다는 뜻입니다. `effect: block`
+진단은 선택한 target의 emit을 막습니다. 버전이 있는 JSON 계약은
+[CLI diagnostics 레퍼런스](./cli.md#diagnostics)를 참고하세요.
+
 SDK 생성에 사용한 원본 OpenAPI 문서는 generated metadata 진입점에서도 확인할 수
 있습니다.

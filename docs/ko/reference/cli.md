@@ -185,8 +185,19 @@ openapi-sdkgen generate \
 JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 phase가
 포함됩니다. 현재 envelope는 `schemaVersion: 3`이며 diagnostic에는 additive
 `rule`, `action`, `capability`, `scope`, `effect` 필드가 포함될 수 있습니다. Diagnostic
-JSON 소비자는 `schemaVersion`으로 분기해야 합니다. Diagnostic report는 stderr에 기록되며,
-생성 artifact는 요청한 경우에만 output 디렉터리에 기록됩니다.
+JSON 소비자는 `schemaVersion`으로 분기해야 합니다.
+
+schema v3에서는 severity와 generation effect를 별개의 계약으로 봅니다. `error`는
+계속 blocking입니다. `warning`이 `scope: operation` +
+`effect: omit-operation` 또는 `scope: capability` +
+`effect: omit-capability`를 가질 수 있는 것은 해당 unsafe surface 전체가 target
+plan에서 제거된 경우뿐입니다. `scope: document` + `effect: block`은 선택한
+target을 emit할 수 없다는 뜻입니다. v2에서 마이그레이션하는 소비자는 모든
+compatibility `reject`를 document-global failure로 해석하면 안 되며, severity와
+`scope`/`effect`를 함께 읽어야 합니다.
+
+Diagnostic report는 stderr에 기록되며, 생성 artifact는 요청한 경우에만 output
+디렉터리에 기록됩니다.
 
 <span id="input-source-options"></span>
 

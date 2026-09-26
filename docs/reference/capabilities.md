@@ -101,5 +101,12 @@ versions. The documentation site focuses on how to use supported behavior;
 generation diagnostics determine compatibility for a particular document and
 installed version.
 
+Compatibility is scope-aware. A warning with `effect: omit-operation` or
+`effect: omit-capability` means that complete surface is intentionally absent
+while the remaining safe SDK may still be generated. A diagnostic with
+`effect: block` prevents the selected target from being emitted. See the
+[CLI diagnostics reference](./cli.md#diagnostics) for the versioned JSON
+contract.
+
 The source OpenAPI document used for generation is also available through the
 generated metadata entry point.

@@ -177,8 +177,19 @@ openapi-sdkgen generate \
 The JSON envelope is versioned and contains counts, diagnostics, and skipped
 phases. The current envelope is `schemaVersion: 3`; diagnostics may carry additive
 `rule`, `action`, `capability`, `scope`, and `effect` fields. Consumers of diagnostic
-JSON should branch on `schemaVersion`. Diagnostic reports are written to stderr; generated
-artifacts are written to the output directory.
+JSON should branch on `schemaVersion`.
+
+In schema v3, severity and generation effect are separate contracts. An
+`error` remains blocking. A warning can carry `scope: operation` with
+`effect: omit-operation`, or `scope: capability` with
+`effect: omit-capability`, only after that complete unsafe surface has been
+removed from the generated target plan. `scope: document` with `effect: block`
+means the selected target cannot be emitted. Consumers migrating from v2 must
+not treat every compatibility `reject` as a document-global failure; use the
+diagnostic severity plus `scope`/`effect`.
+
+Diagnostic reports are written to stderr; generated artifacts are written to the
+output directory.
 
 ## Input source options
 

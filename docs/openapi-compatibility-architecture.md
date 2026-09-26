@@ -403,24 +403,26 @@ Therefore the compatibility policy is impact-sensitive:
 2. Any top-level Request Body `$ref`, schema `$ref`, required body, or non-empty
    payload/encoding is treated as **potentially meaningful without following a
    nested reference merely to prove emptiness**.
-3. For OAS 3.0 DELETE, a potentially meaningful body uses
-   `preserve-extension` because Fetch can transmit DELETE content and existing
-   successful corpora rely on it. The action emits a compatibility-deviation
-   warning and requires runtime proof. Empty DELETE bodies may be ignored.
+3. For OAS 3.0 DELETE and OPTIONS, a potentially meaningful body uses
+   `preserve-extension`. Generated Fetch runtime proof demonstrates exact
+   method, body bytes, and content type for both methods. The action emits a
+   compatibility-deviation warning; empty bodies may still be ignored.
 4. For GET/HEAD/TRACE, a potentially meaningful body is `reject`; Fetch cannot
    provide a portable GET/HEAD body contract and TRACE request content is
-   prohibited/unsupported. A referenced body is therefore conservatively
-   rejected rather than fetched solely to discover that it might be empty.
-5. OPTIONS with a meaningful body remains `reject` until a dedicated runtime
-   contract proves a portable intended use; an inline empty OPTIONS body may be
-   ignored.
+   prohibited/unsupported. The complete owning operation is quarantined and the
+   TypeScript target emits an operation-scoped omission warning rather than a
+   document-global failure.
+5. A referenced unsafe body is conservatively classified before nested reference
+   traversal. Once semantics are preserved (for example OPTIONS), reachable
+   references are traversed normally and unresolved references remain
+   document-blocking.
 6. No rule may silently move body fields into query/path parameters or otherwise
    guess the author's intended transport.
 
 POST and PUT have defined payload semantics and are preserved. PATCH has
-request-body semantics in RFC 5789 and is preserved. OPTIONS requires an
-explicit compatibility proof before a meaningful body can be preserved because
-HTTP defines no standard use for its payload.
+request-body semantics in RFC 5789 and is preserved. OPTIONS is retained only as
+an evidenced compatibility extension: the generated Fetch request is covered by
+an exact runtime wire test rather than inferred from the OpenAPI 3.0 wording.
 
 OAS 3.1 changes the OpenAPI policy: request bodies on methods with poorly
 defined semantics are permitted but discouraged. OAS 3.2 similarly permits
@@ -438,8 +440,10 @@ For OAS 3.1/3.2, keep compatibility and target capability separate:
   preflight must reject the TRACE operation independently of whether it has a
   body, rather than generating code that fails only when invoked.
 
-Current TypeScript output exposes BodyInput/runtime request-body definitions
-without making these version/target distinctions.
+Current TypeScript planning applies these distinctions before emission:
+unsupported operations are removed from `$operations`, `$routes`, resource
+call surfaces, Links/callback ownership, and operation modules while collision
+reservations for surviving public paths remain stable.
 
 #### COMP-METHOD-001 — Fetch-native method capability
 
@@ -698,11 +702,14 @@ These cases must never be described as universally portable behavior.
 | non-JSON scalar conversion | implementation-defined | deterministic codec policy with runtime tests |
 | cross-document implicit Security Scheme name resolution | implementation-defined | document entry-vs-referenced-document policy and test it |
 
-## Current confirmed mismatches
+## Pre-compatibility baseline mismatches
 
-All of the following are reproduced on HEAD, not inferred from source alone.
+The table below is retained as investigation history: every row was reproduced
+before the compatibility/failure-isolation implementation. It is **not** a list
+of current HEAD behavior. Current contracts are the executable rules, feature
+manifest, and post-change corpus evidence in the following sections.
 
-| Finding | Current result |
+| Finding | Baseline result |
 | --- | --- |
 | OAS 3.0 Reference Object `description + $ref` | fatal `SDKGEN-E140`; should ignore sibling |
 | OAS 3.1 Parameter Reference Object with `name/required` siblings | sibling overrides referenced Parameter and changes public API |
@@ -734,9 +741,11 @@ Observed compatibility footprint:
   schemas in the component-schema audit;
 - two independent path-template/Parameter name mismatches.
 
-Applying **only** the normative OAS 3.0 Reference Object sibling-ignore rule to
-an experimental effective copy moves GitLab past the OpenAPI phase. The next
-failure is target `SDKGEN-E507` for:
+On current HEAD, OAS 3.0 Reference Object siblings—including Schema-or-Reference
+positions—are removed from effective semantics while remaining in source
+metadata. The two meaningful HEAD bodies are quarantined as operation omissions.
+The frozen GitLab corpus then reaches the independent target `SDKGEN-E507`
+failure for:
 
 `/api/v4/jobs/{id}/sbom_scans/{sbom_digest}` GET
 
@@ -753,9 +762,10 @@ A full path-template audit finds exactly two such mismatches:
 These are not safe normalization candidates. Renaming a path parameter requires
 guessing author intent and must remain a rejection boundary.
 
-Therefore the structural compatibility work can correctly remove GitLab's first
-false blocker without claiming that the entire GitLab document is valid or
-generatable.
+Therefore the structural compatibility work removes GitLab's false reference
+and HEAD-body blockers without claiming full generation success: the remaining
+path-template/Parameter mismatch is intentionally document-blocking because
+renaming it would require guessing author intent.
 
 ## Real-corpus impact and existing boundaries
 
@@ -766,11 +776,11 @@ the OAS normative disposition.
 | --- | --- | --- | --- |
 | GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header, and boolean Schema occurrences including `additionalProperties: false`; no audited Reference siblings, reserved request headers, path mismatch, general type array, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; boolean schemas use the proved COMP-SCHEMA-001 normalizations. Corpus must remain full-generation/strict-TypeScript successful. |
 | Stripe SDK spec | SHA-256 `2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6`, 4,518,735 B, OAS 3.0.0 | 265 optional empty GET form bodies, 32 DELETE bodies of which seven are meaningful; no other audited mismatch | Empty GET/DELETE artifacts are lossless ignores; seven meaningful DELETE bodies require `preserve-extension`. Corpus must remain successful. |
-| GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Reference siblings are lossless ignores. Meaningful HEAD bodies are reject candidates because the Fetch target cannot provide a portable HEAD-body contract. Path mismatches remain reject. GitLab must not be claimed fully supported merely because the first false blocker is removed. |
-| Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, two reserved request-header Parameters, two response `Content-Type` Headers | DELETE bodies can be compatibility extensions if runtime proof passes; reserved/response headers are ignores; meaningful GET body is a reject candidate. This may expose a compatibility diagnostic before the previously recorded undeclared-security `SDKGEN-E508` boundary. Both causes must remain independently testable. |
+| GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Current rerun ignores the Reference siblings, omits both HEAD-body operations, then exposes the independent `SDKGEN-E507` path-template/Parameter-name mismatch. The corpus is intentionally not claimed fully generatable. |
+| Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, two reserved request-header Parameters, two response `Content-Type` Headers | Current rerun preserves all 32 DELETE bodies as evidenced extensions, omits the one GET-body operation, then reports four independent undeclared-security `SDKGEN-E508 scope=document effect=block` failures. |
 | Microsoft Graph v1.0 | OAS 3.0.4 local corpus | no Reference-sibling, reserved-header, OAS-3.0 body, or response-`Content-Type` occurrence in the focused audit | Existing internal TypeScript preparation failure remains independent unless direct rerun evidence changes it. |
-| Microsoft Graph beta | OAS 3.0.4 local corpus | same focused audit: zero occurrences | Same independent-boundary rule as v1.0. |
-| DigitalOcean source tree | OAS 3.0.0 entry document; 3,034 YAML fragments inspected | entry document has zero focused occurrences. The repository is heavily fragment/references based; the simple fragment walker found no directly embedded operation objects, so it is not evidence that every referenced operation is unaffected. | Existing external-fragment/reference and undeclared-`batch_id` boundaries remain authoritative. Post-implementation rerun must use the real compiler rather than infer support from the static fragment scan. |
+| Microsoft Graph beta | SHA-256 `bc6119cc3c48cae1492400c0490ad5b5911afc6145049ed708e2f9b2dedcd15e`, 78,964,171 B, OAS 3.0.4 | 122 empty/non-actionable response Links plus very long path-parameter names | All 122 Links are capability omissions with zero `SDKGEN-E509`; bounded portable resource naming removes the next generic artifact-path blocker and generation completes for 30,360 operations. |
+| DigitalOcean source tree | OAS 3.0.0 entry document; 3,034 YAML fragments inspected | entry document has zero focused occurrences. The repository is heavily fragment/reference based. | Fresh compiler traversal remains fail-closed at `SDKGEN-E120` for reachable missing reference/example files; the static fragment scan is not used as evidence of generation support. |
 | Twilio core 2010 | SHA-256 `170b3ccd0f891416840083d72f1795b1499b14a18d4873fd2b39f47ef84642d6`, 1,877,664 B, OAS 3.0.1 | zero focused compatibility occurrences | Generation and strict TypeScript now pass after the generic numeric-leading identifier normalization fix; no Twilio-specific compatibility branch is required. |
 
 The previous integrated workstream's historical failures are evidence, not
@@ -1089,8 +1099,8 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-004 | Reference Object rules | OAS 3.0/3.1/3.2 fixtures for allowed and extra siblings across Parameter, Header, RequestBody, Response, Link, Callback, Example, SecurityScheme, MediaType where applicable | only version/object-type-defined Reference fields affect effective semantics; arbitrary siblings never override referenced objects |
 | VAL-COMP-005 | Path Item refs | non-conflicting and conflicting local Path Item sibling fixtures | non-conflicting siblings retain documented behavior; direct conflicts fail closed with both source locations; behavior is never described as normative |
 | VAL-COMP-006 | OAS 3.0 empty bodies | GET/HEAD/DELETE/OPTIONS empty/non-meaningful body fixtures | compatibility action `ignore`; no public body input/runtime body plan |
-| VAL-COMP-007 | OAS 3.0 meaningful DELETE | representative GitHub/Stripe/Cloudflare DELETE fixtures plus runtime request capture | action `preserve-extension`; request body is typed, encoded, and sent exactly; compatibility-deviation warning recorded while author conformance is classified independently |
-| VAL-COMP-008 | unsafe method bodies / Fetch capability | OAS 3.0 and 3.1/3.2 meaningful GET/HEAD bodies; ordinary TRACE; OAS 3.2 `additionalOperations` controls for `QUERY`, `CONNECT`, `TRACE`, `TRACK`, and one allowed custom method; OAS 3.0 unproved OPTIONS fixtures | OAS 3.0 unsafe bodies reject through compatibility policy; OAS 3.1/3.2 GET/HEAD remain source-valid but fail as TypeScript target-capability diagnostics; Fetch-forbidden methods fail target preflight while QUERY/control custom methods remain eligible; no automatic method/parameter rewrite; managed output remains unchanged |
+| VAL-COMP-007 | OAS 3.0 meaningful DELETE/OPTIONS | representative DELETE fixtures plus direct OPTIONS runtime request capture | action `preserve-extension`; request body is typed, encoded, and sent exactly; compatibility-deviation warning recorded while author conformance is classified independently |
+| VAL-COMP-008 | unsafe method bodies / Fetch capability | OAS 3.0 and 3.1/3.2 meaningful GET/HEAD bodies; ordinary TRACE; OAS 3.2 `additionalOperations` controls for `QUERY`, `CONNECT`, `TRACE`, `TRACK`, and one allowed custom method | Unsafe GET/HEAD/TRACE or Fetch-forbidden operations are omitted as complete operations with scope/effect diagnostics; QUERY/control custom methods remain eligible; no automatic method/parameter rewrite; managed output remains unchanged when no meaningful entry surface survives |
 | VAL-COMP-009 | Encoding applicability | multipart, urlencoded, JSON, response, Content-Type-header, style/explode/allowReserved precedence fixtures | ignored/no-effect fields do not reach target unsupported validation or runtime plans; applicable fields retain wire behavior |
 | VAL-COMP-010 | Reference I/O visibility | inline ignored nodes plus local/remote reusable-object occurrences; missing local ref, disallowed remote ref, allowed remote ref with counting handler, lock/cache probes | nested refs reachable only after an `ignore` action cause zero file/network fetches and zero lock/cache entries; an outer reference needed to classify its own occurrence may resolve once under existing trust policy; preserved/extended content retains existing allowlist/lock/offline behavior |
 | VAL-COMP-011 | External documents, version context, and source fidelity | local/file-URL/HTTP(S)/stdin/in-memory root inputs; local and remote multi-document fixtures with non-entry documents, complete-document parsing, nested refs, entry OAS 3.0/3.1/3.2 lines, standalone/embedded Schema `$schema` cases, entry-source metadata assertions across normalization/bundling, and prototype-sensitive metadata keys (`__proto__`, `constructor`) | every production compiler entry path populates source-facing metadata; OpenAPI Object semantics inherit the entry OAS line; referenced roots do not silently switch OAS versions; Schema dialect/resource rules remain independent where specified; exact fetched bytes remain integrity/provenance input; generated metadata reflects the decoded entry source, preserves prototype-safe own data properties and the existing useful TypeScript readonly/literal contract, and does not retain a second decoded tree for the plan lifetime; only synthetic manually-built IR may use the documented Raw fallback |
