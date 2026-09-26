@@ -32,6 +32,8 @@ error [SDKGEN-E600] Recognized extension "x-sort" is declared at an unsupported 
 error [SDKGEN-E505] The OpenAPI feature #/webhooks (generated inbound webhook contracts) requires the TypeScript server add-on for inbound webhook contracts.
   at: <ROOT>/test/typescript/fixtures/diagnostics.openapi.json#/webhooks
   target: typescript
+  scope: document
+  effect: block
   hint: Generate again with --with server, or remove the inbound contract.
 
 Skipped phases:

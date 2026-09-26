@@ -44,14 +44,17 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 			if detail == "generated inbound webhook contracts" {
 				kind = "webhook"
 			}
-			result = append(result, sourceTargetDiagnostic(
+			value := sourceTargetDiagnostic(
 				document,
 				plan.ownership,
 				pointer,
 				"SDKGEN-E505",
 				fmt.Sprintf("The OpenAPI feature %s requires the TypeScript server add-on for inbound %s contracts.", feature, kind),
 				"Generate again with --with server, or remove the inbound contract.",
-			))
+			)
+			value.Scope = failure.ScopeDocument
+			value.Effect = failure.EffectBlock
+			result = append(result, value)
 			continue
 		}
 		result = append(result, unsupportedFeatureDiagnostic(
@@ -364,7 +367,7 @@ func serverPreparationDiagnostic(document *ir.Document, ownership *sourceOwnersh
 	if pointer == "" {
 		pointer = "#"
 	}
-	return sourceTargetDiagnostic(
+	value := sourceTargetDiagnostic(
 		document,
 		ownership,
 		pointer,
@@ -372,6 +375,9 @@ func serverPreparationDiagnostic(document *ir.Document, ownership *sourceOwnersh
 		fmt.Sprintf("The TypeScript server add-on cannot prepare %s: %s.", kind, strings.TrimSuffix(message, ".")),
 		"Fix the inbound OpenAPI contract, or generate without --with server if inbound adapters are not required.",
 	)
+	value.Scope = failure.ScopeDocument
+	value.Effect = failure.EffectBlock
+	return value
 }
 
 func loweringPreparationDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, err error) diagnostic.Diagnostic {
@@ -463,6 +469,8 @@ func helperPreparationDiagnostic(document *ir.Document, ownership *sourceOwnersh
 		value.Route = route
 		value.Operation = operationID
 	}
+	value.Scope = failure.ScopeDocument
+	value.Effect = failure.EffectBlock
 	return value
 }
 

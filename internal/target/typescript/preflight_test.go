@@ -7,6 +7,7 @@ import (
 	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/generator"
 )
 
@@ -127,6 +128,11 @@ func TestPrepareReplacesBaseInboundHintWithServerSemanticDiagnostics(t *testing.
 	if !strings.Contains(baseReport, "SDKGEN-E505") || !strings.Contains(baseReport, "--with server") {
 		t.Fatalf("base inbound diagnostic =\n%s", baseReport)
 	}
+	for _, value := range baseValues {
+		if value.Code == "SDKGEN-E505" && (value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock) {
+			t.Fatalf("base inbound scope = %#v", value)
+		}
+	}
 
 	options, err := generator.NewAddonRegistry(generator.AddonServer)
 	if err != nil {
@@ -143,6 +149,21 @@ func TestPrepareReplacesBaseInboundHintWithServerSemanticDiagnostics(t *testing.
 	serverReport := diagnostic.RenderHuman(serverValues, nil)
 	if strings.Contains(serverReport, "SDKGEN-E505") || strings.Count(serverReport, "SDKGEN-E506") < 14 {
 		t.Fatalf("server inbound diagnostics =\n%s", serverReport)
+	}
+	hasWebhookFailure := false
+	hasCallbackFailure := false
+	for _, value := range serverValues {
+		if value.Code != "SDKGEN-E506" {
+			continue
+		}
+		if value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
+			t.Fatalf("server inbound scope = %#v", value)
+		}
+		hasWebhookFailure = hasWebhookFailure || strings.Contains(value.Message, "webhook contracts")
+		hasCallbackFailure = hasCallbackFailure || strings.Contains(value.Message, "callback contracts")
+	}
+	if !hasWebhookFailure || !hasCallbackFailure {
+		t.Fatalf("server family coverage = webhook:%v callback:%v\n%s", hasWebhookFailure, hasCallbackFailure, serverReport)
 	}
 }
 
