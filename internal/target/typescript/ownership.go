@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -15,39 +16,42 @@ type sourceRestrictionKey struct {
 }
 
 type sourceOwnershipIndex struct {
-	operationsByPointer  map[string]ir.Operation
-	operationsBySource   map[sourceRestrictionKey]ir.Operation
-	operationsByID       map[string]ir.Operation
-	operationsByPath     map[string]ir.Operation
+	operations           []ir.Operation
+	operationsByPointer  map[string]int
+	operationsBySource   map[sourceRestrictionKey]int
+	operationsByID       map[string]int
+	operationsByPath     map[string]int
 	restrictionsByPoint  map[string][]ir.SemanticRestriction
 	restrictionsBySource map[sourceRestrictionKey][]ir.SemanticRestriction
 }
 
 func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 	index := &sourceOwnershipIndex{
-		operationsByPointer:  make(map[string]ir.Operation, len(document.Operations)),
-		operationsBySource:   make(map[sourceRestrictionKey]ir.Operation, len(document.Operations)),
-		operationsByID:       make(map[string]ir.Operation, len(document.Operations)),
-		operationsByPath:     make(map[string]ir.Operation, len(document.Operations)),
+		operations:           document.Operations,
+		operationsByPointer:  make(map[string]int, len(document.Operations)),
+		operationsBySource:   make(map[sourceRestrictionKey]int, len(document.Operations)),
+		operationsByID:       make(map[string]int, len(document.Operations)),
+		operationsByPath:     make(map[string]int, len(document.Operations)),
 		restrictionsByPoint:  make(map[string][]ir.SemanticRestriction),
 		restrictionsBySource: make(map[sourceRestrictionKey][]ir.SemanticRestriction),
 	}
-	for _, operation := range document.Operations {
+	for operationIndex := range document.Operations {
+		operation := document.Operations[operationIndex]
 		pointer := operation.Pointer
 		if pointer == "" {
 			pointer = "#/paths/" + escapePointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
 		}
-		index.operationsByPointer[pointer] = operation
+		index.operationsByPointer[pointer] = operationIndex
 		if provenance, found := document.LookupProvenance(pointer); found {
 			locations := append([]ir.SourceLocation{provenance.Primary}, provenance.Related...)
 			for _, location := range locations {
-				index.operationsBySource[sourceRestrictionKey{source: location.Source, pointer: location.Pointer}] = operation
+				index.operationsBySource[sourceRestrictionKey{source: location.Source, pointer: location.Pointer}] = operationIndex
 			}
 		}
 		if operation.OperationID != "" {
-			index.operationsByID[operation.OperationID] = operation
+			index.operationsByID[operation.OperationID] = operationIndex
 		}
-		index.operationsByPath[operationPathMethodKey(operation.Path, operation.Method)] = operation
+		index.operationsByPath[operationPathMethodKey(operation.Path, operation.Method)] = operationIndex
 	}
 	for _, restriction := range document.SemanticRestrictions {
 		index.restrictionsByPoint[restriction.Location.Pointer] = append(index.restrictionsByPoint[restriction.Location.Pointer], restriction)
@@ -57,13 +61,20 @@ func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 	return index
 }
 
+func (index *sourceOwnershipIndex) operation(operationIndex int) (ir.Operation, bool) {
+	if index == nil || operationIndex < 0 || operationIndex >= len(index.operations) {
+		return ir.Operation{}, false
+	}
+	return index.operations[operationIndex], true
+}
+
 func (index *sourceOwnershipIndex) operationAt(pointer string) (ir.Operation, bool) {
 	if index == nil {
 		return ir.Operation{}, false
 	}
 	for candidate := pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
-		if operation, exists := index.operationsByPointer[candidate]; exists {
-			return operation, true
+		if operationIndex, exists := index.operationsByPointer[candidate]; exists {
+			return index.operation(operationIndex)
 		}
 		if candidate == "#" {
 			break
@@ -78,8 +89,8 @@ func (index *sourceOwnershipIndex) operationAtLocation(location ir.SourceLocatio
 	}
 	for candidate := location.Pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
 		key := sourceRestrictionKey{source: location.Source, pointer: candidate}
-		if operation, exists := index.operationsBySource[key]; exists {
-			return operation, true
+		if operationIndex, exists := index.operationsBySource[key]; exists {
+			return index.operation(operationIndex)
 		}
 		if candidate == "#" {
 			break
@@ -95,7 +106,35 @@ func (index *sourceOwnershipIndex) linkTarget(link map[string]any) (ir.Operation
 	if index == nil {
 		return ir.Operation{}, errMissingOwnershipIndex
 	}
-	return linkTargetOperation(index.operationsByID, index.operationsByPath, link)
+	if operationID, _ := link["operationId"].(string); operationID != "" {
+		operationIndex, ok := index.operationsByID[operationID]
+		if !ok {
+			return ir.Operation{}, fmt.Errorf("operationId %q does not name a generated operation", operationID)
+		}
+		operation, _ := index.operation(operationIndex)
+		return operation, nil
+	}
+	operationRef, _ := link["operationRef"].(string)
+	if !strings.HasPrefix(operationRef, "#/paths/") {
+		return ir.Operation{}, fmt.Errorf("requires operationId or a local operationRef")
+	}
+	tokens := strings.Split(strings.TrimPrefix(operationRef, "#/"), "/")
+	if len(tokens) != 3 || tokens[0] != "paths" {
+		return ir.Operation{}, fmt.Errorf("operationRef %q must target one path operation", operationRef)
+	}
+	path, err := linkJSONPointerToken(tokens[1])
+	if err != nil {
+		return ir.Operation{}, err
+	}
+	method, err := linkJSONPointerToken(tokens[2])
+	if err != nil {
+		return ir.Operation{}, err
+	}
+	if operationIndex, exists := index.operationsByPath[operationPathMethodKey(path, method)]; exists {
+		operation, _ := index.operation(operationIndex)
+		return operation, nil
+	}
+	return ir.Operation{}, fmt.Errorf("operationRef %q does not name a generated operation", operationRef)
 }
 
 func (index *sourceOwnershipIndex) restrictionsAt(document *ir.Document, pointer string) []ir.SemanticRestriction {

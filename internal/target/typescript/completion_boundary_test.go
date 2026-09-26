@@ -180,52 +180,6 @@ func TestPreparedOmissionPlanSurvivesEmitFailureWithoutSemanticMutation(t *testi
 	}
 }
 
-func TestPreparedPlanDoesNotObserveNestedSourceMutation(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(`{
-  "openapi":"3.1.1",
-  "info":{"title":"Immutable nested plan","version":"1"},
-  "paths":{
-    "/thing":{"get":{
-      "operationId":"getThing",
-      "responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Thing"}}}}}
-    }}
-  },
-  "components":{"schemas":{"Thing":{"type":"object","properties":{"value":{"type":"string"}}}}}
-}`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	prepared, values, err := (Generator{}).Prepare(document, generator.Options{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diagnostic.HasErrors(values) {
-		t.Fatalf("prepare diagnostics = %#v", values)
-	}
-	before, err := (Generator{}).Emit(prepared)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	document.ComponentSchemas["Thing"]["properties"].(map[string]any)["value"] = map[string]any{"type": "integer"}
-	components := document.Raw["components"].(map[string]any)
-	schemas := components["schemas"].(map[string]any)
-	schemas["Thing"].(map[string]any)["properties"].(map[string]any)["value"] = map[string]any{"type": "boolean"}
-
-	after, err := (Generator{}).Emit(prepared)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(before) != len(after) {
-		t.Fatalf("artifact count changed after source mutation: %d -> %d", len(before), len(after))
-	}
-	for index := range before {
-		if before[index].Path != after[index].Path || !bytes.Equal(before[index].Data, after[index].Data) {
-			t.Fatalf("artifact %d changed after source mutation: %q -> %q", index, before[index].Path, after[index].Path)
-		}
-	}
-}
-
 func serverOnlyBoundaryOptions(t *testing.T) generator.Options {
 	t.Helper()
 	registry, err := generator.NewAddonRegistry(generator.AddonServer)

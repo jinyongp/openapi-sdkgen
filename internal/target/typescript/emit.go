@@ -106,6 +106,9 @@ func (Generator) Prepare(document *ir.Document, options generator.Options) (gene
 		diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
 		plan.modules = nil
 	}
+	// Ownership is a preparation-only index. Emission consumes the frozen
+	// decisions and must not retain or recompute ownership.
+	plan.ownership = nil
 	return generator.NewPlan("typescript", plan), diagnostic.Sort(diagnostics), nil
 }
 

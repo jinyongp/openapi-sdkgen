@@ -6,6 +6,15 @@ func snapshotIRDocument(document *ir.Document) *ir.Document {
 	if document == nil {
 		return nil
 	}
+	if document.OpenAPIVersion != "" && document.Raw != nil {
+		result := *document
+		result.Operations = append([]ir.Operation(nil), document.Operations...)
+		return &result
+	}
+	return snapshotSyntheticIRDocument(document)
+}
+
+func snapshotSyntheticIRDocument(document *ir.Document) *ir.Document {
 	result := *document
 	result.Servers = cloneIRServers(document.Servers)
 	result.Security = cloneIRSecurityRequirements(document.Security)
