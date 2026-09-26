@@ -60,7 +60,6 @@ func prepareKnownExtensions(document *ir.Document) (*ir.Document, []diagnostic.D
 
 	categoryDiagnostics := prepareErrorCategories(prepared, consumed)
 	diagnostics = append(diagnostics, categoryDiagnostics...)
-	diagnostics = append(diagnostics, validateVisibilityDependencies(prepared)...)
 
 	for _, occurrence := range occurrences {
 		if consumed[occurrence.Pointer] {
@@ -81,7 +80,7 @@ func prepareKnownExtensions(document *ir.Document) (*ir.Document, []diagnostic.D
 	return prepared, diagnostic.Sort(diagnostics), nil
 }
 
-func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnostic {
+func validateVisibilityDependencies(document *ir.Document, omitted map[string]bool) []diagnostic.Diagnostic {
 	byID := make(map[string]ir.Operation)
 	byRoute := make(map[string]ir.Operation)
 	byPathMethod := make(map[string]ir.Operation)
@@ -94,7 +93,7 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 	}
 	var result []diagnostic.Diagnostic
 	for _, source := range document.Operations {
-		if source.Visibility == "hidden" {
+		if source.Visibility == "hidden" || omitted[operationRouteKey(source)] {
 			continue
 		}
 		responses, err := operationResponses(document, source)
@@ -114,7 +113,7 @@ func validateVisibilityDependencies(document *ir.Document) []diagnostic.Diagnost
 					continue
 				}
 				target, exists := visibilityLinkTarget(byID, byRoute, byPathMethod, link)
-				if !exists || target.Visibility != "hidden" {
+				if !exists || target.Visibility != "hidden" || omitted[operationRouteKey(target)] {
 					continue
 				}
 				pointer := linksPointer + "/" + escapePointerToken(name)

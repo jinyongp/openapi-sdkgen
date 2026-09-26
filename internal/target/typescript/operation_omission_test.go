@@ -233,6 +233,19 @@ func TestOperationOmissionTransitivelyRemovesOwnedAndTargetingLinks(t *testing.T
 	if !diagnosticsContainCode(diagnostics, "SDKGEN-W511") || !diagnosticsContainCode(diagnostics, "SDKGEN-W509") {
 		t.Fatalf("omission diagnostics = %#v", diagnostics)
 	}
+	foundUnavailableLink := false
+	for _, value := range diagnostics {
+		if value.Code != "SDKGEN-W509" {
+			continue
+		}
+		if strings.Contains(value.Message, "targets unavailable operation") && !strings.Contains(value.Message, "targets hidden operation") {
+			foundUnavailableLink = true
+			break
+		}
+	}
+	if !foundUnavailableLink {
+		t.Fatalf("omitted target Link diagnostic misclassified visibility: %#v", diagnostics)
+	}
 	if _, err := (Generator{}).Emit(plan); err != nil {
 		t.Fatal(err)
 	}
@@ -248,6 +261,42 @@ api.$links.getSource.toOmitted
 api.$links.getOmitted.toSupported
 `
 	compileTypeScriptArtifactsWithProbe(t, document, "link-operation-omission.probe.ts", probe)
+}
+
+func TestOmittedSourceOperationDoesNotBlockOnOwnedLinkVisibility(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Omitted source Link visibility","version":"1"},
+  "paths":{
+    "/source":{"get":{
+      "operationId":"getSource",
+      "requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"string"}}}},
+      "responses":{"200":{
+        "description":"OK",
+        "links":{"toHidden":{"operationId":"getHidden"}}
+      }}
+    }},
+    "/hidden":{"post":{
+      "operationId":"getHidden",
+      "x-sdk-visibility":"hidden",
+      "responses":{"204":{"description":"OK"}}
+    }},
+    "/ok":{"post":{"operationId":"createItem","responses":{"204":{"description":"OK"}}}}
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, diagnostics, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diagnostic.HasErrors(diagnostics) || diagnosticsContainCode(diagnostics, "SDKGEN-E621") {
+		t.Fatalf("omitted source Link visibility blocked generation: %#v", diagnostics)
+	}
+	if !diagnosticsContainCode(diagnostics, "SDKGEN-W511") {
+		t.Fatalf("missing source operation omission diagnostic: %#v", diagnostics)
+	}
 }
 
 func TestOperationOmissionRemovesOwnedServerCallbackContract(t *testing.T) {
@@ -288,6 +337,44 @@ func TestOperationOmissionRemovesOwnedServerCallbackContract(t *testing.T) {
 	if strings.Contains(callbacks, "getSource") || strings.Contains(callbacks, "completedCallback") ||
 		strings.Contains(callbacks, "completed") || strings.Contains(callbacks, "GET /source") {
 		t.Fatalf("omitted operation leaked callback server contract:\n%s", callbacks)
+	}
+}
+
+func TestOperationRestrictionWithAmbiguousSharedSourceOwnershipStaysBlocking(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Ambiguous restriction ownership","version":"1"},
+  "paths":{
+    "/a":{"get":{"operationId":"getA","responses":{"204":{"description":"OK"}}}},
+    "/b":{"get":{"operationId":"getB","responses":{"204":{"description":"OK"}}}}
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	shared := ir.SourceLocation{Source: "shared.yaml", Pointer: "#/Shared/get"}
+	document.Provenance = map[string]ir.Provenance{
+		document.Operations[0].Pointer: {Primary: shared},
+		document.Operations[1].Pointer: {Primary: shared},
+	}
+	document.SemanticRestrictions = []ir.SemanticRestriction{{
+		RuleID: "shared",
+		Scope:  failure.ScopeOperation,
+		Effect: failure.EffectOmitOperation,
+		Location: ir.SourceLocation{
+			Source:  shared.Source,
+			Pointer: shared.Pointer + "/requestBody",
+		},
+	}}
+	_, diagnostics, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diagnostics) != 1 || diagnostics[0].Code != "SDKGEN-E507" ||
+		diagnostics[0].Severity != diagnostic.SeverityError ||
+		diagnostics[0].Scope != failure.ScopeDocument ||
+		diagnostics[0].Effect != failure.EffectBlock {
+		t.Fatalf("diagnostics = %#v", diagnostics)
 	}
 }
 

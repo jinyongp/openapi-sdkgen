@@ -49,6 +49,24 @@ func TestSourceOwnershipIndexDoesNotGuessOperationAcrossSources(t *testing.T) {
 	}
 }
 
+func TestSourceOwnershipIndexRejectsAmbiguousSharedSourceOwnership(t *testing.T) {
+	sourceOperation := ir.SourceLocation{Source: "shared.yaml", Pointer: "#/Shared/get"}
+	document := &ir.Document{
+		Operations: []ir.Operation{
+			{Pointer: "#/paths/~1a/get", OperationID: "getA", Method: "GET", Path: "/a"},
+			{Pointer: "#/paths/~1b/get", OperationID: "getB", Method: "GET", Path: "/b"},
+		},
+		Provenance: map[string]ir.Provenance{
+			"#/paths/~1a/get": {Primary: sourceOperation},
+			"#/paths/~1b/get": {Primary: sourceOperation},
+		},
+	}
+	index := newSourceOwnershipIndex(document)
+	if operation, found := index.operationAtLocation(ir.SourceLocation{Source: "shared.yaml", Pointer: "#/Shared/get/requestBody"}); found {
+		t.Fatalf("ambiguous shared source ownership guessed operation %#v", operation)
+	}
+}
+
 func TestSourceOwnershipIndexKeepsRestrictionSourceIdentity(t *testing.T) {
 	pointer := "#/paths/~1items/get/responses/200/links/follow"
 	wanted := ir.SemanticRestriction{

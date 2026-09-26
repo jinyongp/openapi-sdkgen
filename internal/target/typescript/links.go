@@ -110,7 +110,11 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest, ownersh
 				}
 				targetPlan, targetVisible := visible[operationRouteKey(target)]
 				if !targetVisible {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s targets hidden operation %q", operationLabel(source), name, operationLabel(target)), false))
+					reason := "unavailable"
+					if target.Visibility == "hidden" {
+						reason = "hidden"
+					}
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s targets %s operation %q", operationLabel(source), name, reason, operationLabel(target)), false))
 					continue
 				}
 				definition, err := linkDefinition(sourcePlan.prepared.parameters, targetPlan.prepared.parameters, link, linkDefinitionPointers{

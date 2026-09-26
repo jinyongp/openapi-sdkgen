@@ -238,6 +238,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	plan := &sourcePlan{document: prepared, ownership: newSourceOwnershipIndex(prepared), includeServer: includeServer}
 	targetDiagnostics := prepareTargetDiagnostics(plan)
 	diagnostics = append(diagnostics, targetDiagnostics...)
+	diagnostics = append(diagnostics, validateVisibilityDependencies(prepared, plan.omittedOperations)...)
 	manifest, manifestErrors := buildManifestDiagnostics(prepared)
 	for _, manifestErr := range manifestErrors {
 		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))

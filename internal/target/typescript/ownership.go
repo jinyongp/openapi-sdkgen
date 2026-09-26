@@ -45,7 +45,14 @@ func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 		if provenance, found := document.LookupProvenance(pointer); found {
 			locations := append([]ir.SourceLocation{provenance.Primary}, provenance.Related...)
 			for _, location := range locations {
-				index.operationsBySource[sourceRestrictionKey{source: location.Source, pointer: location.Pointer}] = operationIndex
+				key := sourceRestrictionKey{source: location.Source, pointer: location.Pointer}
+				if existing, exists := index.operationsBySource[key]; exists && existing != operationIndex {
+					index.operationsBySource[key] = -1
+					continue
+				}
+				if _, exists := index.operationsBySource[key]; !exists {
+					index.operationsBySource[key] = operationIndex
+				}
 			}
 		}
 		if operation.OperationID != "" {
@@ -90,6 +97,9 @@ func (index *sourceOwnershipIndex) operationAtLocation(location ir.SourceLocatio
 	for candidate := location.Pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
 		key := sourceRestrictionKey{source: location.Source, pointer: candidate}
 		if operationIndex, exists := index.operationsBySource[key]; exists {
+			if operationIndex < 0 {
+				return ir.Operation{}, false
+			}
 			return index.operation(operationIndex)
 		}
 		if candidate == "#" {
