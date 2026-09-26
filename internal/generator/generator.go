@@ -141,6 +141,12 @@ type Target interface {
 	Emit(Plan) ([]Artifact, error)
 }
 
+// DiagnosticTarget exposes analyzer-level target coverage without changing the
+// compatibility Target.Prepare contract used by direct callers.
+type DiagnosticTarget interface {
+	PrepareWithCoverage(*ir.Document, Options) (Plan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error)
+}
+
 // ArtifactSink accepts one validated artifact at a time. Implementations may
 // write directly to a rollback-safe staging area instead of retaining bytes.
 // After WriteArtifact returns nil, ownership of artifact.Data belongs to the

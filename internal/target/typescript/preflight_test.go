@@ -59,6 +59,124 @@ func TestPrepareAccumulatesIndependentTargetSupportDiagnostics(t *testing.T) {
 	}
 }
 
+func TestCollectPrepareReturnsNoEmitCapablePlanAndReportsAnalyzerCoverage(t *testing.T) {
+	document := &ir.Document{
+		Raw: map[string]any{
+			"paths": map[string]any{
+				"/things/{id}":   map[string]any{},
+				"/things/{name}": map[string]any{},
+			},
+		},
+		ComponentSchemas: map[string]map[string]any{
+			"Dynamic": {"$dynamicRef": "#node"},
+		},
+		Operations: []ir.Operation{
+			{
+				OperationID: "same",
+				Method:      "GET",
+				Path:        "/things/{id}",
+				Raw: map[string]any{
+					"security": "invalid",
+				},
+			},
+			{OperationID: "same", Method: "GET", Path: "/things/{name}"},
+		},
+	}
+
+	failFastPlan, failFastDiagnostics, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !diagnostic.HasErrors(failFastDiagnostics) {
+		t.Fatalf("fail-fast diagnostics = %#v, want blocking target findings", failFastDiagnostics)
+	}
+	if _, err := failFastPlan.Value("typescript"); err != nil {
+		t.Fatalf("fail-fast direct Prepare lost compatibility plan: %v", err)
+	}
+
+	collectOptions := generator.Options{DiagnosticMode: diagnostic.ModeCollect}
+	collectPlan, values, coverage, err := (Generator{}).PrepareWithCoverage(document, collectOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := diagnostic.RenderHuman(values, nil)
+	for _, code := range []string{"SDKGEN-E501", "SDKGEN-E503", "SDKGEN-E508"} {
+		if !strings.Contains(report, code) {
+			t.Fatalf("collect target preflight missing %s:\n%s", code, report)
+		}
+	}
+	if _, err := collectPlan.Value("typescript"); err == nil {
+		t.Fatal("collect mode returned an emit-capable plan despite blocking target diagnostics")
+	}
+
+	statuses := map[string]diagnostic.CoverageStatus{}
+	for _, item := range coverage {
+		statuses[item.Analyzer] = item.Status
+	}
+	for _, analyzer := range []string{
+		"target.extensions",
+		"target.support",
+		"target.visibility",
+		"target.lowering",
+		"target.links",
+		"target.streams",
+	} {
+		if statuses[analyzer] != diagnostic.CoverageComplete {
+			t.Fatalf("coverage[%s] = %q, all coverage = %#v", analyzer, statuses[analyzer], coverage)
+		}
+	}
+	if statuses["target.modules"] != diagnostic.CoverageSkipped ||
+		statuses["target.entry-surface"] != diagnostic.CoverageSkipped {
+		t.Fatalf("blocking-plan coverage = %#v", coverage)
+	}
+}
+
+func TestCollectPipelineKeepsBlockingTargetPlanNonEmitCapable(t *testing.T) {
+	compiled, err := sdkgen.CompileResultWithOptions([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Collect target pipeline","version":"1"},
+  "paths":{
+    "/items":{"get":{
+      "operationId":"same",
+      "security":[{"missing":[]}],
+      "responses":{"204":{"description":"OK"}}
+    }},
+    "/other":{"get":{
+      "operationId":"same",
+      "responses":{"204":{"description":"OK"}}
+    }}
+  }
+}`), sdkgen.CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if compiled.Document == nil || diagnostic.HasErrors(compiled.Diagnostics) {
+		t.Fatalf("compiler result = %#v", compiled)
+	}
+
+	options := generator.Options{DiagnosticMode: diagnostic.ModeCollect}
+	prepared, err := generator.PrepareCompilation(Generator{}, compiled, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !diagnostic.HasErrors(prepared.Diagnostics) {
+		t.Fatalf("target diagnostics = %#v, want blocking findings", prepared.Diagnostics)
+	}
+	if _, err := prepared.Plan.Value("typescript"); err == nil {
+		t.Fatal("pipeline retained an emit-capable plan after collect-mode target blockers")
+	}
+	var detailedCoverage bool
+	for _, item := range prepared.Coverage {
+		if item.Analyzer == "target.support" && item.Status == diagnostic.CoverageComplete {
+			detailedCoverage = true
+			break
+		}
+	}
+	if !detailedCoverage {
+		t.Fatalf("pipeline coverage = %#v", prepared.Coverage)
+	}
+}
+
 func TestPrepareAcceptsOrdinaryTemplatedPathCollisionWithServerAddon(t *testing.T) {
 	document := &ir.Document{Operations: []ir.Operation{
 		pathOperation("deleteByID", "DELETE", "/users/{id}", "id", map[string]any{"type": "integer"}),

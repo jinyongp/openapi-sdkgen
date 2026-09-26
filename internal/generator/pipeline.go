@@ -66,13 +66,23 @@ func PrepareCompilation(target Target, compiled compiler.Result, options Options
 	if !orchestrator.Ready(targetAnalyzer) {
 		return Preparation{}, fmt.Errorf("internal generation pipeline: target analyzer prerequisites unexpectedly unavailable")
 	}
-	plan, targetDiagnostics, err := target.Prepare(compiled.Document, options)
+	var (
+		plan              Plan
+		targetDiagnostics []diagnostic.Diagnostic
+		targetCoverage    []diagnostic.AnalysisCoverage
+	)
+	if analyzed, ok := target.(DiagnosticTarget); ok {
+		plan, targetDiagnostics, targetCoverage, err = analyzed.PrepareWithCoverage(compiled.Document, options)
+	} else {
+		plan, targetDiagnostics, err = target.Prepare(compiled.Document, options)
+	}
 	result.Diagnostics = diagnostic.Sort(append(result.Diagnostics, targetDiagnostics...))
 	if err != nil {
 		return result, err
 	}
 	orchestrator.Record(targetAnalyzer, diagnostic.CoverageOutcome{Status: diagnostic.CoverageComplete})
 	result.Coverage = append(result.Coverage, orchestrator.Coverage()...)
+	result.Coverage = append(result.Coverage, targetCoverage...)
 	result.Plan = plan
 	if diagnostic.HasErrors(targetDiagnostics) {
 		result.SkippedPhases = append(result.SkippedPhases,

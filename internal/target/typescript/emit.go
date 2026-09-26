@@ -95,21 +95,41 @@ type sourcePlan struct {
 
 // Prepare validates author input for the TypeScript target.
 func (Generator) Prepare(document *ir.Document, options generator.Options) (generator.Plan, []diagnostic.Diagnostic, error) {
+	plan, diagnostics, _, err := (Generator{}).PrepareWithCoverage(document, options)
+	return plan, diagnostics, err
+}
+
+// PrepareWithCoverage validates target-owned constraints and reports which
+// independent analyzers were or were not able to run before plan construction.
+func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Options) (generator.Plan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	if document == nil {
-		return generator.Plan{}, nil, fmt.Errorf("internal TypeScript target: IR document is nil")
+		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: IR document is nil")
 	}
-	plan, diagnostics, err := prepareSourcePlan(document, options.HasAddon(generator.AddonServer))
+	mode, err := options.DiagnosticMode.Resolve()
 	if err != nil {
-		return generator.Plan{}, diagnostics, err
+		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: diagnostic mode: %w", err)
 	}
-	if !diagnostic.HasErrors(diagnostics) && !hasMeaningfulEntrySurface(plan) {
-		diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
-		plan.modules = nil
+	plan, diagnostics, coverage, err := prepareSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode)
+	if err != nil {
+		return generator.Plan{}, diagnostics, coverage, err
+	}
+	if !diagnostic.HasErrors(diagnostics) {
+		if !hasMeaningfulEntrySurface(plan) {
+			diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
+			plan.modules = nil
+		}
+		coverage = append(coverage, targetAnalysisCoverage("target.entry-surface", diagnostic.CoverageComplete, ""))
+	} else {
+		coverage = append(coverage, targetAnalysisCoverage("target.entry-surface", diagnostic.CoverageSkipped, "blocking target diagnostics prevented meaningful-entry validation"))
 	}
 	// Ownership is a preparation-only index. Emission consumes the frozen
 	// decisions and must not retain or recompute ownership.
 	plan.ownership = nil
-	return generator.NewPlan("typescript", plan), diagnostic.Sort(diagnostics), nil
+	diagnostics = diagnostic.Sort(diagnostics)
+	if mode == diagnostic.ModeCollect && diagnostic.HasErrors(diagnostics) {
+		return generator.Plan{}, diagnostics, coverage, nil
+	}
+	return generator.NewPlan("typescript", plan), diagnostics, coverage, nil
 }
 
 // Emit emits a previously validated TypeScript plan.
@@ -228,21 +248,34 @@ func sourceArtifacts(document *ir.Document, includeServer bool) ([]Artifact, err
 }
 
 func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, []diagnostic.Diagnostic, error) {
+	plan, diagnostics, _, err := prepareSourcePlanWithCoverage(document, includeServer, diagnostic.ModeFailFast)
+	return plan, diagnostics, err
+}
+
+func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	if document == nil {
-		return nil, nil, fmt.Errorf("IR document is nil")
+		return nil, nil, nil, fmt.Errorf("IR document is nil")
 	}
+	if _, err := mode.Resolve(); err != nil {
+		return nil, nil, nil, err
+	}
+	var coverage []diagnostic.AnalysisCoverage
 	prepared, diagnostics, err := prepareKnownExtensions(document)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, coverage, err
 	}
+	coverage = append(coverage, targetAnalysisCoverage("target.extensions", diagnostic.CoverageComplete, ""))
 	plan := &sourcePlan{document: prepared, ownership: newSourceOwnershipIndex(prepared), includeServer: includeServer}
 	targetDiagnostics := prepareTargetDiagnostics(plan)
 	diagnostics = append(diagnostics, targetDiagnostics...)
+	coverage = append(coverage, targetAnalysisCoverage("target.support", diagnostic.CoverageComplete, ""))
 	diagnostics = append(diagnostics, validateVisibilityDependencies(prepared, plan.omittedOperations)...)
+	coverage = append(coverage, targetAnalysisCoverage("target.visibility", diagnostic.CoverageComplete, ""))
 	manifest, manifestErrors := buildManifestDiagnostics(prepared)
 	for _, manifestErr := range manifestErrors {
 		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))
 	}
+	coverage = append(coverage, targetAnalysisCoverage("target.lowering", diagnostic.CoverageComplete, ""))
 	helperManifest := filterManifestOperations(manifest, plan.omittedOperations)
 	if len(manifestErrors) != 0 {
 		helperManifest = filterManifestOperations(visibilityManifest(prepared), plan.omittedOperations)
@@ -262,6 +295,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		}
 	}
 	plan.links = links
+	coverage = append(coverage, targetAnalysisCoverage("target.links", diagnostic.CoverageComplete, ""))
 	streams, streamErrors := generatedStreamsDiagnostics(prepared, helperManifest)
 	for _, streamsErr := range streamErrors {
 		diagnostics = append(diagnostics, helperPreparationDiagnostic(prepared, plan.ownership, "response streams", "SDKGEN-E510", streamsErr))
@@ -269,6 +303,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	if len(streamErrors) == 0 {
 		plan.streams = streams
 	}
+	coverage = append(coverage, targetAnalysisCoverage("target.streams", diagnostic.CoverageComplete, ""))
 	if len(manifestErrors) == 0 && !blockingLinkFailure && len(streamErrors) == 0 {
 		if plan.manifest != nil && plan.reservationManifest != nil {
 			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, *plan.reservationManifest, plan.manifest, links, streams)
@@ -278,7 +313,14 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
 			}
+			coverage = append(coverage, targetAnalysisCoverage("target.resources", diagnostic.CoverageComplete, ""))
 		}
+	} else {
+		coverage = append(coverage, targetAnalysisCoverage(
+			"target.resources",
+			diagnostic.CoverageSkipped,
+			"lowering, Link, or stream prerequisites were unavailable",
+		))
 	}
 	if includeServer {
 		webhooks, webhookErrors := collectWebhooksDiagnostics(prepared)
@@ -288,6 +330,7 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		if len(webhookErrors) == 0 {
 			plan.webhooks = webhooks
 		}
+		coverage = append(coverage, targetAnalysisCoverage("target.webhooks", diagnostic.CoverageComplete, ""))
 		callbacks, callbackErrors := collectCallbacksDiagnostics(prepared, plan.omittedOperations)
 		for _, callbackErr := range callbackErrors {
 			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, plan.ownership, "callback contracts", callbackErr))
@@ -295,15 +338,41 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		if len(callbackErrors) == 0 {
 			plan.callbacks = callbacks
 		}
+		coverage = append(coverage, targetAnalysisCoverage("target.callbacks", diagnostic.CoverageComplete, ""))
 	}
 	if plan.manifest != nil && plan.reservationManifest != nil && !diagnostic.HasErrors(diagnostics) {
 		modules, moduleErr := buildSemanticModulePlan(prepared, *plan.reservationManifest, *plan.manifest, plan.resourceTree, includeServer)
 		if moduleErr != nil {
-			return nil, diagnostic.Sort(diagnostics), fmt.Errorf("build TypeScript semantic module plan: %w", moduleErr)
+			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript semantic module plan: %w", moduleErr)
 		}
 		plan.modules = modules
+		coverage = append(coverage, targetAnalysisCoverage("target.modules", diagnostic.CoverageComplete, ""))
+	} else {
+		coverage = append(coverage, targetAnalysisCoverage(
+			"target.modules",
+			diagnostic.CoverageSkipped,
+			"blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction",
+		))
 	}
-	return plan, diagnostic.Sort(diagnostics), nil
+	return plan, diagnostic.Sort(diagnostics), coverage, nil
+}
+
+func targetAnalysisCoverage(analyzer string, status diagnostic.CoverageStatus, reason string) diagnostic.AnalysisCoverage {
+	coverage := diagnostic.AnalysisCoverage{
+		Phase:    diagnostic.PhaseTarget,
+		Analyzer: analyzer,
+		Status:   status,
+		Target:   "typescript",
+	}
+	if status == diagnostic.CoverageSkipped {
+		coverage.Prerequisites = []diagnostic.CoveragePrerequisite{{
+			Name:      "target-analysis-prerequisites",
+			Available: false,
+			Reason:    reason,
+		}}
+		coverage.Reason = reason
+	}
+	return coverage
 }
 
 func hasMeaningfulEntrySurface(plan *sourcePlan) bool {
