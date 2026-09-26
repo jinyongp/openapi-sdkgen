@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+
+	"openapi-sdkgen/internal/failure"
 )
 
 // Severity classifies whether generation may continue.
@@ -43,19 +45,22 @@ type Location struct {
 // Cause contains only an explicitly sanitized summary; callers must never put
 // credentials, URLs with secrets, or arbitrary transport errors in it.
 type Diagnostic struct {
-	Severity  Severity   `json:"severity"`
-	Code      string     `json:"code"`
-	Phase     Phase      `json:"phase"`
-	Location  Location   `json:"location"`
-	Related   []Location `json:"related,omitempty"`
-	Target    string     `json:"target,omitempty"`
-	Route     string     `json:"route,omitempty"`
-	Operation string     `json:"operation,omitempty"`
-	Rule      string     `json:"rule,omitempty"`
-	Action    string     `json:"action,omitempty"`
-	Message   string     `json:"message"`
-	Hint      string     `json:"hint,omitempty"`
-	Cause     string     `json:"cause,omitempty"`
+	Severity   Severity       `json:"severity"`
+	Code       string         `json:"code"`
+	Phase      Phase          `json:"phase"`
+	Location   Location       `json:"location"`
+	Related    []Location     `json:"related,omitempty"`
+	Target     string         `json:"target,omitempty"`
+	Route      string         `json:"route,omitempty"`
+	Operation  string         `json:"operation,omitempty"`
+	Capability string         `json:"capability,omitempty"`
+	Scope      failure.Scope  `json:"scope,omitempty"`
+	Effect     failure.Effect `json:"effect,omitempty"`
+	Rule       string         `json:"rule,omitempty"`
+	Action     string         `json:"action,omitempty"`
+	Message    string         `json:"message"`
+	Hint       string         `json:"hint,omitempty"`
+	Cause      string         `json:"cause,omitempty"`
 }
 
 // SkippedPhase explains a prerequisite-bound phase that could not run.
@@ -162,6 +167,15 @@ func Sort(values []Diagnostic) []Diagnostic {
 		if left.Operation != right.Operation {
 			return left.Operation < right.Operation
 		}
+		if left.Capability != right.Capability {
+			return left.Capability < right.Capability
+		}
+		if left.Scope != right.Scope {
+			return left.Scope < right.Scope
+		}
+		if left.Effect != right.Effect {
+			return left.Effect < right.Effect
+		}
 		if left.Rule != right.Rule {
 			return left.Rule < right.Rule
 		}
@@ -184,7 +198,7 @@ func NewReport(values []Diagnostic, skipped []SkippedPhase) Report {
 	values = SanitizeSources(values)
 	skipped = normalizeSkipped(skipped)
 	return Report{
-		SchemaVersion: 2,
+		SchemaVersion: 3,
 		Counts:        Count(values),
 		Diagnostics:   append([]Diagnostic{}, values...),
 		SkippedPhases: append([]SkippedPhase{}, skipped...),
@@ -235,6 +249,15 @@ func RenderHuman(values []Diagnostic, skipped []SkippedPhase) string {
 		}
 		if value.Operation != "" {
 			fmt.Fprintf(&output, "\n  operation: %s", value.Operation)
+		}
+		if value.Capability != "" {
+			fmt.Fprintf(&output, "\n  capability: %s", value.Capability)
+		}
+		if value.Scope != failure.ScopeNone {
+			fmt.Fprintf(&output, "\n  scope: %s", value.Scope)
+		}
+		if value.Effect != failure.EffectNone {
+			fmt.Fprintf(&output, "\n  effect: %s", value.Effect)
 		}
 		if value.Rule != "" {
 			fmt.Fprintf(&output, "\n  rule: %s", value.Rule)

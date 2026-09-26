@@ -18,6 +18,7 @@ import (
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/generator"
 )
 
@@ -54,13 +55,16 @@ func TestGenerateDoesNotPublishOutputWhenInputFails(t *testing.T) {
 func TestGenerateJSONDiagnosticsAreStructuredAndSanitized(t *testing.T) {
 	const secret = "diagnostic-secret"
 	warning := diagnostic.Diagnostic{
-		Severity: diagnostic.SeverityWarning,
-		Code:     "SDKGEN-W900",
-		Phase:    diagnostic.PhaseTarget,
-		Location: diagnostic.Location{Source: "https://user:" + secret + "@example.test/openapi.json?token=alpha#fragment", Pointer: "#/paths"},
-		Rule:     "COMP-TEST-001",
-		Action:   "ignore",
-		Message:  "test warning",
+		Severity:   diagnostic.SeverityWarning,
+		Code:       "SDKGEN-W900",
+		Phase:      diagnostic.PhaseTarget,
+		Location:   diagnostic.Location{Source: "https://user:" + secret + "@example.test/openapi.json?token=alpha#fragment", Pointer: "#/paths"},
+		Capability: "test-capability",
+		Scope:      failure.ScopeCapability,
+		Effect:     failure.EffectOmitCapability,
+		Rule:       "COMP-TEST-001",
+		Action:     "ignore",
+		Message:    "test warning",
 	}
 	blocking := diagnostic.Diagnostic{
 		Severity: diagnostic.SeverityError,
@@ -68,6 +72,8 @@ func TestGenerateJSONDiagnosticsAreStructuredAndSanitized(t *testing.T) {
 		Phase:    diagnostic.PhaseTarget,
 		Location: diagnostic.Location{Source: "https://other:" + secret + "@example.test/openapi.json?token=beta#fragment", Pointer: "#/paths/~1items/get"},
 		Related:  []diagnostic.Location{{Source: "https://related:" + secret + "@example.test/schema.json?token=gamma", Pointer: "#/Thing"}},
+		Scope:    failure.ScopeDocument,
+		Effect:   failure.EffectBlock,
 		Message:  "test error",
 		Hint:     "fix it",
 	}
@@ -106,15 +112,17 @@ func TestGenerateJSONDiagnosticsAreStructuredAndSanitized(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
 		t.Fatalf("decode JSON diagnostics: %v\n%s", err, output.String())
 	}
-	if report.SchemaVersion != 2 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+	if report.SchemaVersion != 3 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
 		t.Fatalf("report header = %#v", report)
 	}
 	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E900" || report.Diagnostics[1].Code != "SDKGEN-W900" {
 		t.Fatalf("diagnostics = %#v", report.Diagnostics)
 	}
 	if report.Diagnostics[1].Rule != "COMP-TEST-001" || report.Diagnostics[1].Action != "ignore" ||
-		report.Diagnostics[0].Rule != "" || report.Diagnostics[0].Action != "" {
-		t.Fatalf("diagnostic compatibility fields = %#v", report.Diagnostics)
+		report.Diagnostics[1].Scope != failure.ScopeCapability || report.Diagnostics[1].Effect != failure.EffectOmitCapability ||
+		report.Diagnostics[1].Capability != "test-capability" || report.Diagnostics[0].Scope != failure.ScopeDocument ||
+		report.Diagnostics[0].Effect != failure.EffectBlock || report.Diagnostics[0].Rule != "" || report.Diagnostics[0].Action != "" {
+		t.Fatalf("diagnostic v3 fields = %#v", report.Diagnostics)
 	}
 	if len(report.SkippedPhases) != 1 || report.SkippedPhases[0].Phase != diagnostic.PhaseEmit {
 		t.Fatalf("skipped phases = %#v", report.SkippedPhases)

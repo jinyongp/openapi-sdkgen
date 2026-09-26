@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"openapi-sdkgen/internal/failure"
 )
 
 type featureManifest struct {
@@ -28,16 +30,20 @@ type manifestFeature struct {
 	CompatibilityAction  string             `json:"compatibilityAction,omitempty"`
 	Conformance          string             `json:"conformance,omitempty"`
 	SemanticImpact       string             `json:"semanticImpact,omitempty"`
+	FailureScope         failure.Scope      `json:"failureScope,omitempty"`
+	GenerationEffect     failure.Effect     `json:"generationEffect,omitempty"`
 	Proof                map[string]string  `json:"proof,omitempty"`
 	Conditions           []featureCondition `json:"conditions"`
 }
 
 type featureCondition struct {
-	Target   string   `json:"target"`
-	With     []string `json:"with"`
-	Scope    string   `json:"scope"`
-	State    string   `json:"state"`
-	Evidence string   `json:"evidence"`
+	Target           string         `json:"target"`
+	With             []string       `json:"with"`
+	Scope            string         `json:"scope"`
+	State            string         `json:"state"`
+	FailureScope     failure.Scope  `json:"failureScope,omitempty"`
+	GenerationEffect failure.Effect `json:"generationEffect,omitempty"`
+	Evidence         string         `json:"evidence"`
 }
 
 func TestFeatureMatrixListsEveryVersionAndFeatureFamily(t *testing.T) {
@@ -104,8 +110,8 @@ func TestFeatureMatrixListsEveryVersionAndFeatureFamily(t *testing.T) {
 				t.Errorf("feature matrix has no Current value: %s", lines[index])
 			} else if current >= 0 {
 				status := strings.ToLower(cells[current])
-				if !strings.Contains(status, "generated") && !strings.Contains(status, "metadata") && !strings.Contains(status, "error") {
-					t.Errorf("feature matrix Current value must map to generated, metadata, or error: %s", lines[index])
+				if !strings.Contains(status, "generated") && !strings.Contains(status, "metadata") && !strings.Contains(status, "omitted") && !strings.Contains(status, "error") {
+					t.Errorf("feature matrix Current value must map to generated, metadata, omitted, or error: %s", lines[index])
 				}
 			}
 			if evidence < 0 || evidence >= len(cells) {
@@ -169,7 +175,7 @@ func TestAtomicFeatureInventoryUsesOneVerifiableTargetStatePerSurface(t *testing
 			}
 			seenIDs[cells[id]] = true
 			switch cells[state] {
-			case "generated", "metadata", "error":
+			case "generated", "metadata", "omitted", "error":
 			default:
 				t.Errorf("atomic feature inventory needs exactly one target state: %s", lines[index])
 			}
@@ -192,7 +198,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 	if err := json.Unmarshal(contents, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.SchemaVersion != 2 || len(manifest.States) != 3 {
+	if manifest.SchemaVersion != 3 || !sameStrings(manifest.States, []string{"generated", "metadata", "omitted", "error"}) {
 		t.Fatalf("unexpected feature manifest header: %#v", manifest)
 	}
 	if !sameStrings(manifest.Targets, []string{"typescript"}) {
@@ -207,9 +213,12 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		}
 		seen[feature.ID] = feature
 		switch feature.State {
-		case "generated", "metadata", "error":
+		case "generated", "metadata", "omitted", "error":
 		default:
 			t.Errorf("manifest feature %q has invalid state %q", feature.ID, feature.State)
+		}
+		if err := manifestFailureContractError(feature.State, feature.FailureScope, feature.GenerationEffect); err != nil {
+			t.Errorf("manifest feature %q failure contract: %v", feature.ID, err)
 		}
 		if len(feature.Versions) == 0 {
 			t.Errorf("manifest feature %q has no versions", feature.ID)
@@ -229,9 +238,12 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 				t.Errorf("manifest feature %q has invalid conditional target %q", feature.ID, condition.Target)
 			}
 			switch condition.State {
-			case "generated", "metadata", "error":
+			case "generated", "metadata", "omitted", "error":
 			default:
 				t.Errorf("manifest feature %q has invalid conditional state %q", feature.ID, condition.State)
+			}
+			if err := manifestFailureContractError(condition.State, condition.FailureScope, condition.GenerationEffect); err != nil {
+				t.Errorf("manifest feature %q conditional failure contract: %v", feature.ID, err)
 			}
 			if condition.Evidence == "" {
 				t.Errorf("manifest feature %q has conditional state without evidence", feature.ID)
@@ -251,12 +263,18 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 				t.Errorf("manifest feature %s has unsupported condition scope %q", feature.ID, condition.Scope)
 			}
 			manifestContracts = append(manifestContracts, strings.Join([]string{
-				feature.ID + "@" + condition.Target, condition.Scope, condition.State, strings.Join(condition.With, ","), condition.Evidence,
+				feature.ID + "@" + condition.Target,
+				condition.Scope,
+				condition.State,
+				string(condition.FailureScope),
+				string(condition.GenerationEffect),
+				strings.Join(condition.With, ","),
+				condition.Evidence,
 			}, "\t"))
 		}
 	}
 	sort.Strings(manifestContracts)
-	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "37981c32f1ac2ee9dd2a1b4070a6d0b83abef968bd8cfa149ce98dbccaca195d" {
+	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "fda747bc1bfb3922ecbedce79a9d34faeaf6a9cacfab7af1d939c117dd1c80c6" {
 		t.Errorf("manifest feature/evidence contract changed: %s", got)
 	}
 
@@ -355,8 +373,60 @@ func manifestFeatureContract(feature manifestFeature) string {
 		feature.CompatibilityAction,
 		feature.Conformance,
 		feature.SemanticImpact,
+		string(feature.FailureScope),
+		string(feature.GenerationEffect),
 		strings.Join(proof, ","),
 	}, "\t")
+}
+
+func manifestFailureContractError(state string, scope failure.Scope, effect failure.Effect) error {
+	if !failure.ValidPair(scope, effect) {
+		return fmt.Errorf("invalid failure scope/effect pair %q/%q", scope, effect)
+	}
+	switch state {
+	case "generated", "metadata":
+		if scope != failure.ScopeNone || effect != failure.EffectNone {
+			return fmt.Errorf("state %q must not declare failure scope/effect", state)
+		}
+	case "omitted":
+		if effect != failure.EffectOmitOperation && effect != failure.EffectOmitCapability {
+			return fmt.Errorf("omitted state requires an omit generation effect")
+		}
+	case "error":
+		if effect != failure.EffectBlock || scope == failure.ScopeNone {
+			return fmt.Errorf("error state requires a non-empty scope and block effect")
+		}
+	default:
+		return fmt.Errorf("unsupported state %q", state)
+	}
+	return nil
+}
+
+func TestFeatureManifestV3FailureContracts(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		state  string
+		scope  failure.Scope
+		effect failure.Effect
+		valid  bool
+	}{
+		{name: "generated", state: "generated", valid: true},
+		{name: "metadata", state: "metadata", valid: true},
+		{name: "omitted operation", state: "omitted", scope: failure.ScopeOperation, effect: failure.EffectOmitOperation, valid: true},
+		{name: "omitted capability", state: "omitted", scope: failure.ScopeCapability, effect: failure.EffectOmitCapability, valid: true},
+		{name: "blocking document", state: "error", scope: failure.ScopeDocument, effect: failure.EffectBlock, valid: true},
+		{name: "blocking operation", state: "error", scope: failure.ScopeOperation, effect: failure.EffectBlock, valid: true},
+		{name: "generated with failure", state: "generated", scope: failure.ScopeDocument, effect: failure.EffectBlock},
+		{name: "omitted without omit effect", state: "omitted", scope: failure.ScopeOperation, effect: failure.EffectBlock},
+		{name: "error without scope", state: "error", effect: failure.EffectBlock},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := manifestFailureContractError(test.state, test.scope, test.effect)
+			if (err == nil) != test.valid {
+				t.Fatalf("contract error = %v, valid = %v", err, test.valid)
+			}
+		})
+	}
 }
 
 func validateCompatibilityFeature(t *testing.T, root string, feature manifestFeature) {
@@ -410,8 +480,11 @@ func validateCompatibilityFeature(t *testing.T, root string, feature manifestFea
 			t.Errorf("preserve-extension feature %q requires generated state plus compile and runtime proof", feature.ID)
 		}
 	case "reject":
-		if feature.State != "error" || (feature.Proof["compile"] == "" && feature.Proof["target-error"] == "") {
-			t.Errorf("reject compatibility feature %q requires error state and compile or target-error proof", feature.ID)
+		if feature.State != "error" && feature.State != "omitted" {
+			t.Errorf("reject compatibility feature %q requires error or omitted state", feature.ID)
+		}
+		if feature.Proof["compile"] == "" && feature.Proof["target-error"] == "" {
+			t.Errorf("reject compatibility feature %q requires compile or target-error proof", feature.ID)
 		}
 	}
 }

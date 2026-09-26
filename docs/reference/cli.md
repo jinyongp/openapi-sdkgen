@@ -175,9 +175,9 @@ openapi-sdkgen generate \
 ```
 
 The JSON envelope is versioned and contains counts, diagnostics, and skipped
-phases. The current envelope is `schemaVersion: 2`; compatibility diagnostics may
-carry additive `rule` and `action` fields. Consumers of diagnostic JSON should
-branch on `schemaVersion`. Diagnostic reports are written to stderr; generated
+phases. The current envelope is `schemaVersion: 3`; diagnostics may carry additive
+`rule`, `action`, `capability`, `scope`, and `effect` fields. Consumers of diagnostic
+JSON should branch on `schemaVersion`. Diagnostic reports are written to stderr; generated
 artifacts are written to the output directory.
 
 ## Input source options

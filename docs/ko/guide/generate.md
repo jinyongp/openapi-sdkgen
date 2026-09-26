@@ -97,10 +97,10 @@ openapi-sdkgen generate \
 ```
 
 JSON report에는 `schemaVersion`, severity 개수, diagnostics, 실행하지 못한
-pipeline phase가 포함됩니다. 현재 JSON 계약은 `schemaVersion: 2`이며,
-compatibility diagnostic에는 additive `rule`, `action` 필드가 포함될 수 있습니다.
-Diagnostic JSON을 저장하거나 파싱하는 도구는 이전 envelope를 가정하지 말고
-`schemaVersion`으로 분기해야 합니다. URL credential, query, fragment 같은 민감한
+pipeline phase가 포함됩니다. 현재 JSON 계약은 `schemaVersion: 3`이며,
+diagnostic에는 additive `rule`, `action`, `capability`, `scope`, `effect` 필드가 포함될 수
+있습니다. Diagnostic JSON을 저장하거나 파싱하는 도구는 이전 envelope를 가정하지
+말고 `schemaVersion`으로 분기해야 합니다. URL credential, query, fragment 같은 민감한
 source 정보는 렌더링 전에 정리됩니다.
 
 종료 코드는 그대로 검증 결과입니다. 0은 성공을 뜻하며, generation diagnostic,

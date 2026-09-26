@@ -8,6 +8,7 @@ import (
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 type pipelineTarget struct {
@@ -24,11 +25,15 @@ func (target *pipelineTarget) Prepare(*ir.Document, Options) (Plan, []diagnostic
 		Severity: diagnostic.SeverityWarning,
 		Code:     "SDKGEN-W500",
 		Phase:    diagnostic.PhaseTarget,
+		Scope:    failure.ScopeOperation,
+		Effect:   failure.EffectOmitOperation,
 		Message:  "target warning",
 	}
 	if target.targetErr {
 		value.Severity = diagnostic.SeverityError
 		value.Code = "SDKGEN-E500"
+		value.Scope = failure.ScopeDocument
+		value.Effect = failure.EffectBlock
 		value.Message = "target error"
 	}
 	return NewPlan(target.Name(), "value"), []diagnostic.Diagnostic{value}, target.prepareErr

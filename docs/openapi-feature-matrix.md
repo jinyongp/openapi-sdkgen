@@ -3,9 +3,10 @@
 This matrix is the implementation contract for `openapi-sdkgen`. It covers
 every normative OpenAPI 3.x feature family and every Schema Object keyword
 family. `generated` means observable generated source/runtime behavior;
-`metadata` means exported source metadata/documentation; `error` means a
-feature-path diagnostic until the target implements it. No valid feature may be
-silently dropped. [The canonical feature manifest](openapi-feature-manifest.json)
+`metadata` means exported source metadata/documentation; `omitted` means a
+scoped operation/capability is deliberately absent from generated call surfaces
+with an explicit diagnostic; `error` means the selected target remains blocked.
+No valid feature may be silently dropped. [The canonical feature manifest](openapi-feature-manifest.json)
 is the field-level register for the active TypeScript target; this matrix and
 the [capability inventory](openapi-feature-inventory.md) are readable views of it.
 JavaScript output is not a supported generator target.

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"openapi-sdkgen/internal/failure"
 )
 
 func TestCollectorSortCountsAndRender(t *testing.T) {
@@ -97,7 +99,7 @@ func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
 	if err := json.Unmarshal([]byte(first), &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.SchemaVersion != 2 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+	if report.SchemaVersion != 3 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
 		t.Fatalf("report header = %#v", report)
 	}
 	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E001" || report.Diagnostics[1].Code != "SDKGEN-W002" {
@@ -108,15 +110,20 @@ func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
 	}
 }
 
-func TestDiagnosticV2RendersCompatibilityRuleAndAction(t *testing.T) {
+func TestDiagnosticV3RendersCompatibilityAndFailureContracts(t *testing.T) {
 	values := []Diagnostic{{
-		Severity: SeverityWarning,
-		Code:     "SDKGEN-W140",
-		Phase:    PhaseOpenAPI,
-		Location: Location{Source: "openapi.yaml", Pointer: "#/info/summary"},
-		Rule:     "COMP-VERSION-001",
-		Action:   "ignore",
-		Message:  "summary is ignored",
+		Severity:   SeverityWarning,
+		Code:       "SDKGEN-W140",
+		Phase:      PhaseOpenAPI,
+		Location:   Location{Source: "openapi.yaml", Pointer: "#/paths/~1items/get/requestBody"},
+		Route:      "GET /items",
+		Operation:  "getItems",
+		Capability: "request-body",
+		Scope:      failure.ScopeOperation,
+		Effect:     failure.EffectOmitOperation,
+		Rule:       "COMP-BODY-001",
+		Action:     "reject",
+		Message:    "request body is unavailable for this target",
 	}}
 	rendered, err := RenderJSON(values, nil)
 	if err != nil {
@@ -126,15 +133,46 @@ func TestDiagnosticV2RendersCompatibilityRuleAndAction(t *testing.T) {
 	if err := json.Unmarshal([]byte(rendered), &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.SchemaVersion != 2 || len(report.Diagnostics) != 1 ||
-		report.Diagnostics[0].Rule != "COMP-VERSION-001" || report.Diagnostics[0].Action != "ignore" {
+	if report.SchemaVersion != 3 || len(report.Diagnostics) != 1 {
 		t.Fatalf("report = %#v", report)
 	}
+	value := report.Diagnostics[0]
+	if value.Rule != "COMP-BODY-001" || value.Action != "reject" ||
+		value.Scope != failure.ScopeOperation || value.Effect != failure.EffectOmitOperation ||
+		value.Capability != "request-body" {
+		t.Fatalf("diagnostic contracts = %#v", value)
+	}
 	human := RenderHuman(values, nil)
-	for _, want := range []string{"rule: COMP-VERSION-001", "action: ignore"} {
+	for _, want := range []string{
+		"operation: getItems",
+		"capability: request-body",
+		"scope: operation",
+		"effect: omit-operation",
+		"rule: COMP-BODY-001",
+		"action: reject",
+	} {
 		if !strings.Contains(human, want) {
 			t.Fatalf("human report missing %q:\n%s", want, human)
 		}
+	}
+}
+
+func TestDiagnosticV3KeepsSeverityAsTheBlockingContract(t *testing.T) {
+	recoverable := []Diagnostic{{
+		Severity: SeverityWarning,
+		Scope:    failure.ScopeOperation,
+		Effect:   failure.EffectOmitOperation,
+	}}
+	if HasErrors(recoverable) {
+		t.Fatal("recoverable omission warning unexpectedly blocked generation")
+	}
+	blocking := append(recoverable, Diagnostic{
+		Severity: SeverityError,
+		Scope:    failure.ScopeDocument,
+		Effect:   failure.EffectBlock,
+	})
+	if !HasErrors(blocking) {
+		t.Fatal("blocking error unexpectedly allowed generation")
 	}
 }
 

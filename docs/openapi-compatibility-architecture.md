@@ -924,7 +924,7 @@ managed reuse. Do **not** add a redundant compatibility-policy field or manifest
 migration. Add a separate policy identity only if a future runtime-selectable
 policy can vary independently of the generator identity.
 
-## Capability manifest v2
+## Capability manifest v3
 
 Do not replace the current canonical manifest with a second unrelated registry.
 Extend it.
@@ -934,7 +934,7 @@ for example:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "features": [{
     "id": "parameter.header.reserved",
     "versions": ["3.0", "3.1", "3.2"],
@@ -970,6 +970,9 @@ entry document or name another explicit generated metadata surface.
 The manifest test should reject:
 
 - unknown consumer actions/impact/proof values;
+- invalid failure-scope/generation-effect pairs;
+- an `omitted` state that is not operation- or capability-scoped with the matching omit effect;
+- an `error` state without a non-empty scope and `block` effect;
 - version scopes inconsistent with the rule;
 - missing evidence;
 - an `ignore` rule whose evidence does not assert absence from generated
@@ -988,7 +991,9 @@ Generation diagnostics need to distinguish these layers:
 - conformance finding;
 - compatibility action;
 - reference failure;
-- target capability failure.
+- target capability failure;
+- failure ownership scope;
+- generation effect.
 
 A safe ignore, normalization, or explicitly proved compatibility extension can
 continue generation without pretending that its behavior is portable OAS
@@ -1005,20 +1010,23 @@ mode:
 - `preserve-extension` emits a compatibility-deviation warning even when the
   source itself is conforming, because generated behavior intentionally exceeds
   the normative disposition;
-- `reject` emits an error and remains fatal;
+- `reject` stops the declared owning scope. A document-scoped reject remains a blocking error; once scoped restriction plumbing is enabled, an operation- or capability-scoped reject may be represented as a recoverable omission warning only when the rejected semantics are quarantined from the effective view and the owning scope is not emitted;
 - a future strict-conformance flag may promote findings but is outside this
   workstream.
 
 In all cases:
 
-- semantic loss is never downgraded to warning;
+- semantic loss is never hidden: a recoverable warning is permitted only when the complete unsafe owning scope is omitted;
+- semantic loss inside an emitted owning scope is never downgraded to warning;
 - source pointer and original source identity are preserved;
 - target context is only attached to target failures;
 - a rule-applied finding includes the stable compatibility rule ID/action.
 
-The machine-readable contract must represent that data structurally. Extend
-`diagnostic.Diagnostic` with optional `rule` and `action` JSON fields (strings at
-this layer to avoid a package dependency cycle). Compatibility/OpenAPI findings
+The machine-readable contract must represent that data structurally. Diagnostic
+schema version 3 retains optional `rule` and `action` and adds optional
+`capability`, `scope`, and `effect` fields. `scope` uses `document`, `operation`,
+or `capability`; `effect` uses `block`, `omit-operation`, or `omit-capability`.
+Compatibility/OpenAPI findings
 use the existing OpenAPI code family: `SDKGEN-W140` for non-blocking
 compatibility/conformance findings and `SDKGEN-E140` for blocking OpenAPI-level
 compatibility rejects, with the stable rule ID providing the specific reason.
@@ -1026,12 +1034,13 @@ Fetch-method target rejection uses the next TypeScript capability code
 `SDKGEN-E511` rather than masquerading as an OpenAPI error.
 
 Because JSON diagnostics are explicitly versioned and existing consumers can
-branch on `schemaVersion`, adding `rule`/`action` is released as diagnostic
-report schema version **2**. Existing unrelated diagnostics simply omit the new
-fields. Human rendering shows rule/action when present. The CLI continues to
-exit 0 when only warnings are present and nonzero when an error is present.
-This schema change is a release-note/semver review item alongside the generated
-metadata correction.
+branch on `schemaVersion`, the failure-scope/effect contract is released as
+diagnostic report schema version **3**. Existing unrelated diagnostics simply
+omit the optional fields. Human rendering shows capability/scope/effect and
+rule/action when present. Severity remains the blocking contract in v3: the CLI
+continues to exit 0 when only warnings are present and nonzero when an error is
+present. Scoped omission behavior must therefore emit warnings only after the
+unsafe operation/capability has been removed from the target plan.
 
 ## Implementation ordering
 
@@ -1088,8 +1097,8 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-012 | Narrow schema normalization | A/B fixtures for approved `const`, nullable two-type union, numeric exclusive bound, and boolean `true`/`false` candidates | public types, runtime validation, request serialization, response decoding, and wire descriptors are equivalent; source-facing metadata remains the original decoded construct rather than the normalized replacement |
 | VAL-COMP-013 | Schema reject boundaries | general type arrays, dialect/reference keywords, and unproved JSON Schema assertions under OAS 3.0 | precise reject; no silent partial lowering |
 | VAL-COMP-014 | Version-aware media/schema | 3.0 vs 3.1/3.2 `format: binary`, contentEncoding/contentMediaType contradictions, XML context fixtures | generated wire semantics follow the declared OAS line/context; legacy annotations do not accidentally control 3.1+ wire behavior |
-| VAL-COMP-015 | Manifest v2 | feature-matrix/manifest tests through `just agent test` and `just agent conformance`; direct `allowEmptyValue` true/false/absent/n-a runtime fixtures; audit of every `metadata` evidence path that currently relies on external-ref bundling | every compatibility rule has executable proof; `generated` cannot be supported by acceptance-only evidence; `metadata` evidence names an actual generated surface and does not assume external documents are folded into entry-source `openapi.document`; `allowEmptyValue` state is retained only if wire behavior is directly proved, otherwise corrected |
-| VAL-COMP-016 | Diagnostics | human + JSON-v2 diagnostic fixtures for silent normative ignore, safe nonconforming ignore/normalize, preserve-extension, OpenAPI reject, and Fetch-method target reject; baseline fixtures for pre-existing diagnostic fields; CLI exit-code assertions | report `schemaVersion` is 2; compatibility findings expose structural `rule`/`action`; `SDKGEN-W140` warnings remain exit 0, `SDKGEN-E140` OpenAPI rejects and `SDKGEN-E511` target-method rejects are nonzero; pre-existing diagnostic fields/values remain stable aside from the versioned additive contract; unrelated diagnostics omit rule/action; target appears only for target failure; human/JSON ordering and sanitization remain deterministic; docs/release notes call out the versioned JSON schema change |
+| VAL-COMP-015 | Manifest v3 | feature-matrix/manifest tests through `just agent test` and `just agent conformance`; direct `allowEmptyValue` true/false/absent/n-a runtime fixtures; audit of every `metadata` evidence path that currently relies on external-ref bundling | every compatibility rule has executable proof; `generated` cannot be supported by acceptance-only evidence; `metadata` evidence names an actual generated surface and does not assume external documents are folded into entry-source `openapi.document`; `allowEmptyValue` state is retained only if wire behavior is directly proved, otherwise corrected |
+| VAL-COMP-016 | Diagnostics | human + JSON-v3 diagnostic fixtures for compatibility findings and target failures; baseline fixtures for pre-existing fields; CLI exit-code assertions | report `schemaVersion` is 3; diagnostics may expose structural `rule`/`action` plus `capability`/`scope`/`effect`; warnings remain exit 0 and errors remain nonzero; unrelated diagnostics omit optional fields; target appears only for target failure; human/JSON ordering and sanitization remain deterministic; docs/release notes call out the versioned JSON schema change |
 | VAL-COMP-017 | Incremental identity | managed fresh/check/incremental tests across unchanged build identity and a changed clean VCS/release generator identity carrying a compatibility change | existing generator identity invalidates reuse across policy code changes; unchanged identity retains normal incremental stability; no new manifest field is added unless policy later becomes runtime-selectable |
 | VAL-COMP-018 | Publication recovery | existing staging-write/final-rename failure injection plus compatibility reject after existing output | rollback/preservation remains exact; no partial effective output is published |
 | VAL-COMP-019 | GitHub pinned corpus | exact SHA above through generation, strict TS, source consumer, declaration consumer, bundle/runtime checks | remains successful; empty ignored fields disappear where expected; meaningful DELETE behavior remains callable |
@@ -1105,7 +1114,7 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-029 | CI | `just agent ci` | pass with coverage not weakened |
 | VAL-COMP-030 | Performance gate | `just agent perf-acceptance` | pass; nonzero cost still disclosed |
 | VAL-COMP-031 | Full release-safe repository gate | `just agent check` | pass including packaging, release simulations, examples, cross-build paths |
-| VAL-COMP-032 | Documentation and migration note | `just docs validate` and `just docs build`, plus review of generated-metadata/reference docs, diagnostics JSON docs, and release notes | pass; public docs describe only implemented behavior; external-reference `openapi.document` correction and diagnostic JSON schema v2 are explicitly documented as public generated/tooling behavior changes; architecture docs retain investigation/current-state distinction |
+| VAL-COMP-032 | Documentation and migration note | `just docs validate` and `just docs build`, plus review of generated-metadata/reference docs, diagnostics JSON docs, and release notes | pass; public docs describe only implemented behavior; external-reference `openapi.document` semantics and the current diagnostic JSON schema version are explicitly documented as public generated/tooling behavior changes; architecture docs retain investigation/current-state distinction |
 
 For `ignore` rules, rule-local proof additionally requires exact source
 metadata/provenance preservation. For `normalize` rules it requires A/B
