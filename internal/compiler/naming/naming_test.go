@@ -14,6 +14,10 @@ func TestIdentifierNormalization(t *testing.T) {
 		{input: "productID", wantPublic: "ProductID", wantProperty: "productID"},
 		{input: "createdAtGte", wantPublic: "CreatedAtGTE", wantProperty: "createdAtGTE"},
 		{input: "requestUri", wantPublic: "RequestURI", wantProperty: "requestURI"},
+		{input: "2010", wantPublic: "Value2010", wantProperty: "value2010"},
+		{input: "2010-api", wantPublic: "Value2010API", wantProperty: "value2010API"},
+		{input: "٢٠١٠-api", wantPublic: "Value٢٠١٠API", wantProperty: "value٢٠١٠API"},
+		{input: "@orders", wantPublic: "Orders", wantProperty: "orders"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			public, err := Public(test.input)

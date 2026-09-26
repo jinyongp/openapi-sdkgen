@@ -517,6 +517,25 @@ func TestBuildResourceTreeOmitsNormalizationEquivalentLiteralSiblings(t *testing
 	}
 }
 
+func TestBuildResourceTreeOmitsNumericNormalizationEquivalentLiteralSiblings(t *testing.T) {
+	document := &ir.Document{Operations: []ir.Operation{
+		{OperationID: "getNumeric", Method: "GET", Path: "/2010"},
+		{OperationID: "getPrefixed", Method: "GET", Path: "/value2010"},
+	}}
+	manifest, err := buildManifest(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(buildResourceSegments(manifest)) != 0 {
+		t.Fatalf("numeric normalization-equivalent siblings retained a resource shortcut: %#v", manifest.Operations)
+	}
+	for id, call := range manifestCalls(manifest) {
+		if call != `api.$operations["`+id+`"]()` {
+			t.Fatalf("%s call = %q", id, call)
+		}
+	}
+}
+
 func TestBuildResourceTreeOmitsTwoOperationsRequiringOneTerminal(t *testing.T) {
 	document := &ir.Document{Operations: []ir.Operation{
 		{OperationID: "listUsers", Method: "GET", Path: "/users"},

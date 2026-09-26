@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 var initialisms = map[string]string{
@@ -57,7 +58,7 @@ func Public(value string) (string, error) {
 		builder.WriteString(publicWord(word))
 	}
 	result := builder.String()
-	if unicode.IsDigit(rune(result[0])) {
+	if startsWithDigit(result) {
 		result = "Value" + result
 	}
 	return result, nil
@@ -78,10 +79,27 @@ func Property(value string) (string, error) {
 		builder.WriteString(publicWord(word))
 	}
 	result := builder.String()
-	if unicode.IsDigit(rune(result[0])) || isReserved(result) {
+	if startsWithDigit(result) {
+		result = "value" + result
+	} else if isReserved(result) {
 		result += "Value"
 	}
 	return result, nil
+}
+
+func startsWithDigit(value string) bool {
+	if value == "" {
+		return false
+	}
+	firstByte := value[0]
+	if firstByte >= '0' && firstByte <= '9' {
+		return true
+	}
+	if firstByte < utf8.RuneSelf {
+		return false
+	}
+	firstRune, _ := utf8.DecodeRuneInString(value)
+	return unicode.IsDigit(firstRune)
 }
 
 func publicWord(word string) string {

@@ -771,7 +771,7 @@ the OAS normative disposition.
 | Microsoft Graph v1.0 | OAS 3.0.4 local corpus | no Reference-sibling, reserved-header, OAS-3.0 body, or response-`Content-Type` occurrence in the focused audit | Existing internal TypeScript preparation failure remains independent unless direct rerun evidence changes it. |
 | Microsoft Graph beta | OAS 3.0.4 local corpus | same focused audit: zero occurrences | Same independent-boundary rule as v1.0. |
 | DigitalOcean source tree | OAS 3.0.0 entry document; 3,034 YAML fragments inspected | entry document has zero focused occurrences. The repository is heavily fragment/references based; the simple fragment walker found no directly embedded operation objects, so it is not evidence that every referenced operation is unaffected. | Existing external-fragment/reference and undeclared-`batch_id` boundaries remain authoritative. Post-implementation rerun must use the real compiler rather than infer support from the static fragment scan. |
-| Twilio core 2010 | SHA-256 `170b3ccd0f891416840083d72f1795b1499b14a18d4873fd2b39f47ef84642d6`, 1,877,664 B, OAS 3.0.1 | zero focused compatibility occurrences | Generation should remain unchanged; the existing strict-TypeScript failure on the numeric-leading public resource family remains independent. |
+| Twilio core 2010 | SHA-256 `170b3ccd0f891416840083d72f1795b1499b14a18d4873fd2b39f47ef84642d6`, 1,877,664 B, OAS 3.0.1 | zero focused compatibility occurrences | Generation and strict TypeScript now pass after the generic numeric-leading identifier normalization fix; no Twilio-specific compatibility branch is required. |
 
 The previous integrated workstream's historical failures are evidence, not
 expected-output strings that the new pipeline must artificially preserve. A new
@@ -1098,7 +1098,7 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-022 | Cloudflare | exact local corpus through generation/preflight | reserved/response-header rules and DELETE extensions behave generically; meaningful GET-body reject is justified; undeclared security issue remains separately reproducible once isolated |
 | VAL-COMP-023 | Graph v1/beta | existing local corpora | no new compatibility regression; existing preparation boundary classified from fresh evidence |
 | VAL-COMP-024 | DigitalOcean | real source tree through existing compiler reference path | no false success from fragment scan; existing external-reference/path-parameter boundaries classified from fresh evidence |
-| VAL-COMP-025 | Twilio | existing core 2010 corpus + strict TypeScript | generation compatibility remains unchanged; numeric-leading TS boundary remains separately evidenced unless fixed elsewhere |
+| VAL-COMP-025 | Twilio | existing core 2010 corpus + strict TypeScript | generation and strict TypeScript pass; numeric-leading identifiers are normalized generically without provider-specific code |
 | VAL-COMP-026 | Compile/generate cost | paired pinned GitHub/Stripe process runs using existing representation/perf harnesses | wall/CPU/allocation/peak RSS recorded; no unreviewed material regression or duplicate full-tree phase |
 | VAL-COMP-027 | Target artifacts | `just agent generate-check-test` plus strict/source/declaration/bundle/callable checks | generated API/runtime/public declarations remain coherent |
 | VAL-COMP-028 | Repository conformance | `just agent conformance` | pass |
