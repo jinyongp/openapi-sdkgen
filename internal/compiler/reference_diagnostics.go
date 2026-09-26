@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 func unresolvedLocalReferenceDiagnostics(value any, source string) []diagnostic.Diagnostic {
@@ -24,6 +25,8 @@ func scanUnresolvedLocalReferences(root, value any, path []string, source string
 					Severity: diagnostic.SeverityError,
 					Code:     "SDKGEN-E120",
 					Phase:    diagnostic.PhaseReferences,
+					Scope:    failure.ScopeDocument,
+					Effect:   failure.EffectBlock,
 					Location: diagnostic.Location{
 						Source:  source,
 						Pointer: sourceJSONPointer(append(path, "$ref")),

@@ -148,6 +148,20 @@ func operationOmissionDiagnostic(document *ir.Document, ownership *sourceOwnersh
 	return value
 }
 
+func noMeaningfulEntrySurfaceDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex) diagnostic.Diagnostic {
+	value := sourceTargetDiagnostic(
+		document,
+		ownership,
+		"#",
+		"SDKGEN-E512",
+		"The TypeScript target has no meaningful requested entry surface after scoped omissions.",
+		"Keep at least one supported client operation, or request the server add-on with an independently useful inbound entry surface.",
+	)
+	value.Scope = failure.ScopeDocument
+	value.Effect = failure.EffectBlock
+	return value
+}
+
 func requestBodyRequiresFetchPayload(body *ir.RequestBody) bool {
 	return body != nil && (body.Required || len(body.Content) != 0)
 }
@@ -181,6 +195,8 @@ func sourceTargetDiagnostic(document *ir.Document, ownership *sourceOwnershipInd
 		Location: location,
 		Related:  related,
 		Target:   "typescript",
+		Scope:    failure.ScopeDocument,
+		Effect:   failure.EffectBlock,
 		Message:  message,
 		Hint:     hint,
 	}
@@ -268,6 +284,8 @@ func securityPreparationDiagnostics(document *ir.Document, ownership *sourceOwne
 			)
 			value.Route = operationRouteKey(operation)
 			value.Operation = operation.OperationID
+			value.Scope = failure.ScopeDocument
+			value.Effect = failure.EffectBlock
 			result = append(result, value)
 		}
 	}

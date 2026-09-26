@@ -32,10 +32,19 @@ func TestPrepareOmitsGETAndHEADBodiesAsFetchTargetCapabilities(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if len(values) != 1 || values[0].Code != "SDKGEN-W511" || values[0].Severity != diagnostic.SeverityWarning ||
-					values[0].Scope != failure.ScopeOperation || values[0].Effect != failure.EffectOmitOperation ||
-					values[0].Phase != diagnostic.PhaseTarget || values[0].Target != "typescript" ||
-					!strings.HasSuffix(values[0].Location.Pointer, "/requestBody") {
+				if len(values) != 2 || !diagnosticsContainCode(values, "SDKGEN-E512") {
+					t.Fatalf("diagnostics = %#v", values)
+				}
+				var omission diagnostic.Diagnostic
+				for _, value := range values {
+					if value.Code == "SDKGEN-W511" {
+						omission = value
+					}
+				}
+				if omission.Code == "" || omission.Severity != diagnostic.SeverityWarning ||
+					omission.Scope != failure.ScopeOperation || omission.Effect != failure.EffectOmitOperation ||
+					omission.Phase != diagnostic.PhaseTarget || omission.Target != "typescript" ||
+					!strings.HasSuffix(omission.Location.Pointer, "/requestBody") {
 					t.Fatalf("diagnostics = %#v", values)
 				}
 			})
@@ -93,9 +102,14 @@ func TestPrepareOmitsOrdinaryTRACEWithoutBodyBeforeEmit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(values) != 1 || values[0].Code != "SDKGEN-W511" || values[0].Severity != diagnostic.SeverityWarning ||
-		values[0].Scope != failure.ScopeOperation || values[0].Effect != failure.EffectOmitOperation || values[0].Operation != "traceItems" {
+	if len(values) != 2 || !diagnosticsContainCode(values, "SDKGEN-W511") || !diagnosticsContainCode(values, "SDKGEN-E512") {
 		t.Fatalf("diagnostics = %#v", values)
+	}
+	for _, value := range values {
+		if value.Code == "SDKGEN-W511" && (value.Severity != diagnostic.SeverityWarning ||
+			value.Scope != failure.ScopeOperation || value.Effect != failure.EffectOmitOperation || value.Operation != "traceItems") {
+			t.Fatalf("diagnostics = %#v", values)
+		}
 	}
 }
 

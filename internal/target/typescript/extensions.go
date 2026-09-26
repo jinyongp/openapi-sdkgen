@@ -157,8 +157,7 @@ func extensionStringValue(object map[string]any, name string) string {
 }
 
 func cloneDocumentForPreparation(document *ir.Document) *ir.Document {
-	prepared := *document
-	prepared.Operations = append([]ir.Operation(nil), document.Operations...)
+	prepared := snapshotIRDocument(document)
 	prepared.ErrorCategories = make(map[string]string)
 	prepared.ParameterSortPlans = make(map[string]ir.SortParameterPlan)
 	for index := range prepared.Operations {
@@ -169,7 +168,7 @@ func cloneDocumentForPreparation(document *ir.Document) *ir.Document {
 		operation.PaginationPlan = nil
 		operation.Visibility = ""
 	}
-	return &prepared
+	return prepared
 }
 
 func prepareOperationExtensions(document *ir.Document, operation *ir.Operation, consumed map[string]bool) ([]diagnostic.Diagnostic, error) {

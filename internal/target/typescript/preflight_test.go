@@ -48,6 +48,12 @@ func TestPrepareAccumulatesIndependentTargetSupportDiagnostics(t *testing.T) {
 			t.Fatalf("target preflight missing %s:\n%s", code, report)
 		}
 	}
+	for _, value := range values {
+		if value.Severity == diagnostic.SeverityError &&
+			(value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock) {
+			t.Fatalf("target blocking diagnostic lacks document scope: %#v", value)
+		}
+	}
 	if strings.Contains(report, "SDKGEN-E504") {
 		t.Fatalf("ordinary path resource collision remained a target diagnostic:\n%s", report)
 	}

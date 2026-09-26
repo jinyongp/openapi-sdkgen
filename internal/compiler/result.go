@@ -12,6 +12,7 @@ import (
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
@@ -175,6 +176,8 @@ func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) 
 					Severity: diagnostic.SeverityError,
 					Code:     "SDKGEN-E120",
 					Phase:    diagnostic.PhaseReferences,
+					Scope:    failure.ScopeDocument,
+					Effect:   failure.EffectBlock,
 					Location: diagnostic.Location{Source: source, Pointer: sourceJSONPointer([]string{"paths", path, conflict.Field})},
 					Related:  []diagnostic.Location{{Source: source, Pointer: strings.TrimSuffix(conflict.Reference, "/") + "/" + field}},
 					Message:  "Conflicting Path Item fields have undefined OpenAPI semantics.",
@@ -193,6 +196,8 @@ func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) 
 			Severity: diagnostic.SeverityError,
 			Code:     "SDKGEN-E120",
 			Phase:    diagnostic.PhaseReferences,
+			Scope:    failure.ScopeDocument,
+			Effect:   failure.EffectBlock,
 			Location: diagnostic.Location{Source: source, Pointer: sourceJSONPointer([]string{"paths", path, "$ref"})},
 			Message:  "Unable to resolve the Path Item reference.",
 			Cause:    sanitizeDiagnosticCause(err.Error()),

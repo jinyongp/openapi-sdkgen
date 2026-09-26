@@ -102,6 +102,10 @@ func (Generator) Prepare(document *ir.Document, options generator.Options) (gene
 	if err != nil {
 		return generator.Plan{}, diagnostics, err
 	}
+	if !diagnostic.HasErrors(diagnostics) && !hasMeaningfulEntrySurface(plan) {
+		diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
+		plan.modules = nil
+	}
 	return generator.NewPlan("typescript", plan), diagnostic.Sort(diagnostics), nil
 }
 
@@ -296,6 +300,29 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 		plan.modules = modules
 	}
 	return plan, diagnostic.Sort(diagnostics), nil
+}
+
+func hasMeaningfulEntrySurface(plan *sourcePlan) bool {
+	if plan == nil || plan.manifest == nil {
+		return false
+	}
+	for _, operation := range plan.manifest.Operations {
+		if operation.Visibility != "hidden" {
+			return true
+		}
+	}
+	if !plan.includeServer {
+		return false
+	}
+	if len(plan.webhooks) != 0 {
+		return true
+	}
+	for _, callback := range plan.callbacks {
+		if callback.componentName != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func filterManifestOperations(manifest Manifest, omitted map[string]bool) Manifest {

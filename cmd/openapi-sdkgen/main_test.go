@@ -903,7 +903,7 @@ func TestGenerateParsesRepeatableWithAddons(t *testing.T) {
 func TestGenerateAcceptsExplicitRemoteReferenceOptionsWithoutFetching(t *testing.T) {
 	directory := t.TempDir()
 	input := filepath.Join(directory, "openapi.json")
-	if err := os.WriteFile(input, []byte(`{"openapi":"3.1.0","info":{"title":"Offline","version":"1"},"paths":{}}`), 0o600); err != nil {
+	if err := os.WriteFile(input, []byte(`{"openapi":"3.1.0","info":{"title":"Offline","version":"1"},"paths":{"/health":{"get":{"operationId":"health","responses":{"204":{"description":"OK"}}}}}}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	output := filepath.Join(directory, "generated")

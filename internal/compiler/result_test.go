@@ -8,6 +8,7 @@ import (
 
 	"go.yaml.in/yaml/v4"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 func TestCompileInputResultMarksOnlySelfContainedLocalInputReusable(t *testing.T) {
@@ -113,7 +114,8 @@ func TestCompileResultAccumulatesIndependentUnresolvedLocalReferences(t *testing
 		t.Fatalf("result = %#v", result)
 	}
 	for _, value := range result.Diagnostics {
-		if value.Code != "SDKGEN-E120" || value.Phase != diagnostic.PhaseReferences {
+		if value.Code != "SDKGEN-E120" || value.Phase != diagnostic.PhaseReferences ||
+			value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
 			t.Fatalf("diagnostic = %#v", value)
 		}
 	}
@@ -221,7 +223,8 @@ func TestPathItemReferenceErrorsUseReferencePhase(t *testing.T) {
 			t.Fatalf("diagnostics = %#v", result.Diagnostics)
 		}
 		value := result.Diagnostics[0]
-		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" {
+		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" ||
+			value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
 			t.Fatalf("diagnostic = %#v", value)
 		}
 	}
@@ -244,7 +247,8 @@ func TestPathItemReferenceDiagnosticsAccumulate(t *testing.T) {
 		t.Fatalf("diagnostics = %#v", result.Diagnostics)
 	}
 	for _, value := range result.Diagnostics {
-		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" {
+		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" ||
+			value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
 			t.Fatalf("diagnostic = %#v", value)
 		}
 	}
@@ -267,7 +271,8 @@ func TestPathItemReferenceDiagnosticsAccumulateNonObjectTargets(t *testing.T) {
 		t.Fatalf("diagnostics = %#v", result.Diagnostics)
 	}
 	for _, value := range result.Diagnostics {
-		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" {
+		if value.Phase != diagnostic.PhaseReferences || value.Code != "SDKGEN-E120" ||
+			value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
 			t.Fatalf("diagnostic = %#v", value)
 		}
 	}
