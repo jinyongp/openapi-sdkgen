@@ -79,6 +79,7 @@ func (Generator) SupportsAddon(addon generator.Addon) bool {
 
 type sourcePlan struct {
 	document          *ir.Document
+	ownership         *sourceOwnershipIndex
 	includeServer     bool
 	manifest          *Manifest
 	modules           *semanticModulePlan
@@ -225,12 +226,12 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	if err != nil {
 		return nil, nil, err
 	}
-	plan := &sourcePlan{document: prepared, includeServer: includeServer}
+	plan := &sourcePlan{document: prepared, ownership: newSourceOwnershipIndex(prepared), includeServer: includeServer}
 	targetDiagnostics := prepareTargetDiagnostics(plan)
 	diagnostics = append(diagnostics, targetDiagnostics...)
 	manifest, manifestErrors := buildManifestDiagnostics(prepared)
 	for _, manifestErr := range manifestErrors {
-		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, manifestErr))
+		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))
 	}
 	helperManifest := manifest
 	if len(manifestErrors) != 0 {
@@ -238,25 +239,28 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	} else {
 		plan.manifest = &manifest
 	}
-	links, linkErrors := generatedLinksDiagnostics(prepared, helperManifest)
-	for _, linksErr := range linkErrors {
-		diagnostics = append(diagnostics, helperPreparationDiagnostic(prepared, "response links", "SDKGEN-E509", linksErr))
+	links, linkFailures := generatedLinksDiagnostics(prepared, helperManifest, plan.ownership)
+	blockingLinkFailure := false
+	for _, linkFailure := range linkFailures {
+		value := linkPreparationDiagnostic(prepared, plan.ownership, linkFailure)
+		diagnostics = append(diagnostics, value)
+		if value.Severity == diagnostic.SeverityError {
+			blockingLinkFailure = true
+		}
 	}
-	if len(linkErrors) == 0 {
-		plan.links = links
-	}
+	plan.links = links
 	streams, streamErrors := generatedStreamsDiagnostics(prepared, helperManifest)
 	for _, streamsErr := range streamErrors {
-		diagnostics = append(diagnostics, helperPreparationDiagnostic(prepared, "response streams", "SDKGEN-E510", streamsErr))
+		diagnostics = append(diagnostics, helperPreparationDiagnostic(prepared, plan.ownership, "response streams", "SDKGEN-E510", streamsErr))
 	}
 	if len(streamErrors) == 0 {
 		plan.streams = streams
 	}
-	if len(manifestErrors) == 0 && len(linkErrors) == 0 && len(streamErrors) == 0 {
+	if len(manifestErrors) == 0 && !blockingLinkFailure && len(streamErrors) == 0 {
 		if plan.manifest != nil {
 			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, &manifest, links, streams)
 			if reconcileErr != nil {
-				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, reconcileErr))
+				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, reconcileErr))
 			} else {
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
@@ -267,14 +271,14 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	if includeServer {
 		webhooks, webhookErrors := collectWebhooksDiagnostics(prepared)
 		for _, webhookErr := range webhookErrors {
-			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, "webhook contracts", webhookErr))
+			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, plan.ownership, "webhook contracts", webhookErr))
 		}
 		if len(webhookErrors) == 0 {
 			plan.webhooks = webhooks
 		}
 		callbacks, callbackErrors := collectCallbacksDiagnostics(prepared)
 		for _, callbackErr := range callbackErrors {
-			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, "callback contracts", callbackErr))
+			diagnostics = append(diagnostics, serverPreparationDiagnostic(prepared, plan.ownership, "callback contracts", callbackErr))
 		}
 		if len(callbackErrors) == 0 {
 			plan.callbacks = callbacks

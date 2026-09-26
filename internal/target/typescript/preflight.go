@@ -7,15 +7,17 @@ import (
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
+	"openapi-sdkgen/internal/failure"
 )
 
 func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 	document := plan.document
 	var result []diagnostic.Diagnostic
-	result = append(result, methodCapabilityDiagnostics(document)...)
+	result = append(result, methodCapabilityDiagnostics(document, plan.ownership)...)
 	for _, feature := range unsupportedSchemasForTarget(document) {
 		result = append(result, unsupportedFeatureDiagnostic(
 			document,
+			plan.ownership,
 			feature,
 			"SDKGEN-E501",
 			"TypeScript cannot represent this Schema Object feature",
@@ -26,6 +28,7 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 		for _, feature := range unsupportedServerInboundSchemas(document) {
 			result = append(result, unsupportedFeatureDiagnostic(
 				document,
+				plan.ownership,
 				feature,
 				"SDKGEN-E506",
 				"The TypeScript server add-on cannot represent this inbound Schema Object feature",
@@ -42,6 +45,7 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 			}
 			result = append(result, sourceTargetDiagnostic(
 				document,
+				plan.ownership,
 				pointer,
 				"SDKGEN-E505",
 				fmt.Sprintf("The OpenAPI feature %s requires the TypeScript server add-on for inbound %s contracts.", feature, kind),
@@ -51,19 +55,20 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 		}
 		result = append(result, unsupportedFeatureDiagnostic(
 			document,
+			plan.ownership,
 			feature,
 			"SDKGEN-E502",
 			"TypeScript cannot represent this OpenAPI feature",
 			"Remove the unsupported construct or use a supported OpenAPI representation.",
 		))
 	}
-	result = append(result, operationIdentityDiagnostics(document)...)
-	result = append(result, securityPreparationDiagnostics(document)...)
-	result = append(result, cookieSecurityOwnershipDiagnostics(document)...)
+	result = append(result, operationIdentityDiagnostics(document, plan.ownership)...)
+	result = append(result, securityPreparationDiagnostics(document, plan.ownership)...)
+	result = append(result, cookieSecurityOwnershipDiagnostics(document, plan.ownership)...)
 	return diagnostic.Sort(result)
 }
 
-func methodCapabilityDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
+func methodCapabilityDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
 	var result []diagnostic.Diagnostic
 	for _, operation := range document.Operations {
 		method := strings.ToUpper(strings.TrimSpace(operation.Method))
@@ -75,6 +80,7 @@ func methodCapabilityDiagnostics(document *ir.Document) []diagnostic.Diagnostic 
 		case "CONNECT", "TRACE", "TRACK":
 			result = append(result, sourceTargetDiagnostic(
 				document,
+				ownership,
 				pointer,
 				"SDKGEN-E511",
 				fmt.Sprintf("The TypeScript Fetch target cannot issue %s requests.", method),
@@ -85,6 +91,7 @@ func methodCapabilityDiagnostics(document *ir.Document) []diagnostic.Diagnostic 
 		if (method == "GET" || method == "HEAD") && requestBodyRequiresFetchPayload(operation.RequestBody) {
 			result = append(result, sourceTargetDiagnostic(
 				document,
+				ownership,
 				pointer+"/requestBody",
 				"SDKGEN-E511",
 				fmt.Sprintf("The TypeScript Fetch target cannot send a request body with %s.", method),
@@ -99,14 +106,14 @@ func requestBodyRequiresFetchPayload(body *ir.RequestBody) bool {
 	return body != nil && (body.Required || len(body.Content) != 0)
 }
 
-func unsupportedFeatureDiagnostic(document *ir.Document, feature, code, message, hint string) diagnostic.Diagnostic {
+func unsupportedFeatureDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, feature, code, message, hint string) diagnostic.Diagnostic {
 	pointer, detail := splitUnsupportedFeature(feature)
 	if detail != "" {
 		message += " at " + feature + "."
 	} else {
 		message += " at " + pointer + "."
 	}
-	return sourceTargetDiagnostic(document, pointer, code, message, hint)
+	return sourceTargetDiagnostic(document, ownership, pointer, code, message, hint)
 }
 
 func splitUnsupportedFeature(feature string) (string, string) {
@@ -119,7 +126,7 @@ func splitUnsupportedFeature(feature string) (string, string) {
 	return pointer, detail
 }
 
-func sourceTargetDiagnostic(document *ir.Document, pointer, code, message, hint string) diagnostic.Diagnostic {
+func sourceTargetDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, pointer, code, message, hint string) diagnostic.Diagnostic {
 	location, related := extensionDiagnosticLocation(document, pointer)
 	value := diagnostic.Diagnostic{
 		Severity: diagnostic.SeverityError,
@@ -131,31 +138,18 @@ func sourceTargetDiagnostic(document *ir.Document, pointer, code, message, hint 
 		Message:  message,
 		Hint:     hint,
 	}
-	if operation, ok := operationAtPointer(document, pointer); ok {
+	if operation, ok := ownership.operationAt(pointer); ok {
 		value.Route = operationRouteKey(operation)
 		value.Operation = operation.OperationID
 	}
 	return value
 }
 
-func operationAtPointer(document *ir.Document, pointer string) (ir.Operation, bool) {
-	for _, operation := range document.Operations {
-		operationPointer := operation.Pointer
-		if operationPointer == "" {
-			operationPointer = "#/paths/" + escapePointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
-		}
-		if pointer == operationPointer || strings.HasPrefix(pointer, operationPointer+"/") {
-			return operation, true
-		}
-	}
-	return ir.Operation{}, false
-}
-
 type identityOccurrence struct {
 	pointer string
 }
 
-func operationIdentityDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
+func operationIdentityDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
 	seenRoutes := make(map[string]identityOccurrence, len(document.Operations))
 	seenIDs := make(map[string]identityOccurrence, len(document.Operations))
 	var result []diagnostic.Diagnostic
@@ -168,6 +162,7 @@ func operationIdentityDiagnostics(document *ir.Document) []diagnostic.Diagnostic
 		if previous, exists := seenRoutes[routeKey]; exists {
 			value := sourceTargetDiagnostic(
 				document,
+				ownership,
 				operationPointer,
 				"SDKGEN-E503",
 				fmt.Sprintf("OpenAPI route identity %q is duplicated.", routeKey),
@@ -187,6 +182,7 @@ func operationIdentityDiagnostics(document *ir.Document) []diagnostic.Diagnostic
 		if previous, exists := seenIDs[operation.OperationID]; exists {
 			value := sourceTargetDiagnostic(
 				document,
+				ownership,
 				idPointer,
 				"SDKGEN-E503",
 				fmt.Sprintf("operationId %q is duplicated.", operation.OperationID),
@@ -203,7 +199,7 @@ func operationIdentityDiagnostics(document *ir.Document) []diagnostic.Diagnostic
 	return result
 }
 
-func securityPreparationDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
+func securityPreparationDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
 	var result []diagnostic.Diagnostic
 	for _, operation := range document.Operations {
 		if _, _, err := operationSecurityDefinition(document, operation); err != nil {
@@ -218,6 +214,7 @@ func securityPreparationDiagnostics(document *ir.Document) []diagnostic.Diagnost
 			}
 			value := sourceTargetDiagnostic(
 				document,
+				ownership,
 				pointer,
 				"SDKGEN-E508",
 				"Security requirements for this operation are invalid: "+strings.TrimSuffix(err.Error(), ".")+".",
@@ -231,7 +228,7 @@ func securityPreparationDiagnostics(document *ir.Document) []diagnostic.Diagnost
 	return result
 }
 
-func cookieSecurityOwnershipDiagnostics(document *ir.Document) []diagnostic.Diagnostic {
+func cookieSecurityOwnershipDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
 	components, _ := document.Raw["components"].(map[string]any)
 	schemes, _ := components["securitySchemes"].(map[string]any)
 	var result []diagnostic.Diagnostic
@@ -291,6 +288,7 @@ func cookieSecurityOwnershipDiagnostics(document *ir.Document) []diagnostic.Diag
 			}
 			value := sourceTargetDiagnostic(
 				document,
+				ownership,
 				pointer,
 				"SDKGEN-E509",
 				fmt.Sprintf("Cookie %q is declared as both an operation parameter and security credential.", parameter.Name),
@@ -318,13 +316,14 @@ func containsString(values []string, expected string) bool {
 	return false
 }
 
-func serverPreparationDiagnostic(document *ir.Document, kind string, err error) diagnostic.Diagnostic {
+func serverPreparationDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, kind string, err error) diagnostic.Diagnostic {
 	pointer, message := sourcePointerErrorDetails(err)
 	if pointer == "" {
 		pointer = "#"
 	}
 	return sourceTargetDiagnostic(
 		document,
+		ownership,
 		pointer,
 		"SDKGEN-E506",
 		fmt.Sprintf("The TypeScript server add-on cannot prepare %s: %s.", kind, strings.TrimSuffix(message, ".")),
@@ -332,7 +331,7 @@ func serverPreparationDiagnostic(document *ir.Document, kind string, err error) 
 	)
 }
 
-func loweringPreparationDiagnostic(document *ir.Document, err error) diagnostic.Diagnostic {
+func loweringPreparationDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, err error) diagnostic.Diagnostic {
 	pointer := "#"
 	route := ""
 	operationID := ""
@@ -350,6 +349,7 @@ func loweringPreparationDiagnostic(document *ir.Document, err error) diagnostic.
 	}
 	value := sourceTargetDiagnostic(
 		document,
+		ownership,
 		pointer,
 		"SDKGEN-E507",
 		"The OpenAPI contract cannot be lowered into a TypeScript operation contract: "+strings.TrimSuffix(err.Error(), ".")+".",
@@ -360,7 +360,35 @@ func loweringPreparationDiagnostic(document *ir.Document, err error) diagnostic.
 	return value
 }
 
-func helperPreparationDiagnostic(document *ir.Document, kind string, code string, err error) diagnostic.Diagnostic {
+func linkPreparationDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, failureValue linkPreparationFailure) diagnostic.Diagnostic {
+	pointer := failureValue.Pointer
+	if pointer == "" {
+		pointer = "#"
+	}
+	value := sourceTargetDiagnostic(
+		document,
+		ownership,
+		pointer,
+		"SDKGEN-E509",
+		"The TypeScript target cannot prepare response link: "+strings.TrimSuffix(failureValue.Error(), ".")+".",
+		"Correct the referenced operation, response, or Link Object shown by this diagnostic.",
+	)
+	value.Route = operationRouteKey(failureValue.SourceOperation)
+	value.Operation = failureValue.SourceOperation.OperationID
+	value.Capability = "response-link"
+	value.Scope = failure.ScopeDocument
+	value.Effect = failure.EffectBlock
+	if !failureValue.Blocking {
+		value.Severity = diagnostic.SeverityWarning
+		value.Code = "SDKGEN-W509"
+		value.Scope = failure.ScopeCapability
+		value.Effect = failure.EffectOmitCapability
+		value.Hint = "This Link helper is omitted; the base response operation remains generated."
+	}
+	return value
+}
+
+func helperPreparationDiagnostic(document *ir.Document, ownership *sourceOwnershipIndex, kind string, code string, err error) diagnostic.Diagnostic {
 	pointer, message := sourcePointerErrorDetails(err)
 	route := ""
 	operationID := ""
@@ -382,6 +410,7 @@ func helperPreparationDiagnostic(document *ir.Document, kind string, code string
 	}
 	value := sourceTargetDiagnostic(
 		document,
+		ownership,
 		pointer,
 		code,
 		fmt.Sprintf("The TypeScript target cannot prepare %s: %s.", kind, strings.TrimSuffix(message, ".")),

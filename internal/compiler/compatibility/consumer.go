@@ -16,6 +16,7 @@ const (
 	RuleEncodingHeaders       = "COMP-ENC-001"
 	RuleEncodingFields        = "COMP-ENC-002"
 	RuleRequestBody30         = "COMP-BODY-001"
+	RuleLinkTargetIdentity    = "COMP-LINK-001"
 	RuleVersion30Metadata     = "COMP-VERSION-001"
 	RuleVersionPre32Metadata  = "COMP-VERSION-002"
 	RuleSchemaBoolean30       = "COMP-SCHEMA-001"
@@ -87,7 +88,9 @@ func ConsumerPolicyMayApply(version openapidoc.VersionLine, object openapiwalk.O
 	case openapiwalk.ObjectSecurityScheme:
 		_, hasDeprecated := objectValue["deprecated"]
 		return hasReference || (version != openapidoc.Version32 && hasDeprecated)
-	case openapiwalk.ObjectLink, openapiwalk.ObjectCallback, openapiwalk.ObjectMediaType:
+	case openapiwalk.ObjectLink:
+		return true
+	case openapiwalk.ObjectCallback, openapiwalk.ObjectMediaType:
 		return hasReference
 	case openapiwalk.ObjectInfo:
 		_, hasSummary := objectValue["summary"]
@@ -140,6 +143,10 @@ func (ConsumerPolicy) Apply(context Context, value any) Result {
 		return applyEncodingRule(context, object)
 	case openapiwalk.ObjectRequestBody:
 		if result, applied := applyRequestBodyRule(context, object); applied {
+			return result
+		}
+	case openapiwalk.ObjectLink:
+		if result, applied := applyLinkTargetIdentityRule(context, object); applied {
 			return result
 		}
 	}
@@ -544,6 +551,58 @@ func applyRequestBodyRule(context Context, object map[string]any) (Result, bool)
 		failure.EffectBlock,
 		true,
 	), true
+}
+
+func applyLinkTargetIdentityRule(context Context, object map[string]any) (Result, bool) {
+	if context.Object != openapiwalk.ObjectLink || linkComponentDefinition(context.Pointer) {
+		return Result{}, false
+	}
+	if reference, _ := object["$ref"].(string); reference != "" {
+		return Result{}, false
+	}
+	operationID, hasOperationID := object["operationId"]
+	operationRef, hasOperationRef := object["operationRef"]
+	id, idOK := operationID.(string)
+	ref, refOK := operationRef.(string)
+	hasValidID := hasOperationID && idOK && strings.TrimSpace(id) != ""
+	hasValidRef := hasOperationRef && refOK && strings.TrimSpace(ref) != ""
+	if hasValidID != hasValidRef && (hasValidID || hasValidRef) {
+		return Result{Value: object}, true
+	}
+	message := "OpenAPI Link Object must define exactly one non-empty operationId or operationRef."
+	return Result{
+		Value:  object,
+		Reject: true,
+		Scope:  failure.ScopeCapability,
+		Effect: failure.EffectOmitCapability,
+		Findings: []Finding{{
+			RuleID:      RuleLinkTargetIdentity,
+			Conformance: ConformanceNonconforming,
+			Disposition: DispositionInvalid,
+			Action:      ActionReject,
+			Impact:      ImpactRouting,
+			Scope:       failure.ScopeCapability,
+			Effect:      failure.EffectOmitCapability,
+			Source:      context.Source,
+			Pointer:     context.Pointer,
+			Message:     message,
+		}},
+		Ledger: []LedgerEntry{{
+			RuleID:  RuleLinkTargetIdentity,
+			Action:  ActionReject,
+			Impact:  ImpactRouting,
+			Scope:   failure.ScopeCapability,
+			Effect:  failure.EffectOmitCapability,
+			Source:  context.Source,
+			Pointer: context.Pointer,
+			Version: context.Version,
+		}},
+	}, true
+}
+
+func linkComponentDefinition(pointer string) bool {
+	tokens, ok := pointerTokens(pointer)
+	return ok && len(tokens) >= 3 && tokens[0] == "components" && tokens[1] == "links"
 }
 
 func requestBodyMethod(pointer string) (string, bool) {

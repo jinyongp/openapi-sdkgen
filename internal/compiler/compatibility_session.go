@@ -216,7 +216,7 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 }
 
 func (session *compatibilitySession) resolveToClassify(context compatibility.Context, sourceRoot, value any) (compatibility.Result, bool) {
-	if context.Object != openapiwalk.ObjectParameter {
+	if context.Object != openapiwalk.ObjectParameter && context.Object != openapiwalk.ObjectLink {
 		return compatibility.Result{}, false
 	}
 	object, ok := value.(map[string]any)
@@ -248,7 +248,16 @@ func (session *compatibilitySession) resolveToClassify(context compatibility.Con
 		current = resolved
 	}
 	result := session.policy.Apply(context, current)
-	if !result.Omit {
+	switch context.Object {
+	case openapiwalk.ObjectParameter:
+		if !result.Omit {
+			return compatibility.Result{}, false
+		}
+	case openapiwalk.ObjectLink:
+		if !result.Reject || result.Scope != failure.ScopeCapability {
+			return compatibility.Result{}, false
+		}
+	default:
 		return compatibility.Result{}, false
 	}
 	return result, true

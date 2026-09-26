@@ -853,7 +853,7 @@ if (JSON.stringify(paths) !== JSON.stringify(expected)) throw new Error("resourc
 	}
 }
 
-func TestGeneratedResponseLinksRejectUnknownRequestParameterExpressions(t *testing.T) {
+func TestGeneratedResponseLinksOmitUnknownRequestParameterExpressions(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.1.0", "info":{"title":"Invalid request link","version":"1"},
   "paths":{
@@ -864,9 +864,31 @@ func TestGeneratedResponseLinksRejectUnknownRequestParameterExpressions(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := SourceArtifacts(document); err == nil || !strings.Contains(err.Error(), "unknown source header parameter") {
-		t.Fatalf("Link with unknown request parameter expression error = %v", err)
+	plan, diagnostics, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
 	}
+	if len(diagnostics) != 1 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	value := diagnostics[0]
+	if value.Severity != "warning" || value.Code != "SDKGEN-W509" ||
+		value.Scope != "capability" || value.Effect != "omit-capability" ||
+		value.Capability != "response-link" ||
+		!strings.Contains(value.Message, "unknown source header parameter") {
+		t.Fatalf("Link omission diagnostic = %#v", value)
+	}
+	if _, err := (Generator{}).Emit(plan); err != nil {
+		t.Fatalf("emit with omitted Link: %v", err)
+	}
+	probe := `import { createClient } from "./index.js"
+declare const api: ReturnType<typeof createClient>
+api.$operations.getSource()
+api.$operations.getTarget({ path: { id: "1" } })
+// @ts-expect-error the invalid response Link helper is omitted
+api.$links.getSource.follow
+`
+	compileTypeScriptArtifactsWithProbe(t, document, "omitted-link.probe.ts", probe)
 }
 
 func TestGeneratedResponseLinksDelegateEnvironmentControlledRequestHeaders(t *testing.T) {

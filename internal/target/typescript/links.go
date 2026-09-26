@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/failure"
 )
 
 var (
@@ -31,31 +32,38 @@ type generatedLink struct {
 	TargetOptionsRequired bool
 }
 
+type linkPreparationFailure struct {
+	SourceOperation ir.Operation
+	Pointer         string
+	Name            string
+	Err             error
+	Blocking        bool
+}
+
+func (failure linkPreparationFailure) Error() string {
+	if failure.Err == nil {
+		return "response link preparation failed"
+	}
+	return failure.Err.Error()
+}
+
 func generatedLinks(document *ir.Document, manifest Manifest) ([]generatedLink, error) {
-	result, failures := generatedLinksDiagnostics(document, manifest)
+	result, failures := generatedLinksDiagnostics(document, manifest, newSourceOwnershipIndex(document))
 	if len(failures) != 0 {
 		return nil, failures[0]
 	}
 	return result, nil
 }
 
-func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]generatedLink, []error) {
+func generatedLinksDiagnostics(document *ir.Document, manifest Manifest, ownership *sourceOwnershipIndex) ([]generatedLink, []linkPreparationFailure) {
 	visible := map[string]ManifestOperation{}
 	for _, operation := range manifest.Operations {
 		if operation.Visibility != "hidden" {
 			visible[manifestRouteKey(operation)] = operation
 		}
 	}
-	byID := make(map[string]ir.Operation, len(document.Operations))
-	byPathMethod := make(map[string]ir.Operation, len(document.Operations))
-	for _, operation := range document.Operations {
-		if operation.OperationID != "" {
-			byID[operation.OperationID] = operation
-		}
-		byPathMethod[operationPathMethodKey(operation.Path, operation.Method)] = operation
-	}
 	var result []generatedLink
-	var failures []error
+	var failures []linkPreparationFailure
 	for _, source := range document.Operations {
 		sourcePlan, sourceVisible := visible[operationRouteKey(source)]
 		if !sourceVisible {
@@ -63,43 +71,46 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 		}
 		responses, err := operationResponses(document, source)
 		if err != nil {
-			failures = append(failures, fmt.Errorf("responses %s: %w", operationLabel(source), err))
+			failures = append(failures, newLinkPreparationFailure(source, source.Pointer+"/responses", "", fmt.Errorf("responses %s: %w", operationLabel(source), err), true))
 			continue
 		}
 		for _, response := range responses {
 			status := response.Status
 			linksPointer, err := componentObjectFieldPointer(document, response.SourceRaw, "responses", response.Pointer, "links")
 			if err != nil {
-				failures = append(failures, fmt.Errorf("response %s %s: %w", operationLabel(source), status, err))
+				failures = append(failures, newLinkPreparationFailure(source, response.Pointer+"/links", "", fmt.Errorf("response %s %s: %w", operationLabel(source), status, err), true))
 				continue
 			}
 			links, _ := response.Raw["links"].(map[string]any)
 			for _, name := range sortedAnyKeys(links) {
 				linkPointer := linksPointer + "/" + escapePointerToken(name)
+				if linkCapabilityRestricted(ownership.restrictionsAt(document, linkPointer)) {
+					continue
+				}
 				link, _ := links[name].(map[string]any)
 				parametersPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "parameters")
 				if err != nil {
-					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
 					continue
 				}
 				requestBodyPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "requestBody")
 				if err != nil {
-					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
 					continue
 				}
 				link, err = resolveComponentObject(document, link, "links")
 				if err != nil {
-					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
 					continue
 				}
-				target, err := linkTargetOperation(byID, byPathMethod, link)
+				target, err := ownership.linkTarget(link)
 				if err != nil {
-					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
 					continue
 				}
 				targetPlan, targetVisible := visible[operationRouteKey(target)]
 				if !targetVisible {
-					failures = append(failures, fmt.Errorf("response link %s %s targets hidden operation %q", operationLabel(source), name, operationLabel(target)))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s targets hidden operation %q", operationLabel(source), name, operationLabel(target)), false))
 					continue
 				}
 				definition, err := linkDefinition(sourcePlan.prepared.parameters, targetPlan.prepared.parameters, link, linkDefinitionPointers{
@@ -107,16 +118,15 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 					requestBody: requestBodyPointer,
 				})
 				if err != nil {
-					if strings.HasPrefix(err.Error(), "#") {
-						failures = append(failures, err)
-					} else {
-						failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					if !strings.HasPrefix(err.Error(), "#") {
+						err = fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err)
 					}
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, err, false))
 					continue
 				}
 				serverURL, err := linkServerURL(link)
 				if err != nil {
-					failures = append(failures, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err))
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
 					continue
 				}
 				result = append(result, generatedLink{
@@ -137,6 +147,28 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest) ([]gene
 		return operationRouteKey(result[left].SourceOperation) < operationRouteKey(result[right].SourceOperation)
 	})
 	return result, failures
+}
+
+func newLinkPreparationFailure(source ir.Operation, pointer, name string, err error, blocking bool) linkPreparationFailure {
+	if located, _ := sourcePointerErrorDetails(err); located != "" {
+		pointer = located
+	}
+	return linkPreparationFailure{
+		SourceOperation: source,
+		Pointer:         pointer,
+		Name:            name,
+		Err:             err,
+		Blocking:        blocking,
+	}
+}
+
+func linkCapabilityRestricted(values []ir.SemanticRestriction) bool {
+	for _, restriction := range values {
+		if restriction.Scope == failure.ScopeCapability && restriction.Effect == failure.EffectOmitCapability {
+			return true
+		}
+	}
+	return false
 }
 
 func responsePointer(source ir.Operation, status string) string {
