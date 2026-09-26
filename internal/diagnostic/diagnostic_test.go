@@ -99,7 +99,7 @@ func TestRenderJSONIsDeterministicVersionedAndSanitized(t *testing.T) {
 	if err := json.Unmarshal([]byte(first), &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.SchemaVersion != 3 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
+	if report.SchemaVersion != 4 || report.Counts.Errors != 1 || report.Counts.Warnings != 1 {
 		t.Fatalf("report header = %#v", report)
 	}
 	if len(report.Diagnostics) != 2 || report.Diagnostics[0].Code != "SDKGEN-E001" || report.Diagnostics[1].Code != "SDKGEN-W002" {
@@ -133,7 +133,7 @@ func TestDiagnosticV3RendersCompatibilityAndFailureContracts(t *testing.T) {
 	if err := json.Unmarshal([]byte(rendered), &report); err != nil {
 		t.Fatal(err)
 	}
-	if report.SchemaVersion != 3 || len(report.Diagnostics) != 1 {
+	if report.SchemaVersion != 4 || len(report.Diagnostics) != 1 {
 		t.Fatalf("report = %#v", report)
 	}
 	value := report.Diagnostics[0]

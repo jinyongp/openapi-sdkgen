@@ -45,22 +45,26 @@ type Location struct {
 // Cause contains only an explicitly sanitized summary; callers must never put
 // credentials, URLs with secrets, or arbitrary transport errors in it.
 type Diagnostic struct {
-	Severity   Severity       `json:"severity"`
-	Code       string         `json:"code"`
-	Phase      Phase          `json:"phase"`
-	Location   Location       `json:"location"`
-	Related    []Location     `json:"related,omitempty"`
-	Target     string         `json:"target,omitempty"`
-	Route      string         `json:"route,omitempty"`
-	Operation  string         `json:"operation,omitempty"`
-	Capability string         `json:"capability,omitempty"`
-	Scope      failure.Scope  `json:"scope,omitempty"`
-	Effect     failure.Effect `json:"effect,omitempty"`
-	Rule       string         `json:"rule,omitempty"`
-	Action     string         `json:"action,omitempty"`
-	Message    string         `json:"message"`
-	Hint       string         `json:"hint,omitempty"`
-	Cause      string         `json:"cause,omitempty"`
+	ID       string   `json:"id,omitempty"`
+	Severity Severity `json:"severity"`
+	Code     string   `json:"code"`
+	Phase    Phase    `json:"phase"`
+	Location Location `json:"location"`
+	// IdentitySource is an optional stable logical source identity used only to
+	// derive the v4 issue fingerprint. It is never rendered.
+	IdentitySource string         `json:"-"`
+	Related        []Location     `json:"related,omitempty"`
+	Target         string         `json:"target,omitempty"`
+	Route          string         `json:"route,omitempty"`
+	Operation      string         `json:"operation,omitempty"`
+	Capability     string         `json:"capability,omitempty"`
+	Scope          failure.Scope  `json:"scope,omitempty"`
+	Effect         failure.Effect `json:"effect,omitempty"`
+	Rule           string         `json:"rule,omitempty"`
+	Action         string         `json:"action,omitempty"`
+	Message        string         `json:"message"`
+	Hint           string         `json:"hint,omitempty"`
+	Cause          string         `json:"cause,omitempty"`
 }
 
 // SkippedPhase explains a prerequisite-bound phase that could not run.
@@ -77,10 +81,11 @@ type Counts struct {
 
 // Report is the stable machine-readable diagnostic envelope.
 type Report struct {
-	SchemaVersion int            `json:"schemaVersion"`
-	Counts        Counts         `json:"counts"`
-	Diagnostics   []Diagnostic   `json:"diagnostics"`
-	SkippedPhases []SkippedPhase `json:"skippedPhases"`
+	SchemaVersion int                `json:"schemaVersion"`
+	Counts        Counts             `json:"counts"`
+	Diagnostics   []Diagnostic       `json:"diagnostics"`
+	SkippedPhases []SkippedPhase     `json:"skippedPhases"`
+	Coverage      []AnalysisCoverage `json:"coverage"`
 }
 
 // Collector accumulates diagnostics without rendering them.
@@ -194,20 +199,22 @@ func Sort(values []Diagnostic) []Diagnostic {
 }
 
 // NewReport builds the stable machine-readable diagnostic envelope.
-func NewReport(values []Diagnostic, skipped []SkippedPhase) Report {
-	values = SanitizeSources(values)
+func NewReport(values []Diagnostic, skipped []SkippedPhase, coverage ...AnalysisCoverage) Report {
+	values = canonicalizeDiagnostics(values)
 	skipped = normalizeSkipped(skipped)
+	coverage = normalizeCoverage(coverage)
 	return Report{
-		SchemaVersion: 3,
+		SchemaVersion: 4,
 		Counts:        Count(values),
 		Diagnostics:   append([]Diagnostic{}, values...),
 		SkippedPhases: append([]SkippedPhase{}, skipped...),
+		Coverage:      append([]AnalysisCoverage{}, coverage...),
 	}
 }
 
 // RenderJSON renders one deterministic versioned JSON report.
-func RenderJSON(values []Diagnostic, skipped []SkippedPhase) (string, error) {
-	data, err := json.MarshalIndent(NewReport(values, skipped), "", "  ")
+func RenderJSON(values []Diagnostic, skipped []SkippedPhase, coverage ...AnalysisCoverage) (string, error) {
+	data, err := json.MarshalIndent(NewReport(values, skipped, coverage...), "", "  ")
 	if err != nil {
 		return "", fmt.Errorf("encode diagnostic report: %w", err)
 	}
@@ -216,8 +223,9 @@ func RenderJSON(values []Diagnostic, skipped []SkippedPhase) (string, error) {
 
 // RenderHuman renders one complete deterministic report. The severity counts
 // are deliberately first so long reports remain scannable.
-func RenderHuman(values []Diagnostic, skipped []SkippedPhase) string {
-	values = SanitizeSources(values)
+func RenderHuman(values []Diagnostic, skipped []SkippedPhase, coverage ...AnalysisCoverage) string {
+	values = canonicalizeDiagnostics(values)
+	coverage = normalizeCoverage(coverage)
 	counts := Count(values)
 	var output strings.Builder
 	fmt.Fprintf(&output, "OpenAPI SDK generation: %d error(s), %d warning(s)\n", counts.Errors, counts.Warnings)
@@ -281,6 +289,36 @@ func RenderHuman(values []Diagnostic, skipped []SkippedPhase) string {
 		output.WriteString("\nSkipped phases:\n")
 		for _, item := range skipped {
 			fmt.Fprintf(&output, "- %s: %s\n", item.Phase, item.Reason)
+		}
+	}
+	if len(coverage) != 0 {
+		output.WriteString("\nAnalysis coverage:\n")
+		for _, item := range coverage {
+			fmt.Fprintf(&output, "- %s/%s: %s", item.Phase, item.Analyzer, item.Status)
+			if item.Location != nil && (item.Location.Source != "" || item.Location.Pointer != "") {
+				fmt.Fprintf(&output, " at %s%s", item.Location.Source, item.Location.Pointer)
+			}
+			if item.Scope != failure.ScopeNone {
+				fmt.Fprintf(&output, " scope=%s", item.Scope)
+			}
+			if item.Reason != "" {
+				fmt.Fprintf(&output, " — %s", item.Reason)
+			}
+			output.WriteByte('\n')
+			for _, prerequisite := range item.Prerequisites {
+				state := "available"
+				if !prerequisite.Available {
+					state = "unavailable"
+				}
+				fmt.Fprintf(&output, "  prerequisite %s: %s", prerequisite.Name, state)
+				if prerequisite.Reason != "" {
+					fmt.Fprintf(&output, " — %s", prerequisite.Reason)
+				}
+				output.WriteByte('\n')
+			}
+			if len(item.BlockedBy) != 0 {
+				fmt.Fprintf(&output, "  blocked by: %s\n", strings.Join(item.BlockedBy, ", "))
+			}
 		}
 	}
 	return output.String()
