@@ -280,6 +280,10 @@ func resultFromCompile(document *ir.Document, err error, source string, collecto
 			value.Location.Pointer = compatibilityError.DiagnosticPointer()
 			value.Rule = compatibilityError.CompatibilityRule()
 			value.Action = compatibilityError.CompatibilityAction()
+			if value.Action == "reject" {
+				value.Scope = failure.ScopeDocument
+				value.Effect = failure.EffectBlock
+			}
 		}
 		collector.Add(value)
 		result.Document = nil

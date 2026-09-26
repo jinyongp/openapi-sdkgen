@@ -1,6 +1,10 @@
 package sdkgen
 
-import "testing"
+import (
+	"testing"
+
+	"openapi-sdkgen/internal/failure"
+)
 
 func TestVersionFeatureRejectCarriesStructuredCompatibilityDiagnostic(t *testing.T) {
 	result, err := CompileResult([]byte(`{
@@ -17,7 +21,8 @@ func TestVersionFeatureRejectCarriesStructuredCompatibilityDiagnostic(t *testing
 	}
 	value := result.Diagnostics[0]
 	if value.Code != "SDKGEN-E140" || value.Location.Pointer != "#/webhooks" ||
-		value.Rule != "COMP-VERSION-003" || value.Action != "reject" {
+		value.Rule != "COMP-VERSION-003" || value.Action != "reject" ||
+		value.Scope != failure.ScopeDocument || value.Effect != failure.EffectBlock {
 		t.Fatalf("diagnostic = %#v", value)
 	}
 }

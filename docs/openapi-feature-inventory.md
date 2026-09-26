@@ -25,6 +25,7 @@ line.
 | ID | Fields | Versions | State | Evidence |
 | --- | --- | --- | --- | --- |
 | document-version | `openapi` SemVer | all | generated | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
+| declared-version-feature-boundaries | Feature/field used outside the declared OpenAPI minor line | all | error | `internal/compiler/version_reject_diagnostic_test.go::TestVersionFeatureRejectCarriesStructuredCompatibilityDiagnostic` |
 | info-documentation | `info.title`, `description`, `termsOfService`, `contact`, `license`, `version` | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | document-discovery | root `tags`, `externalDocs` | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | extensions | every `x-*` patterned field | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
@@ -109,6 +110,7 @@ line.
 | stream-frame-limit | `maxStreamFrameBytes` bounds one wire frame/record/part across client, request, custom protocol, Webhook, and Callback paths | 3.2 | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeStreamCodecOverridesBuiltInFraming` |
 | complete-inbound-body-limit | `maxBodyBytes` bounds one complete generated Webhook/Callback request body while preserving streaming frame limits | all | generated | `internal/target/typescript/server_body_test.go::TestGeneratedWebhookRouterDecodesTextAndFormBodies` |
 | response-links | Link Object `operationId`/local `operationRef`, response/request body/header/status expressions, parameters, requestBody, and same-name status dispatch | all | generated | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksDispatchSameNameByStatus` |
+| invalid-link-target-identity | Link Object missing both `operationId`/`operationRef`, declaring both, or using an empty target identity | all | omitted | `internal/compiler/link_compatibility_test.go::TestCompatibilityQuarantinesInvalidInlineLinkTargetIdentity` |
 | fetch-managed-link-request-headers | Link source expressions read caller input and target assignments forward Fetch-managed request headers | all | generated | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksDelegateEnvironmentControlledRequestHeaders` |
 | callbacks | Callback Object, key expressions, callback Path Items; without `server` the selected target is document-blocked, with `typescript --with server` they are generated | all | error | `internal/target/typescript/server_failure_scope_test.go::TestInboundContractsWithoutServerAddonRemainDocumentBlocking` |
 | webhooks | root Webhook Object; without `server` the selected target is document-blocked, with `typescript --with server` it is generated | 3.1+ | error | `internal/target/typescript/server_failure_scope_test.go::TestInboundContractsWithoutServerAddonRemainDocumentBlocking` |

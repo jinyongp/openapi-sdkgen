@@ -274,16 +274,16 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		}
 	}
 	sort.Strings(manifestContracts)
-	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "661f166249795f270d0ffb297b083b17fb62d847e3a1ee97d7b8ff5663aa4c66" {
+	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "87a44b1d83b0f0ff958af6b624205b1c6daafcf4269280de5cab34b2e8402b5f" {
 		t.Errorf("manifest feature/evidence contract changed: %s", got)
 	}
 
 	for _, rule := range []string{
 		"COMP-REF-001", "COMP-REF-002", "COMP-REF-003",
 		"COMP-PARAM-001", "COMP-PARAM-002",
-		"COMP-BODY-001", "COMP-METHOD-001", "COMP-RESP-001",
+		"COMP-BODY-001", "COMP-METHOD-001", "COMP-LINK-001", "COMP-RESP-001",
 		"COMP-ENC-001", "COMP-ENC-002", "COMP-ENC-003",
-		"COMP-VERSION-001", "COMP-VERSION-002",
+		"COMP-VERSION-001", "COMP-VERSION-002", "COMP-VERSION-003",
 		"COMP-SCHEMA-001", "COMP-SCHEMA-002", "COMP-SCHEMA-003", "COMP-SCHEMA-004", "COMP-SCHEMA-005",
 		"COMP-SCHEMA-007", "COMP-SCHEMA-008",
 	} {

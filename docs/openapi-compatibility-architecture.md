@@ -470,6 +470,24 @@ GitLab inputs. Graph beta static method counting timed out on the large source;
 it remains covered only by the required fresh compiler corpus rerun and is not
 counted as a clean static result.
 
+#### COMP-LINK-001 — Link target identity
+
+A response Link capability must identify exactly one target through a non-empty
+`operationId` or `operationRef`. Missing both targets, declaring both targets,
+or providing only an empty target identity is a source-conformance failure owned
+by that Link capability, not by the base response operation.
+
+The compiler therefore quarantines only the invalid Link occurrence with
+`scope=capability effect=omit-capability`, preserves exact source/provenance,
+and records the restriction in IR. Valid sibling Links and the base response
+remain eligible. Reusable invalid Links are classified at each reference
+occurrence so omission does not degrade into an unrelated missing-reference
+failure.
+
+A source-valid Link target form that the TypeScript target cannot represent is a
+separate target capability omission (`SDKGEN-W509`); it is not reclassified as
+a source-conformance failure and the target is never guessed or redirected.
+
 ### Responses
 
 
@@ -647,10 +665,14 @@ reachability distinction between API semantics and source/type metadata.
 
 ## Version-gate classification
 
-The existing `internal/compiler/openapi/version.go` rules should be replaced by
-feature rules rather than one fail-fast traversal.
+Current compilation applies proven compatibility ignores/normalizations before
+the remaining declared-version gates. A version-gated construct that is still
+invalid for the declared OpenAPI line is reported as `COMP-VERSION-003` with
+`scope=document effect=block`; these failures are intentionally not converted
+to operation/capability omissions because their semantic ownership is the
+declared document version.
 
-| Existing gate | Compatibility classification |
+| Version gate | Compatibility classification |
 | --- | --- |
 | OAS 3.0 missing `paths` | reject: required structural contract |
 | 3.0 `webhooks` | reject: API/routing semantics |
