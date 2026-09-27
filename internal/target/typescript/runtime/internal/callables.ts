@@ -148,6 +148,27 @@ export function bindOperation<
   return Object.assign(call, { raw }) as OperationCall<Input, Output, Options, Raw>;
 }
 
+/**
+ * Binds one generated operation without re-instantiating its public recursive
+ * Input/Output graph through the runtime helper type system.
+ *
+ * Generated operation modules already declare the exact public callable
+ * interface and cast this runtime-only result at that boundary.
+ */
+export function bindGeneratedOperation(
+  request: RequestFunction,
+  operation: OperationDefinition,
+  hasInput: boolean,
+  inputOptional = false,
+): unknown {
+  return bindOperation<unknown, unknown, RequestOptions, RawResponse<unknown>>(
+    request,
+    operation,
+    hasInput,
+    inputOptional,
+  );
+}
+
 /** Binds generated streaming operation metadata with the same input and options dispatch as decoded calls. */
 export function bindStreamOperation<Input, Item, Options extends RequestOptions = RequestOptions>(
   request: RequestFunction,

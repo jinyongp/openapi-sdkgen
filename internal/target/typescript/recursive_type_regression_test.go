@@ -87,6 +87,26 @@ func TestOperationModuleTypechecksRecursiveBodyInput(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	artifacts, err := SourceArtifacts(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operationSource := operationArtifactSource(t, artifacts, "PUT /bulk")
+	for _, expected := range []string{
+		"interface __sdkgen_Input {",
+		"export type Input = __sdkgen_Input",
+		"export type Output = __sdkgen_Output",
+		"export type BaseCall = __sdkgen_Call",
+		"export type ExactCall =",
+		"bindGeneratedOperation(request,",
+	} {
+		if !strings.Contains(operationSource, expected) {
+			t.Fatalf("recursive operation source missing %q:\n%s", expected, operationSource)
+		}
+	}
+	if strings.Contains(operationSource, "bindOperation<Input, Output") {
+		t.Fatalf("recursive operation re-instantiated public types through runtime binder:\n%s", operationSource)
+	}
 	compileTypeScriptArtifacts(t, document)
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  bindGeneratedOperation,
   bindOperation,
   bindPathOperation,
   type RequestFunction,
@@ -654,6 +655,45 @@ describe("generated runtime", () => {
     );
     await expect(noInput()).resolves.toEqual({ id: "widget-1" });
     await expect(noInput.raw()).resolves.toMatchObject({ data: { id: "widget-1" } });
+  });
+
+  it("binds generated operations through the bounded runtime boundary", async () => {
+    const calls: unknown[][] = [];
+    const request = (async <Output>(...args: unknown[]) => {
+      calls.push(args);
+      return { id: "widget-generated" } as Output;
+    }) as unknown as RequestFunction;
+    request.raw = async <Output>() =>
+      ({
+        status: 200,
+        contentType: "application/json",
+        data: { id: "widget-generated" } as Output,
+        headers: Object.create(null) as Readonly<Record<string, unknown>>,
+        request: {},
+        response: new Response(),
+      }) as RawResponse<Output>;
+
+    type GeneratedCall = {
+      (input: { readonly body: { readonly name: string } }): Promise<{ readonly id: string }>;
+      raw(input: {
+        readonly body: { readonly name: string };
+      }): Promise<RawResponse<{ readonly id: string }>>;
+    };
+    const call = bindGeneratedOperation(
+      request,
+      operation({ path: "/generated" }),
+      true,
+      false,
+    ) as GeneratedCall;
+    await expect(call({ body: { name: "generated" } })).resolves.toEqual({
+      id: "widget-generated",
+    });
+    await expect(call.raw({ body: { name: "generated" } })).resolves.toMatchObject({
+      data: { id: "widget-generated" },
+    });
+    expect(calls).toEqual([
+      [operation({ path: "/generated" }), { body: { name: "generated" } }, undefined],
+    ]);
   });
 
   it("splits sole options from optional generated input", async () => {
