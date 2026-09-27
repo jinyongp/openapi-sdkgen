@@ -215,6 +215,8 @@ func ensureReferenceResolutionState(source inputSource, options *CompileOptions)
 	return state, nil
 }
 
+var errStructuredCompatibilityBlocker = errors.New("structured compatibility diagnostics blocked remote reference resolution")
+
 type remoteReferenceResolver struct {
 	origins          map[string]struct{}
 	trustedOrigin    string
@@ -226,6 +228,7 @@ type remoteReferenceResolver struct {
 	trustedClient    *http.Client
 	trustedConfig    *httpInputConfig
 	diagnostics      *diagnostic.Collector
+	diagnosticMode   diagnostic.Mode
 	compatibility    *compatibilitySession
 	lookup           hostLookup
 	metrics          *compilationMetrics
@@ -257,6 +260,10 @@ func (r *remoteReferenceResolver) firstError() error {
 }
 
 func newRemoteReferenceResolver(options CompileOptions, lock *referenceLock, cache string, trustedBase *url.URL, trustedConfig *httpInputConfig) (*remoteReferenceResolver, error) {
+	mode, err := options.DiagnosticMode.Resolve()
+	if err != nil {
+		return nil, err
+	}
 	origins := make(map[string]struct{}, len(options.RemoteRefAllowlist))
 	for _, value := range options.RemoteRefAllowlist {
 		origin, err := canonicalRemoteOrigin(value)
@@ -290,6 +297,7 @@ func newRemoteReferenceResolver(options CompileOptions, lock *referenceLock, cac
 		offline:        options.Offline,
 		cache:          cache,
 		diagnostics:    options.diagnostics,
+		diagnosticMode: mode,
 		compatibility:  options.compatibilitySession,
 		lookup:         lookup,
 		metrics:        options.metrics,
@@ -680,6 +688,19 @@ func (r *remoteReferenceResolver) responseForSource(data []byte, source string) 
 	effective, err := r.effectiveRemoteSource(data, source)
 	if err != nil {
 		return nil, err
+	}
+	if r.compatibility != nil {
+		if r.diagnostics != nil {
+			r.diagnostics.Extend(r.compatibility.drainCollectorDiagnostics())
+		}
+		if r.diagnosticMode == diagnostic.ModeFailFast {
+			if err := compatibilityBlockingError(r.compatibility); err != nil {
+				if r.diagnostics != nil {
+					return nil, errStructuredCompatibilityBlocker
+				}
+				return nil, err
+			}
+		}
 	}
 	if err := r.scanRemoteSource(effective.data, source); err != nil {
 		return nil, err

@@ -567,6 +567,58 @@ components:
 	}
 }
 
+func TestDirectRemoteCompatibilityBlockerStopsBeforeNestedFetch(t *testing.T) {
+	var schemaRequests atomic.Int32
+	var laterRequests atomic.Int32
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/schema.yaml":
+			schemaRequests.Add(1)
+			_, _ = response.Write([]byte("type: [string, number]\nproperties:\n  later:\n    $ref: later.yaml\n"))
+		case "/later.yaml":
+			laterRequests.Add(1)
+			_, _ = response.Write([]byte("type: string\n"))
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer remote.Close()
+
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Remote fail-fast compatibility, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: "`+remote.URL+`/schema.yaml"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := CompileFileWithOptions(root, CompileOptions{
+		RemoteRefAllowlist:    []string{remote.URL},
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "type array") {
+		t.Fatalf("direct compile error = %v, want remote compatibility blocker", err)
+	}
+	if got := schemaRequests.Load(); got != 1 {
+		t.Fatalf("schema requests = %d, want 1", got)
+	}
+	if got := laterRequests.Load(); got != 0 {
+		t.Fatalf("nested requests after fail-fast blocker = %d, want 0", got)
+	}
+	if _, statErr := os.Stat(defaultReferenceLockPath(root)); !os.IsNotExist(statErr) {
+		t.Fatalf("blocked direct compile published reference lock: %v", statErr)
+	}
+}
+
 func TestCollectModePreservesSchemaContextAcrossNestedRemoteSources(t *testing.T) {
 	var requests atomic.Int32
 	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {

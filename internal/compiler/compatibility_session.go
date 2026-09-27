@@ -546,7 +546,11 @@ func syncCompatibilityDiagnostics(options *CompileOptions) error {
 		options.diagnostics.Extend(options.compatibilitySession.drainCollectorDiagnostics())
 		return nil
 	}
-	for _, value := range compatibilityDiagnostics(options.compatibilitySession) {
+	return compatibilityBlockingError(options.compatibilitySession)
+}
+
+func compatibilityBlockingError(session *compatibilitySession) error {
+	for _, value := range compatibilityDiagnostics(session) {
 		if value.Severity == diagnostic.SeverityError {
 			return phaseError(
 				diagnostic.PhaseOpenAPI,

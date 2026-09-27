@@ -217,6 +217,9 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 	bundled, err := bundler.BundleBytesComposed(bundleData, bundlerConfiguration, nil)
 	if remoteResolver != nil {
 		if remoteErr := remoteResolver.firstError(); remoteErr != nil {
+			if errors.Is(remoteErr, errStructuredCompatibilityBlocker) && options.diagnostics != nil {
+				return nil, nil
+			}
 			return nil, phaseError(diagnostic.PhaseReferences, fmt.Errorf("resolve OpenAPI references: %w", remoteErr))
 		}
 	}
