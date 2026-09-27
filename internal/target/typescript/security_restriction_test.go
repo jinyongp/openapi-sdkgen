@@ -104,6 +104,43 @@ func TestSecurityRestrictionStillBlocksEmptyEntrySurface(t *testing.T) {
 	}
 }
 
+func TestNonObjectComponentsContainerDoesNotBecomeUndeclaredSecurityOmission(t *testing.T) {
+	result, err := sdkgen.CompileResultWithOptions([]byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Non-object components","version":"1"},
+  "paths":{
+    "/items":{"get":{
+      "operationId":"getItems",
+      "security":[{"declared":[]}],
+      "responses":{"204":{"description":"OK"}}
+    }}
+  },
+  "components":"malformed"
+}`), sdkgen.CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil {
+		t.Fatalf("structured compile lost document: %#v", result)
+	}
+	for _, value := range result.Diagnostics {
+		if value.Rule == compatibility.RuleSecurityRequirement {
+			t.Fatalf("malformed shared components container was misclassified as undeclared: %#v", result.Diagnostics)
+		}
+	}
+	if len(result.Document.SemanticRestrictions) != 0 {
+		t.Fatalf("malformed shared components created operation restriction: %#v", result.Document.SemanticRestrictions)
+	}
+
+	_, diagnostics, err := (Generator{}).Prepare(result.Document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasTargetSecurityBlocker(diagnostics) {
+		t.Fatalf("malformed shared components did not remain target-blocking: %#v", diagnostics)
+	}
+}
+
 func TestNonObjectDeclaredSecuritySchemeRemainsTargetOwned(t *testing.T) {
 	result, err := sdkgen.CompileResultWithOptions([]byte(`{
   "openapi":"3.0.3",

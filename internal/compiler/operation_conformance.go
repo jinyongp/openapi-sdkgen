@@ -142,7 +142,14 @@ func securityRequirementConformanceFindings(document *ir.Document, fallbackSourc
 }
 
 func declaredSecuritySchemeNames(raw map[string]any) (map[string]struct{}, bool) {
-	components, _ := raw["components"].(map[string]any)
+	componentsValue, componentsExists := raw["components"]
+	if !componentsExists {
+		return map[string]struct{}{}, true
+	}
+	components, ok := componentsValue.(map[string]any)
+	if !ok {
+		return nil, false
+	}
 	value, exists := components["securitySchemes"]
 	if !exists {
 		return map[string]struct{}{}, true
