@@ -152,3 +152,38 @@ func TestSchemaModulesTypecheckMutuallyRecursiveMaps(t *testing.T) {
 	}
 	compileTypeScriptArtifacts(t, document)
 }
+
+func TestOperationModuleTypechecksRecursiveInputWithStreamCapability(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.2.0",
+  "info":{"title":"Recursive stream input","version":"1"},
+  "paths":{
+    "/events":{"post":{
+      "operationId":"publishAndStreamEvents",
+      "requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/JSONValue"}}}},
+      "responses":{"200":{"description":"OK","content":{"application/x-ndjson":{"itemSchema":{"type":"string"}}}}}
+    }}
+  },
+  "components":{"schemas":{
+    "JSONValue":{"oneOf":[
+      {"type":"string"},
+      {"type":"number"},
+      {"type":"boolean"},
+      {"type":"object","additionalProperties":{"$ref":"#/components/schemas/JSONValue"}},
+      {"type":"array","items":{"$ref":"#/components/schemas/JSONValue"}}
+    ]}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifacts, err := SourceArtifacts(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operationSource := operationArtifactSource(t, artifacts, "POST /events")
+	if !strings.Contains(operationSource, "bindStreamOperation<Input, string, Options>") {
+		t.Fatalf("recursive stream operation did not exercise generic stream binder:\n%s", operationSource)
+	}
+	compileTypeScriptArtifacts(t, document)
+}
