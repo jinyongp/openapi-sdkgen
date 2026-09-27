@@ -155,7 +155,7 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 	case map[string]any:
 		var copied map[string]any
 		for name, child := range typed {
-			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
+			if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, child) {
 				continue
 			}
 			effective, omitted, childChanged, err := session.walk(source, sourceRoot, child, append(path, name), root)

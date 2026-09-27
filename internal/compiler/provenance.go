@@ -8,6 +8,7 @@ import (
 
 	"go.yaml.in/yaml/v4"
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/openapiwalk"
 )
 
 func attachDocumentProvenanceValue(document *ir.Document, source inputSource, value any, remoteSources map[string][]byte, localSources *decodedSourceCache) {
@@ -93,7 +94,7 @@ func referenceProvenanceValue(value any, displaySource, resolutionSource, direct
 				}
 			}
 			for key, child := range typed {
-				if key == "$ref" || referenceTraversalOpaque(path, key, child) {
+				if key == "$ref" || openapiwalk.ReferenceChildOpaque(path, key, child) {
 					continue
 				}
 				token := strings.ReplaceAll(strings.ReplaceAll(key, "~", "~0"), "/", "~1")

@@ -39,7 +39,7 @@ type referenceFSFile struct {
 	info referenceFSInfo
 }
 
-func newReferenceSourceFS(root string, filters []string, cache *decodedSourceCache, session *compatibilitySession) (*referenceSourceFS, error) {
+func newReferenceSourceFS(root string, filters []string, cache *decodedSourceCache, session *compatibilitySession, opaqueReferences *opaqueReferenceEscaper) (*referenceSourceFS, error) {
 	result := &referenceSourceFS{
 		files: make(map[string]referenceFSFile),
 		dirs:  map[string][]fs.DirEntry{".": {}},
@@ -66,17 +66,21 @@ func newReferenceSourceFS(root string, filters []string, cache *decodedSourceCac
 		if err != nil {
 			return nil, err
 		}
+		referenceData, err := opaqueReferences.data(effective.value, effective.data)
+		if err != nil {
+			return nil, fmt.Errorf("prepare OpenAPI reference-resolution view %s: %w", resolved, err)
+		}
 		stat, err := os.Stat(resolved)
 		if err != nil {
 			return nil, fmt.Errorf("stat OpenAPI reference source %s: %w", resolved, err)
 		}
 		info := referenceFSInfo{
 			name:    path.Base(name),
-			size:    int64(len(effective.data)),
+			size:    int64(len(referenceData)),
 			mode:    stat.Mode(),
 			modTime: stat.ModTime(),
 		}
-		result.files[name] = referenceFSFile{data: effective.data, info: info}
+		result.files[name] = referenceFSFile{data: referenceData, info: info}
 		ensureReferenceFSParents(children, name)
 		parent := path.Dir(name)
 		if parent == "" {

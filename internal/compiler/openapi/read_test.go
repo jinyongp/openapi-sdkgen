@@ -72,6 +72,38 @@ func TestReadAcceptsYAMLFlowMappingsThatStartWithABrace(t *testing.T) {
 	}
 }
 
+func TestMaskOpaqueReferenceKeywordsUsesStructuralExtensionContext(t *testing.T) {
+	value := map[string]any{
+		"openapi": "3.1.1",
+		"x-tool": map[string]any{
+			"$ref": "missing-extension.yaml",
+		},
+		"components": map[string]any{
+			"schemas": map[string]any{
+				"Base": map[string]any{"type": "string"},
+				"Thing": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"x-model": map[string]any{
+							"$ref": "#/components/schemas/Base",
+						},
+					},
+				},
+			},
+		},
+	}
+	masked := maskOpaqueReferenceKeywords(value, nil, false).(map[string]any)
+	extension := masked["x-tool"].(map[string]any)
+	if _, exists := extension["$ref"]; exists {
+		t.Fatalf("extension reference remained active: %#v", extension)
+	}
+	properties := masked["components"].(map[string]any)["schemas"].(map[string]any)["Thing"].(map[string]any)["properties"].(map[string]any)
+	model := properties["x-model"].(map[string]any)
+	if model["$ref"] != "#/components/schemas/Base" {
+		t.Fatalf("named-map x-* schema property lost active reference: %#v", model)
+	}
+}
+
 func TestReadRejectsUnsupportedOpenAPIVersionLines(t *testing.T) {
 	for _, version := range []string{"2.0", "3.2", "3.3.0", "4.0.0", "3.01.0", "3.1.00", "3.1.1-01", "3.1.1-rc.01"} {
 		t.Run(version, func(t *testing.T) {

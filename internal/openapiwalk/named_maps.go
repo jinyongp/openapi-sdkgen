@@ -21,6 +21,15 @@ func IsOpaqueDataField(name string, value any) bool {
 	}
 }
 
+// ReferenceChildOpaque reports whether a child value is literal/extension data
+// whose descendants must not be interpreted as OpenAPI or JSON Schema
+// references. Named-map keys remain author-defined names, even when they begin
+// with x- or collide with literal-data field names.
+func ReferenceChildOpaque(path []string, name string, value any) bool {
+	return IsExtensionKey(path, name) ||
+		(!IsNamedMap(path) && IsOpaqueDataField(name, value))
+}
+
 // IsNamedMap reports whether the object at path is a map whose keys are
 // user-defined names rather than OpenAPI or JSON Schema keywords.
 //

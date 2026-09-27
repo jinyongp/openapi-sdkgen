@@ -36,7 +36,7 @@ func TestReferenceSourceFSUsesImmutableCacheAndValidatedFileSet(t *testing.T) {
 	}
 	session := newCompatibilitySession(map[string]any{"openapi": "3.1.2"}, nil)
 	session.registerSourceContext(schema, openapiwalk.ObjectSchema)
-	filesystem, err := newReferenceSourceFS(root, []string{"openapi.yaml", "schemas/thing.yaml"}, cache, session)
+	filesystem, err := newReferenceSourceFS(root, []string{"openapi.yaml", "schemas/thing.yaml"}, cache, session, newOpaqueReferenceEscaper())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestReferenceSourceFSPreservesReferencedRootContext(t *testing.T) {
 	cache := newDecodedSourceCache()
 	session := newCompatibilitySession(map[string]any{"openapi": "3.1.2"}, nil)
 	session.registerSourceContext(schema, openapiwalk.ObjectSchema)
-	if _, err := newReferenceSourceFS(root, []string{"schema.yaml"}, cache, session); err != nil {
+	if _, err := newReferenceSourceFS(root, []string{"schema.yaml"}, cache, session, newOpaqueReferenceEscaper()); err != nil {
 		t.Fatal(err)
 	}
 	if got := session.sourceContext(schema); got != openapiwalk.ObjectSchema {

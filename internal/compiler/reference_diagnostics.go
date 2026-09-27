@@ -8,6 +8,7 @@ import (
 
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/failure"
+	"openapi-sdkgen/internal/openapiwalk"
 )
 
 func unresolvedLocalReferenceDiagnostics(value any, source string) []diagnostic.Diagnostic {
@@ -37,7 +38,7 @@ func scanUnresolvedLocalReferences(root, value any, path []string, source string
 			}
 		}
 		for name, child := range typed {
-			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
+			if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, child) {
 				continue
 			}
 			scanUnresolvedLocalReferences(root, child, append(path, name), source, result)

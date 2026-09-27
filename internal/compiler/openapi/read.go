@@ -11,6 +11,8 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	"go.yaml.in/yaml/v4"
+
+	"openapi-sdkgen/internal/openapiwalk"
 )
 
 type VersionLine string
@@ -80,7 +82,7 @@ func ReadParsed(raw map[string]any, validateModel bool) (*Document, error) {
 	}
 
 	if validateModel {
-		parseData, err := json.Marshal(maskOpaqueReferenceKeywords(raw, false))
+		parseData, err := json.Marshal(maskOpaqueReferenceKeywords(raw, nil, false))
 		if err != nil {
 			return nil, fmt.Errorf("normalize OpenAPI input: %w", err)
 		}
@@ -107,7 +109,7 @@ func ValidateModel(data []byte) error {
 	return nil
 }
 
-func maskOpaqueReferenceKeywords(value any, opaque bool) any {
+func maskOpaqueReferenceKeywords(value any, path []string, opaque bool) any {
 	switch typed := value.(type) {
 	case map[string]any:
 		result := make(map[string]any, len(typed))
@@ -115,30 +117,18 @@ func maskOpaqueReferenceKeywords(value any, opaque bool) any {
 			if opaque && key == "$ref" {
 				continue
 			}
-			childOpaque := opaque || len(key) >= 2 && key[:2] == "x-" || openAPIReferenceLiteralKey(key, child)
-			result[key] = maskOpaqueReferenceKeywords(child, childOpaque)
+			childOpaque := opaque || openapiwalk.ReferenceChildOpaque(path, key, child)
+			result[key] = maskOpaqueReferenceKeywords(child, append(path, key), childOpaque)
 		}
 		return result
 	case []any:
 		result := make([]any, len(typed))
 		for index, child := range typed {
-			result[index] = maskOpaqueReferenceKeywords(child, opaque)
+			result[index] = maskOpaqueReferenceKeywords(child, append(path, fmt.Sprint(index)), opaque)
 		}
 		return result
 	default:
 		return value
-	}
-}
-
-func openAPIReferenceLiteralKey(key string, value any) bool {
-	switch key {
-	case "const", "dataValue", "default", "enum", "example", "serializedValue", "value":
-		return true
-	case "examples":
-		_, literal := value.([]any)
-		return literal
-	default:
-		return false
 	}
 }
 

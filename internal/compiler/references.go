@@ -158,9 +158,10 @@ func writeReferenceLock(path string, lock *referenceLock) error {
 type hostLookup func(context.Context, string) ([]net.IPAddr, error)
 
 type referenceResolutionState struct {
-	lockPath string
-	lock     *referenceLock
-	remote   *remoteReferenceResolver
+	lockPath         string
+	lock             *referenceLock
+	remote           *remoteReferenceResolver
+	opaqueReferences *opaqueReferenceEscaper
 }
 
 func ensureReferenceResolutionState(source inputSource, options *CompileOptions) (*referenceResolutionState, error) {
@@ -188,6 +189,8 @@ func ensureReferenceResolutionState(source inputSource, options *CompileOptions)
 		}
 	}
 
+	opaqueReferences := newOpaqueReferenceEscaper()
+
 	var remote *remoteReferenceResolver
 	if len(options.RemoteRefAllowlist) != 0 || source.remoteBase != nil {
 		cache := ""
@@ -199,32 +202,39 @@ func ensureReferenceResolutionState(source inputSource, options *CompileOptions)
 		if err != nil {
 			return nil, err
 		}
+		remote.opaqueReferences = opaqueReferences
 	}
 
-	state := &referenceResolutionState{lockPath: lockPath, lock: lock, remote: remote}
+	state := &referenceResolutionState{
+		lockPath:         lockPath,
+		lock:             lock,
+		remote:           remote,
+		opaqueReferences: opaqueReferences,
+	}
 	options.referenceState = state
 	return state, nil
 }
 
 type remoteReferenceResolver struct {
-	origins        map[string]struct{}
-	trustedOrigin  string
-	lock           *referenceLock
-	update         bool
-	offline        bool
-	cache          string
-	client         *http.Client
-	trustedClient  *http.Client
-	trustedConfig  *httpInputConfig
-	diagnostics    *diagnostic.Collector
-	compatibility  *compatibilitySession
-	lookup         hostLookup
-	metrics        *compilationMetrics
-	mu             sync.Mutex
-	errs           []error
-	sources        map[string][]byte
-	decoded        map[string]decodedSource
-	decodeFailures map[string]error
+	origins          map[string]struct{}
+	trustedOrigin    string
+	lock             *referenceLock
+	update           bool
+	offline          bool
+	cache            string
+	client           *http.Client
+	trustedClient    *http.Client
+	trustedConfig    *httpInputConfig
+	diagnostics      *diagnostic.Collector
+	compatibility    *compatibilitySession
+	lookup           hostLookup
+	metrics          *compilationMetrics
+	mu               sync.Mutex
+	errs             []error
+	sources          map[string][]byte
+	decoded          map[string]decodedSource
+	decodeFailures   map[string]error
+	opaqueReferences *opaqueReferenceEscaper
 }
 
 func (r *remoteReferenceResolver) handle(rawURL string) (*http.Response, error) {
@@ -642,44 +652,48 @@ func (r *remoteReferenceResolver) decodedSourceSnapshot(source string, data []by
 	return decoded, nil
 }
 
-func (r *remoteReferenceResolver) effectiveRemoteBody(data []byte, source string) ([]byte, error) {
+func (r *remoteReferenceResolver) effectiveRemoteSource(data []byte, source string) (decodedSource, error) {
 	context := openapiwalk.ObjectUnknown
 	if r.compatibility != nil {
 		context = r.compatibility.sourceContext(source)
 	}
-	return r.effectiveRemoteBodyForContext(data, source, context)
+	return r.effectiveRemoteSourceForContext(data, source, context)
 }
 
-func (r *remoteReferenceResolver) effectiveRemoteBodyForContext(data []byte, source string, context openapiwalk.ObjectContext) ([]byte, error) {
+func (r *remoteReferenceResolver) effectiveRemoteSourceForContext(data []byte, source string, context openapiwalk.ObjectContext) (decodedSource, error) {
 	decoded, err := r.decodedSourceSnapshot(source, data)
 	if err != nil {
-		return nil, err
+		return decodedSource{}, err
 	}
 	if r.compatibility == nil {
-		return decoded.data, nil
+		return decoded, nil
 	}
 	effective, err := r.compatibility.effectiveSource(source, decoded, context)
 	if err != nil {
-		return nil, err
+		return decodedSource{}, err
 	}
 	registerRemoteReferenceContexts(r.compatibility, effective.value, source)
-	return effective.data, nil
+	return effective, nil
 }
 
 func (r *remoteReferenceResolver) responseForSource(data []byte, source string) (*http.Response, error) {
-	effective, err := r.effectiveRemoteBody(data, source)
+	effective, err := r.effectiveRemoteSource(data, source)
 	if err != nil {
 		return nil, err
 	}
-	if err := r.scanRemoteSource(effective, source); err != nil {
+	if err := r.scanRemoteSource(effective.data, source); err != nil {
+		return nil, err
+	}
+	referenceView, err := r.opaqueReferences.data(effective.value, effective.data)
+	if err != nil {
 		return nil, err
 	}
 	return &http.Response{
 		StatusCode:    http.StatusOK,
 		Status:        "200 OK",
 		Header:        http.Header{"Content-Type": []string{"application/json"}},
-		Body:          io.NopCloser(bytes.NewReader(effective)),
-		ContentLength: int64(len(effective)),
+		Body:          io.NopCloser(bytes.NewReader(referenceView)),
+		ContentLength: int64(len(referenceView)),
 	}, nil
 }
 

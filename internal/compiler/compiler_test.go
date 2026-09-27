@@ -2,6 +2,9 @@ package sdkgen
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +14,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -262,6 +266,116 @@ paths:
 	}
 }
 
+func TestCompileFileRemoteReferenceViewSkipsOpaqueURLsAndLocksExactSources(t *testing.T) {
+	var pathRequests atomic.Int32
+	var schemaRequests atomic.Int32
+	var opaqueRequests atomic.Int32
+	var pathBody []byte
+	schemaBody := []byte("Thing:\n  type: object\n  properties:\n    id: {type: string}\n")
+
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/path.yaml":
+			pathRequests.Add(1)
+			_, _ = response.Write(pathBody)
+		case "/schema.yaml":
+			schemaRequests.Add(1)
+			_, _ = response.Write(schemaBody)
+		case "/opaque-missing.yaml":
+			opaqueRequests.Add(1)
+			http.NotFound(response, request)
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer remote.Close()
+
+	pathBody = []byte(`get:
+  operationId: listRemoteThings
+  x-codeSamples:
+    - lang: curl
+      $ref: "` + remote.URL + `/opaque-missing.yaml"
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "` + remote.URL + `/schema.yaml#/Thing"
+`)
+
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.1.1
+info: {title: Remote opaque references, version: "1"}
+paths:
+  /things:
+    $ref: "`+remote.URL+`/path.yaml"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	lockPath := filepath.Join(directory, "references.lock")
+	metrics := &compilationMetrics{}
+	document, err := CompileFileWithOptions(root, CompileOptions{
+		RemoteRefAllowlist:    []string{remote.URL},
+		RefLockPath:           lockPath,
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+		metrics: metrics,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pathRequests.Load() != 1 || schemaRequests.Load() != 1 || opaqueRequests.Load() != 0 {
+		t.Fatalf("remote requests = path:%d schema:%d opaque:%d", pathRequests.Load(), schemaRequests.Load(), opaqueRequests.Load())
+	}
+	if metrics.RemoteReferenceSourceDecodes != 2 {
+		t.Fatalf("remote source decodes = %d, want 2", metrics.RemoteReferenceSourceDecodes)
+	}
+	if len(document.Operations) != 1 || document.Operations[0].OperationID != "listRemoteThings" {
+		t.Fatalf("operations = %#v", document.Operations)
+	}
+	samples, _ := document.Operations[0].Raw["x-codeSamples"].([]any)
+	if len(samples) != 1 {
+		t.Fatalf("x-codeSamples = %#v", document.Operations[0].Raw["x-codeSamples"])
+	}
+	sample, _ := samples[0].(map[string]any)
+	if sample["$ref"] != remote.URL+"/opaque-missing.yaml" {
+		t.Fatalf("remote opaque reference = %#v", sample)
+	}
+	rawJSON, err := json.Marshal(document.Raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(rawJSON), opaqueReferenceMarkerPrefix) {
+		t.Fatalf("transient opaque marker escaped into canonical Raw: %s", rawJSON)
+	}
+	schemaPointer := document.Operations[0].Pointer + "/responses/200/content/application~1json/schema"
+	if provenance, found := document.LookupProvenance(schemaPointer); !found || provenance.Primary.Source != remote.URL+"/schema.yaml" {
+		t.Fatalf("remote schema provenance = %#v, found=%v", provenance, found)
+	}
+
+	lock, err := loadReferenceLock(lockPath, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for source, body := range map[string][]byte{
+		remote.URL + "/path.yaml":   pathBody,
+		remote.URL + "/schema.yaml": schemaBody,
+	} {
+		digest := sha256.Sum256(body)
+		if got := lock.References[source]; got != hex.EncodeToString(digest[:]) {
+			t.Fatalf("lock digest for %s = %q", source, got)
+		}
+	}
+	if _, exists := lock.References[remote.URL+"/opaque-missing.yaml"]; exists {
+		t.Fatalf("opaque reference entered lock: %#v", lock.References)
+	}
+}
+
 func TestProtectedHTTPSInputSettingsApplyOnlyToSameOriginReferences(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows fails protected same-origin reference caching before persistence")
@@ -509,6 +623,81 @@ func TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine(t *
 				t.Fatalf("operations = %#v", document.Operations)
 			}
 		})
+	}
+}
+
+func TestCompileFileIgnoresOpaqueReferencesInsideReferencedExtensions(t *testing.T) {
+	directory := t.TempDir()
+	pathsDirectory := filepath.Join(directory, "paths")
+	if err := os.Mkdir(pathsDirectory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	input := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(input, []byte(`openapi: 3.0.3
+info: {title: Opaque references, version: "1"}
+paths:
+  /things:
+    $ref: paths/things.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pathsDirectory, "things.yaml"), []byte(`get:
+  operationId: listThings
+  x-codeSamples:
+    - lang: curl
+      $ref: examples/missing.yml
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas.yaml#/Thing
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, "schemas.yaml"), []byte(`Thing:
+  type: object
+  properties:
+    id: {type: string}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := &compilationMetrics{}
+	document, err := CompileFileWithOptions(input, CompileOptions{metrics: metrics})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Operations) != 1 || document.Operations[0].OperationID != "listThings" {
+		t.Fatalf("operations = %#v", document.Operations)
+	}
+	samples, _ := document.Operations[0].Raw["x-codeSamples"].([]any)
+	if len(samples) != 1 {
+		t.Fatalf("x-codeSamples = %#v", document.Operations[0].Raw["x-codeSamples"])
+	}
+	sample, _ := samples[0].(map[string]any)
+	if sample["$ref"] != "examples/missing.yml" {
+		t.Fatalf("opaque extension reference = %#v", sample)
+	}
+	rawJSON, err := json.Marshal(document.Raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(rawJSON), opaqueReferenceMarkerPrefix) {
+		t.Fatalf("transient opaque marker escaped into canonical Raw: %s", rawJSON)
+	}
+	schemaPointer := document.Operations[0].Pointer + "/responses/200/content/application~1json/schema"
+	if provenance, found := document.LookupProvenance(schemaPointer); !found ||
+		!strings.HasSuffix(filepath.ToSlash(provenance.Primary.Source), "/schemas.yaml") {
+		t.Fatalf("local schema provenance = %#v, found=%v", provenance, found)
+	}
+	wantFilter := []string{"openapi.yaml", "paths/things.yaml", "schemas.yaml"}
+	if !reflect.DeepEqual(metrics.FileFilter, wantFilter) {
+		t.Fatalf("reference file filter = %#v, want %#v", metrics.FileFilter, wantFilter)
+	}
+	if metrics.ReferenceSourceDecodes != 2 {
+		t.Fatalf("reference source decodes = %d, want 2", metrics.ReferenceSourceDecodes)
 	}
 }
 

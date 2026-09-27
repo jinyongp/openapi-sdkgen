@@ -168,7 +168,7 @@ func hasExternalReference(value any, path []string) bool {
 			return true
 		}
 		for name, child := range typed {
-			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
+			if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, child) {
 				continue
 			}
 			if hasExternalReference(child, append(path, name)) {
@@ -199,7 +199,7 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 			})
 		}
 		for name, child := range typed {
-			if name == "$ref" || referenceTraversalOpaque(path, name, child) {
+			if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, child) {
 				continue
 			}
 			collectExternalReferenceOccurrences(child, append(path, name), result)
@@ -209,9 +209,4 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 			collectExternalReferenceOccurrences(child, append(path, strconv.Itoa(index)), result)
 		}
 	}
-}
-
-func referenceTraversalOpaque(path []string, name string, value any) bool {
-	return openapiwalk.IsExtensionKey(path, name) ||
-		(!openapiwalk.IsNamedMap(path) && openapiwalk.IsOpaqueDataField(name, value))
 }

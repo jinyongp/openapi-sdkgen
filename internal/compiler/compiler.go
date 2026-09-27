@@ -167,6 +167,11 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		}
 		return document, nil
 	}
+	bundleData, err := referenceState.opaqueReferences.data(value, data)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseReferences, err)
+	}
+
 	var fileFilter []string
 	if !project && source.fileBase != "" {
 		var err error
@@ -187,7 +192,7 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		SkipMetadataCollection: true,
 	}
 	if source.fileBase != "" && hasLocalReferenceDependencies(source, fileFilter) {
-		localFS, err := newReferenceSourceFS(source.fileBase, fileFilter, options.sourceCache, options.compatibilitySession)
+		localFS, err := newReferenceSourceFS(source.fileBase, fileFilter, options.sourceCache, options.compatibilitySession, referenceState.opaqueReferences)
 		if err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
@@ -200,7 +205,7 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		options.metrics.Bundles++
 		options.metrics.ModelBuilds++
 	}
-	bundled, err := bundler.BundleBytesComposed(data, bundlerConfiguration, nil)
+	bundled, err := bundler.BundleBytesComposed(bundleData, bundlerConfiguration, nil)
 	if remoteResolver != nil {
 		if remoteErr := remoteResolver.firstError(); remoteErr != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, fmt.Errorf("resolve OpenAPI references: %w", remoteErr))
@@ -212,6 +217,10 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 	var bundledValue any
 	if err := yaml.Unmarshal(bundled, &bundledValue); err != nil {
 		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("decode bundled OpenAPI document: %w", err))
+	}
+	bundledValue, err = referenceState.opaqueReferences.restore(bundledValue)
+	if err != nil {
+		return nil, phaseError(diagnostic.PhaseNormalize, fmt.Errorf("restore opaque OpenAPI reference data: %w", err))
 	}
 	merged := mergeBundledDocument(value, bundledValue)
 	document, err := compileValue(merged, false, false, options, lock)
@@ -263,7 +272,7 @@ func absolutizeRelativeRemoteReferencesValue(document any, base *url.URL) (any, 
 				}
 			}
 			for name, item := range typed {
-				if name == "$ref" || referenceTraversalOpaque(path, name, item) {
+				if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, item) {
 					continue
 				}
 				if err := visit(item, append(path, name)); err != nil {
@@ -290,28 +299,55 @@ func absolutizeRelativeRemoteReferencesValue(document any, base *url.URL) (any, 
 // This matters for an OpenAPI 3.2 document such as a Path Item's
 // additionalOperations: it must reach the IR even when the CLI compiles a file.
 func mergeBundledDocument(source, bundled any) any {
+	return mergeBundledDocumentAt(source, bundled, nil, false)
+}
+
+func mergeBundledDocumentAt(source, bundled any, path []string, opaque bool) any {
+	if opaque {
+		return source
+	}
 	sourceObject, sourceIsObject := source.(map[string]any)
 	bundledObject, bundledIsObject := bundled.(map[string]any)
-	if !sourceIsObject || !bundledIsObject {
-		return bundled
-	}
-	result := make(map[string]any, len(sourceObject)+len(bundledObject))
-	for key, value := range bundledObject {
-		result[key] = value
-	}
-	for key, sourceValue := range sourceObject {
-		if key == "$ref" {
-			// The bundled value is the resolved reference. Restoring the source
-			// value would undo external reference resolution.
-			continue
+	if sourceIsObject && bundledIsObject {
+		result := make(map[string]any, len(sourceObject)+len(bundledObject))
+		for key, value := range bundledObject {
+			result[key] = value
 		}
-		if bundledValue, exists := bundledObject[key]; exists {
-			result[key] = mergeBundledDocument(sourceValue, bundledValue)
-			continue
+		for key, sourceValue := range sourceObject {
+			if key == "$ref" {
+				// The bundled value is the resolved reference. Restoring the
+				// source value would undo active reference resolution.
+				continue
+			}
+			childOpaque := openapiwalk.ReferenceChildOpaque(path, key, sourceValue)
+			if childOpaque {
+				result[key] = sourceValue
+				continue
+			}
+			if bundledValue, exists := bundledObject[key]; exists {
+				result[key] = mergeBundledDocumentAt(sourceValue, bundledValue, append(path, key), false)
+				continue
+			}
+			result[key] = sourceValue
 		}
-		result[key] = sourceValue
+		return result
 	}
-	return result
+
+	sourceArray, sourceIsArray := source.([]any)
+	bundledArray, bundledIsArray := bundled.([]any)
+	if sourceIsArray && bundledIsArray && len(sourceArray) == len(bundledArray) {
+		result := append([]any(nil), bundledArray...)
+		for index := range sourceArray {
+			result[index] = mergeBundledDocumentAt(
+				sourceArray[index],
+				bundledArray[index],
+				append(path, strconv.Itoa(index)),
+				false,
+			)
+		}
+		return result
+	}
+	return bundled
 }
 
 func rejectEscapingFileReferences(path, root string) error {
@@ -440,7 +476,7 @@ func inspectReferenceValue(document any, directory, root string, visited map[str
 				}
 			}
 			for name, item := range typed {
-				if name == "$ref" || referenceTraversalOpaque(path, name, item) {
+				if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, item) {
 					continue
 				}
 				if err := visit(item, append(path, name)); err != nil {
@@ -487,7 +523,7 @@ func hasRelativeExternalReferenceValue(document any) bool {
 				}
 			}
 			for name, item := range typed {
-				if name == "$ref" || referenceTraversalOpaque(path, name, item) {
+				if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, item) {
 					continue
 				}
 				if visit(item, append(path, name)) {
@@ -553,7 +589,7 @@ func rejectProjectExternalReferencesValue(root any) error {
 				return fmt.Errorf("project OpenAPI artifacts must be self-contained; external reference %q is not allowed", reference)
 			}
 			for name, item := range typed {
-				if name == "$ref" || referenceTraversalOpaque(path, name, item) {
+				if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, item) {
 					continue
 				}
 				if err := visit(item, append(path, name)); err != nil {
