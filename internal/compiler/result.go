@@ -178,7 +178,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	}
 	if _, err = analysis.reserved(source.display, func() error {
 		collector.Extend(reservedExtensionDiagnosticsValue(effective, source.display))
-		if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
+		if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession, mode); err != nil {
 			return fmt.Errorf("internal source registry failure: %w", err)
 		}
 		return syncCompatibilityDiagnostics(&options)

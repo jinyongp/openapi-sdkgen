@@ -199,6 +199,55 @@ schema:
 	}
 }
 
+func TestFailFastLocalCompatibilityBlockerStopsBeforeNestedRead(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	schema := filepath.Join(directory, "schema.yaml")
+	later := filepath.Join(directory, "later.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Local fail-fast compatibility, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: schema.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schema, []byte(`type: [string, number]
+properties:
+  later:
+    $ref: later.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(later, []byte("type: string\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := &compilationMetrics{}
+	result, err := CompileFileResultWithOptions(root, CompileOptions{metrics: metrics})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("fail-fast result built IR past local compatibility blocker: %#v", result)
+	}
+	if metrics.ReferenceSourceDecodes != 1 {
+		t.Fatalf("reference source decodes = %d, want only blocking schema source", metrics.ReferenceSourceDecodes)
+	}
+	var found bool
+	for _, value := range result.Diagnostics {
+		if value.Code == "SDKGEN-E140" && value.Rule == compatibility.RuleSchemaNullableTypes30 {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %#v, want local compatibility blocker", result.Diagnostics)
+	}
+}
+
 func TestCollectModeReportsIndependentMissingReferenceSources(t *testing.T) {
 	directory := t.TempDir()
 	root := filepath.Join(directory, "openapi.yaml")

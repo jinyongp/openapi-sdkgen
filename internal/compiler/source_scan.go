@@ -80,10 +80,10 @@ func scanLocalReferenceDocuments(source inputSource, collector *diagnostic.Colle
 	if err := yaml.Unmarshal(source.data, &value); err != nil {
 		return nil
 	}
-	return scanLocalReferenceDocumentsValue(source, value, collector, nil, nil)
+	return scanLocalReferenceDocumentsValue(source, value, collector, nil, nil, diagnostic.ModeCollect)
 }
 
-func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession) error {
+func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession, mode diagnostic.Mode) error {
 	if source.fileBase == "" {
 		return nil
 	}
@@ -97,7 +97,7 @@ func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *
 			visited[resolved] = true
 		}
 	}
-	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector, cache, session, openapiwalk.ObjectOpenAPI)
+	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector, cache, session, openapiwalk.ObjectOpenAPI, mode)
 }
 
 func scanLocalReferences(data []byte, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
@@ -105,10 +105,10 @@ func scanLocalReferences(data []byte, directory, root string, visited map[string
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil
 	}
-	return scanLocalReferenceValue(value, directory, root, visited, collector, nil, nil, openapiwalk.ObjectOpenAPI)
+	return scanLocalReferenceValue(value, directory, root, visited, collector, nil, nil, openapiwalk.ObjectOpenAPI, diagnostic.ModeCollect)
 }
 
-func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession, rootContext openapiwalk.ObjectContext) error {
+func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession, rootContext openapiwalk.ObjectContext, mode diagnostic.Mode) error {
 	var references []externalReferenceOccurrence
 	collectExternalReferenceOccurrencesAtRoot(value, nil, rootContext, &references)
 	sort.Slice(references, func(i, j int) bool {
@@ -143,9 +143,18 @@ func scanLocalReferenceValue(value any, directory, root string, visited map[stri
 		if err != nil {
 			return err
 		}
+		if session != nil {
+			values := session.drainCollectorDiagnostics()
+			if collector != nil {
+				collector.Extend(values)
+			}
+			if mode == diagnostic.ModeFailFast && diagnostic.HasErrors(values) {
+				return nil
+			}
+		}
 		referencedValue := effective.value
 		collector.Extend(reservedExtensionDiagnosticsValue(referencedValue, target))
-		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector, cache, session, occurrence.Context); err != nil {
+		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector, cache, session, occurrence.Context, mode); err != nil {
 			return err
 		}
 	}
