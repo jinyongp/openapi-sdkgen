@@ -126,7 +126,8 @@ line.
 | oas30-scalar-types | `type`, `enum` | 3.0 | generated | `internal/target/typescript/types_test.go::TestSchemaTypeMapsCompositeOpenAPISchemas` |
 | oas30-scalar-constraints | `multipleOf`, bounds, string constraints, `format`, `default`, `example` | 3.0 | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
 | oas30-arrays-objects | `items`, `properties`, `required`, schema-valued `additionalProperties` | 3.0 | generated | `internal/target/typescript/types_test.go::TestSchemaTypeMapsCompositeOpenAPISchemas` |
-| oas30-closed-objects | `additionalProperties: false` | 3.0 | generated | `internal/target/typescript/types_test.go::TestSourceArtifactsEmitsClosedObjectRuntimeValidation` |
+| oas30-open-objects | `additionalProperties: true` | 3.0 | generated | `internal/target/typescript/schema_compatibility_test.go::TestOpenAPI30BooleanAdditionalPropertiesStayNativeAcrossTarget` |
+| oas30-closed-objects | `additionalProperties: false` | 3.0 | generated | `internal/target/typescript/schema_compatibility_test.go::TestOpenAPI30BooleanAdditionalPropertiesStayNativeAcrossTarget` |
 | oas30-array-constraints | `maxItems`, `minItems`, `uniqueItems` | 3.0 | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
 | oas30-object-constraints | `maxProperties`, `minProperties` | 3.0 | metadata | `internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords` |
 | oas30-all-of | `allOf` | 3.0 | generated | `internal/target/typescript/types_test.go::TestSchemaTypeMapsCompositeOpenAPISchemas` |

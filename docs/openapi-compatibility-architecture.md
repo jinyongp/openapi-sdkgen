@@ -552,12 +552,15 @@ instance-dependent ignore semantics.
 
 #### COMP-SCHEMA-001 — OAS 3.0 boolean schemas
 
-Boolean JSON Schemas are a 3.1+ capability. Current OAS 3.0 version validation
-does not gate them, and `false` is currently lowered to `never`.
+A standalone boolean Schema is a 3.1+ capability, but OAS 3.0 explicitly allows
+the `additionalProperties` Schema Object keyword to contain either a boolean or
+a Schema Object. Those native OAS 3.0 booleans are not compatibility findings:
+`true` remains an open additional-property space and `false` remains a closed
+one, with exact source/effective semantics preserved.
 
-This is a confirmed conformance gap.
-
-Both boolean forms now have proved OAS 3.0-compatible normalizations:
+`COMP-SCHEMA-001` applies only where OAS 3.0 requires a Schema Object and the
+source instead supplies a boolean Schema. For those nonconforming positions both
+boolean forms have proved OAS 3.0-compatible normalizations:
 
 - `true → {}` preserves the public `unknown` type and unconstrained wire
   semantics;
@@ -565,9 +568,10 @@ Both boolean forms now have proved OAS 3.0-compatible normalizations:
   recognizes an exact negated-empty schema as unsatisfiable, and the generated
   runtime rejects both request and response values.
 
-The original source boolean remains intact in source metadata. The pinned GitHub
-and Cloudflare corpora provide additional real-world coverage for boolean
-subschemas such as `additionalProperties: false`.
+The original source boolean remains intact in source metadata. The pinned
+GitHub and Cloudflare corpora provide real-world coverage for the distinct
+native `additionalProperties: true|false` forms and must not produce
+`COMP-SCHEMA-001` solely for those keyword values.
 
 #### COMP-SCHEMA-002 — OAS 3.1 `const` in a 3.0 document
 
@@ -796,7 +800,7 @@ the OAS normative disposition.
 
 | Corpus | Frozen identity / baseline | Compatibility footprint found by this investigation | Required post-change interpretation |
 | --- | --- | --- | --- |
-| GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header, and boolean Schema occurrences including `additionalProperties: false`; no audited Reference siblings, reserved request headers, path mismatch, general type array, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; boolean schemas use the proved COMP-SCHEMA-001 normalizations. Corpus must remain full-generation/strict-TypeScript successful. |
+| GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header, and native boolean `additionalProperties` values; no audited Reference siblings, reserved request headers, path mismatch, general type array, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; native boolean `additionalProperties` values are preserved without COMP-SCHEMA-001. Corpus must remain full-generation/strict-TypeScript successful. |
 | Stripe SDK spec | SHA-256 `2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6`, 4,518,735 B, OAS 3.0.0 | 265 optional empty GET form bodies, 32 DELETE bodies of which seven are meaningful; no other audited mismatch | Empty GET/DELETE artifacts are lossless ignores; seven meaningful DELETE bodies require `preserve-extension`. Corpus must remain successful. |
 | GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Current rerun ignores the Reference siblings, omits both HEAD-body operations, then exposes the independent `SDKGEN-E507` path-template/Parameter-name mismatch. The corpus is intentionally not claimed fully generatable. |
 | Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, two reserved request-header Parameters, two response `Content-Type` Headers | Current rerun preserves all 32 DELETE bodies as evidenced extensions, omits the one GET-body operation, then reports four independent undeclared-security `SDKGEN-E508 scope=document effect=block` failures. |

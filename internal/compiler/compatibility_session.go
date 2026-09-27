@@ -98,37 +98,37 @@ func (session *compatibilitySession) walk(source string, sourceRoot, value any, 
 	current := value
 	changed := false
 	applyPolicy := true
-	var object openapiwalk.ObjectContext
-	objectResolved := false
+	var position openapiwalk.StructuralPosition
+	positionResolved := false
+	resolvePosition := func() openapiwalk.StructuralPosition {
+		if positionResolved {
+			return position
+		}
+		position = openapiwalk.StructuralPositionAtRoot(root, path)
+		positionResolved = true
+		return position
+	}
 	if session.consumerPolicy {
 		switch value.(type) {
 		case map[string]any, bool:
-			object = openapiwalk.ObjectContextAt(path)
-			if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
-				object = root
-			}
-			objectResolved = true
+			position := resolvePosition()
 			// OpenAPI 3.1+ Schema subtrees already use native JSON Schema
 			// semantics and contain no ConsumerPolicy-owned OpenAPI objects.
 			// Prune them wholesale instead of walking every nested schema node.
-			if object == openapiwalk.ObjectSchema && session.version != openapidoc.Version30 {
+			if position.Object == openapiwalk.ObjectSchema && session.version != openapidoc.Version30 {
 				return value, false, false, nil
 			}
-			applyPolicy = compatibility.ConsumerPolicyMayApply(session.version, object, value)
+			applyPolicy = compatibility.ConsumerPolicyMayApply(session.version, position.Object, value)
 		default:
 			applyPolicy = false
 		}
 	}
 	if applyPolicy {
-		if !objectResolved {
-			object = openapiwalk.ObjectContextAt(path)
-			if len(path) == 0 && root != "" && root != openapiwalk.ObjectUnknown {
-				object = root
-			}
-		}
+		position := resolvePosition()
 		context := compatibility.Context{
 			Version: session.version,
-			Object:  object,
+			Object:  position.Object,
+			Keyword: position.Keyword,
 			Source:  source,
 			Pointer: sourceJSONPointer(path),
 		}

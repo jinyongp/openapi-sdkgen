@@ -209,6 +209,9 @@ func isReferenceObjectContext(object openapiwalk.ObjectContext) bool {
 
 func applyOpenAPI30SchemaRule(context Context, value any) (Result, bool) {
 	if allowed, ok := value.(bool); ok {
+		if context.Keyword == "additionalProperties" {
+			return Result{Value: value}, true
+		}
 		if allowed {
 			return schemaCompatibilityResult(context, map[string]any{}, RuleSchemaBoolean30, ActionNormalize, "OpenAPI 3.0 boolean true schema is normalized to an empty Schema Object.", false), true
 		}

@@ -274,7 +274,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		}
 	}
 	sort.Strings(manifestContracts)
-	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "87a44b1d83b0f0ff958af6b624205b1c6daafcf4269280de5cab34b2e8402b5f" {
+	if got := fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(manifestContracts, "\n")))); got != "fea39846460ea2c3201db4f983a7f56426759430b708997d94b15daccd20b302" {
 		t.Errorf("manifest feature/evidence contract changed: %s", got)
 	}
 
@@ -297,7 +297,7 @@ func TestCanonicalFeatureManifestHasEverySchemaKeywordAndExecutableEvidence(t *t
 		"maxLength", "minLength", "pattern", "maxItems", "minItems", "uniqueItems",
 		"maxProperties", "minProperties", "required", "enum", "type", "allOf", "oneOf",
 		"anyOf", "not", "items", "properties", "additionalProperties.schema",
-		"additionalProperties.false", "description", "format", "default", "nullable", "discriminator",
+		"additionalProperties.true", "additionalProperties.false", "description", "format", "default", "nullable", "discriminator",
 		"readOnly", "writeOnly", "xml", "externalDocs", "example", "deprecated",
 	} {
 		if _, exists := seen["oas30.schema."+suffix]; !exists {

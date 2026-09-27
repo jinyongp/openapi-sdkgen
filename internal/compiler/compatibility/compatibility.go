@@ -66,6 +66,7 @@ const (
 type Context struct {
 	Version openapidoc.VersionLine
 	Object  openapiwalk.ObjectContext
+	Keyword string
 	Source  string
 	Pointer string
 }

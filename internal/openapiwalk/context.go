@@ -77,7 +77,16 @@ func sequencePosition(keyword string, entryObject ObjectContext) StructuralPosit
 // such as "links" or "properties" cannot acquire structural meaning merely
 // because its token matches an OpenAPI or JSON Schema keyword.
 func StructuralPositionAt(path []string) StructuralPosition {
-	position := objectPosition(ObjectOpenAPI, "")
+	return StructuralPositionAtRoot(ObjectOpenAPI, path)
+}
+
+// StructuralPositionAtRoot resolves a path whose physical source is already
+// known to represent one reusable OpenAPI object or Schema root.
+func StructuralPositionAtRoot(root ObjectContext, path []string) StructuralPosition {
+	if root == "" || root == ObjectUnknown {
+		root = ObjectOpenAPI
+	}
+	position := objectPosition(root, "")
 	for _, token := range path {
 		position = childStructuralPosition(position, token)
 	}

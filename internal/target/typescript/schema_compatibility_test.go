@@ -3,6 +3,7 @@ package typescript
 import (
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
@@ -61,6 +62,79 @@ func TestOpenAPI30SchemaNormalizationsMatchEquivalentTargetSemantics(t *testing.
 				t.Fatalf("wire descriptor differs:\ncandidate: %s\nequivalent: %s", candidateWire, equivalentWire)
 			}
 		})
+	}
+}
+
+func TestOpenAPI30BooleanAdditionalPropertiesStayNativeAcrossTarget(t *testing.T) {
+	result, err := sdkgen.CompileResult([]byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Boolean additional properties","version":"1"},
+  "paths":{
+    "/open":{"post":{"operationId":"acceptOpen","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Open"}}}},"responses":{"204":{"description":"OK"}}}},
+    "/closed":{"post":{"operationId":"rejectClosed","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Closed"}}}},"responses":{"204":{"description":"OK"}}}}
+  },
+  "components":{"schemas":{
+    "Open":{"type":"object","additionalProperties":true},
+    "Closed":{"type":"object","additionalProperties":false}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || len(result.Diagnostics) != 0 {
+		t.Fatalf("compile result = %#v", result)
+	}
+
+	openSchema := result.Document.ComponentSchemas["Open"]
+	closedSchema := result.Document.ComponentSchemas["Closed"]
+	openType, err := schemaType(result.Document, openSchema, projectionInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closedType, err := schemaType(result.Document, closedSchema, projectionInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if openType != "Readonly<Record<string, unknown>>" ||
+		closedType != "Readonly<Record<string, never>>" {
+		t.Fatalf("types = open %q closed %q", openType, closedType)
+	}
+
+	openWire, err := newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptorForDocument(result.Document, openSchema, projectionInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closedWire, err := newWireRenderContext(wirePropertiesLiteral).wireSchemaDescriptorForDocument(result.Document, closedSchema, projectionInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(openWire, "additionalProperties: { boolean: true }") {
+		t.Fatalf("open wire descriptor = %s", openWire)
+	}
+	if !strings.Contains(closedWire, "additionalProperties: false") {
+		t.Fatalf("closed wire descriptor = %s", closedWire)
+	}
+
+	output := compileTypeScriptArtifacts(t, result.Document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient } = await import(pathToFileURL(process.argv[1]).href);
+let calls = 0;
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: async () => { calls++; return new Response(null, { status: 204 }); },
+});
+await api.$operations.acceptOpen({ body: { extra: { nested: true } } });
+if (calls !== 1) throw new Error("open additionalProperties did not reach fetch");
+let rejected = false;
+try { await api.$operations.rejectClosed({ body: { extra: true } }); }
+catch (error) {
+  rejected = String(error).includes("unexpected property extra") || String(error.cause).includes("unexpected property extra");
+}
+if (!rejected || calls !== 1) throw new Error("closed additionalProperties accepted an unknown property");
+`
+	if runtimeOutput, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("execute boolean additionalProperties runtime test: %v\n%s", err, runtimeOutput)
 	}
 }
 

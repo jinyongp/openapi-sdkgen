@@ -36,6 +36,30 @@ func TestCompatibilitySessionUsesEntryVersionAndReferencedRootContext(t *testing
 	}
 }
 
+func TestCompatibilitySessionPropagatesReferencedSchemaRootStructure(t *testing.T) {
+	policy := &contextRecordingPolicy{}
+	session := newCompatibilitySession(map[string]any{"openapi": "3.0.4"}, policy)
+	source := decodedSource{
+		data: []byte("type: object\nadditionalProperties: false\n"),
+		value: map[string]any{
+			"type":                 "object",
+			"additionalProperties": false,
+		},
+	}
+	if _, err := session.effectiveSource("schema.yaml", source, openapiwalk.ObjectSchema); err != nil {
+		t.Fatal(err)
+	}
+	for _, context := range policy.contexts {
+		if context.Pointer == "#/additionalProperties" {
+			if context.Object != openapiwalk.ObjectSchema || context.Keyword != "additionalProperties" {
+				t.Fatalf("additionalProperties context = %#v", context)
+			}
+			return
+		}
+	}
+	t.Fatalf("contexts = %#v, want additionalProperties occurrence", policy.contexts)
+}
+
 func TestCompatibilitySessionTracksAmbiguousReferencedContexts(t *testing.T) {
 	session := newCompatibilitySession(map[string]any{"openapi": "3.1.2"}, nil)
 	session.registerSourceContext("shared.yaml", openapiwalk.ObjectSchema)

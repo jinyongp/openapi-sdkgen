@@ -86,6 +86,35 @@ func TestConsumerPolicyNormalizesProvedOpenAPI30SchemaForms(t *testing.T) {
 	}
 }
 
+func TestConsumerPolicyPreservesNativeOpenAPI30BooleanAdditionalProperties(t *testing.T) {
+	for _, allowed := range []bool{true, false} {
+		result := (ConsumerPolicy{}).Apply(Context{
+			Version: openapidoc.Version30,
+			Object:  openapiwalk.ObjectSchema,
+			Keyword: "additionalProperties",
+			Source:  "openapi.yaml",
+			Pointer: "#/components/schemas/Value/additionalProperties",
+		}, allowed)
+		if result.Reject || result.Changed || result.Value != allowed ||
+			len(result.Findings) != 0 || len(result.Ledger) != 0 {
+			t.Fatalf("additionalProperties %t result = %#v", allowed, result)
+		}
+	}
+
+	propertyNamedAdditional := (ConsumerPolicy{}).Apply(Context{
+		Version: openapidoc.Version30,
+		Object:  openapiwalk.ObjectSchema,
+		Keyword: "properties",
+		Source:  "openapi.yaml",
+		Pointer: "#/components/schemas/Value/properties/additionalProperties",
+	}, false)
+	if propertyNamedAdditional.Reject || !propertyNamedAdditional.Changed ||
+		len(propertyNamedAdditional.Findings) != 1 ||
+		propertyNamedAdditional.Findings[0].RuleID != RuleSchemaBoolean30 {
+		t.Fatalf("property named additionalProperties result = %#v", propertyNamedAdditional)
+	}
+}
+
 func TestConsumerPolicyRejectsUnprovedOpenAPI30SchemaForms(t *testing.T) {
 	tests := []struct {
 		name  string

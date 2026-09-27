@@ -99,6 +99,36 @@ func TestCompatibilityKeepsSchemaContextWhenPropertyNamesCollideWithStructuralTo
 	}
 }
 
+func TestCompatibilityPreservesNativeOpenAPI30BooleanAdditionalProperties(t *testing.T) {
+	input := []byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Boolean additional properties","version":"1"},
+  "paths":{},
+  "components":{"schemas":{
+    "Open":{"type":"object","additionalProperties":true},
+    "Closed":{"type":"object","additionalProperties":false}
+  }}
+}`)
+	result, err := CompileResult(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || len(result.Diagnostics) != 0 {
+		t.Fatalf("compile result = %#v", result)
+	}
+	if got := result.Document.ComponentSchemas["Open"]["additionalProperties"]; got != true {
+		t.Fatalf("open additionalProperties = %#v", got)
+	}
+	if got := result.Document.ComponentSchemas["Closed"]["additionalProperties"]; got != false {
+		t.Fatalf("closed additionalProperties = %#v", got)
+	}
+	metadata := string(result.Document.SourceMetadataJSON)
+	if !strings.Contains(metadata, `"additionalProperties":true`) ||
+		!strings.Contains(metadata, `"additionalProperties":false`) {
+		t.Fatalf("source metadata lost boolean additionalProperties: %s", metadata)
+	}
+}
+
 func TestCompatibilityOAS30SchemaReferenceSiblingsAreIgnoredBeforeVersionValidation(t *testing.T) {
 	for _, test := range []struct {
 		name            string
