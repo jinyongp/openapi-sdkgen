@@ -131,3 +131,24 @@ void value
 `
 	compileTypeScriptArtifactsWithProbe(t, document, "recursive-record-alias.probe.ts", probe)
 }
+
+func TestSchemaModulesTypecheckMutuallyRecursiveMaps(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Mutually recursive maps","version":"1"},
+  "paths":{
+    "/items":{"get":{
+      "operationId":"getItems",
+      "responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"#/components/schemas/A"}}}}}
+    }}
+  },
+  "components":{"schemas":{
+    "A":{"type":"object","additionalProperties":{"$ref":"#/components/schemas/B"}},
+    "B":{"type":"object","additionalProperties":{"$ref":"#/components/schemas/A"}}
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compileTypeScriptArtifacts(t, document)
+}
