@@ -207,23 +207,24 @@ func ensureReferenceResolutionState(source inputSource, options *CompileOptions)
 }
 
 type remoteReferenceResolver struct {
-	origins       map[string]struct{}
-	trustedOrigin string
-	lock          *referenceLock
-	update        bool
-	offline       bool
-	cache         string
-	client        *http.Client
-	trustedClient *http.Client
-	trustedConfig *httpInputConfig
-	diagnostics   *diagnostic.Collector
-	compatibility *compatibilitySession
-	lookup        hostLookup
-	metrics       *compilationMetrics
-	mu            sync.Mutex
-	errs          []error
-	sources       map[string][]byte
-	decoded       map[string]decodedSource
+	origins        map[string]struct{}
+	trustedOrigin  string
+	lock           *referenceLock
+	update         bool
+	offline        bool
+	cache          string
+	client         *http.Client
+	trustedClient  *http.Client
+	trustedConfig  *httpInputConfig
+	diagnostics    *diagnostic.Collector
+	compatibility  *compatibilitySession
+	lookup         hostLookup
+	metrics        *compilationMetrics
+	mu             sync.Mutex
+	errs           []error
+	sources        map[string][]byte
+	decoded        map[string]decodedSource
+	decodeFailures map[string]error
 }
 
 func (r *remoteReferenceResolver) handle(rawURL string) (*http.Response, error) {
@@ -272,18 +273,19 @@ func newRemoteReferenceResolver(options CompileOptions, lock *referenceLock, cac
 		lookup = options.remoteReferenceLookup
 	}
 	resolver := &remoteReferenceResolver{
-		origins:       origins,
-		trustedOrigin: trustedOrigin,
-		lock:          lock,
-		update:        options.UpdateRefLock,
-		offline:       options.Offline,
-		cache:         cache,
-		diagnostics:   options.diagnostics,
-		compatibility: options.compatibilitySession,
-		lookup:        lookup,
-		metrics:       options.metrics,
-		sources:       make(map[string][]byte),
-		decoded:       make(map[string]decodedSource),
+		origins:        origins,
+		trustedOrigin:  trustedOrigin,
+		lock:           lock,
+		update:         options.UpdateRefLock,
+		offline:        options.Offline,
+		cache:          cache,
+		diagnostics:    options.diagnostics,
+		compatibility:  options.compatibilitySession,
+		lookup:         lookup,
+		metrics:        options.metrics,
+		sources:        make(map[string][]byte),
+		decoded:        make(map[string]decodedSource),
+		decodeFailures: make(map[string]error),
 	}
 	resolver.client = secureRemoteHTTPClient(resolver)
 	if options.remoteReferenceClient != nil {
@@ -617,15 +619,23 @@ func (r *remoteReferenceResolver) decodedSourceSnapshot(source string, data []by
 	if r.decoded == nil {
 		r.decoded = make(map[string]decodedSource)
 	}
+	if r.decodeFailures == nil {
+		r.decodeFailures = make(map[string]error)
+	}
 	if value, exists := r.decoded[source]; exists {
 		return value, nil
 	}
-	value, err := decodeInputValue(data, nil)
-	if err != nil {
-		return decodedSource{}, fmt.Errorf("decode remote OpenAPI reference %s: %w", source, err)
+	if err, exists := r.decodeFailures[source]; exists {
+		return decodedSource{}, err
 	}
 	if r.metrics != nil {
 		r.metrics.RemoteReferenceSourceDecodes++
+	}
+	value, err := decodeInputValue(data, nil)
+	if err != nil {
+		failure := fmt.Errorf("decode remote OpenAPI reference %s: %w", source, err)
+		r.decodeFailures[source] = failure
+		return decodedSource{}, failure
 	}
 	decoded := decodedSource{data: data, value: value}
 	r.decoded[source] = decoded

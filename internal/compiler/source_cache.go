@@ -15,9 +15,10 @@ type decodedSource struct {
 // Reference diagnostics, containment checks, and provenance share the same
 // bytes and decoded YAML tree instead of reopening every referenced file.
 type decodedSourceCache struct {
-	mu      sync.Mutex
-	sources map[string]decodedSource
-	metrics *compilationMetrics
+	mu       sync.Mutex
+	sources  map[string]decodedSource
+	failures map[string]error
+	metrics  *compilationMetrics
 }
 
 func newDecodedSourceCache(metrics ...*compilationMetrics) *decodedSourceCache {
@@ -25,7 +26,11 @@ func newDecodedSourceCache(metrics ...*compilationMetrics) *decodedSourceCache {
 	if len(metrics) != 0 {
 		value = metrics[0]
 	}
-	return &decodedSourceCache{sources: make(map[string]decodedSource), metrics: value}
+	return &decodedSourceCache{
+		sources:  make(map[string]decodedSource),
+		failures: make(map[string]error),
+		metrics:  value,
+	}
 }
 
 func (cache *decodedSourceCache) remember(path string, source decodedSource) error {
@@ -41,6 +46,7 @@ func (cache *decodedSourceCache) remember(path string, source decodedSource) err
 	if _, exists := cache.sources[resolved]; exists {
 		return nil
 	}
+	delete(cache.failures, resolved)
 	// remember is used only with bytes already owned by the compiler input
 	// loader. Treat that buffer as immutable and share it with the per-compile
 	// cache instead of retaining a second full source copy.
@@ -65,8 +71,12 @@ func (cache *decodedSourceCache) load(path string) (decodedSource, error) {
 	if source, exists := cache.sources[path]; exists {
 		return source, nil
 	}
+	if err, exists := cache.failures[path]; exists {
+		return decodedSource{}, err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
+		cache.failures[path] = err
 		return decodedSource{}, err
 	}
 	if cache.metrics != nil {
@@ -74,6 +84,7 @@ func (cache *decodedSourceCache) load(path string) (decodedSource, error) {
 	}
 	value, err := decodeInputValue(data, nil)
 	if err != nil {
+		cache.failures[path] = err
 		return decodedSource{}, err
 	}
 	source := decodedSource{data: data, value: value}

@@ -63,6 +63,40 @@ components:
 	}
 }
 
+func TestCollectModeReportsEveryOccurrenceOfSameMissingReferenceSource(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.1.0
+info: {title: Repeated missing source, version: "1"}
+paths: {}
+components:
+  schemas:
+    One: {$ref: missing.yaml#/One}
+    Two: {$ref: missing.yaml#/Two}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var referenceErrors, unavailable int
+	for _, value := range result.Diagnostics {
+		if value.Code == "SDKGEN-E120" {
+			referenceErrors++
+		}
+	}
+	for _, value := range result.Coverage {
+		if value.Analyzer == "reference.source" && value.Status == diagnostic.CoverageSkipped {
+			unavailable++
+		}
+	}
+	if referenceErrors != 2 || unavailable != 2 {
+		t.Fatalf("diagnostics=%#v coverage=%#v, want one failure record per reference occurrence", result.Diagnostics, result.Coverage)
+	}
+}
+
 func TestCollectModeContinuesHealthyReferenceBranchAfterBrokenSibling(t *testing.T) {
 	directory := t.TempDir()
 	root := filepath.Join(directory, "openapi.yaml")
@@ -111,6 +145,42 @@ components:
 	}
 	if missing != 1 {
 		t.Fatalf("diagnostics = %#v, want only missing sibling failure", result.Diagnostics)
+	}
+}
+
+func TestCollectModeDecodesBrokenLocalPhysicalSourceOnceAcrossContexts(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	shared := filepath.Join(directory, "shared.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.1.0
+info: {title: Broken local contexts, version: "1"}
+paths:
+  /items:
+    get:
+      parameters:
+        - {$ref: shared.yaml}
+      responses:
+        "200": {$ref: shared.yaml}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(shared, []byte("description: [\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := &compilationMetrics{}
+	result, err := CompileFileResultWithOptions(root, CompileOptions{
+		DiagnosticMode: diagnostic.ModeCollect,
+		metrics:        metrics,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("collect mode built poisoned IR: %#v", result.Document)
+	}
+	if metrics.ReferenceSourceDecodes != 1 {
+		t.Fatalf("reference source decode attempts = %d, want one per physical source", metrics.ReferenceSourceDecodes)
 	}
 }
 
@@ -359,6 +429,54 @@ components:
 	}
 	if got := requests.Load(); got != 2 {
 		t.Fatalf("remote requests = %d, want one per independent physical source", got)
+	}
+}
+
+func TestCollectModeDecodesBrokenRemotePhysicalSourceOnceAcrossContexts(t *testing.T) {
+	var requests atomic.Int32
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests.Add(1)
+		_, _ = response.Write([]byte("Thing: [\\n"))
+	}))
+	defer remote.Close()
+
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.1.0
+info: {title: Broken remote contexts, version: "1"}
+paths:
+  /items:
+    get:
+      parameters:
+        - {$ref: "`+remote.URL+`/shared.yaml"}
+      responses:
+        "200": {$ref: "`+remote.URL+`/shared.yaml"}
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	metrics := &compilationMetrics{}
+	result, err := CompileFileResultWithOptions(root, CompileOptions{
+		DiagnosticMode:        diagnostic.ModeCollect,
+		RemoteRefAllowlist:    []string{remote.URL},
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+		metrics: metrics,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("collect mode built poisoned IR: %#v", result.Document)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("remote requests = %d, want one fetch for the physical source", got)
+	}
+	if metrics.RemoteReferenceSourceDecodes != 1 {
+		t.Fatalf("remote source decode attempts = %d, want one per physical source", metrics.RemoteReferenceSourceDecodes)
 	}
 }
 
