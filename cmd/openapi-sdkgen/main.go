@@ -697,7 +697,11 @@ func writeDiagnostics(values []diagnostic.Diagnostic, skipped []diagnostic.Skipp
 	var report string
 	switch format {
 	case diagnosticOutputHuman:
-		report = diagnostic.RenderHuman(values, skipped, coverage...)
+		if mode == diagnostic.ModeCollect {
+			report = diagnostic.RenderHuman(values, skipped, coverage...)
+		} else {
+			report = diagnostic.RenderHuman(values, skipped)
+		}
 	case diagnosticOutputJSON:
 		var err error
 		report, err = diagnostic.RenderJSON(values, skipped, coverage...)
