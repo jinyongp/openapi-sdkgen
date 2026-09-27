@@ -187,3 +187,31 @@ func TestOperationModuleTypechecksRecursiveInputWithStreamCapability(t *testing.
 	}
 	compileTypeScriptArtifacts(t, document)
 }
+
+func TestSchemaModulesTypecheckComposedRecursiveMap(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Composed recursive map","version":"1"},
+  "paths":{
+    "/items":{"get":{
+      "operationId":"getItems",
+      "responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Node"}}}}}
+    }}
+  },
+  "components":{"schemas":{
+    "Node":{
+      "type":"object",
+      "additionalProperties":{
+        "anyOf":[
+          {"$ref":"#/components/schemas/Node"},
+          {"type":"string"}
+        ]
+      }
+    }
+  }}
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	compileTypeScriptArtifacts(t, document)
+}
