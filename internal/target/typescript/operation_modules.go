@@ -279,7 +279,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		output.WriteString("}\n")
 	}
 	if hasStream {
-		streamItemType := strings.ReplaceAll(stream.ItemType, "Contract.", "ContractSchemas.")
+		streamItemType := qualifyOperationSchemaContractReferences(stream.ItemType)
 		defaultAccept := "undefined"
 		if len(stream.Plan.streamMediaTypes) > 0 {
 			defaultAccept = quoteTS(stream.Plan.streamMediaTypes[0])
@@ -290,7 +290,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		output.WriteString("}\n")
 	}
 
-	localized := strings.ReplaceAll(output.String(), "Contract.", "ContractSchemas.")
+	localized := qualifyOperationSchemaContractReferences(output.String())
 	localized, err = localizeOperationSchemaReferences(localized, module, plan, schemaIndex, names)
 	if err != nil {
 		return nil, err
@@ -355,6 +355,14 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	fmt.Fprintf(&output, "  return %s as Links\n", value)
 	output.WriteString("}\n")
 	return output.Bytes(), nil
+}
+
+func qualifyOperationSchemaContractReferences(source string) string {
+	replacer := strings.NewReplacer(
+		"Contract.ComponentInput<", "ContractSchemas.ComponentInput<",
+		"Contract.ComponentOutput<", "ContractSchemas.ComponentOutput<",
+	)
+	return replacer.Replace(source)
 }
 
 func publicCapabilityType(field string) string {
