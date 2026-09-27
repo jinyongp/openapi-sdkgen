@@ -110,25 +110,59 @@ func ValidateModel(data []byte) error {
 }
 
 func maskOpaqueReferenceKeywords(value any, path []string, opaque bool) any {
+	masked, _ := maskOpaqueReferenceKeywordsValue(value, path, opaque)
+	return masked
+}
+
+func maskOpaqueReferenceKeywordsValue(value any, path []string, opaque bool) (any, bool) {
 	switch typed := value.(type) {
 	case map[string]any:
-		result := make(map[string]any, len(typed))
+		var result map[string]any
+		clone := func() {
+			if result != nil {
+				return
+			}
+			result = make(map[string]any, len(typed))
+			for key, child := range typed {
+				result[key] = child
+			}
+		}
 		for key, child := range typed {
 			if opaque && key == "$ref" {
+				clone()
+				delete(result, key)
 				continue
 			}
 			childOpaque := opaque || openapiwalk.ReferenceChildOpaque(path, key, child)
-			result[key] = maskOpaqueReferenceKeywords(child, append(path, key), childOpaque)
+			masked, changed := maskOpaqueReferenceKeywordsValue(child, append(path, key), childOpaque)
+			if !changed {
+				continue
+			}
+			clone()
+			result[key] = masked
 		}
-		return result
+		if result == nil {
+			return value, false
+		}
+		return result, true
 	case []any:
-		result := make([]any, len(typed))
+		var result []any
 		for index, child := range typed {
-			result[index] = maskOpaqueReferenceKeywords(child, append(path, fmt.Sprint(index)), opaque)
+			masked, changed := maskOpaqueReferenceKeywordsValue(child, append(path, fmt.Sprint(index)), opaque)
+			if !changed {
+				continue
+			}
+			if result == nil {
+				result = append([]any(nil), typed...)
+			}
+			result[index] = masked
 		}
-		return result
+		if result == nil {
+			return value, false
+		}
+		return result, true
 	default:
-		return value
+		return value, false
 	}
 }
 

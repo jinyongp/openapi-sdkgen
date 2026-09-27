@@ -72,6 +72,31 @@ func TestReadAcceptsYAMLFlowMappingsThatStartWithABrace(t *testing.T) {
 	}
 }
 
+func TestMaskOpaqueReferenceKeywordsReturnsOriginalTreeWithoutOpaqueReference(t *testing.T) {
+	value := map[string]any{
+		"openapi": "3.1.1",
+		"paths": map[string]any{
+			"/items": map[string]any{
+				"get": map[string]any{
+					"responses": map[string]any{
+						"204": map[string]any{"description": "OK"},
+					},
+				},
+			},
+		},
+	}
+	masked := maskOpaqueReferenceKeywords(value, nil, false)
+	root, ok := masked.(map[string]any)
+	if !ok {
+		t.Fatalf("masked = %#v", masked)
+	}
+	root["x-review-probe"] = true
+	if value["x-review-probe"] != true {
+		t.Fatal("mask copied an unchanged source tree instead of returning the original")
+	}
+	delete(root, "x-review-probe")
+}
+
 func TestMaskOpaqueReferenceKeywordsUsesStructuralExtensionContext(t *testing.T) {
 	value := map[string]any{
 		"openapi": "3.1.1",
