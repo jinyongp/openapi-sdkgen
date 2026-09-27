@@ -48,6 +48,7 @@ func CompileFile(path string) (*ir.Document, error) {
 // reference and extension capabilities. It never fetches a remote reference
 // unless RemoteRefAllowlist is populated.
 func CompileFileWithOptions(path string, options CompileOptions) (*ir.Document, error) {
+	options.DiagnosticMode = diagnostic.ModeFailFast
 	if options.InputBase != "" || options.InputReader != nil {
 		return nil, errors.New("CompileFileWithOptions does not accept stdin input options")
 	}
@@ -64,6 +65,7 @@ func CompileFileWithOptions(path string, options CompileOptions) (*ir.Document, 
 // CompileInputWithOptions compiles an OpenAPI document read from a path, file
 // URL, HTTP(S) URL, or standard input (-).
 func CompileInputWithOptions(input string, options CompileOptions) (*ir.Document, error) {
+	options.DiagnosticMode = diagnostic.ModeFailFast
 	source, err := loadInputSource(input, options)
 	if err != nil {
 		return nil, err

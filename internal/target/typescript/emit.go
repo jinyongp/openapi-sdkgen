@@ -93,8 +93,11 @@ type sourcePlan struct {
 	resourceReachable   map[string]bool
 }
 
-// Prepare validates author input for the TypeScript target.
+// Prepare validates author input for the TypeScript target using the
+// historical fail-fast contract. Policy-aware orchestration uses
+// PrepareWithCoverage explicitly.
 func (Generator) Prepare(document *ir.Document, options generator.Options) (generator.Plan, []diagnostic.Diagnostic, error) {
+	options.DiagnosticMode = diagnostic.ModeFailFast
 	plan, diagnostics, _, err := (Generator{}).PrepareWithCoverage(document, options)
 	return plan, diagnostics, err
 }

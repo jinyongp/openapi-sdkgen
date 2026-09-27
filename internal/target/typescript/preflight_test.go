@@ -95,6 +95,17 @@ func TestCollectPrepareReturnsNoEmitCapablePlanAndReportsAnalyzerCoverage(t *tes
 	}
 
 	collectOptions := generator.Options{DiagnosticMode: diagnostic.ModeCollect}
+	directPlan, directDiagnostics, err := (Generator{}).Prepare(document, collectOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !diagnostic.HasErrors(directDiagnostics) {
+		t.Fatalf("direct Prepare diagnostics = %#v, want blocking target findings", directDiagnostics)
+	}
+	if _, err := directPlan.Value("typescript"); err != nil {
+		t.Fatalf("existing direct Prepare must remain fail-fast even when new options carry collect mode: %v", err)
+	}
+
 	collectPlan, values, coverage, err := (Generator{}).PrepareWithCoverage(document, collectOptions)
 	if err != nil {
 		t.Fatal(err)
