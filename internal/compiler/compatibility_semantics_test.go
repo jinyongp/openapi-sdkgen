@@ -64,6 +64,41 @@ func TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects(t *tes
 	}
 }
 
+func TestCompatibilityKeepsSchemaContextWhenPropertyNamesCollideWithStructuralTokens(t *testing.T) {
+	input := []byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Schema token collisions","version":"1"},
+  "paths":{"/items":{"get":{"operationId":"getItems","responses":{"204":{"description":"OK"}}}}},
+  "components":{"schemas":{"Thing":{
+    "type":"object",
+    "properties":{
+      "links":{
+        "type":"object",
+        "properties":{
+          "operationId":{"type":"string"},
+          "operationRef":{"type":"string"}
+        }
+      },
+      "properties":{
+        "type":"object",
+        "nullable":true
+      },
+      "responses":{"type":"string"},
+      "headers":{"type":"string"},
+      "content":{"type":"string"},
+      "callbacks":{"type":"string"}
+    }
+  }}}
+}`)
+	result, err := CompileResult(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || len(result.Diagnostics) != 0 {
+		t.Fatalf("compile result = %#v", result)
+	}
+}
+
 func TestCompatibilityOAS30SchemaReferenceSiblingsAreIgnoredBeforeVersionValidation(t *testing.T) {
 	for _, test := range []struct {
 		name            string

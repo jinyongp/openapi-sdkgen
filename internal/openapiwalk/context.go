@@ -26,79 +26,198 @@ const (
 	ObjectSchema         ObjectContext = "schema"
 )
 
+// StructuralPosition describes the grammar-owned meaning of one OpenAPI path.
+// Keyword is the structural field or named-map collection that owns the value.
+// NamedMapContainer identifies maps whose keys are author-defined names;
+// NamedMapEntry identifies one value selected from such a map.
+type StructuralPosition struct {
+	Object            ObjectContext
+	Keyword           string
+	NamedMapContainer bool
+	NamedMapEntry     bool
+
+	kind        structuralPositionKind
+	entryObject ObjectContext
+}
+
+type structuralPositionKind uint8
+
+const (
+	structuralObject structuralPositionKind = iota
+	structuralComponents
+	structuralNamedMap
+	structuralSequence
+)
+
+func objectPosition(object ObjectContext, keyword string) StructuralPosition {
+	return StructuralPosition{Object: object, Keyword: keyword, kind: structuralObject}
+}
+
+func namedMapPosition(keyword string, entryObject ObjectContext) StructuralPosition {
+	return StructuralPosition{
+		Object:            ObjectUnknown,
+		Keyword:           keyword,
+		NamedMapContainer: true,
+		kind:              structuralNamedMap,
+		entryObject:       entryObject,
+	}
+}
+
+func sequencePosition(keyword string, entryObject ObjectContext) StructuralPosition {
+	return StructuralPosition{
+		Object:      ObjectUnknown,
+		Keyword:     keyword,
+		kind:        structuralSequence,
+		entryObject: entryObject,
+	}
+}
+
+// StructuralPositionAt resolves an RFC 6901 token path from the OpenAPI root.
+// Resolution follows the grammar from parent to child so a user-defined name
+// such as "links" or "properties" cannot acquire structural meaning merely
+// because its token matches an OpenAPI or JSON Schema keyword.
+func StructuralPositionAt(path []string) StructuralPosition {
+	position := objectPosition(ObjectOpenAPI, "")
+	for _, token := range path {
+		position = childStructuralPosition(position, token)
+	}
+	return position
+}
+
 // ObjectContextAt classifies common OpenAPI object locations from an RFC 6901
 // token path. Reference Object detection remains a value-level compatibility
 // decision and must not be inferred from path alone.
 func ObjectContextAt(path []string) ObjectContext {
-	if len(path) == 0 {
-		return ObjectOpenAPI
-	}
-	if len(path) == 1 && path[0] == "info" {
-		return ObjectInfo
-	}
-	if isSchemaObjectPath(path) {
-		return ObjectSchema
-	}
-	if len(path) >= 2 {
-		switch path[len(path)-2] {
-		case "parameters":
-			return ObjectParameter
-		case "requestBodies":
-			return ObjectRequestBody
-		case "responses":
-			return ObjectResponse
-		case "headers":
-			return ObjectHeader
-		case "links":
-			return ObjectLink
-		case "callbacks":
-			return ObjectCallback
-		case "examples":
-			return ObjectExample
-		case "securitySchemes":
-			return ObjectSecurityScheme
-		case "content":
-			return ObjectMediaType
-		case "encoding":
-			return ObjectEncoding
-		case "paths", "webhooks", "pathItems":
-			return ObjectPathItem
-		case "additionalOperations":
-			return ObjectOperation
-		}
-	}
-	if path[len(path)-1] == "requestBody" {
-		return ObjectRequestBody
-	}
-	if isOperationToken(path[len(path)-1]) {
-		return ObjectOperation
-	}
-	if isCallbackPathItem(path) {
-		return ObjectPathItem
-	}
-	return ObjectUnknown
+	return StructuralPositionAt(path).Object
 }
 
-func isSchemaObjectPath(path []string) bool {
-	if len(path) == 0 {
-		return false
+func childStructuralPosition(parent StructuralPosition, token string) StructuralPosition {
+	switch parent.kind {
+	case structuralComponents:
+		return componentsChildPosition(token)
+	case structuralNamedMap, structuralSequence:
+		return StructuralPosition{
+			Object:        parent.entryObject,
+			Keyword:       parent.Keyword,
+			NamedMapEntry: parent.kind == structuralNamedMap,
+			kind:          structuralObject,
+		}
 	}
-	last := path[len(path)-1]
-	switch last {
-	case "schema", "items", "not", "additionalProperties", "contains", "contentSchema",
-		"else", "if", "propertyNames", "then", "unevaluatedItems", "unevaluatedProperties":
-		return true
+
+	switch parent.Object {
+	case ObjectOpenAPI:
+		switch token {
+		case "info":
+			return objectPosition(ObjectInfo, token)
+		case "components":
+			return StructuralPosition{Object: ObjectUnknown, Keyword: token, kind: structuralComponents}
+		case "paths", "webhooks":
+			return namedMapPosition(token, ObjectPathItem)
+		}
+	case ObjectPathItem:
+		if isOperationToken(token) {
+			return objectPosition(ObjectOperation, token)
+		}
+		switch token {
+		case "parameters":
+			return sequencePosition(token, ObjectParameter)
+		case "additionalOperations":
+			return namedMapPosition(token, ObjectOperation)
+		}
+	case ObjectOperation:
+		switch token {
+		case "parameters":
+			return sequencePosition(token, ObjectParameter)
+		case "requestBody":
+			return objectPosition(ObjectRequestBody, token)
+		case "responses":
+			return namedMapPosition(token, ObjectResponse)
+		case "callbacks":
+			return namedMapPosition(token, ObjectCallback)
+		}
+	case ObjectParameter, ObjectHeader:
+		switch token {
+		case "schema":
+			return objectPosition(ObjectSchema, token)
+		case "content":
+			return namedMapPosition(token, ObjectMediaType)
+		case "examples":
+			return namedMapPosition(token, ObjectExample)
+		}
+	case ObjectRequestBody:
+		if token == "content" {
+			return namedMapPosition(token, ObjectMediaType)
+		}
+	case ObjectResponse:
+		switch token {
+		case "headers":
+			return namedMapPosition(token, ObjectHeader)
+		case "links":
+			return namedMapPosition(token, ObjectLink)
+		case "content":
+			return namedMapPosition(token, ObjectMediaType)
+		}
+	case ObjectMediaType:
+		switch token {
+		case "schema":
+			return objectPosition(ObjectSchema, token)
+		case "encoding":
+			return namedMapPosition(token, ObjectEncoding)
+		case "examples":
+			return namedMapPosition(token, ObjectExample)
+		}
+	case ObjectEncoding:
+		if token == "headers" {
+			return namedMapPosition(token, ObjectHeader)
+		}
+	case ObjectCallback:
+		if !strings.HasPrefix(token, "x-") {
+			return objectPosition(ObjectPathItem, "callbacks")
+		}
+	case ObjectSchema:
+		return schemaChildPosition(token)
 	}
-	if len(path) < 2 {
-		return false
-	}
-	switch path[len(path)-2] {
-	case "schemas", "properties", "patternProperties", "$defs", "definitions", "dependentSchemas":
-		return true
-	case "allOf", "anyOf", "oneOf", "prefixItems":
-		return true
+	return objectPosition(ObjectUnknown, token)
+}
+
+func componentsChildPosition(token string) StructuralPosition {
+	switch token {
+	case "schemas":
+		return namedMapPosition(token, ObjectSchema)
+	case "parameters":
+		return namedMapPosition(token, ObjectParameter)
+	case "headers":
+		return namedMapPosition(token, ObjectHeader)
+	case "requestBodies":
+		return namedMapPosition(token, ObjectRequestBody)
+	case "responses":
+		return namedMapPosition(token, ObjectResponse)
+	case "links":
+		return namedMapPosition(token, ObjectLink)
+	case "callbacks":
+		return namedMapPosition(token, ObjectCallback)
+	case "examples":
+		return namedMapPosition(token, ObjectExample)
+	case "securitySchemes":
+		return namedMapPosition(token, ObjectSecurityScheme)
+	case "pathItems":
+		return namedMapPosition(token, ObjectPathItem)
 	default:
-		return false
+		return objectPosition(ObjectUnknown, token)
+	}
+}
+
+func schemaChildPosition(token string) StructuralPosition {
+	switch token {
+	case "items", "not", "additionalProperties", "contains", "contentSchema",
+		"else", "if", "propertyNames", "then", "unevaluatedItems", "unevaluatedProperties":
+		return objectPosition(ObjectSchema, token)
+	case "properties", "patternProperties", "$defs", "definitions", "dependentSchemas":
+		return namedMapPosition(token, ObjectSchema)
+	case "allOf", "anyOf", "oneOf", "prefixItems":
+		return sequencePosition(token, ObjectSchema)
+	default:
+		return objectPosition(ObjectUnknown, token)
 	}
 }
 
@@ -109,16 +228,4 @@ func isOperationToken(value string) bool {
 	default:
 		return false
 	}
-}
-
-func isCallbackPathItem(path []string) bool {
-	if len(path) < 3 {
-		return false
-	}
-	for index := len(path) - 3; index >= 0; index-- {
-		if path[index] == "callbacks" {
-			return len(path) == index+3
-		}
-	}
-	return false
 }
