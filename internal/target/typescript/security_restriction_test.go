@@ -104,6 +104,43 @@ func TestSecurityRestrictionStillBlocksEmptyEntrySurface(t *testing.T) {
 	}
 }
 
+func TestNonObjectDeclaredSecuritySchemeRemainsTargetOwned(t *testing.T) {
+	result, err := sdkgen.CompileResultWithOptions([]byte(`{
+  "openapi":"3.0.3",
+  "info":{"title":"Non-object security scheme","version":"1"},
+  "paths":{
+    "/items":{"get":{
+      "operationId":"getItems",
+      "security":[{"declared":[]}],
+      "responses":{"204":{"description":"OK"}}
+    }}
+  },
+  "components":{"securitySchemes":{"declared":"malformed"}}
+}`), sdkgen.CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil {
+		t.Fatalf("structured compile lost document: %#v", result)
+	}
+	for _, value := range result.Diagnostics {
+		if value.Rule == compatibility.RuleSecurityRequirement {
+			t.Fatalf("declared malformed scheme was misclassified as undeclared: %#v", result.Diagnostics)
+		}
+	}
+	if len(result.Document.SemanticRestrictions) != 0 {
+		t.Fatalf("declared malformed scheme created operation restriction: %#v", result.Document.SemanticRestrictions)
+	}
+
+	_, diagnostics, err := (Generator{}).Prepare(result.Document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasTargetSecurityBlocker(diagnostics) {
+		t.Fatalf("declared malformed scheme did not remain target-blocking: %#v", diagnostics)
+	}
+}
+
 func TestSecuritySchemeURIsAndDeclaredMalformedSchemesRemainTargetOwned(t *testing.T) {
 	uriDocument, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0",

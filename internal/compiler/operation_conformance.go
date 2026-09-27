@@ -81,9 +81,12 @@ func securityRequirementConformanceFindings(document *ir.Document, fallbackSourc
 	if document == nil || (document.OpenAPIVersionLine != "3.0" && document.OpenAPIVersionLine != "3.1") {
 		return nil
 	}
-	known := make(map[string]struct{}, len(document.SecuritySchemes))
-	for name := range document.SecuritySchemes {
-		known[name] = struct{}{}
+	known, declarationSetKnown := declaredSecuritySchemeNames(document.Raw)
+	if !declarationSetKnown {
+		// A malformed shared securitySchemes container cannot safely support an
+		// "undeclared" conclusion for one operation. Leave that shared shape at
+		// the existing target/document-blocking boundary.
+		return nil
 	}
 	var result []operationConformanceFinding
 	appendRequirementFindings := func(
@@ -136,6 +139,23 @@ func securityRequirementConformanceFindings(document *ir.Document, fallbackSourc
 		)
 	}
 	return result
+}
+
+func declaredSecuritySchemeNames(raw map[string]any) (map[string]struct{}, bool) {
+	components, _ := raw["components"].(map[string]any)
+	value, exists := components["securitySchemes"]
+	if !exists {
+		return map[string]struct{}{}, true
+	}
+	schemes, ok := value.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	result := make(map[string]struct{}, len(schemes))
+	for name := range schemes {
+		result[name] = struct{}{}
+	}
+	return result, true
 }
 
 func conformanceLocation(document *ir.Document, fallbackSource, pointer string) ir.SourceLocation {
