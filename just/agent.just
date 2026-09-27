@@ -57,6 +57,9 @@ generate-check input target='typescript' *args:
 generate-check-test:
     ./scripts/agent/generate-check-test
 
+diagnostic-harvest manifest output:
+    bash ./scripts/agent/diagnostic-harvest {{quote(manifest)}} {{quote(output)}}
+
 conformance:
     ./scripts/agent/conformance
 
