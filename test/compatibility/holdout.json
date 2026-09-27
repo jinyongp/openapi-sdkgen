@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/APIs-guru/openapi-directory.git",
+    "commit": "f04b8d0bcd39c52e1cf3ad7a5fe744709832ae49",
+    "apiTree": "32216d017e0e58574e71d2f55c79148cab485b25",
+    "rawBaseUrl": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/f04b8d0bcd39c52e1cf3ad7a5fe744709832ae49/"
+  },
+  "selection": {
+    "method": "From the complete APIs tree at the pinned commit: keep blobs ending /openapi.yaml or /openapi.json, exclude the seven regression-provider families, keep the first lexicographic OpenAPI file per provider, stratify by file size, then choose five evenly spaced lexicographic positions per stratum using floor((i+0.5)*N/5). Membership is frozen before sdkgen execution.",
+    "candidateCount": 482,
+    "excludedProviders": [
+      "cloudflare.com",
+      "digitalocean.com",
+      "github.com",
+      "gitlab.com",
+      "microsoft.com",
+      "stripe.com",
+      "twilio.com"
+    ],
+    "sizeStrata": [
+      {
+        "name": "small",
+        "minBytes": 0,
+        "maxBytes": 50000,
+        "candidates": 217,
+        "selected": 5
+      },
+      {
+        "name": "medium",
+        "minBytes": 50000,
+        "maxBytes": 250000,
+        "candidates": 150,
+        "selected": 5
+      },
+      {
+        "name": "large",
+        "minBytes": 250000,
+        "maxBytes": 1000000,
+        "candidates": 82,
+        "selected": 5
+      },
+      {
+        "name": "xlarge",
+        "minBytes": 1000000,
+        "candidates": 33,
+        "selected": 5
+      }
+    ]
+  },
+  "corpora": [
+    {
+      "id": "betfair.com",
+      "provider": "betfair.com",
+      "cohort": "holdout",
+      "input": "APIs/betfair.com/1.0.1423/openapi.yaml",
+      "gitBlob": "9337bcdc043a3b8c17370e5dd908085f9f9abd5e",
+      "bytes": 29566,
+      "sizeClass": "small"
+    },
+    {
+      "id": "eos.local",
+      "provider": "eos.local",
+      "cohort": "holdout",
+      "input": "APIs/eos.local/1.0.0/openapi.yaml",
+      "gitBlob": "3017755ac9486ff51a4b9f4e0aab328225de96bd",
+      "bytes": 10186,
+      "sizeClass": "small"
+    },
+    {
+      "id": "klarna.com",
+      "provider": "klarna.com",
+      "cohort": "holdout",
+      "input": "APIs/klarna.com/openai/v0/openapi.yaml",
+      "gitBlob": "b62dfec5736421d012457e75a82c17adfbd6ae16",
+      "bytes": 2558,
+      "sizeClass": "small"
+    },
+    {
+      "id": "pdfblocks.com",
+      "provider": "pdfblocks.com",
+      "cohort": "holdout",
+      "input": "APIs/pdfblocks.com/1.5.0/openapi.yaml",
+      "gitBlob": "a5762593c6ec425d8353d299196bf20b681ca8a4",
+      "bytes": 20489,
+      "sizeClass": "small"
+    },
+    {
+      "id": "tvmaze.com",
+      "provider": "tvmaze.com",
+      "cohort": "holdout",
+      "input": "APIs/tvmaze.com/1.0/openapi.yaml",
+      "gitBlob": "90ac906a97fdee2e24c64d74f3ff163fc7a35ea8",
+      "bytes": 30494,
+      "sizeClass": "small"
+    },
+    {
+      "id": "autodealerdata.com",
+      "provider": "autodealerdata.com",
+      "cohort": "holdout",
+      "input": "APIs/autodealerdata.com/1.0/openapi.yaml",
+      "gitBlob": "13879a79395f636025cba25b2e1033f387707349",
+      "bytes": 81470,
+      "sizeClass": "medium"
+    },
+    {
+      "id": "dodo.ac",
+      "provider": "dodo.ac",
+      "cohort": "holdout",
+      "input": "APIs/dodo.ac/1.6.0/openapi.yaml",
+      "gitBlob": "5096aeb844b8b8dafc0e8f0874cecaff8d6b2a63",
+      "bytes": 166695,
+      "sizeClass": "medium"
+    },
+    {
+      "id": "listennotes.com",
+      "provider": "listennotes.com",
+      "cohort": "holdout",
+      "input": "APIs/listennotes.com/2.0/openapi.yaml",
+      "gitBlob": "a7a13be2bfc8176d357bef07bb1cba09d2ed8c4d",
+      "bytes": 120567,
+      "sizeClass": "medium"
+    },
+    {
+      "id": "phantauth.net",
+      "provider": "phantauth.net",
+      "cohort": "holdout",
+      "input": "APIs/phantauth.net/1.0.0/openapi.yaml",
+      "gitBlob": "6d4489c3f03f3a12e7fb8eaa5e78c98ad68d804f",
+      "bytes": 139826,
+      "sizeClass": "medium"
+    },
+    {
+      "id": "trashnothing.com",
+      "provider": "trashnothing.com",
+      "cohort": "holdout",
+      "input": "APIs/trashnothing.com/1.3/openapi.yaml",
+      "gitBlob": "f074c68688da91ee64cff34d8f2b05af724dd081",
+      "bytes": 75190,
+      "sizeClass": "medium"
+    },
+    {
+      "id": "biapi.pro",
+      "provider": "biapi.pro",
+      "cohort": "holdout",
+      "input": "APIs/biapi.pro/2.0/openapi.yaml",
+      "gitBlob": "75b1467164f32f4a137d99ea7589f37a2a7b6b44",
+      "bytes": 330338,
+      "sizeClass": "large"
+    },
+    {
+      "id": "gerermesaffaires.com",
+      "provider": "gerermesaffaires.com",
+      "cohort": "holdout",
+      "input": "APIs/gerermesaffaires.com/1.0.6/openapi.yaml",
+      "gitBlob": "cc3689acddb52c4421dbcb9da7a00da40d5f9435",
+      "bytes": 490695,
+      "sizeClass": "large"
+    },
+    {
+      "id": "netboxdemo.com",
+      "provider": "netboxdemo.com",
+      "cohort": "holdout",
+      "input": "APIs/netboxdemo.com/2.4/openapi.yaml",
+      "gitBlob": "6c46409cea1d37dba048cc66781b3c96606e2829",
+      "bytes": 371879,
+      "sizeClass": "large"
+    },
+    {
+      "id": "spoonacular.com",
+      "provider": "spoonacular.com",
+      "cohort": "holdout",
+      "input": "APIs/spoonacular.com/1.1/openapi.yaml",
+      "gitBlob": "294d51675dca9da5344df71993ae8533ae079e1c",
+      "bytes": 809896,
+      "sizeClass": "large"
+    },
+    {
+      "id": "viator.com",
+      "provider": "viator.com",
+      "cohort": "holdout",
+      "input": "APIs/viator.com/1.0.0/openapi.yaml",
+      "gitBlob": "562e44fcd7f2f3433bd0d33d6fa884c0405b7dac",
+      "bytes": 984805,
+      "sizeClass": "large"
+    },
+    {
+      "id": "bitbucket.org",
+      "provider": "bitbucket.org",
+      "cohort": "holdout",
+      "input": "APIs/bitbucket.org/2.0/openapi.yaml",
+      "gitBlob": "94b1528141a7ce13555164eb545a16ed543346c4",
+      "bytes": 1016167,
+      "sizeClass": "xlarge"
+    },
+    {
+      "id": "docusign.net",
+      "provider": "docusign.net",
+      "cohort": "holdout",
+      "input": "APIs/docusign.net/v2.1/openapi.yaml",
+      "gitBlob": "eb0c9aa5427322a877042806beb94af8dd9f3ba7",
+      "bytes": 3295160,
+      "sizeClass": "xlarge"
+    },
+    {
+      "id": "loket.nl",
+      "provider": "loket.nl",
+      "cohort": "holdout",
+      "input": "APIs/loket.nl/V2/openapi.yaml",
+      "gitBlob": "653511acf7b9b4fbd5e929b84340ce89a93084ab",
+      "bytes": 11420215,
+      "sizeClass": "xlarge"
+    },
+    {
+      "id": "plaid.com",
+      "provider": "plaid.com",
+      "cohort": "holdout",
+      "input": "APIs/plaid.com/2020-09-14_1.345.1/openapi.yaml",
+      "gitBlob": "e7a3abd8b019d92aa2bf6e8721e68128a8cae90f",
+      "bytes": 1534450,
+      "sizeClass": "xlarge"
+    },
+    {
+      "id": "unicourt.com",
+      "provider": "unicourt.com",
+      "cohort": "holdout",
+      "input": "APIs/unicourt.com/1.0.0/openapi.yaml",
+      "gitBlob": "2239b3a13209d2a591b2a257981e961c24318208",
+      "bytes": 4496508,
+      "sizeClass": "xlarge"
+    }
+  ]
+}

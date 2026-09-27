@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+
+if [[ $# -lt 3 || $# -gt 4 ]]; then
+  echo "usage: $0 <manifest.json> <corpus-directory> <report.json> [typecheck-timeout]" >&2
+  exit 2
+fi
+
+manifest="$1"
+corpus="$2"
+output="$3"
+timeout="${4:-3m}"
+binary="$ROOT/.tmp/bin/openapi-sdkgen-compat-benchmark"
+arguments=(
+  --mode run
+  --manifest "$manifest"
+  --corpus-root "$corpus"
+  --output "$output"
+  --typescript-root "$TYPESCRIPT_ROOT"
+  --typecheck-timeout "$timeout"
+)
+
+agent_run "build compatibility benchmark" go build -o "$binary" ./scripts/compat-benchmark
+if command -v fnm >/dev/null 2>&1; then
+  agent_run "compatibility benchmark" fnm exec --using "$NODE_VERSION" "$binary" "${arguments[@]}"
+else
+  require_system_node
+  agent_run "compatibility benchmark" "$binary" "${arguments[@]}"
+fi

@@ -60,6 +60,15 @@ generate-check-test:
 diagnostic-harvest manifest output:
     bash ./scripts/agent/diagnostic-harvest {{quote(manifest)}} {{quote(output)}}
 
+compatibility-fetch manifest='test/compatibility/holdout.json' corpus='.tmp/compatibility-holdout':
+    bash ./scripts/agent/compatibility-fetch {{quote(manifest)}} {{quote(corpus)}} fresh
+
+compatibility-verify manifest='test/compatibility/holdout.json' corpus='.tmp/compatibility-holdout':
+    bash ./scripts/agent/compatibility-fetch {{quote(manifest)}} {{quote(corpus)}} offline
+
+compatibility-benchmark manifest='test/compatibility/holdout.json' corpus='.tmp/compatibility-holdout' output='.tmp/compatibility-benchmark.json' typecheck_timeout='3m':
+    bash ./scripts/agent/compatibility-benchmark {{quote(manifest)}} {{quote(corpus)}} {{quote(output)}} {{quote(typecheck_timeout)}}
+
 conformance:
     ./scripts/agent/conformance
 

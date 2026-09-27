@@ -871,6 +871,74 @@ the OAS normative disposition.
 | DigitalOcean source tree | entry SHA-256 `9601e8c39dde0bdbe9a7ed97b948f71ffd01da3025721fdb31e82aad7490923e`, OAS 3.0.0; heavily fragment/reference based | extension/example `$ref` values are opaque data; 459 independently owned path-template/Parameter mismatches remain in reachable operations | Opaque `x-codeSamples` references no longer trigger E120/file I/O. Final rerun is `0E/459W`, all `COMP-PARAM-005` operation omissions; coverage complete and generation/strict TypeScript pass. |
 | Twilio core 2010 | SHA-256 `170b3ccd0f891416840083d72f1795b1499b14a18d4873fd2b39f47ef84642d6`, 1,877,664 B, OAS 3.0.1 | zero focused compatibility occurrences | Generation and strict TypeScript now pass after the generic numeric-leading identifier normalization fix; no Twilio-specific compatibility branch is required. |
 
+## Independent 20-provider holdout benchmark
+
+The seven corpora above are regression evidence. They are intentionally **not**
+treated as independent generalization evidence because they participated in
+compatibility development and review.
+
+A separate holdout benchmark is frozen in
+`test/compatibility/holdout.json` from APIs.guru
+`openapi-directory` commit
+`f04b8d0bcd39c52e1cf3ad7a5fe744709832ae49`. The selector is deterministic and
+does not inspect sdkgen results:
+
+1. enumerate every `openapi.yaml` / `openapi.json` blob under the pinned
+   `APIs` tree;
+2. exclude the seven regression-provider families above;
+3. sort paths lexicographically and retain the first OpenAPI document per
+   provider;
+4. partition the resulting 482 providers by document size;
+5. select five evenly spaced lexicographic positions from each of four size
+   strata.
+
+The resulting 20 providers are therefore a fixed size-stratified holdout rather
+than a pass-selected corpus. Fetching verifies the pinned Git blob identity and
+byte size for every document. Benchmark execution re-verifies the materialized
+corpus before measuring it, runs under the repository-pinned Node environment,
+and records a deterministic JSON report in
+`test/compatibility/holdout-results.json`.
+
+Current corrected holdout evidence:
+
+| Metric | Result |
+| --- | ---: |
+| Documents | 20 |
+| Default client-only end-to-end success | 16 / 20 (80%) |
+| Capability-adjusted support | 18 / 20 (90%) |
+| Strict TypeScript among default generated documents | 16 / 16 (100%) |
+| Operations retained | 2,829 / 2,830 (99.96%) |
+| Explicit compatibility findings preserved | 37 / 38 (97.37%) |
+| Benchmark feature detectors observed | 20 / 31 (64.52%) |
+
+`capability-adjusted support` does not hide the default result. Documents with
+top-level Webhooks or operation Callbacks are additionally verified with the
+existing TypeScript `server` add-on. In the current holdout, Listen Notes and
+UniCourt fail the default client-only profile because inbound contracts require
+that add-on, then both pass generation and strict TypeScript with `server`
+enabled.
+
+Two documents remain unsupported after capability adjustment:
+
+- `eos.local` uses local Schema Object references to nested Schema Objects
+  under response schemas. The TypeScript target currently lowers component
+  schema references but does not yet lower this generic nested-reference shape.
+- `gerermesaffaires.com` completes compiler and target analysis with
+  `0 errors / 0 warnings`, then fails emission because an operation retains an
+  unplanned schema-registry reference. This is an internal generic emitter
+  defect, not a compatibility disposition for that provider.
+
+The holdout currently contains 19 OAS 3.0 documents and one OAS 3.1 document.
+It contains no OAS 3.2 document and no selected external-`$ref` occurrence.
+Accordingly, the 90% capability-adjusted result must **not** be interpreted as
+"90% of all OpenAPI documents" or "90% of popular APIs." It is empirical
+evidence over this fixed independent cross-section.
+
+The feature manifest remains the canonical feature-by-feature contract. The
+holdout benchmark answers a different question: whether complete real external
+documents survive diagnostic discovery, generation, and strict target
+verification without provider-specific behavior.
+
 The previous integrated workstream's historical failures are evidence, not
 expected-output strings that the new pipeline must artificially preserve. A new
 compatibility rule may expose an earlier, more precise failure (Cloudflare is a

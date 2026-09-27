@@ -1,0 +1,6084 @@
+{
+  "schemaVersion": 1,
+  "manifestSha256": "3d0f2255ed74d4b49a64a8bd958624f80ede02a452b6947bb2eaedcfd3edeb30",
+  "featureCatalog": [
+    "oas.version.3.0",
+    "oas.version.3.1",
+    "oas.version.3.2",
+    "reference.local",
+    "reference.external",
+    "operation.request-body",
+    "operation.required-request-body",
+    "operation.callbacks",
+    "operation.servers",
+    "document.webhooks",
+    "response.links",
+    "media.multipart",
+    "media.url-encoded",
+    "media.binary",
+    "media.encoding",
+    "security.api-key",
+    "security.http",
+    "security.oauth2",
+    "security.openid-connect",
+    "schema.allOf",
+    "schema.oneOf",
+    "schema.anyOf",
+    "schema.not",
+    "schema.discriminator",
+    "schema.additional-properties.boolean",
+    "schema.additional-properties.schema",
+    "schema.type-array",
+    "schema.const",
+    "schema.null-type",
+    "schema.prefix-items",
+    "schema.unevaluated-properties"
+  ],
+  "documents": [
+    {
+      "id": "autodealerdata.com",
+      "cohort": "holdout",
+      "input": "APIs/autodealerdata.com/1.0/openapi.yaml",
+      "inputSha256": "3ee2072ec7af649343dfa1ecdf7a45b00afbd4db0fae4a158072985606e2dd50",
+      "gitBlob": "13879a79395f636025cba25b2e1033f387707349",
+      "sizeClass": "medium",
+      "openapiVersion": "3.0.2",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 35,
+        "retained": 35,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 133,
+        "artifactBytes": 987130
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "betfair.com",
+      "cohort": "holdout",
+      "input": "APIs/betfair.com/1.0.1423/openapi.yaml",
+      "inputSha256": "de07f9283e07f79cf7a745a44c8778f84f30cf47272728746e7822207a22d0b9",
+      "gitBlob": "9337bcdc043a3b8c17370e5dd908085f9f9abd5e",
+      "sizeClass": "small",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 1,
+        "retained": 1,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "schema.allOf",
+        "schema.discriminator",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 61,
+        "artifactBytes": 446463
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "biapi.pro",
+      "cohort": "holdout",
+      "input": "APIs/biapi.pro/2.0/openapi.yaml",
+      "inputSha256": "0c29aa11509eda2e9e366635629a88046bb696a8ea37831a8e851cbcda50a0b8",
+      "gitBlob": "75b1467164f32f4a137d99ea7589f37a2a7b6b44",
+      "sizeClass": "large",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 1
+      },
+      "findings": [
+        {
+          "id": "a4e07df240ecbe2c60c16e28759d49e142e70965f98fe36a5c7129d51255e05d",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1webauth/get/requestBody"
+          },
+          "scope": "operation",
+          "effect": "omit-operation",
+          "rule": "COMP-BODY-001",
+          "action": "reject",
+          "message": "OpenAPI 3.0 request body is potentially meaningful on a method whose payload semantics are not portable.",
+          "hint": "The rejected semantic scope is omitted from generated target behavior."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 167,
+        "retained": 166,
+        "omitted": 1,
+        "unresolvedOmissions": 0,
+        "rate": 0.9940119760479041
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 1,
+        "total": 1,
+        "rate": 0,
+        "actions": {
+          "reject": 1
+        },
+        "rules": {
+          "COMP-BODY-001": 1
+        }
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 343,
+        "artifactBytes": 2985840
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "bitbucket.org",
+      "cohort": "holdout",
+      "input": "APIs/bitbucket.org/2.0/openapi.yaml",
+      "inputSha256": "1765d8a44451249986f9aeaa99d9dda8134cd68e447af4d68460826daff47a85",
+      "gitBlob": "94b1528141a7ce13555164eb545a16ed543346c4",
+      "sizeClass": "xlarge",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 305,
+        "retained": 305,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "security.api-key",
+        "security.http",
+        "security.oauth2",
+        "schema.allOf",
+        "schema.discriminator",
+        "schema.additional-properties.boolean"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 667,
+        "artifactBytes": 7377878
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "docusign.net",
+      "cohort": "holdout",
+      "input": "APIs/docusign.net/v2.1/openapi.yaml",
+      "inputSha256": "2a9e86d5bab61f0466fffcd228a580f9ff07c743d721d5714bfb635595fd356b",
+      "gitBlob": "eb0c9aa5427322a877042806beb94af8dd9f3ba7",
+      "sizeClass": "xlarge",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 33
+      },
+      "findings": [
+        {
+          "id": "550c1a128f147c27449b11d188b64b540ea29c5b7b6be1d3169fb3c2ee5173f8",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1brands/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "a900faa8b1b640ebca0eda0bc6528b2801c51d1c36418e21cf71285301a311ab",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1captive_recipients~1{recipientPart}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "8a1857db249c26e12738efbe3bd85013c5b765417f9be14d394458c39d8bc67c",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1contacts/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "80241d5746178d6234fb367085f7f314aaaa885a3d7ae1c5a174d18cd786bc6b",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1attachments/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "815d2ee282b99d038454d0100f3a3525b1a01dd32b0ace3fe66bcbcd59a7eec3",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1custom_fields/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "df30792a0d2b7b1a33cbf9b9a5a9903bc654bcba09ffa0a2a740b185fbed7119",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1documents/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "31d0fd593a51588d06bb9fcf5d77699accf8d2c9baf8c9b7089773889fa71e10",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1documents~1{documentId}~1fields/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "ddbbed1ec2674cc687518cd5dc03a58741daa1d70379b8aa0750b381bb5ed651",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1documents~1{documentId}~1tabs/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "d51bbdf7a38382393427de946f2c14f174b3467c2ca7d7e02b27db962b95f6f9",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1recipients/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "77cc8717acd54c87cb32744793cd526d7bd5ce35ec05a5021db65bf9deadd8be",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1recipients~1{recipientId}~1tabs/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "bf53a52e8e151a3ede1a125b34618521861b37cdb27fd81e846227fb5b634d50",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1envelopes~1{envelopeId}~1views~1correct/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "cce38a6ed33df3adefeda6ca819576e633e83971945a901651e6d4fd6b12ca7f",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1favorite_templates/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "69f0f62fb3695577a331f9d2d4b91c058eeb56718d9ae272c1b363baa4054acc",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1groups/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "f51d0a28662e254891def03698b81a6185a53004cafa4fe31a3b1483da94c1ef",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1groups~1{groupId}~1brands/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "6df1055eefda9331aa4033d3d2f798ea7eab0c3cea381a99fb3119ee391e9279",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1groups~1{groupId}~1users/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "ad75e3d4d874404825edd3460338afe5ebdd8ceba950978b251d19b2d3215156",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1powerforms/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "a6bd7919563fbb0c8bad32172acf516f1ad78315e0a929c9791b3fc3fe7b1525",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1signing_groups/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "4f88117ca436286a2899806f17db02a47793014bedad9234c5f6bfeb204682f1",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1signing_groups~1{signingGroupId}~1users/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "30d487339398c691075e92866aefbe068f2fb19f8d9df692fddf6ae57754c457",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1custom_fields/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "15db2fa508e6836abd416cd3c6d168bec626065ac325c6eb12b022f2c9861c36",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1documents/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "a55296eb945c5981751e2025aad3422d47615a1b68e53e89009770cdd2030c80",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1documents~1{documentId}~1fields/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "2d33bc4bc917580673c0981b88f305503e785ff8012d058ca286c60b2f1488d7",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1documents~1{documentId}~1pages~1{pageNumber}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "6731e6798d30a25cc0f719ccff1370c7d0deb6d39e28364524bba522368d19f9",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1documents~1{documentId}~1tabs/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "cfaad1db72ec3a30d92006eb12afa3065bc5001fbd0da499d1191c4dc332e078",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1lock/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "e17c4b2e2fe6e56ac423408312a8cc810bb517889f4049a27570f92b4833e5f5",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1recipients/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "56c9231daccf573407765bb2872d2d223cea03c51ed9c711d81e287b0d3842f7",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1recipients~1{recipientId}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "17dea28a6b33fab928af1a3bc7e6ea1536a21debcbfb3468809af9f4edf3dceb",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1recipients~1{recipientId}~1tabs/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "a5700e7bd8d21c002cd8e67089c17eab07e1db7a9a6d6a67080efe4e4f59dd96",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1templates~1{templateId}~1{templatePart}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "52e20126d13de0f2b81ebee5fde37fd2d8f420146eaf98147d642027e803f09c",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1users/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "6e93a969d0e8a09e74c6d9e75329686587896829d0b485d2980653dc32585149",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1users~1{userId}~1authorizations/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "6764846561803d994f1cb659593af1b66f1d223a2fd35e4639b7a9d10e1d1bbb",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1users~1{userId}~1cloud_storage/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "9b178dfe06606bc12046ab4d7a9b1eb2f660b742dae64b36d25f36769a1e09d9",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1users~1{userId}~1custom_settings/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "ed3bd5acc9778067d957fe369b514eb714b19feed6388ede9a0445b9ca572c0f",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1v2.1~1accounts~1{accountId}~1workspaces~1{workspaceId}~1folders~1{folderId}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 402,
+        "retained": 402,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 33,
+        "rejected": 0,
+        "total": 33,
+        "rate": 1,
+        "actions": {
+          "preserve-extension": 33
+        },
+        "rules": {
+          "COMP-BODY-001": 33
+        }
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.binary",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 1138,
+        "artifactBytes": 16718481
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "dodo.ac",
+      "cohort": "holdout",
+      "input": "APIs/dodo.ac/1.6.0/openapi.yaml",
+      "inputSha256": "5af3263b202d6aa6705bc5a039beab3b9e2d41fe09b35b22bd406a438719db25",
+      "gitBlob": "5096aeb844b8b8dafc0e8f0874cecaff8d6b2a63",
+      "sizeClass": "medium",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 30,
+        "retained": 30,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 116,
+        "artifactBytes": 1060506
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "eos.local",
+      "cohort": "holdout",
+      "input": "APIs/eos.local/1.0.0/openapi.yaml",
+      "inputSha256": "c3ef76e03e2334ec46c3008a6f95eb5dd07bd2f1a3722f03c4e003630b2a591f",
+      "gitBlob": "3017755ac9486ff51a4b9f4e0aab328225de96bd",
+      "sizeClass": "small",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": false,
+      "diagnostics": {
+        "errors": 14,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "id": "5f82beeb0f128be02ebc4ab55dc662465602e38cb190be8d238c2f62f2fd34ee",
+          "severity": "error",
+          "code": "SDKGEN-E507",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connect/post"
+          },
+          "target": "typescript",
+          "route": "POST /net/connect",
+          "operation": "connect",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI contract cannot be lowered into a TypeScript operation contract: operation connections media outputs: unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\".",
+          "hint": "Correct the referenced schema, parameter, response, or operation identity shown by this diagnostic."
+        },
+        {
+          "id": "88b1e423cf9138b3ef1655f345e7788ba9a4e391f74f4753dc7779d3a4c520cb",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/chain_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/chain_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "4233f8094f7ad11849e28aa45447df61d6e2a2c24ccac07d87efa8eba4e8faf5",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/head_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/head_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "63a6670c8b0b8dd40121fcfd25ecd64cf0828f5b31661aad27a7be7ff490c86a",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/key/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/key/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/key\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "1f16d1fc44f46b64e659907c993a927b1f7066a6f2c9a63e1df23fbcd3aa3bc1",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/last_irreversible_block_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/last_irreversible_block_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "97cbc8c755dbd62be30377874e1d604e089e3d488fb475a827d3a936e64b5ae2",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/node_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/node_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "6ec66c48ca539416856e66be20a930d74b3ea00ff8b9eb969f0014bd3380eecf",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/sig/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/sig/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/sig\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "5050ccf35039d3a12ead44dcfc9fc215ace8dcb9371b0855ccc80aef93abfef1",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/time/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/time/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/time\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "d62b7b713899003c3a67d14fc051931b73bef4bb5b6d078bd9b54318a34b7759",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/token/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/token/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "2278aba5f5d82176153124c9965a31eee14b421c109cf6778456d5de094eba13",
+          "severity": "error",
+          "code": "SDKGEN-E507",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI contract cannot be lowered into a TypeScript operation contract: operation status media outputs: unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\".",
+          "hint": "Correct the referenced schema, parameter, response, or operation identity shown by this diagnostic."
+        },
+        {
+          "id": "f42874a7cdf93de983450cc5f4604ff224af2d36abd2046a4e9f374261a57954",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/chain_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/chain_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "da79b8d6e0c921b163a56945ddddeb4ea44b8fd7e568a670aa6678baaebe7680",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/head_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/head_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "bac1228c7bbba984283a3baae69ef809d8421b485d1ca15742782d9161917203",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/last_irreversible_block_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/last_irreversible_block_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "c9ed4689eb08494649df15120c81f8f08edfd63150cc3f54d08ea1cc5e53085a",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/node_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/node_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 4,
+        "retained": 4,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body"
+      ],
+      "generation": {
+        "status": "blocked"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "capabilityAdjustedSuccess": false,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "lowering, Link, or stream prerequisites were unavailable"
+            }
+          ],
+          "reason": "lowering, Link, or stream prerequisites were unavailable"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
+    },
+    {
+      "id": "gerermesaffaires.com",
+      "cohort": "holdout",
+      "input": "APIs/gerermesaffaires.com/1.0.6/openapi.yaml",
+      "inputSha256": "7365b46730f8704e5e7523ef669adfbd1a0861e8d2e01935b617661313ada8f7",
+      "gitBlob": "cc3689acddb52c4421dbcb9da7a00da40d5f9435",
+      "sizeClass": "large",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 280,
+        "retained": 280,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.binary",
+        "security.oauth2",
+        "schema.allOf",
+        "schema.oneOf"
+      ],
+      "generation": {
+        "status": "fail",
+        "detail": "emit operation module \"DELETE /spaces/{spaceId}/folders/{id}/tax-contract\": operation \"DELETE /spaces/{spaceId}/folders/{id}/tax-contract\" retains an unplanned schema registry reference"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "capabilityAdjustedSuccess": false,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "klarna.com",
+      "cohort": "holdout",
+      "input": "APIs/klarna.com/openai/v0/openapi.yaml",
+      "inputSha256": "72e2c35f8d318ccbbe695ea1da434c83cd20290d1ae7376a78b70880e9cbcffa",
+      "gitBlob": "b62dfec5736421d012457e75a82c17adfbd6ae16",
+      "sizeClass": "small",
+      "openapiVersion": "3.0.1",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 1,
+        "retained": 1,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 40,
+        "artifactBytes": 325918
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "listennotes.com",
+      "cohort": "holdout",
+      "input": "APIs/listennotes.com/2.0/openapi.yaml",
+      "inputSha256": "51b15eb0e703c26eece40c964245c0434cb0e8ff7a419be2cd6fd9dcebd93216",
+      "gitBlob": "a7a13be2bfc8176d357bef07bb1cba09d2ed8c4d",
+      "sizeClass": "medium",
+      "openapiVersion": "3.1.0",
+      "discoveryComplete": false,
+      "diagnostics": {
+        "errors": 1,
+        "warnings": 1
+      },
+      "findings": [
+        {
+          "id": "7e1b17712675eed7998fd3b9771974e5aee248c7af148782b38bb9a8da5485d3",
+          "severity": "warning",
+          "code": "SDKGEN-W509",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1podcasts/post/responses/200/links/paginate/parameters/next_episode_pub_date"
+          },
+          "target": "typescript",
+          "route": "POST /podcasts",
+          "operation": "getPodcastsInBatch",
+          "capability": "response-link",
+          "scope": "capability",
+          "effect": "omit-capability",
+          "message": "The TypeScript target cannot prepare response link: #/paths/~1podcasts/post/responses/200/links/paginate/parameters/next_episode_pub_date: parameter \"next_episode_pub_date\" matches 0 target parameters.",
+          "hint": "This Link helper is omitted; the base response operation remains generated."
+        },
+        {
+          "id": "2922baffc8146f66ef6c4e6873e8727ea1f9ee0696481ef508734d11f5aef2bb",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/webhooks"
+          },
+          "target": "typescript",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/webhooks (generated inbound webhook contracts) requires the TypeScript server add-on for inbound webhook contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 24,
+        "retained": 24,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.1",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "document.webhooks",
+        "response.links",
+        "media.url-encoded",
+        "schema.oneOf"
+      ],
+      "generation": {
+        "status": "blocked"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "supportProfiles": [
+        {
+          "name": "server-addon",
+          "applicable": true,
+          "discoveryComplete": true,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 1
+          },
+          "findings": [
+            {
+              "id": "7e1b17712675eed7998fd3b9771974e5aee248c7af148782b38bb9a8da5485d3",
+              "severity": "warning",
+              "code": "SDKGEN-W509",
+              "phase": "target",
+              "location": {
+                "source": "$root",
+                "pointer": "#/paths/~1podcasts/post/responses/200/links/paginate/parameters/next_episode_pub_date"
+              },
+              "target": "typescript",
+              "route": "POST /podcasts",
+              "operation": "getPodcastsInBatch",
+              "capability": "response-link",
+              "scope": "capability",
+              "effect": "omit-capability",
+              "message": "The TypeScript target cannot prepare response link: #/paths/~1podcasts/post/responses/200/links/paginate/parameters/next_episode_pub_date: parameter \"next_episode_pub_date\" matches 0 target parameters.",
+              "hint": "This Link helper is omitted; the base response operation remains generated."
+            }
+          ],
+          "generation": {
+            "status": "pass",
+            "artifactCount": 186,
+            "artifactBytes": 1442343
+          },
+          "typecheck": {
+            "status": "pass"
+          },
+          "success": true,
+          "coverage": [
+            {
+              "phase": "references",
+              "analyzer": "source.local-references",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.path-parameter-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.security-requirement-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.compatibility",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "decoded-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.reserved-extensions",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-features",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                },
+                {
+                  "name": "version-identity",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-identity",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.callbacks",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.entry-surface",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.extensions",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.links",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.lowering",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.modules",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.prepare",
+              "status": "complete",
+              "target": "typescript",
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.resources",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.streams",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.support",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.visibility",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.webhooks",
+              "status": "complete",
+              "target": "typescript"
+            }
+          ]
+        }
+      ],
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
+    },
+    {
+      "id": "loket.nl",
+      "cohort": "holdout",
+      "input": "APIs/loket.nl/V2/openapi.yaml",
+      "inputSha256": "8040ca048d5611a1c8f8015eb784432b454661d50f95b8602158614ddb0c18f4",
+      "gitBlob": "653511acf7b9b4fbd5e929b84340ce89a93084ab",
+      "sizeClass": "xlarge",
+      "openapiVersion": "3.0.2",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 663,
+        "retained": 663,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.binary",
+        "schema.allOf"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 1037,
+        "artifactBytes": 29970432
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "netboxdemo.com",
+      "cohort": "holdout",
+      "input": "APIs/netboxdemo.com/2.4/openapi.yaml",
+      "inputSha256": "64dbba7a4afce8e7d1d2594a13b7e4a5837c31d8a220db8df359669d6bf5e54d",
+      "gitBlob": "6c46409cea1d37dba048cc66781b3c96606e2829",
+      "sizeClass": "large",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 357,
+        "retained": 357,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "security.api-key"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 669,
+        "artifactBytes": 5219045
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "pdfblocks.com",
+      "cohort": "holdout",
+      "input": "APIs/pdfblocks.com/1.5.0/openapi.yaml",
+      "inputSha256": "e087bf683827d1338f200cd3679d20228a9a4e42c42548882a6c19edfea26437",
+      "gitBlob": "a5762593c6ec425d8353d299196bf20b681ca8a4",
+      "sizeClass": "small",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 12,
+        "retained": 12,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.binary",
+        "security.api-key"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 59,
+        "artifactBytes": 471928
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "phantauth.net",
+      "cohort": "holdout",
+      "input": "APIs/phantauth.net/1.0.0/openapi.yaml",
+      "inputSha256": "caef3d40f40fe3bddc22668e0db280696d672329fb484902ae1522689570147d",
+      "gitBlob": "6d4489c3f03f3a12e7fb8eaa5e78c98ad68d804f",
+      "sizeClass": "medium",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 10,
+        "retained": 10,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 59,
+        "artifactBytes": 617295
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "plaid.com",
+      "cohort": "holdout",
+      "input": "APIs/plaid.com/2020-09-14_1.345.1/openapi.yaml",
+      "inputSha256": "79291d99cc1de9909805841b30b2795b8c9327563d76b94d37a2df3733176bda",
+      "gitBlob": "e7a3abd8b019d92aa2bf6e8721e68128a8cae90f",
+      "sizeClass": "xlarge",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 200,
+        "retained": 200,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.binary",
+        "security.api-key",
+        "schema.allOf",
+        "schema.additional-properties.boolean",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 1716,
+        "artifactBytes": 8272417
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "spoonacular.com",
+      "cohort": "holdout",
+      "input": "APIs/spoonacular.com/1.1/openapi.yaml",
+      "inputSha256": "bd2f8b16a625e78d99cf71bdcd5531537050b58973950d96ff5865f257297764",
+      "gitBlob": "294d51675dca9da5344df71993ae8533ae079e1c",
+      "sizeClass": "large",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 4
+      },
+      "findings": [
+        {
+          "id": "773c79abe957824f70a9e526ec9a5061cac61bc8187a48df366cc66c0229b042",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1mealplanner~1{username}~1day~1{date}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "3c41a0e9dd586928632640207782745c1a2b75a3618dc8b83d514b8456eb2c21",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1mealplanner~1{username}~1items~1{id}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "40001c8d263ca5f2b3f733c5ddb0fb92f00bec2eabb7efe609ba9a2b980f3946",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1mealplanner~1{username}~1shopping-list~1items~1{id}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        },
+        {
+          "id": "f766b469647d1630730758e2fb6500f8eeeed1ddfff34e501b0ed1fa2911712a",
+          "severity": "warning",
+          "code": "SDKGEN-W140",
+          "phase": "openapi",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1mealplanner~1{username}~1templates~1{id}/delete/requestBody"
+          },
+          "rule": "COMP-BODY-001",
+          "action": "preserve-extension",
+          "message": "OpenAPI 3.0 DELETE request body is preserved as an evidenced compatibility extension.",
+          "hint": "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 99,
+        "retained": 99,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 4,
+        "rejected": 0,
+        "total": 4,
+        "rate": 1,
+        "actions": {
+          "preserve-extension": 4
+        },
+        "rules": {
+          "COMP-BODY-001": 4
+        }
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.url-encoded",
+        "security.api-key"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 252,
+        "artifactBytes": 2696056
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "trashnothing.com",
+      "cohort": "holdout",
+      "input": "APIs/trashnothing.com/1.3/openapi.yaml",
+      "inputSha256": "727ec3dc7b8c1c96725e452e704ec794a549d67a92c226b42d00a5c400bab286",
+      "gitBlob": "f074c68688da91ee64cff34d8f2b05af724dd081",
+      "sizeClass": "medium",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 12,
+        "retained": 12,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "security.api-key",
+        "schema.allOf"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 65,
+        "artifactBytes": 650739
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "tvmaze.com",
+      "cohort": "holdout",
+      "input": "APIs/tvmaze.com/1.0/openapi.yaml",
+      "inputSha256": "d74e37b951a03b17ccd271777c0083053992f91b9c58e8681a51ca88af4eab62",
+      "gitBlob": "90ac906a97fdee2e24c64d74f3ff163fc7a35ea8",
+      "sizeClass": "small",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 42,
+        "retained": 42,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "security.http"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 121,
+        "artifactBytes": 798144
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "id": "unicourt.com",
+      "cohort": "holdout",
+      "input": "APIs/unicourt.com/1.0.0/openapi.yaml",
+      "inputSha256": "d8d536ea8daca766a98ec0db6599041cfdcc449b71f689df9046b88b9796a79d",
+      "gitBlob": "2239b3a13209d2a591b2a257981e961c24318208",
+      "sizeClass": "xlarge",
+      "openapiVersion": "3.0.0",
+      "discoveryComplete": false,
+      "diagnostics": {
+        "errors": 4,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "id": "09adbb2b7fbdb2630f9b79f8e78252ad7e499713b048d005db336f21496597dc",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1caseDocumentOrder/put/callbacks"
+          },
+          "target": "typescript",
+          "route": "PUT /caseDocumentOrder",
+          "operation": "orderCaseDocument",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/paths/~1caseDocumentOrder/put/callbacks (generated callback contracts) requires the TypeScript server add-on for inbound callback contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        },
+        {
+          "id": "fd3b807891366e43e25787ba1ab886a4a9d8c83f830a3af0b7ddd312c14ac9ff",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1caseExport~1{caseId}/get/callbacks"
+          },
+          "target": "typescript",
+          "route": "GET /caseExport/{caseId}",
+          "operation": "exportCase",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/paths/~1caseExport~1{caseId}/get/callbacks (generated callback contracts) requires the TypeScript server add-on for inbound callback contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        },
+        {
+          "id": "0c68e5b73de609c66545450e9fe395d50c048a913b670c25ebb7b48f5d6f442c",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1caseTrack/put/callbacks"
+          },
+          "target": "typescript",
+          "route": "PUT /caseTrack",
+          "operation": "trackCase",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/paths/~1caseTrack/put/callbacks (generated callback contracts) requires the TypeScript server add-on for inbound callback contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        },
+        {
+          "id": "cfd2f271534519f0b6305b3e7546075f7c2d0e63ff004405608168c0df208770",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1caseUpdate/put/callbacks"
+          },
+          "target": "typescript",
+          "route": "PUT /caseUpdate",
+          "operation": "updateCase",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/paths/~1caseUpdate/put/callbacks (generated callback contracts) requires the TypeScript server add-on for inbound callback contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 158,
+        "retained": 158,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.callbacks",
+        "security.http",
+        "schema.oneOf",
+        "schema.additional-properties.boolean"
+      ],
+      "generation": {
+        "status": "blocked"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "supportProfiles": [
+        {
+          "name": "server-addon",
+          "applicable": true,
+          "discoveryComplete": true,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "findings": [],
+          "generation": {
+            "status": "pass",
+            "artifactCount": 588,
+            "artifactBytes": 10560886
+          },
+          "typecheck": {
+            "status": "pass"
+          },
+          "success": true,
+          "coverage": [
+            {
+              "phase": "references",
+              "analyzer": "source.local-references",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.path-parameter-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.security-requirement-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.compatibility",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "decoded-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.reserved-extensions",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-features",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                },
+                {
+                  "name": "version-identity",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-identity",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.callbacks",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.entry-surface",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.extensions",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.links",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.lowering",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.modules",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.prepare",
+              "status": "complete",
+              "target": "typescript",
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.resources",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.streams",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.support",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.visibility",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.webhooks",
+              "status": "complete",
+              "target": "typescript"
+            }
+          ]
+        }
+      ],
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
+    },
+    {
+      "id": "viator.com",
+      "cohort": "holdout",
+      "input": "APIs/viator.com/1.0.0/openapi.yaml",
+      "inputSha256": "d6a83d78bde34cda3166cc2aafc3af394fd5e3afe4c74366fa8d561534aaec89",
+      "gitBlob": "562e44fcd7f2f3433bd0d33d6fa884c0405b7dac",
+      "sizeClass": "large",
+      "openapiVersion": "3.0.1",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 28,
+        "retained": 28,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.servers",
+        "security.api-key",
+        "schema.allOf",
+        "schema.discriminator",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 140,
+        "artifactBytes": 2080090
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    }
+  ],
+  "cohorts": [
+    {
+      "cohort": "holdout",
+      "documents": 20,
+      "successfulDocuments": 16,
+      "documentSuccessRate": 0.8,
+      "capabilityAdjustedDocuments": 18,
+      "capabilityAdjustedSuccessRate": 0.9,
+      "discoveryComplete": 17,
+      "generatedDocuments": 16,
+      "typecheckedDocuments": 16,
+      "generatedVerificationRate": 1,
+      "operations": {
+        "availableDocuments": 20,
+        "total": 2830,
+        "retained": 2829,
+        "omitted": 1,
+        "rate": 0.9996466431095407
+      },
+      "compatibility": {
+        "preserved": 37,
+        "rejected": 1,
+        "total": 38,
+        "rate": 0.9736842105263158,
+        "actions": {
+          "preserve-extension": 37,
+          "reject": 1
+        },
+        "rules": {
+          "COMP-BODY-001": 38
+        }
+      },
+      "featureCoverage": {
+        "observed": 20,
+        "total": 31,
+        "rate": 0.6451612903225806,
+        "missing": [
+          "oas.version.3.2",
+          "reference.external",
+          "media.encoding",
+          "security.openid-connect",
+          "schema.anyOf",
+          "schema.not",
+          "schema.type-array",
+          "schema.const",
+          "schema.null-type",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    }
+  ],
+  "overall": {
+    "documents": 20,
+    "successfulDocuments": 16,
+    "documentSuccessRate": 0.8,
+    "capabilityAdjustedDocuments": 18,
+    "capabilityAdjustedSuccessRate": 0.9,
+    "discoveryComplete": 17,
+    "generatedDocuments": 16,
+    "typecheckedDocuments": 16,
+    "generatedVerificationRate": 1,
+    "operations": {
+      "availableDocuments": 20,
+      "total": 2830,
+      "retained": 2829,
+      "omitted": 1,
+      "rate": 0.9996466431095407
+    },
+    "compatibility": {
+      "preserved": 37,
+      "rejected": 1,
+      "total": 38,
+      "rate": 0.9736842105263158,
+      "actions": {
+        "preserve-extension": 37,
+        "reject": 1
+      },
+      "rules": {
+        "COMP-BODY-001": 38
+      }
+    },
+    "featureCoverage": {
+      "observed": 20,
+      "total": 31,
+      "rate": 0.6451612903225806,
+      "missing": [
+        "oas.version.3.2",
+        "reference.external",
+        "media.encoding",
+        "security.openid-connect",
+        "schema.anyOf",
+        "schema.not",
+        "schema.type-array",
+        "schema.const",
+        "schema.null-type",
+        "schema.prefix-items",
+        "schema.unevaluated-properties"
+      ]
+    }
+  }
+}

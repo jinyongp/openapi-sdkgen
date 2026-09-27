@@ -21,6 +21,27 @@ Supported OpenAPI semantics are generated or preserved as documented metadata.
 A construct that cannot be represented safely is rejected with a source-aware
 diagnostic.
 
+## Compatibility evidence boundary
+
+The feature manifest and feature matrix are the canonical feature-level
+contracts. Real-document corpora provide separate empirical evidence that those
+contracts compose across complete inputs.
+
+Two corpus classes are intentionally kept distinct:
+
+- seven provider corpora are regression probes because they participated in
+  compatibility development;
+- `test/compatibility/holdout.json` is an independent 20-provider,
+  size-stratified APIs.guru holdout selected deterministically from one pinned
+  upstream tree before sdkgen pass/fail results are inspected.
+
+The current corrected holdout has 80% default client-only end-to-end success and
+90% capability-adjusted support when existing server generation is enabled for
+documents containing inbound Webhooks or Callbacks. Those numbers are not a
+population-wide compatibility claim. See
+[OpenAPI compatibility architecture](openapi-compatibility-architecture.md#independent-20-provider-holdout-benchmark)
+for selection, metrics, limitations, and remaining generic gaps.
+
 ## Pipeline
 
 ```text
