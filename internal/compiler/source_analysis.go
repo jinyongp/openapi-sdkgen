@@ -75,10 +75,12 @@ func (analysis *sourceAnalysis) run(
 		return true, err
 	}
 	analysis.orchestrator.Record(spec, diagnostic.CoverageOutcome{Status: diagnostic.CoverageComplete})
-	if analysis.blocked == sourceScanNone &&
-		collectorHasCompilationBlockingErrors(analysis.collector, analysis.options.compatibilitySession) {
-		analysis.blocked = boundary
-		analysis.orchestrator.Block(blockReason, nil)
+	if analysis.blocked == sourceScanNone {
+		blocked, blockedBy := compilationBlockingDiagnostics(analysis.collector, analysis.options.compatibilitySession)
+		if blocked {
+			analysis.blocked = boundary
+			analysis.orchestrator.Block(blockReason, blockedBy)
+		}
 	}
 	return true, nil
 }
@@ -98,12 +100,13 @@ func (analysis *sourceAnalysis) blockingResult() (Result, bool) {
 			result = referenceSourceScanResult(analysis.collector)
 		}
 	} else {
+		const reason = "source analysis reported blocking diagnostics before canonical normalization and IR construction"
 		result = Result{
 			Diagnostics: diagnostic.Sort(analysis.collector.Diagnostics()),
-			SkippedPhases: []diagnostic.SkippedPhase{{
-				Phase:  diagnostic.PhaseIR,
-				Reason: "source analysis reported blocking diagnostics before canonical IR construction",
-			}},
+			SkippedPhases: []diagnostic.SkippedPhase{
+				{Phase: diagnostic.PhaseNormalize, Reason: reason},
+				{Phase: diagnostic.PhaseIR, Reason: reason},
+			},
 		}
 	}
 	return analysis.attach(result), true

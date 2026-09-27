@@ -30,6 +30,15 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 		failFast.Diagnostics[0].Code != "SDKGEN-E140" {
 		t.Fatalf("fail-fast result = %#v", failFast)
 	}
+	var linkedBlocker bool
+	for _, item := range failFast.Coverage {
+		if item.Status == diagnostic.CoverageSkipped && len(item.BlockedBy) == 1 && item.BlockedBy[0] == "SDKGEN-E140" {
+			linkedBlocker = true
+		}
+	}
+	if !linkedBlocker {
+		t.Fatalf("fail-fast coverage does not identify its blocking diagnostic: %#v", failFast.Coverage)
+	}
 
 	collected, err := CompileResultWithOptions(input, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
 	if err != nil {
@@ -69,6 +78,13 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 		if coverage[analyzer] != diagnostic.CoverageComplete {
 			t.Fatalf("coverage = %#v, missing complete analyzer %q", collected.Coverage, analyzer)
 		}
+	}
+	skipped := map[diagnostic.Phase]bool{}
+	for _, phase := range collected.SkippedPhases {
+		skipped[phase.Phase] = true
+	}
+	if !skipped[diagnostic.PhaseNormalize] || !skipped[diagnostic.PhaseIR] {
+		t.Fatalf("skipped phases = %#v, want normalize and ir after blocking source analysis", collected.SkippedPhases)
 	}
 }
 

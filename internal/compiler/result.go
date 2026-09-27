@@ -288,10 +288,12 @@ func resultWithMode(result Result, mode diagnostic.Mode) Result {
 	return result
 }
 
-func collectorHasCompilationBlockingErrors(collector *diagnostic.Collector, session *compatibilitySession) bool {
+func compilationBlockingDiagnostics(collector *diagnostic.Collector, session *compatibilitySession) (bool, []string) {
 	if collector == nil {
-		return false
+		return false, nil
 	}
+	var codes []string
+	blocked := false
 	for _, value := range collector.Diagnostics() {
 		if value.Severity != diagnostic.SeverityError {
 			continue
@@ -299,9 +301,12 @@ func collectorHasCompilationBlockingErrors(collector *diagnostic.Collector, sess
 		if isScopedCompatibilityRejectDiagnostic(value, session) {
 			continue
 		}
-		return true
+		blocked = true
+		if value.Code != "" {
+			codes = append(codes, value.Code)
+		}
 	}
-	return false
+	return blocked, codes
 }
 
 func compatibilitySourceScanResult(collector *diagnostic.Collector) Result {
