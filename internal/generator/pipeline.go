@@ -76,6 +76,7 @@ func PrepareCompilation(target Target, compiled compiler.Result, options Options
 	} else {
 		plan, targetDiagnostics, err = target.Prepare(compiled.Document, options)
 	}
+	targetDiagnostics = compiled.WithDiagnosticIdentitySources(targetDiagnostics)
 	result.Diagnostics = diagnostic.Sort(append(result.Diagnostics, targetDiagnostics...))
 	if err != nil {
 		return result, err

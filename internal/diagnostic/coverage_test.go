@@ -2,6 +2,7 @@ package diagnostic
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -50,6 +51,31 @@ func TestReportV4AssignsStableIssueIdentityAndDeduplicates(t *testing.T) {
 	distinctReport := NewReport([]Diagnostic{first, distinct}, nil)
 	if len(distinctReport.Diagnostics) != 2 || distinctReport.Diagnostics[0].ID == distinctReport.Diagnostics[1].ID {
 		t.Fatalf("distinct locations were merged: %#v", distinctReport.Diagnostics)
+	}
+}
+
+func TestReportV4DoesNotMergeDistinctAbsoluteSourcesWithSameBasename(t *testing.T) {
+	root := t.TempDir()
+	first := Diagnostic{
+		Severity: SeverityError,
+		Code:     "SDKGEN-E900",
+		Phase:    PhaseOpenAPI,
+		Location: Location{Source: filepath.Join(root, "a", "schema.yaml"), Pointer: "#/Thing"},
+		Scope:    failure.ScopeDocument,
+		Effect:   failure.EffectBlock,
+		Rule:     "TEST-001",
+		Message:  "first source",
+	}
+	second := first
+	second.Location.Source = filepath.Join(root, "b", "schema.yaml")
+	second.Message = "second source"
+
+	report := NewReport([]Diagnostic{first, second}, nil)
+	if len(report.Diagnostics) != 2 {
+		t.Fatalf("distinct source diagnostics were merged: %#v", report.Diagnostics)
+	}
+	if report.Diagnostics[0].ID == report.Diagnostics[1].ID {
+		t.Fatalf("distinct source diagnostics share id %q", report.Diagnostics[0].ID)
 	}
 }
 

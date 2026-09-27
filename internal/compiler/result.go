@@ -26,6 +26,7 @@ type Result struct {
 	Coverage       []diagnostic.AnalysisCoverage
 	DiagnosticMode diagnostic.Mode
 	ReusableInput  *ReusableInput
+	identity       *diagnosticIdentityContext
 }
 
 // ReusableInput identifies the exact self-contained local input bytes used by
@@ -33,6 +34,21 @@ type Result struct {
 // compilation when every generation setting and managed output also match.
 type ReusableInput struct {
 	SHA256 string
+}
+
+// WithDiagnosticIdentitySources returns a copy of diagnostics with stable
+// source identities derived from the compilation input boundary.
+func (result Result) WithDiagnosticIdentitySources(values []diagnostic.Diagnostic) []diagnostic.Diagnostic {
+	if result.identity == nil {
+		return append([]diagnostic.Diagnostic(nil), values...)
+	}
+	return result.identity.apply(values)
+}
+
+func resultWithDiagnosticIdentity(result Result, identity *diagnosticIdentityContext) Result {
+	result.identity = identity
+	result.Diagnostics = identity.apply(result.Diagnostics)
+	return result
 }
 
 // CompileResult compiles in-memory OpenAPI input and returns structured
@@ -123,11 +139,14 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 	options.sourceCache = newDecodedSourceCache(options.metrics)
 	source, err := loadInputSource(input, options)
 	if err != nil {
-		return resultWithMode(resultFromCompile(nil, phaseError(diagnostic.PhaseInput, err), safeInputDisplay(input), collector), mode), nil
+		result := resultWithMode(resultFromCompile(nil, phaseError(diagnostic.PhaseInput, err), safeInputDisplay(input), collector), mode)
+		return resultWithDiagnosticIdentity(result, &diagnosticIdentityContext{rootDisplay: safeInputDisplay(input)}), nil
 	}
+	identity := newDiagnosticIdentityContext(source)
 	decoded, err := decodeInputValue(source.data, options.metrics)
 	if err != nil {
-		return resultWithMode(resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err)), source.display, collector), mode), nil
+		result := resultWithMode(resultFromCompile(nil, phaseError(diagnostic.PhaseDecode, fmt.Errorf("decode OpenAPI input: %w", err)), source.display, collector), mode)
+		return resultWithDiagnosticIdentity(result, identity), nil
 	}
 	if source.filePath != "" {
 		if err := options.sourceCache.remember(source.filePath, decodedSource{data: source.data, value: decoded}); err != nil {
@@ -181,7 +200,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		}
 	}
 	if result, blocked := analysis.blockingResult(); blocked {
-		return result, nil
+		return resultWithDiagnosticIdentity(result, identity), nil
 	}
 
 	effectiveData := source.data
@@ -197,7 +216,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}
 	}
-	return result, nil
+	return resultWithDiagnosticIdentity(result, identity), nil
 }
 
 func pathItemReferenceDiagnostics(value any, source string, allowExternal bool) []diagnostic.Diagnostic {

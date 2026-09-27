@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net/url"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -52,7 +51,11 @@ func canonicalizeDiagnostics(values []Diagnostic) []Diagnostic {
 	for index := range result {
 		result[index].Related = normalizeLocations(result[index].Related)
 		if result[index].ID == "" {
-			result[index].ID = stableDiagnosticID(result[index])
+			source := result[index].IdentitySource
+			if source == "" {
+				source = stableSourceIdentity(result[index].Location.Source)
+			}
+			result[index].ID = stableDiagnosticID(result[index], source)
 		}
 	}
 	result = Sort(result)
@@ -71,11 +74,7 @@ func canonicalizeDiagnostics(values []Diagnostic) []Diagnostic {
 	return SanitizeSources(result[:write])
 }
 
-func stableDiagnosticID(value Diagnostic) string {
-	source := value.IdentitySource
-	if source == "" {
-		source = stableSourceIdentity(value.Location.Source)
-	}
+func stableDiagnosticID(value Diagnostic, source string) string {
 	fields := []string{
 		"diagnostic-v1",
 		value.Code,
@@ -105,13 +104,7 @@ func stableSourceIdentity(source string) string {
 		return "url:" + parsed.String()
 	}
 	if filepath.IsAbs(source) {
-		if cwd, err := os.Getwd(); err == nil {
-			if relative, err := filepath.Rel(cwd, source); err == nil &&
-				relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-				return "workspace:" + filepath.ToSlash(filepath.Clean(relative))
-			}
-		}
-		return "absolute-leaf:" + filepath.Base(filepath.Clean(source))
+		return "absolute:" + filepath.ToSlash(filepath.Clean(source))
 	}
 	if strings.ContainsAny(source, `/\`) || strings.HasPrefix(source, ".") {
 		return "relative:" + filepath.ToSlash(filepath.Clean(source))
