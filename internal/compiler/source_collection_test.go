@@ -61,12 +61,9 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 	if rules["COMP-SCHEMA-003"] != 1 || rules["COMP-VERSION-003"] != 1 {
 		t.Fatalf("diagnostic rules = %#v, want compatibility and version ownership preserved", rules)
 	}
-	coverage := map[string]diagnostic.CoverageStatus{}
+	coverage := map[string]diagnostic.AnalysisCoverage{}
 	for _, item := range collected.Coverage {
-		coverage[item.Analyzer] = item.Status
-		if item.Status != diagnostic.CoverageComplete {
-			t.Fatalf("coverage = %#v", collected.Coverage)
-		}
+		coverage[item.Analyzer] = item
 	}
 	for _, analyzer := range []string{
 		"source.compatibility",
@@ -75,9 +72,16 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 		"source.version-identity",
 		"source.version-features",
 	} {
-		if coverage[analyzer] != diagnostic.CoverageComplete {
+		if coverage[analyzer].Status != diagnostic.CoverageComplete {
 			t.Fatalf("coverage = %#v, missing complete analyzer %q", collected.Coverage, analyzer)
 		}
+	}
+	pathCoverage := coverage[pathParameterConformanceAnalyzer]
+	if pathCoverage.Status != diagnostic.CoverageSkipped ||
+		len(pathCoverage.Prerequisites) != 1 ||
+		pathCoverage.Prerequisites[0].Name != "compiler-document" ||
+		pathCoverage.Prerequisites[0].Available {
+		t.Fatalf("path conformance coverage = %#v, want skipped compiler-document prerequisite", pathCoverage)
 	}
 	skipped := map[diagnostic.Phase]bool{}
 	for _, phase := range collected.SkippedPhases {

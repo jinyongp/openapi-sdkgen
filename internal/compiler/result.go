@@ -107,15 +107,21 @@ func CompileResultWithOptions(data []byte, options CompileOptions) (Result, erro
 			return Result{}, err
 		}
 	}
-	if result, blocked := analysis.blockingResult(); blocked {
+	if result, blocked := analysis.blockingResult("in-memory OpenAPI document"); blocked {
 		return result, nil
 	}
 
 	document, err := compileValue(effective, false, false, options, nil)
-	if err == nil {
-		attachSourceMetadata(document, sourceMetadata)
+	if err != nil {
+		analysis.recordPostIRUnavailable("in-memory OpenAPI document")
+		return analysis.attach(resultFromCompile(nil, err, "in-memory OpenAPI document", collector)), nil
 	}
-	return analysis.attach(resultFromCompile(document, err, "in-memory OpenAPI document", collector)), nil
+	attachSourceMetadata(document, sourceMetadata)
+	if finalizeErr := finalizeCompilerDocument(document, "in-memory OpenAPI document", &options); finalizeErr != nil {
+		return Result{}, finalizeErr
+	}
+	analysis.recordPostIRComplete("in-memory OpenAPI document")
+	return analysis.attach(resultFromCompile(document, nil, "in-memory OpenAPI document", collector)), nil
 }
 
 // CompileFileResultWithOptions compiles a file with structured diagnostics.
@@ -199,7 +205,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 			return Result{}, err
 		}
 	}
-	if result, blocked := analysis.blockingResult(); blocked {
+	if result, blocked := analysis.blockingResult(source.display); blocked {
 		return resultWithDiagnosticIdentity(result, identity), nil
 	}
 
@@ -211,6 +217,11 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		}
 	}
 	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
+	if document != nil {
+		analysis.recordPostIRComplete(source.display)
+	} else {
+		analysis.recordPostIRUnavailable(source.display)
+	}
 	result := analysis.attach(resultFromCompile(document, err, source.display, collector))
 	if result.Document != nil && !diagnostic.HasErrors(result.Diagnostics) && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)

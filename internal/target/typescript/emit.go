@@ -78,19 +78,20 @@ func (Generator) SupportsAddon(addon generator.Addon) bool {
 }
 
 type sourcePlan struct {
-	document            *ir.Document
-	ownership           *sourceOwnershipIndex
-	includeServer       bool
-	omittedOperations   map[string]bool
-	reservationManifest *Manifest
-	manifest            *Manifest
-	modules             *semanticModulePlan
-	links               []generatedLink
-	streams             []generatedStream
-	webhooks            []webhookDefinition
-	callbacks           []callbackDefinition
-	resourceTree        *resourceNode
-	resourceReachable   map[string]bool
+	document                    *ir.Document
+	ownership                   *sourceOwnershipIndex
+	includeServer               bool
+	omittedOperations           map[string]bool
+	resourceReservationExcluded map[string]bool
+	reservationManifest         *Manifest
+	manifest                    *Manifest
+	modules                     *semanticModulePlan
+	links                       []generatedLink
+	streams                     []generatedStream
+	webhooks                    []webhookDefinition
+	callbacks                   []callbackDefinition
+	resourceTree                *resourceNode
+	resourceReachable           map[string]bool
 }
 
 // Prepare validates author input for the TypeScript target using the
@@ -274,7 +275,7 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 	coverage = append(coverage, targetAnalysisCoverage("target.support", diagnostic.CoverageComplete, ""))
 	diagnostics = append(diagnostics, validateVisibilityDependencies(prepared, plan.omittedOperations)...)
 	coverage = append(coverage, targetAnalysisCoverage("target.visibility", diagnostic.CoverageComplete, ""))
-	manifest, manifestErrors := buildManifestDiagnostics(prepared)
+	manifest, manifestErrors := buildManifestDiagnostics(prepared, plan.resourceReservationExcluded)
 	for _, manifestErr := range manifestErrors {
 		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))
 	}
@@ -309,7 +310,8 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 	coverage = append(coverage, targetAnalysisCoverage("target.streams", diagnostic.CoverageComplete, ""))
 	if len(manifestErrors) == 0 && !blockingLinkFailure && len(streamErrors) == 0 {
 		if plan.manifest != nil && plan.reservationManifest != nil {
-			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, *plan.reservationManifest, plan.manifest, links, streams)
+			resourceReservations := filterManifestOperations(*plan.reservationManifest, plan.resourceReservationExcluded)
+			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, resourceReservations, plan.manifest, links, streams)
 			if reconcileErr != nil {
 				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, reconcileErr))
 			} else {
@@ -704,14 +706,14 @@ func exportedSymbols(source string) map[string]bool {
 }
 
 func buildManifest(document *ir.Document) (Manifest, error) {
-	manifest, failures := buildManifestDiagnostics(document)
+	manifest, failures := buildManifestDiagnostics(document, nil)
 	if len(failures) != 0 {
 		return Manifest{}, failures[0]
 	}
 	return manifest, nil
 }
 
-func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
+func buildManifestDiagnostics(document *ir.Document, resourceReservationExcluded map[string]bool) (Manifest, []error) {
 	manifest := Manifest{
 		Operations: make([]ManifestOperation, 0, len(document.Operations)),
 	}
@@ -832,7 +834,8 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 	if len(failures) != 0 {
 		return manifest, failures
 	}
-	tree, err := buildResourceTree(document, manifest)
+	resourceManifest := filterManifestOperations(manifest, resourceReservationExcluded)
+	tree, err := buildResourceTree(document, resourceManifest)
 	if err != nil {
 		return Manifest{}, append(failures, err)
 	}
@@ -840,6 +843,10 @@ func buildManifestDiagnostics(document *ir.Document) (Manifest, []error) {
 	resourceOperationIDs(tree, reachable)
 	for index := range manifest.Operations {
 		item := &manifest.Operations[index]
+		if resourceReservationExcluded[item.RouteKey] {
+			item.ResourceSegments = nil
+			continue
+		}
 		if item.Visibility == "public" && !reachable[item.RouteKey] {
 			operation := item.compiled
 			item.CallExpression = exactOperationCall(document, operation, item.InputSections)

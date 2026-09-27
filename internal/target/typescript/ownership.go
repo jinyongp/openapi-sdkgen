@@ -75,6 +75,17 @@ func (index *sourceOwnershipIndex) operation(operationIndex int) (ir.Operation, 
 	return index.operations[operationIndex], true
 }
 
+func (index *sourceOwnershipIndex) operationByExactPointer(pointer string) (ir.Operation, bool) {
+	if index == nil || pointer == "" {
+		return ir.Operation{}, false
+	}
+	operationIndex, exists := index.operationsByPointer[pointer]
+	if !exists {
+		return ir.Operation{}, false
+	}
+	return index.operation(operationIndex)
+}
+
 func (index *sourceOwnershipIndex) operationAt(pointer string) (ir.Operation, bool) {
 	if index == nil {
 		return ir.Operation{}, false

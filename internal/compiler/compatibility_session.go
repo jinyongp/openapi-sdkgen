@@ -403,34 +403,57 @@ func (session *compatibilitySession) evidence() ([]compatibility.Finding, []comp
 	return append([]compatibility.Finding(nil), session.findings...), append([]compatibility.LedgerEntry(nil), session.ledger...)
 }
 
+func compatibilityDiagnostic(finding compatibility.Finding) diagnostic.Diagnostic {
+	severity := diagnostic.SeverityWarning
+	code := "SDKGEN-W140"
+	hint := "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
+	if finding.Action == compatibility.ActionReject {
+		if finding.Effect == failure.EffectOmitOperation || finding.Effect == failure.EffectOmitCapability {
+			hint = "The rejected semantic scope is omitted from generated target behavior."
+		} else {
+			severity = diagnostic.SeverityError
+			code = "SDKGEN-E140"
+			hint = "Remove or rewrite the construct so its semantics can be generated safely."
+		}
+	}
+	return diagnostic.Diagnostic{
+		Severity: severity,
+		Code:     code,
+		Phase:    diagnostic.PhaseOpenAPI,
+		Location: diagnostic.Location{Source: finding.Source, Pointer: finding.Pointer},
+		Scope:    finding.Scope,
+		Effect:   finding.Effect,
+		Rule:     finding.RuleID,
+		Action:   string(finding.Action),
+		Message:  finding.Message,
+		Hint:     hint,
+	}
+}
+
+func semanticRestrictionForFinding(finding compatibility.Finding, ownerPointer string) (ir.SemanticRestriction, bool) {
+	if finding.Action != compatibility.ActionReject ||
+		finding.Scope == failure.ScopeNone || finding.Scope == failure.ScopeDocument {
+		return ir.SemanticRestriction{}, false
+	}
+	return ir.SemanticRestriction{
+		RuleID:       finding.RuleID,
+		Conformance:  string(finding.Conformance),
+		Disposition:  string(finding.Disposition),
+		Action:       string(finding.Action),
+		Impact:       string(finding.Impact),
+		Scope:        finding.Scope,
+		Effect:       finding.Effect,
+		Location:     ir.SourceLocation{Source: finding.Source, Pointer: finding.Pointer},
+		OwnerPointer: ownerPointer,
+		Message:      finding.Message,
+	}, true
+}
+
 func compatibilityDiagnostics(session *compatibilitySession) []diagnostic.Diagnostic {
 	findings, _ := session.evidence()
 	result := make([]diagnostic.Diagnostic, 0, len(findings))
 	for _, finding := range findings {
-		severity := diagnostic.SeverityWarning
-		code := "SDKGEN-W140"
-		hint := "Review the compatibility behavior before relying on it as portable OpenAPI semantics."
-		if finding.Action == compatibility.ActionReject {
-			if finding.Effect == failure.EffectOmitOperation || finding.Effect == failure.EffectOmitCapability {
-				hint = "The rejected semantic scope is omitted from generated target behavior."
-			} else {
-				severity = diagnostic.SeverityError
-				code = "SDKGEN-E140"
-				hint = "Remove or rewrite the construct so its semantics can be generated safely."
-			}
-		}
-		result = append(result, diagnostic.Diagnostic{
-			Severity: severity,
-			Code:     code,
-			Phase:    diagnostic.PhaseOpenAPI,
-			Location: diagnostic.Location{Source: finding.Source, Pointer: finding.Pointer},
-			Scope:    finding.Scope,
-			Effect:   finding.Effect,
-			Rule:     finding.RuleID,
-			Action:   string(finding.Action),
-			Message:  finding.Message,
-			Hint:     hint,
-		})
+		result = append(result, compatibilityDiagnostic(finding))
 	}
 	return diagnostic.Sort(result)
 }
@@ -439,21 +462,9 @@ func compatibilityRestrictions(session *compatibilitySession) []ir.SemanticRestr
 	findings, _ := session.evidence()
 	result := make([]ir.SemanticRestriction, 0, len(findings))
 	for _, finding := range findings {
-		if finding.Action != compatibility.ActionReject ||
-			finding.Scope == failure.ScopeNone || finding.Scope == failure.ScopeDocument {
-			continue
+		if restriction, ok := semanticRestrictionForFinding(finding, ""); ok {
+			result = append(result, restriction)
 		}
-		result = append(result, ir.SemanticRestriction{
-			RuleID:      finding.RuleID,
-			Conformance: string(finding.Conformance),
-			Disposition: string(finding.Disposition),
-			Action:      string(finding.Action),
-			Impact:      string(finding.Impact),
-			Scope:       finding.Scope,
-			Effect:      finding.Effect,
-			Location:    ir.SourceLocation{Source: finding.Source, Pointer: finding.Pointer},
-			Message:     finding.Message,
-		})
 	}
 	sort.Slice(result, func(i, j int) bool {
 		if result[i].Location.Source != result[j].Location.Source {

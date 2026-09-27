@@ -39,15 +39,16 @@ type Document struct {
 // SemanticRestriction records source semantics that were deliberately removed
 // from the effective IR because their owning scope cannot be generated safely.
 type SemanticRestriction struct {
-	RuleID      string
-	Conformance string
-	Disposition string
-	Action      string
-	Impact      string
-	Scope       failure.Scope
-	Effect      failure.Effect
-	Location    SourceLocation
-	Message     string
+	RuleID       string
+	Conformance  string
+	Disposition  string
+	Action       string
+	Impact       string
+	Scope        failure.Scope
+	Effect       failure.Effect
+	Location     SourceLocation
+	OwnerPointer string
+	Message      string
 }
 
 type SourceLocation struct {

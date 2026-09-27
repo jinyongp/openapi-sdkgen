@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"openapi-sdkgen/internal/compiler/compatibility"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/failure"
@@ -76,12 +77,21 @@ func semanticOperationRestrictionDiagnostics(plan *sourcePlan) []diagnostic.Diag
 	if plan.omittedOperations == nil {
 		plan.omittedOperations = make(map[string]bool)
 	}
+	if plan.resourceReservationExcluded == nil {
+		plan.resourceReservationExcluded = make(map[string]bool)
+	}
 	var result []diagnostic.Diagnostic
 	for _, restriction := range plan.document.SemanticRestrictions {
 		if restriction.Scope != failure.ScopeOperation || restriction.Effect != failure.EffectOmitOperation {
 			continue
 		}
-		operation, found := plan.ownership.operationAtLocation(restriction.Location)
+		var operation ir.Operation
+		var found bool
+		if restriction.OwnerPointer != "" {
+			operation, found = plan.ownership.operationByExactPointer(restriction.OwnerPointer)
+		} else {
+			operation, found = plan.ownership.operationAtLocation(restriction.Location)
+		}
 		if !found {
 			result = append(result, diagnostic.Diagnostic{
 				Severity: diagnostic.SeverityError,
@@ -96,7 +106,11 @@ func semanticOperationRestrictionDiagnostics(plan *sourcePlan) []diagnostic.Diag
 			})
 			continue
 		}
-		plan.omittedOperations[operationRouteKey(operation)] = true
+		routeKey := operationRouteKey(operation)
+		plan.omittedOperations[routeKey] = true
+		if restriction.RuleID == compatibility.RulePathParameterBinding {
+			plan.resourceReservationExcluded[routeKey] = true
+		}
 	}
 	return result
 }

@@ -85,10 +85,24 @@ func (analysis *sourceAnalysis) run(
 	return true, nil
 }
 
-func (analysis *sourceAnalysis) blockingResult() (Result, bool) {
+func (analysis *sourceAnalysis) recordPostIRUnavailable(source string) {
+	spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, pathParameterConformanceAnalyzer, source, "compiler-document")
+	analysis.orchestrator.Ready(spec)
+}
+
+func (analysis *sourceAnalysis) recordPostIRComplete(source string) {
+	analysis.orchestrator.Provide("compiler-document")
+	spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, pathParameterConformanceAnalyzer, source, "compiler-document")
+	if analysis.orchestrator.Ready(spec) {
+		analysis.orchestrator.Record(spec, diagnostic.CoverageOutcome{Status: diagnostic.CoverageComplete})
+	}
+}
+
+func (analysis *sourceAnalysis) blockingResult(source string) (Result, bool) {
 	if analysis.blocked == sourceScanNone {
 		return Result{}, false
 	}
+	analysis.recordPostIRUnavailable(source)
 	var result Result
 	if analysis.mode == diagnostic.ModeFailFast {
 		switch analysis.blocked {

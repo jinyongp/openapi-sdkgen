@@ -160,7 +160,10 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		}
 		attachSourceMetadata(document, sourceMetadata)
 		attachDocumentProvenanceValue(document, source, document.Raw, nil, options.sourceCache)
-		if lock != nil && options.UpdateRefLock {
+		if err := finalizeCompilerDocument(document, source.display, &options); err != nil {
+			return nil, err
+		}
+		if lock != nil && options.UpdateRefLock && !compilerDiagnosticsBlocked(options.diagnostics) {
 			if err := writeReferenceLock(lockPath, lock); err != nil {
 				return nil, phaseError(diagnostic.PhaseReferences, err)
 			}
@@ -233,12 +236,19 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 	}
 	attachSourceMetadata(document, sourceMetadata)
 	attachDocumentProvenanceValue(document, source, value, remoteSources, options.sourceCache)
-	if lock != nil && options.UpdateRefLock {
+	if err := finalizeCompilerDocument(document, source.display, &options); err != nil {
+		return nil, err
+	}
+	if lock != nil && options.UpdateRefLock && !compilerDiagnosticsBlocked(options.diagnostics) {
 		if err := writeReferenceLock(lockPath, lock); err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
 	}
 	return document, nil
+}
+
+func compilerDiagnosticsBlocked(collector *diagnostic.Collector) bool {
+	return collector != nil && diagnostic.HasErrors(collector.Diagnostics())
 }
 
 func absolutizeRelativeRemoteReferences(data []byte, base *url.URL) ([]byte, error) {
@@ -623,13 +633,17 @@ func compile(data []byte, source bool) (*ir.Document, error) {
 		return nil, phaseError(diagnostic.PhaseNormalize, err)
 	}
 	model, err := compileValue(effective, source, true, options, nil)
-	if err == nil {
-		attachSourceMetadata(model, sourceMetadata)
+	if err != nil {
+		return nil, err
 	}
-	if err == nil && source {
+	attachSourceMetadata(model, sourceMetadata)
+	if source {
 		attachDocumentProvenanceValue(model, inputSource{data: data, display: "in-memory OpenAPI document"}, model.Raw, nil, nil)
 	}
-	return model, err
+	if err := finalizeCompilerDocument(model, "in-memory OpenAPI document", &options); err != nil {
+		return nil, err
+	}
+	return model, nil
 }
 
 func decodeInputValue(data []byte, metrics *compilationMetrics) (any, error) {
