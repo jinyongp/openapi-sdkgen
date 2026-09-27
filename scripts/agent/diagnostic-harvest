@@ -8,5 +8,4 @@ if [[ $# -ne 2 ]]; then
   exit 2
 fi
 
-run_go run ./scripts/diagnostic-harvest --manifest "$1" --output "$2"
-echo "ok diagnostic harvest"
+agent_run "diagnostic harvest" go run ./scripts/diagnostic-harvest --manifest "$1" --output "$2"
