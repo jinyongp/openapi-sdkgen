@@ -22,6 +22,7 @@ func TestObjectContextAt(t *testing.T) {
 		{name: "callback", path: []string{"paths", "/items", "post", "callbacks", "done"}, want: ObjectCallback},
 		{name: "example", path: []string{"components", "examples", "Sample"}, want: ObjectExample},
 		{name: "security scheme", path: []string{"components", "securitySchemes", "Bearer"}, want: ObjectSecurityScheme},
+		{name: "component media type", path: []string{"components", "mediaTypes", "JSON"}, want: ObjectMediaType},
 		{name: "media type", path: []string{"paths", "/items", "get", "responses", "200", "content", "application/json"}, want: ObjectMediaType},
 		{name: "encoding", path: []string{"paths", "/items", "post", "requestBody", "content", "multipart/form-data", "encoding", "file"}, want: ObjectEncoding},
 		{name: "parameter example", path: []string{"paths", "/items", "get", "parameters", "0", "examples", "sample"}, want: ObjectExample},

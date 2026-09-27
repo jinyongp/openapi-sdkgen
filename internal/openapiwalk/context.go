@@ -211,6 +211,8 @@ func componentsChildPosition(token string) StructuralPosition {
 		return namedMapPosition(token, ObjectSecurityScheme)
 	case "pathItems":
 		return namedMapPosition(token, ObjectPathItem)
+	case "mediaTypes":
+		return namedMapPosition(token, ObjectMediaType)
 	default:
 		return objectPosition(ObjectUnknown, token)
 	}
