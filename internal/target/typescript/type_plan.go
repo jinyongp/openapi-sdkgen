@@ -20,6 +20,7 @@ const (
 type typeRenderScope struct {
 	mode               typeRenderMode
 	componentReference func(name string, direction projection) string
+	ownerComponent     string
 }
 
 var (
@@ -27,8 +28,8 @@ var (
 	typeRenderContract = typeRenderScope{mode: typeRenderModeContract}
 )
 
-func typeRenderModule(reference func(name string, direction projection) string) typeRenderScope {
-	return typeRenderScope{mode: typeRenderModeLocal, componentReference: reference}
+func typeRenderModule(owner string, reference func(name string, direction projection) string) typeRenderScope {
+	return typeRenderScope{mode: typeRenderModeLocal, componentReference: reference, ownerComponent: owner}
 }
 
 // typeExpression keeps local and cross-module renderings together so emitters

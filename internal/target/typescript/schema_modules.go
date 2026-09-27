@@ -151,7 +151,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		uses = append(uses, typeReferenceUse{key: key, modulePath: path, exportName: exportName})
 		return "unknown"
 	}
-	countScope := typeRenderModule(countReference)
+	countScope := typeRenderModule(schema.name, countReference)
 	if _, err := schemaTypeForScope(document, value, projectionInput, countScope); err != nil {
 		return renderedSchemaProjections{}, err
 	}
@@ -210,7 +210,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		}
 		return reference.alias
 	}
-	renderScope := typeRenderModule(renderReference)
+	renderScope := typeRenderModule(schema.name, renderReference)
 	input, err := schemaTypeForScope(document, value, projectionInput, renderScope)
 	if err != nil {
 		return renderedSchemaProjections{}, err

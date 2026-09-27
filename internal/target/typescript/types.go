@@ -557,7 +557,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 			return "", err
 		}
 		if dynamic != "" {
-			return "Readonly<Record<string, " + dynamic + ">>", nil
+			return objectIndexType(schema, scope, dynamic), nil
 		}
 		if additional, ok := schema["additionalProperties"].(bool); ok && !additional {
 			return "Readonly<Record<string, never>>", nil
@@ -619,7 +619,48 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		return output.String(), nil
 	}
 	indexType := typeUnion(append([]string{additional}, propertyIndexTypes...))
-	return "(" + output.String() + ") & (Readonly<Record<string, " + indexType + ">>)", nil
+	return "(" + output.String() + ") & (" + objectIndexType(schema, scope, indexType) + ")", nil
+}
+
+func objectIndexType(schema map[string]any, scope typeRenderScope, value string) string {
+	if objectIndexHasSelfReference(schema, scope) {
+		return "{ readonly [key: string]: " + value + " }"
+	}
+	return "Readonly<Record<string, " + value + ">>"
+}
+
+func objectIndexHasSelfReference(schema map[string]any, scope typeRenderScope) bool {
+	if scope.ownerComponent == "" {
+		return false
+	}
+	if schemaReferenceTargetsComponent(schema["additionalProperties"], scope.ownerComponent) {
+		return true
+	}
+	patterns, _ := schema["patternProperties"].(map[string]any)
+	for _, value := range patterns {
+		if schemaReferenceTargetsComponent(value, scope.ownerComponent) {
+			return true
+		}
+	}
+	return false
+}
+
+func schemaReferenceTargetsComponent(value any, owner string) bool {
+	schema, ok := value.(map[string]any)
+	if !ok {
+		return false
+	}
+	reference, _ := schema["$ref"].(string)
+	if reference == "" {
+		if dynamic, ok := schema["x-sdkgen-dynamic-reference"].(map[string]any); ok {
+			reference, _ = dynamic["reference"].(string)
+		}
+	}
+	if reference == "" {
+		return false
+	}
+	name, err := componentSchemaReferenceName(reference)
+	return err == nil && name == owner
 }
 
 // objectAdditionalType is intentionally conservative for patternProperties:
