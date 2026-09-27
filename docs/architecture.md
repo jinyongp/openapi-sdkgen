@@ -35,8 +35,8 @@ Two corpus classes are intentionally kept distinct:
   size-stratified APIs.guru holdout selected deterministically from one pinned
   upstream tree before sdkgen pass/fail results are inspected.
 
-The current corrected holdout has 80% default client-only end-to-end success and
-90% capability-adjusted support when existing server generation is enabled for
+The current corrected holdout has 85% default client-only end-to-end success and
+95% capability-adjusted support when existing server generation is enabled for
 documents containing inbound Webhooks or Callbacks. Those numbers are not a
 population-wide compatibility claim. See
 [OpenAPI compatibility architecture](openapi-compatibility-architecture.md#independent-20-provider-holdout-benchmark)

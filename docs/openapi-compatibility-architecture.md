@@ -904,9 +904,9 @@ Current corrected holdout evidence:
 | Metric | Result |
 | --- | ---: |
 | Documents | 20 |
-| Default client-only end-to-end success | 16 / 20 (80%) |
-| Capability-adjusted support | 18 / 20 (90%) |
-| Strict TypeScript among default generated documents | 16 / 16 (100%) |
+| Default client-only end-to-end success | 17 / 20 (85%) |
+| Capability-adjusted support | 19 / 20 (95%) |
+| Strict TypeScript among default generated documents | 17 / 17 (100%) |
 | Operations retained | 2,829 / 2,830 (99.96%) |
 | Explicit compatibility findings preserved | 37 / 38 (97.37%) |
 | Benchmark feature detectors observed | 20 / 31 (64.52%) |
@@ -918,20 +918,25 @@ UniCourt fail the default client-only profile because inbound contracts require
 that add-on, then both pass generation and strict TypeScript with `server`
 enabled.
 
-Two documents remain unsupported after capability adjustment:
+One document remains unsupported after capability adjustment:
 
 - `eos.local` uses local Schema Object references to nested Schema Objects
   under response schemas. The TypeScript target currently lowers component
   schema references but does not yet lower this generic nested-reference shape.
-- `gerermesaffaires.com` completes compiler and target analysis with
-  `0 errors / 0 warnings`, then fails emission because an operation retains an
-  unplanned schema-registry reference. This is an internal generic emitter
-  defect, not a compatibility disposition for that provider.
+
+The holdout also exposed and now regression-tests a generic emitter bug: schema
+post-processing previously replaced every `Contract.` substring in an
+operation module, so an ordinary generated call such as
+`api.taxContract.delete()` could be corrupted into a schema namespace
+reference. Qualification is now restricted to generated
+`Contract.ComponentInput<...>` and `Contract.ComponentOutput<...>` tokens.
+The unchanged `gerermesaffaires.com` holdout document now generates and
+strict-typechecks successfully without provider-specific behavior.
 
 The holdout currently contains 19 OAS 3.0 documents and one OAS 3.1 document.
 It contains no OAS 3.2 document and no selected external-`$ref` occurrence.
-Accordingly, the 90% capability-adjusted result must **not** be interpreted as
-"90% of all OpenAPI documents" or "90% of popular APIs." It is empirical
+Accordingly, the 95% capability-adjusted result must **not** be interpreted as
+"95% of all OpenAPI documents" or "95% of popular APIs." It is empirical
 evidence over this fixed independent cross-section.
 
 The feature manifest remains the canonical feature-by-feature contract. The

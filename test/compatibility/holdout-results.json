@@ -2421,14 +2421,15 @@
         "schema.oneOf"
       ],
       "generation": {
-        "status": "fail",
-        "detail": "emit operation module \"DELETE /spaces/{spaceId}/folders/{id}/tax-contract\": operation \"DELETE /spaces/{spaceId}/folders/{id}/tax-contract\" retains an unplanned schema registry reference"
+        "status": "pass",
+        "artifactCount": 571,
+        "artifactBytes": 4896716
       },
       "typecheck": {
-        "status": "not-run"
+        "status": "pass"
       },
-      "documentSuccess": false,
-      "capabilityAdjustedSuccess": false,
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
       "coverage": [
         {
           "phase": "references",
@@ -5984,13 +5985,13 @@
     {
       "cohort": "holdout",
       "documents": 20,
-      "successfulDocuments": 16,
-      "documentSuccessRate": 0.8,
-      "capabilityAdjustedDocuments": 18,
-      "capabilityAdjustedSuccessRate": 0.9,
+      "successfulDocuments": 17,
+      "documentSuccessRate": 0.85,
+      "capabilityAdjustedDocuments": 19,
+      "capabilityAdjustedSuccessRate": 0.95,
       "discoveryComplete": 17,
-      "generatedDocuments": 16,
-      "typecheckedDocuments": 16,
+      "generatedDocuments": 17,
+      "typecheckedDocuments": 17,
       "generatedVerificationRate": 1,
       "operations": {
         "availableDocuments": 20,
@@ -6034,13 +6035,13 @@
   ],
   "overall": {
     "documents": 20,
-    "successfulDocuments": 16,
-    "documentSuccessRate": 0.8,
-    "capabilityAdjustedDocuments": 18,
-    "capabilityAdjustedSuccessRate": 0.9,
+    "successfulDocuments": 17,
+    "documentSuccessRate": 0.85,
+    "capabilityAdjustedDocuments": 19,
+    "capabilityAdjustedSuccessRate": 0.95,
     "discoveryComplete": 17,
-    "generatedDocuments": 16,
-    "typecheckedDocuments": 16,
+    "generatedDocuments": 17,
+    "typecheckedDocuments": 17,
     "generatedVerificationRate": 1,
     "operations": {
       "availableDocuments": 20,

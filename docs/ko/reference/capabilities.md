@@ -127,17 +127,16 @@ Feature manifest는 기능별 정식 계약입니다. 프로젝트는 여기에 
 - compatibility 작업 중 regression probe로 사용한 7개 provider corpus
 - sdkgen 결과를 보기 전에 고정한 별도 20-provider APIs.guru holdout
 
-현재 교정된 holdout에서 기본 TypeScript client profile은 20개 중 16개 문서를
+현재 교정된 holdout에서 기본 TypeScript client profile은 20개 중 17개 문서를
 생성하고 strict typecheck까지 통과합니다. Webhook 또는 Callback을 포함한 문서를
 기존 `server` add-on으로 추가 검증하면 capability-adjusted support는 20개 중
-18개입니다. 같은 holdout에서 2,830개 operation 중 2,829개가 유지되고, 명시적인
+19개입니다. 같은 holdout에서 2,830개 operation 중 2,829개가 유지되고, 명시적인
 compatibility finding 38개 중 37개는 의미를 보존하는 처리로 끝납니다.
 
 이 수치는 전체 OpenAPI 생태계에 대한 지원률 약속이 아니라 engineering evidence입니다.
 Holdout은 인기도가 아니라 문서 크기로 층화되어 있고, OAS 3.0 문서 19개와 OAS 3.1
 문서 1개로 구성됩니다. 현재 OAS 3.2 문서와 선택된 external-`$ref` 사례는 없습니다.
-Capability-adjusted 기준으로 남은 두 실패는 generic nested Schema `$ref` 지원 공백과
-generic TypeScript emitter defect를 각각 드러냅니다.
+Capability-adjusted 기준으로 남은 실패는 generic nested Schema `$ref` 지원 공백입니다.
 
 표본 선택 규칙, 고정 identity, 정확한 지표, 알려진 공백, 재현 명령은 저장소의
 `docs/openapi-compatibility-architecture.md`와

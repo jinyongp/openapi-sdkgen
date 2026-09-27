@@ -126,16 +126,16 @@ and material schema composition/dialect constructs.
 The committed manifest SHA-256 is
 `3d0f2255ed74d4b49a64a8bd958624f80ede02a452b6947bb2eaedcfd3edeb30`.
 
-The committed report is 180,472 bytes with SHA-256
-`12b81a411a810d9b86993f14b4303959ee5d1b6b6bda7243a0d25b788fcc585f`.
+The committed report is 180,324 bytes with SHA-256
+`7f15c11638405a75fb6572d656d7a9a427f273a34ce43b55f6cb9b526a5c0fbf`.
 An independent rerun produced the exact same bytes.
 
 | Metric | Result |
 | --- | ---: |
 | Holdout documents | 20 |
-| Default client-only success | 16 / 20 (80%) |
-| Capability-adjusted support | 18 / 20 (90%) |
-| Default generated documents passing strict TypeScript | 16 / 16 (100%) |
+| Default client-only success | 17 / 20 (85%) |
+| Capability-adjusted support | 19 / 20 (95%) |
+| Default generated documents passing strict TypeScript | 17 / 17 (100%) |
 | Default discovery complete | 17 / 20 |
 | Operations retained | 2,829 / 2,830 (99.96%) |
 | Compatibility findings preserved | 37 / 38 (97.37%) |
@@ -177,9 +177,9 @@ callback contracts.
 With `server` enabled, diagnostic discovery is complete, generation passes,
 and strict TypeScript passes with no diagnostics.
 
-## Remaining holdout failures
+## Remaining holdout failure
 
-Two documents remain unsupported after capability adjustment.
+One document remains unsupported after capability adjustment.
 
 ### eos.local
 
@@ -199,29 +199,25 @@ registry model but does not lower these nested schema references. The holdout
 therefore records 14 blocking `SDKGEN-E501/E507` diagnostics. This is a
 generic schema-reference support gap, not a provider-specific exception.
 
-### gerermesaffaires.com
+## Resolved holdout defect
 
-Compiler and target preparation finish with `0 errors / 0 warnings` and
-complete discovery. Emission then fails with:
+The holdout previously exposed a generic TypeScript emitter defect on a resource
+whose generated example contained `api.taxContract.delete()`. Operation-module
+post-processing qualified schema references with a global `Contract.` string
+replacement, which also rewrote the `Contract.` substring inside the ordinary
+`taxContract.delete()` identifier chain.
 
-```text
-emit operation module "DELETE /spaces/{spaceId}/folders/{id}/tax-contract":
-operation "DELETE /spaces/{spaceId}/folders/{id}/tax-contract"
-retains an unplanned schema registry reference
-```
-
-Because analysis completed without a blocking diagnostic and the failure occurs
-inside TypeScript emission, this is an internal generic emitter defect rather
-than an input compatibility disposition.
-
-The benchmark keeps this failure in the frozen result. It does not replace the
-document or add provider-specific behavior to improve the metric.
+Schema qualification now targets only generated
+`Contract.ComponentInput<...>` and `Contract.ComponentOutput<...>`
+references. The unchanged `gerermesaffaires.com` holdout document now
+completes generation and strict TypeScript validation without provider-specific
+logic.
 
 ## Interpretation boundaries
 
 This holdout is evidence that the generator works across an independent
-cross-section of real OpenAPI documents. It is not a claim that 90% of all
-OpenAPI documents, or 90% of popular APIs, are supported.
+cross-section of real OpenAPI documents. It is not a claim that 95% of all
+OpenAPI documents, or 95% of popular APIs, are supported.
 
 Important limitations:
 

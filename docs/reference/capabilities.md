@@ -124,18 +124,17 @@ also keeps two real-document evidence sets:
   inspected.
 
 On the current corrected holdout, the default TypeScript client profile
-generates and strict-typechecks 16 of 20 documents. When documents that contain
+generates and strict-typechecks 17 of 20 documents. When documents that contain
 Webhooks or Callbacks are rechecked with the existing `server` add-on, current
-capability-adjusted support is 18 of 20. Across the same holdout, 2,829 of 2,830
+capability-adjusted support is 19 of 20. Across the same holdout, 2,829 of 2,830
 operations are retained and 37 of 38 explicit compatibility findings preserve
 semantics rather than reject them.
 
 These numbers are engineering evidence, not a population-wide support promise.
 The holdout is size-stratified rather than popularity-weighted, contains 19 OAS
 3.0 documents and one OAS 3.1 document, and currently contains no OAS 3.2 or
-selected external-`$ref` case. The two remaining capability-adjusted failures
-exercise a generic nested Schema `$ref` support gap and a generic TypeScript
-emitter defect.
+selected external-`$ref` case. The remaining capability-adjusted failure
+exercises a generic nested Schema `$ref` support gap.
 
 For selection rules, identities, exact metrics, known gaps, and reproduction
 commands, maintainers can inspect
