@@ -55,10 +55,7 @@ just agent example-advanced
 just agent example-capabilities
 just agent release-check
 just agent release-script-test
-just agent npm-package VERSION
-just agent npm-package-check [PACKAGE_DIRECTORY]
-just agent npm-publish PACKAGE_DIRECTORY [latest|next]
-just agent npm-publish-test
+just agent npm-source-check
 ```
 
 ## Documentation commands

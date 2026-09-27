@@ -97,14 +97,6 @@ run_step "TypeScript typecheck" corepack "pnpm@$PNPM_VERSION" --dir "$TYPESCRIPT
 # repeat every TypeScript test without adding release confidence.
 run_step "TypeScript test coverage" corepack "pnpm@$PNPM_VERSION" --dir "$TYPESCRIPT_ROOT" --config.store-dir="$PNPM_STORE" run coverage
 
-run_step "npm package" env \
-  SOURCE_ROOT="$ROOT" \
-  NPM_PACKAGE_DIR="$WORK_ROOT/npm-package" \
-  bash "$SCRIPT_ROOT/scripts/npm/package.sh" "$1"
-run_step "npm package check" env \
-  SOURCE_ROOT="$ROOT" \
-  NPM_PACKAGE_DIR="$WORK_ROOT/npm-package" \
-  NPM_TEST_DIR="$WORK_ROOT/npm-package-install" \
-  bash "$SCRIPT_ROOT/scripts/npm/check.sh" "$WORK_ROOT/npm-package"
+run_step "npm Releaseway source contract" bash "$SCRIPT_ROOT/scripts/npm/source-check.sh"
 
 printf 'ok release checks %s\n' "$1"

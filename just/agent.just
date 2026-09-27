@@ -148,14 +148,5 @@ release-script-test:
 release-workflow-test:
     ./scripts/agent/release-workflow-test
 
-npm-package version:
-    ./scripts/agent/npm-package {{quote(version)}}
-
-npm-package-check package_dir='.tmp/npm-package':
-    ./scripts/agent/npm-package-check {{quote(package_dir)}}
-
-npm-publish package_dir dist_tag:
-    ./scripts/agent/npm-publish {{quote(package_dir)}} {{quote(dist_tag)}}
-
-npm-publish-test:
-    ./scripts/agent/npm-publish-test
+npm-source-check:
+    ./scripts/agent/npm-source-check

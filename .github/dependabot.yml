@@ -8,6 +8,7 @@ updates:
       releaseway:
         patterns:
           - releaseway/actions
+          - releaseway/npm-actions
           - releaseway/homebrew-actions/.github/workflows/check.yml
           - releaseway/homebrew-actions/.github/workflows/publish.yml
       github-actions:
@@ -15,5 +16,6 @@ updates:
           - "*"
         exclude-patterns:
           - releaseway/actions
+          - releaseway/npm-actions
           - releaseway/homebrew-actions/.github/workflows/check.yml
           - releaseway/homebrew-actions/.github/workflows/publish.yml

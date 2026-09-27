@@ -1,0 +1,41 @@
+schema: 1
+
+version:
+  source: git-tag
+  prefix: v
+  prerelease-tag: next
+
+publish:
+  mode: direct
+
+packages:
+  openapi-sdkgen:
+    distribution:
+      type: github-release
+      tag: "v{version}"
+      cache-env: OPENAPI_SDKGEN_CACHE_DIR
+      targets:
+        darwin-arm64:
+          asset: "openapi-sdkgen_{version}_darwin_arm64.tar.gz"
+          executable: openapi-sdkgen
+        darwin-x64:
+          asset: "openapi-sdkgen_{version}_darwin_amd64.tar.gz"
+          executable: openapi-sdkgen
+        linux-arm64-gnu:
+          asset: "openapi-sdkgen_{version}_linux_arm64.tar.gz"
+          executable: openapi-sdkgen
+        linux-arm64-musl:
+          asset: "openapi-sdkgen_{version}_linux_arm64.tar.gz"
+          executable: openapi-sdkgen
+        linux-x64-gnu:
+          asset: "openapi-sdkgen_{version}_linux_amd64.tar.gz"
+          executable: openapi-sdkgen
+        linux-x64-musl:
+          asset: "openapi-sdkgen_{version}_linux_amd64.tar.gz"
+          executable: openapi-sdkgen
+        win32-arm64:
+          asset: "openapi-sdkgen_{version}_windows_arm64.zip"
+          executable: openapi-sdkgen.exe
+        win32-x64:
+          asset: "openapi-sdkgen_{version}_windows_amd64.zip"
+          executable: openapi-sdkgen.exe

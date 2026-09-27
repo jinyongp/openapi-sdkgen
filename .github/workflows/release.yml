@@ -70,7 +70,7 @@ jobs:
   publish-npm:
     name: Publish npm package
     needs: [validate-release, publish-github-release]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -78,24 +78,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate-release.outputs.ref }}
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          path: release-tools
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "24.21.0"
-          registry-url: "https://registry.npmjs.org"
-          package-manager-cache: false
+          fetch-depth: 0
       - name: Verify immutable tag target
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
-      - name: Build npm package
-        run: |
-          SOURCE_ROOT="$GITHUB_WORKSPACE" \
-            NPM_PACKAGE_DIR="$GITHUB_WORKSPACE/.tmp/npm-package" \
-            bash release-tools/scripts/npm/package.sh "${{ needs.validate-release.outputs.version }}"
-      - name: Publish npm package through OIDC
-        run: bash release-tools/scripts/npm/publish.sh "$GITHUB_WORKSPACE/.tmp/npm-package" ${{ contains(needs.validate-release.outputs.tag, '-') && 'next' || 'latest' }}
+      - name: Publish npm package through Releaseway
+        id: npm
+        uses: releaseway/npm-actions@14f7f9df2f098fed98f495a54e0d3ac77b4b32c7 # v0.3.2
 
   publish-homebrew:
     name: Publish Homebrew formula
