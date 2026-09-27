@@ -38,6 +38,7 @@ openapi-sdkgen generate [options]
 | `--incremental` | 기존 manifest-owned output 갱신 |
 | `--with <addon>` | target-specific artifact 추가. 현재 `server`, 반복 가능 |
 | `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
+| `--diagnostic-mode fail-fast|collect` | 진단 탐색 정책 선택. 기본 `fail-fast`는 기존 중단 경계를 유지하고, `collect`는 prerequisite가 충족된 독립 analyzer만 계속 실행 |
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
 `--output`은 디렉터리 경로를 받으며 stdout 출력 모드는 제공하지 않습니다.
@@ -56,6 +57,7 @@ output = "./src/generated/api"
 addons = ["server"]
 incremental = true
 diagnostics_format = "human"
+diagnostic_mode = "fail-fast"
 
 [input]
 tls_ca_file = "./certs/internal-ca.pem"
@@ -86,6 +88,7 @@ Config에서 지원하는 key는 전체 CLI surface를 그대로 복제하지 �
 | `addons` | 반복 가능한 `--with` |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
+| `diagnostic_mode` | `--diagnostic-mode` |
 | `input.base` | `--input-base` |
 | `input.headers_from_env` | 반복 가능한 `--http-header-env` |
 | `input.tls_client_cert` | `--tls-client-cert` |
@@ -182,12 +185,24 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 phase가
-포함됩니다. 현재 envelope는 `schemaVersion: 3`이며 diagnostic에는 additive
-`rule`, `action`, `capability`, `scope`, `effect` 필드가 포함될 수 있습니다. Diagnostic
-JSON 소비자는 `schemaVersion`으로 분기해야 합니다.
+JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 phase와
+analyzer 단위 discovery coverage가 포함됩니다. 현재 envelope는
+`schemaVersion: 4`입니다. 각 diagnostic에는 안정적인 issue `id`가 있고,
+coverage는 analyzer별 `complete`, `partial`, `skipped` 상태와 사용할 수 없었던
+prerequisite를 기록합니다. Diagnostic JSON 소비자는 반드시 `schemaVersion`으로
+분기해야 합니다.
 
-schema v3에서는 severity와 generation effect를 별개의 계약으로 봅니다. `error`는
+schema v4는 v3의 severity, `rule`, `action`, `capability`, `scope`, `effect`
+의미를 유지합니다. 마이그레이션에서 새로 중요한 점은 completeness가 명시적이라는
+것입니다. 추가 finding이 없더라도 coverage가 partial/skipped이면 전체를 확인한 clean
+결과로 해석하면 안 됩니다.
+
+독립 문제를 한 실행에서 수집하려면 `--diagnostic-mode collect`를 사용합니다.
+collect는 blocker를 warning으로 낮추거나 partial SDK를 만들지 않습니다. blocking
+diagnostic이 하나라도 있으면 non-zero로 종료하고 emit/publish는 실행하지 않습니다.
+기본 `fail-fast`는 기존 stop-boundary 동작을 유지합니다.
+
+schema v3/v4에서는 severity와 generation effect를 별개의 계약으로 봅니다. `error`는
 계속 blocking입니다. `warning`이 `scope: operation` +
 `effect: omit-operation` 또는 `scope: capability` +
 `effect: omit-capability`를 가질 수 있는 것은 해당 unsafe surface 전체가 target

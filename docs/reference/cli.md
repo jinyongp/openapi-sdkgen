@@ -36,6 +36,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--incremental` | Update an existing manifest-owned output directory |
 | `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
 | `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
+| `--diagnostic-mode fail-fast|collect` | Select the diagnostic discovery policy; default `fail-fast` preserves existing stop boundaries, while `collect` continues only across independent analyzers with satisfied prerequisites |
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
 directory path; standard output is not a supported generation destination.
@@ -52,6 +53,7 @@ output = "./src/generated/api"
 addons = ["server"]
 incremental = true
 diagnostics_format = "human"
+diagnostic_mode = "fail-fast"
 
 [input]
 tls_ca_file = "./certs/internal-ca.pem"
@@ -81,6 +83,7 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `addons` | repeatable `--with` |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
+| `diagnostic_mode` | `--diagnostic-mode` |
 | `input.base` | `--input-base` |
 | `input.headers_from_env` | repeatable `--http-header-env` |
 | `input.tls_client_cert` | `--tls-client-cert` |
@@ -174,12 +177,23 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-The JSON envelope is versioned and contains counts, diagnostics, and skipped
-phases. The current envelope is `schemaVersion: 3`; diagnostics may carry additive
-`rule`, `action`, `capability`, `scope`, and `effect` fields. Consumers of diagnostic
-JSON should branch on `schemaVersion`.
+The JSON envelope is versioned and contains counts, diagnostics, skipped
+phases, and analyzer-level discovery coverage. The current envelope is
+`schemaVersion: 4`. Each diagnostic has a stable issue `id`; coverage records
+identify analyzers as `complete`, `partial`, or `skipped` and expose unavailable
+prerequisites. Consumers of diagnostic JSON must branch on `schemaVersion`.
 
-In schema v3, severity and generation effect are separate contracts. An
+Schema v4 preserves the v3 meaning of severity, `rule`, `action`, `capability`,
+`scope`, and `effect`. The migration change is that completeness is now explicit:
+a report with no additional findings but partial/skipped coverage is not an
+exhaustive clean result.
+
+Use `--diagnostic-mode collect` when inventorying independent issues. Collection
+does not downgrade blockers or create partial SDKs. If any blocking diagnostic
+remains, the command exits non-zero and emit/publish do not run. The default
+`fail-fast` mode preserves the previous stop-boundary behavior.
+
+In schema v3/v4, severity and generation effect are separate contracts. An
 `error` remains blocking. A warning can carry `scope: operation` with
 `effect: omit-operation`, or `scope: capability` with
 `effect: omit-capability`, only after that complete unsafe surface has been

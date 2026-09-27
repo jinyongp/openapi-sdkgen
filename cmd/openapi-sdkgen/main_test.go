@@ -142,6 +142,174 @@ func TestGenerateRejectsUnsupportedDiagnosticFormat(t *testing.T) {
 	}
 }
 
+func TestGenerateRejectsUnsupportedDiagnosticMode(t *testing.T) {
+	err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--output", filepath.Join(t.TempDir(), "generated"),
+		"--diagnostic-mode", "all",
+	}, generationRuntime{})
+	if err == nil || !strings.Contains(err.Error(), `unsupported --diagnostic-mode "all" (available: fail-fast, collect)`) {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestGenerateCollectModePropagatesPolicyReportsCoverageAndDoesNotPublishBlockers(t *testing.T) {
+	var compileMode diagnostic.Mode
+	var prepareMode diagnostic.Mode
+	published := false
+	blocking := diagnostic.Diagnostic{
+		Severity: diagnostic.SeverityError,
+		Code:     "SDKGEN-E508",
+		Phase:    diagnostic.PhaseTarget,
+		Location: diagnostic.Location{Source: "openapi.yaml", Pointer: "#/paths/~1items/get/security"},
+		Target:   "typescript",
+		Scope:    failure.ScopeDocument,
+		Effect:   failure.EffectBlock,
+		Message:  "test blocker",
+	}
+	coverage := diagnostic.AnalysisCoverage{
+		Phase:    diagnostic.PhaseTarget,
+		Analyzer: "target.support",
+		Status:   diagnostic.CoverageComplete,
+		Target:   "typescript",
+	}
+	runtime := generationRuntime{
+		compile: func(_ string, options compiler.CompileOptions) (compiler.Result, error) {
+			compileMode = options.DiagnosticMode
+			return compiler.Result{
+				Document:       &ir.Document{},
+				DiagnosticMode: options.DiagnosticMode,
+			}, nil
+		},
+		prepare: func(_ generator.Target, _ compiler.Result, options generator.Options) (generator.Preparation, error) {
+			prepareMode = options.DiagnosticMode
+			return generator.Preparation{
+				Diagnostics:    []diagnostic.Diagnostic{blocking},
+				Coverage:       []diagnostic.AnalysisCoverage{coverage},
+				DiagnosticMode: options.DiagnosticMode,
+			}, nil
+		},
+		publish: func(string, []generator.Artifact, *artifactGeneration) error {
+			published = true
+			return nil
+		},
+	}
+
+	previousError := standardError
+	var output bytes.Buffer
+	standardError = &output
+	t.Cleanup(func() { standardError = previousError })
+
+	err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--output", filepath.Join(t.TempDir(), "generated"),
+		"--diagnostic-mode", "collect",
+		"--diagnostics-format", "json",
+	}, runtime)
+	if !errors.Is(err, errReportedDiagnostics) {
+		t.Fatalf("error = %v", err)
+	}
+	if compileMode != diagnostic.ModeCollect || prepareMode != diagnostic.ModeCollect {
+		t.Fatalf("mode propagation: compile=%q prepare=%q", compileMode, prepareMode)
+	}
+	if published {
+		t.Fatal("collect-mode blocker reached publication")
+	}
+	var report diagnostic.Report
+	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
+		t.Fatalf("decode diagnostics: %v\n%s", err, output.String())
+	}
+	if report.SchemaVersion != 4 || len(report.Coverage) != 1 ||
+		report.Coverage[0].Analyzer != "target.support" ||
+		report.Coverage[0].Status != diagnostic.CoverageComplete {
+		t.Fatalf("collect report = %#v", report)
+	}
+}
+
+func TestGenerateFailFastSuccessRemainsSilentWhenCoverageExists(t *testing.T) {
+	runtime := generationRuntime{
+		compile: func(_ string, options compiler.CompileOptions) (compiler.Result, error) {
+			return compiler.Result{
+				Document:       &ir.Document{},
+				DiagnosticMode: options.DiagnosticMode,
+				Coverage: []diagnostic.AnalysisCoverage{{
+					Phase: diagnostic.PhaseOpenAPI, Analyzer: "openapi.test", Status: diagnostic.CoverageComplete,
+				}},
+			}, nil
+		},
+		prepare: func(_ generator.Target, _ compiler.Result, options generator.Options) (generator.Preparation, error) {
+			return generator.Preparation{
+				Plan:           generator.NewPlan("typescript", struct{}{}),
+				DiagnosticMode: options.DiagnosticMode,
+				Coverage: []diagnostic.AnalysisCoverage{{
+					Phase: diagnostic.PhaseTarget, Analyzer: "target.test", Status: diagnostic.CoverageComplete,
+				}},
+			}, nil
+		},
+		emit:    func(generator.Target, generator.Plan) ([]generator.Artifact, error) { return nil, nil },
+		publish: func(string, []generator.Artifact, *artifactGeneration) error { return nil },
+	}
+	previousError := standardError
+	var output bytes.Buffer
+	standardError = &output
+	t.Cleanup(func() { standardError = previousError })
+
+	if err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--output", filepath.Join(t.TempDir(), "generated"),
+	}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	if output.Len() != 0 {
+		t.Fatalf("fail-fast success wrote diagnostics: %s", output.String())
+	}
+}
+
+func TestGenerateCollectSuccessReportsCoverageWithoutWritingOutput(t *testing.T) {
+	runtime := generationRuntime{
+		compile: func(_ string, options compiler.CompileOptions) (compiler.Result, error) {
+			return compiler.Result{
+				Document:       &ir.Document{},
+				DiagnosticMode: options.DiagnosticMode,
+			}, nil
+		},
+		prepare: func(_ generator.Target, _ compiler.Result, options generator.Options) (generator.Preparation, error) {
+			return generator.Preparation{
+				Plan:           generator.NewPlan("typescript", struct{}{}),
+				DiagnosticMode: options.DiagnosticMode,
+				Coverage: []diagnostic.AnalysisCoverage{{
+					Phase: diagnostic.PhaseTarget, Analyzer: "target.support", Status: diagnostic.CoverageComplete, Target: "typescript",
+				}},
+			}, nil
+		},
+	}
+	previousError := standardError
+	var output bytes.Buffer
+	standardError = &output
+	t.Cleanup(func() { standardError = previousError })
+
+	if err := generateWithRuntime([]string{
+		"--input", "unused.json",
+		"--target", "typescript",
+		"--check",
+		"--diagnostic-mode", "collect",
+		"--diagnostics-format", "json",
+	}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	var report diagnostic.Report
+	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
+		t.Fatalf("decode diagnostics: %v\n%s", err, output.String())
+	}
+	if report.Counts.Errors != 0 || len(report.Coverage) != 1 ||
+		report.Coverage[0].Status != diagnostic.CoverageComplete {
+		t.Fatalf("collect success report = %#v", report)
+	}
+}
+
 func TestGenerateCheckWithoutOutputRunsCompileAndPrepareOnly(t *testing.T) {
 	compiled := false
 	prepared := false

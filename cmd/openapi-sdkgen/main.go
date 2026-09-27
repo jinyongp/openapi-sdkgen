@@ -98,6 +98,7 @@ type generateFlagValues struct {
 	incremental       *bool
 	check             *bool
 	diagnosticsFormat *string
+	diagnosticMode    *string
 	help              *bool
 	tlsClientCert     *string
 	tlsClientKey      *string
@@ -265,6 +266,10 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if err != nil {
 		return generateUsageError(err.Error())
 	}
+	diagnosticMode, err := resolveDiagnosticMode(*values.diagnosticMode)
+	if err != nil {
+		return generateUsageError(err.Error())
+	}
 	if *values.input == "" || *values.targetName == "" {
 		return generateUsageError("--input and --target are required")
 	}
@@ -282,6 +287,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if err != nil {
 		return err
 	}
+	options.DiagnosticMode = diagnosticMode
 	if err := generator.ValidateTargetOptions(target, options); err != nil {
 		return err
 	}
@@ -291,6 +297,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		}
 	}
 	compileOptions := compiler.CompileOptions{
+		DiagnosticMode:           diagnosticMode,
 		InputBase:                *values.inputBase,
 		InputReader:              standardInput,
 		RemoteRefAllowlist:       values.remoteRefs,
@@ -304,7 +311,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		TLSCAFile:                *values.tlsCAFile,
 	}
 	requestedGeneration := reusableGenerationRequest(*values.input, target.Name(), options, compileOptions)
-	if *values.incremental && requestedGeneration != nil {
+	if diagnosticMode == diagnostic.ModeFailFast && *values.incremental && requestedGeneration != nil {
 		noop, err := incrementalGenerationMatches(*values.output, requestedGeneration)
 		if err != nil {
 			return err
@@ -315,19 +322,19 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	}
 	compiled, err := runtime.compile(*values.input, compileOptions)
 	if err != nil {
-		if renderErr := writeDiagnostics(compiled.Diagnostics, compiled.SkippedPhases, diagnosticsFormat); renderErr != nil {
+		if renderErr := writeDiagnostics(compiled.Diagnostics, compiled.SkippedPhases, compiled.Coverage, diagnosticMode, diagnosticsFormat); renderErr != nil {
 			return internalFailure("internal diagnostic rendering failure", renderErr)
 		}
 		return internalFailure("internal compiler failure", err)
 	}
 	prepared, err := runtime.prepare(target, compiled, options)
 	if err != nil {
-		if renderErr := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, diagnosticsFormat); renderErr != nil {
+		if renderErr := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage, diagnosticMode, diagnosticsFormat); renderErr != nil {
 			return internalFailure("internal diagnostic rendering failure", renderErr)
 		}
 		return internalFailure(fmt.Sprintf("internal %s preparation failure", target.Name()), err)
 	}
-	if err := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, diagnosticsFormat); err != nil {
+	if err := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage, diagnosticMode, diagnosticsFormat); err != nil {
 		return internalFailure("internal diagnostic rendering failure", err)
 	}
 	if diagnostic.HasErrors(prepared.Diagnostics) {
@@ -487,6 +494,10 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		Name: "diagnostics-format", Metavariable: "format", Summary: "Diagnostic report format",
 		Available: func() []string { return []string{string(diagnosticOutputHuman), string(diagnosticOutputJSON)} },
 	}, string(diagnosticOutputHuman))
+	values.diagnosticMode = flags.String(optionsGroup, helpOption{
+		Name: "diagnostic-mode", Metavariable: "mode", Summary: "Diagnostic discovery policy",
+		Available: func() []string { return []string{string(diagnostic.ModeFailFast), string(diagnostic.ModeCollect)} },
+	}, string(diagnostic.ModeFailFast))
 	values.help = flags.Bool(optionsGroup, helpOption{
 		Name: "help", Short: "h", Summary: "Show help",
 	}, false)
@@ -671,17 +682,25 @@ func resolveDiagnosticOutputFormat(value string) (diagnosticOutputFormat, error)
 	}
 }
 
-func writeDiagnostics(values []diagnostic.Diagnostic, skipped []diagnostic.SkippedPhase, format diagnosticOutputFormat) error {
-	if len(values) == 0 && len(skipped) == 0 {
+func resolveDiagnosticMode(value string) (diagnostic.Mode, error) {
+	mode, err := diagnostic.Mode(value).Resolve()
+	if err != nil {
+		return "", fmt.Errorf("unsupported --diagnostic-mode %q (available: fail-fast, collect)", value)
+	}
+	return mode, nil
+}
+
+func writeDiagnostics(values []diagnostic.Diagnostic, skipped []diagnostic.SkippedPhase, coverage []diagnostic.AnalysisCoverage, mode diagnostic.Mode, format diagnosticOutputFormat) error {
+	if len(values) == 0 && len(skipped) == 0 && (mode != diagnostic.ModeCollect || len(coverage) == 0) {
 		return nil
 	}
 	var report string
 	switch format {
 	case diagnosticOutputHuman:
-		report = diagnostic.RenderHuman(values, skipped)
+		report = diagnostic.RenderHuman(values, skipped, coverage...)
 	case diagnosticOutputJSON:
 		var err error
-		report, err = diagnostic.RenderJSON(values, skipped)
+		report, err = diagnostic.RenderJSON(values, skipped, coverage...)
 		if err != nil {
 			return err
 		}

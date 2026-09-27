@@ -96,12 +96,18 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-The report contains `schemaVersion`, severity counts, diagnostics, and skipped
-pipeline phases. The current JSON contract is `schemaVersion: 3`; diagnostics can
-include additive `rule`, `action`, `capability`, `scope`, and `effect` fields. Tooling
-that persists or parses diagnostic JSON should branch on `schemaVersion` rather
-than assuming the previous envelope. Diagnostic source names are sanitized before rendering;
-URL credentials, queries, and fragments are removed from the report.
+The report contains `schemaVersion`, severity counts, diagnostics, skipped
+pipeline phases, and analyzer-level coverage. The current JSON contract is
+`schemaVersion: 4`; each diagnostic has a stable issue `id`, and coverage says
+which analyzers were complete, partial, or skipped. Tooling that persists or
+parses diagnostic JSON should branch on `schemaVersion`. Diagnostic source names
+are sanitized before rendering; URL credentials, queries, and fragments are
+removed from the report.
+
+Use `--diagnostic-mode collect` to inventory independent issues in one run.
+Collection continues only where analyzer prerequisites remain valid. Blocking
+diagnostics still produce a non-zero exit and prevent emit/publish, so collect
+mode never creates a partial SDK. The default is `fail-fast`.
 
 Exit status reports the result: zero means the requested check succeeded; a
 non-zero status reports generation diagnostics, drift, or an operational error.

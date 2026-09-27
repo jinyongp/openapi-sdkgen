@@ -20,6 +20,7 @@ type generateProjectConfig struct {
 	Addons            []string                    `toml:"addons"`
 	Incremental       *bool                       `toml:"incremental"`
 	DiagnosticsFormat *string                     `toml:"diagnostics_format"`
+	DiagnosticMode    *string                     `toml:"diagnostic_mode"`
 	Input             generateProjectInputConfig  `toml:"input"`
 	References        generateProjectRefConfig    `toml:"references"`
 	Schema            generateProjectSchemaConfig `toml:"schema"`
@@ -88,6 +89,9 @@ func applyGenerateProjectConfig(
 	}
 	if !visited["diagnostics-format"] && config.DiagnosticsFormat != nil {
 		*values.diagnosticsFormat = *config.DiagnosticsFormat
+	}
+	if !visited["diagnostic-mode"] && config.DiagnosticMode != nil {
+		*values.diagnosticMode = *config.DiagnosticMode
 	}
 	if !visited["input-base"] && config.Input.Base != nil {
 		*values.inputBase = resolveConfigSource(base, *config.Input.Base)

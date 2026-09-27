@@ -9,6 +9,7 @@ import (
 
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
 )
 
@@ -25,6 +26,7 @@ target = "typescript"
 output = "./generated"
 addons = ["server"]
 diagnostics_format = "json"
+diagnostic_mode = "collect"
 
 [input]
 base = "./refs"
@@ -50,6 +52,7 @@ extensions = ["./extensions/custom.json"]
 
 	var compiledInput string
 	var compiledOptions compiler.CompileOptions
+	var preparedOptions generator.Options
 	var publishedOutput string
 	runtime := generationRuntime{
 		compile: func(input string, options compiler.CompileOptions) (compiler.Result, error) {
@@ -57,7 +60,8 @@ extensions = ["./extensions/custom.json"]
 			compiledOptions = options
 			return compiler.Result{Document: &ir.Document{}}, nil
 		},
-		prepare: func(generator.Target, compiler.Result, generator.Options) (generator.Preparation, error) {
+		prepare: func(_ generator.Target, _ compiler.Result, options generator.Options) (generator.Preparation, error) {
+			preparedOptions = options
 			return generator.Preparation{Plan: generator.NewPlan("typescript", struct{}{})}, nil
 		},
 		emit: func(generator.Target, generator.Plan) ([]generator.Artifact, error) {
@@ -91,6 +95,9 @@ extensions = ["./extensions/custom.json"]
 	if !compiledOptions.Offline {
 		t.Fatal("offline config was not applied")
 	}
+	if compiledOptions.DiagnosticMode != diagnostic.ModeCollect || preparedOptions.DiagnosticMode != diagnostic.ModeCollect {
+		t.Fatalf("diagnostic mode not propagated: compile=%q prepare=%q", compiledOptions.DiagnosticMode, preparedOptions.DiagnosticMode)
+	}
 	if !reflect.DeepEqual(compiledOptions.RemoteRefAllowlist, []string{"https://schemas.example.com"}) {
 		t.Fatalf("remote refs = %#v", compiledOptions.RemoteRefAllowlist)
 	}
@@ -114,6 +121,7 @@ target = "typescript"
 output = "./config-output"
 addons = ["server"]
 incremental = true
+diagnostic_mode = "fail-fast"
 
 [input.headers_from_env]
 Authorization = "CONFIG_AUTH"
@@ -143,6 +151,7 @@ extensions = ["./config-extension.json"]
 		"--http-header-env", "X-Token=CLI_TOKEN",
 		"--offline=false",
 		"--incremental=false",
+		"--diagnostic-mode", "collect",
 	}
 	if err := flags.Flags.Parse(args); err != nil {
 		t.Fatal(err)
@@ -158,6 +167,9 @@ extensions = ["./config-extension.json"]
 	}
 	if *values.incremental || *values.offline {
 		t.Fatalf("explicit false CLI booleans lost: incremental=%v offline=%v", *values.incremental, *values.offline)
+	}
+	if *values.diagnosticMode != "collect" {
+		t.Fatalf("diagnostic mode CLI override lost: %q", *values.diagnosticMode)
 	}
 	if !reflect.DeepEqual([]string(values.with), []string{"server"}) {
 		t.Fatalf("addons = %#v", values.with)
