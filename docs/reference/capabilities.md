@@ -104,8 +104,17 @@ installed version.
 Compatibility is scope-aware. A warning with `effect: omit-operation` or
 `effect: omit-capability` means that complete surface is intentionally absent
 while the remaining safe SDK may still be generated. A diagnostic with
-`effect: block` prevents the selected target from being emitted. See the
-[CLI diagnostics reference](./cli.md#diagnostics) for the versioned JSON
+`effect: block` prevents the selected target from being emitted.
+
+For example, a path-template/path-Parameter name mismatch is reported as
+`COMP-PARAM-005` and omits only the malformed operation. In OAS 3.0/3.1, an
+explicit operation Security Requirement that names an undeclared scheme is
+`COMP-SEC-001` and is also operation-scoped; the same defect at root security
+is document-blocking. sdkgen never renames path parameters or invents security
+schemes to recover these inputs. OAS 3.2 Security Scheme URI names are not
+rejected merely because no same-named component exists.
+
+See the [CLI diagnostics reference](./cli.md#diagnostics) for the versioned JSON
 contract.
 
 The source OpenAPI document used for generation is also available through the

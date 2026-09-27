@@ -245,6 +245,21 @@ This staged visibility decision must feed:
 It must apply recursively to every referenced document, not only the entry
 document.
 
+Specification Extensions and literal data fields use the same path-aware
+reference-opacity contract. A `$ref` key below `x-*`, examples/default/value
+payload data, or another opaque data field is data rather than an OpenAPI/JSON
+Schema reference. Discovery, provenance, model validation, local/remote loader
+adapters, and bundling all share that classification.
+
+libopenapi still interprets raw `$ref` keys recursively, so sdkgen presents a
+temporary reference-semantic view at the bundler boundary: opaque `$ref` keys
+are reversibly renamed to per-compile collision-checked markers, the composed
+bundle is produced, then only markers allocated by that compile are restored.
+Exact source/effective metadata, remote cache content, and reference-lock hashes
+always use the unescaped source. This prevents extension data such as
+DigitalOcean `x-codeSamples` from causing file/network I/O without weakening
+real reference containment, allowlist, TLS, lock, cache, or cycle policy.
+
 The current source cache is a useful boundary: it already owns immutable bytes
 and decoded YAML trees for local referenced documents. libopenapi also exposes
 `DocumentConfiguration.LocalFS` and `RemoteURLHandler`. A safe design can
@@ -376,6 +391,29 @@ representation is `in: cookie`.
 This belongs in the undefined-policy inventory, not in the normative ignore
 set.
 
+#### COMP-PARAM-005 — Path-template / path-Parameter correspondence
+
+Every path template expression must have a corresponding effective `in: path`
+Parameter with the exact case-sensitive name, and a path Parameter must
+correspond to a template expression. sdkgen validates this after canonical IR
+and provenance are available so reusable/remote source locations and the exact
+compiled operation owner are known.
+
+A mismatch is nonconforming source input, but the invalid semantics are owned by
+one operation. sdkgen therefore:
+
+- emits `SDKGEN-W140` with `rule=COMP-PARAM-005`,
+  `scope=operation`, `effect=omit-operation`;
+- records a canonical operation owner pointer in the IR semantic restriction;
+- does not rename, alias, or otherwise guess the intended path parameter;
+- removes the operation from emitted call/resource/helper surfaces while
+  retaining independently valid flat/artifact collision reservations;
+- keeps ambiguous legacy/source-only ownership fail-closed as target
+  `SDKGEN-E507`.
+
+The post-IR analyzer is reported as
+`openapi.path-parameter-conformance` in diagnostic coverage.
+
 ### Operation request bodies
 
 #### COMP-BODY-001 — OAS 3.0 method applicability
@@ -469,6 +507,33 @@ pinned GitHub, Stripe, Cloudflare, Microsoft Graph v1.0, Twilio core 2010, or
 GitLab inputs. Graph beta static method counting timed out on the large source;
 it remains covered only by the required fresh compiler corpus rerun and is not
 counted as a clean static result.
+
+### Security Requirement conformance
+
+#### COMP-SEC-001 — undeclared Security Scheme references
+
+For OAS 3.0 and 3.1, each Security Requirement name must identify a Security
+Scheme declared under Components. This is source conformance, not TypeScript
+target capability.
+
+sdkgen validates the rule after canonical IR/provenance construction:
+
+- an explicitly operation-declared requirement that names no declared scheme
+  emits `SDKGEN-W140`, `scope=operation`,
+  `effect=omit-operation`; only that operation is quarantined;
+- a top-level requirement with the same defect emits `SDKGEN-E140`,
+  `scope=document`, `effect=block`;
+- operations inheriting an invalid root requirement are not independently
+  narrowed;
+- a scheme that exists but is malformed or unsupported by the selected target
+  remains target-owned (for TypeScript, existing `SDKGEN-E508`);
+- OAS 3.2 Security Requirement names may be Security Scheme URIs, so absence of
+  a same-named component is not classified as `COMP-SEC-001`.
+
+The post-IR analyzer is reported as
+`openapi.security-requirement-conformance` in diagnostic coverage. Compiler
+operation restrictions are consumed before target security/cookie analysis, so
+the same quarantined route is not duplicated as E508.
 
 #### COMP-LINK-001 — Link target identity
 
@@ -767,31 +832,28 @@ Observed compatibility footprint:
   schemas in the component-schema audit;
 - two independent path-template/Parameter name mismatches.
 
-On current HEAD, OAS 3.0 Reference Object siblings—including Schema-or-Reference
-positions—are removed from effective semantics while remaining in source
-metadata. The two meaningful HEAD bodies are quarantined as operation omissions.
-The frozen GitLab corpus then reaches the independent target `SDKGEN-E507`
-failure for:
+On current HEAD, OAS 3.0 Reference Object siblings—including
+Schema-or-Reference positions—are removed from effective semantics while
+remaining in source metadata. The two meaningful HEAD bodies are quarantined as
+operation omissions.
 
-`/api/v4/jobs/{id}/sbom_scans/{sbom_digest}` GET
-
-The operation declares path parameter `sbom_scan_id` instead of
-`sbom_digest`.
-
-A full path-template audit finds exactly two such mismatches:
+A full path-template audit finds exactly two independent mismatches:
 
 1. GET `/api/v4/jobs/{id}/sbom_scans/{sbom_digest}`:
    expected `sbom_digest`, declared `sbom_scan_id`.
 2. POST `/api/v4/groups/{id}/(-/)epics/{epic_iid}/issues/{epic_issue_id}`:
    expected `epic_issue_id`, declared `issue_id`.
 
-These are not safe normalization candidates. Renaming a path parameter requires
-guessing author intent and must remain a rejection boundary.
+These are not safe normalization candidates. sdkgen does not rename either
+parameter. Instead the post-IR `COMP-PARAM-005` analyzer assigns exact
+operation ownership, emits two `SDKGEN-W140 scope=operation
+effect=omit-operation` findings, and removes only those malformed operations
+from generated call/resource/helper surfaces.
 
-Therefore the structural compatibility work removes GitLab's false reference
-and HEAD-body blockers without claiming full generation success: the remaining
-path-template/Parameter mismatch is intentionally document-blocking because
-renaming it would require guessing author intent.
+The pinned GitLab 19.5 corpus therefore completes generation and strict
+TypeScript validation with `0 errors / 4 warnings`: two
+`COMP-PARAM-005` omissions and two `COMP-BODY-001` HEAD-body omissions.
+All compiler and target analyzers report complete coverage.
 
 ## Real-corpus impact and existing boundaries
 
@@ -802,11 +864,11 @@ the OAS normative disposition.
 | --- | --- | --- | --- |
 | GitHub REST 2022-11-28 | SHA-256 `d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc`, 12,891,411 B, OAS 3.0.3 | 20 meaningful DELETE bodies, one non-meaningful GET body, one response `Content-Type` Header, and native boolean `additionalProperties` values; no audited Reference siblings, reserved request headers, path mismatch, general type array, or numeric exclusive-bound mismatch | Empty GET body and response `Content-Type` are lossless ignores. Meaningful DELETE bodies require an evidenced `preserve-extension`; native boolean `additionalProperties` values are preserved without COMP-SCHEMA-001. Corpus must remain full-generation/strict-TypeScript successful. |
 | Stripe SDK spec | SHA-256 `2c31317cdff103e4495b5b3501004d9ddc0af61f43b0ab819e2db392eef008f6`, 4,518,735 B, OAS 3.0.0 | 265 optional empty GET form bodies, 32 DELETE bodies of which seven are meaningful; no other audited mismatch | Empty GET/DELETE artifacts are lossless ignores; seven meaningful DELETE bodies require `preserve-extension`. Corpus must remain successful. |
-| GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Current rerun ignores the Reference siblings, omits both HEAD-body operations, then exposes the independent `SDKGEN-E507` path-template/Parameter-name mismatch. The corpus is intentionally not claimed fully generatable. |
-| Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, two reserved request-header Parameters, two response `Content-Type` Headers | Current rerun preserves all 32 DELETE bodies as evidenced extensions, omits the one GET-body operation, then reports four independent undeclared-security `SDKGEN-E508 scope=document effect=block` failures. |
+| GitLab REST 19.5 | SHA-256 `06db53616968cb3b30d5064cfcdfcfa3bbd3923118c837f73ecc7370feaef236`, 3,794,471 B, OAS 3.0.0 | two Reference Object `description` siblings; two meaningful HEAD bodies; exactly two path-template/Parameter-name mismatches | Final rerun is `0E/4W`: two HEAD-body `COMP-BODY-001` omissions plus two `COMP-PARAM-005` operation omissions. Coverage is complete and generation/strict TypeScript pass. |
+| Cloudflare | SHA-256 `179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3`, 26,098,205 B, OAS 3.0.3 | 32 meaningful DELETE bodies, one meaningful required GET body, four explicit operation Security Requirements naming undeclared schemes, recursive JSON-value schemas | Final rerun is `0E/37W`: 33 `COMP-BODY-001` findings plus four `COMP-SEC-001` operation omissions. Recursive JSON projections and bounded generated-operation binding remove the previously masked TS2456/TS2589 failures; coverage is complete and generation/strict TypeScript pass. |
 | Microsoft Graph v1.0 | OAS 3.0.4 local corpus | no Reference-sibling, reserved-header, OAS-3.0 body, or response-`Content-Type` occurrence in the focused audit | Existing internal TypeScript preparation failure remains independent unless direct rerun evidence changes it. |
-| Microsoft Graph beta | SHA-256 `bc6119cc3c48cae1492400c0490ad5b5911afc6145049ed708e2f9b2dedcd15e`, 78,964,171 B, OAS 3.0.4 | 122 empty/non-actionable response Links plus very long path-parameter names | All 122 Links are capability omissions with zero `SDKGEN-E509`; bounded portable resource naming removes the next generic artifact-path blocker and generation completes for 30,360 operations. |
-| DigitalOcean source tree | OAS 3.0.0 entry document; 3,034 YAML fragments inspected | entry document has zero focused occurrences. The repository is heavily fragment/reference based. | Fresh compiler traversal remains fail-closed at `SDKGEN-E120` for reachable missing reference/example files; the static fragment scan is not used as evidence of generation support. |
+| Microsoft Graph beta | current local SHA-256 `46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec`, 69,965,060 B, OAS 3.0.4 | current snapshot contains no remaining diagnostic findings after named-map-aware context correction | Final rerun is `0E/0W`, coverage complete, generation and strict TypeScript pass. |
+| DigitalOcean source tree | entry SHA-256 `9601e8c39dde0bdbe9a7ed97b948f71ffd01da3025721fdb31e82aad7490923e`, OAS 3.0.0; heavily fragment/reference based | extension/example `$ref` values are opaque data; 459 independently owned path-template/Parameter mismatches remain in reachable operations | Opaque `x-codeSamples` references no longer trigger E120/file I/O. Final rerun is `0E/459W`, all `COMP-PARAM-005` operation omissions; coverage complete and generation/strict TypeScript pass. |
 | Twilio core 2010 | SHA-256 `170b3ccd0f891416840083d72f1795b1499b14a18d4873fd2b39f47ef84642d6`, 1,877,664 B, OAS 3.0.1 | zero focused compatibility occurrences | Generation and strict TypeScript now pass after the generic numeric-leading identifier normalization fix; no Twilio-specific compatibility branch is required. |
 
 The previous integrated workstream's historical failures are evidence, not
@@ -1058,25 +1120,27 @@ In all cases:
 - target context is only attached to target failures;
 - a rule-applied finding includes the stable compatibility rule ID/action.
 
-The machine-readable contract must represent that data structurally. Diagnostic
-schema version 3 retains optional `rule` and `action` and adds optional
-`capability`, `scope`, and `effect` fields. `scope` uses `document`, `operation`,
-or `capability`; `effect` uses `block`, `omit-operation`, or `omit-capability`.
-Compatibility/OpenAPI findings
-use the existing OpenAPI code family: `SDKGEN-W140` for non-blocking
-compatibility/conformance findings and `SDKGEN-E140` for blocking OpenAPI-level
-compatibility rejects, with the stable rule ID providing the specific reason.
-Fetch-method target rejection uses the next TypeScript capability code
-`SDKGEN-E511` rather than masquerading as an OpenAPI error.
+The machine-readable contract represents that data structurally. Current
+diagnostic schema version **4** retains the v3 meaning of optional `rule`,
+`action`, `capability`, `scope`, and `effect` fields and adds stable issue
+identity plus analyzer coverage / skipped-prerequisite accounting. `scope` uses
+`document`, `operation`, or `capability`; `effect` uses `block`,
+`omit-operation`, or `omit-capability`.
 
-Because JSON diagnostics are explicitly versioned and existing consumers can
-branch on `schemaVersion`, the failure-scope/effect contract is released as
-diagnostic report schema version **3**. Existing unrelated diagnostics simply
-omit the optional fields. Human rendering shows capability/scope/effect and
-rule/action when present. Severity remains the blocking contract in v3: the CLI
-continues to exit 0 when only warnings are present and nonzero when an error is
-present. Scoped omission behavior must therefore emit warnings only after the
-unsafe operation/capability has been removed from the target plan.
+Compatibility/OpenAPI findings use the existing OpenAPI code family:
+`SDKGEN-W140` for non-blocking compatibility/conformance findings and
+`SDKGEN-E140` for blocking OpenAPI-level compatibility rejects, with the
+stable rule ID providing the specific reason. Fetch-method target rejection
+uses the TypeScript capability code `SDKGEN-E511` rather than masquerading as
+an OpenAPI error.
+
+Consumers branch on `schemaVersion`. Existing unrelated diagnostics omit
+optional compatibility fields. Human rendering shows capability/scope/effect
+and rule/action when present. Severity remains the blocking contract in v4: the
+CLI exits 0 when only warnings are present and nonzero when an error is present.
+Scoped omission behavior therefore emits warnings only after the unsafe
+operation/capability has been removed from the target plan, and a zero-finding
+report is exhaustive only when the relevant analyzer coverage is complete.
 
 ## Implementation ordering
 
@@ -1139,10 +1203,10 @@ recorded result. Earlier failures are appended as history rather than rewritten.
 | VAL-COMP-018 | Publication recovery | existing staging-write/final-rename failure injection plus compatibility reject after existing output | rollback/preservation remains exact; no partial effective output is published |
 | VAL-COMP-019 | GitHub pinned corpus | exact SHA above through generation, strict TS, source consumer, declaration consumer, bundle/runtime checks | remains successful; empty ignored fields disappear where expected; meaningful DELETE behavior remains callable |
 | VAL-COMP-020 | Stripe pinned corpus | exact SHA above through same artifact matrix | remains successful; empty artifact bodies are removed without breaking meaningful DELETE operations |
-| VAL-COMP-021 | GitLab 19.5 exact corpus | exact local SHA above | OAS 3.0 Reference siblings no longer cause false fatal; next failures are justified generic reject boundaries; no GitLab-specific code |
-| VAL-COMP-022 | Cloudflare | exact local corpus through generation/preflight | reserved/response-header rules and DELETE extensions behave generically; meaningful GET-body reject is justified; undeclared security issue remains separately reproducible once isolated |
-| VAL-COMP-023 | Graph v1/beta | existing local corpora | no new compatibility regression; existing preparation boundary classified from fresh evidence |
-| VAL-COMP-024 | DigitalOcean | real source tree through existing compiler reference path | no false success from fragment scan; existing external-reference/path-parameter boundaries classified from fresh evidence |
+| VAL-COMP-021 | GitLab 19.5 exact corpus | exact local SHA above | `0E/4W`, complete coverage, generation/strict TypeScript pass; two HEAD-body and two path-binding omissions are generic rule outcomes; no GitLab-specific code |
+| VAL-COMP-022 | Cloudflare | exact local corpus through full generation + strict TypeScript | `0E/37W`, complete coverage; body/security omissions are generic and recursive schema/callable type generation remains typecheck-safe |
+| VAL-COMP-023 | Graph v1/beta | existing local corpora | no new compatibility regression; current beta snapshot `0E/0W`, complete coverage, generation/strict TypeScript pass |
+| VAL-COMP-024 | DigitalOcean | real source tree through existing compiler reference path | opaque extension/example refs cause no false I/O/E120; `0E/459W` path-binding omissions, complete coverage, generation/strict TypeScript pass |
 | VAL-COMP-025 | Twilio | existing core 2010 corpus + strict TypeScript | generation and strict TypeScript pass; numeric-leading identifiers are normalized generically without provider-specific code |
 | VAL-COMP-026 | Compile/generate cost | paired pinned GitHub/Stripe process runs using existing representation/perf harnesses | wall/CPU/allocation/peak RSS recorded; no unreviewed material regression or duplicate full-tree phase |
 | VAL-COMP-027 | Target artifacts | `just agent generate-check-test` plus strict/source/declaration/bundle/callable checks | generated API/runtime/public declarations remain coherent |

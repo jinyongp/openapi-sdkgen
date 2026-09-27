@@ -109,7 +109,17 @@ Custom JSON Schema vocabulary extension은 schema 의미를 처리합니다.
 Compatibility 진단은 scope-aware입니다. `effect: omit-operation` 또는
 `effect: omit-capability` warning은 해당 surface 전체를 의도적으로 생성하지
 않으면서 나머지 안전한 SDK는 계속 생성할 수 있다는 뜻입니다. `effect: block`
-진단은 선택한 target의 emit을 막습니다. 버전이 있는 JSON 계약은
+진단은 선택한 target의 emit을 막습니다.
+
+예를 들어 path template과 path Parameter 이름이 일치하지 않으면
+`COMP-PARAM-005`로 보고하고 잘못된 operation만 생략합니다. OAS 3.0/3.1에서
+operation이 명시한 Security Requirement가 선언되지 않은 scheme을 참조하면
+`COMP-SEC-001` operation omission이 되지만, 같은 문제가 root security에 있으면
+document block입니다. sdkgen은 복구를 위해 path parameter 이름을 추측해 바꾸거나
+security scheme을 만들어내지 않습니다. OAS 3.2의 Security Scheme URI 이름은 같은
+이름의 component가 없다는 이유만으로 거부하지 않습니다.
+
+버전이 있는 JSON 계약은
 [CLI diagnostics 레퍼런스](./cli.md#diagnostics)를 참고하세요.
 
 SDK 생성에 사용한 원본 OpenAPI 문서는 generated metadata 진입점에서도 확인할 수

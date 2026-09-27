@@ -54,7 +54,7 @@ line.
 | contained-external-references | file references inside the input root | all | generated | `internal/compiler/compiler_test.go::TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine` |
 | remote-references | allowlisted HTTPS `$ref` with lockfile, content-addressed cache, DNS policy, and offline mode | all | generated | `internal/compiler/references_test.go::TestCompileFileWithOptionsUsesLockedOfflineRemoteReference` |
 | escaping-references | file `$ref` outside the input root | all | error | `internal/compiler/compiler_test.go::TestCompileFileRejectsReferenceOutsideInputDirectory` |
-| reference-cycles | cyclic reusable schema references | all | generated | `internal/target/typescript/types_test.go::TestSourceArtifactsGenerateRecursiveComponentSchemas` |
+| reference-cycles | cyclic reusable schema references, including recursive object/array JSON-value shapes | all | generated | `internal/target/typescript/recursive_type_regression_test.go::TestSchemaModulesTypecheckRecursiveJSONValue` |
 | schema-components | `components.schemas` object schemas | all | generated | `internal/target/typescript/types_test.go::TestSchemaTypeMapsCompositeOpenAPISchemas` |
 | reusable-responses | `components.responses` | all | generated | `internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic` |
 | reusable-parameters | `components.parameters` | all | generated | `internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic` |
@@ -76,6 +76,7 @@ line.
 | query-method | `query` | 3.2 | generated | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsGenerateOpenAPI32QueryAndAdditionalOperations` |
 | additional-operations | `additionalOperations` arbitrary methods | 3.2 | generated | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsGenerateOpenAPI32QueryAndAdditionalOperations` |
 | parameter-locations | `path`, `query`, `header`, `cookie` | all | generated | `internal/target/typescript/runtime_parity_test.go::TestVersionedTypeScriptRuntime` |
+| compat.parameter.path-binding | path-template expressions and effective `in: path` Parameter names | all | omitted | `internal/compiler/operation_conformance_test.go::TestPathParameterConformanceCollectsIndependentOperationMismatches` |
 | fetch-managed-request-headers | Fetch-controlled fixed names and `Proxy-*`/`Sec-*` families as optional explicit caller inputs; method-override values delegated to Fetch; generated Webhook/Callback inbound requiredness preserved | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeDelegatesEnvironmentControlledRequestHeadersToFetch` |
 | parameter-serialization | scalar/array `simple`, `label`, `matrix`, `form`, `spaceDelimited`, `pipeDelimited`, `deepObject`, `explode` | all | generated | `test/typescript/tests/runtime.test.ts::serializes paths, query styles, headers, cookies, and wire names` |
 | parameter-delimited-object | `spaceDelimited` and `pipeDelimited` object parameters | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSerializesDelimitedObjectQueryParameters` |
@@ -116,6 +117,8 @@ line.
 | webhooks | root Webhook Object; without `server` the selected target is document-blocked, with `typescript --with server` it is generated | 3.1+ | error | `internal/target/typescript/server_failure_scope_test.go::TestInboundContractsWithoutServerAddonRemainDocumentBlocking` |
 | examples | Example `summary`, `description`, `value`, `externalValue` | all | metadata | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
 | security-requirements | root/operation Security Requirement Objects and explicit overrides | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesOpenAPISecurityRequirementsAndOperationOverride` |
+| compat.security.requirement-operation | undeclared Security Requirement name on an explicit operation requirement | 3.0, 3.1 | omitted | `internal/compiler/operation_conformance_test.go::TestSecurityRequirementConformanceScopesOperationAndRootFailures` |
+| compat.security.requirement-root | undeclared Security Requirement name on the root requirement | 3.0, 3.1 | error | `internal/compiler/operation_conformance_test.go::TestSecurityRequirementConformanceScopesOperationAndRootFailures` |
 | security-schemes | API key, HTTP, OAuth2, OpenID Connect, and mTLS host providers with capability gates | all; mutual TLS 3.1+ | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesEveryHostManagedSecurityCredentialShape` |
 | fetch-managed-header-api-keys | Header API-key credentials for environment-controlled names and method-override values are forwarded to Fetch | all | generated | `internal/target/typescript/runtime_parity_test.go::TestRuntimeDelegatesEnvironmentControlledHeaderAPIKeysToFetch` |
 
