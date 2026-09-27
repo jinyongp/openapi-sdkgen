@@ -173,8 +173,10 @@ func normalizeInventorySources(report *diagnostic.Report, rootInput string) {
 }
 
 func discoveryComplete(report diagnostic.Report) bool {
-	if len(report.SkippedPhases) != 0 {
-		return false
+	for _, phase := range report.SkippedPhases {
+		if phase.Phase != diagnostic.PhaseEmit && phase.Phase != diagnostic.PhasePublish {
+			return false
+		}
 	}
 	for _, item := range report.Coverage {
 		if item.Status != diagnostic.CoverageComplete {
