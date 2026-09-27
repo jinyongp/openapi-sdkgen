@@ -666,19 +666,22 @@ components:
 	if result.Document != nil {
 		t.Fatalf("fail-fast result built IR past remote compatibility blocker: %#v", result)
 	}
-	var foundDiagnostic, skippedIR bool
+	var foundDiagnostic, skippedNormalize, skippedIR bool
 	for _, value := range result.Diagnostics {
 		if value.Code == "SDKGEN-E140" && value.Rule == compatibility.RuleSchemaNullableTypes30 {
 			foundDiagnostic = true
 		}
 	}
 	for _, skipped := range result.SkippedPhases {
-		if skipped.Phase == diagnostic.PhaseIR {
+		switch skipped.Phase {
+		case diagnostic.PhaseNormalize:
+			skippedNormalize = true
+		case diagnostic.PhaseIR:
 			skippedIR = true
 		}
 	}
-	if !foundDiagnostic || !skippedIR {
-		t.Fatalf("result = %#v, want E140 and skipped IR", result)
+	if !foundDiagnostic || !skippedNormalize || !skippedIR {
+		t.Fatalf("result = %#v, want E140 plus skipped normalize and IR", result)
 	}
 }
 

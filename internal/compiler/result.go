@@ -217,17 +217,19 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		}
 	}
 	document, err := compilePreparedInputValue(source, sourceMetadata, effectiveData, effective, false, options)
+	lateBlocked := document == nil && err == nil && collector.HasErrors()
 	if document != nil {
 		analysis.recordPostIRComplete(source.display)
 	} else {
 		analysis.recordPostIRUnavailable(source.display)
 	}
 	result := analysis.attach(resultFromCompile(document, err, source.display, collector))
-	if document == nil && err == nil && diagnostic.HasErrors(result.Diagnostics) {
-		result.SkippedPhases = append(result.SkippedPhases, diagnostic.SkippedPhase{
-			Phase:  diagnostic.PhaseIR,
-			Reason: "blocking diagnostics discovered while preparing referenced OpenAPI sources prevented canonical IR construction",
-		})
+	if lateBlocked {
+		const reason = "blocking diagnostics discovered while preparing referenced OpenAPI sources prevented canonical normalization and IR construction"
+		result.SkippedPhases = append(result.SkippedPhases,
+			diagnostic.SkippedPhase{Phase: diagnostic.PhaseNormalize, Reason: reason},
+			diagnostic.SkippedPhase{Phase: diagnostic.PhaseIR, Reason: reason},
+		)
 	}
 	if result.Document != nil && !diagnostic.HasErrors(result.Diagnostics) && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
