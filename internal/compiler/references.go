@@ -672,7 +672,7 @@ func (r *remoteReferenceResolver) effectiveRemoteSourceForContext(data []byte, s
 	if err != nil {
 		return decodedSource{}, err
 	}
-	registerRemoteReferenceContexts(r.compatibility, effective.value, source)
+	registerRemoteReferenceContextsAtRoot(r.compatibility, effective.value, source, context)
 	return effective, nil
 }
 

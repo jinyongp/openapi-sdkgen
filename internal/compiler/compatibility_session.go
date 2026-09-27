@@ -26,11 +26,12 @@ type compatibilitySession struct {
 	consumerPolicy bool
 	noopPolicy     bool
 
-	mu               sync.Mutex
-	findings         []compatibility.Finding
-	ledger           []compatibility.LedgerEntry
-	contexts         map[string]map[openapiwalk.ObjectContext]struct{}
-	effectiveSources map[compatibilitySourceKey]decodedSource
+	mu                 sync.Mutex
+	findings           []compatibility.Finding
+	collectorFindingAt int
+	ledger             []compatibility.LedgerEntry
+	contexts           map[string]map[openapiwalk.ObjectContext]struct{}
+	effectiveSources   map[compatibilitySourceKey]decodedSource
 }
 
 type compatibilitySourceKey struct {
@@ -363,6 +364,10 @@ func (session *compatibilitySession) sourceContexts(source string) []openapiwalk
 }
 
 func registerRemoteReferenceContexts(session *compatibilitySession, value any, baseSource string) {
+	registerRemoteReferenceContextsAtRoot(session, value, baseSource, openapiwalk.ObjectOpenAPI)
+}
+
+func registerRemoteReferenceContextsAtRoot(session *compatibilitySession, value any, baseSource string, rootContext openapiwalk.ObjectContext) {
 	if session == nil {
 		return
 	}
@@ -371,7 +376,7 @@ func registerRemoteReferenceContexts(session *compatibilitySession, value any, b
 		base, _ = url.Parse(baseSource)
 	}
 	var occurrences []externalReferenceOccurrence
-	collectExternalReferenceOccurrences(value, nil, &occurrences)
+	collectExternalReferenceOccurrencesAtRoot(value, nil, rootContext, &occurrences)
 	for _, occurrence := range occurrences {
 		if strings.HasPrefix(occurrence.Reference, "#") {
 			continue
@@ -392,6 +397,26 @@ func registerRemoteReferenceContexts(session *compatibilitySession, value any, b
 		reference.Fragment = ""
 		session.registerSourceContext(reference.String(), occurrence.Context)
 	}
+}
+
+func (session *compatibilitySession) drainCollectorDiagnostics() []diagnostic.Diagnostic {
+	if session == nil {
+		return nil
+	}
+	session.mu.Lock()
+	start := session.collectorFindingAt
+	if start > len(session.findings) {
+		start = len(session.findings)
+	}
+	findings := append([]compatibility.Finding(nil), session.findings[start:]...)
+	session.collectorFindingAt = len(session.findings)
+	session.mu.Unlock()
+
+	result := make([]diagnostic.Diagnostic, 0, len(findings))
+	for _, finding := range findings {
+		result = append(result, compatibilityDiagnostic(finding))
+	}
+	return diagnostic.Sort(result)
 }
 
 func (session *compatibilitySession) evidence() ([]compatibility.Finding, []compatibility.LedgerEntry) {
@@ -507,15 +532,27 @@ func prepareCompatibilityValue(source string, value any, options *CompileOptions
 	if err != nil {
 		return nil, false, err
 	}
-	values := compatibilityDiagnostics(options.compatibilitySession)
-	if options.diagnostics != nil {
-		options.diagnostics.Extend(values)
-		return effective, changed, nil
-	}
-	for _, value := range values {
-		if value.Severity == diagnostic.SeverityError {
-			return nil, changed, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", value.Message, safeInputDisplay(value.Location.Source), value.Location.Pointer))
-		}
+	if err := syncCompatibilityDiagnostics(options); err != nil {
+		return nil, changed, err
 	}
 	return effective, changed, nil
+}
+
+func syncCompatibilityDiagnostics(options *CompileOptions) error {
+	if options == nil || options.compatibilitySession == nil {
+		return nil
+	}
+	if options.diagnostics != nil {
+		options.diagnostics.Extend(options.compatibilitySession.drainCollectorDiagnostics())
+		return nil
+	}
+	for _, value := range compatibilityDiagnostics(options.compatibilitySession) {
+		if value.Severity == diagnostic.SeverityError {
+			return phaseError(
+				diagnostic.PhaseOpenAPI,
+				fmt.Errorf("%s at %s%s", value.Message, safeInputDisplay(value.Location.Source), value.Location.Pointer),
+			)
+		}
+	}
+	return nil
 }

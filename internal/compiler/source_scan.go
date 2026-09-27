@@ -97,7 +97,7 @@ func scanLocalReferenceDocumentsValue(source inputSource, value any, collector *
 			visited[resolved] = true
 		}
 	}
-	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector, cache, session)
+	return scanLocalReferenceValue(value, source.fileBase, root, visited, collector, cache, session, openapiwalk.ObjectOpenAPI)
 }
 
 func scanLocalReferences(data []byte, directory, root string, visited map[string]bool, collector *diagnostic.Collector) error {
@@ -105,12 +105,12 @@ func scanLocalReferences(data []byte, directory, root string, visited map[string
 	if err := yaml.Unmarshal(data, &value); err != nil {
 		return nil
 	}
-	return scanLocalReferenceValue(value, directory, root, visited, collector, nil, nil)
+	return scanLocalReferenceValue(value, directory, root, visited, collector, nil, nil, openapiwalk.ObjectOpenAPI)
 }
 
-func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession) error {
+func scanLocalReferenceValue(value any, directory, root string, visited map[string]bool, collector *diagnostic.Collector, cache *decodedSourceCache, session *compatibilitySession, rootContext openapiwalk.ObjectContext) error {
 	var references []externalReferenceOccurrence
-	collectExternalReferenceOccurrences(value, nil, &references)
+	collectExternalReferenceOccurrencesAtRoot(value, nil, rootContext, &references)
 	sort.Slice(references, func(i, j int) bool {
 		if references[i].Reference != references[j].Reference {
 			return references[i].Reference < references[j].Reference
@@ -145,7 +145,7 @@ func scanLocalReferenceValue(value any, directory, root string, visited map[stri
 		}
 		referencedValue := effective.value
 		collector.Extend(reservedExtensionDiagnosticsValue(referencedValue, target))
-		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector, cache, session); err != nil {
+		if err := scanLocalReferenceValue(referencedValue, filepath.Dir(target), root, visited, collector, cache, session, occurrence.Context); err != nil {
 			return err
 		}
 	}
@@ -186,6 +186,10 @@ func hasExternalReference(value any, path []string) bool {
 }
 
 func collectExternalReferenceOccurrences(value any, path []string, result *[]externalReferenceOccurrence) {
+	collectExternalReferenceOccurrencesAtRoot(value, path, openapiwalk.ObjectOpenAPI, result)
+}
+
+func collectExternalReferenceOccurrencesAtRoot(value any, path []string, root openapiwalk.ObjectContext, result *[]externalReferenceOccurrence) {
 	if path == nil {
 		path = make([]string, 0, 64)
 	}
@@ -194,7 +198,7 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 		if reference, _ := typed["$ref"].(string); reference != "" && !strings.HasPrefix(reference, "#") {
 			*result = append(*result, externalReferenceOccurrence{
 				Reference: reference,
-				Context:   openapiwalk.ObjectContextAt(path),
+				Context:   openapiwalk.StructuralPositionAtRoot(root, path).Object,
 				Pointer:   sourceJSONPointer(append(path, "$ref")),
 			})
 		}
@@ -202,11 +206,11 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 			if name == "$ref" || openapiwalk.ReferenceChildOpaque(path, name, child) {
 				continue
 			}
-			collectExternalReferenceOccurrences(child, append(path, name), result)
+			collectExternalReferenceOccurrencesAtRoot(child, append(path, name), root, result)
 		}
 	case []any:
 		for index, child := range typed {
-			collectExternalReferenceOccurrences(child, append(path, strconv.Itoa(index)), result)
+			collectExternalReferenceOccurrencesAtRoot(child, append(path, strconv.Itoa(index)), root, result)
 		}
 	}
 }

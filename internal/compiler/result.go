@@ -181,7 +181,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		if err := scanLocalReferenceDocumentsValue(source, effective, collector, options.sourceCache, options.compatibilitySession); err != nil {
 			return fmt.Errorf("internal source registry failure: %w", err)
 		}
-		return nil
+		return syncCompatibilityDiagnostics(&options)
 	}); err != nil {
 		return Result{}, err
 	}
@@ -196,7 +196,7 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 			collector.Extend(values)
 			analysis.addCoverage(coverage...)
 		}
-		return nil
+		return syncCompatibilityDiagnostics(&options)
 	}); err != nil {
 		return Result{}, err
 	}
@@ -223,6 +223,12 @@ func CompileInputResultWithOptions(input string, options CompileOptions) (Result
 		analysis.recordPostIRUnavailable(source.display)
 	}
 	result := analysis.attach(resultFromCompile(document, err, source.display, collector))
+	if document == nil && err == nil && diagnostic.HasErrors(result.Diagnostics) {
+		result.SkippedPhases = append(result.SkippedPhases, diagnostic.SkippedPhase{
+			Phase:  diagnostic.PhaseIR,
+			Reason: "blocking diagnostics discovered while preparing referenced OpenAPI sources prevented canonical IR construction",
+		})
+	}
 	if result.Document != nil && !diagnostic.HasErrors(result.Diagnostics) && source.filePath != "" && !hasExternalReference(effective, nil) && len(options.SchemaExtensionManifests) == 0 {
 		digest := sha256.Sum256(source.data)
 		result.ReusableInput = &ReusableInput{SHA256: hex.EncodeToString(digest[:])}

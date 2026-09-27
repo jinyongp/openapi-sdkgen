@@ -182,6 +182,12 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		if err != nil {
 			return nil, phaseError(diagnostic.PhaseReferences, err)
 		}
+		if err := syncCompatibilityDiagnostics(&options); err != nil {
+			return nil, err
+		}
+		if options.diagnostics != nil && compilerDiagnosticsBlocked(options.diagnostics) {
+			return nil, nil
+		}
 		if options.metrics != nil {
 			options.metrics.FileFilter = append([]string(nil), fileFilter...)
 		}
@@ -216,6 +222,12 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 	}
 	if err != nil {
 		return nil, phaseError(diagnostic.PhaseReferences, fmt.Errorf("resolve OpenAPI references: %w", err))
+	}
+	if err := syncCompatibilityDiagnostics(&options); err != nil {
+		return nil, err
+	}
+	if options.diagnostics != nil && compilerDiagnosticsBlocked(options.diagnostics) {
+		return nil, nil
 	}
 	var bundledValue any
 	if err := yaml.Unmarshal(bundled, &bundledValue); err != nil {
@@ -414,7 +426,7 @@ func validatedReferenceFileFilter(source inputSource, document any, allowRemote 
 		visited[resolved] = true
 		directory = filepath.Dir(resolved)
 	}
-	if err := inspectReferenceValue(document, directory, root, visited, allowRemote, cache, session); err != nil {
+	if err := inspectReferenceValue(document, directory, root, visited, allowRemote, cache, session, openapiwalk.ObjectOpenAPI); err != nil {
 		return nil, err
 	}
 	filters := make([]string, 0, len(visited))
@@ -455,7 +467,7 @@ func inspectReferenceFile(path, root string, visited map[string]bool, allowRemot
 	if err != nil {
 		return err
 	}
-	return inspectReferenceValue(effective.value, filepath.Dir(resolvedPath), root, visited, allowRemote, cache, session)
+	return inspectReferenceValue(effective.value, filepath.Dir(resolvedPath), root, visited, allowRemote, cache, session, context)
 }
 
 func inspectReferenceData(data []byte, directory, root string, visited map[string]bool, allowRemote bool) error {
@@ -463,16 +475,16 @@ func inspectReferenceData(data []byte, directory, root string, visited map[strin
 	if err := yaml.Unmarshal(data, &document); err != nil {
 		return fmt.Errorf("inspect OpenAPI references: %w", err)
 	}
-	return inspectReferenceValue(document, directory, root, visited, allowRemote, nil, nil)
+	return inspectReferenceValue(document, directory, root, visited, allowRemote, nil, nil, openapiwalk.ObjectOpenAPI)
 }
 
-func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache, session *compatibilitySession) error {
+func inspectReferenceValue(document any, directory, root string, visited map[string]bool, allowRemote bool, cache *decodedSourceCache, session *compatibilitySession, rootContext openapiwalk.ObjectContext) error {
 	var visit func(any, []string) error
 	visit = func(value any, path []string) error {
 		switch typed := value.(type) {
 		case map[string]any:
 			if reference, _ := typed["$ref"].(string); reference != "" {
-				context := openapiwalk.ObjectContextAt(path)
+				context := openapiwalk.StructuralPositionAtRoot(rootContext, path).Object
 				target, err := resolveContainedReference(reference, directory, root, allowRemote)
 				if err != nil {
 					return err

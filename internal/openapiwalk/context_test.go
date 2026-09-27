@@ -49,6 +49,15 @@ func TestObjectContextAt(t *testing.T) {
 	}
 }
 
+func TestStructuralPositionAtRootKeepsAmbiguousRootUnknown(t *testing.T) {
+	if got := StructuralPositionAtRoot(ObjectUnknown, nil); got.Object != ObjectUnknown {
+		t.Fatalf("ambiguous root context = %#v, want unknown", got)
+	}
+	if got := StructuralPositionAtRoot(ObjectUnknown, []string{"properties", "value"}); got.Object != ObjectUnknown {
+		t.Fatalf("ambiguous nested context = %#v, want unknown", got)
+	}
+}
+
 func TestStructuralPositionAtDistinguishesSchemaKeywordsFromNamedEntries(t *testing.T) {
 	tests := []struct {
 		name              string

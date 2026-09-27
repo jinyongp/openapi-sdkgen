@@ -62,7 +62,7 @@ func collectReferenceGraphDiagnostics(
 		remoteFailures: make(map[string]error),
 		visited:        make(map[compatibilitySourceKey]bool),
 	}
-	values, err := discovery.scanValue(effective, currentSource, directory, source.remoteBase)
+	values, err := discovery.scanValue(effective, currentSource, directory, source.remoteBase, openapiwalk.ObjectOpenAPI)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,9 +74,10 @@ func (discovery *referenceDiscovery) scanValue(
 	source string,
 	directory string,
 	remoteBase *url.URL,
+	rootContext openapiwalk.ObjectContext,
 ) ([]diagnostic.Diagnostic, error) {
 	var occurrences []externalReferenceOccurrence
-	collectExternalReferenceOccurrences(value, nil, &occurrences)
+	collectExternalReferenceOccurrencesAtRoot(value, nil, rootContext, &occurrences)
 	sort.Slice(occurrences, func(i, j int) bool {
 		if occurrences[i].Reference != occurrences[j].Reference {
 			return occurrences[i].Reference < occurrences[j].Reference
@@ -166,7 +167,7 @@ func (discovery *referenceDiscovery) scanLocalOccurrence(
 	result := reservedExtensionDiagnosticsValue(effective.value, target)
 	result = append(result, pathItemReferenceDiagnostics(effective.value, target, true)...)
 	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, target)...)
-	nested, err := discovery.scanValue(effective.value, target, filepath.Dir(target), nil)
+	nested, err := discovery.scanValue(effective.value, target, filepath.Dir(target), nil, occurrence.Context)
 	if err != nil {
 		return nil, err
 	}
@@ -214,12 +215,12 @@ func (discovery *referenceDiscovery) scanRemoteOccurrence(
 	if err != nil {
 		return nil, err
 	}
-	registerRemoteReferenceContexts(discovery.session, effective.value, canonical)
+	registerRemoteReferenceContextsAtRoot(discovery.session, effective.value, canonical, occurrence.Context)
 
 	result := reservedExtensionDiagnosticsValue(effective.value, canonical)
 	result = append(result, pathItemReferenceDiagnostics(effective.value, canonical, true)...)
 	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, canonical)...)
-	nested, err := discovery.scanValue(effective.value, canonical, "", remoteBase)
+	nested, err := discovery.scanValue(effective.value, canonical, "", remoteBase, occurrence.Context)
 	if err != nil {
 		return nil, err
 	}

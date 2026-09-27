@@ -83,7 +83,7 @@ func StructuralPositionAt(path []string) StructuralPosition {
 // StructuralPositionAtRoot resolves a path whose physical source is already
 // known to represent one reusable OpenAPI object or Schema root.
 func StructuralPositionAtRoot(root ObjectContext, path []string) StructuralPosition {
-	if root == "" || root == ObjectUnknown {
+	if root == "" {
 		root = ObjectOpenAPI
 	}
 	position := objectPosition(root, "")

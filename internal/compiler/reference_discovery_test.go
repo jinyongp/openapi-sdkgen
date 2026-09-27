@@ -11,8 +11,193 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"openapi-sdkgen/internal/compiler/compatibility"
 	"openapi-sdkgen/internal/diagnostic"
 )
+
+func TestCollectModePreservesSchemaContextAcrossNestedExternalSources(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	schema := filepath.Join(directory, "schema.yaml")
+	child := filepath.Join(directory, "child.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Nested external schema context, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: schema.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schema, []byte(`type: object
+properties:
+  child:
+    $ref: child.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(child, []byte("false\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, value := range result.Diagnostics {
+		if value.Rule == compatibility.RuleSchemaBoolean30 && strings.HasSuffix(filepath.ToSlash(value.Location.Source), "/child.yaml") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %#v, want nested external boolean Schema compatibility finding", result.Diagnostics)
+	}
+}
+
+func TestNestedExternalSchemaBlockerStopsStructuredAndDirectCompilation(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	schema := filepath.Join(directory, "schema.yaml")
+	child := filepath.Join(directory, "child.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Nested external schema blocker, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: schema.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schema, []byte(`type: object
+properties:
+  child:
+    $ref: child.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(child, []byte("type: [string, number]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("collect mode built IR past nested schema blocker: %#v", result.Document)
+	}
+	var found bool
+	for _, value := range result.Diagnostics {
+		if value.Code == "SDKGEN-E140" &&
+			value.Rule == compatibility.RuleSchemaNullableTypes30 &&
+			strings.HasSuffix(filepath.ToSlash(value.Location.Source), "/child.yaml") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %#v, want nested external schema blocker", result.Diagnostics)
+	}
+
+	if _, err := CompileFile(root); err == nil || !strings.Contains(err.Error(), "type array") {
+		t.Fatalf("direct compile error = %v, want nested schema compatibility blocker", err)
+	}
+}
+
+func TestDirectCompileBlocksNestedExternalSchemaCompatibilityReject(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	schema := filepath.Join(directory, "schema.yaml")
+	child := filepath.Join(directory, "child.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Nested external schema reject, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: schema.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(schema, []byte(`type: object
+properties:
+  child:
+    $ref: child.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(child, []byte(`contains:
+  type: string
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := CompileFile(root); err == nil ||
+		!strings.Contains(err.Error(), compatibility.RuleSchemaKeywords30) &&
+			!strings.Contains(err.Error(), "contains") {
+		t.Fatalf("direct compile error = %v, want nested external schema compatibility rejection", err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("collect mode built document despite nested blocking schema finding: %#v", result.Document)
+	}
+	var found bool
+	for _, value := range result.Diagnostics {
+		if value.Rule == compatibility.RuleSchemaKeywords30 &&
+			value.Code == "SDKGEN-E140" &&
+			strings.HasSuffix(filepath.ToSlash(value.Location.Source), "/child.yaml") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %#v, want nested external COMP-SCHEMA-005 blocker", result.Diagnostics)
+	}
+}
+
+func TestAmbiguousReferencedContextsRemainFailClosed(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	shared := filepath.Join(directory, "shared.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Ambiguous referenced contexts, version: "1"}
+paths:
+  /items:
+    get:
+      operationId: getItems
+      parameters:
+        - $ref: shared.yaml
+      responses:
+        "200":
+          $ref: shared.yaml
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(shared, []byte(`name: Content-Type
+in: header
+description: shared
+schema:
+  type: string
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil || !diagnostic.HasErrors(result.Diagnostics) {
+		t.Fatalf("ambiguous multi-context source was guessed instead of blocked: %#v", result)
+	}
+}
 
 func TestCollectModeReportsIndependentMissingReferenceSources(t *testing.T) {
 	directory := t.TempDir()
@@ -379,6 +564,121 @@ components:
 	}
 	if metrics.RemoteReferenceSourceDecodes != 1 {
 		t.Fatalf("remote source decodes = %d, want 1", metrics.RemoteReferenceSourceDecodes)
+	}
+}
+
+func TestCollectModePreservesSchemaContextAcrossNestedRemoteSources(t *testing.T) {
+	var requests atomic.Int32
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests.Add(1)
+		switch request.URL.Path {
+		case "/schema.yaml":
+			_, _ = response.Write([]byte("type: object\nproperties:\n  child:\n    $ref: child.yaml\n"))
+		case "/child.yaml":
+			_, _ = response.Write([]byte("false\n"))
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer remote.Close()
+
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Nested remote schema context, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: "`+remote.URL+`/schema.yaml"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{
+		DiagnosticMode:        diagnostic.ModeCollect,
+		RemoteRefAllowlist:    []string{remote.URL},
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document == nil || diagnostic.HasErrors(result.Diagnostics) {
+		t.Fatalf("collect result = %#v", result)
+	}
+	var found bool
+	for _, value := range result.Diagnostics {
+		if value.Rule == compatibility.RuleSchemaBoolean30 &&
+			strings.HasSuffix(value.Location.Source, "/child.yaml") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("diagnostics = %#v, want nested remote boolean Schema compatibility finding", result.Diagnostics)
+	}
+	if got := requests.Load(); got != 2 {
+		t.Fatalf("remote requests = %d, want one request per physical source", got)
+	}
+}
+
+func TestFailFastRemoteCompatibilityBlockerReportsSkippedIR(t *testing.T) {
+	remote := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/schema.yaml":
+			_, _ = response.Write([]byte("type: object\nproperties:\n  child:\n    $ref: child.yaml\n"))
+		case "/child.yaml":
+			_, _ = response.Write([]byte("type: [string, number]\n"))
+		default:
+			http.NotFound(response, request)
+		}
+	}))
+	defer remote.Close()
+
+	directory := t.TempDir()
+	root := filepath.Join(directory, "openapi.yaml")
+	if err := os.WriteFile(root, []byte(`openapi: 3.0.3
+info: {title: Remote nested blocker, version: "1"}
+paths: {}
+components:
+  schemas:
+    Root:
+      $ref: "`+remote.URL+`/schema.yaml"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := CompileFileResultWithOptions(root, CompileOptions{
+		RemoteRefAllowlist:    []string{remote.URL},
+		UpdateRefLock:         true,
+		remoteReferenceClient: remote.Client(),
+		remoteReferenceLookup: func(context.Context, string) ([]net.IPAddr, error) {
+			return []net.IPAddr{{IP: net.ParseIP("93.184.216.34")}}, nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Document != nil {
+		t.Fatalf("fail-fast result built IR past remote compatibility blocker: %#v", result)
+	}
+	var foundDiagnostic, skippedIR bool
+	for _, value := range result.Diagnostics {
+		if value.Code == "SDKGEN-E140" && value.Rule == compatibility.RuleSchemaNullableTypes30 {
+			foundDiagnostic = true
+		}
+	}
+	for _, skipped := range result.SkippedPhases {
+		if skipped.Phase == diagnostic.PhaseIR {
+			skippedIR = true
+		}
+	}
+	if !foundDiagnostic || !skippedIR {
+		t.Fatalf("result = %#v, want E140 and skipped IR", result)
 	}
 }
 
