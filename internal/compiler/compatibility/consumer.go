@@ -13,6 +13,7 @@ const (
 	RuleReference31Fields     = "COMP-REF-002"
 	RuleReservedHeader        = "COMP-PARAM-001"
 	RulePathParameterBinding  = "COMP-PARAM-005"
+	RuleSecurityRequirement   = "COMP-SEC-001"
 	RuleResponseContentType   = "COMP-RESP-001"
 	RuleEncodingHeaders       = "COMP-ENC-001"
 	RuleEncodingFields        = "COMP-ENC-002"

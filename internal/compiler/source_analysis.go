@@ -85,16 +85,27 @@ func (analysis *sourceAnalysis) run(
 	return true, nil
 }
 
+func postIRConformanceAnalyzers() []string {
+	return []string{
+		pathParameterConformanceAnalyzer,
+		securityRequirementConformanceAnalyzer,
+	}
+}
+
 func (analysis *sourceAnalysis) recordPostIRUnavailable(source string) {
-	spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, pathParameterConformanceAnalyzer, source, "compiler-document")
-	analysis.orchestrator.Ready(spec)
+	for _, analyzer := range postIRConformanceAnalyzers() {
+		spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, analyzer, source, "compiler-document")
+		analysis.orchestrator.Ready(spec)
+	}
 }
 
 func (analysis *sourceAnalysis) recordPostIRComplete(source string) {
 	analysis.orchestrator.Provide("compiler-document")
-	spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, pathParameterConformanceAnalyzer, source, "compiler-document")
-	if analysis.orchestrator.Ready(spec) {
-		analysis.orchestrator.Record(spec, diagnostic.CoverageOutcome{Status: diagnostic.CoverageComplete})
+	for _, analyzer := range postIRConformanceAnalyzers() {
+		spec := sourceAnalyzerSpec(diagnostic.PhaseOpenAPI, analyzer, source, "compiler-document")
+		if analysis.orchestrator.Ready(spec) {
+			analysis.orchestrator.Record(spec, diagnostic.CoverageOutcome{Status: diagnostic.CoverageComplete})
+		}
 	}
 }
 

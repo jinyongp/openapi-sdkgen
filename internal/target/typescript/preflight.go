@@ -68,8 +68,8 @@ func prepareTargetDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
 		))
 	}
 	result = append(result, operationIdentityDiagnostics(document, plan.ownership)...)
-	result = append(result, securityPreparationDiagnostics(document, plan.ownership)...)
-	result = append(result, cookieSecurityOwnershipDiagnostics(document, plan.ownership)...)
+	result = append(result, securityPreparationDiagnostics(plan)...)
+	result = append(result, cookieSecurityOwnershipDiagnostics(plan)...)
 	return diagnostic.Sort(result)
 }
 
@@ -275,9 +275,13 @@ func operationIdentityDiagnostics(document *ir.Document, ownership *sourceOwners
 	return result
 }
 
-func securityPreparationDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
+func securityPreparationDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
+	document := plan.document
 	var result []diagnostic.Diagnostic
 	for _, operation := range document.Operations {
+		if plan.omittedOperations[operationRouteKey(operation)] {
+			continue
+		}
 		if _, _, err := operationSecurityDefinition(document, operation); err != nil {
 			pointer := operation.Pointer
 			if pointer == "" {
@@ -290,7 +294,7 @@ func securityPreparationDiagnostics(document *ir.Document, ownership *sourceOwne
 			}
 			value := sourceTargetDiagnostic(
 				document,
-				ownership,
+				plan.ownership,
 				pointer,
 				"SDKGEN-E508",
 				"Security requirements for this operation are invalid: "+strings.TrimSuffix(err.Error(), ".")+".",
@@ -306,11 +310,15 @@ func securityPreparationDiagnostics(document *ir.Document, ownership *sourceOwne
 	return result
 }
 
-func cookieSecurityOwnershipDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex) []diagnostic.Diagnostic {
+func cookieSecurityOwnershipDiagnostics(plan *sourcePlan) []diagnostic.Diagnostic {
+	document := plan.document
 	components, _ := document.Raw["components"].(map[string]any)
 	schemes, _ := components["securitySchemes"].(map[string]any)
 	var result []diagnostic.Diagnostic
 	for _, operation := range document.Operations {
+		if plan.omittedOperations[operationRouteKey(operation)] {
+			continue
+		}
 		value, exists := operation.Raw["security"]
 		if !exists {
 			value, exists = document.Raw["security"]
@@ -366,7 +374,7 @@ func cookieSecurityOwnershipDiagnostics(document *ir.Document, ownership *source
 			}
 			value := sourceTargetDiagnostic(
 				document,
-				ownership,
+				plan.ownership,
 				pointer,
 				"SDKGEN-E509",
 				fmt.Sprintf("Cookie %q is declared as both an operation parameter and security credential.", parameter.Name),

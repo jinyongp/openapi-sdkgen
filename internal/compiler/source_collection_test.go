@@ -76,12 +76,14 @@ func TestCollectModeAccumulatesIndependentSourceSafeBlockers(t *testing.T) {
 			t.Fatalf("coverage = %#v, missing complete analyzer %q", collected.Coverage, analyzer)
 		}
 	}
-	pathCoverage := coverage[pathParameterConformanceAnalyzer]
-	if pathCoverage.Status != diagnostic.CoverageSkipped ||
-		len(pathCoverage.Prerequisites) != 1 ||
-		pathCoverage.Prerequisites[0].Name != "compiler-document" ||
-		pathCoverage.Prerequisites[0].Available {
-		t.Fatalf("path conformance coverage = %#v, want skipped compiler-document prerequisite", pathCoverage)
+	for _, analyzer := range []string{pathParameterConformanceAnalyzer, securityRequirementConformanceAnalyzer} {
+		postIRCoverage := coverage[analyzer]
+		if postIRCoverage.Status != diagnostic.CoverageSkipped ||
+			len(postIRCoverage.Prerequisites) != 1 ||
+			postIRCoverage.Prerequisites[0].Name != "compiler-document" ||
+			postIRCoverage.Prerequisites[0].Available {
+			t.Fatalf("%s coverage = %#v, want skipped compiler-document prerequisite", analyzer, postIRCoverage)
+		}
 	}
 	skipped := map[diagnostic.Phase]bool{}
 	for _, phase := range collected.SkippedPhases {

@@ -3,6 +3,7 @@ package sdkgen
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/compatibility"
@@ -11,7 +12,10 @@ import (
 	"openapi-sdkgen/internal/failure"
 )
 
-const pathParameterConformanceAnalyzer = "openapi.path-parameter-conformance"
+const (
+	pathParameterConformanceAnalyzer       = "openapi.path-parameter-conformance"
+	securityRequirementConformanceAnalyzer = "openapi.security-requirement-conformance"
+)
 
 type operationConformanceFinding struct {
 	finding      compatibility.Finding
@@ -25,6 +29,21 @@ func finalizeCompilerDocument(document *ir.Document, fallbackSource string, opti
 		return nil
 	}
 	findings := pathParameterConformanceFindings(document, fallbackSource)
+	findings = append(findings, securityRequirementConformanceFindings(document, fallbackSource)...)
+	sort.Slice(findings, func(i, j int) bool {
+		left := findings[i]
+		right := findings[j]
+		if left.finding.Source != right.finding.Source {
+			return left.finding.Source < right.finding.Source
+		}
+		if left.finding.Pointer != right.finding.Pointer {
+			return left.finding.Pointer < right.finding.Pointer
+		}
+		if left.finding.RuleID != right.finding.RuleID {
+			return left.finding.RuleID < right.finding.RuleID
+		}
+		return left.ownerPointer < right.ownerPointer
+	})
 	for _, value := range findings {
 		diagnosticValue := compatibilityDiagnostic(value.finding)
 		diagnosticValue.Route = value.route
@@ -56,6 +75,80 @@ func finalizeCompilerDocument(document *ir.Document, fallbackSource string, opti
 		return left.RuleID < right.RuleID
 	})
 	return nil
+}
+
+func securityRequirementConformanceFindings(document *ir.Document, fallbackSource string) []operationConformanceFinding {
+	if document == nil || (document.OpenAPIVersionLine != "3.0" && document.OpenAPIVersionLine != "3.1") {
+		return nil
+	}
+	known := make(map[string]struct{}, len(document.SecuritySchemes))
+	for name := range document.SecuritySchemes {
+		known[name] = struct{}{}
+	}
+	var result []operationConformanceFinding
+	appendRequirementFindings := func(
+		requirements []ir.SecurityRequirement,
+		basePointer string,
+		scope failure.Scope,
+		effect failure.Effect,
+		ownerPointer, route, operationID string,
+	) {
+		for requirementIndex, requirement := range requirements {
+			for _, scheme := range requirement.Schemes {
+				if _, exists := known[scheme.Name]; exists {
+					continue
+				}
+				pointer := basePointer + "/" + strconv.Itoa(requirementIndex) + "/" + escapeConformancePointerToken(scheme.Name)
+				location := conformanceLocation(document, fallbackSource, pointer)
+				result = append(result, operationConformanceFinding{
+					finding: compatibility.Finding{
+						RuleID:      compatibility.RuleSecurityRequirement,
+						Conformance: compatibility.ConformanceNonconforming,
+						Disposition: compatibility.DispositionInvalid,
+						Action:      compatibility.ActionReject,
+						Impact:      compatibility.ImpactSecurity,
+						Scope:       scope,
+						Effect:      effect,
+						Source:      location.Source,
+						Pointer:     location.Pointer,
+						Message:     fmt.Sprintf("Security Requirement references undeclared Security Scheme %q.", scheme.Name),
+					},
+					ownerPointer: ownerPointer,
+					route:        route,
+					operation:    operationID,
+				})
+			}
+		}
+	}
+	appendRequirementFindings(document.Security, "#/security", failure.ScopeDocument, failure.EffectBlock, "", "", "")
+	for _, operation := range document.Operations {
+		if !operation.SecurityDeclared {
+			continue
+		}
+		appendRequirementFindings(
+			operation.Security,
+			operation.Pointer+"/security",
+			failure.ScopeOperation,
+			failure.EffectOmitOperation,
+			operation.Pointer,
+			operationRouteIdentity(operation),
+			operation.OperationID,
+		)
+	}
+	return result
+}
+
+func conformanceLocation(document *ir.Document, fallbackSource, pointer string) ir.SourceLocation {
+	location := ir.SourceLocation{Source: fallbackSource, Pointer: pointer}
+	if provenance, found := document.LookupProvenance(pointer); found {
+		location = provenance.Primary
+	}
+	return location
+}
+
+func escapeConformancePointerToken(value string) string {
+	value = strings.ReplaceAll(value, "~", "~0")
+	return strings.ReplaceAll(value, "/", "~1")
 }
 
 func pathParameterConformanceFindings(document *ir.Document, fallbackSource string) []operationConformanceFinding {
