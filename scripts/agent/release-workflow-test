@@ -4,6 +4,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh
 
 workflow="$ROOT/.github/workflows/release.yml"
 ci_workflow="$ROOT/.github/workflows/ci.yml"
+npm_smoke="$ROOT/.github/workflows/npm-smoke.yml"
 homebrew_check="$ROOT/.github/workflows/homebrew.yml"
 dependabot="$ROOT/.github/dependabot.yml"
 npm_config="$ROOT/.github/npm/packages.yml"
@@ -45,6 +46,10 @@ require_text "needs: [validate-release, publish-github-release]"
 
 require_text "uses: releaseway/actions@${releaseway_actions_sha} # v0.1.4"
 require_text "uses: releaseway/npm-actions@${npm_actions_sha} # v0.3.2"
+require_text "verify-npm-release:"
+require_text "needs: [validate-release, publish-npm]"
+require_text 'OPENAPI_SDKGEN_CACHE_DIR: ${{ runner.temp }}/openapi-sdkgen-native-cache'
+require_text 'npx --yes openapi-sdkgen@${{ needs.validate-release.outputs.version }} --version'
 require_text "uses: releaseway/homebrew-actions/.github/workflows/publish.yml@${homebrew_actions_sha} # v0.1.0"
 require_text "tap-repository: jinyongp/homebrew-tap"
 require_text 'commit: ${{ needs.validate-release.outputs.commit }}'
@@ -75,6 +80,14 @@ if [[ "$release_tools_checkouts" != "1" ]]; then
 fi
 reject_file_text "$ci_workflow" "npm-launcher-node22:" "CI workflow"
 require_file_text "$agent_ci" '"$ROOT/scripts/agent/npm-source-check"' "agent CI"
+
+require_file_text "$npm_smoke" "workflow_dispatch:" "npm smoke workflow"
+require_file_text "$npm_smoke" "ubuntu-24.04" "npm smoke workflow"
+require_file_text "$npm_smoke" "macos-latest" "npm smoke workflow"
+require_file_text "$npm_smoke" "windows-latest" "npm smoke workflow"
+require_file_text "$npm_smoke" 'node-version: "22.23.2"' "npm smoke workflow"
+require_file_text "$npm_smoke" 'OPENAPI_SDKGEN_CACHE_DIR: ${{ runner.temp }}/openapi-sdkgen-native-cache' "npm smoke workflow"
+require_file_text "$npm_smoke" 'npx --yes openapi-sdkgen@${{ inputs.version }} --version' "npm smoke workflow"
 
 require_file_text "$npm_config" "source: git-tag" "npm Releaseway config"
 require_file_text "$npm_config" "prefix: v" "npm Releaseway config"

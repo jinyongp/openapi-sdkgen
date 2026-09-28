@@ -1,0 +1,33 @@
+name: npm smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published openapi-sdkgen npm version to verify.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  npm-smoke:
+    name: npm cold-cache smoke (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.2"
+          package-manager-cache: false
+      - name: Execute published npm launcher from a cold native cache
+        env:
+          OPENAPI_SDKGEN_CACHE_DIR: ${{ runner.temp }}/openapi-sdkgen-native-cache
+        run: npx --yes openapi-sdkgen@${{ inputs.version }} --version
