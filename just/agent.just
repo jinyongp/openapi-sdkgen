@@ -148,6 +148,10 @@ runtime-delivery-session-report *args:
     bash ./scripts/agent/runtime-delivery-session-report "$@"
 
 [positional-arguments]
+sdk-delivery-check *args:
+    bash ./scripts/agent/sdk-delivery-check "$@"
+
+[positional-arguments]
 sdk-delivery-browser *args:
     bash ./scripts/agent/sdk-delivery-browser "$@"
 

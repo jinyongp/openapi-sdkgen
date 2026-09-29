@@ -1,0 +1,78 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { test } from "node:test";
+
+import { requireVerificationSpace } from "./sdk-delivery-compile.mjs";
+
+const root = fileURLToPath(new URL("../../../", import.meta.url));
+
+test("storage preflight uses account-available bytes rather than reserved free blocks", () => {
+  assert.throws(
+    () =>
+      requireVerificationSpace(root, 4096, () => ({
+        bsize: 4096,
+        bavail: 0,
+        bfree: 1000000,
+        ffree: 1000,
+      })),
+    /found 0/,
+  );
+  assert.deepEqual(
+    requireVerificationSpace(root, 4096, () => ({
+      bsize: 4096,
+      bavail: 2,
+      bfree: 1000000,
+      ffree: 1000,
+    })),
+    { availableBytes: 8192, minimumBytes: 4096, freeInodes: 1000 },
+  );
+});
+
+function runnerFixture(t) {
+  const directory = path.join(root, ".tmp/sdk-runner-tests", randomUUID());
+  const scripts = path.join(directory, "scripts/agent");
+  fs.mkdirSync(scripts, { recursive: true });
+  fs.mkdirSync(path.join(directory, ".tmp"));
+  const wrapper = path.join(scripts, "sdk-delivery-check");
+  fs.copyFileSync(path.join(root, "scripts/agent/sdk-delivery-check"), wrapper);
+  // Run the real wrapper and lock; substitute only the expensive command bodies.
+  fs.writeFileSync(
+    path.join(scripts, "lib.sh"),
+    `ROOT=${JSON.stringify(directory)}
+TYPESCRIPT_ROOT="$ROOT/test"
+agent_run() { printf '%s\\n' "$1" >> "$ROOT/calls"; return "\${TEST_FAILURE_STATUS:-0}"; }
+`,
+  );
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  return { directory, wrapper, lock: path.join(directory, ".tmp/sdk-delivery-check.lock") };
+}
+
+test("an existing SDK run lock rejects a second run before any compiler or generator", (t) => {
+  const { directory, wrapper, lock } = runnerFixture(t);
+  fs.mkdirSync(lock);
+  fs.writeFileSync(path.join(lock, "owner"), "other-run\n");
+  const result = spawnSync("bash", [wrapper], { encoding: "utf8", timeout: 10000 });
+  assert.equal(result.status, 75);
+  assert.match(result.stderr, /already locked/);
+  assert(!fs.existsSync(path.join(directory, "calls")));
+  assert.equal(fs.readFileSync(path.join(lock, "owner"), "utf8"), "other-run\n");
+});
+
+for (const failure of [0, 17]) {
+  test(`SDK runner releases its lock and preserves exit status ${failure}`, (t) => {
+    const { directory, wrapper, lock } = runnerFixture(t);
+    const result = spawnSync("bash", [wrapper], {
+      encoding: "utf8",
+      timeout: 10000,
+      env: { ...process.env, TEST_FAILURE_STATUS: String(failure) },
+    });
+    assert.equal(result.status, failure, result.stderr);
+    assert(!fs.existsSync(lock));
+    const calls = fs.readFileSync(path.join(directory, "calls"), "utf8").trim().split("\n");
+    assert.equal(calls.length, failure === 0 ? 3 : 1);
+  });
+}
