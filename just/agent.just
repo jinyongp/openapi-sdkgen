@@ -127,6 +127,18 @@ ts-typecheck:
 ts-test:
     ./scripts/agent/ts-test
 
+[positional-arguments]
+runtime-delivery-check *args:
+    bash ./scripts/agent/runtime-delivery-check "$@"
+
+[positional-arguments]
+runtime-delivery-browser *args:
+    bash ./scripts/agent/runtime-delivery-browser "$@"
+
+[positional-arguments]
+runtime-delivery-browser-report *args:
+    bash ./scripts/agent/runtime-delivery-browser-report "$@"
+
 typescript-split-diff baseline:
     ./scripts/agent/typescript-split-diff {{quote(baseline)}}
 
