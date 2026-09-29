@@ -25,6 +25,7 @@ type runtimeTemplateArtifact struct {
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
 	{source: "selection.ts", path: "internal/runtime/selection.ts"},
 	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
 	{source: "runtime-support.ts", path: "internal/runtime/runtime-support.ts"},

@@ -55,6 +55,7 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 		"internal/runtime/links.ts",
 		"internal/runtime/media-type.ts",
 		"internal/runtime/objects.ts",
+		"internal/runtime/operation-loader.ts",
 		"internal/runtime/operation.ts",
 		"internal/runtime/pagination.ts",
 		"internal/runtime/request.ts",
