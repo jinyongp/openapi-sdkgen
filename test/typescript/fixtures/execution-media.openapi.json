@@ -1,0 +1,229 @@
+{
+  "openapi": "3.1.1",
+  "info": { "title": "Execution service wiring", "version": "1" },
+  "paths": {
+    "/json": {
+      "post": {
+        "operationId": "jsonEcho",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/xml": {
+      "post": {
+        "operationId": "xmlEcho",
+        "requestBody": {
+          "required": true,
+          "content": { "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "XML",
+            "content": { "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/header": {
+      "get": {
+        "operationId": "xmlHeader",
+        "responses": {
+          "200": {
+            "description": "XML header and JSON body",
+            "headers": {
+              "X-Item": {
+                "required": true,
+                "content": {
+                  "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } }
+                }
+              }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/parameter": {
+      "get": {
+        "operationId": "xmlParameter",
+        "parameters": [
+          {
+            "name": "item",
+            "in": "query",
+            "required": true,
+            "content": { "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/form": {
+      "post": {
+        "operationId": "formEcho",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/Item" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/multipart": {
+      "post": {
+        "operationId": "multipartEcho",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": { "schema": { "$ref": "#/components/schemas/Item" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/text": {
+      "post": {
+        "operationId": "textEcho",
+        "requestBody": {
+          "required": true,
+          "content": { "text/plain": { "schema": { "type": "string" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "text",
+            "content": { "text/plain": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/embedded": {
+      "get": {
+        "operationId": "embeddedXML",
+        "responses": {
+          "200": {
+            "description": "XML in JSON string",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/xml",
+                  "contentSchema": { "$ref": "#/components/schemas/Item" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nested": {
+      "get": {
+        "operationId": "nestedXML",
+        "responses": {
+          "200": {
+            "description": "XML in nested JSON string",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["payload"],
+                  "properties": {
+                    "payload": {
+                      "type": "string",
+                      "contentMediaType": "application/xml",
+                      "contentSchema": { "$ref": "#/components/schemas/Item" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/error": {
+      "get": {
+        "operationId": "xmlError",
+        "responses": {
+          "200": {
+            "description": "JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          },
+          "400": {
+            "description": "XML error",
+            "content": { "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/custom": {
+      "get": {
+        "operationId": "customCodec",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "query",
+            "required": true,
+            "content": { "application/x-number": { "schema": { "type": "integer" } } }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "custom",
+            "content": {
+              "application/x-record": { "schema": { "$ref": "#/components/schemas/Item" } }
+            }
+          }
+        }
+      }
+    },
+    "/plain": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "ID-less JSON",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": ["id", "count"],
+        "xml": { "name": "item" },
+        "properties": { "id": { "type": "string" }, "count": { "type": "integer", "minimum": 0 } }
+      },
+      "Unused": {
+        "type": "object",
+        "properties": { "marker": { "type": "string", "const": "unused-execution-schema" } }
+      }
+    }
+  }
+}

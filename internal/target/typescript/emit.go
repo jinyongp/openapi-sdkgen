@@ -98,6 +98,7 @@ type sourcePlan struct {
 	reservationManifest         *Manifest
 	manifest                    *Manifest
 	modules                     *semanticModulePlan
+	executions                  map[string]operationExecutionPlan
 	links                       []generatedLink
 	streams                     []generatedStream
 	webhooks                    []webhookDefinition
@@ -362,7 +363,12 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 		if moduleErr != nil {
 			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript semantic module plan: %w", moduleErr)
 		}
+		executions, executionErr := prepareOperationExecutions(prepared, *plan.manifest, modules, plan.streams)
+		if executionErr != nil {
+			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript execution plan: %w", executionErr)
+		}
 		plan.modules = modules
+		plan.executions = executions
 		coverage = append(coverage, targetAnalysisCoverage("target.modules", diagnostic.CoverageComplete, ""))
 	} else {
 		coverage = append(coverage, targetAnalysisCoverage(
@@ -490,12 +496,22 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no manifest")
 	}
 	manifest := *plan.manifest
+	if plan.modules == nil {
+		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
+	}
+	// Execution dependencies must be complete before the first artifact reaches
+	// the sink. Emission consumes the prepared plan rather than analyzing inputs.
+	for _, module := range plan.modules.operations {
+		if _, exists := plan.executions[module.routeKey]; !exists {
+			return fmt.Errorf("internal TypeScript target: missing prepared execution for %q", module.routeKey)
+		}
+	}
 	write := validatedArtifactWriter(sink)
 	typesSource, err := emitSchemaArtifactsTo(document, plan.modules, write)
 	if err != nil {
 		return err
 	}
-	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.resourceTree, plan.resourceReachable, plan.links, plan.streams, write); err != nil {
+	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.executions, plan.resourceTree, plan.resourceReachable, plan.links, plan.streams, write); err != nil {
 		return err
 	}
 	if err := emitRouteArtifactsTo(manifest, plan.modules, write); err != nil {

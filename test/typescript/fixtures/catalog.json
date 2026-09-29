@@ -2,6 +2,21 @@
   "version": 1,
   "local": [
     {
+      "id": "execution-media",
+      "input": "execution-media.openapi.json",
+      "output": "execution-media",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": [
+        "execution-providers",
+        "xml",
+        "embedded-content",
+        "form",
+        "custom-codecs"
+      ],
+      "scenario": "surface"
+    },
+    {
       "id": "contract",
       "input": "contract.openapi.json",
       "output": "client",

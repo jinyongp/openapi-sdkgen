@@ -101,6 +101,7 @@ beforeAll(async () => {
   const cases = {
     rootError: rootValue("isAPIError"),
     directError: directValue("isAPIError", "runtime/errors"),
+    executionProvider: directValue("provider", "executions/bundle-isolation-sentinel/get"),
     rootClient: rootValue("createClient"),
     directClient: directValue("createClient", "client/index"),
     rootSort: rootValue("SortDirection"),
@@ -169,6 +170,32 @@ describe("generated public entry bundle isolation", () => {
     ]);
     expect(result!.code).not.toContain("Symbol.iterator");
     expect(result!.code).not.toContain("bundle-error-category-sentinel");
+  });
+
+  it("emits a JSON execution provider without the full runtime or wire registry", () => {
+    const result = results.executionProvider;
+    expect(result).toBeDefined();
+    const modules = internalModules(result!);
+    expect(modules).toContain("internal/executions/bundle-isolation-sentinel/get.ts");
+    expect(modules).toContain("internal/runtime/http-core.ts");
+    expect(modules).toContain("internal/runtime/wire-engine.ts");
+    for (const excluded of [
+      "internal/runtime/http.ts",
+      "internal/runtime/http-codecs.ts",
+      "internal/runtime/http-advanced.ts",
+      "internal/runtime/http-stream.ts",
+      "internal/runtime/streaming.ts",
+      "internal/runtime/codecs.ts",
+      "internal/runtime/wire-xml.ts",
+      "internal/schemas/wire.ts",
+      "internal/client/registry.ts",
+      "internal/client/factory.ts",
+      "internal/enums.ts",
+    ])
+      expect(modules, bundleEvidence(result!)).not.toContain(excluded);
+    expect(result!.code).not.toContain("multipart response");
+    expect(result!.code).not.toContain("XML document");
+    expect(result!.gzipBytes).toBeLessThan(results.rootClient!.gzipBytes);
   });
 
   it("keeps the sort constant independent", () => {

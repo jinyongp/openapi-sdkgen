@@ -9,7 +9,7 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, tree *resourceNode, resourceReachable map[string]bool, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
+func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, executions map[string]operationExecutionPlan, tree *resourceNode, resourceReachable map[string]bool, links []generatedLink, streams []generatedStream, write func(Artifact) error) error {
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
@@ -42,6 +42,17 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 			return fmt.Errorf("emit operation module %q: %w", module.routeKey, err)
 		}
 		if err := write(Artifact{Path: module.path, Data: generatedSource(source)}); err != nil {
+			return err
+		}
+		execution, exists := executions[module.routeKey]
+		if !exists {
+			return fmt.Errorf("missing prepared execution for %q", module.routeKey)
+		}
+		provider, err := emitOperationExecutionProvider(plan, module, item, execution)
+		if err != nil {
+			return fmt.Errorf("emit execution %q: %w", module.routeKey, err)
+		}
+		if err := write(Artifact{Path: operationExecutionArtifactPath(module), Data: generatedSource(provider)}); err != nil {
 			return err
 		}
 	}

@@ -263,6 +263,9 @@ func (plan *semanticModulePlan) validate() error {
 		if err := add("operation "+operation.routeKey, operation.path); err != nil {
 			return err
 		}
+		if err := add("execution "+operation.routeKey, operationExecutionArtifactPath(operation)); err != nil {
+			return err
+		}
 	}
 	for _, resource := range plan.resources {
 		if err := add("resource "+resource.identity, resource.path); err != nil {
