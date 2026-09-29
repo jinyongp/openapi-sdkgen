@@ -7,6 +7,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
+import { exerciseRuntimeDelivery } from "./runtime-delivery-fixture.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const runtimePath = "internal/target/typescript/runtime/internal";
@@ -265,6 +266,38 @@ function graph(entry) {
 async function exercise(entry, names) {
   const traces = [];
   const { createAPIs } = await import(pathToFileURL(entry).href);
+  const browserFixture = await exerciseRuntimeDelivery(
+    createAPIs,
+    names,
+    "https://browser-fixture.test/sdk-case",
+  );
+  assert(browserFixture.checks.includes("two-client-isolation"));
+  if (names.includes("post")) {
+    for (const corrupt of [
+      (init) => ({ ...init, method: "GET" }),
+      (init) => ({
+        ...init,
+        headers: new Headers({
+          "content-type": "text/plain",
+          authorization: "Bearer first-fixture",
+        }),
+      }),
+      (init) => ({ ...init, body: JSON.stringify({ todo_id: "wrong", title: "JSON" }) }),
+    ]) {
+      await assert.rejects(
+        exerciseRuntimeDelivery(
+          (options) =>
+            createAPIs({
+              ...options,
+              fetch: (url, init) =>
+                options.fetch(url, init.method === "POST" ? corrupt(init) : init),
+            }),
+          names,
+          "https://browser-fixture.test/sdk-case",
+        ),
+      );
+    }
+  }
   const api = createAPIs({
     baseURL: "https://example.test",
     authorization: "Bearer local-fixture",

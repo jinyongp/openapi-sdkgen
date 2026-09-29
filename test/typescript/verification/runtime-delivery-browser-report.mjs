@@ -43,8 +43,8 @@ for (const entry of manifest.cases) {
   assert.equal(body, build.native[field], `HTTP body and static inventory disagree in ${entry.id}`);
   assert.equal(
     rows.filter((row) => row.category === "api").length,
-    entry.names.length,
-    `Not all API requests reached the local server in ${entry.id}`,
+    manifest.apiTransport === "injected-fetch" ? 0 : entry.names.length,
+    `Unexpected API network activity in ${entry.id}`,
   );
   const key = entry.kind + ":" + entry.names.join("+");
   const group = groups.get(key) ?? {
@@ -76,6 +76,14 @@ if (observed !== undefined) {
     );
     assert(found, "Missing browser observation group");
     assert.equal(found.passed, group.cases);
+    if (manifest.apiTransport === "injected-fetch") {
+      assert.equal(found.semanticsPassed, group.cases, "Missing browser request assertions");
+      assert.equal(found.twoClientChecks, group.cases, "Missing browser client isolation checks");
+      assert.deepEqual(
+        found.postSamples,
+        Array(group.cases).fill(group.names.includes("post") ? 1 : 0),
+      );
+    }
     assert.deepEqual(found.bodyBytes, group.bodySamples);
     assert.deepEqual(found.requests, group.requestSamples);
     group.elapsedSamplesMS = found.elapsedMS;

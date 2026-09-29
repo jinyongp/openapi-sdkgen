@@ -50,7 +50,7 @@ just agent ts-lint
 just agent ts-typecheck
 just agent ts-test
 just agent runtime-delivery-check [BASELINE_COMMIT]
-just agent runtime-delivery-browser [--read-only]
+just agent runtime-delivery-browser
 just agent runtime-delivery-browser-report [OBSERVED_SUMMARY_JSON]
 just agent typescript-split-diff BASELINE
 just agent example-todo

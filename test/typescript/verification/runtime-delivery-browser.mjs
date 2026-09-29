@@ -6,6 +6,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
+import { exerciseRuntimeDelivery } from "./runtime-delivery-fixture.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const latest = JSON.parse(
@@ -33,7 +34,6 @@ for (let repetition = 0; repetition < 11; repetition++) {
     ["get", "stream"],
     ["get", "xml", "stream"],
   ]) {
-    if (process.argv.includes("--read-only") && names.includes("post")) continue;
     for (const kind of repetition % 2 === 0
       ? ["baseline", "candidate"]
       : ["candidate", "baseline"]) {
@@ -58,16 +58,10 @@ const entry = ${JSON.stringify(entry)};
 const started = performance.now();
 try {
   const {createAPIs} = await import('/assets/' + entry.id + '/' + entry.kind + '/' + entry.names.join('-') + '/entry.js');
-  const api = createAPIs({baseURL:location.origin + '/api/' + entry.id, authorization:'Bearer browser-fixture'});
-  const canonical = value => value && typeof value === 'object' ? (Array.isArray(value) ? value.map(canonical) : Object.fromEntries(Object.keys(value).sort().map(key => [key,canonical(value[key])]))) : value;
-  const check = (value, expected) => {if (JSON.stringify(canonical(value)) !== JSON.stringify(canonical(expected))) throw new Error('Unexpected result: ' + JSON.stringify(value));};
-  for (const name of entry.names) {
-    if (name === 'stream') {const items=[]; const stream=api.stream.stream(); if(typeof stream.then==='function')throw new Error('Thenable stream'); for await(const item of stream)items.push(item);check(items,[{n:1},{n:2}]);}
-    else if(name==='xml')check(await api.xml(),{title:'XML'});
-    else check(await api[name](name==='get'?{path:{id:'a/b'}}:{body:{todoId:'todo-1',title:'JSON'}}),{todoId:'todo-1',title:'JSON'});
-  }
+  const exercise = ${exerciseRuntimeDelivery.toString()};
+  const semantics = await exercise(createAPIs, entry.names, location.origin + '/api/' + entry.id);
   const assets = performance.getEntriesByType('resource').filter(r=>r.name.includes('/assets/'+entry.id+'/'));
-  const result={...entry,pass:true,elapsedMS:performance.now()-started,encodedBodySize:assets.reduce((n,r)=>n+r.encodedBodySize,0),transferSize:assets.reduce((n,r)=>n+r.transferSize,0),requests:assets.length,paths:assets.map(r=>new URL(r.name).pathname)};
+  const result={...entry,pass:true,semantics,elapsedMS:performance.now()-started,encodedBodySize:assets.reduce((n,r)=>n+r.encodedBodySize,0),transferSize:assets.reduce((n,r)=>n+r.transferSize,0),requests:assets.length,paths:assets.map(r=>new URL(r.name).pathname)};
   document.querySelector('#result').textContent=JSON.stringify(result);
   console.log('RUNTIME_BROWSER_CASE '+JSON.stringify(result));
   parent.postMessage({type:'runtime-result',result},location.origin);
@@ -81,7 +75,7 @@ try {
 }
 const suite = `<!doctype html><meta charset="utf-8"><title>Runtime native ESM suite</title><h1>Runtime native ESM</h1><pre id="summary">Starting</pre><iframe id="case" style="width:100%;height:260px"></iframe><script type="module">
 const cases=${JSON.stringify(cases)};const results=[];const frame=document.querySelector('#case');let index=0;
-const summarize=()=>{const groups=new Map();for(const r of results){const key=r.kind+':'+r.names.join('+');let group=groups.get(key);if(!group){group={kind:r.kind,names:r.names,passed:0,bodyBytes:[],requests:[],elapsedMS:[],errors:[]};groups.set(key,group);}if(r.pass){group.passed++;group.bodyBytes.push(r.encodedBodySize);group.requests.push(r.requests);group.elapsedMS.push(r.elapsedMS);}else group.errors.push(r.error);}return [...groups.values()];};
+const summarize=()=>{const groups=new Map();for(const r of results){const key=r.kind+':'+r.names.join('+');let group=groups.get(key);if(!group){group={kind:r.kind,names:r.names,passed:0,bodyBytes:[],requests:[],elapsedMS:[],semanticsPassed:0,postSamples:[],twoClientChecks:0,errors:[]};groups.set(key,group);}if(r.pass){group.passed++;if(r.semantics?.apiTransport==='injected-fetch'){group.semanticsPassed++;group.postSamples.push(r.semantics.requests.filter(x=>x.method==='POST').length);if(r.semantics.checks.includes('two-client-isolation'))group.twoClientChecks++;}group.bodyBytes.push(r.encodedBodySize);group.requests.push(r.requests);group.elapsedMS.push(r.elapsedMS);}else group.errors.push(r.error);}return [...groups.values()];};
 window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.type!=='runtime-result')return;const result=event.data.result;if(result.id!==cases[index]?.id)return;results.push(result);index++;document.querySelector('#summary').textContent=JSON.stringify({completed:results.length,total:cases.length,failed:results.filter(r=>!r.pass).length},null,2);if(index<cases.length)frame.src='/case/'+cases[index].id;else {for(const group of summarize())console.log('RUNTIME_BROWSER_GROUP '+JSON.stringify(group));console.log('RUNTIME_BROWSER_SUMMARY '+JSON.stringify({browserRun:${JSON.stringify(browserRun)},runID:${JSON.stringify(latest.runID)},cases:results.length,passed:results.filter(r=>r.pass).length}));}});
 frame.src='/case/'+cases[0].id;
 </script>`;
@@ -168,8 +162,9 @@ const server = http.createServer((request, response) => {
 server.listen(0, "127.0.0.1", () => {
   const origin = `http://127.0.0.1:${server.address().port}`;
   const manifest = {
-    readOnlyMode: process.argv.includes("--read-only"),
-    excludedWorkloads: process.argv.includes("--read-only") ? ["get+post"] : [],
+    apiTransport: "injected-fetch",
+    readOnlyMode: false,
+    excludedWorkloads: [],
     runID: latest.runID,
     browserRun,
     origin,
