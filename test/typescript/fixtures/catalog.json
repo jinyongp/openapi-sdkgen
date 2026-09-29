@@ -2,6 +2,24 @@
   "version": 1,
   "local": [
     {
+      "id": "selection-links",
+      "input": "selection-links.openapi.json",
+      "output": "selection-links",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["browser-selection", "lazy-links", "cyclic-links", "private-target"],
+      "scenario": "surface"
+    },
+    {
+      "id": "selection-public",
+      "input": "selection-public.openapi.json",
+      "output": "selection-public",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["browser-selection", "exact-identities", "resource-collisions"],
+      "scenario": "surface"
+    },
+    {
       "id": "execution-media",
       "input": "execution-media.openapi.json",
       "output": "execution-media",

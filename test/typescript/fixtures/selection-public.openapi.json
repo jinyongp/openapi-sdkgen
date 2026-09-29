@@ -1,0 +1,31 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "Selective public client", "version": "1" },
+  "paths": {
+    "/idless": { "get": { "responses": { "204": { "description": "No content" } } } },
+    "/named-then": {
+      "get": { "operationId": "then", "responses": { "204": { "description": "No content" } } }
+    },
+    "/named-proto": {
+      "get": { "operationId": "__proto__", "responses": { "204": { "description": "No content" } } }
+    },
+    "/named-constructor": {
+      "get": {
+        "operationId": "constructor",
+        "responses": { "204": { "description": "No content" } }
+      }
+    },
+    "/unicode": {
+      "get": {
+        "operationId": "get-unicode",
+        "responses": { "204": { "description": "No content" } }
+      }
+    },
+    "/a-b": {
+      "get": { "operationId": "a-b", "responses": { "204": { "description": "No content" } } }
+    },
+    "/a_b": {
+      "get": { "operationId": "a_b", "responses": { "204": { "description": "No content" } } }
+    }
+  }
+}

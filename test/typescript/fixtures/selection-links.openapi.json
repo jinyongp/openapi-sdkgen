@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.1",
+  "info": { "title": "Selective lazy links", "version": "1" },
+  "paths": {
+    "/source": {
+      "get": {
+        "operationId": "getSource",
+        "responses": {
+          "200": {
+            "description": "Source",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Item" } }
+            },
+            "links": {
+              "follow": { "operationId": "getItem", "parameters": { "id": "$response.body#/id" } },
+              "xml": { "operationRef": "#/paths/~1xml/get" }
+            }
+          }
+        }
+      }
+    },
+    "/items/{id}": {
+      "get": {
+        "operationId": "getItem",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cyclic target",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Item" } }
+            },
+            "links": {
+              "back": { "operationId": "getSource" },
+              "xml": { "operationRef": "#/paths/~1xml/get" }
+            }
+          }
+        }
+      }
+    },
+    "/xml": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Private XML",
+            "content": { "application/xml": { "schema": { "$ref": "#/components/schemas/Item" } } }
+          }
+        }
+      }
+    },
+    "/failure-source": {
+      "get": {
+        "operationId": "failureSource",
+        "responses": {
+          "204": {
+            "description": "Source",
+            "links": { "follow": { "operationId": "unavailableTarget" } }
+          }
+        }
+      }
+    },
+    "/unavailable": {
+      "get": {
+        "operationId": "unavailableTarget",
+        "responses": { "204": { "description": "Target" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "xml": { "name": "item" },
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } },
+        "additionalProperties": false
+      }
+    }
+  }
+}

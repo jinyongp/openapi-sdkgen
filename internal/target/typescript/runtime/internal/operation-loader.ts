@@ -16,14 +16,35 @@ export interface PreparedOperations<Selection = unknown> {
 /** Exact operation-ID or method/path lookup domain. */
 export type OperationLookupKind = "operation" | "route";
 
+/** One placement in the full document's collision-resolved resource tree. */
+export interface OperationResourcePlacement {
+  readonly path: readonly (string | null)[];
+  readonly member: string;
+  readonly pathParameters?: readonly string[];
+  readonly hasInput?: boolean;
+  readonly inputOptional?: boolean;
+  readonly pagination?: boolean;
+}
+
 /** A compiler-owned execution module. Client state is supplied only when binding. */
 export interface OperationExecutionProvider {
   readonly abi: number;
   readonly generation: string;
   readonly route: string;
   readonly operationID?: string;
+  readonly resources?: readonly OperationResourcePlacement[];
+  /** Literal lazy imports emitted only for this operation's direct Link targets. */
+  readonly linkTargets?: Readonly<Record<string, () => Promise<OperationExecutionProvider>>>;
   bind(context: RequestContext): object;
+  /** Connects response helpers without binding or loading their target operations. */
+  bindLinks?(invoke: (route: string, args: readonly unknown[]) => Promise<unknown>): object;
 }
+
+/** Shares validated code while keeping operation callables inside each client. */
+export type OperationProviderResolver = (
+  route: string,
+  loadProvider?: () => Promise<OperationExecutionProvider>,
+) => Promise<OperationExecutionProvider>;
 
 /** Fixed export shape of each generated lookup module. */
 export interface OperationLookupEntry {
@@ -39,7 +60,7 @@ export interface PreparedClientModule {
   createSelectedClient(
     options: ClientOptions,
     providers: readonly OperationExecutionProvider[],
-    resolve: (route: string) => Promise<OperationExecutionProvider>,
+    resolve: OperationProviderResolver,
   ): object;
 }
 
@@ -103,7 +124,10 @@ export async function operationLookupFilename(
   assertLookupKey(key);
   const bytes = new TextEncoder().encode(`${kind}\0${key}`);
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-  return `${kind === "route" ? "r" : "o"}-${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}.js`;
+  const encoded = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+  return `${kind === "route" ? "r" : "o"}-${encoded.slice(0, 16)}/${encoded.slice(16)}.js`;
 }
 
 function referenceValue<Route extends string>(data: ReferenceData): OperationReference<Route> {
@@ -233,7 +257,10 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
     return candidate as ReferenceData;
   }
 
-  function load(data: ReferenceData): Promise<OperationExecutionProvider> {
+  function load(
+    data: ReferenceData,
+    loadProvider?: () => Promise<OperationExecutionProvider>,
+  ): Promise<OperationExecutionProvider> {
     if (data.provider !== undefined) {
       const provider = validateProvider(data.provider);
       if (data.kind !== "route" || provider.route !== data.key) {
@@ -249,6 +276,23 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
     const existing = loads.get(identity);
     if (existing !== undefined) return existing;
     const pending = (async () => {
+      if (loadProvider !== undefined) {
+        let loaded: unknown;
+        try {
+          loaded = await loadProvider();
+        } catch (cause) {
+          throw new OperationPreparationError(
+            "MODULE_LOAD",
+            "Could not load the linked operation module",
+            { cause },
+          );
+        }
+        const provider = validateProvider(loaded);
+        if (data.kind !== "route" || provider.route !== data.key) {
+          throw new OperationPreparationError("IDENTITY", "Link selected a different operation");
+        }
+        return canonicalize(provider);
+      }
       const filename = await operationLookupFilename(data.kind, data.key);
       let module: unknown;
       try {
@@ -285,9 +329,8 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
     return pending;
   }
 
-  function resolve(route: string): Promise<OperationExecutionProvider> {
-    return load({ abi: operationLoaderABI, generation, kind: "route", key: route });
-  }
+  const resolve: OperationProviderResolver = (route, loadProvider) =>
+    load({ abi: operationLoaderABI, generation, kind: "route", key: route }, loadProvider);
 
   async function loadOperations<const Selection>(
     selection: Selection & SelectionInput<Selection>,
@@ -295,7 +338,7 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
     // No SDK module request starts until the entire selection has been collected.
     // Application getter exceptions intentionally retain their original identity.
     const selected = collectSelectionReferences(selection, readReference);
-    const providers = await Promise.all(selected.map(load));
+    const providers = await Promise.all(selected.map((data) => load(data)));
     if (clientModule === undefined) {
       const pending = Promise.resolve().then(() => configuration.loadClient());
       clientModule = pending;

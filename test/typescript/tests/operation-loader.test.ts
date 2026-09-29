@@ -46,7 +46,7 @@ for (const [label, create, filename, staticRef] of [
       ] as const) {
         if (key === undefined) continue;
         const hash = createHash("sha256").update(`${kind}\0${key}`).digest("hex");
-        entries.set(`${kind === "route" ? "r" : "o"}-${hash}.js`, {
+        entries.set(`${kind === "route" ? "r" : "o"}-${hash.slice(0, 16)}/${hash.slice(16)}.js`, {
           abi: 1,
           generation,
           kind,
@@ -62,7 +62,7 @@ for (const [label, create, filename, staticRef] of [
       importModule: async (url) => {
         requests.push(url);
         if (extra.importModule) return extra.importModule(url);
-        const entry = entries.get(new URL(url).pathname.split("/").at(-1)!);
+        const entry = entries.get(new URL(url).pathname.split("/lookup/")[1]!);
         if (!entry) throw new Error("not found");
         return { entry };
       },
@@ -244,7 +244,9 @@ for (const [label, create, filename, staticRef] of [
         "😀",
       ]) {
         const expected = createHash("sha256").update(`route\0${key}`).digest("hex");
-        expect(await filename("route", key)).toBe(`r-${expected}.js`);
+        expect(await filename("route", key)).toBe(
+          `r-${expected.slice(0, 16)}/${expected.slice(16)}.js`,
+        );
       }
       for (const key of ["\ud800", "\udfff", "bad\ud800x"]) {
         await expect(filename("route", key)).rejects.toMatchObject({ stage: "INPUT" });

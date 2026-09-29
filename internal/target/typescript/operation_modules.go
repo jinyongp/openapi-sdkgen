@@ -44,17 +44,6 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 		if err := write(Artifact{Path: module.path, Data: generatedSource(source)}); err != nil {
 			return err
 		}
-		execution, exists := executions[module.routeKey]
-		if !exists {
-			return fmt.Errorf("missing prepared execution for %q", module.routeKey)
-		}
-		provider, err := emitOperationExecutionProvider(plan, module, item, execution)
-		if err != nil {
-			return fmt.Errorf("emit execution %q: %w", module.routeKey, err)
-		}
-		if err := write(Artifact{Path: operationExecutionArtifactPath(module), Data: generatedSource(provider)}); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -327,8 +316,11 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	output.WriteString("\n/** Completed exact callables required by this operation's response links. */\n")
 	output.WriteString("export interface LinkTargets {\n")
 	targets := make(map[string]bool)
+	targetInputs := make(map[string]generatedLink)
 	for _, link := range links {
-		targets[operationRouteKey(link.TargetOperation)] = true
+		route := operationRouteKey(link.TargetOperation)
+		targets[route] = true
+		targetInputs[route] = link
 	}
 	for _, route := range sortedStringKeys(targets) {
 		path, exists := plan.operationByRoute[route]
@@ -342,14 +334,33 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 		fmt.Fprintf(&output, "  readonly %s: import(%s).Contract[\"call\"]\n", quoteTS(route), quoteTS(specifier))
 	}
 	output.WriteString("}\n\n")
-	output.WriteString("/** Creates this operation's response-link container. */\n")
-	output.WriteString("export function bindLinks(targets: LinkTargets): Links {\n")
+	output.WriteString("/** Invokes a resolved Link target without exposing an unimplemented callable surface. */\n")
+	output.WriteString("export type LinkInvoker = (route: keyof LinkTargets, args: readonly unknown[]) => Promise<unknown>\n\n")
+	output.WriteString("/** Creates this operation's response-link container from ready or lazy targets. */\n")
+	output.WriteString("export function bindLinks(targets: LinkTargets | LinkInvoker): Links {\n")
+	output.WriteString("  const invoke: LinkInvoker = typeof targets === \"function\" ? targets : (route, args) => Reflect.apply(targets[route], targets, args) as Promise<unknown>\n")
 	var body bytes.Buffer
 	targetReference := func(route string) (string, error) {
 		if !targets[route] {
 			return "", fmt.Errorf("operation %q has no declared Link target %q", module.routeKey, route)
 		}
-		return "targets[" + quoteTS(route) + "]", nil
+		specifier, err := plan.relativeModuleSpecifier(module.path, plan.operationByRoute[route])
+		if err != nil {
+			return "", err
+		}
+		// Retain target argument checking at the generated boundary without
+		// pretending a deferred call already has raw/stream/helper properties.
+		target := targetInputs[route]
+		qualified := "import(" + quoteTS(specifier) + ")."
+		optional := "?"
+		if target.TargetOptionsRequired {
+			optional = ""
+		}
+		arguments := "options" + optional + ": " + qualified + "Options"
+		if target.TargetHasInput {
+			arguments = "input: " + qualified + "Input, " + arguments
+		}
+		return "((...args: [" + arguments + "]) => invoke(" + quoteTS(route) + ", args) as Promise<" + qualified + "Output>)", nil
 	}
 	if err := emitLinkValuesForGroups(&body, document, links, groups, targetReference, names); err != nil {
 		return nil, err

@@ -33,7 +33,15 @@ const run = (label, arguments_) => {
   return result.stdout ?? "";
 };
 const inventories = {};
-for (const fixture of ["lifecycle", "bundle-isolation", "baseline-oas31", "execution-media"]) {
+for (const fixture of [
+  "lifecycle",
+  "bundle-isolation",
+  "baseline-oas31",
+  "execution-media",
+  "client",
+  "selection-public",
+  "selection-links",
+]) {
   const generated = path.join(root, "test/typescript/fixtures/generated", fixture);
   const inventory = inspectGenerated(generated);
   inventories[fixture] = inventory.treeSha256;
@@ -86,6 +94,16 @@ const selectionTypeSource = fs.readFileSync(
 );
 const selectionWitness = selectionTypeSource.replaceAll("../fixtures/generated/", "./");
 write(path.join(output, "source/selection-witness.ts"), selectionWitness);
+const browserTypeSource = fs.readFileSync(
+  path.join(root, "test/typescript/tests/browser-types.ts"),
+  "utf8",
+);
+const browserWitness = browserTypeSource.replaceAll("../fixtures/generated/", "./");
+write(path.join(output, "source/browser-witness.ts"), browserWitness);
+write(
+  path.join(output, "browser-consumer.ts"),
+  browserWitness.replaceAll('from "./', 'from "./declarations/'),
+);
 write(path.join(output, "package.json"), '{"type":"module"}\n');
 const options = {
   target: "ES2022",
@@ -123,7 +141,7 @@ write(
   path.join(output, "consumer.json"),
   JSON.stringify({
     compilerOptions: { ...options, noEmit: true },
-    files: ["consumer.ts", "selection-consumer.ts"],
+    files: ["consumer.ts", "selection-consumer.ts", "browser-consumer.ts"],
   }),
 );
 const inputs = run("declarations-only-consumer", [
@@ -181,6 +199,17 @@ const selectionNative = JSON.parse(
 const loaderScript = path.join(root, "test/typescript/verification/operation-loader-native.mjs");
 const loaderNative = JSON.parse(
   run("native-loader", [loaderScript, path.join(output, "javascript")]),
+);
+const browserClientScript = path.join(
+  root,
+  "test/typescript/verification/browser-client-native.mjs",
+);
+const browserClientNative = JSON.parse(
+  run("native-public-client", [browserClientScript, path.join(output, "javascript")]),
+);
+const browserLinksScript = path.join(root, "test/typescript/verification/browser-links-native.mjs");
+const browserLinksNative = JSON.parse(
+  run("native-and-bundled-links", [browserLinksScript, path.join(output, "javascript")]),
 );
 const parser = createRequire(
   path.join(root, "test/typescript/node_modules/.pnpm/node_modules/package.json"),
@@ -305,6 +334,11 @@ const report = {
   mediaNative,
   selectionNative,
   loaderNative,
+  browserClientNative,
+  browserLinksNative,
+  browserLinksSHA256: sha256(fs.readFileSync(browserLinksScript)),
+  browserClientWitnessSHA256: sha256(fs.readFileSync(browserClientScript)),
+  browserTypeWitnessSHA256: sha256(browserTypeSource),
   loaderNativeSHA256: sha256(fs.readFileSync(loaderScript)),
   selectionNativeSHA256: sha256(fs.readFileSync(selectionScript)),
   mediaNativeSHA256: sha256(fs.readFileSync(mediaScript)),

@@ -27,11 +27,13 @@ for (const [kind, key] of [
   ["route", "GET /a"],
   ["operation", "readA"],
 ]) {
-  const filename = `${kind === "route" ? "r" : "o"}-${createHash("sha256").update(`${kind}\0${key}`).digest("hex")}.js`;
+  const hash = createHash("sha256").update(`${kind}\0${key}`).digest("hex");
+  const filename = `${kind === "route" ? "r" : "o"}-${hash.slice(0, 16)}/${hash.slice(16)}.js`;
   assert.equal(await runtime.operationLookupFilename(kind, key), filename);
+  fs.mkdirSync(path.dirname(path.join(directory, "lookup", filename)), { recursive: true });
   fs.writeFileSync(
     path.join(directory, "lookup", filename),
-    `import {provider} from '../provider.mjs';
+    `import {provider} from '../../provider.mjs';
 export const entry={abi:1,generation:${JSON.stringify(generation)},kind:${JSON.stringify(kind)},key:${JSON.stringify(key)},provider};\n`,
   );
 }

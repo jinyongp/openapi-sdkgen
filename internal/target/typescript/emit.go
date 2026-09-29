@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
 	"fmt"
 	"sort"
@@ -25,6 +26,7 @@ type runtimeTemplateArtifact struct {
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "selected-client.ts", path: "internal/runtime/selected-client.ts"},
 	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
 	{source: "selection.ts", path: "internal/runtime/selection.ts"},
 	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
@@ -509,7 +511,13 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 			return fmt.Errorf("internal TypeScript target: missing prepared execution for %q", module.routeKey)
 		}
 	}
-	write := validatedArtifactWriter(sink)
+	publish := validatedArtifactWriter(sink)
+	digest := sha256.New()
+	_, _ = digest.Write([]byte("openapi-sdkgen/browser/v1\x00"))
+	write := func(artifact Artifact) error {
+		hashBrowserArtifact(digest, artifact)
+		return publish(artifact)
+	}
 	typesSource, err := emitSchemaArtifactsTo(document, plan.modules, write)
 	if err != nil {
 		return err
@@ -588,12 +596,22 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 			return err
 		}
 		for _, artifact := range serverArtifacts {
-			if err := write(artifact); err != nil {
+			// The optional server add-on is not part of browser execution identity.
+			// Keep the same client artifacts when only that add-on is selected.
+			if err := publish(artifact); err != nil {
 				return err
 			}
 		}
 	}
-	return nil
+	// Hash the identity-neutral browser artifacts as structured emitter output.
+	// The second render embeds that fingerprint; it never parses or rewrites JS.
+	if err := emitBrowserArtifactsTo(plan, "", func(artifact Artifact) error {
+		hashBrowserArtifact(digest, artifact)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return emitBrowserArtifactsTo(plan, fmt.Sprintf("%x", digest.Sum(nil)), publish)
 }
 
 func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {

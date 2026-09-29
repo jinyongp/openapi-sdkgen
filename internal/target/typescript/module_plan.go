@@ -13,6 +13,7 @@ type semanticModulePlan struct {
 	schemas                   []schemaModulePlan
 	operations                []operationModulePlan
 	resources                 []resourceModulePlan
+	browser                   []artifactPathCandidate
 	fixed                     map[string]string
 	schemaByName              map[string]string
 	schemaByQuotedName        map[string]string
@@ -70,6 +71,9 @@ func buildSemanticModulePlan(document *ir.Document, reservations Manifest, manif
 		return nil, err
 	}
 	if err := result.planResources(resourceTree); err != nil {
+		return nil, err
+	}
+	if err := result.planBrowser(manifest); err != nil {
 		return nil, err
 	}
 	if err := result.validate(); err != nil {
@@ -269,6 +273,11 @@ func (plan *semanticModulePlan) validate() error {
 	}
 	for _, resource := range plan.resources {
 		if err := add("resource "+resource.identity, resource.path); err != nil {
+			return err
+		}
+	}
+	for _, artifact := range plan.browser {
+		if err := add(artifact.identity, artifact.base); err != nil {
 			return err
 		}
 	}

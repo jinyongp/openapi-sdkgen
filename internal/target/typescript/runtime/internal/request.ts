@@ -76,8 +76,8 @@ export interface RawResponse<Output, HeaderValues = Readonly<Record<string, unkn
   readonly status: number;
   /** Response headers. */
   readonly headers: HeaderValues;
-  /** Normalized response media type without parameters. */
-  readonly contentType?: string;
+  /** Normalized response media type, or undefined for a response without media. */
+  readonly contentType?: string | undefined;
   /** Decoded, typed response body. */
   readonly data: Output;
   /** Request metadata extracted from the response. */

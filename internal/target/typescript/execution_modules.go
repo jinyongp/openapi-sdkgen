@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -12,7 +13,7 @@ func operationExecutionArtifactPath(module operationModulePlan) string {
 	return "internal/executions/" + strings.TrimPrefix(module.path, "internal/operations/")
 }
 
-func emitOperationExecutionProvider(plan *semanticModulePlan, module operationModulePlan, item ManifestOperation, execution operationExecutionPlan) ([]byte, error) {
+func emitOperationExecutionProvider(plan *semanticModulePlan, module operationModulePlan, item ManifestOperation, execution operationExecutionPlan, generation string, placements []browserResourcePlacement, linkedTargets []string) ([]byte, error) {
 	artifact := operationExecutionArtifactPath(module)
 	var output bytes.Buffer
 	importFrom := func(clause, target string) error {
@@ -30,6 +31,12 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		return nil, err
 	}
 	binders := []string{"bindBase", "type BaseCall"}
+	if len(linkedTargets) > 0 {
+		binders = append(binders, "bindLinks")
+		if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/operation-loader.ts"); err != nil {
+			return nil, err
+		}
+	}
 	callType := "BaseCall"
 	if execution.hasStream {
 		binders = append(binders, "bindStream", "type Stream")
@@ -110,6 +117,14 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	output.WriteString("\n/** Compiler-owned base execution provider; no client configuration is cached here. */\n")
 	output.WriteString("export const provider = /* @__PURE__ */ Object.freeze({\n")
+	fmt.Fprintf(&output, "  abi: %d, generation: %s,\n", browserExecutionABI, quoteTS(generation))
+	if len(placements) > 0 {
+		data, err := json.Marshal(placements)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "  resources: %s,\n", data)
+	}
 	fmt.Fprintf(&output, "  route: %s,\n", quoteTS(module.routeKey))
 	if item.compiled.OperationID != "" {
 		fmt.Fprintf(&output, "  operationID: %s,\n", quoteTS(item.compiled.OperationID))
@@ -130,6 +145,24 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	} else {
 		fmt.Fprintf(&output, "    return Object.assign(base, { %s })\n", strings.Join(capabilities, ", "))
 	}
-	output.WriteString("  },\n} as const)\n")
+	output.WriteString("  },\n")
+	if len(linkedTargets) > 0 {
+		output.WriteString("  bindLinks,\n  linkTargets: {\n")
+		for _, route := range linkedTargets {
+			target, exists := plan.operationByRoute[route]
+			if !exists {
+				return nil, fmt.Errorf("Link target %q has no execution module", route)
+			}
+			specifier, err := plan.relativeModuleSpecifier(artifact, operationExecutionArtifactPath(operationModulePlan{path: target}))
+			if err != nil {
+				return nil, err
+			}
+			// Literal dynamic imports let native ESM and bundlers defer the same
+			// target. An explicit return type bounds cyclic Link provider types.
+			fmt.Fprintf(&output, "    %s: (): Promise<OperationExecutionProvider> => import(%s).then(module => module.provider),\n", quoteTS(route), quoteTS(specifier))
+		}
+		output.WriteString("  },\n")
+	}
+	output.WriteString("} as const)\n")
 	return output.Bytes(), nil
 }
