@@ -42,6 +42,7 @@ for (const fixture of [
   "client",
   "selection-public",
   "selection-links",
+  "discriminator-dependencies",
 ]) {
   const generated = path.join(root, "test/typescript/fixtures/generated", fixture);
   const inventory = inspectGenerated(generated);
@@ -101,6 +102,16 @@ type LocalContractIdentity = [
 ];
 const localContractIdentity: LocalContractIdentity = [true, true, true, true, true];
 void localContractIdentity;
+import type { Input as CatInput, Output as CatOutput } from "./discriminator-dependencies/internal/schemas/cat.js";
+const inputCat: CatInput = { kind: "cat", lives: 9, secret: "private" };
+const outputCat: CatOutput = { kind: "cat", lives: 9, label: "public" };
+// @ts-expect-error Read-only fields remain absent from the mapped input projection.
+const wrongCatInput: CatInput = { kind: "cat", lives: 9, label: "public" };
+// @ts-expect-error Write-only fields remain absent from the mapped output projection.
+const wrongCatOutput: CatOutput = { kind: "cat", lives: 9, secret: "private" };
+// @ts-expect-error The discriminator-only target retains its declared field types.
+const wrongCatLives: CatInput = { kind: "cat", lives: "nine" };
+void [inputCat, outputCat, wrongCatInput, wrongCatOutput, wrongCatLives];
 `;
 write(path.join(output, "source/type-witness.ts"), witness);
 const selectionTypeSource = fs.readFileSync(
@@ -262,6 +273,40 @@ console.log(JSON.stringify({checks:["generated-json-full-parity","raw-metadata",
 `;
 write(path.join(output, "native.mjs"), runtime);
 const native = JSON.parse(run("native-esm", [path.join(output, "native.mjs")]));
+const discriminatorRuntime = `
+import assert from "node:assert/strict";
+import {createClient as createFull} from "./javascript/discriminator-dependencies/index.js";
+import {createClient, loadOperations, operations} from "./javascript/discriminator-dependencies/browser/index.js";
+const trace = [];
+const configuration = {baseURL:"https://example.test", fetch:async (url, init)=>{
+  trace.push({url:String(url), method:init.method, body:init.body});
+  return Response.json(JSON.parse(init.body));
+}};
+const prepared = await loadOperations([operations.echoPet]);
+assert.equal(trace.length, 0);
+const selected = createClient({...configuration, operations:prepared}).$operations.echoPet;
+const full = createFull(configuration).$operations.echoPet;
+for (const kind of ["cat", "unknown"]) {
+  const input = {body:{kind, lives:9}};
+  assert.deepEqual(await selected(input), await full(input));
+  assert.deepEqual(trace.at(-1), trace.at(-2));
+  assert.equal((await selected.raw(input)).status, 200);
+}
+const before = trace.length;
+for (const call of [selected, full]) {
+  await assert.rejects(call({body:{kind:42}}), {code:"REQUEST_ENCODE_FAILED"});
+}
+assert.equal(trace.length, before);
+const badResponse = {...configuration, fetch:async()=>Response.json({kind:42})};
+for (const call of [createClient({...badResponse, operations:prepared}).$operations.echoPet, createFull(badResponse).$operations.echoPet]) {
+  await assert.rejects(call({body:{kind:"cat"}}), {code:"RESPONSE_DECODE_FAILED"});
+}
+console.log(JSON.stringify({status:"pass", checks:["mapping-cycle-preparation","selected-full-traces","default-mapping-preparation","raw-response","invalid-request-before-fetch","invalid-response"]}));
+`;
+write(path.join(output, "discriminator-native.mjs"), discriminatorRuntime);
+const discriminatorNative = JSON.parse(
+  run("native-discriminator-dependencies", [path.join(output, "discriminator-native.mjs")]),
+);
 const mediaScript = path.join(root, "test/typescript/verification/execution-media-native.mjs");
 const mediaNative = JSON.parse(run("native-media", [mediaScript, path.join(output, "javascript")]));
 const selectionScript = path.join(root, "test/typescript/verification/selection-native.mjs");
@@ -313,6 +358,7 @@ for (const relative of [
   "execution-media/internal/executions/json/post.js",
   "execution-media/internal/executions/custom/get.js",
   "execution-media/internal/executions/plain/get.js",
+  "discriminator-dependencies/internal/executions/echo/post.js",
 ]) {
   const modules = nativeImports(path.join(output, "javascript", relative));
   assert(modules.some((name) => name.endsWith("/runtime/http-core.js")));
@@ -411,6 +457,8 @@ const report = {
   nativeSHA256: sha256(runtime),
   native,
   mediaNative,
+  discriminatorNative,
+  discriminatorWitnessSHA256: sha256(discriminatorRuntime),
   selectionNative,
   loaderNative,
   browserClientNative,

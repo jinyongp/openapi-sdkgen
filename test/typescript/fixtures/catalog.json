@@ -2,6 +2,15 @@
   "version": 1,
   "local": [
     {
+      "id": "discriminator-dependencies",
+      "input": "discriminator-dependencies.openapi.json",
+      "output": "discriminator-dependencies",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["discriminator", "mapping-only", "cycles", "projection"],
+      "scenario": "surface"
+    },
+    {
       "id": "selection-links",
       "input": "selection-links.openapi.json",
       "output": "selection-links",

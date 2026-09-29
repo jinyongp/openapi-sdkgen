@@ -168,7 +168,7 @@ func childStructuralPosition(parent StructuralPosition, token string) Structural
 		}
 	case ObjectMediaType:
 		switch token {
-		case "schema":
+		case "schema", "itemSchema":
 			return objectPosition(ObjectSchema, token)
 		case "encoding":
 			return namedMapPosition(token, ObjectEncoding)

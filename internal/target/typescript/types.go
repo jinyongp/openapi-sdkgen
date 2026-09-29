@@ -190,6 +190,22 @@ func visitComponentSchemaReferences(document *ir.Document, found map[string]bool
 				reference, _ := dynamic["reference"].(string)
 				visitReference(reference)
 			}
+			// Discriminator targets are schema dependencies even without oneOf or
+			// anyOf. Classify the owning object, not the spelling of a user key.
+			if openapiwalk.ObjectContextAt(path) == openapiwalk.ObjectSchema {
+				discriminator, _ := typed["discriminator"].(map[string]any)
+				if property, _ := discriminator["propertyName"].(string); property != "" {
+					mapping, _ := discriminator["mapping"].(map[string]any)
+					for _, value := range mapping {
+						if reference, ok := value.(string); ok && reference != "" {
+							visitReference(normalizedDiscriminatorReference(reference))
+						}
+					}
+					if reference, _ := discriminator["defaultMapping"].(string); reference != "" {
+						visitReference(normalizedDiscriminatorReference(reference))
+					}
+				}
+			}
 			for key, item := range typed {
 				if key == "$ref" || key == "$dynamicRef" || key == "x-sdkgen-dynamic-reference" ||
 					openapiwalk.IsExtensionKey(path, key) ||

@@ -1,0 +1,99 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "Discriminator-only dependencies", "version": "1" },
+  "paths": {
+    "/echo": {
+      "post": {
+        "operationId": "echoPet",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Pet",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Pet" } } }
+          }
+        }
+      }
+    },
+    "/input": {
+      "post": {
+        "operationId": "acceptInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/InputBase" } }
+          }
+        },
+        "responses": { "204": { "description": "Accepted" } }
+      }
+    },
+    "/output": {
+      "get": {
+        "operationId": "getOutput",
+        "responses": {
+          "200": {
+            "description": "Output",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/OutputBase" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": { "kind": { "type": "string" } },
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": { "cat": "#/components/schemas/Cat" },
+          "defaultMapping": "OtherPet"
+        }
+      },
+      "Cat": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Pet" },
+          {
+            "type": "object",
+            "required": ["lives"],
+            "properties": {
+              "lives": { "type": "integer" },
+              "secret": { "type": "string", "writeOnly": true },
+              "label": { "type": "string", "readOnly": true }
+            }
+          }
+        ]
+      },
+      "OtherPet": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": { "kind": { "type": "string" } }
+      },
+      "InputBase": {
+        "type": "object",
+        "discriminator": { "propertyName": "kind", "mapping": { "in": "InputOnly" } }
+      },
+      "InputOnly": {
+        "type": "object",
+        "properties": { "secret": { "type": "string", "writeOnly": true } }
+      },
+      "OutputBase": {
+        "type": "object",
+        "discriminator": {
+          "propertyName": "kind",
+          "defaultMapping": "#/components/schemas/OutputOnly"
+        }
+      },
+      "OutputOnly": {
+        "type": "object",
+        "properties": { "label": { "type": "string", "readOnly": true } }
+      },
+      "Unused": { "type": "boolean" }
+    }
+  }
+}

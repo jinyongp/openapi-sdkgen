@@ -39,6 +39,9 @@ func TestObjectContextAt(t *testing.T) {
 		{name: "schema property named headers", path: []string{"components", "schemas", "Thing", "properties", "headers"}, want: ObjectSchema},
 		{name: "schema property named content", path: []string{"components", "schemas", "Thing", "properties", "content"}, want: ObjectSchema},
 		{name: "schema property named callbacks", path: []string{"components", "schemas", "Thing", "properties", "callbacks"}, want: ObjectSchema},
+		{name: "sequence item schema", path: []string{"paths", "/events", "get", "responses", "200", "content", "application/x-ndjson", "itemSchema"}, want: ObjectSchema},
+		{name: "sequence nested item schema", path: []string{"components", "mediaTypes", "Events", "itemSchema", "properties", "value"}, want: ObjectSchema},
+		{name: "opaque example itemSchema", path: []string{"components", "mediaTypes", "Events", "example", "itemSchema"}, want: ObjectUnknown},
 		{name: "unknown", path: []string{"x-custom"}, want: ObjectUnknown},
 	}
 	for _, test := range tests {
