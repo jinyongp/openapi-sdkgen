@@ -7,7 +7,10 @@ import {
 } from "../fixtures/generated/lifecycle/browser/index.js";
 import * as contract from "../fixtures/generated/client/browser/index.js";
 import * as exact from "../fixtures/generated/selection-public/browser/index.js";
-import type { OperationReference } from "../fixtures/generated/lifecycle/browser/index.js";
+import type {
+  OperationReference,
+  OperationSelection,
+} from "../fixtures/generated/lifecycle/browser/index.js";
 import type { OperationInput } from "../fixtures/generated/client/index.js";
 
 type Equal<A, B> =
@@ -109,6 +112,26 @@ async function publicSelectionTypeChecks(flag: boolean) {
   special.$operations.idless;
 }
 void publicSelectionTypeChecks;
+
+async function widenedSelectionTypeChecks(selection: OperationSelection) {
+  const api = createClient({ operations: await loadOperations(selection) });
+  const result: number | undefined = (await api.$operations.echoInline?.({ body: { value: 1 } }))
+    ?.value;
+  void result;
+  api.$operations.echoInline?.raw({ body: { value: 1 } });
+  api.events?.get?.stream();
+  // @ts-expect-error A widened recursive selection guarantees no specific operation.
+  api.$operations.echoInline({ body: { value: 1 } });
+  // @ts-expect-error Possible methods retain the actual operation's input type.
+  api.$operations.echoInline?.({ body: { value: "wrong" } });
+  const mixed = createClient({
+    operations: await loadOperations([operations.echoInline, selection]),
+  });
+  mixed.$operations.echoInline({ body: { value: 1 } });
+  // @ts-expect-error The widened tail does not guarantee this operation.
+  mixed.$operations.events.stream();
+}
+void widenedSelectionTypeChecks;
 
 import * as linked from "../fixtures/generated/selection-links/browser/index.js";
 async function linkedTypeChecks() {

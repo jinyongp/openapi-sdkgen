@@ -2,6 +2,7 @@
 import type {
   GuaranteedSelection,
   OperationReference,
+  OperationSelection,
   PossibleSelection,
   SelectedOperationCalls,
   SelectionInput,
@@ -100,6 +101,18 @@ export type SelectionTypeLaws = [
   Assert<Equal<Required<{ broad: OperationReference<`GET /${string}`>; fixed: B }>, "POST /b">>,
   Assert<Equal<Required<OperationReference<"GET /a" | "GET /outside">>, never>>,
   Assert<Equal<Required<{ impossible: OperationReference<never>; choice: A | B }>, never>>,
+  Assert<Equal<SelectionInput<OperationSelection>, OperationSelection>>,
+  Assert<Equal<Required<OperationSelection>, never>>,
+  Assert<Equal<Possible<OperationSelection>, Routes>>,
+  Assert<Equal<Required<readonly [A, OperationSelection]>, "GET /a">>,
+  Assert<Equal<Possible<readonly [A, OperationSelection]>, Routes>>,
+  Assert<Equal<Required<{ fixed: A; feature: OperationSelection }>, "GET /a">>,
+  Assert<Equal<Possible<Readonly<Record<string, OperationSelection>>>, Routes>>,
+  Assert<Equal<Required<Readonly<Record<string, OperationSelection>>>, never>>,
+  Assert<Equal<Required<readonly OperationSelection[]>, never>>,
+  Assert<Equal<Possible<readonly OperationSelection[]>, Routes>>,
+  Assert<Equal<SelectionInput<OperationReference | number>, OperationReference>>,
+  Assert<Equal<Possible<unknown>, never>>,
 ];
 
 type Calls = { "POST /inline": Echo; "GET /events": Events & { readonly stream: Stream } };

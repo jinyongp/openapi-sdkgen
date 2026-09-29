@@ -17,6 +17,16 @@ type IsAny<Value> = 0 extends 1 & Value ? true : false;
 type SelectionFunction = (...args: never[]) => unknown;
 type SelectionConstructor = abstract new (...args: never[]) => unknown;
 
+// A fully widened selection already permits every reference and guarantees none.
+// Stop at that boundary instead of recursively expanding OperationSelection.
+// The validity check keeps unions with unsupported leaves subject to validation.
+type IsUnboundedSelection<Value> =
+  OperationReference extends Extract<Value, OperationReference>
+    ? [Value] extends [OperationSelection]
+      ? true
+      : false
+    : false;
+
 /**
  * Checks leaves without requiring an index signature on a feature object.
  * Optional properties remain optional. Symbols are outside group collection.
@@ -24,35 +34,39 @@ type SelectionConstructor = abstract new (...args: never[]) => unknown;
 export type SelectionInput<Value> =
   IsAny<Value> extends true
     ? Value
-    : Value extends OperationReference
+    : IsUnboundedSelection<Value> extends true
       ? Value
-      : Value extends SelectionFunction | SelectionConstructor | PromiseLike<unknown>
-        ? never
-        : Value extends readonly unknown[]
-          ? { [Key in keyof Value]: SelectionInput<Value[Key]> }
-          : Value extends object
-            ? {
-                [Key in keyof Value]: Key extends string | number
-                  ? SelectionInput<Value[Key]>
-                  : Value[Key];
-              }
-            : never;
+      : Value extends OperationReference
+        ? Value
+        : Value extends SelectionFunction | SelectionConstructor | PromiseLike<unknown>
+          ? never
+          : Value extends readonly unknown[]
+            ? { [Key in keyof Value]: SelectionInput<Value[Key]> }
+            : Value extends object
+              ? {
+                  [Key in keyof Value]: Key extends string | number
+                    ? SelectionInput<Value[Key]>
+                    : Value[Key];
+                }
+              : never;
 
 /** Every route that could occur, restricted to the generated document's route universe. */
 export type PossibleSelection<Value, Routes extends string = string> =
   IsAny<Value> extends true
     ? Routes
-    : Value extends OperationReference<infer Route>
-      ? Route & Routes
-      : Value extends SelectionFunction | SelectionConstructor | PromiseLike<unknown>
-        ? never
-        : Value extends readonly unknown[]
-          ? PossibleSelection<Value[number], Routes>
-          : Value extends object
-            ? {
-                [Key in SelectionKeys<Value>]-?: PossibleSelection<Value[Key], Routes>;
-              }[SelectionKeys<Value>]
-            : never;
+    : IsUnboundedSelection<Value> extends true
+      ? Routes
+      : Value extends OperationReference<infer Route>
+        ? Route & Routes
+        : Value extends SelectionFunction | SelectionConstructor | PromiseLike<unknown>
+          ? never
+          : Value extends readonly unknown[]
+            ? PossibleSelection<Value[number], Routes>
+            : Value extends object
+              ? {
+                  [Key in SelectionKeys<Value>]-?: PossibleSelection<Value[Key], Routes>;
+                }[SelectionKeys<Value>]
+              : never;
 
 type IsUnion<Value, Whole = Value> = Value extends Whole
   ? [Whole] extends [Value]
@@ -112,7 +126,9 @@ type AllGuaranteed<Value, Routes extends string> =
     ? never
     : [Value] extends [never]
       ? never
-      : keyof GuaranteedBranchMaps<Value, Routes> & string;
+      : IsUnboundedSelection<Value> extends true
+        ? never
+        : keyof GuaranteedBranchMaps<Value, Routes> & string;
 
 /** Routes present in every possible selection branch, within the generated universe. */
 export type GuaranteedSelection<Value, Routes extends string> = string extends Routes
