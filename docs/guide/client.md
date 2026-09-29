@@ -10,6 +10,11 @@ operation:
 All three surfaces call the same OpenAPI operations. Choose the one that makes the
 caller easiest to understand.
 
+For a browser application that uses only part of the API, see
+[Load only the operations you use](./selective-client.md). That entry prepares a
+selection before creating the client; the regular root entry below remains the
+full client.
+
 ## Configure a client
 
 Use [`createClient`](../reference/client-api.md#createclient) to configure one generated client.

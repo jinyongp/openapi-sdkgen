@@ -6,3 +6,4 @@ agent_run "verification harness self-tests" ts_node node --test "$TYPESCRIPT_ROO
 agent_run "TypeScript runtime typecheck" ts_node node "$TYPESCRIPT_ROOT/node_modules/typescript/lib/tsc.js" --project "$ROOT/internal/target/typescript/runtime/tsconfig.json"
 agent_run "TypeScript conformance" ts_pnpm run conformance
 agent_run "emitted provider native/declaration checks" ts_node node "$TYPESCRIPT_ROOT/verification/execution-providers.mjs"
+agent_run "selective client guide examples" ts_node node "$TYPESCRIPT_ROOT/verification/selection-docs.mjs"

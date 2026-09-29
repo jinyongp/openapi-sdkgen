@@ -26,6 +26,10 @@ const sidebarGroups = [
         labels: { en: "Call your API", ko: "클라이언트로 API 호출" },
       },
       {
+        route: "/guide/selective-client",
+        labels: { en: "Load selected operations", ko: "필요한 operation만 불러오기" },
+      },
+      {
         route: "/guide/transport",
         labels: { en: "Authentication, transport, and streams", ko: "인증·전송·스트림" },
       },

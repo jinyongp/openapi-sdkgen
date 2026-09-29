@@ -10,6 +10,11 @@
 세 호출 표면은 같은 OpenAPI operation을 사용합니다. 호출하는 코드에서 가장
 이해하기 쉬운 방식을 선택하면 됩니다.
 
+브라우저 애플리케이션에서 API의 일부만 사용한다면
+[필요한 operation만 불러오기](./selective-client.md)를 참고하세요. 선택형 진입점은
+사용할 코드를 먼저 준비한 뒤 클라이언트를 구성합니다. 아래의 기존 루트 진입점은
+전체 클라이언트를 만듭니다.
+
 ## 클라이언트 설정
 
 [`createClient`](../reference/client-api.md#createclient)로 generated client 하나를 설정합니다.
