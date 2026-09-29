@@ -52,6 +52,8 @@ just agent ts-test
 just agent runtime-delivery-check [BASELINE_COMMIT]
 just agent runtime-delivery-browser
 just agent runtime-delivery-browser-report [OBSERVED_SUMMARY_JSON]
+just agent runtime-delivery-session [RUNTIME_REPORT]
+just agent runtime-delivery-session-report [OBSERVED_SUMMARY_JSON] [SESSION_MANIFEST]
 just agent typescript-split-diff BASELINE
 just agent example-todo
 just agent example-advanced
