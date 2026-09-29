@@ -30,6 +30,11 @@ require_system_node() {
 }
 
 ts_node() {
+  # Do not re-enter a version manager when the required runtime is already active.
+  if [[ "$(node --version 2>/dev/null || true)" == "v$NODE_VERSION" ]]; then
+    (cd "$TYPESCRIPT_ROOT" && "$@")
+    return
+  fi
   if command -v fnm >/dev/null 2>&1; then
     (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" "$@")
     return
@@ -39,6 +44,10 @@ ts_node() {
 }
 
 ts_pnpm() {
+  if [[ "$(node --version 2>/dev/null || true)" == "v$NODE_VERSION" ]]; then
+    (cd "$TYPESCRIPT_ROOT" && corepack "pnpm@$PNPM_VERSION" --config.store-dir="$ROOT/.tmp/pnpm-store" "$@")
+    return
+  fi
   if command -v fnm >/dev/null 2>&1; then
     (cd "$TYPESCRIPT_ROOT" && fnm exec --using "$NODE_VERSION" corepack "pnpm@$PNPM_VERSION" --config.store-dir="$ROOT/.tmp/pnpm-store" "$@")
     return
