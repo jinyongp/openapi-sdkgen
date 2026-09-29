@@ -321,7 +321,7 @@ const report = {
     "Actual Go-emitted artifacts verified against output ownership manifest hashes; verification copies remove only the generated @ts-nocheck directive.",
   checkedImplementationBodies: true,
   scope:
-    "Four emitted fixture trees, strict source/declaration emit, d.ts-only downstream, JSON/stream and ten media native Node ESM scenarios. Not browser delivery, public selection, or lazy Link completion.",
+    "Actual Go-emitted fixtures: strict implementation/declaration checks, d.ts-only public client consumption, native media/selection and native/static-bundled lazy-Link execution. Browser HTTP delivery and large-SDK scale are separate validations.",
   inventories,
   graphs,
   fullRuntimeGraphNegativeControl: true,
