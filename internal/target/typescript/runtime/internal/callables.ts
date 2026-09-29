@@ -268,12 +268,17 @@ export function bindPathOperation<
               sourceStream(mergeInput(input), options[0])
         : (...options: OperationOptionsArguments<Options>) =>
             sourceStream(mergeInput(undefined), options[0]);
-  return Object.assign(call, { raw }, stream === undefined ? {} : { stream }) as OperationCall<
-    Input,
-    Output,
-    Options,
-    Raw
-  >;
+  // Helpers have their own invocation input contract. Preserve their identity;
+  // only call/raw/stream merge the resource path into an operation input.
+  const links: unknown = Reflect.get(callable, "links");
+  const paginate: unknown = Reflect.get(callable, "paginate");
+  return Object.assign(
+    call,
+    { raw },
+    stream === undefined ? {} : { stream },
+    links === undefined ? {} : { links },
+    paginate === undefined ? {} : { paginate },
+  ) as OperationCall<Input, Output, Options, Raw>;
 }
 
 /**

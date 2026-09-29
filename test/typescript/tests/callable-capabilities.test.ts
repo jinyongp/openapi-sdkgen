@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { assignCallableProperties } from "../../../internal/target/typescript/runtime/internal/callables.js";
+import {
+  assignCallableProperties,
+  bindPathOperation,
+} from "../../../internal/target/typescript/runtime/internal/callables.js";
+import type { RequestOptions } from "../../../internal/target/typescript/runtime/internal/request.js";
 import { createClient } from "../fixtures/generated/lifecycle/index.js";
 
 // These checks must not execute: the generated stream-only surface deliberately
@@ -24,6 +28,32 @@ function checkPublicTypes(api: ReturnType<typeof createClient>) {
 void checkPublicTypes;
 
 describe("internal callable capability boundary", () => {
+  it("retains exact helper objects when binding a resource path", async () => {
+    type FullInput = { readonly path: { readonly id: string } };
+    const invoke = async (input: FullInput) => input.path.id;
+    const raw = async (input: FullInput) => ({ data: await invoke(input) });
+    const links = { follow: async () => "linked" };
+    const paginate = async () => "page";
+    const operation = Object.assign(invoke, { raw, links, paginate });
+    const bound = bindPathOperation<FullInput, never, string, RequestOptions, { data: string }>(
+      operation,
+      { id: "bound/id" },
+      false,
+    );
+    expect(await bound()).toBe("bound/id");
+    expect(await bound.raw()).toEqual({ data: "bound/id" });
+    expect(Reflect.get(bound, "links")).toBe(links);
+    expect(Reflect.get(bound, "paginate")).toBe(paginate);
+    expect(Object.hasOwn(bound, "stream")).toBe(false);
+    const plain = bindPathOperation<FullInput, never, string, RequestOptions, { data: string }>(
+      Object.assign(async (input: FullInput) => invoke(input), { raw }),
+      { id: "plain" },
+      false,
+    );
+    expect(Object.hasOwn(plain, "links")).toBe(false);
+    expect(Object.hasOwn(plain, "paginate")).toBe(false);
+  });
+
   it("decorates a generated value whose public type exposes capabilities only", async () => {
     const raw = async () => ({ status: 200, data: "ok" });
     const callable = Object.assign(() => "buffered", { raw });
