@@ -50,9 +50,9 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	optionalName := operationLocalTypePrefix
 	optionalCall := interfaceBody("GET /optional", optionalName+"Call")
 	for _, expected := range []string{
-		`(options?: RouteOptions<"GET /optional">)`,
-		`(input?: RouteInput<"GET /optional">, options?: RouteOptions<"GET /optional">)`,
-		`readonly raw: OperationRawCall<"GET /optional">`,
+		`(options?: OperationPublicType<Options>)`,
+		`(input?: OperationPublicType<Input>, options?: OperationPublicType<Options>)`,
+		`readonly raw: (RawCall & RouteTypeIdentity<"GET /optional">)`,
 	} {
 		if !strings.Contains(optionalCall, expected) {
 			t.Fatalf("optional call missing %q:\n%s", expected, optionalCall)
@@ -60,8 +60,8 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	}
 	optionalRawCall := interfaceBody("GET /optional", optionalName+"RawCall")
 	for _, expected := range []string{
-		`(options?: RouteOptions<"GET /optional">)`,
-		`(input?: RouteInput<"GET /optional">, options?: RouteOptions<"GET /optional">)`,
+		`(options?: OperationPublicType<Options>)`,
+		`(input?: OperationPublicType<Input>, options?: OperationPublicType<Options>)`,
 	} {
 		if !strings.Contains(optionalRawCall, expected) {
 			t.Fatalf("optional raw call missing %q:\n%s", expected, optionalRawCall)
@@ -69,10 +69,10 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	}
 
 	requiredName := operationLocalTypePrefix
-	if requiredCall := interfaceBody("POST /required", requiredName+"Call"); strings.Contains(requiredCall, `(options?: RouteOptions<"POST /required">)`) {
+	if requiredCall := interfaceBody("POST /required", requiredName+"Call"); strings.Contains(requiredCall, `(options?: OperationPublicType<Options>)`) {
 		t.Fatalf("required call gained options-only overload:\n%s", requiredCall)
 	}
-	if requiredRawCall := interfaceBody("POST /required", requiredName+"RawCall"); strings.Contains(requiredRawCall, `(options?: RouteOptions<"POST /required">)`) {
+	if requiredRawCall := interfaceBody("POST /required", requiredName+"RawCall"); strings.Contains(requiredRawCall, `(options?: OperationPublicType<Options>)`) {
 		t.Fatalf("required raw call gained options-only overload:\n%s", requiredRawCall)
 	}
 
@@ -80,19 +80,19 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	healthCall := interfaceBody("GET /health", healthName+"Call")
 	healthRawCall := interfaceBody("GET /health", healthName+"RawCall")
 	if strings.Count(healthCall, `
-  (options?: RouteOptions<"GET /health">)`) != 1 || strings.Count(healthRawCall, `
-  (options?: RouteOptions<"GET /health">)`) != 1 {
+  (options?: OperationPublicType<Options>)`) != 1 || strings.Count(healthRawCall, `
+  (options?: OperationPublicType<Options>)`) != 1 {
 		t.Fatalf("no-input call should retain one options-only signature:\n%s", healthCall)
 	}
 
 	deleteName := operationLocalTypePrefix
 	deleteCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"Call")
-	if strings.Contains(deleteCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) {
+	if strings.Contains(deleteCall, `(options?: OperationPublicType<Options>)`) {
 		t.Fatalf("full path call gained options-only overload:\n%s", deleteCall)
 	}
 	deleteResourceCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceCall")
 	deleteResourceRawCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceRawCall")
-	if !strings.Contains(deleteResourceCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) || !strings.Contains(deleteResourceRawCall, `(options?: RouteOptions<"DELETE /accounts/{accountID}/phone">)`) {
+	if !strings.Contains(deleteResourceCall, `(options?: OperationPublicType<Options>)`) || !strings.Contains(deleteResourceRawCall, `(options?: OperationPublicType<Options>)`) {
 		t.Fatalf("optional resource call missing options-only overload:\n%s", deleteResourceCall)
 	}
 }

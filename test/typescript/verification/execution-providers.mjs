@@ -86,6 +86,20 @@ async function consumeMedia() {
   void [payload, count, id];
 }
 void consumeMedia;
+import type { ResourceMethod as LocalResource, Input as LocalInput, Output as LocalOutput, RawResponse as LocalRaw } from "./lifecycle/internal/operations/inline/post.js";
+import type { OperationPublicType } from "./lifecycle/internal/runtime/contract-types.js";
+import type { ResourceCall as PublicResource, RouteInput, RouteOutput, RouteRawResponse, OperationInput } from "./lifecycle/internal/routes/helpers.js";
+type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type AssertSame<Value extends true> = Value;
+type LocalContractIdentity = [
+  AssertSame<Same<LocalResource, PublicResource<"POST /inline">>>,
+  AssertSame<Same<OperationPublicType<LocalInput>, RouteInput<"POST /inline">>>,
+  AssertSame<Same<OperationPublicType<LocalOutput>, RouteOutput<"POST /inline">>>,
+  AssertSame<Same<OperationPublicType<LocalRaw>, RouteRawResponse<"POST /inline">>>,
+  AssertSame<Same<OperationInput<LocalResource>, OperationInput<PublicResource<"POST /inline">>>>
+];
+const localContractIdentity: LocalContractIdentity = [true, true, true, true, true];
+void localContractIdentity;
 `;
 write(path.join(output, "source/type-witness.ts"), witness);
 const selectionTypeSource = fs.readFileSync(
@@ -155,6 +169,63 @@ assert(
     .split(/\r?\n/)
     .some((filename) => filename.startsWith(path.join(output, "source") + path.sep)),
   "declaration consumer read implementation sources",
+);
+
+const isolatedTypeGraphs = {};
+const assertIsolatedTypeGraph = (files, leaf) => {
+  assert(
+    files.some((file) => file.endsWith(leaf)),
+    "The isolated operation was not checked",
+  );
+  assert(
+    !files.some((file) => file.includes("/internal/routes/")),
+    "Operation type dependency loads the whole route registry",
+  );
+  assert(
+    files
+      .filter((file) => file.includes("/internal/operations/"))
+      .every((file) => file.endsWith(leaf)),
+    "Operation type dependency loads an unrelated operation",
+  );
+};
+for (const surface of ["source", "declarations"]) {
+  const extension = surface === "source" ? ".ts" : ".d.ts";
+  const leaf = "lifecycle/internal/operations/inline/post" + extension;
+  const config = path.join(output, `${surface}-isolated-operation.json`);
+  write(
+    config,
+    JSON.stringify({
+      compilerOptions: { ...options, noEmit: true },
+      files: [path.join(surface, leaf)],
+    }),
+  );
+  const files = run(`${surface}-isolated-operation`, [compiler, "--project", config, "--listFiles"])
+    .split(/\r?\n/)
+    .filter((file) => file.startsWith(path.join(output, surface) + path.sep));
+  assertIsolatedTypeGraph(files, leaf);
+  isolatedTypeGraphs[surface] = files.map((file) =>
+    path.relative(path.join(output, surface), file),
+  );
+}
+const fullTypesConfig = path.join(output, "full-route-types-control.json");
+write(
+  fullTypesConfig,
+  JSON.stringify({
+    compilerOptions: { ...options, noEmit: true },
+    files: ["source/lifecycle/internal/routes/helpers.ts"],
+  }),
+);
+const fullTypeFiles = run("full-route-types-control", [
+  compiler,
+  "--project",
+  fullTypesConfig,
+  "--listFiles",
+])
+  .split(/\r?\n/)
+  .filter((file) => file.startsWith(path.join(output, "source") + path.sep));
+assert.throws(
+  () => assertIsolatedTypeGraph(fullTypeFiles, "lifecycle/internal/operations/inline/post.ts"),
+  /whole route registry/,
 );
 
 const runtime = `
@@ -325,6 +396,8 @@ const report = {
   inventories,
   graphs,
   fullRuntimeGraphNegativeControl: true,
+  isolatedTypeGraphs,
+  wholeRouteTypeGraphNegativeControl: true,
   witnessSHA256: sha256(witness),
   selectionWitnessSHA256: sha256(selectionTypeSource),
   selectionTypeAssertions: (selectionTypeSource.match(/Assert<Equal</g) ?? []).length,

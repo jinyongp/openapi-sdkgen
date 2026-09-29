@@ -329,8 +329,8 @@ describe("generated client QuickInfo", () => {
   });
 
   it.each([
-    ["contract.$operations.createTask(", "RouteInput<"],
-    ['contract.projects("project-1").tasks.create(', "RouteResourceInput<"],
+    ["contract.$operations.createTask(", "OperationPublicType<Input>"],
+    ['contract.projects("project-1").tasks.create(', "OperationPublicType<ResourceInput>"],
   ])("keeps %s signature help public", async (expression, expected) => {
     const info = await signatureInfo(expression);
 
@@ -348,11 +348,11 @@ describe("generated client QuickInfo", () => {
   it.each([
     [
       'contract.projects("project-1").tasks.create.raw',
-      'RawCall<"POST /projects/{projectID}/tasks">',
+      'ResourceRawMethod<"POST /projects/{projectID}/tasks">',
     ],
     ["contract.tasks.paginate", 'PaginateCall<"GET /tasks">'],
-    ["openAPI31.source.get.links", 'LinkCalls<"GET /source">'],
-    ["openAPI32.events.get.stream", 'StreamCall<"GET /events">'],
+    ["openAPI31.source.get.links", 'Links & RouteTypeIdentity<"GET /source">'],
+    ["openAPI32.events.get.stream", 'Stream & RouteTypeIdentity<"GET /events">'],
   ])("keeps %s capability concise", async (expression, expected) => {
     const info = await quickInfo(expression);
 

@@ -77,7 +77,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	routeHelpers, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
+	contractTypes, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/contract-types.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -194,8 +194,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
 	fmt.Fprintf(&output, "import type { TransportError } from %s\n", quoteTS(runtimeErrors))
 	fmt.Fprintf(&output, "import type { BinaryBody, OperationStream, RawResponseFor, RequestOptions, StreamSource } from %s\n", quoteTS(runtimeRequest))
-	fmt.Fprintf(&output, "import type { OperationTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
-	fmt.Fprintf(&output, "import type { LinkCalls, OperationRawCall, PaginateCall, ResourceRawCapability, RouteInput, RouteOptions, RouteOutput, RouteRawResponse, RouteResourceInput, StreamCall } from %s\n", quoteTS(routeHelpers))
+	fmt.Fprintf(&output, "import type { OperationTypeIdentity, RouteTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
+	fmt.Fprintf(&output, "import type { OperationPublicType, OperationResourceRawCapability } from %s\n", quoteTS(contractTypes))
 	fmt.Fprintf(&output, "import type * as ContractSchemas from %s\n", quoteTS(schemaIndex))
 	fmt.Fprintf(&output, "import type * as Errors from %s\n", quoteTS(errorCatalog))
 	if operation.PaginationPlan != nil {
@@ -215,6 +215,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 	output.WriteByte('\n')
 	fmt.Fprintf(&output, "export type RouteKey = %s\n", quoteTS(module.routeKey))
+	output.WriteString("type ResourceRawMethod<Route> = ResourceRawCall & RouteTypeIdentity<Route>\n")
+	output.WriteString("interface ResourceRawCapability<Route> { readonly raw: ResourceRawMethod<Route> }\n")
 	output.WriteByte('\n')
 	output.WriteString(bodySource)
 
@@ -243,6 +245,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "export type ResourceStream = %s\n", resourceStreamType)
 	fmt.Fprintf(&output, "export type ExactCall = (%s) & OperationTypeIdentity<RouteKey, \"exact\">\n", exactCallType)
 	fmt.Fprintf(&output, "export type ResourceCall = %s\n\n", resourceCallType)
+	output.WriteString("export type ResourceMethod<Route extends RouteKey = RouteKey> = ResourceCall & RouteTypeIdentity<Route> & OperationTypeIdentity<Route, \"resource\">\n\n")
 	output.WriteString("export interface Contract {\n")
 	output.WriteString("  readonly input: Input\n")
 	output.WriteString("  readonly resourceInput: ResourceInput\n")
@@ -305,7 +308,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 		result = append(result, factory...)
 	}
-	return result, nil
+	localizedHelpers, err := localizeOperationHelperTypes(string(result), module, plan)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(localizedHelpers), nil
 }
 
 func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink, groups []generatedLinkGroup, names *localIdentifierPlan) ([]byte, error) {

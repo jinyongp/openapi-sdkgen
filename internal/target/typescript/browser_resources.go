@@ -86,13 +86,6 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 	nodeRoutes := func(node *resourceNode) string { return fmt.Sprintf("NodeRoutes%d", ids[node]) }
 	nodeType := func(node *resourceNode) string { return fmt.Sprintf("Node%d<G, P>", ids[node]) }
 	operationType := func(route, slot string) (string, error) {
-		if slot == "ResourceCall" {
-			specifier, err := plan.relativeModuleSpecifier("browser/types.ts", plan.fixed["route-helpers"])
-			if err != nil {
-				return "", err
-			}
-			return "import(" + quoteTS(specifier) + ").ResourceCall<" + quoteTS(route) + ">", nil
-		}
 		module, exists := plan.operationByRoute[route]
 		if !exists {
 			return "", fmt.Errorf("selected resource route %q has no operation module", route)
@@ -100,6 +93,9 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 		specifier, err := plan.relativeModuleSpecifier("browser/types.ts", module)
 		if err != nil {
 			return "", err
+		}
+		if slot == "ResourceCall" {
+			return "import(" + quoteTS(specifier) + ").ResourceMethod<" + quoteTS(route) + ">", nil
 		}
 		return "import(" + quoteTS(specifier) + ")." + slot, nil
 	}

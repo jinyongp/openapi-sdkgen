@@ -397,7 +397,7 @@ func TestGeneratedLinksAndStreamsUseStandardHeaderParameters(t *testing.T) {
 		`invocation?: LinkInvocation<import("../target/post.js").Contract["input"], import("../target/post.js").Contract["options"]`,
 		`readonly "Idempotency-Key": string`,
 		`readonly "If-Match": string`,
-		`readonly stream: StreamCall<RouteKey>`,
+		`readonly stream: (Stream & RouteTypeIdentity<RouteKey>)`,
 	} {
 		if !strings.Contains(client, expected) {
 			t.Fatalf("standard header contract missing %q:\n%s", expected, client)

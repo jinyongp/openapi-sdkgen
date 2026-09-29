@@ -26,6 +26,7 @@ type runtimeTemplateArtifact struct {
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "contract-types.ts", path: "internal/runtime/contract-types.ts"},
 	{source: "selected-client.ts", path: "internal/runtime/selected-client.ts"},
 	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
 	{source: "selection.ts", path: "internal/runtime/selection.ts"},
