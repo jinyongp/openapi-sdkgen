@@ -214,18 +214,20 @@ func emitBrowserTypes(plan *sourcePlan) ([]byte, error) {
 	output.WriteString(`}
 export type Operations = { readonly [ID in keyof OperationRoutes]: OperationReference<OperationRoutes[ID]> }
 export type RouteReferences = { readonly [Route in RouteKey]: OperationReference<Route> }
-type G<S> = GuaranteedSelection<S, RouteKey> & RouteKey
+type G<S> = GuaranteedSelection<S, RouteKey>
 type P<S> = PossibleSelection<S, RouteKey> & RouteKey
-type SelectedIDs<S> = {
-  readonly [ID in keyof OperationRoutes as OperationRoutes[ID] extends G<S> ? ID : never]: RouteCalls[OperationRoutes[ID]]
+// Compute membership before entering document-wide mapped types. Re-evaluating
+// the feature tree for every operation makes dense selections quadratic.
+type SelectedIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
+  readonly [ID in keyof OperationRoutes as OperationRoutes[ID] extends Guaranteed ? ID : never]: RouteCalls[OperationRoutes[ID]]
 } & {
-  readonly [ID in keyof OperationRoutes as OperationRoutes[ID] extends Exclude<P<S>, G<S>> ? ID : never]?: RouteCalls[OperationRoutes[ID]]
+  readonly [ID in keyof OperationRoutes as OperationRoutes[ID] extends Exclude<Possible, Guaranteed> ? ID : never]?: RouteCalls[OperationRoutes[ID]]
 }
 type LinksFor<Route extends RouteKey> = RouteCalls[Route] extends { readonly links: infer Links } ? Links : never
-type SelectedLinkIDs<S> = {
-  readonly [ID in keyof OperationLinkRoutes as OperationLinkRoutes[ID] extends G<S> ? ID : never]: LinksFor<OperationLinkRoutes[ID]>
+type SelectedLinkIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
+  readonly [ID in keyof OperationLinkRoutes as OperationLinkRoutes[ID] extends Guaranteed ? ID : never]: LinksFor<OperationLinkRoutes[ID]>
 } & {
-  readonly [ID in keyof OperationLinkRoutes as OperationLinkRoutes[ID] extends Exclude<P<S>, G<S>> ? ID : never]?: LinksFor<OperationLinkRoutes[ID]>
+  readonly [ID in keyof OperationLinkRoutes as OperationLinkRoutes[ID] extends Exclude<Possible, Guaranteed> ? ID : never]?: LinksFor<OperationLinkRoutes[ID]>
 }
 `)
 	resources, err := emitSelectedResourceTypes(plan.document, plan.modules, plan.resourceTree)
@@ -233,7 +235,7 @@ type SelectedLinkIDs<S> = {
 		return nil, err
 	}
 	output.Write(resources)
-	output.WriteString("\n/** Only the selected routes and their collision-resolved resource paths. */\nexport type Client<Selection> = {\n  readonly $routes: SelectedOperationCalls<Selection, RouteCalls>\n  readonly $operations: SelectedIDs<Selection>\n} & SelectedResources<G<Selection>, P<Selection>> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], G<Selection>, P<Selection>, SelectedLinkIDs<Selection>>\n")
+	output.WriteString("\n/** Only the selected routes and their collision-resolved resource paths. */\nexport type Client<Selection> = {\n  readonly $routes: SelectedOperationCalls<Selection, RouteCalls>\n  readonly $operations: SelectedIDs<G<Selection>, P<Selection>>\n} & SelectedResources<G<Selection>, P<Selection>> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], G<Selection>, P<Selection>, SelectedLinkIDs<G<Selection>, P<Selection>>>\n")
 	return output.Bytes(), nil
 }
 

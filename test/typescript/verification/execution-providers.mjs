@@ -8,6 +8,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { inspectGenerated, sha256 } from "./catalog.mjs";
+import { verifyResourceMembership } from "./resource-membership.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const require = createRequire(new URL("../package.json", import.meta.url));
@@ -383,8 +384,13 @@ for (const [relative, modules] of Object.entries(graphs)) {
 // Ensure the dependency check catches a full-runtime edge instead of only accepting the candidate.
 const fullGraph = nativeImports(path.join(output, "javascript/lifecycle/internal/runtime/http.js"));
 assert(fullGraph.some((name) => name.endsWith("/runtime/http-codecs.js")));
+const resourceMembership = verifyResourceMembership(
+  path.join(output, "source/lifecycle/browser/types.ts"),
+  path.join(output, "resource-membership"),
+);
 const report = {
   status: "pass",
+  resourceMembership,
   runID,
   node: process.version,
   typescript: typescript.version,

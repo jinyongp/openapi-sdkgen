@@ -54,60 +54,70 @@ export type PossibleSelection<Value, Routes extends string = string> =
               }[SelectionKeys<Value>]
             : never;
 
-type EverySelectionBranch<Value, Route extends string> =
-  IsAny<Value> extends true
+type IsUnion<Value, Whole = Value> = Value extends Whole
+  ? [Whole] extends [Value]
     ? false
-    : [Value] extends [never]
-      ? false
-      : [SelectionBranchHas<Value, Route>] extends [true]
-        ? true
-        : false;
+    : true
+  : never;
 
-// Inspect required prefixes and suffixes, not just fixed-length tuples. A
-// selection [A, ...dynamic, B] still guarantees A and B even when length is number.
-type ArraySelectionHas<
+type ExactReferenceRoute<Route extends string, Routes extends string> =
+  IsAny<Route> extends true
+    ? never
+    : string extends Route
+      ? never
+      : [Route] extends [never]
+        ? never
+        : [Route] extends [Routes]
+          ? true extends IsUnion<Route>
+            ? never
+            : Route
+          : never;
+
+// Fixed prefixes and suffixes contribute guarantees; an arbitrary array can be empty.
+type ArrayGuaranteed<
   Value extends readonly unknown[],
-  Route extends string,
+  Routes extends string,
 > = Value extends readonly [infer First, ...infer Rest]
-  ? true extends EverySelectionBranch<First, Route> | ArraySelectionHas<Rest, Route>
-    ? true
-    : false
+  ? AllGuaranteed<First, Routes> | ArrayGuaranteed<Rest, Routes>
   : Value extends readonly [...infer Rest, infer Last]
-    ? true extends EverySelectionBranch<Last, Route> | ArraySelectionHas<Rest, Route>
-      ? true
-      : false
-    : false;
+    ? ArrayGuaranteed<Rest, Routes> | AllGuaranteed<Last, Routes>
+    : never;
 
-type SelectionBranchHas<Value, Route extends string> =
-  Value extends OperationReference<infer Selected>
-    ? [Selected] extends [Route]
-      ? true
-      : false
+type BranchGuaranteed<Value, Routes extends string> =
+  Value extends OperationReference<infer Route>
+    ? ExactReferenceRoute<Route, Routes>
     : Value extends SelectionFunction | SelectionConstructor | PromiseLike<unknown>
-      ? false
+      ? never
       : Value extends readonly unknown[]
-        ? ArraySelectionHas<Value, Route>
+        ? ArrayGuaranteed<Value, Routes>
         : Value extends object
-          ? true extends {
+          ? {
               [Key in SelectionKeys<Value>]-?: Record<never, never> extends Pick<Value, Key>
-                ? false
-                : EverySelectionBranch<Value[Key], Route>;
+                ? never
+                : AllGuaranteed<Value[Key], Routes>;
             }[SelectionKeys<Value>]
-            ? true
-            : false
-          : false;
+          : never;
 
-/**
- * Routes present in every possible selection branch. The route universe is
- * supplied by generated declarations; an unconstrained string cannot prove presence.
- */
+// keyof a union contains only keys shared by every branch. Build each branch
+// once instead of testing every route against every required feature key.
+// The inferred intermediate also defers recursive mapped-key constraints.
+type GuaranteedBranchMaps<Value, Universe extends string> = Value extends unknown
+  ? BranchGuaranteed<Value, Universe> extends infer Routes
+    ? { readonly [Route in Routes & string]: true }
+    : never
+  : never;
+
+type AllGuaranteed<Value, Routes extends string> =
+  IsAny<Value> extends true
+    ? never
+    : [Value] extends [never]
+      ? never
+      : keyof GuaranteedBranchMaps<Value, Routes> & string;
+
+/** Routes present in every possible selection branch, within the generated universe. */
 export type GuaranteedSelection<Value, Routes extends string> = string extends Routes
   ? never
-  : {
-      [Route in PossibleSelection<Value, Routes>]: EverySelectionBranch<Value, Route> extends true
-        ? Route
-        : never;
-    }[PossibleSelection<Value, Routes>];
+  : AllGuaranteed<Value, Routes> & Routes;
 
 /** Keeps original callable signatures, making only uncertain membership optional. */
 export type SelectedOperationCalls<Value, Calls extends object> = {

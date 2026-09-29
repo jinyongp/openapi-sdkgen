@@ -59,14 +59,21 @@ func browserResourcePlacements(root *resourceNode) map[string][]browserResourceP
 func emitSelectedResourceTypes(document *ir.Document, plan *semanticModulePlan, root *resourceNode) ([]byte, error) {
 	var output bytes.Buffer
 	output.WriteString(`type Member<Key extends string, Routes extends RouteKey, Guaranteed extends RouteKey, Possible extends RouteKey, Value> =
-  [Extract<Possible, Routes>] extends [never] ? {} :
-  [Extract<Guaranteed, Routes>] extends [never] ? { readonly [K in Key]?: Value } : { readonly [K in Key]: Value }
+  [Extract<Routes, Possible>] extends [never] ? {} :
+  [Extract<Routes, Guaranteed>] extends [never] ? { readonly [K in Key]?: Value } : { readonly [K in Key]: Value }
 // A parameter builder or operation may share a namespace. When only its
 // descendants are guaranteed, the callable itself must still be narrowed.
 type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends RouteKey, Guaranteed extends RouteKey, Possible extends RouteKey> =
-  [Extract<Possible, CallRoutes>] extends [never] ? Members :
-  [Extract<Possible, MemberRoutes>] extends [never] ? Call :
-  [Extract<Guaranteed, CallRoutes>] extends [never] ? Members | (Call & Members) : Call & Members
+  [Extract<CallRoutes, Possible>] extends [never] ? Members :
+  [Extract<MemberRoutes, Possible>] extends [never] ? Call :
+  [Extract<CallRoutes, Guaranteed>] extends [never] ? Members | (Call & Members) : Call & Members
+// Distribute over each member's finite route set, not the whole document for
+// every property. Required/possible membership is unchanged for generated keys.
+type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: RouteKey }, G extends RouteKey, P extends RouteKey> = {
+  readonly [Key in keyof Values as [Extract<Routes[Key], G>] extends [never] ? never : Key]: Values[Key]
+} & {
+  readonly [Key in keyof Values as [Extract<Routes[Key], P>] extends [never] ? never : [Extract<Routes[Key], G>] extends [never] ? Key : never]?: Values[Key]
+}
 
 `)
 	ids := make(map[*resourceNode]int)
@@ -101,6 +108,7 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 	}
 	for _, node := range nodes {
 		members := make([]string, 0)
+		memberRouteFields := make([]string, 0)
 		routes := make([]string, 0)
 		for _, name := range sortedResourceMemberNames(node) {
 			operation, hasOperation := node.operations[name]
@@ -115,11 +123,16 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 				if err != nil {
 					return nil, err
 				}
-				memberValue = "WithCall<" + call + ", " + quoteTS(route) + ", " + memberValue + ", " + memberRoutes + ", G, P>"
+				if child == nil {
+					memberValue = call
+				} else {
+					memberValue = "WithCall<" + call + ", " + quoteTS(route) + ", " + memberValue + ", " + memberRoutes + ", G, P>"
+				}
 				memberRoutes += " | " + quoteTS(route)
 			}
 			routes = append(routes, memberRoutes)
-			members = append(members, "Member<"+quoteTS(name)+", "+memberRoutes+", G, P, "+memberValue+">")
+			members = append(members, "  readonly "+quoteTS(name)+": "+memberValue)
+			memberRouteFields = append(memberRouteFields, "  readonly "+quoteTS(name)+": "+memberRoutes)
 		}
 		if operation, exists := paginatedResourceNodeOperation(node); exists {
 			route := manifestRouteKey(operation)
@@ -128,7 +141,8 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 				return nil, err
 			}
 			routes = append(routes, quoteTS(route))
-			members = append(members, "Member<\"paginate\", "+quoteTS(route)+", G, P, "+call+">")
+			members = append(members, "  readonly paginate: "+call)
+			memberRouteFields = append(memberRouteFields, "  readonly paginate: "+quoteTS(route))
 		}
 		memberRoutes := "never"
 		if len(routes) > 0 {
@@ -136,7 +150,9 @@ type WithCall<Call, CallRoutes extends RouteKey, Members, MemberRoutes extends R
 		}
 		memberValue := "{}"
 		if len(members) > 0 {
-			memberValue = strings.Join(members, " & ")
+			fmt.Fprintf(&output, "interface NodeMembers%d<G extends RouteKey, P extends RouteKey> {\n%s\n}\n", ids[node], strings.Join(members, "\n"))
+			fmt.Fprintf(&output, "interface NodeMemberRoutes%d {\n%s\n}\n", ids[node], strings.Join(memberRouteFields, "\n"))
+			memberValue = fmt.Sprintf("SelectedMembers<NodeMembers%d<G, P>, NodeMemberRoutes%d, G, P>", ids[node], ids[node])
 		}
 		nodeValue := memberValue
 		allRoutes := memberRoutes
