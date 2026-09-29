@@ -147,6 +147,14 @@ runtime-delivery-session *args:
 runtime-delivery-session-report *args:
     bash ./scripts/agent/runtime-delivery-session-report "$@"
 
+[positional-arguments]
+sdk-delivery-browser *args:
+    bash ./scripts/agent/sdk-delivery-browser "$@"
+
+[positional-arguments]
+sdk-delivery-browser-report *args:
+    bash ./scripts/agent/sdk-delivery-browser-report "$@"
+
 typescript-split-diff baseline:
     ./scripts/agent/typescript-split-diff {{quote(baseline)}}
 

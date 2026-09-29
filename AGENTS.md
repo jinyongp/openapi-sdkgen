@@ -54,6 +54,8 @@ just agent runtime-delivery-browser
 just agent runtime-delivery-browser-report [OBSERVED_SUMMARY_JSON]
 just agent runtime-delivery-session [RUNTIME_REPORT]
 just agent runtime-delivery-session-report [OBSERVED_SUMMARY_JSON] [SESSION_MANIFEST]
+just agent sdk-delivery-browser V1_REPORT V2_REPORT
+just agent sdk-delivery-browser-report RUN_DIRECTORY OBSERVED_SUMMARY_JSON
 just agent typescript-split-diff BASELINE
 just agent example-todo
 just agent example-advanced

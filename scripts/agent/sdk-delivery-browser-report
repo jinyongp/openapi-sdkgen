@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+agent_run "generated SDK browser report" ts_node node "$TYPESCRIPT_ROOT/verification/sdk-delivery-browser-report.mjs" "$@"
