@@ -25,6 +25,7 @@ type runtimeTemplateArtifact struct {
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
 	{source: "runtime-support.ts", path: "internal/runtime/runtime-support.ts"},
 	{source: "http-stream.ts", path: "internal/runtime/http-stream.ts"},
 	{source: "http-json-stream.ts", path: "internal/runtime/http-json-stream.ts"},

@@ -80,6 +80,12 @@ async function consumeMedia() {
 void consumeMedia;
 `;
 write(path.join(output, "source/type-witness.ts"), witness);
+const selectionTypeSource = fs.readFileSync(
+  path.join(root, "test/typescript/tests/selection-types.ts"),
+  "utf8",
+);
+const selectionWitness = selectionTypeSource.replaceAll("../fixtures/generated/", "./");
+write(path.join(output, "source/selection-witness.ts"), selectionWitness);
 write(path.join(output, "package.json"), '{"type":"module"}\n');
 const options = {
   target: "ES2022",
@@ -110,8 +116,15 @@ write(
 run("source-and-declaration-emit", [compiler, "--project", path.join(output, "emit.json")]);
 write(path.join(output, "consumer.ts"), witness.replaceAll('from "./', 'from "./declarations/'));
 write(
+  path.join(output, "selection-consumer.ts"),
+  selectionWitness.replaceAll('from "./', 'from "./declarations/'),
+);
+write(
   path.join(output, "consumer.json"),
-  JSON.stringify({ compilerOptions: { ...options, noEmit: true }, files: ["consumer.ts"] }),
+  JSON.stringify({
+    compilerOptions: { ...options, noEmit: true },
+    files: ["consumer.ts", "selection-consumer.ts"],
+  }),
 );
 const inputs = run("declarations-only-consumer", [
   compiler,
@@ -203,6 +216,7 @@ for (const relative of [
     "/runtime/codecs.js",
     "/runtime/wire-xml.js",
     "/runtime/streaming.js",
+    "/runtime/selection-types.js",
     "/schemas/wire.js",
     "/client/registry.js",
   ]) {
@@ -274,6 +288,9 @@ const report = {
   graphs,
   fullRuntimeGraphNegativeControl: true,
   witnessSHA256: sha256(witness),
+  selectionWitnessSHA256: sha256(selectionTypeSource),
+  selectionTypeAssertions: (selectionTypeSource.match(/Assert<Equal</g) ?? []).length,
+  selectionNegativeAssertions: (selectionTypeSource.match(/@ts-expect-error/g) ?? []).length,
   nativeSHA256: sha256(runtime),
   native,
   mediaNative,
