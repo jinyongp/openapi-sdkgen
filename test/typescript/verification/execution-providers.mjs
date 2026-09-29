@@ -178,6 +178,10 @@ const selectionScript = path.join(root, "test/typescript/verification/selection-
 const selectionNative = JSON.parse(
   run("native-selection", [selectionScript, path.join(output, "javascript")]),
 );
+const loaderScript = path.join(root, "test/typescript/verification/operation-loader-native.mjs");
+const loaderNative = JSON.parse(
+  run("native-loader", [loaderScript, path.join(output, "javascript")]),
+);
 const parser = createRequire(
   path.join(root, "test/typescript/node_modules/.pnpm/node_modules/package.json"),
 )("@babel/parser");
@@ -300,6 +304,8 @@ const report = {
   native,
   mediaNative,
   selectionNative,
+  loaderNative,
+  loaderNativeSHA256: sha256(fs.readFileSync(loaderScript)),
   selectionNativeSHA256: sha256(fs.readFileSync(selectionScript)),
   mediaNativeSHA256: sha256(fs.readFileSync(mediaScript)),
   consumerDeclarationFiles: inputs
