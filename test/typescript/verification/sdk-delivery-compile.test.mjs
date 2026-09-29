@@ -180,6 +180,33 @@ test("noCheck cannot bypass verification even when strict is enabled", (t) => {
   assert.equal(fs.readFileSync(path.join(directory, "source/index.ts"), "utf8"), original);
 });
 
+test("recovery rejects another compiler's lock before changing any source", async (t) => {
+  const { createHash } = await import("node:crypto");
+  const { restoreGeneratedSources } = await import("./sdk-delivery-compile.mjs");
+  const original = "// @ts-nocheck\nexport const value = 1;\n";
+  const stripped = original.replaceAll("// @ts-nocheck\n", "");
+  const directory = fixture(t, stripped);
+  const sourceRoot = path.join(directory, "source");
+  const filename = path.join(sourceRoot, "index.ts");
+  const journalFile = path.join(directory, "interrupted.source-journal.json");
+  const lock = path.join(sourceRoot, ".sdk-delivery-strict-lock");
+  const otherOwner = path.join(directory, "active.source-journal.json");
+  const digest = (text) => createHash("sha256").update(text).digest("hex");
+  const journal = JSON.stringify({
+    id: randomUUID(),
+    sourceRoot,
+    entries: [
+      { name: "index.ts", offsets: [0], original: digest(original), stripped: digest(stripped) },
+    ],
+  });
+  fs.writeFileSync(journalFile, journal);
+  fs.writeFileSync(lock, otherOwner);
+  assert.throws(() => restoreGeneratedSources(journalFile), /Another compiler owns/);
+  assert.equal(fs.readFileSync(filename, "utf8"), stripped);
+  assert.equal(fs.readFileSync(lock, "utf8"), otherOwner);
+  assert.equal(fs.readFileSync(journalFile, "utf8"), journal);
+});
+
 for (const changed of [false, true])
   test(`interrupted-source recovery ${changed ? "preserves unexpected edits" : "restores exact bytes and releases its lock"}`, async (t) => {
     const { createHash } = await import("node:crypto");

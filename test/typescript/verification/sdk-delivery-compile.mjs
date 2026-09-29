@@ -59,6 +59,15 @@ function replaceAtomic(filename, text, id) {
 export function restoreGeneratedSources(journalFile) {
   const journal = JSON.parse(fs.readFileSync(journalFile, "utf8"));
   assert(path.resolve(journal.sourceRoot).startsWith(path.join(root, ".tmp") + path.sep));
+  // Reject a stale recovery request before touching another compiler's inputs.
+  const lock = path.join(journal.sourceRoot, ".sdk-delivery-strict-lock");
+  if (fs.existsSync(lock)) {
+    assert.equal(
+      fs.readFileSync(lock, "utf8"),
+      journalFile,
+      "Another compiler owns the generated tree",
+    );
+  }
   for (const entry of journal.entries) {
     const filename = path.resolve(journal.sourceRoot, entry.name);
     assert(filename.startsWith(journal.sourceRoot + path.sep));
@@ -85,7 +94,6 @@ export function restoreGeneratedSources(journalFile) {
     assert.equal(hash(text), entry.original, "Recovery reconstruction differs from original");
     replaceAtomic(filename, text, journal.id);
   }
-  const lock = path.join(journal.sourceRoot, ".sdk-delivery-strict-lock");
   if (fs.existsSync(lock)) {
     assert.equal(
       fs.readFileSync(lock, "utf8"),
