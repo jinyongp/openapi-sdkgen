@@ -174,6 +174,10 @@ write(path.join(output, "native.mjs"), runtime);
 const native = JSON.parse(run("native-esm", [path.join(output, "native.mjs")]));
 const mediaScript = path.join(root, "test/typescript/verification/execution-media-native.mjs");
 const mediaNative = JSON.parse(run("native-media", [mediaScript, path.join(output, "javascript")]));
+const selectionScript = path.join(root, "test/typescript/verification/selection-native.mjs");
+const selectionNative = JSON.parse(
+  run("native-selection", [selectionScript, path.join(output, "javascript")]),
+);
 const parser = createRequire(
   path.join(root, "test/typescript/node_modules/.pnpm/node_modules/package.json"),
 )("@babel/parser");
@@ -217,6 +221,7 @@ for (const relative of [
     "/runtime/wire-xml.js",
     "/runtime/streaming.js",
     "/runtime/selection-types.js",
+    "/runtime/selection.js",
     "/schemas/wire.js",
     "/client/registry.js",
   ]) {
@@ -294,6 +299,8 @@ const report = {
   nativeSHA256: sha256(runtime),
   native,
   mediaNative,
+  selectionNative,
+  selectionNativeSHA256: sha256(fs.readFileSync(selectionScript)),
   mediaNativeSHA256: sha256(fs.readFileSync(mediaScript)),
   consumerDeclarationFiles: inputs
     .split(/\r?\n/)
