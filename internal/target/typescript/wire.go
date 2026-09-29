@@ -134,6 +134,8 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			}
 			return "", err
 		}
+		wire.recordExecutionReference(name, direction)
+		wire.recordExecutionCapability(executionSchemaDynamic)
 		referenceDescriptor := "{ dynamicReference: { anchor: " + quoteTS(anchor) + ", fallback: { reference: " + quoteTS(name) + " } } }"
 		if len(schema) == 1 {
 			return referenceDescriptor, nil
@@ -155,6 +157,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		if err != nil {
 			return "", err
 		}
+		wire.recordExecutionReference(name, direction)
 		referenceDescriptor := "{ reference: " + quoteTS(name) + " }"
 		if len(schema) == 1 {
 			return referenceDescriptor, nil
@@ -263,6 +266,9 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "contentEncoding: "+quoteTS(value))
 	}
 	if value, ok := schema["contentMediaType"].(string); ok && value != "" {
+		if executionXMLMedia(value) {
+			wire.recordExecutionCapability(executionSchemaXML)
+		}
 		fields = append(fields, "contentMediaType: "+quoteTS(value))
 	}
 	if value, exists := schema["contentSchema"]; exists {

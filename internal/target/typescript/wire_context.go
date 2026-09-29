@@ -19,6 +19,8 @@ const (
 type wireRenderContext struct {
 	properties     wirePropertiesMode
 	usesProperties bool
+	// Optional semantic observer used by execution planning, never a text parser.
+	execution *executionSchemaFacts
 }
 
 func newWireRenderContext(mode wirePropertiesMode) *wireRenderContext {
