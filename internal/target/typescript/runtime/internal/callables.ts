@@ -1,4 +1,4 @@
-import { isRecord } from "./objects.js";
+import { isRecord } from "./runtime-support.js";
 import type { OperationDefinition } from "./operation.js";
 import type { OperationStream, RawResponse, RequestOptions } from "./request.js";
 
@@ -6,7 +6,7 @@ import type { OperationStream, RawResponse, RequestOptions } from "./request.js"
 export { wireProperties as createWireProperties } from "./wire-properties.js";
 
 /** Low-level request executor used by generated operation bindings. */
-export interface RequestFunction {
+export interface BufferedRequestFunction {
   /**
    * Sends an operation and returns its decoded response body.
    *
@@ -31,6 +31,10 @@ export interface RequestFunction {
     input?: unknown,
     options?: RequestOptions,
   ): Promise<RawResponse<Output>>;
+}
+
+/** Full request executor, including streaming operations. */
+export interface RequestFunction extends BufferedRequestFunction {
   /** Opens one declared streaming response and lazily decodes its items. */
   stream<Item>(
     operation: OperationDefinition,
@@ -120,7 +124,7 @@ export function bindOperation<
   Options extends RequestOptions = RequestOptions,
   Raw = RawResponse<Output>,
 >(
-  request: RequestFunction,
+  request: BufferedRequestFunction,
   operation: OperationDefinition,
   hasInput: boolean,
   inputOptional = false,
@@ -156,7 +160,7 @@ export function bindOperation<
  * interface and cast this runtime-only result at that boundary.
  */
 export function bindGeneratedOperation(
-  request: RequestFunction,
+  request: BufferedRequestFunction,
   operation: OperationDefinition,
   hasInput: boolean,
   inputOptional = false,

@@ -183,9 +183,9 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 
 	var output strings.Builder
 	output.Grow(len(bodySource) + 4096)
-	callableImports := "bindGeneratedOperation, type RequestFunction"
+	callableImports := "bindGeneratedOperation, type BufferedRequestFunction"
 	if hasStream {
-		callableImports = "bindGeneratedOperation, bindStreamOperation, type RequestFunction"
+		callableImports = "bindGeneratedOperation, bindStreamOperation, type BufferedRequestFunction, type RequestFunction"
 	}
 	if wire.usesProperties {
 		callableImports += ", createWireProperties as __sdkgen_Properties"
@@ -260,7 +260,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	hasInput := len(item.InputSections) > 0
 	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")
-	output.WriteString("export function bindBase(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): BaseCall {\n")
+	output.WriteString("export function bindBase(request: BufferedRequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): BaseCall {\n")
 	fmt.Fprintf(&output, "  return bindGeneratedOperation(request, %s, %t, %t) as BaseCall\n", definition, hasInput, inputOptional)
 	output.WriteString("}\n")
 

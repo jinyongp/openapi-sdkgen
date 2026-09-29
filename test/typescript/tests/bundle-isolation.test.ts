@@ -133,8 +133,11 @@ describe("generated public entry bundle isolation", () => {
     const result = results.rootError;
     expect(result).toBeDefined();
     expect(internalModules(result!), bundleEvidence(result!)).toEqual([
-      "internal/runtime/errors.ts",
+      "internal/runtime/runtime-support.ts",
     ]);
+    expect(result!.code).not.toContain("XML schema");
+    expect(result!.code).not.toContain("baseURL");
+    expect(result!.code).not.toContain("application/json");
     expect(result!.code).not.toContain("bundle-enum-sentinel-01");
     expect(result!.code).not.toContain("bundle-error-category-sentinel");
     expect(result!.code).not.toContain("bundle-isolation-sentinel");
@@ -151,11 +154,14 @@ describe("generated public entry bundle isolation", () => {
       "internal/resources/root.ts",
       "internal/runtime/callables.ts",
       "internal/runtime/codecs.ts",
-      "internal/runtime/errors.ts",
+      "internal/runtime/http-advanced.ts",
+      "internal/runtime/http-codecs.ts",
+      "internal/runtime/http-core.ts",
+      "internal/runtime/http-stream.ts",
       "internal/runtime/http.ts",
-      "internal/runtime/objects.ts",
-      "internal/runtime/operation.ts",
+      "internal/runtime/runtime-support.ts",
       "internal/runtime/streaming.ts",
+      "internal/runtime/wire-engine.ts",
       "internal/schemas/isolation-mode.ts",
       "internal/schemas/isolation-record.ts",
       "internal/schemas/isolation-rejected-error.ts",

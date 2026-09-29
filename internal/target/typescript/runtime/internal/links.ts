@@ -1,5 +1,5 @@
-import { isAPIError, type APIError } from "./errors.js";
-import { defineOwnDataProperty, isRecord } from "./objects.js";
+import { isAPIError, type APIError } from "./runtime-support.js";
+import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
 import type { RawResponse } from "./request.js";
 
 /** One generated OpenAPI Link parameter assignment. */

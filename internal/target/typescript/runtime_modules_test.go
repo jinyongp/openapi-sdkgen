@@ -42,17 +42,29 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 		"internal/runtime/configuration.ts",
 		"internal/runtime/constants.ts",
 		"internal/runtime/errors.ts",
+		"internal/runtime/http-advanced.ts",
+		"internal/runtime/http-buffered.ts",
+		"internal/runtime/http-codecs.ts",
+		"internal/runtime/http-core.ts",
+		"internal/runtime/http-json-stream.ts",
+		"internal/runtime/http-json.ts",
+		"internal/runtime/http-stream.ts",
+		"internal/runtime/http-types.ts",
 		"internal/runtime/http.ts",
 		"internal/runtime/identity.ts",
 		"internal/runtime/links.ts",
+		"internal/runtime/media-type.ts",
 		"internal/runtime/objects.ts",
 		"internal/runtime/operation.ts",
 		"internal/runtime/pagination.ts",
 		"internal/runtime/request.ts",
+		"internal/runtime/runtime-support.ts",
 		"internal/runtime/security.ts",
 		"internal/runtime/streaming.ts",
 		"internal/runtime/transport.ts",
+		"internal/runtime/wire-engine.ts",
 		"internal/runtime/wire-properties.ts",
+		"internal/runtime/wire-xml.ts",
 	}
 	if paths := sortedRuntimePaths(first); strings.Join(paths, "\n") != strings.Join(expected, "\n") {
 		t.Fatalf("runtime artifact paths = %v, want %v", paths, expected)
@@ -69,7 +81,7 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 	owners := make(map[string]string)
 	graph := make(map[string][]string, len(first))
 	for artifactPath, source := range first {
-		for symbol := range exportedSymbols(string(source)) {
+		for symbol := range declaredRuntimeSymbols(string(source)) {
 			if previous, exists := owners[symbol]; exists {
 				t.Fatalf("runtime export %q is owned by both %s and %s", symbol, previous, artifactPath)
 			}
@@ -88,6 +100,32 @@ func TestRuntimeModulesAreInvariantOwnedAndAcyclic(t *testing.T) {
 		}
 	}
 	assertAcyclicRuntimeGraph(t, graph)
+}
+
+// Forwarding an existing binding is not a second implementation owner. The
+// import-graph and TypeScript checks still validate forwarding edges and names.
+var runtimeDeclarationPattern = regexp.MustCompile(`(?m)^export\s+(?:declare\s+)?(?:async\s+)?(?:type|interface|const|let|function|class)\s+([A-Za-z_$][A-Za-z0-9_$]*)`)
+
+func declaredRuntimeSymbols(source string) map[string]bool {
+	result := make(map[string]bool)
+	for _, match := range runtimeDeclarationPattern.FindAllStringSubmatch(source, -1) {
+		result[match[1]] = true
+	}
+	return result
+}
+
+func TestRuntimeDeclarationOwnershipDistinguishesForwarding(t *testing.T) {
+	source := "export { APIError } from \"./runtime-support.js\"\nexport type { RequestMetadata } from \"./runtime-support.js\"\nexport const value = 1\nexport type value = typeof value\nexport function local<Value>(value: Value): Value { return value }\n"
+	declared := declaredRuntimeSymbols(source)
+	if len(declared) != 2 || !declared["value"] || !declared["local"] {
+		t.Fatalf("declaration ownership = %v; forwarding must not create owners", declared)
+	}
+	// A real second definition remains a duplicate, even beside a forwarding API.
+	first := declaredRuntimeSymbols("export class APIError extends Error {}\n")
+	second := declaredRuntimeSymbols("export class APIError extends Error {}\n")
+	if !first["APIError"] || !second["APIError"] {
+		t.Fatal("duplicate implementation declarations escaped ownership detection")
+	}
 }
 
 func generatedRuntimeArtifactMap(t *testing.T, document *ir.Document) map[string][]byte {

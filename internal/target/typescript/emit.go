@@ -25,6 +25,18 @@ type runtimeTemplateArtifact struct {
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "runtime-support.ts", path: "internal/runtime/runtime-support.ts"},
+	{source: "http-stream.ts", path: "internal/runtime/http-stream.ts"},
+	{source: "http-json-stream.ts", path: "internal/runtime/http-json-stream.ts"},
+	{source: "http-buffered.ts", path: "internal/runtime/http-buffered.ts"},
+	{source: "http-advanced.ts", path: "internal/runtime/http-advanced.ts"},
+	{source: "http-json.ts", path: "internal/runtime/http-json.ts"},
+	{source: "http-types.ts", path: "internal/runtime/http-types.ts"},
+	{source: "http-codecs.ts", path: "internal/runtime/http-codecs.ts"},
+	{source: "http-core.ts", path: "internal/runtime/http-core.ts"},
+	{source: "media-type.ts", path: "internal/runtime/media-type.ts"},
+	{source: "wire-xml.ts", path: "internal/runtime/wire-xml.ts"},
+	{source: "wire-engine.ts", path: "internal/runtime/wire-engine.ts"},
 	{source: "objects.ts", path: "internal/runtime/objects.ts"},
 	{source: "identity.ts", path: "internal/runtime/identity.ts"},
 	{source: "request.ts", path: "internal/runtime/request.ts"},

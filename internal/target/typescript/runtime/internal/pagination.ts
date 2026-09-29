@@ -1,4 +1,4 @@
-import { isRecord } from "./objects.js";
+import { isRecord } from "./runtime-support.js";
 import type { RequestOptions } from "./request.js";
 
 /** Query controls for cursor-based pagination. */

@@ -1,10 +1,8 @@
 import type { StreamCodec } from "./codecs.js";
 
-/** Metadata that identifies the server-side request associated with a result or error. */
-export interface RequestMetadata {
-  /** Server request ID, usually read from the `X-Request-Id` response header. */
-  readonly id?: string;
-}
+import type { RequestMetadata } from "./runtime-support.js";
+/** Request metadata shares the canonical definition used by SDK errors. */
+export type { RequestMetadata } from "./runtime-support.js";
 
 /** One parsed Server-Sent Event using the standard event-stream fields. */
 export interface ServerSentEvent {

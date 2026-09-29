@@ -1,11 +1,11 @@
-import {
-  type StreamCodec,
-  type StreamContext,
-  type StreamFraming,
-  type StreamProtocol,
-  type StreamReader,
-} from "./codecs.js";
-import { isRecord } from "./objects.js";
+import type {
+  StreamCodec,
+  StreamContext,
+  StreamFraming,
+  StreamProtocol,
+  StreamReader,
+} from "./wire-engine.js";
+import { isRecord } from "./runtime-support.js";
 import type { ServerSentEvent } from "./request.js";
 
 /** Internal response-stream decoding options shared by HTTP framing implementations. */

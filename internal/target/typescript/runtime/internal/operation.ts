@@ -27,9 +27,9 @@ export interface OperationDefinition {
   /** Case-insensitive set of headers owned by the OpenAPI operation. */
   readonly headerNames?: readonly string[];
   /** Input component schemas used to map TypeScript properties to JSON wire names. */
-  readonly inputSchemas?: WireSchemas;
+  readonly inputSchemas?: WireSchemas | undefined;
   /** Output component schemas used to map JSON wire names to TypeScript properties. */
-  readonly outputSchemas?: WireSchemas;
+  readonly outputSchemas?: WireSchemas | undefined;
   /** Supported request-body representations. */
   readonly requestBodies?: readonly WireBodyDefinition[];
   /** Whether the OpenAPI Request Body Object requires a body. */
@@ -40,10 +40,8 @@ export interface OperationDefinition {
   readonly security?: readonly SecurityRequirementDefinition[];
 }
 
-/** Returns the stable operation name used in runtime diagnostics. */
-export function operationDiagnosticName(operation: OperationDefinition): string {
-  return operation.operationID ?? operation.route;
-}
+/** Stable operation diagnostic name shared with request execution. */
+export { operationDiagnosticName } from "./runtime-support.js";
 
 /** Stable OpenAPI Server selection supplied to {@link ClientOptions.server}. */
 export interface ServerSelection {
