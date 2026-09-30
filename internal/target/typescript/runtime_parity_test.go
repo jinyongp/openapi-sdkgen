@@ -195,19 +195,21 @@ for (const [format, value] of Object.entries(invalid)) {
 }
 
 func TestRuntimeResolvesDynamicReferencesAgainstTheOuterDynamicScope(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(`{
+	for _, dynamicRef := range []string{"#node", "#%6Eode"} {
+		t.Run(dynamicRef, func(t *testing.T) {
+			document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.1.0", "info":{"title":"Dynamic","version":"1"},
   "paths":{"/tree":{"post":{"operationId":"createTree","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/StrictTree"}}}},"responses":{"204":{"description":"No Content"}}}}},
   "components":{"schemas":{
-    "BaseTree":{"$id":"https://schemas.example.test/base-tree","$dynamicAnchor":"node","type":"object","properties":{"child":{"$dynamicRef":"#node"}}},
+    "BaseTree":{"$id":"https://schemas.example.test/base-tree","$dynamicAnchor":"node","type":"object","properties":{"child":{"$dynamicRef":"` + dynamicRef + `"}}},
     "StrictTree":{"$id":"https://schemas.example.test/strict-tree","$dynamicAnchor":"node","allOf":[{"$ref":"#/components/schemas/BaseTree"},{"type":"object","required":["strict"],"properties":{"strict":{"const":true}}}]}
   }}
 }`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	output := compileTypeScriptArtifacts(t, document)
-	script := `
+			if err != nil {
+				t.Fatal(err)
+			}
+			output := compileTypeScriptArtifacts(t, document)
+			script := `
 import { pathToFileURL } from "node:url";
 const { createClient } = await import(pathToFileURL(process.argv[1]).href);
 let fetched = false;
@@ -218,8 +220,10 @@ catch (error) {
   if (fetched) throw new Error("fetch ran before dynamic-reference validation");
 }
 `
-	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript dynamic-reference runtime test: %v\n%s", err, output)
+			if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+				t.Fatalf("execute TypeScript dynamic-reference runtime test: %v\n%s", err, output)
+			}
+		})
 	}
 }
 

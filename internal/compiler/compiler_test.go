@@ -923,7 +923,9 @@ func TestCompileNormalizesNestedComponentSchemaReferences(t *testing.T) {
 	holder := document.ComponentSchemas["Holder"]
 	properties, _ := holder["properties"].(map[string]any)
 	id, _ := properties["id"].(map[string]any)
-	if id["type"] != "string" || id["$ref"] != nil {
+	reference, _ := id["$ref"].(string)
+	name := strings.TrimPrefix(reference, "#/components/schemas/")
+	if reference == "" || document.ComponentSchemas[name]["type"] != "string" {
 		t.Fatalf("normalized nested schema = %#v", id)
 	}
 }
