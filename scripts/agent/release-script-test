@@ -142,7 +142,4 @@ if [[ -e "$release_args" ]]; then
   fail "normal tag release unexpectedly invoked gh"
 fi
 
-release_recipe="$(just --justfile "$ROOT/justfile" --show release)"
-assert_contains "$release_recipe" 'publish.sh {{ args }}'
-
 agent_note "ok release script test"

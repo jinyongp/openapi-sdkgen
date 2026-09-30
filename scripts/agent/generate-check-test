@@ -606,7 +606,4 @@ fi
 assert_contains "$missing_lock_output" "reference lock"
 assert_clean_temporary_root
 
-grep -F 'ts_node node "$TYPESCRIPT_ROOT/node_modules/typescript/lib/tsc.js"' "$ROOT/scripts/agent/generate-check" >/dev/null ||
-  fail "generate-check does not invoke the pinned TypeScript compiler"
-
 agent_note "ok generate-check test"

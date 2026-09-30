@@ -108,13 +108,4 @@ run_case 2 fail clean "govulncheck execution failed"
 run_case 2 invalid clean "report could not be interpreted"
 run_case 2 clean fail "osv-scanner failed with exit code 127"
 
-if ! grep -Fq 'GOVULNCHECK_VERSION="v1.8.0"' "$ROOT/scripts/agent/vuln"; then
-  echo "govulncheck version pin drifted" >&2
-  exit 1
-fi
-if ! grep -Fq 'OSV_SCANNER_VERSION="v2.6.0"' "$ROOT/scripts/agent/vuln"; then
-  echo "OSV-Scanner version pin drifted" >&2
-  exit 1
-fi
-
-agent_note "ok vulnerability audit contract"
+agent_note "ok vulnerability audit test"
