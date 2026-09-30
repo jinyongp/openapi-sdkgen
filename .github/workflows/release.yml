@@ -157,12 +157,12 @@ jobs:
             --dist dist \
             --version "${{ needs.validate-release.outputs.version }}"
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@49c543357d96884d0e5a683c45d45ebd50a8b612 # v0.1.4
+        uses: releaseway/actions@4fdc624aafb0c824fb81dd7aaf59031bb1f5aa0f # v0.2.0
         with:
           tag: ${{ needs.validate-release.outputs.tag }}
           commit: ${{ needs.validate-release.outputs.commit }}
           prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
-          generate-notes: "true"
+          notes: github
           assets: |
             dist/checksums.txt
             dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64.tar.gz
