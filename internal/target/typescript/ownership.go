@@ -3,6 +3,8 @@ package typescript
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -16,6 +18,7 @@ type sourceRestrictionKey struct {
 }
 
 type sourceOwnershipIndex struct {
+	document             *ir.Document
 	operations           []ir.Operation
 	operationsByPointer  map[string]int
 	operationsBySource   map[sourceRestrictionKey]int
@@ -27,6 +30,7 @@ type sourceOwnershipIndex struct {
 
 func newSourceOwnershipIndex(document *ir.Document) *sourceOwnershipIndex {
 	index := &sourceOwnershipIndex{
+		document:             document,
 		operations:           document.Operations,
 		operationsByPointer:  make(map[string]int, len(document.Operations)),
 		operationsBySource:   make(map[sourceRestrictionKey]int, len(document.Operations)),
@@ -123,7 +127,7 @@ func (index *sourceOwnershipIndex) operationAtLocation(location ir.SourceLocatio
 	return ir.Operation{}, false
 }
 
-func (index *sourceOwnershipIndex) linkTarget(link map[string]any) (ir.Operation, error) {
+func (index *sourceOwnershipIndex) linkTarget(link map[string]any, pointer string) (ir.Operation, error) {
 	if index == nil {
 		return ir.Operation{}, errMissingOwnershipIndex
 	}
@@ -136,10 +140,11 @@ func (index *sourceOwnershipIndex) linkTarget(link map[string]any) (ir.Operation
 		return operation, nil
 	}
 	operationRef, _ := link["operationRef"].(string)
-	if !strings.HasPrefix(operationRef, "#/paths/") {
-		return ir.Operation{}, fmt.Errorf("requires operationId or a local operationRef")
+	reference, err := url.Parse(operationRef)
+	if err != nil || !strings.HasPrefix(reference.Fragment, "/") || reference.RawQuery != "" || reference.User != nil {
+		return ir.Operation{}, fmt.Errorf("operationRef %q must target one path operation", operationRef)
 	}
-	tokens := strings.Split(strings.TrimPrefix(operationRef, "#/"), "/")
+	tokens := strings.Split(strings.TrimPrefix(reference.Fragment, "/"), "/")
 	if len(tokens) != 3 || tokens[0] != "paths" {
 		return ir.Operation{}, fmt.Errorf("operationRef %q must target one path operation", operationRef)
 	}
@@ -151,11 +156,45 @@ func (index *sourceOwnershipIndex) linkTarget(link map[string]any) (ir.Operation
 	if err != nil {
 		return ir.Operation{}, err
 	}
-	if operationIndex, exists := index.operationsByPath[operationPathMethodKey(path, method)]; exists {
-		operation, _ := index.operation(operationIndex)
-		return operation, nil
+	canonicalPointer := "#/paths/" + escapePointerToken(path) + "/" + escapePointerToken(method)
+	provenance, found := index.document.LookupProvenance(pointer)
+	if !found && strings.HasPrefix(operationRef, "#/") {
+		if operation, exists := index.operationByExactPointer(canonicalPointer); exists {
+			return operation, nil
+		}
 	}
-	return ir.Operation{}, fmt.Errorf("operationRef %q does not name a generated operation", operationRef)
+	if found {
+		source := provenance.Primary.Source
+		// Entry-document fragment references address physical mounted paths,
+		// while source-document references retain exact external identity.
+		if root, ok := index.document.LookupProvenance("#"); ok && source == root.Primary.Source && strings.HasPrefix(operationRef, "#/") {
+			if operation, exists := index.operationByExactPointer(canonicalPointer); exists {
+				return operation, nil
+			}
+		}
+		reference.Fragment, reference.RawFragment = "", ""
+		if reference.String() != "" {
+			if base, err := url.Parse(source); err == nil && (base.Scheme == "http" || base.Scheme == "https" || base.Scheme == "file") {
+				source = base.ResolveReference(reference).String()
+			} else if reference.IsAbs() {
+				source = reference.String()
+			} else if source != "" && !strings.HasPrefix(source, "<") {
+				source = filepath.Clean(filepath.Join(filepath.Dir(source), filepath.FromSlash(reference.Path)))
+			} else {
+				return ir.Operation{}, fmt.Errorf("operationRef %q has no source base", operationRef)
+			}
+		}
+		// Exact source identities from the compiled closure only. An operationRef
+		// never loads a document, and multiple mounts deliberately stay ambiguous.
+		if operationIndex, exists := index.operationsBySource[sourceRestrictionKey{source: source, pointer: canonicalPointer}]; exists && operationIndex >= 0 {
+			operation, _ := index.operation(operationIndex)
+			if operation.Path != path || !strings.EqualFold(operation.Method, method) {
+				return ir.Operation{}, fmt.Errorf("operationRef %q target path does not match its generated route", operationRef)
+			}
+			return operation, nil
+		}
+	}
+	return ir.Operation{}, fmt.Errorf("operationRef %q does not uniquely name a generated operation in the compiled document closure", operationRef)
 }
 
 func (index *sourceOwnershipIndex) restrictionsAt(document *ir.Document, pointer string) []ir.SemanticRestriction {

@@ -19,6 +19,28 @@ func attachDocumentProvenanceValue(document *ir.Document, source inputSource, va
 	document.Provenance = make(map[string]ir.Provenance)
 	references := referenceProvenanceValue(value, display, source.effective, source.fileBase, remoteSources, localSources)
 	document.ProvenanceIndex = newProvenanceIndex(document.Raw, display, references)
+	document.SourceServers = make(map[string][]any)
+	rememberServers := func(source string, value any) {
+		if object, ok := value.(map[string]any); ok {
+			if servers, ok := object["servers"].([]any); ok {
+				document.SourceServers[source] = servers
+			}
+		}
+	}
+	rememberServers(display, value)
+	if localSources != nil {
+		localSources.mu.Lock()
+		for name, snapshot := range localSources.sources {
+			rememberServers(name, snapshot.value)
+		}
+		localSources.mu.Unlock()
+	}
+	for name, data := range remoteSources {
+		var decoded any
+		if yaml.Unmarshal(data, &decoded) == nil {
+			rememberServers(name, decoded)
+		}
+	}
 }
 
 func referenceProvenance(data []byte, displaySource, resolutionSource, directory string, remoteSources map[string][]byte) map[string]ir.Provenance {
@@ -163,6 +185,7 @@ func newProvenanceIndex(raw map[string]any, rootSource string, references map[st
 			if local, _ := object["$ref"].(string); strings.HasPrefix(local, "#/") {
 				if _, targetFound := resolveLocalReference(raw, local); targetFound {
 					redirects = append(redirects, redirect{from: pointer, to: local})
+					index.ranges = append(index.ranges, provenanceRange{bundledPrefix: resolvedPointer, sourcePrefix: provenance.Primary.Pointer, provenance: provenance})
 					index.ranges = append(index.ranges, provenanceRange{bundledPrefix: local, sourcePrefix: provenance.Primary.Pointer, provenance: provenance})
 					continue
 				}

@@ -98,12 +98,17 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest, ownersh
 					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
 					continue
 				}
+				operationRefPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "operationRef")
+				if err != nil {
+					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, err, true))
+					continue
+				}
 				link, err = resolveComponentObject(document, link, "links")
 				if err != nil {
 					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
 					continue
 				}
-				target, err := ownership.linkTarget(link)
+				target, err := ownership.linkTarget(link, operationRefPointer)
 				if err != nil {
 					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
 					continue
@@ -129,6 +134,49 @@ func generatedLinksDiagnostics(document *ir.Document, manifest Manifest, ownersh
 					continue
 				}
 				serverURL, err := linkServerURL(link)
+				serverSource := ""
+				if provenance, found := document.LookupProvenance(operationRefPointer); found {
+					serverSource = provenance.Primary.Source
+				}
+				if err == nil && serverURL == "" {
+					operationRef, _ := link["operationRef"].(string)
+					targetSource := ""
+					if provenance, found := document.LookupProvenance(target.Pointer); found {
+						targetSource = provenance.Primary.Source
+					}
+					rootSource := ""
+					if provenance, found := document.LookupProvenance("#"); found {
+						rootSource = provenance.Primary.Source
+					}
+					if (operationRef != "" && !strings.HasPrefix(operationRef, "#")) || (targetSource != "" && targetSource != rootSource) {
+						serverSource = targetSource
+						var server map[string]any
+						values, exists := target.Raw["servers"].([]any)
+						if !exists {
+							values, exists = target.PathItemRaw["servers"].([]any)
+						}
+						if !exists {
+							if provenance, found := document.LookupProvenance(target.Pointer); found {
+								values = document.SourceServers[provenance.Primary.Source]
+							}
+						}
+						if len(values) != 0 {
+							server, _ = values[0].(map[string]any)
+						}
+						if len(server) != 0 {
+							serverURL, err = linkServerURL(map[string]any{"server": server})
+						}
+					}
+				}
+				if err == nil && serverURL != "" {
+					if base, parseErr := url.Parse(serverSource); parseErr == nil && (base.Scheme == "http" || base.Scheme == "https") {
+						if relative, parseErr := url.Parse(serverURL); parseErr == nil {
+							serverURL = base.ResolveReference(relative).String()
+						} else {
+							err = parseErr
+						}
+					}
+				}
 				if err != nil {
 					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
 					continue
@@ -513,7 +561,7 @@ func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links 
 		}
 		options := "invocation.options"
 		if link.ServerURL != "" {
-			options = "{ ...(invocation.options ?? {}), baseURL: new URL(" + quoteTS(link.ServerURL) + ", response.response.url).href }"
+			options = "{ ...(invocation.options ?? {}), baseURL: new URL(" + quoteTS(link.ServerURL) + ", response.response?.url).href }"
 		}
 		if !targetHasInput {
 			fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<never, %s, %s>%s): Promise<%s> => { resolveLinkInput<never>(response, %s, invocation.sourceInput); return %s(%s) }\n", name, sourceRawResponse, invocationType, targetOptions, sourceInput, invocationDefault, targetOutput, link.Definition, targetProperty, options)

@@ -180,6 +180,14 @@ await api.$operations.updateTodo(
 
 ## Link
 
+외부 `operationRef`도 `$ref`로 대상 operation을 원래 path template을 유지하여
+compiled document closure에 mount한 경우 helper를 생성합니다. Link의 원본 문서와 대상의 정확한 source pointer로
+해석하며, 대상 operation/path/document 서버 또는 명시적인 Link 서버를 base URL로
+사용합니다. 상속한 상대 서버 URL은 대상 문서의 HTTP URL을 기준으로 해석합니다.
+대상이 없거나 path가 달라졌거나 같은 source를 여러 번 mount하여 모호한 경우 `SDKGEN-W509`로 해당
+helper만 제외하고 원본 response와 다른 helper는 유지합니다. Link 해석은 추가 fetch를
+수행하지 않으며 compiler의 allowlist·lock·offline cache 정책을 따릅니다.
+
 `$links`에는 OpenAPI Link Object에서 생성된 타입 안전 후속 호출이 있습니다.
 각 helper는 Link runtime expression을 해석하는 데 필요한 원본 response context를
 전달합니다.

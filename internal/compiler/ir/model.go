@@ -23,6 +23,9 @@ type Document struct {
 	// synthetic manually-constructed Document may leave it empty and fall back
 	// to Raw at emission time.
 	SourceMetadataJSON []byte
+	// SourceServers retains root Server Objects from the loaded document closure
+	// so external Link targets inherit their own document's server base.
+	SourceServers map[string][]any
 	// Provenance contains explicit caller overrides. Production compilation
 	// keeps this map empty and resolves source locations through ProvenanceIndex.
 	Provenance map[string]Provenance

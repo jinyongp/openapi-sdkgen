@@ -64,7 +64,7 @@ func TestGeneratedResponseLinksOmitUnsupportedOperationRefForm(t *testing.T) {
 	if value.Severity != "warning" || value.Code != "SDKGEN-W509" ||
 		value.Scope != "capability" || value.Effect != "omit-capability" ||
 		value.Capability != "response-link" ||
-		!strings.Contains(value.Message, "requires operationId or a local operationRef") {
+		!strings.Contains(value.Message, "compiled document closure") {
 		t.Fatalf("unsupported operationRef diagnostic = %#v", value)
 	}
 	if _, err := (Generator{}).Emit(plan); err != nil {

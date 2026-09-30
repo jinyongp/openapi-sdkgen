@@ -178,6 +178,17 @@ sent. See [Request headers](../guide/transport.md#pass-declared-request-headers)
 
 ## Links
 
+External `operationRef` targets can generate helpers when a `$ref` has already
+mounted the target operation in the compiled document closure with its original
+path template. Resolution uses
+the Link's source document and the target's exact source pointer. The target's
+operation/path/document server (or an explicit Link server) supplies its base
+URL. Relative inherited servers resolve against the target document's HTTP URL.
+Unresolved targets, relocated paths, and targets mounted more than once produce capability-scoped
+`SDKGEN-W509`; the source response and sibling helpers remain available. Link
+resolution performs no additional fetch and keeps the compiler's allowlist,
+lock, and offline cache policy.
+
 `$links` contains typed follow-up calls generated from OpenAPI Link Objects.
 Each helper carries the source response context needed to resolve Link runtime
 expressions.

@@ -1,0 +1,8 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "External Link closure", "version": "1"},
+  "paths": {
+    "/source": {"$ref": "source.json#/paths/~1source"},
+    "/items/{id}": {"$ref": "target.json#/paths/~1items~1{id}"}
+  }
+}

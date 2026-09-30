@@ -3,6 +3,8 @@
   "states": ["generated", "metadata", "omitted", "error"],
   "targets": ["typescript"],
   "features": [
+    {"id":"response.links-external-closure","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/external_links_test.go::TestExternalResponseLinkClosureRuntime"},
+    {"id":"response.links-locked-remote-closure","versions":["3.2"],"state":"generated","evidence":"internal/target/typescript/external_links_test.go::TestExternalResponseLinkLockedRemoteClosure"},
     {"id":"oas30.schema.title","versions":["3.0"],"state":"metadata","evidence":"internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic"},
     {"id":"oas30.schema.multipleOf","versions":["3.0"],"state":"metadata","evidence":"internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords"},
     {"id":"oas30.schema.maximum","versions":["3.0"],"state":"metadata","evidence":"internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords"},

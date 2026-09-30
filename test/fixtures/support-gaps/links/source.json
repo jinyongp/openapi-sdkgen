@@ -1,0 +1,14 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Link source", "version": "1"},
+  "paths": {
+    "/source": {"get": {
+      "operationId": "getSource",
+      "responses": {"200": {
+        "description": "OK",
+        "content": {"application/json": {"schema": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}}},
+        "links": {"item": {"operationRef": "target.json#/paths/~1items~1{id}/get", "parameters": {"id": "$response.body#/id"}}}
+      }}
+    }}
+  }
+}
