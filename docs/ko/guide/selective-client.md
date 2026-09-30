@@ -1,6 +1,6 @@
 # 필요한 operation만 불러오기
 
-생성된 SDK에는 기존 전체 클라이언트와 함께 선택형 브라우저 진입점이 제공됩니다.
+생성된 SDK에는 기존 전체 클라이언트와 함께 선택형 진입점이 제공됩니다.
 큰 API 중 일부만 사용하는 애플리케이션이라면 이 진입점으로 필요한 operation과
 그 실행에 필요한 코드만 준비할 수 있습니다. 생성기는 모든 operation과 TypeScript
 타입을 그대로 출력합니다. 애플리케이션에서 선택을 바꿀 때마다 SDK를 다시 생성할
@@ -19,7 +19,7 @@ import {
   loadOperations,
   operations,
   routes,
-} from "./generated/api/browser/index.js";
+} from "./generated/api/selective/index.js";
 
 const prepared = await loadOperations([
   operations.listTasks,
@@ -56,7 +56,7 @@ feature에서 사용하는 선택 목록을 해당 코드와 함께 둘 수 있�
 
 ```ts
 // tasks.operations.ts
-import { operations } from "./generated/api/browser/index.js";
+import { operations } from "./generated/api/selective/index.js";
 
 export default [operations.listTasks] as const;
 ```
@@ -66,7 +66,7 @@ import {
   createClient,
   loadOperations,
   routes,
-} from "./generated/api/browser/index.js";
+} from "./generated/api/selective/index.js";
 import tasks from "./tasks.operations.js";
 
 const api = createClient({
@@ -118,7 +118,7 @@ await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
 열거하거나 필터링해야 한다면 이름만 제공하는 별도 진입점을 사용합니다.
 
 ```ts
-import { routes as allRoutes } from "./generated/api/browser/all.js";
+import { routes as allRoutes } from "./generated/api/selective/all.js";
 
 const taskRoutes = Object.entries(allRoutes)
   .filter(([route]) => route.startsWith("GET /tasks"))
@@ -139,7 +139,7 @@ const preparedTasks = await loadOperations(taskRoutes);
 
 ```ts
 // tasks.operations.ts
-import { operation } from "./generated/api/browser/operations/tasks/get.js";
+import { operation } from "./generated/api/selective/operations/tasks/get.js";
 
 export default [operation] as const;
 ```
@@ -182,7 +182,7 @@ native ESM으로 제공할 때는 컴파일된 생성 트리 전체를 배포하
 프로토콜 호환성을 확인하지만, 이 검사는 인증이나 신뢰할 수 있는 스크립트 호스팅을
 대신하지 않습니다.
 
-브라우저 진입점의 `OperationPreparationError`에는 `stage`가 있습니다. 값은 `INPUT`,
+선택형 진입점의 `OperationPreparationError`에는 `stage`가 있습니다. 값은 `INPUT`,
 `MODULE_LOAD`, `IDENTITY`, `BINDING`이며 가능한 경우 원래 cause도 보존합니다.
 native import 실패만으로 HTTP status나 CSP·오프라인·파일 누락을 항상 구별할 수는
 없으므로 브라우저의 네트워크 진단을 함께 확인하세요. 애플리케이션 getter의 예외를

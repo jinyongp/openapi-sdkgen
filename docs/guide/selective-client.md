@@ -1,6 +1,6 @@
 # Load only the operations you use
 
-The generated SDK includes a selective browser entry alongside the regular full
+The generated SDK includes a selective entry alongside the regular full
 client. Use it when an application needs a small part of a larger API: preparing
 an operation loads its implementation and required runtime code, rather than the
 full client registry. The generator still produces every operation and all of
@@ -20,7 +20,7 @@ import {
   loadOperations,
   operations,
   routes,
-} from "./generated/api/browser/index.js";
+} from "./generated/api/selective/index.js";
 
 const prepared = await loadOperations([
   operations.listTasks,
@@ -57,7 +57,7 @@ Keep each feature's selection next to its application code:
 
 ```ts
 // tasks.operations.ts
-import { operations } from "./generated/api/browser/index.js";
+import { operations } from "./generated/api/selective/index.js";
 
 export default [operations.listTasks] as const;
 ```
@@ -67,7 +67,7 @@ import {
   createClient,
   loadOperations,
   routes,
-} from "./generated/api/browser/index.js";
+} from "./generated/api/selective/index.js";
 import tasks from "./tasks.operations.js";
 
 const api = createClient({
@@ -121,7 +121,7 @@ The default reference objects do not carry a runtime list of every operation.
 Import the opt-in names-only entry for enumeration and filtering:
 
 ```ts
-import { routes as allRoutes } from "./generated/api/browser/all.js";
+import { routes as allRoutes } from "./generated/api/selective/all.js";
 
 const taskRoutes = Object.entries(allRoutes)
   .filter(([route]) => route.startsWith("GET /tasks"))
@@ -142,7 +142,7 @@ bundler can see their dependency edges:
 
 ```ts
 // tasks.operations.ts
-import { operation } from "./generated/api/browser/operations/tasks/get.js";
+import { operation } from "./generated/api/selective/operations/tasks/get.js";
 
 export default [operation] as const;
 ```
@@ -190,7 +190,7 @@ in place with a different generated revision. The loader checks generation and
 protocol compatibility, but those checks are not authentication or a substitute
 for trusted script hosting.
 
-`OperationPreparationError` from the browser entry exposes `stage` (`INPUT`,
+`OperationPreparationError` from the selective entry exposes `stage` (`INPUT`,
 `MODULE_LOAD`, `IDENTITY`, or `BINDING`) and retains the original cause when one
 is available. A native import failure does not always reveal an HTTP status or
 whether the cause was CSP, offline access, or a missing file; use the browser's
