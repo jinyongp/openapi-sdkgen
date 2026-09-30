@@ -4013,6 +4013,101 @@ func TestVisibleRecursiveComponentCanServeRequestSuccessAndErrorRoles(t *testing
 	_ = compileTypeScriptArtifacts(t, document)
 }
 
+func TestResourceSelectorsPreserveOperationSpecificPathContracts(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi":"3.1.1",
+  "info":{"title":"Resource path contracts","version":"1"},
+  "paths":{
+    "/accounts/{id}/profile":{
+      "get":{
+        "operationId":"getProfile",
+        "parameters":[{
+          "name":"id",
+          "in":"path",
+          "required":true,
+          "style":"simple",
+          "schema":{"type":"string","minLength":1}
+        }],
+        "responses":{"204":{"description":"OK"}}
+      }
+    },
+    "/accounts/{id}/settings":{
+      "get":{
+        "operationId":"getSettings",
+        "parameters":[{
+          "name":"id",
+          "in":"path",
+          "required":true,
+          "style":"label",
+          "schema":{"type":"string","minLength":5}
+        }],
+        "responses":{"204":{"description":"OK"}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifactsWithProbe(t, document, "resource-path-contracts.probe.ts", `
+import { createClient } from "./index.js"
+
+const api = createClient({ baseURL: "https://api.example.test" })
+declare const id: string
+
+void api.accounts(id).profile.get
+void api.accounts(id).settings.get
+void api.$operations.getProfile({ path: { id } })
+void api.$operations.getSettings({ path: { id } })
+`)
+
+	script := `
+import { pathToFileURL } from "node:url";
+const root = process.argv[1];
+const { createClient } = await import(pathToFileURL(root + "/index.js").href);
+const requests = [];
+const fetch = async (url) => {
+  requests.push(new URL(String(url)).pathname);
+  return new Response(null, { status: 204 });
+};
+const api = createClient({ baseURL: "https://api.example.test", fetch });
+await api.accounts("abc").profile.get();
+await api.accounts("abcdef").settings.get();
+let rejected;
+try {
+  await api.accounts("abc").settings.get();
+} catch (error) {
+  rejected = error;
+}
+const rejectedCause = rejected?.cause;
+if (!(rejectedCause instanceof TypeError) || !String(rejectedCause.message).includes("length >= 5"))
+  throw new Error("settings minLength was not preserved: " + String(rejected));
+if (JSON.stringify(requests) !== JSON.stringify(["/accounts/abc/profile", "/accounts/.abcdef/settings"]))
+  throw new Error("operation-specific path serialization was not preserved: " + JSON.stringify(requests));
+
+const selective = await import(pathToFileURL(root + "/selective/index.js").href);
+const prepared = await selective.loadOperations([selective.operations.getProfile]);
+const selectedRequests = [];
+const selected = selective.createClient({
+  operations: prepared,
+  baseURL: "https://api.example.test",
+  fetch: async (url) => {
+    selectedRequests.push(new URL(String(url)).pathname);
+    return new Response(null, { status: 204 });
+  },
+});
+const account = selected.accounts("abc");
+if (!Object.hasOwn(account, "profile") || Object.hasOwn(account, "settings"))
+  throw new Error("single-operation selection leaked resource members");
+await account.profile.get();
+if (JSON.stringify(selectedRequests) !== JSON.stringify(["/accounts/abc/profile"]))
+  throw new Error("selected resource request mismatch: " + JSON.stringify(selectedRequests));
+`
+	if runtimeOutput, err := exec.Command("node", "--input-type=module", "--eval", script, output).CombinedOutput(); err != nil {
+		t.Fatalf("execute resource path contract test: %v\n%s", err, runtimeOutput)
+	}
+}
+
 func TestResourceCallableNamespacesSupportFunctionIntrinsicNames(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.1.1","info":{"title":"Callable namespaces","version":"1"},

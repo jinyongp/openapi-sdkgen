@@ -674,6 +674,18 @@ func TestBuildResourceTreeNormalizesPureLocalSchemaReferences(t *testing.T) {
 			name:     "different wire constraints",
 			first:    `{"type":"string","minLength":1}`,
 			second:   `{"type":"string","minLength":2}`,
+			resource: true,
+		},
+		{
+			name:     "different string format and pattern",
+			first:    `{"type":"string","format":"uuid"}`,
+			second:   `{"type":"string","pattern":"^[a-z]+$"}`,
+			resource: true,
+		},
+		{
+			name:     "different literal selector types",
+			first:    `{"type":"string","enum":["a","b"]}`,
+			second:   `{"type":"string","enum":["x","y"]}`,
 			resource: false,
 		},
 		{

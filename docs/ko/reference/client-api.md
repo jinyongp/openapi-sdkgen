@@ -100,6 +100,12 @@ const todo = await api.todos.create({
 });
 ```
 
+여러 operation이 하나의 path selector를 공유하더라도 공개 selector input type이
+같으면 resource 메서드를 유지합니다. Schema 제약과 path serialization은 각 terminal
+operation에 그대로 남으므로 resource 값을 바인딩한다고 계약을 합치거나 느슨하게
+만들지 않습니다. Selector type 자체가 호환되지 않으면 resource shortcut만 생략하고
+정확한 `$operations` / `$routes` 호출은 유지하며 `SDKGEN-W513`을 보고합니다.
+
 ### `$routes`
 
 HTTP 메서드와 OpenAPI 경로를 기준으로 호출합니다.

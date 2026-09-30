@@ -1062,12 +1062,15 @@ func pruneEmptyResourceNodes(node *resourceNode) {
 }
 
 func resourceParameterSignature(document *ir.Document, parameter operationParameter) (string, error) {
-	wire := newWireRenderContext(wirePropertiesLiteral)
 	schema := resourceParameterCompatibilitySchema(document, parameter.Schema)
 	inputType, err := schemaTypeForScope(document, schema, projectionInput, typeRenderContract)
 	if err != nil {
 		return "", err
 	}
+	if inputType != "unknown" && inputType != "never" {
+		return inputType, nil
+	}
+	wire := newWireRenderContext(wirePropertiesLiteral)
 	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, schema, projectionInput)
 	if err != nil {
 		return "", err

@@ -96,6 +96,13 @@ const todo = await api.todos.create({
 });
 ```
 
+When multiple operations share one path selector, the resource method is retained
+when their public selector input type is the same. Operation-specific schema
+constraints and path serialization remain attached to each terminal operation;
+binding the resource value does not merge or weaken those contracts. If selector
+types are incompatible, the resource shortcut is omitted, exact `$operations` /
+`$routes` calls remain available, and generation reports `SDKGEN-W513`.
+
 ### `$routes`
 
 Call an API by its HTTP method and OpenAPI path. This also works when no
