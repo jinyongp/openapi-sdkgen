@@ -2,9 +2,11 @@ package typescript
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"testing"
 
+	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
@@ -631,6 +633,148 @@ func TestBuildResourceTreeFallsBackForRootParameterBranch(t *testing.T) {
 	if call := manifest.Operations[0].CallExpression; call != `api.$operations["getTenant"]({ path: { "tenant": tenant } })` {
 		t.Fatalf("call = %q", call)
 	}
+}
+
+func TestBuildResourceTreeNormalizesPureLocalSchemaReferences(t *testing.T) {
+	tests := []struct {
+		name       string
+		first      string
+		second     string
+		components string
+		resource   bool
+	}{
+		{
+			name:       "inline versus pure ref",
+			first:      `{"type":"string","format":"uuid"}`,
+			second:     `{"$ref":"#/components/schemas/ItemID"}`,
+			components: `"ItemID":{"type":"string","format":"uuid"}`,
+			resource:   true,
+		},
+		{
+			name:       "multi hop pure ref",
+			first:      `{"$ref":"#/components/schemas/Alias"}`,
+			second:     `{"$ref":"#/components/schemas/ItemID"}`,
+			components: `"Alias":{"$ref":"#/components/schemas/ItemID"},"ItemID":{"type":"string","format":"uuid"}`,
+			resource:   true,
+		},
+		{
+			name:       "boolean schema",
+			first:      `false`,
+			second:     `{"$ref":"#/components/schemas/Never"}`,
+			components: `"Never":false`,
+			resource:   true,
+		},
+		{
+			name:     "different scalar types",
+			first:    `{"type":"string"}`,
+			second:   `{"type":"integer"}`,
+			resource: false,
+		},
+		{
+			name:     "different wire constraints",
+			first:    `{"type":"string","minLength":1}`,
+			second:   `{"type":"string","minLength":2}`,
+			resource: false,
+		},
+		{
+			name:       "ref sibling is not pure",
+			first:      `{"$ref":"#/components/schemas/ItemID"}`,
+			second:     `{"$ref":"#/components/schemas/ItemID","minLength":2}`,
+			components: `"ItemID":{"type":"string"}`,
+			resource:   false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			document := compileResourceParameterCompatibilityDocument(t, test.first, test.second, test.components)
+			manifest, err := buildManifest(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			calls := manifestCalls(manifest)
+			if test.resource {
+				if calls["getItemDetails"] != "api.items(itemID).details.get()" ||
+					calls["getItemHistory"] != "api.items(itemID).history.get()" {
+					t.Fatalf("resource calls = %#v", calls)
+				}
+				return
+			}
+			for _, id := range []string{"getItemDetails", "getItemHistory"} {
+				if !strings.HasPrefix(calls[id], `api.$operations["`+id+`"]`) {
+					t.Fatalf("%s call = %q", id, calls[id])
+				}
+			}
+			artifacts, err := SourceArtifacts(document)
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := clientSemanticSource(artifacts)
+			for _, expected := range []string{
+				`readonly "GET /items/{itemID}/details": OperationMethod<"GET /items/{itemID}/details">`,
+				`readonly "GET /items/{itemID}/history": OperationMethod<"GET /items/{itemID}/history">`,
+				`readonly "getItemDetails": OperationMethod<"GET /items/{itemID}/details">`,
+				`readonly "getItemHistory": OperationMethod<"GET /items/{itemID}/history">`,
+			} {
+				if !strings.Contains(source, expected) {
+					t.Fatalf("exact operation surface missing %q:\n%s", expected, source)
+				}
+			}
+		})
+	}
+}
+
+func TestResourceParameterCompatibilitySchemaFallsBackForUnresolvedPureReferences(t *testing.T) {
+	const reference = "#/components/schemas/Loop"
+	for _, test := range []struct {
+		name     string
+		document *ir.Document
+	}{
+		{
+			name: "cycle",
+			document: &ir.Document{Schemas: map[string]ir.Schema{
+				"Loop": {Value: map[string]any{"$ref": reference}},
+			}},
+		},
+		{name: "missing target", document: &ir.Document{}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			original := map[string]any{"$ref": reference}
+			resolved, ok := resourceParameterCompatibilitySchema(test.document, original).(map[string]any)
+			if !ok || resolved["$ref"] != reference {
+				t.Fatalf("fallback schema = %#v", resolved)
+			}
+		})
+	}
+}
+
+func compileResourceParameterCompatibilityDocument(t *testing.T, firstSchema, secondSchema, components string) *ir.Document {
+	t.Helper()
+	input := fmt.Sprintf(`{
+  "openapi": "3.1.1",
+  "info": {"title": "Resource parameter compatibility", "version": "1"},
+  "paths": {
+    "/items/{itemID}/details": {
+      "get": {
+        "operationId": "getItemDetails",
+        "parameters": [{"name":"itemID","in":"path","required":true,"schema":%s}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/items/{itemID}/history": {
+      "get": {
+        "operationId": "getItemHistory",
+        "parameters": [{"name":"itemID","in":"path","required":true,"schema":%s}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    }
+  },
+  "components": {"schemas": {%s}}
+}`, firstSchema, secondSchema, components)
+	document, err := sdkgen.Compile([]byte(input))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return document
 }
 
 func TestBuildResourceTreeSharesCompatibleParameterPositionAndRemapsNames(t *testing.T) {

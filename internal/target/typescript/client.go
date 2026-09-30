@@ -820,11 +820,12 @@ func pruneEmptyResourceNodes(node *resourceNode) {
 
 func resourceParameterSignature(document *ir.Document, parameter operationParameter) (string, error) {
 	wire := newWireRenderContext(wirePropertiesLiteral)
-	inputType, err := schemaTypeForScope(document, parameter.Schema, projectionInput, typeRenderContract)
+	schema := resourceParameterCompatibilitySchema(document, parameter.Schema)
+	inputType, err := schemaTypeForScope(document, schema, projectionInput, typeRenderContract)
 	if err != nil {
 		return "", err
 	}
-	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput)
+	wireSchema, err := wire.wireSchemaDescriptorForDocument(document, schema, projectionInput)
 	if err != nil {
 		return "", err
 	}
@@ -838,6 +839,38 @@ func resourceParameterSignature(document *ir.Document, parameter operationParame
 		parameter.ContentType,
 		wireSchema,
 	}, "\x00"), nil
+}
+
+func resourceParameterCompatibilitySchema(document *ir.Document, value any) any {
+	original := value
+	current := value
+	seen := make(map[string]bool)
+	for {
+		schema, ok := current.(map[string]any)
+		if !ok || len(schema) != 1 {
+			return current
+		}
+		reference, ok := schema["$ref"].(string)
+		if !ok || reference == "" {
+			return current
+		}
+		name, err := componentSchemaReferenceName(reference)
+		if err != nil || seen[name] {
+			return original
+		}
+		seen[name] = true
+		if document != nil {
+			if compiled, exists := document.Schemas[name]; exists {
+				current = compiled.Value
+				continue
+			}
+			if legacy, exists := document.ComponentSchemas[name]; exists {
+				current = legacy
+				continue
+			}
+		}
+		return original
+	}
 }
 
 func resolveResourceNodeCollisions(node *resourceNode, fixedMembers map[string]map[string]bool) {
