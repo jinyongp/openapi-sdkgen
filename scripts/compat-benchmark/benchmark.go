@@ -25,6 +25,7 @@ import (
 )
 
 const benchmarkSchemaVersion = 1
+const benchmarkReportSchemaVersion = 2
 
 type benchmarkManifest struct {
 	SchemaVersion int                `json:"schemaVersion"`
@@ -86,6 +87,7 @@ type documentResult struct {
 	Diagnostics               diagnostic.Counts             `json:"diagnostics"`
 	Findings                  []diagnostic.Diagnostic       `json:"findings"`
 	OperationRetention        operationMetric               `json:"operationRetention"`
+	OperationEmission         *emissionMetric               `json:"operationEmission,omitempty"`
 	Compatibility             compatibilityMetric           `json:"compatibility"`
 	Features                  []string                      `json:"features"`
 	Generation                verificationResult            `json:"generation"`
@@ -106,6 +108,7 @@ type supportProfileResult struct {
 	Generation        verificationResult            `json:"generation"`
 	Typecheck         verificationResult            `json:"typecheck"`
 	Success           bool                          `json:"success"`
+	OperationEmission *emissionMetric               `json:"operationEmission,omitempty"`
 	Coverage          []diagnostic.AnalysisCoverage `json:"coverage,omitempty"`
 	SkippedPhases     []diagnostic.SkippedPhase     `json:"skippedPhases,omitempty"`
 }
@@ -117,6 +120,20 @@ type operationMetric struct {
 	Omitted             int      `json:"omitted"`
 	UnresolvedOmissions int      `json:"unresolvedOmissions"`
 	Rate                *float64 `json:"rate"`
+}
+
+type emissionMetric struct {
+	Available          bool `json:"available"`
+	Count              int  `json:"count"`
+	OperationOmissions int  `json:"operationOmissions"`
+	HelperOmissions    int  `json:"helperOmissions"`
+}
+
+type aggregateEmission struct {
+	AvailableDocuments int `json:"availableDocuments"`
+	Count              int `json:"count"`
+	OperationOmissions int `json:"operationOmissions"`
+	HelperOmissions    int `json:"helperOmissions"`
 }
 
 type compatibilityMetric struct {
@@ -147,6 +164,7 @@ type summaryResult struct {
 	TypecheckedDocuments          int                 `json:"typecheckedDocuments"`
 	GeneratedVerificationRate     *float64            `json:"generatedVerificationRate"`
 	Operations                    aggregateOperations `json:"operations"`
+	OperationEmission             *aggregateEmission  `json:"operationEmission,omitempty"`
 	Compatibility                 compatibilityMetric `json:"compatibility"`
 	FeatureCoverage               featureCoverage     `json:"featureCoverage"`
 }
@@ -219,7 +237,7 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 	})
 
 	report := benchmarkReport{
-		SchemaVersion:  benchmarkSchemaVersion,
+		SchemaVersion:  benchmarkReportSchemaVersion,
 		ManifestSHA256: hex.EncodeToString(manifestDigest[:]),
 		FeatureCatalog: featureCatalog(),
 		Documents:      documents,
@@ -369,6 +387,8 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		return documentResult{}, err
 	}
 	result.Generation = defaultProfile.Generation
+	result.OperationEmission = defaultProfile.OperationEmission
+	result.OperationEmission.OperationOmissions = result.OperationRetention.Omitted
 	result.Typecheck = defaultProfile.Typecheck
 	result.DocumentSuccess = defaultProfile.Success
 	result.CapabilityAdjustedSuccess = result.DocumentSuccess
@@ -391,6 +411,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		if err != nil {
 			return documentResult{}, err
 		}
+		serverProfile.OperationEmission.OperationOmissions = operationRetention(compiled.Document, serverPrepared.Diagnostics).Omitted
 		result.SupportProfiles = append(result.SupportProfiles, serverProfile)
 		if serverProfile.Success {
 			result.CapabilityAdjustedSuccess = true
@@ -412,6 +433,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 		Typecheck:         verificationResult{Status: "not-run"},
 		Coverage:          report.Coverage,
 		SkippedPhases:     report.SkippedPhases,
+		OperationEmission: &emissionMetric{Available: true, HelperOmissions: helperOmissionCount(prepared.Diagnostics)},
 	}
 	if diagnostic.HasErrors(prepared.Diagnostics) || !hasDocument {
 		return result, nil
@@ -446,13 +468,29 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 	}))
 	if emitErr != nil {
 		result.Generation = verificationResult{Status: "fail", Detail: boundedDetail(emitErr.Error())}
+		result.OperationEmission.Available = false
 		return result, nil
 	}
+	routes, err := typescript.EmissionRoutes(prepared.Plan)
+	if err != nil {
+		return supportProfileResult{}, fmt.Errorf("read emitted operation manifest: %w", err)
+	}
+	result.OperationEmission.Count = len(routes)
 	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes}
 	result.Typecheck = typecheck(temporary)
 	result.Success = result.DiscoveryComplete && result.Diagnostics.Errors == 0 &&
 		result.Generation.Status == "pass" && result.Typecheck.Status == "pass"
 	return result, nil
+}
+
+func helperOmissionCount(values []diagnostic.Diagnostic) int {
+	seen := map[string]bool{}
+	for _, value := range values {
+		if value.Scope == failure.ScopeCapability && value.Effect == failure.EffectOmitCapability {
+			seen[value.Location.Source+"\x00"+value.Location.Pointer+"\x00"+value.Capability] = true
+		}
+	}
+	return len(seen)
 }
 
 func hasInboundContractFeature(features []string) bool {
@@ -813,6 +851,17 @@ func summarizeDocuments(cohort string, documents []documentResult) summaryResult
 			result.Operations.Total += document.OperationRetention.Total
 			result.Operations.Retained += document.OperationRetention.Retained
 			result.Operations.Omitted += document.OperationRetention.Omitted
+		}
+		if document.OperationEmission != nil {
+			if result.OperationEmission == nil {
+				result.OperationEmission = &aggregateEmission{}
+			}
+			if document.OperationEmission.Available {
+				result.OperationEmission.AvailableDocuments++
+				result.OperationEmission.Count += document.OperationEmission.Count
+			}
+			result.OperationEmission.OperationOmissions += document.OperationEmission.OperationOmissions
+			result.OperationEmission.HelperOmissions += document.OperationEmission.HelperOmissions
 		}
 		result.Compatibility.Preserved += document.Compatibility.Preserved
 		result.Compatibility.Rejected += document.Compatibility.Rejected

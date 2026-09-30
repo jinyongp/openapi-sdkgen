@@ -98,9 +98,31 @@ The denominator is the compiler IR operation set. The benchmark subtracts
 unique operation-scoped `omit-operation` effects from compiler semantic
 restrictions and target diagnostics.
 
+This is IR retention. It includes operations from documents whose generation is
+blocked, so it does not measure delivered SDK coverage. Existing reports preserve
+this meaning and their original values.
+
 This avoids guessing operation ownership from raw source syntax and prevents
 multiple diagnostics for one omitted operation from being counted multiple
 times.
+
+### Emitted operations
+
+New reports use `schemaVersion: 2`; corpus manifests remain at version 1.
+`operationEmission.count` counts visible exact routes in the manifest used by
+successful TypeScript emission. Blocked documents have zero emitted operations.
+Emission failures mark the metric unavailable. Typecheck and document success
+remain separate, so emitted source that fails typechecking is still counted as
+emitted, with its failed verification status visible.
+
+`operationOmissions` counts diagnosed omitted operations. `helperOmissions`
+counts distinct capability omissions and does not subtract their owning
+operations. The same metrics appear per support profile and in the overall/cohort
+summary. Profile counts are separate; capability-adjusted support does not add
+server-profile operations to default-client coverage.
+
+Consumers branch on the report version. A missing emission field in a historical
+version 1 report means no measurement was made; it does not mean zero operations.
 
 ### Compatibility semantic preservation
 

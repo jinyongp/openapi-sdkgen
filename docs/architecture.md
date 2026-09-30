@@ -42,6 +42,12 @@ population-wide compatibility claim. See
 [OpenAPI compatibility architecture](openapi-compatibility-architecture.md#independent-20-provider-holdout-benchmark)
 for selection, metrics, limitations, and remaining generic gaps.
 
+Compatibility report version 2 separates compiler IR retention from emitted
+operation coverage. Emitted counts come from the visible route manifest after
+successful emission; blocked documents contribute zero. Operation and helper
+omissions are reported separately. Stored version 1 holdout results retain their
+historical values and do not contain an emitted-coverage measurement.
+
 ## Pipeline
 
 ```text
