@@ -618,7 +618,7 @@ select_bump() {
 run_checks() {
   ui_section "Checks"
   ui_note "Running release checks"
-  if bash "$ROOT/scripts/release/check.sh" "${PATCH_TAG#v}"; then
+  if bash "$ROOT/scripts/release/check.sh"; then
     ui_ok "checks passed"
   else
     ui_error "checks failed"
