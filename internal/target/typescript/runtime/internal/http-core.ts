@@ -557,8 +557,8 @@ export function mediaTypeMatches(pattern: string, actual: string): boolean {
 /** Ranks exact, suffix-wildcard and general media matches. */
 export function mediaTypeMatchScore(pattern: string, actual: string | undefined): number {
   if (actual === undefined) return 0;
-  const normalized = pattern.toLowerCase();
-  if (normalized === actual) return 3;
+  const normalized = normalizeMediaType(pattern);
+  if (normalized === normalizeMediaType(actual)) return 3;
   if (normalized.includes("*+")) return 2;
   if (normalized.includes("*")) return 1;
   return 0;
@@ -1545,7 +1545,10 @@ export function createHTTPServices(
     contentType: string,
     value: unknown,
   ): unknown {
-    const definition = operation.requestBodies?.find((item) => item.contentType === contentType);
+    const definition =
+      operation.requestBodies === undefined
+        ? undefined
+        : selectRequestBodyDefinition(operation.requestBodies, contentType);
     return definition === undefined
       ? value
       : transformWireValue(value, definition.schema, operation.inputSchemas ?? {}, "encode");
