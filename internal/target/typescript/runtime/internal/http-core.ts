@@ -2083,6 +2083,7 @@ export function createHTTPServices(
       }
       return form.toString();
     }
+    if (contentType.toLowerCase().startsWith("text/")) return String(value);
     const codec = codecs.get(normalizeMediaType(contentType));
     if (codec?.encodeParameter === undefined)
       throw new TypeError(`missing parameter encode codec for ${contentType}`);
