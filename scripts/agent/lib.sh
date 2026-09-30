@@ -17,8 +17,12 @@ export npm_config_cache="$ROOT/.tmp/node-cache"
 export npm_config_store_dir="$ROOT/.tmp/pnpm-store"
 export CI=true
 
-NODE_VERSION="24.21.0"
-PNPM_VERSION="12.4.1"
+NODE_VERSION="$(tr -d '[:space:]' < "$ROOT/.node-version")"
+PNPM_VERSION="$(sed -n 's/^[[:space:]]*"packageManager"[[:space:]]*:[[:space:]]*"pnpm@\([^"]*\)".*/\1/p' "$ROOT/package.json")"
+if [[ -z "$NODE_VERSION" || -z "$PNPM_VERSION" ]]; then
+  echo "toolchain versions are missing from .node-version or package.json" >&2
+  exit 1
+fi
 
 require_system_node() {
   local actual
