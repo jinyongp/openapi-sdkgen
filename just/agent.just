@@ -177,8 +177,5 @@ release-check:
 release-script-test:
     ./scripts/agent/release-script-test
 
-release-assets-test:
-    ./scripts/agent/release-assets-test
-
 npm-source-check:
     ./scripts/agent/npm-source-check

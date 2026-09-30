@@ -132,30 +132,16 @@ jobs:
         with:
           ref: ${{ needs.validate-release.outputs.ref }}
           fetch-depth: 0
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          path: release-tools
       - name: Verify immutable tag target
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.27.0"
-      - name: Prepare GoReleaser config
-        run: |
-          cp release-tools/.goreleaser.yaml "$RUNNER_TEMP/goreleaser.yaml"
-          cp release-tools/scripts/release/prepare-assets.py "$RUNNER_TEMP/prepare-release-assets.py"
-          rm -rf release-tools
+          go-version-file: go.mod
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           distribution: goreleaser
           version: "v2.17.0"
-          args: release --clean --skip=publish --config ${{ runner.temp }}/goreleaser.yaml
-      - name: Prepare releaseway assets
-        run: |
-          python3 "$RUNNER_TEMP/prepare-release-assets.py" \
-            --dist dist \
-            --version "${{ needs.validate-release.outputs.version }}"
+          args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
         uses: releaseway/actions@4fdc624aafb0c824fb81dd7aaf59031bb1f5aa0f # v0.2.0
         with:
@@ -165,15 +151,5 @@ jobs:
           notes: github
           assets: |
             dist/checksums.txt
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64.tar.gz
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64.tar.gz
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64.tar.gz
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64.tar.gz
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.zip
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.zip
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_amd64
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_darwin_arm64
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_amd64
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_linux_arm64
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_amd64.exe
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_windows_arm64.exe
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.tar.gz
+            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.zip
