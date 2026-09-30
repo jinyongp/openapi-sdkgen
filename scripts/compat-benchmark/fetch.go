@@ -38,13 +38,13 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 	if err := validateManifest(manifest); err != nil {
 		return err
 	}
-	if manifest.Source == nil {
-		return errors.New("corpus fetch requires manifest source metadata")
-	}
 	manifestSum := sha256.Sum256(manifestData)
 	manifestSHA := hex.EncodeToString(manifestSum[:])
 	if offline {
 		return verifyMaterializedCorpus(destination, manifest, manifestSHA)
+	}
+	if manifest.Source == nil {
+		return errors.New("corpus fetch requires manifest source metadata; pinned local corpora use --offline")
 	}
 	if manifest.Source.RawBaseURL == "" {
 		return errors.New("corpus source rawBaseUrl is required for fetch")
@@ -142,6 +142,12 @@ func fetchCorpusFile(client *http.Client, rawBaseURL, input string) ([]byte, err
 }
 
 func verifyMaterializedCorpus(root string, manifest benchmarkManifest, manifestSHA string) error {
+	if manifest.Source == nil {
+		if !manifest.Pinned {
+			return errors.New("manifest requires source metadata or a pinned local corpus")
+		}
+		return verifyPinnedCorpusFiles(root, manifest)
+	}
 	receiptData, err := os.ReadFile(filepath.Join(root, ".openapi-sdkgen-compat-corpus.json"))
 	if err != nil {
 		return fmt.Errorf("read corpus receipt: %w", err)
@@ -172,10 +178,65 @@ func verifyMaterializedCorpus(root string, manifest benchmarkManifest, manifestS
 			return fmt.Errorf("%s: %w", corpus.ID, err)
 		}
 	}
+	return verifyPinnedAuxiliaryFiles(root, manifest.Files)
+}
+
+func verifyPinnedCorpusFiles(root string, manifest benchmarkManifest) error {
+	for _, corpus := range manifest.Corpora {
+		path, err := safeCorpusPath(root, corpus.Input)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := verifyCorpusBytes(corpus, data); err != nil {
+			return fmt.Errorf("%s: %w", corpus.ID, err)
+		}
+	}
+	return verifyPinnedAuxiliaryFiles(root, manifest.Files)
+}
+
+func verifyPinnedAuxiliaryFiles(root string, files []pinnedCorpusFile) error {
+	for _, file := range files {
+		path, err := safeCorpusPath(root, file.Input)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := verifyCorpusBytes(corpusSpec{SHA256: file.SHA256}, data); err != nil {
+			return fmt.Errorf("%s: %w", file.Input, err)
+		}
+	}
 	return nil
 }
 
+func validSHA256(value string) bool {
+	decoded, err := hex.DecodeString(value)
+	return err == nil && len(decoded) == sha256.Size
+}
+
 func verifyCorpusBytes(corpus corpusSpec, data []byte) error {
+	if corpus.SHA256 != "" {
+		sum := sha256.Sum256(data)
+		if hex.EncodeToString(sum[:]) != corpus.SHA256 {
+			return errors.New("sha256 mismatch")
+		}
+	}
+	if corpus.OpenAPIVersion != "" {
+		value, err := decodeFeatureInput(data)
+		if err != nil {
+			return err
+		}
+		root, _ := value.(map[string]any)
+		if root["openapi"] != corpus.OpenAPIVersion {
+			return fmt.Errorf("OpenAPI version mismatch: got %v want %s", root["openapi"], corpus.OpenAPIVersion)
+		}
+	}
 	if corpus.Bytes != 0 && int64(len(data)) != corpus.Bytes {
 		return fmt.Errorf("byte size mismatch: got %d want %d", len(data), corpus.Bytes)
 	}

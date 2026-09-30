@@ -1,0 +1,6 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Server addon boundary", "version": "1"},
+  "paths": {},
+  "webhooks": {"notice": {"post": {"requestBody": {"content": {"application/json": {"schema": {"type": "object"}}}}, "responses": {"204": {"description": "OK"}}}}}
+}

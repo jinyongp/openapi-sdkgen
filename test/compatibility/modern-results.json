@@ -1,0 +1,3275 @@
+{
+  "schemaVersion": 2,
+  "manifestSha256": "a40006f8afdcf25dfb06965933d02696bf239b3026e32f0ab0851574a37ed937",
+  "featureCatalog": [
+    "operation.query",
+    "parameter.querystring",
+    "document.media-types",
+    "media.item-schema",
+    "media.jsonl",
+    "media.json-seq",
+    "media.multipart-positional-encoding",
+    "schema.discriminator-default-mapping",
+    "security.oauth2-metadata",
+    "security.device-authorization",
+    "security.deprecated",
+    "security.requirement-uri",
+    "schema.xml-node-type",
+    "oas.version.3.0",
+    "oas.version.3.1",
+    "oas.version.3.2",
+    "reference.local",
+    "reference.external",
+    "operation.request-body",
+    "operation.required-request-body",
+    "operation.callbacks",
+    "operation.servers",
+    "document.webhooks",
+    "response.links",
+    "media.multipart",
+    "media.url-encoded",
+    "media.binary",
+    "media.encoding",
+    "security.api-key",
+    "security.http",
+    "security.oauth2",
+    "security.openid-connect",
+    "schema.allOf",
+    "schema.oneOf",
+    "schema.anyOf",
+    "schema.not",
+    "schema.discriminator",
+    "schema.additional-properties.boolean",
+    "schema.additional-properties.schema",
+    "schema.type-array",
+    "schema.const",
+    "schema.null-type",
+    "schema.prefix-items",
+    "schema.unevaluated-properties"
+  ],
+  "documents": [
+    {
+      "evidenceKind": "normative",
+      "id": "oas32-normative",
+      "cohort": "normative",
+      "input": "fixtures/support-gaps/oas32-normative.json",
+      "inputSha256": "30d59f9332162f4fb478cc958aeeb5c64b965984615d5c28fccbc1618848cbaf",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 6,
+        "retained": 6,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 6,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "operation.query",
+        "parameter.querystring",
+        "document.media-types",
+        "media.item-schema",
+        "media.jsonl",
+        "media.json-seq",
+        "media.multipart-positional-encoding",
+        "schema.discriminator-default-mapping",
+        "security.oauth2-metadata",
+        "security.device-authorization",
+        "security.deprecated",
+        "schema.xml-node-type",
+        "oas.version.3.2",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.multipart",
+        "media.url-encoded",
+        "security.oauth2",
+        "schema.oneOf",
+        "schema.discriminator",
+        "schema.const",
+        "schema.prefix-items"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 92,
+        "artifactBytes": 469153
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "normative",
+      "id": "sse-event",
+      "cohort": "normative",
+      "input": "fixtures/support-gaps/sse-event.json",
+      "inputSha256": "cccd602dd666238151325a9e948124fea179e945e4f3852f535e583861c1eeab",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 5,
+        "retained": 5,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 5,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "media.item-schema",
+        "oas.version.3.2",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 84,
+        "artifactBytes": 456303
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "normative",
+      "id": "untyped-sequential",
+      "cohort": "normative",
+      "input": "fixtures/support-gaps/sequential-untyped.json",
+      "inputSha256": "d91acf6fa243ed82d9b8cb72e0003a45dfd80a737406a67ef413182ae62d3ec7",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 4,
+        "retained": 4,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 4,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "media.jsonl",
+        "media.json-seq",
+        "oas.version.3.2"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 77,
+        "artifactBytes": 429784
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "real-document",
+      "id": "resend-3.1",
+      "cohort": "real-document",
+      "input": "compatibility/oas31-real/resend.json",
+      "inputSha256": "834cc0af1324a7a01e8cbe7d125297a249233ecb0fd344faf1024acff9139949",
+      "openapiVersion": "3.1.2",
+      "discoveryComplete": false,
+      "diagnostics": {
+        "errors": 1,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "id": "2922baffc8146f66ef6c4e6873e8727ea1f9ee0696481ef508734d11f5aef2bb",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/webhooks"
+          },
+          "target": "typescript",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/webhooks (generated inbound webhook contracts) requires the TypeScript server add-on for inbound webhook contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 113,
+        "retained": 113,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 0,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.1",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "document.webhooks",
+        "media.multipart",
+        "media.binary",
+        "security.http",
+        "schema.allOf",
+        "schema.oneOf",
+        "schema.additional-properties.boolean",
+        "schema.additional-properties.schema",
+        "schema.type-array",
+        "schema.const",
+        "schema.null-type"
+      ],
+      "generation": {
+        "status": "blocked"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "supportProfiles": [
+        {
+          "name": "server-addon",
+          "applicable": true,
+          "discoveryComplete": true,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "findings": [],
+          "generation": {
+            "status": "pass",
+            "artifactCount": 893,
+            "artifactBytes": 3847687
+          },
+          "typecheck": {
+            "status": "pass"
+          },
+          "success": true,
+          "operationEmission": {
+            "available": true,
+            "count": 113,
+            "operationOmissions": 0,
+            "helperOmissions": 0
+          },
+          "coverage": [
+            {
+              "phase": "references",
+              "analyzer": "source.local-references",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.path-parameter-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.security-requirement-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.compatibility",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "decoded-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.reserved-extensions",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-features",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                },
+                {
+                  "name": "version-identity",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-identity",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.callbacks",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.entry-surface",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.extensions",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.links",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.lowering",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.modules",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.prepare",
+              "status": "complete",
+              "target": "typescript",
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.resources",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.streams",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.support",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.visibility",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.webhooks",
+              "status": "complete",
+              "target": "typescript"
+            }
+          ]
+        }
+      ],
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
+    },
+    {
+      "evidenceKind": "reference",
+      "id": "external-link",
+      "cohort": "reference",
+      "input": "fixtures/support-gaps/links/root.json",
+      "inputSha256": "22136e93cd505bf29cca30ab92efaf00eb45d66c371ff6c7801d8cef0871bd37",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 2,
+        "retained": 2,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 2,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2",
+        "reference.external"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 66,
+        "artifactBytes": 417388
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "reference",
+      "id": "schema-array",
+      "cohort": "reference",
+      "input": "fixtures/support-gaps/schema-array.json",
+      "inputSha256": "233f2a92fdf923fcdd97b8eaacbae0c9148e8adb23264cf33498ae14e9439a1f",
+      "openapiVersion": "3.1.1",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 1,
+        "retained": 1,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 1,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.1",
+        "reference.local",
+        "schema.allOf"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 60,
+        "artifactBytes": 395819
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "reference",
+      "id": "schema-locations",
+      "cohort": "reference",
+      "input": "fixtures/support-gaps/schema-locations.json",
+      "inputSha256": "cdc6cc3c2212646ae70fefacfa666be55395ddb37169197efae5ac7d0966803f",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 2,
+        "retained": 2,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 2,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2",
+        "reference.local"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 66,
+        "artifactBytes": 408456
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "reference",
+      "id": "schema-percent",
+      "cohort": "reference",
+      "input": "fixtures/support-gaps/schema-percent.json",
+      "inputSha256": "c981711b995874872c3789f34f916a4c7cae556858b27b9ca1fc06d9a48ea76e",
+      "openapiVersion": "3.1.1",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 1,
+        "retained": 1,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 1,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.1",
+        "reference.local"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 60,
+        "artifactBytes": 395903
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "target-boundary",
+      "id": "fetch-methods",
+      "cohort": "target-boundary",
+      "input": "fixtures/support-gaps/boundary-methods.json",
+      "inputSha256": "fe70ddcf05d4be79a88bc07693c1a67e5f9899a340b6ab2a016aba92b7593aca",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 3
+      },
+      "findings": [
+        {
+          "id": "a2783b66e1aaa3582367d632447f4cf98868e112090c4ccf4da8595ac18eb8bf",
+          "severity": "warning",
+          "code": "SDKGEN-W511",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1verbs/additionalOperations/CONNECT"
+          },
+          "target": "typescript",
+          "route": "CONNECT /verbs",
+          "operation": "connect",
+          "scope": "operation",
+          "effect": "omit-operation",
+          "message": "The TypeScript Fetch target cannot issue CONNECT requests.",
+          "hint": "This operation is omitted for the TypeScript Fetch target."
+        },
+        {
+          "id": "93dd306af768ad7f60472cf8035024d741da1d1705f36a4d6a26294bacc48259",
+          "severity": "warning",
+          "code": "SDKGEN-W511",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1verbs/additionalOperations/TRACK"
+          },
+          "target": "typescript",
+          "route": "TRACK /verbs",
+          "operation": "track",
+          "scope": "operation",
+          "effect": "omit-operation",
+          "message": "The TypeScript Fetch target cannot issue TRACK requests.",
+          "hint": "This operation is omitted for the TypeScript Fetch target."
+        },
+        {
+          "id": "5524d1ecaf055df5526b1cb6a55c17809bbf805ac5f9650dd673e81d45795c6f",
+          "severity": "warning",
+          "code": "SDKGEN-W511",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1verbs/trace"
+          },
+          "target": "typescript",
+          "route": "TRACE /verbs",
+          "operation": "trace",
+          "scope": "operation",
+          "effect": "omit-operation",
+          "message": "The TypeScript Fetch target cannot issue TRACE requests.",
+          "hint": "This operation is omitted for the TypeScript Fetch target."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 5,
+        "retained": 2,
+        "omitted": 3,
+        "unresolvedOmissions": 0,
+        "rate": 0.4
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 2,
+        "operationOmissions": 3,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 64,
+        "artifactBytes": 404550
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "target-boundary",
+      "id": "server-webhook",
+      "cohort": "target-boundary",
+      "input": "fixtures/support-gaps/boundary-webhook.json",
+      "inputSha256": "30954bf458240dff3d071cc7fed0fc64c0aa348c14d4e562e3b69a00b6fadd10",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": false,
+      "diagnostics": {
+        "errors": 1,
+        "warnings": 0
+      },
+      "findings": [
+        {
+          "id": "2922baffc8146f66ef6c4e6873e8727ea1f9ee0696481ef508734d11f5aef2bb",
+          "severity": "error",
+          "code": "SDKGEN-E505",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/webhooks"
+          },
+          "target": "typescript",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI feature #/webhooks (generated inbound webhook contracts) requires the TypeScript server add-on for inbound webhook contracts.",
+          "hint": "Generate again with --with server, or remove the inbound contract."
+        }
+      ],
+      "operationRetention": {
+        "available": true,
+        "total": 0,
+        "retained": 0,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": null
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 0,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2",
+        "operation.request-body",
+        "document.webhooks"
+      ],
+      "generation": {
+        "status": "blocked"
+      },
+      "typecheck": {
+        "status": "not-run"
+      },
+      "documentSuccess": false,
+      "supportProfiles": [
+        {
+          "name": "server-addon",
+          "applicable": true,
+          "discoveryComplete": true,
+          "diagnostics": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "findings": [],
+          "generation": {
+            "status": "pass",
+            "artifactCount": 56,
+            "artifactBytes": 514067
+          },
+          "typecheck": {
+            "status": "pass"
+          },
+          "success": true,
+          "operationEmission": {
+            "available": true,
+            "count": 0,
+            "operationOmissions": 0,
+            "helperOmissions": 0
+          },
+          "coverage": [
+            {
+              "phase": "references",
+              "analyzer": "source.local-references",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.path-parameter-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "openapi.security-requirement-conformance",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.compatibility",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "decoded-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.reserved-extensions",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-features",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                },
+                {
+                  "name": "version-identity",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "openapi",
+              "analyzer": "source.version-identity",
+              "status": "complete",
+              "location": {
+                "source": "$root",
+                "pointer": "#"
+              },
+              "prerequisites": [
+                {
+                  "name": "effective-source",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.callbacks",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.entry-surface",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.extensions",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.links",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.lowering",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.modules",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.prepare",
+              "status": "complete",
+              "target": "typescript",
+              "prerequisites": [
+                {
+                  "name": "compiler-document",
+                  "available": true
+                }
+              ]
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.resources",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.streams",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.support",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.visibility",
+              "status": "complete",
+              "target": "typescript"
+            },
+            {
+              "phase": "target",
+              "analyzer": "target.webhooks",
+              "status": "complete",
+              "target": "typescript"
+            }
+          ]
+        }
+      ],
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
+    }
+  ],
+  "cohorts": [
+    {
+      "cohort": "normative",
+      "documents": 3,
+      "successfulDocuments": 3,
+      "documentSuccessRate": 1,
+      "capabilityAdjustedDocuments": 3,
+      "capabilityAdjustedSuccessRate": 1,
+      "discoveryComplete": 3,
+      "generatedDocuments": 3,
+      "typecheckedDocuments": 3,
+      "generatedVerificationRate": 1,
+      "operations": {
+        "availableDocuments": 3,
+        "total": 15,
+        "retained": 15,
+        "omitted": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "availableDocuments": 3,
+        "count": 15,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 23,
+        "total": 44,
+        "rate": 0.5227272727272727,
+        "missing": [
+          "security.requirement-uri",
+          "oas.version.3.0",
+          "oas.version.3.1",
+          "reference.external",
+          "operation.callbacks",
+          "operation.servers",
+          "document.webhooks",
+          "response.links",
+          "media.binary",
+          "media.encoding",
+          "security.api-key",
+          "security.http",
+          "security.openid-connect",
+          "schema.allOf",
+          "schema.anyOf",
+          "schema.not",
+          "schema.additional-properties.boolean",
+          "schema.additional-properties.schema",
+          "schema.type-array",
+          "schema.null-type",
+          "schema.unevaluated-properties"
+        ]
+      }
+    },
+    {
+      "cohort": "real-document",
+      "documents": 1,
+      "successfulDocuments": 0,
+      "documentSuccessRate": 0,
+      "capabilityAdjustedDocuments": 1,
+      "capabilityAdjustedSuccessRate": 1,
+      "discoveryComplete": 0,
+      "generatedDocuments": 0,
+      "typecheckedDocuments": 0,
+      "generatedVerificationRate": null,
+      "operations": {
+        "availableDocuments": 1,
+        "total": 113,
+        "retained": 113,
+        "omitted": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "availableDocuments": 1,
+        "count": 0,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 15,
+        "total": 44,
+        "rate": 0.3409090909090909,
+        "missing": [
+          "operation.query",
+          "parameter.querystring",
+          "document.media-types",
+          "media.item-schema",
+          "media.jsonl",
+          "media.json-seq",
+          "media.multipart-positional-encoding",
+          "schema.discriminator-default-mapping",
+          "security.oauth2-metadata",
+          "security.device-authorization",
+          "security.deprecated",
+          "security.requirement-uri",
+          "schema.xml-node-type",
+          "oas.version.3.0",
+          "oas.version.3.2",
+          "reference.external",
+          "operation.callbacks",
+          "operation.servers",
+          "response.links",
+          "media.url-encoded",
+          "media.encoding",
+          "security.api-key",
+          "security.oauth2",
+          "security.openid-connect",
+          "schema.anyOf",
+          "schema.not",
+          "schema.discriminator",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    },
+    {
+      "cohort": "reference",
+      "documents": 4,
+      "successfulDocuments": 4,
+      "documentSuccessRate": 1,
+      "capabilityAdjustedDocuments": 4,
+      "capabilityAdjustedSuccessRate": 1,
+      "discoveryComplete": 4,
+      "generatedDocuments": 4,
+      "typecheckedDocuments": 4,
+      "generatedVerificationRate": 1,
+      "operations": {
+        "availableDocuments": 4,
+        "total": 6,
+        "retained": 6,
+        "omitted": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "availableDocuments": 4,
+        "count": 6,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 5,
+        "total": 44,
+        "rate": 0.11363636363636363,
+        "missing": [
+          "operation.query",
+          "parameter.querystring",
+          "document.media-types",
+          "media.item-schema",
+          "media.jsonl",
+          "media.json-seq",
+          "media.multipart-positional-encoding",
+          "schema.discriminator-default-mapping",
+          "security.oauth2-metadata",
+          "security.device-authorization",
+          "security.deprecated",
+          "security.requirement-uri",
+          "schema.xml-node-type",
+          "oas.version.3.0",
+          "operation.request-body",
+          "operation.required-request-body",
+          "operation.callbacks",
+          "operation.servers",
+          "document.webhooks",
+          "response.links",
+          "media.multipart",
+          "media.url-encoded",
+          "media.binary",
+          "media.encoding",
+          "security.api-key",
+          "security.http",
+          "security.oauth2",
+          "security.openid-connect",
+          "schema.oneOf",
+          "schema.anyOf",
+          "schema.not",
+          "schema.discriminator",
+          "schema.additional-properties.boolean",
+          "schema.additional-properties.schema",
+          "schema.type-array",
+          "schema.const",
+          "schema.null-type",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    },
+    {
+      "cohort": "target-boundary",
+      "documents": 2,
+      "successfulDocuments": 1,
+      "documentSuccessRate": 0.5,
+      "capabilityAdjustedDocuments": 2,
+      "capabilityAdjustedSuccessRate": 1,
+      "discoveryComplete": 1,
+      "generatedDocuments": 1,
+      "typecheckedDocuments": 1,
+      "generatedVerificationRate": 1,
+      "operations": {
+        "availableDocuments": 2,
+        "total": 5,
+        "retained": 2,
+        "omitted": 3,
+        "rate": 0.4
+      },
+      "operationEmission": {
+        "availableDocuments": 2,
+        "count": 2,
+        "operationOmissions": 3,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 3,
+        "total": 44,
+        "rate": 0.06818181818181818,
+        "missing": [
+          "operation.query",
+          "parameter.querystring",
+          "document.media-types",
+          "media.item-schema",
+          "media.jsonl",
+          "media.json-seq",
+          "media.multipart-positional-encoding",
+          "schema.discriminator-default-mapping",
+          "security.oauth2-metadata",
+          "security.device-authorization",
+          "security.deprecated",
+          "security.requirement-uri",
+          "schema.xml-node-type",
+          "oas.version.3.0",
+          "oas.version.3.1",
+          "reference.local",
+          "reference.external",
+          "operation.required-request-body",
+          "operation.callbacks",
+          "operation.servers",
+          "response.links",
+          "media.multipart",
+          "media.url-encoded",
+          "media.binary",
+          "media.encoding",
+          "security.api-key",
+          "security.http",
+          "security.oauth2",
+          "security.openid-connect",
+          "schema.allOf",
+          "schema.oneOf",
+          "schema.anyOf",
+          "schema.not",
+          "schema.discriminator",
+          "schema.additional-properties.boolean",
+          "schema.additional-properties.schema",
+          "schema.type-array",
+          "schema.const",
+          "schema.null-type",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    }
+  ],
+  "overall": {
+    "documents": 10,
+    "successfulDocuments": 8,
+    "documentSuccessRate": 0.8,
+    "capabilityAdjustedDocuments": 10,
+    "capabilityAdjustedSuccessRate": 1,
+    "discoveryComplete": 8,
+    "generatedDocuments": 8,
+    "typecheckedDocuments": 8,
+    "generatedVerificationRate": 1,
+    "operations": {
+      "availableDocuments": 10,
+      "total": 139,
+      "retained": 136,
+      "omitted": 3,
+      "rate": 0.9784172661870504
+    },
+    "operationEmission": {
+      "availableDocuments": 10,
+      "count": 23,
+      "operationOmissions": 3,
+      "helperOmissions": 0
+    },
+    "compatibility": {
+      "preserved": 0,
+      "rejected": 0,
+      "total": 0,
+      "rate": null,
+      "actions": {},
+      "rules": {}
+    },
+    "featureCoverage": {
+      "observed": 33,
+      "total": 44,
+      "rate": 0.75,
+      "missing": [
+        "security.requirement-uri",
+        "oas.version.3.0",
+        "operation.callbacks",
+        "operation.servers",
+        "response.links",
+        "media.encoding",
+        "security.api-key",
+        "security.openid-connect",
+        "schema.anyOf",
+        "schema.not",
+        "schema.unevaluated-properties"
+      ]
+    }
+  }
+}

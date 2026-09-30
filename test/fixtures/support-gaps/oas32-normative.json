@@ -1,0 +1,32 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "OpenAPI 3.2 normative contracts", "version": "1"},
+  "paths": {
+    "/search": {"query": {
+      "operationId": "search",
+      "parameters": [{"name": "whole", "in": "querystring", "content": {"application/x-www-form-urlencoded": {"schema": {"type": "object", "properties": {"term": {"type": "string"}}}}}}],
+      "responses": {"204": {"description": "OK"}}
+    }},
+    "/jsonl": {"get": {"operationId": "jsonl", "responses": {"200": {"description": "JSON lines", "content": {"application/jsonl": {"$ref": "#/components/mediaTypes/Sequence"}}}}}},
+    "/jsonseq": {"get": {"operationId": "jsonseq", "responses": {"200": {"description": "JSON sequence", "content": {"application/json-seq": {"itemSchema": {"type": "string"}}}}}}},
+    "/bundle": {"post": {
+      "operationId": "uploadBundle",
+      "requestBody": {"required": true, "content": {"multipart/mixed": {
+        "schema": {"type": "array", "prefixItems": [{"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}, {"type": "string"}]},
+        "prefixEncoding": [{"contentType": "application/json"}], "itemEncoding": {"contentType": "text/plain"}
+      }}},
+      "responses": {"204": {"description": "OK"}}
+    }},
+    "/choice": {"post": {"operationId": "choice", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Choice"}}}}, "responses": {"204": {"description": "OK"}}}},
+    "/xml": {"post": {"operationId": "xml", "requestBody": {"required": true, "content": {"application/xml": {"schema": {"type": "object", "xml": {"name": "record", "nodeType": "element"}, "properties": {"id": {"type": "string", "xml": {"nodeType": "attribute"}}}}}}}, "responses": {"204": {"description": "OK"}}}}
+  },
+  "components": {
+    "mediaTypes": {"Sequence": {"itemSchema": {"type": "string"}}},
+    "schemas": {
+      "Known": {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "known"}}},
+      "Other": {"type": "object", "required": ["kind"], "properties": {"kind": {"type": "string"}}},
+      "Choice": {"oneOf": [{"$ref": "#/components/schemas/Known"}, {"$ref": "#/components/schemas/Other"}], "discriminator": {"propertyName": "kind", "mapping": {"known": "#/components/schemas/Known"}, "defaultMapping": "#/components/schemas/Other"}}
+    },
+    "securitySchemes": {"oauth": {"type": "oauth2", "deprecated": true, "oauth2MetadataUrl": "https://auth.example.test/metadata", "flows": {"deviceAuthorization": {"deviceAuthorizationUrl": "https://auth.example.test/device", "tokenUrl": "https://auth.example.test/token", "scopes": {}}}}}
+  }
+}

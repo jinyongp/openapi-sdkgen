@@ -29,9 +29,16 @@ const benchmarkReportSchemaVersion = 2
 
 type benchmarkManifest struct {
 	SchemaVersion int                `json:"schemaVersion"`
+	Pinned        bool               `json:"pinned,omitempty"`
+	Files         []pinnedCorpusFile `json:"files,omitempty"`
 	Source        *corpusSource      `json:"source,omitempty"`
 	Selection     *selectionMetadata `json:"selection,omitempty"`
 	Corpora       []corpusSpec       `json:"corpora"`
+}
+
+type pinnedCorpusFile struct {
+	Input  string `json:"input"`
+	SHA256 string `json:"sha256"`
 }
 
 type corpusSource struct {
@@ -57,13 +64,19 @@ type sizeStratum struct {
 }
 
 type corpusSpec struct {
-	ID        string `json:"id"`
-	Provider  string `json:"provider,omitempty"`
-	Cohort    string `json:"cohort"`
-	Input     string `json:"input"`
-	GitBlob   string `json:"gitBlob,omitempty"`
-	Bytes     int64  `json:"bytes,omitempty"`
-	SizeClass string `json:"sizeClass,omitempty"`
+	SHA256         string `json:"sha256,omitempty"`
+	OpenAPIVersion string `json:"openapiVersion,omitempty"`
+	EvidenceKind   string `json:"evidenceKind,omitempty"`
+	SourceURL      string `json:"sourceUrl,omitempty"`
+	Revision       string `json:"revision,omitempty"`
+	Trust          string `json:"trust,omitempty"`
+	ID             string `json:"id"`
+	Provider       string `json:"provider,omitempty"`
+	Cohort         string `json:"cohort"`
+	Input          string `json:"input"`
+	GitBlob        string `json:"gitBlob,omitempty"`
+	Bytes          int64  `json:"bytes,omitempty"`
+	SizeClass      string `json:"sizeClass,omitempty"`
 }
 
 type benchmarkReport struct {
@@ -76,6 +89,7 @@ type benchmarkReport struct {
 }
 
 type documentResult struct {
+	EvidenceKind              string                        `json:"evidenceKind,omitempty"`
 	ID                        string                        `json:"id"`
 	Cohort                    string                        `json:"cohort"`
 	Input                     string                        `json:"input"`
@@ -200,7 +214,7 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 	}
 	manifestDigest := sha256.Sum256(manifestData)
 	manifestSHA := hex.EncodeToString(manifestDigest[:])
-	if manifest.Source != nil {
+	if manifest.Source != nil || manifest.Pinned {
 		if err := verifyMaterializedCorpus(corpusRoot, manifest, manifestSHA); err != nil {
 			return fmt.Errorf("verify corpus before benchmark: %w", err)
 		}
@@ -279,6 +293,16 @@ func validateManifest(manifest benchmarkManifest) error {
 	ids := map[string]bool{}
 	providers := map[string]bool{}
 	for _, corpus := range manifest.Corpora {
+		if manifest.Pinned {
+			if !validSHA256(corpus.SHA256) || corpus.OpenAPIVersion == "" || corpus.Trust == "" || corpus.SourceURL == "" || corpus.Revision == "" {
+				return fmt.Errorf("pinned corpus %q requires sha256, openapiVersion, sourceUrl, revision and trust", corpus.ID)
+			}
+			switch corpus.EvidenceKind {
+			case "real-document", "normative", "reference", "target-boundary":
+			default:
+				return fmt.Errorf("pinned corpus %q has invalid evidenceKind", corpus.ID)
+			}
+		}
 		if strings.TrimSpace(corpus.ID) == "" || strings.TrimSpace(corpus.Cohort) == "" || strings.TrimSpace(corpus.Input) == "" {
 			return errors.New("every corpus requires id, cohort, and input")
 		}
@@ -302,6 +326,17 @@ func validateManifest(manifest benchmarkManifest) error {
 			if corpus.GitBlob == "" || corpus.Bytes <= 0 {
 				return fmt.Errorf("source-backed corpus %q requires gitBlob and positive bytes", corpus.ID)
 			}
+		}
+	}
+	for _, file := range manifest.Files {
+		if !validSHA256(file.SHA256) {
+			return fmt.Errorf("pinned auxiliary file %q requires sha256", file.Input)
+		}
+		if _, err := safeCorpusPath(".", file.Input); err != nil {
+			return err
+		}
+		if filepath.ToSlash(filepath.Clean(file.Input)) != file.Input || file.Input == "." {
+			return fmt.Errorf("non-canonical auxiliary input %q", file.Input)
 		}
 	}
 	if manifest.Selection != nil {
@@ -366,6 +401,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	report := diagnostic.NewReport(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage...)
 	normalizeBenchmarkReportSources(&report, inputPath)
 	result := documentResult{
+		EvidenceKind:       corpus.EvidenceKind,
 		ID:                 corpus.ID,
 		Cohort:             corpus.Cohort,
 		Input:              filepath.ToSlash(corpus.Input),

@@ -1,0 +1,9 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Fetch method boundary", "version": "1"},
+  "paths": {"/verbs": {
+    "get": {"operationId": "get", "responses": {"204": {"description": "OK"}}},
+    "trace": {"operationId": "trace", "responses": {"204": {"description": "OK"}}},
+    "additionalOperations": {"PURGE": {"operationId": "purge", "responses": {"204": {"description": "OK"}}}, "CONNECT": {"operationId": "connect", "responses": {"204": {"description": "OK"}}}, "TRACK": {"operationId": "track", "responses": {"204": {"description": "OK"}}}}
+  }}
+}

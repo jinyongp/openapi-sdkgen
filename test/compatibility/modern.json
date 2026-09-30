@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "pinned": true,
+  "selection": {
+    "method": "Membership frozen before generator/benchmark execution: one official upstream 3.1 production API, authored OAS 3.2 normative contracts, reference regressions, and declared target boundaries. Cohorts measure evidence separately; original holdout membership and reports retained.",
+    "candidateCount": 10
+  },
+  "corpora": [
+    {
+      "id": "resend-3.1",
+      "cohort": "real-document",
+      "evidenceKind": "real-document",
+      "input": "compatibility/oas31-real/resend.json",
+      "sha256": "834cc0af1324a7a01e8cbe7d125297a249233ecb0fd344faf1024acff9139949",
+      "bytes": 331965,
+      "openapiVersion": "3.1.2",
+      "sourceUrl": "https://raw.githubusercontent.com/resend/resend-openapi/8916b099d7f52b8552a2e1ef38a7f16fcd17864c/resend.json",
+      "revision": "8916b099d7f52b8552a2e1ef38a7f16fcd17864c",
+      "trust": "self-contained local snapshot; compiler remote allowlist empty",
+      "provider": "resend.com"
+    },
+    {
+      "id": "oas32-normative",
+      "cohort": "normative",
+      "evidenceKind": "normative",
+      "input": "fixtures/support-gaps/oas32-normative.json",
+      "sha256": "30d59f9332162f4fb478cc958aeeb5c64b965984615d5c28fccbc1618848cbaf",
+      "bytes": 2647,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "sse-event",
+      "cohort": "normative",
+      "evidenceKind": "normative",
+      "input": "fixtures/support-gaps/sse-event.json",
+      "sha256": "cccd602dd666238151325a9e948124fea179e945e4f3852f535e583861c1eeab",
+      "bytes": 1727,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "untyped-sequential",
+      "cohort": "normative",
+      "evidenceKind": "normative",
+      "input": "fixtures/support-gaps/sequential-untyped.json",
+      "sha256": "d91acf6fa243ed82d9b8cb72e0003a45dfd80a737406a67ef413182ae62d3ec7",
+      "bytes": 647,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "schema-locations",
+      "cohort": "reference",
+      "evidenceKind": "reference",
+      "input": "fixtures/support-gaps/schema-locations.json",
+      "sha256": "cdc6cc3c2212646ae70fefacfa666be55395ddb37169197efae5ac7d0966803f",
+      "bytes": 554,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "schema-array",
+      "cohort": "reference",
+      "evidenceKind": "reference",
+      "input": "fixtures/support-gaps/schema-array.json",
+      "sha256": "233f2a92fdf923fcdd97b8eaacbae0c9148e8adb23264cf33498ae14e9439a1f",
+      "bytes": 363,
+      "openapiVersion": "3.1.1",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.1.1.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "schema-percent",
+      "cohort": "reference",
+      "evidenceKind": "reference",
+      "input": "fixtures/support-gaps/schema-percent.json",
+      "sha256": "c981711b995874872c3789f34f916a4c7cae556858b27b9ca1fc06d9a48ea76e",
+      "bytes": 407,
+      "openapiVersion": "3.1.1",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.1.1.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "external-link",
+      "cohort": "reference",
+      "evidenceKind": "reference",
+      "input": "fixtures/support-gaps/links/root.json",
+      "sha256": "22136e93cd505bf29cca30ab92efaf00eb45d66c371ff6c7801d8cef0871bd37",
+      "bytes": 225,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "fetch-methods",
+      "cohort": "target-boundary",
+      "evidenceKind": "target-boundary",
+      "input": "fixtures/support-gaps/boundary-methods.json",
+      "sha256": "fe70ddcf05d4be79a88bc07693c1a67e5f9899a340b6ab2a016aba92b7593aca",
+      "bytes": 554,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    },
+    {
+      "id": "server-webhook",
+      "cohort": "target-boundary",
+      "evidenceKind": "target-boundary",
+      "input": "fixtures/support-gaps/boundary-webhook.json",
+      "sha256": "30954bf458240dff3d071cc7fed0fc64c0aa348c14d4e562e3b69a00b6fadd10",
+      "bytes": 267,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://spec.openapis.org/oas/v3.2.0.html",
+      "revision": "fixture-1",
+      "trust": "local fixtures; external Link closure is pinned auxiliary files; compiler remote allowlist empty"
+    }
+  ],
+  "files": [
+    {
+      "input": "fixtures/support-gaps/links/source.json",
+      "sha256": "8acbb34e65d3eeb1d047845cd3bb0ddb36897512e0923943fabe4d158e3dfb0a"
+    },
+    {
+      "input": "fixtures/support-gaps/links/target.json",
+      "sha256": "68cb07818b703048027705fbcc78519227f1c65537809f8f0f6712c00b5a96e4"
+    }
+  ]
+}

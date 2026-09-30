@@ -6,6 +6,44 @@ that were used while developing OpenAPI compatibility behavior.
 
 ## Cohorts
 
+`modern.json` adds ten preselected inputs independently of the original holdout:
+one official Resend OpenAPI 3.1.2 snapshot at commit
+`8916b099d7f52b8552a2e1ef38a7f16fcd17864c`, three normative media/3.2 inputs,
+four reference inputs, and two target-boundary inputs. Evidence kinds are
+reported separately; these authored regression inputs are not a production
+3.2 sample or independent holdout. The normative inputs follow the
+[OpenAPI 3.2 specification](https://spec.openapis.org/oas/v3.2.0.html).
+The snapshot comes from [Resend's official specification repository](https://github.com/resend/resend-openapi).
+
+Membership, input SHA-256, exact OpenAPI version, revision, and trust policy are
+fixed before benchmark execution. Auxiliary Link source/target files also have
+pinned hashes. Compilation uses local snapshots and the default empty remote
+allowlist. Locked remote trust/cache behavior is exercised separately by
+`TestExternalResponseLinkLockedRemoteClosure`.
+
+```sh
+just agent compatibility-verify test/compatibility/modern.json test
+just agent compatibility-benchmark test/compatibility/modern.json test .tmp/compatibility-modern.json 3m
+```
+
+The verifier checks pinned local files without a fetched-corpus receipt. Existing
+source-backed holdout receipts retain their repository/commit/manifest checks.
+`TestOpenAPI32NormativeCohortRuntime` covers QUERY, querystring, reusable media,
+JSONL/JSON-seq framing, positional multipart, discriminator default mapping, and
+XML node types. Security metadata has detector/compile evidence. The existing
+SSE/reference fixtures have their own strict/runtime probes. A webhook remains
+a default-client blocker with a server-addon profile, and forbidden Fetch
+methods remain operation omissions; those declared boundaries are reported.
+The expanded feature catalog reports missing observations as coverage gaps.
+
+`modern-results.json` records the first completed implementation measurement:
+three OpenAPI 3.1 inputs and seven OpenAPI 3.2 inputs, default-client success
+8/10, and capability-adjusted success 10/10 with the server addon for Resend
+and the webhook boundary. Default emission is 23 operations with three
+forbidden-method omissions. IR retention remains 136/139; the two webhook
+blockers explain why it is larger than emitted coverage. These proportions
+describe this selected mixed evidence cohort, not general ecosystem support.
+
 The existing regression evidence covers GitHub, Stripe, GitLab, Cloudflare,
 Microsoft Graph beta, DigitalOcean, and Twilio. Those inputs are useful
 regression tests, but they are not independent holdout evidence because they

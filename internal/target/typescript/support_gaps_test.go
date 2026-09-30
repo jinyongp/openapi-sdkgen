@@ -21,6 +21,43 @@ func supportGapFixture(t *testing.T, name string) []byte {
 	return input
 }
 
+func TestOpenAPI32NormativeCohortRuntime(t *testing.T) {
+	document, err := sdkgen.Compile(supportGapFixture(t, "oas32-normative"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := compileTypeScriptArtifacts(t, document)
+	script := `
+import { pathToFileURL } from "node:url";
+const { createClient }=await import(pathToFileURL(process.argv[1]).href);
+const seen=[];
+const api=createClient({baseURL:"https://example.test",fetch:async(url,init)=>{
+ const path=new URL(url).pathname;seen.push(path);
+ if(path==='/search'&&(init.method!=='QUERY'||new URL(url).searchParams.get('term')!=='space value'))throw new Error('QUERY/querystring changed');
+ if(path==='/jsonl')return new Response('"one"\n"two"\n',{headers:{'content-type':'application/jsonl'}});
+ if(path==='/jsonseq')return new Response('\x1e"three"\n',{headers:{'content-type':'application/json-seq'}});
+ if(path==='/bundle'){
+  const body=await new Response(init.body).text();
+  if(!body.includes('Content-Type: application/json')||!body.includes('{"id":"first"}')||!body.includes('Content-Type: text/plain')||!body.includes('second'))throw new Error('multipart positional encoding changed');
+ }
+ if(path==='/xml'&&!String(init.body).includes('id="one"'))throw new Error('XML nodeType changed');
+ return new Response(null,{status:204});
+}});
+await api.$operations.search({querystring:{whole:{term:'space value'}}});
+if(JSON.stringify(await api.$operations.jsonl())!=='["one","two"]')throw new Error('JSONL buffered items changed');
+const values=[];for await(const item of api.$operations.jsonl.stream())values.push(item);
+if(JSON.stringify(values)!=='["one","two"]')throw new Error('JSONL incremental items changed');
+if(JSON.stringify(await api.$operations.jsonseq())!=='["three"]')throw new Error('JSON sequence framing changed');
+await api.$operations.uploadBundle({body:[{id:'first'},'second']});
+await api.$operations.choice({body:{kind:'unknown'}});
+await api.$operations.xml({body:{id:'one'}});
+if(seen.length!==7)throw new Error('missing normative execution');
+`
+	if result, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
+		t.Fatalf("%v\n%s", err, result)
+	}
+}
+
 func TestSupportGapSSEEventDefaultClientContract(t *testing.T) {
 	document, err := sdkgen.Compile(supportGapFixture(t, "sse-event"))
 	if err != nil {
