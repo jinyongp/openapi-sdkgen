@@ -1,6 +1,12 @@
 name: npm smoke
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: Published openapi-sdkgen npm version to verify.
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       version:
