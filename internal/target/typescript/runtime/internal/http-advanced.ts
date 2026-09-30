@@ -67,13 +67,6 @@ export function createAdvancedHTTPServices(
   );
   const tolerantResponseTransformOptions = { unknownProperties: "preserve" } as const;
 
-  function resolveMaxStreamFrameBytes(value: number | undefined): number {
-    const resolved = value ?? 1024 * 1024;
-    if (!Number.isSafeInteger(resolved) || resolved <= 0)
-      throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
-    return resolved;
-  }
-
   async function* decodeResponseStreamItems(
     body: ReadableStream<Uint8Array>,
     options: HTTPStreamDecodeOptions,
@@ -1262,14 +1255,6 @@ export function createAdvancedHTTPServices(
       result.push(await decodeMultipartStreamPart(part, schema, schemas, codecs, encoding));
     }
     return result;
-  }
-
-  function resolveStreamCodec(
-    contentType: string,
-    override: StreamCodec | undefined,
-    defaults: ReadonlyMap<string, StreamCodec>,
-  ): StreamCodec | undefined {
-    return override ?? defaults.get(normalizeMediaType(contentType));
   }
 
   function isBinaryMediaType(contentType: string): boolean {
