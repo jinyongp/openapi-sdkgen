@@ -43,7 +43,6 @@ func TestSourceArtifactsRejectsUnimplementedOpenAPIFeaturesWithPaths(t *testing.
 	for _, expected := range []string{
 		"#/webhooks (generated inbound webhook contracts)",
 		"#/paths/~1events/get/callbacks (generated callback contracts)",
-		"#/paths/~1events/get/responses/200/content/text~1event-stream (streaming response API)",
 	} {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("error = %q, missing %q", err, expected)
@@ -211,14 +210,14 @@ func TestSourceArtifactsAllowsImplementedOpenAPIHTTPFeatures(t *testing.T) {
 	}
 }
 
-func TestSourceArtifactsRejectsUnsupportedReusableComponentFeatures(t *testing.T) {
+func TestSourceArtifactsAcceptsUntypedReusableSequentialResponses(t *testing.T) {
 	document := &ir.Document{Raw: map[string]any{"components": map[string]any{
 		"headers":    map[string]any{"RateLimit": map[string]any{"required": true, "schema": map[string]any{"type": "integer"}}},
 		"parameters": map[string]any{"Search": map[string]any{"name": "search", "in": "query", "allowReserved": true, "allowEmptyValue": true}},
 		"responses":  map[string]any{"Events": map[string]any{"content": map[string]any{"text/event-stream": map[string]any{}}}},
 	}}}
 	for _, generate := range []func(*ir.Document) ([]Artifact, error){SourceArtifacts} {
-		if _, err := generate(document); err == nil || !strings.Contains(err.Error(), "event-stream") || strings.Contains(err.Error(), "components/headers") {
+		if _, err := generate(document); err != nil {
 			t.Fatalf("error = %v", err)
 		}
 	}

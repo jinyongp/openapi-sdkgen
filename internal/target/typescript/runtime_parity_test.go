@@ -1142,7 +1142,7 @@ if (JSON.stringify(seen) !== JSON.stringify(expected))
 	}
 }
 
-func TestGeneratedStreamingRequestUsesDefaultSSEJSONAdapter(t *testing.T) {
+func TestGeneratedStreamingRequestUsesExplicitSSEJSONAdapter(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.2.0",
   "info": {"title": "SSE request", "version": "1"},
@@ -1195,7 +1195,10 @@ const api = createClient({ baseURL: "https://api.example.test", fetch: async (_i
   received.push(await new Response(init.body).text());
   if (new Headers(init.headers).get("content-type") !== "text/event-stream") throw new Error("SSE request content type missing");
   return new Response(null, { status: 204 });
-} });
+}, streamCodecs: { "text/event-stream": { adapter: {
+  async *decode(frames) { for await (const frame of frames) yield JSON.parse(frame.data); },
+  async *encode(items) { for await (const item of items) yield { data: JSON.stringify(item) }; },
+} } } });
 async function* events() {
   yield { type: "delta", text: "first\n second" };
   yield { type: "done", text: "" };
@@ -1210,7 +1213,7 @@ if (JSON.stringify(received) !== JSON.stringify(expected))
   throw new Error("SSE JSON adapter request encoding mismatch: " + JSON.stringify(received));
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript default SSE JSON request runtime test: %v\n%s", err, output)
+		t.Fatalf("execute TypeScript explicit SSE JSON request runtime test: %v\n%s", err, output)
 	}
 }
 
@@ -1571,7 +1574,10 @@ func TestGeneratedCompleteSequentialResponseUsesStreamProtocolAcrossVersionLines
 			probe := `import { createClient } from "./index.js"
 declare const api: ReturnType<typeof createClient>
 const raw = await api.$operations.listEvents.raw()
-raw.data.map((event) => event.event_id)
+const empty: void = raw.data
+const events = await api.$operations.listEvents()
+events.map((event) => event.event_id)
+void empty
 `
 			output := compileTypeScriptArtifactsWithProbe(t, document, "complete-sequential.probe.ts", probe)
 			script := `
@@ -1587,6 +1593,9 @@ const api = createClient({
 const events = await api.$operations.listEvents();
 if (events.map((event) => event.event_id).join(",") !== "one,two")
   throw new Error("complete sequential response did not use the built-in stream protocol");
+const raw = await api.$operations.listEvents.raw();
+if (raw.data !== undefined || raw.response.bodyUsed || await raw.response.text() !== '{"event_id":"one"}\n{"event_id":"two"}\n')
+  throw new Error("schema-only raw consumed sequential response body");
 `
 			if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
 				t.Fatalf("execute complete sequential response runtime test: %v\n%s", err, output)
@@ -1623,7 +1632,7 @@ catch (error) { if (!String(error).includes("exceeds 4 bytes") && !String(error.
 	}
 }
 
-func TestGeneratedResponseStreamsUseDefaultSSEJSONAdapter(t *testing.T) {
+func TestGeneratedResponseStreamsUseExplicitSSEJSONAdapter(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0", "info":{"title":"SSE","version":"1"},
   "paths":{"/events":{"get":{"operationId":"watchEvents","responses":{"200":{"description":"OK","content":{"text/event-stream":{
@@ -1639,8 +1648,13 @@ func TestGeneratedResponseStreamsUseDefaultSSEJSONAdapter(t *testing.T) {
 import { pathToFileURL } from "node:url";
 const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
 let calls = 0;
+const streamCodecs = { "text/event-stream": { adapter: {
+  async *decode(frames) { for await (const frame of frames) yield JSON.parse(frame.data); },
+  async *encode(items) { for await (const item of items) yield { data: JSON.stringify(item) }; },
+} } };
 const api = createClient({
   baseURL: "https://api.example.test",
+  streamCodecs,
   fetch: async () => {
     calls++;
     return new Response(
@@ -1652,14 +1666,15 @@ const api = createClient({
 const events = [];
 for await (const event of api.$operations.watchEvents.stream()) events.push(event);
 if (JSON.stringify(events) !== JSON.stringify([{ token: "a" }]))
-  throw new Error("default SSE JSON stream decode mismatch: " + JSON.stringify(events));
+  throw new Error("explicit SSE JSON stream decode mismatch: " + JSON.stringify(events));
 const complete = await api.$operations.watchEvents();
 if (JSON.stringify(complete) !== JSON.stringify([{ token: "a" }]))
-  throw new Error("default SSE JSON complete decode mismatch: " + JSON.stringify(complete));
+  throw new Error("explicit SSE JSON complete decode mismatch: " + JSON.stringify(complete));
 if (calls !== 2) throw new Error("unexpected SSE request count: " + calls);
 
 const invalid = createClient({
   baseURL: "https://api.example.test",
+  streamCodecs,
   fetch: async () => new Response(
     "data: [DONE]\n\n",
     { status: 200, headers: { "content-type": "text/event-stream" } },
@@ -1669,13 +1684,13 @@ try {
   for await (const _event of invalid.$operations.watchEvents.stream()) {
     // consume
   }
-  throw new Error("invalid default SSE JSON data was accepted");
+  throw new Error("invalid explicit SSE JSON data was accepted");
 } catch (error) {
   if (!isErrorCode(error, TransportErrorCode.RESPONSE_DECODE_FAILED)) throw error;
 }
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "index.js")).CombinedOutput(); err != nil {
-		t.Fatalf("execute TypeScript default SSE JSON response runtime test: %v\n%s", err, output)
+		t.Fatalf("execute TypeScript explicit SSE JSON response runtime test: %v\n%s", err, output)
 	}
 }
 
@@ -1873,14 +1888,8 @@ func TestGeneratedSSEContentSchemaValidatesJSONDataWithoutChangingStringValue(t 
 	script := `
 import { pathToFileURL } from "node:url";
 const { createClient, isErrorCode, TransportErrorCode } = await import(pathToFileURL(process.argv[1]).href);
-const rawSSEAdapter = {
-  async *decode(frames) { yield* frames; },
-  async *encode(items) { yield* items; },
-};
-
 const valid = createClient({
   baseURL: "https://api.example.test",
-  streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
   fetch: async () => new Response(
     "event: delta\ndata: {\"token\":\"a\"}\n\n",
     { status: 200, headers: { "content-type": "text/event-stream" } },
@@ -1899,7 +1908,6 @@ if (
 
 const invalid = createClient({
   baseURL: "https://api.example.test",
-  streamCodecs: { "text/event-stream": { adapter: rawSSEAdapter } },
   fetch: async () => new Response(
     "data: {\"token\":1}\n\n",
     { status: 200, headers: { "content-type": "text/event-stream" } },

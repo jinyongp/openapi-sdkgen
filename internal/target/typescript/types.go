@@ -841,7 +841,7 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 			schemaObject, _ := media.Schema.(map[string]any)
 			_, hasItemSchema := media.Raw["itemSchema"]
 			valueType := "void"
-			if !hasItemSchema && media.Schema != nil {
+			if !hasItemSchema && !media.Stream.IsStreaming() && media.Schema != nil {
 				if media.Schema == false {
 					valueType = "never"
 				} else if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {

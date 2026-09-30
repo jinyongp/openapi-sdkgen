@@ -2295,8 +2295,7 @@ export function createHTTPServices(
     if (contentType === undefined || response.body === null) return undefined;
     try {
       const definition = selectResponseDefinition(operation, response, true);
-      const completeSequential =
-        definition?.schemaDeclared === true && definition.streamFraming !== undefined;
+      const completeSequential = definition?.streamFraming !== undefined;
       if (completeSequential && definition !== undefined) {
         const values: unknown[] = [];
         const streamCodec = resolveStreamCodec(
@@ -2567,7 +2566,12 @@ export function createRequestCore(
       const request = requestMetadata(response);
       responseMetadata = { request, status: response.status, response };
       const responseDefinition = selectResponseDefinition(operation, response, true);
-      if (raw && response.ok && responseDefinition?.itemSchema !== undefined) {
+      if (
+        raw &&
+        response.ok &&
+        (responseDefinition?.itemSchema !== undefined ||
+          responseDefinition?.streamFraming !== undefined)
+      ) {
         const contentType = responseContentType(response);
         let headerValues: Readonly<Record<string, unknown>>;
         try {

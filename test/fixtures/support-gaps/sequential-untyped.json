@@ -1,0 +1,10 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "Untyped sequential responses", "version": "1"},
+  "paths": {
+    "/sse": {"get": {"operationId": "sse", "responses": {"200": {"description": "OK", "content": {"text/event-stream": {}}}}}},
+    "/ndjson": {"get": {"operationId": "ndjson", "responses": {"200": {"description": "OK", "content": {"application/x-ndjson": {}}}}}},
+    "/jsonl": {"get": {"operationId": "jsonl", "responses": {"200": {"description": "OK", "content": {"application/jsonl": {}}}}}},
+    "/jsonseq": {"get": {"operationId": "jsonseq", "responses": {"200": {"description": "OK", "content": {"application/json-seq": {}}}}}}
+  }
+}

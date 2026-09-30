@@ -53,16 +53,23 @@ paths:
             text/event-stream:
               itemSchema:
                 type: object
-                required: [type, text]
+                required: [data]
                 properties:
-                  type:
-                    const: text-delta
-                  text:
+                  data:
                     type: string
+                    contentMediaType: application/json
+                    contentSchema:
+                      type: object
+                      required: [type, text]
+                      properties:
+                        type:
+                          const: text-delta
+                        text:
+                          type: string
 ```
 
-`itemSchema`는 SSE frame을 adapter가 변환한 뒤의 application event를
-설명합니다. Wire protocol은 표준 `text/event-stream`을 그대로 사용합니다.
+`itemSchema`는 표준 SSE Event 객체를 설명합니다. 문자열 `data`에 들어 있는
+text-delta payload는 client가 이벤트를 반환하기 전에 `contentSchema`로 검증합니다.
 
 ## 2. Server: API 내부에서 AI SDK 사용
 
@@ -122,10 +129,8 @@ pnpm exec openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-Generated client는 `generate` operation에 incremental response item 타입이
-있다는 사실을 알고 있습니다. Built-in SSE에서는 흔히 사용하는
-JSON-in-`data` mapping도 openapi-sdkgen이 기본으로 처리하므로 이 형태를 위해
-adapter를 따로 작성할 필요가 없습니다.
+Generated client는 `generate`의 incremental Event 응답 타입을 알고 있습니다.
+`data`를 문자열로 유지하면서 선언한 내부 JSON 구조를 검증합니다.
 
 ## 4. Consumer: typed SSE item 사용
 
@@ -144,7 +149,8 @@ const stream = api.$operations.generate.stream({
 });
 
 for await (const event of stream) {
-  process.stdout.write(event.text);
+  const payload = JSON.parse(event.data) as { type: "text-delta"; text: string };
+  process.stdout.write(payload.text);
 }
 ```
 
@@ -153,20 +159,17 @@ SDK contract와 typed event를 사용하는 application code만 필요합니다.
 
 ## SSE 기본 mapping
 
-Built-in SSE protocol은 표준 `data`, `event`, `id`, `retry` field를
-그대로 parsing합니다. Custom stream adapter나 protocol을 지정하지 않으면
-openapi-sdkgen이 각 SSE `data` 값을 JSON으로 parsing한 뒤 결과를
-`itemSchema`로 validation/projection합니다.
+Built-in SSE protocol은 표준 `data`, `event`, `id`, `retry` 필드를 반환합니다.
+`itemSchema`는 Event 객체를 검증합니다. 이 예제의 `contentSchema`는 `data`의
+내부 JSON도 검증하며 공개 `data` 값은 문자열로 유지됩니다.
 
-Non-JSON data, named event routing, terminal marker, frame aggregation처럼 다른
-application semantics가 필요할 때만 `StreamAdapter<ServerSentEvent, Item>`를
-사용합니다. Custom adapter에는 raw `ServerSentEvent` frame이 전달되며,
-지정한 adapter가 기본 JSON mapping을 대체합니다.
+JSON payload 직접 반환, named event routing, terminal marker, frame aggregation처럼
+application별 변환이 필요하면 `StreamAdapter<ServerSentEvent, Item>`를 사용합니다.
+SDK는 adapter 결과에 application schema를 적용합니다. 스트리밍 레퍼런스에서
+명시적 JSON 호환 adapter 예제를 확인할 수 있습니다.
 
-따라서 일반적인 JSON SSE는 별도 설정 없이 사용할 수 있고, 특수한 protocol은
-명시적인 extension point로 처리할 수 있습니다. Server가 AI provider를
-변경해도 generated client는 provider-specific dependency를 가질 필요가
-없습니다.
+Server가 AI provider를 변경해도 generated client는 provider-specific dependency를
+가질 필요가 없습니다.
 
 Protocol/adapter 계약은 [스트리밍 API](../reference/streaming.md), 버전별 기능은
 [OpenAPI 지원 범위](../reference/capabilities.md)를 참고하세요.

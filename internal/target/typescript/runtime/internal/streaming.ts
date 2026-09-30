@@ -5,7 +5,6 @@ import type {
   StreamProtocol,
   StreamReader,
 } from "./wire-engine.js";
-import { isRecord } from "./runtime-support.js";
 import type { ServerSentEvent } from "./request.js";
 
 /** Internal response-stream decoding options shared by HTTP framing implementations. */
@@ -56,17 +55,7 @@ function decodeStreamApplicationItems(
 ): AsyncIterable<unknown> {
   if (options.streamCodec?.adapter !== undefined)
     return options.streamCodec.adapter.decode(frames, context);
-  if (options.streamCodec?.protocol === undefined && options.streamFraming === "sse")
-    return decodeDefaultSSEJSONItems(frames);
   return frames;
-}
-
-async function* decodeDefaultSSEJSONItems(frames: AsyncIterable<unknown>): AsyncIterable<unknown> {
-  for await (const frame of frames) {
-    if (!isRecord(frame) || typeof frame.data !== "string")
-      throw new TypeError("SSE stream protocol produced an invalid event frame");
-    yield parseStreamJSON(frame.data);
-  }
 }
 
 async function* decodeBuiltInStreamFrames(

@@ -18,6 +18,12 @@ differently depending on which fields the OpenAPI version can express.
 The 3.2 fields are defined by the
 [OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object).
 
+A built-in sequential response without `schema` or `itemSchema` still generates
+a buffered call returning `unknown`. The built-in media codec decodes the body;
+malformed framing or JSON remains a decode error. `.stream()` requires
+`itemSchema`. For sequential media, `.raw()` leaves the response body unconsumed
+and returns `undefined` as `data`, including schema-only responses.
+
 Built-in sequential framing covers:
 
 - `text/event-stream` as Server-Sent Events;
@@ -93,12 +99,15 @@ interface ServerSentEvent {
 }
 ```
 
-`data` remains a string at the protocol-frame layer. When built-in SSE is used
-without a custom adapter or protocol, openapi-sdkgen applies the common
-JSON-in-`data` mapping automatically: it parses `event.data` for responses and
-inbound streams and stringifies request items into SSE `data`. The parser
-preserves the SSE last-event-id state and resets it when the wire stream sends an
-empty `id:` field.
+Built-in SSE uses this Event object as its default application value for
+responses, requests, and inbound server streams. `data` remains a string,
+including when it contains JSON. The parser preserves last-event-id state and
+resets it when the wire stream sends an empty `id:` field.
+
+Declare `itemSchema` as an Event object for incremental calls. For buffered
+calls, declare `schema` as an array of Event objects. A `data` property with
+`contentMediaType: application/json` and `contentSchema` validates the embedded
+JSON without changing the public `data` string.
 
 Generated clients do not reconnect or replay SSE automatically.
 
@@ -127,10 +136,33 @@ For responses and inbound server streams, adapter output is validated and
 projected through the declared `itemSchema`. For streaming request bodies, the
 generated item value is encoded through `itemSchema` before the adapter runs.
 
-Use an adapter when the built-in application mapping is not enough. For SSE,
-this includes non-JSON `data`, named-event routing, terminal markers, frame
-aggregation, or other application-specific semantics. An explicit adapter
-receives raw `ServerSentEvent` frames and replaces the default JSON mapping.
+Use an adapter for application-specific mapping, such as JSON payloads,
+named-event routing, terminal markers, or frame aggregation. An SSE adapter
+receives `ServerSentEvent` frames. Its output is the value the SDK validates
+against the configured application item schema.
+
+For an SDK contract that describes JSON application items, opt into that mapping:
+
+```ts
+import type { ServerSentEvent, StreamAdapter } from "./generated/api";
+
+const jsonSSEAdapter: StreamAdapter<ServerSentEvent, unknown> = {
+  async *decode(frames) {
+    for await (const frame of frames) yield JSON.parse(frame.data);
+  },
+  async *encode(items) {
+    for await (const item of items) {
+      const data = JSON.stringify(item);
+      if (data === undefined) throw new TypeError("Item must be JSON-serializable");
+      yield { data };
+    }
+  },
+};
+```
+
+This compatibility adapter changes the SDK application value. A normative SSE
+Event schema describes the frame object; use `contentSchema` on `data` to
+constrain embedded JSON while retaining Event output.
 
 ### StreamProtocol
 
@@ -163,30 +195,41 @@ interface StreamCodec<Frame = unknown, Item = unknown> {
 ```
 
 A codec may replace framing, add an application adapter, or do both. For
-built-in SSE, omitting `adapter` uses the default JSON-in-`data` mapping.
-Providing an adapter replaces that mapping. Providing a custom protocol does not
-implicitly apply the SSE JSON adapter.
+built-in SSE, omitting `adapter` returns Event objects. Providing an adapter
+replaces that application mapping. A custom protocol supplies its own frames.
 
 ## Configuration
 
 ### ClientOptions.streamCodecs
 
-Set media-type defaults for every operation on one client. Ordinary JSON SSE
-does not need a `streamCodecs` entry; configure one when the application needs
-custom stream semantics:
+Set media-type defaults for every operation on one client. Event objects need no
+entry. Configure an adapter when the application consumes JSON payloads directly:
 
 ```ts
 const api = createClient({
   baseURL,
   streamCodecs: {
     "text/event-stream": {
-      adapter: eventAdapter,
+      adapter: jsonSSEAdapter,
     },
   },
 });
 ```
 
 Keys are normalized media types.
+
+### Regeneration migration
+
+This change belongs to the next major generator release. Regenerated SSE clients
+use Event objects by default. Consumers that previously received parsed JSON
+payloads can configure `jsonSSEAdapter` above to retain their application schema,
+or declare an Event schema and parse its `data` explicitly. Request callers send
+Event objects by default; the same adapter retains JSON payload encoding.
+
+Sequential `.raw()` calls, including schema-only responses, now leave the body
+unconsumed and expose `undefined` in `data`. Read `raw.response` for bytes, or use
+the ordinary buffered call for the decoded value. Already generated SDK source
+keeps its behavior until regeneration.
 
 ### RequestOptions.streamCodec
 

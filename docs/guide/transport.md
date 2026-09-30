@@ -186,12 +186,10 @@ one wire frame, record, or multipart part before application adaptation.
 
 ### Adapt a built-in protocol
 
-Built-in SSE already decodes JSON carried in `data`, so that common case
-needs no adapter. Use
-[`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter) when
-the application needs different semantics on top of supported framing. For
-example, this adapter routes only named `todo` events without reimplementing
-the SSE parser:
+Built-in SSE returns Event objects and preserves `data` as a string. Use
+[`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter) to parse
+JSON application payloads and stringify them when encoding. This adapter also
+routes only named `todo` events while reusing the SSE parser:
 
 ```ts
 import type { ServerSentEvent, StreamAdapter } from "./generated/api";

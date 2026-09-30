@@ -31,7 +31,7 @@ func TestPrepareAccumulatesIndependentTargetSupportDiagnostics(t *testing.T) {
 				Raw: map[string]any{
 					"security": "invalid",
 					"responses": map[string]any{
-						"200": map[string]any{"content": map[string]any{"text/event-stream": map[string]any{}}},
+						"200": map[string]any{"content": map[string]any{"text/event-stream": map[string]any{"encoding": map[string]any{"part": map[string]any{}}}}},
 					},
 				},
 			},

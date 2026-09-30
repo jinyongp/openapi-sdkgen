@@ -301,8 +301,6 @@ func unsupportedMediaFeatures(document *ir.Document, content map[string]any, pat
 				if !hasSchema && !hasItemSchema {
 					result = append(result, itemPath+" (streaming request encoder requires schema or itemSchema)")
 				}
-			} else if !hasSchema && !hasItemSchema {
-				result = append(result, itemPath+" (streaming response API)")
 			}
 		}
 		if hasNonEmptyObject(media["encoding"]) && (!request || (!strings.HasPrefix(normalizedMediaType, "multipart/") && normalizedMediaType != "application/x-www-form-urlencoded")) {

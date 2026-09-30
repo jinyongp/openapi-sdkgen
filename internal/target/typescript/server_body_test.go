@@ -335,7 +335,7 @@ if (deniedResponse.status !== 400) throw new Error("false inbound schema accepte
 	}
 }
 
-func TestGeneratedWebhookRouterUsesDefaultSSEJSONAdapterAndCustomRawFrames(t *testing.T) {
+func TestGeneratedWebhookRouterUsesExplicitSSEJSONAdaptersAndRawFrames(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi":"3.2.0",
   "info":{"title":"Inbound SSE","version":"1"},
@@ -400,7 +400,10 @@ const defaultRouter = createWebhookRouter({
     for await (const item of body) defaultSeen.push(item.value);
     return { status: 204 };
   } },
-}, { routes: { events: "/events" } });
+}, { routes: { events: "/events" }, streamCodecs: { "text/event-stream": { adapter: {
+  async *decode(frames) { for await (const frame of frames) yield JSON.parse(frame.data); },
+  async *encode(items) { for await (const item of items) yield { data: JSON.stringify(item) }; },
+} } } });
 const defaultResponse = await defaultRouter.fetch(new Request("https://host.test/events", {
   method: "POST",
   headers: { "content-type": "text/event-stream" },

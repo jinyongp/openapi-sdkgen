@@ -82,7 +82,7 @@ export interface RawResponse<Output, HeaderValues = Readonly<Record<string, unkn
   readonly data: Output;
   /** Request metadata extracted from the response. */
   readonly request: RequestMetadata;
-  /** Original Fetch API response. Its body has already been consumed unless streamed. */
+  /** Original Fetch API response. Sequential raw responses preserve its unconsumed body. */
   readonly response: Response;
 }
 

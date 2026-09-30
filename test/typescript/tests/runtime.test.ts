@@ -2505,7 +2505,7 @@ describe("generated runtime", () => {
     }
   });
 
-  it("accepts CR-only SSE framing with default JSON mapping and discards an incomplete event at EOF", async () => {
+  it("accepts CR-only SSE Event framing and discards an incomplete event at EOF", async () => {
     const request = createRequest({
       baseURL: "https://api.example.test",
       fetch: async () =>
@@ -2531,7 +2531,7 @@ describe("generated runtime", () => {
           }),
         ),
       ),
-    ).resolves.toEqual([{ value: 1 }]);
+    ).resolves.toEqual([{ data: '{"value":1}' }]);
   });
 
   it("decodes SSE identically across deterministic byte chunk partitions", async () => {
@@ -2540,7 +2540,11 @@ describe("generated runtime", () => {
       'data: {"value":"한글"}\n\n' +
       'data: {"value":"split-boundary"}\n\n';
     const bytes = new TextEncoder().encode(wire);
-    const expected = [{ value: "🌍" }, { value: "한글" }, { value: "split-boundary" }];
+    const expected = [
+      { data: '{"value":"🌍"}' },
+      { data: '{"value":"한글"}' },
+      { data: '{"value":"split-boundary"}' },
+    ];
     const definition = operation({
       method: "GET",
       path: "/events",
@@ -2656,12 +2660,12 @@ describe("generated runtime", () => {
     ]);
   });
 
-  it("applies item-schema transformation after the default SSE JSON adapter", async () => {
+  it("applies item-schema transformation to the default SSE Event object", async () => {
     const itemSchema = {
       types: ["object"],
-      required: ["token"],
+      required: ["data"],
       properties: {
-        token: { property: "payload", schema: { types: ["string"] } },
+        data: { property: "payload", schema: { types: ["string"] } },
       },
     } as const;
     const request = createRequest({
@@ -2690,7 +2694,7 @@ describe("generated runtime", () => {
           }),
         ),
       ),
-    ).resolves.toEqual([{ payload: "a" }]);
+    ).resolves.toEqual([{ payload: '{"token":"a"}', event: "delta", retry: 5 }]);
   });
 
   it("lets stream codecs override built-in framing in both directions", async () => {
@@ -3146,7 +3150,7 @@ describe("generated runtime", () => {
     ).resolves.toEqual([{ displayName: "custom", future: true }]);
   });
 
-  it("encodes default SSE JSON request items and rejects non-stream bodies before fetch", async () => {
+  it("encodes default SSE Event request items and rejects non-stream bodies before fetch", async () => {
     const bodies: string[] = [];
     const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
       bodies.push(await new Response(init?.body).text());
@@ -3167,14 +3171,12 @@ describe("generated runtime", () => {
       inputSchemas: {},
     });
     async function* events() {
-      yield { type: "delta", text: "first\n second" };
-      yield { type: "done", text: "" };
+      yield { event: "delta", data: "first\n second" };
+      yield { event: "done", data: "" };
     }
 
     await expect(request(streamOperation, { body: events() })).resolves.toEqual({ ok: true });
-    expect(bodies).toEqual([
-      'data: {"type":"delta","text":"first\\n second"}\n\ndata: {"type":"done","text":""}\n\n',
-    ]);
+    expect(bodies).toEqual(["event: delta\ndata: first\ndata:  second\n\nevent: done\ndata: \n\n"]);
 
     const error = await request(streamOperation, { body: { data: "not-a-stream" } }).catch(
       (cause: unknown) => cause,

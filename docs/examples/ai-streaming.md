@@ -54,16 +54,23 @@ paths:
             text/event-stream:
               itemSchema:
                 type: object
-                required: [type, text]
+                required: [data]
                 properties:
-                  type:
-                    const: text-delta
-                  text:
+                  data:
                     type: string
+                    contentMediaType: application/json
+                    contentSchema:
+                      type: object
+                      required: [type, text]
+                      properties:
+                        type:
+                          const: text-delta
+                        text:
+                          type: string
 ```
 
-`itemSchema` describes the application event after the SSE frame has been
-adapted. The wire protocol is still standard `text/event-stream`.
+`itemSchema` describes the standard SSE Event object. Its `data` string contains
+a text-delta payload, validated by `contentSchema` before the client yields it.
 
 ## 2. Server: use the AI SDK behind the API
 
@@ -123,9 +130,8 @@ pnpm exec openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-The generated client knows that `generate` has an incremental response item
-type. For built-in SSE, openapi-sdkgen also handles the common JSON-in-`data`
-mapping automatically, so the consumer does not need an adapter for this shape.
+The generated client knows that `generate` has an incremental Event response.
+It preserves `data` as a string and validates the declared embedded JSON shape.
 
 ## 4. Consumer: consume typed SSE items
 
@@ -144,7 +150,8 @@ const stream = api.$operations.generate.stream({
 });
 
 for await (const event of stream) {
-  process.stdout.write(event.text);
+  const payload = JSON.parse(event.data) as { type: "text-delta"; text: string };
+  process.stdout.write(payload.text);
 }
 ```
 
@@ -154,21 +161,17 @@ events.
 
 ## Default SSE mapping
 
-The built-in SSE protocol still parses standard `data`, `event`, `id`, and
-`retry` fields. When no custom stream adapter or protocol is configured,
-openapi-sdkgen parses each SSE `data` value as JSON and validates/projects the
-result through `itemSchema`.
+The built-in SSE protocol returns standard `data`, `event`, `id`, and `retry`
+fields. `itemSchema` validates that Event object. In this example, `contentSchema`
+also validates the JSON carried by `data`, which remains a string.
 
-Use `StreamAdapter<ServerSentEvent, Item>` only when the application needs
-different semantics, such as non-JSON data, named-event routing, a terminal
-marker, frame aggregation, or another application-specific mapping. A custom
-adapter receives the raw `ServerSentEvent` frames and replaces the default JSON
-mapping.
+Use `StreamAdapter<ServerSentEvent, Item>` for application-specific transformations
+such as direct JSON payload output, named-event routing, terminal markers, or
+frame aggregation. Adapter output is validated against the SDK application
+schema. The streaming reference includes an explicit JSON compatibility adapter.
 
-This keeps the common JSON SSE path configuration-free while preserving an
-explicit extension point for specialized protocols. The server remains free to
-change AI providers, and the generated client stays free of provider-specific
-dependencies.
+The server remains free to change AI providers, and the generated client stays
+free of provider-specific dependencies.
 
 See [Streaming API](../reference/streaming.md) for the protocol/adapter contract
 and [OpenAPI support](../reference/capabilities.md) for version-specific

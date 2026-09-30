@@ -17,12 +17,7 @@ import { TransportErrorCode, isAPIError } from "./runtime-support.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
 import { operationDiagnosticName } from "./runtime-support.js";
 import type { OperationDefinition } from "./operation.js";
-import type {
-  OperationStream,
-  RequestOptions,
-  ServerSentEvent,
-  StreamResponseMetadata,
-} from "./request.js";
+import type { OperationStream, RequestOptions, StreamResponseMetadata } from "./request.js";
 import {
   decodeResponseStreamItems as decodeFramedResponseStreamItems,
   parseStreamJSON,
@@ -659,12 +654,7 @@ export function createAdvancedHTTPServices(
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     };
     const items = transformStreamingRequestItems(values, options.itemSchema, options.schemas);
-    const frames = encodeStreamApplicationFrames(
-      items,
-      options.streamFraming,
-      options.streamCodec,
-      context,
-    );
+    const frames = encodeStreamApplicationFrames(items, options.streamCodec, context);
     return encodeStreamProtocolFrames(frames, {
       contentType: options.contentType,
       streamFraming: options.streamFraming,
@@ -694,12 +684,7 @@ export function createAdvancedHTTPServices(
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     };
     const items = streamArrayValues(transformed);
-    const frames = encodeStreamApplicationFrames(
-      items,
-      options.streamFraming,
-      options.streamCodec,
-      context,
-    );
+    const frames = encodeStreamApplicationFrames(items, options.streamCodec, context);
     return encodeStreamProtocolFrames(frames, {
       contentType: options.contentType,
       streamFraming: options.streamFraming,
@@ -718,24 +703,11 @@ export function createAdvancedHTTPServices(
 
   function encodeStreamApplicationFrames(
     items: AsyncIterable<unknown>,
-    streamFraming: StreamFraming | undefined,
     streamCodec: StreamCodec | undefined,
     context: StreamContext,
   ): AsyncIterable<unknown> {
     if (streamCodec?.adapter !== undefined) return streamCodec.adapter.encode(items, context);
-    if (streamCodec?.protocol === undefined && streamFraming === "sse")
-      return encodeDefaultSSEJSONFrames(items);
     return items;
-  }
-
-  async function* encodeDefaultSSEJSONFrames(
-    items: AsyncIterable<unknown>,
-  ): AsyncIterable<ServerSentEvent> {
-    for await (const item of items) {
-      const data = JSON.stringify(item);
-      if (data === undefined) throw new TypeError("SSE stream item must be JSON-serializable");
-      yield { data };
-    }
   }
 
   function encodeStreamProtocolFrames(

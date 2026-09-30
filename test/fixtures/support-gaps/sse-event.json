@@ -1,0 +1,12 @@
+{
+  "openapi": "3.2.0",
+  "info": {"title": "SSE Event mapping", "version": "1"},
+  "paths": {
+    "/publish-buffered": {"post": {"operationId": "publishBuffered", "requestBody": {"required": true, "content": {"text/event-stream": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Event"}}}}}, "responses": {"204": {"description": "OK"}}}},
+    "/publish-incremental": {"post": {"operationId": "publishIncremental", "requestBody": {"required": true, "content": {"text/event-stream": {"itemSchema": {"$ref": "#/components/schemas/Event"}}}}, "responses": {"204": {"description": "OK"}}}},
+    "/buffered": {"get": {"operationId": "buffered", "responses": {"200": {"description": "OK", "content": {"text/event-stream": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Event"}}}}}}}},
+    "/incremental": {"get": {"operationId": "incremental", "responses": {"200": {"description": "OK", "content": {"text/event-stream": {"itemSchema": {"$ref": "#/components/schemas/Event"}}}}}}},
+    "/both": {"post": {"operationId": "both", "requestBody": {"required": true, "content": {"text/event-stream": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Event"}}, "itemSchema": {"$ref": "#/components/schemas/Event"}}}}, "responses": {"200": {"description": "OK", "content": {"text/event-stream": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Event"}}, "itemSchema": {"$ref": "#/components/schemas/Event"}}}}}}}
+  },
+  "components": {"schemas": {"Event": {"type": "object", "required": ["data"], "properties": {"data": {"type": "string", "minLength": 1}, "event": {"type": "string"}, "id": {"type": "string"}, "retry": {"type": "integer", "minimum": 0}}}}}
+}

@@ -190,12 +190,11 @@ application adaptation 전의 wire frame, record, multipart part 하나의 크�
 
 ### 기본 protocol에 adapter 적용
 
-Built-in SSE는 `data` 안의 JSON을 기본으로 decode하므로 일반적인 경우에는
-adapter가 필요하지 않습니다. 지원되는 framing 위에 다른 application
-semantics가 필요할 때
+Built-in SSE는 Event 객체를 반환하고 `data`를 문자열로 보존합니다.
+JSON application payload를 파싱하고 인코딩할 때 문자열로 변환하려면
 [`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter)를
-사용합니다. 아래 예제는 SSE parser를 다시 구현하지 않고 이름이 `todo`인
-event만 선택합니다.
+지정합니다. 아래 adapter는 SSE parser를 재사용하면서 이름이 `todo`인 event도
+선택합니다.
 
 ```ts
 import type { ServerSentEvent, StreamAdapter } from "./generated/api";
