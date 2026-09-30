@@ -168,6 +168,67 @@ func TestIncrementalPublicationPreservesOwnershipBoundaries(t *testing.T) {
 	}
 }
 
+func TestStreamArtifactsClassifiesEmissionAndPublicationFailures(t *testing.T) {
+	t.Run("emission", func(t *testing.T) {
+		sentinel := errors.New("emitter failed")
+		err := StreamArtifacts(filepath.Join(t.TempDir(), "generated"), false, nil, func(generator.ArtifactSink) error {
+			return sentinel
+		})
+		var stage *StageError
+		if !errors.As(err, &stage) || stage.Stage != StageEmit || !errors.Is(err, sentinel) {
+			t.Fatalf("stream error = %#v, want emit stage wrapping sentinel", err)
+		}
+		if IsPublicationError(err) {
+			t.Fatal("emitter failure was classified as a publication error")
+		}
+	})
+
+	t.Run("publication", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "generated")
+		err := StreamArtifacts(path, false, nil, func(sink generator.ArtifactSink) error {
+			if err := sink.WriteArtifact(generator.Artifact{Path: "nested", Data: []byte("file\n")}); err != nil {
+				return err
+			}
+			return sink.WriteArtifact(generator.Artifact{Path: "nested/client.ts", Data: []byte("export {}\n")})
+		})
+		var stage *StageError
+		if !errors.As(err, &stage) || stage.Stage != StagePublish || !IsPublicationError(err) {
+			t.Fatalf("stream error = %#v, want publication stage", err)
+		}
+		if _, statErr := os.Stat(path); !errors.Is(statErr, os.ErrNotExist) {
+			t.Fatalf("partial output stat error = %v", statErr)
+		}
+	})
+}
+
+func TestIncrementalPublicationRemovesOnlyEmptyStaleParents(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "generated")
+	if err := PublishArtifacts(path, []generator.Artifact{
+		{Path: "stable.ts", Data: []byte("stable\n")},
+		{Path: "old/deep/stale.ts", Data: []byte("stale\n")},
+	}, false, nil); err != nil {
+		t.Fatal(err)
+	}
+	userFile := filepath.Join(path, "old", "keep.txt")
+	if err := os.WriteFile(userFile, []byte("user\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := PublishArtifacts(path, []generator.Artifact{
+		{Path: "stable.ts", Data: []byte("stable\n")},
+	}, true, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(path, "old", "deep")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("empty stale directory remains: %v", err)
+	}
+	if value, err := os.ReadFile(userFile); err != nil || string(value) != "user\n" {
+		t.Fatalf("user file = %q, %v", value, err)
+	}
+	if info, err := os.Stat(filepath.Join(path, "old")); err != nil || !info.IsDir() {
+		t.Fatalf("non-empty user directory = %#v, %v", info, err)
+	}
+}
+
 func TestGenerationManifestRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "generated")
 	generation := &Generation{
