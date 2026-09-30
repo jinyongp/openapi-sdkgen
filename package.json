@@ -1,7 +1,4 @@
 {
   "private": true,
-  "packageManager": "pnpm@12.4.1",
-  "workspaces": [
-    "npm"
-  ]
+  "packageManager": "pnpm@12.4.1"
 }
