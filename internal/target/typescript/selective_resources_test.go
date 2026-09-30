@@ -65,3 +65,51 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 		})
 	}
 }
+
+func TestGeneratedFullClientPreservesPureRefCompatiblePathParameters(t *testing.T) {
+	document := compileResourceParameterCompatibilityDocument(
+		t,
+		`{"type":"string","format":"uuid"}`,
+		`{"$ref":"#/components/schemas/ItemID"}`,
+		`"ItemID":{"type":"string","format":"uuid"}`,
+	)
+	compileTypeScriptArtifactsWithProbe(t, document, "resource-ref-compatibility.probe.ts", `
+import { createClient } from "./index.js"
+
+const api = createClient({ baseURL: "https://api.example.test" })
+declare const itemID: string
+
+void api.items(itemID).details.get
+void api.items(itemID).history.get
+`)
+}
+
+func TestSelectedResourceTypesPreservePureRefCompatiblePathParameters(t *testing.T) {
+	document := compileResourceParameterCompatibilityDocument(
+		t,
+		`{"type":"string","format":"uuid"}`,
+		`{"$ref":"#/components/schemas/ItemID"}`,
+		`"ItemID":{"type":"string","format":"uuid"}`,
+	)
+	plan, diagnostics, err := prepareSourcePlan(document, false)
+	if err != nil || diagnostic.HasErrors(diagnostics) {
+		t.Fatalf("prepare: %v %v", err, diagnostics)
+	}
+	source, err := emitSelectedResourceTypes(plan.document, plan.modules, plan.resourceTree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	for _, expected := range []string{
+		`readonly "items":`,
+		`((value: string) =>`,
+		`readonly "details":`,
+		`readonly "history":`,
+		`"GET /items/{itemID}/details"`,
+		`"GET /items/{itemID}/history"`,
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("selected resource surface missing %q:\n%s", expected, text)
+		}
+	}
+}
