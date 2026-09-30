@@ -1140,11 +1140,12 @@ export function createAdvancedHTTPServices(
       }
       value = decoded as string;
     }
-    if (schema.types?.includes("array"))
+    const resolved = resolveHeaderSchema(schema, schemas);
+    if (resolved.types?.includes("array"))
       return value
         .split(",")
-        .map((item) => decodeMultipartHeaderScalar(name, item, schema.items ?? {}));
-    if (schema.types?.includes("object") || schema.properties !== undefined) {
+        .map((item) => decodeMultipartHeaderScalar(name, item, resolved.items ?? {}, schemas));
+    if (resolved.types?.includes("object") || resolved.properties !== undefined) {
       const result = Object.create(null) as Record<string, unknown>;
       const tokens = value.split(",");
       if (explode)
@@ -1158,7 +1159,8 @@ export function createAdvancedHTTPServices(
             decodeMultipartHeaderScalar(
               name,
               token.slice(separator + 1),
-              schema.properties?.[property]?.schema ?? {},
+              resolved.properties?.[property]?.schema ?? {},
+              schemas,
             ),
           );
         }
@@ -1170,27 +1172,34 @@ export function createAdvancedHTTPServices(
             decodeMultipartHeaderScalar(
               name,
               tokens[index + 1]!,
-              schema.properties?.[tokens[index]!]?.schema ?? {},
+              resolved.properties?.[tokens[index]!]?.schema ?? {},
+              schemas,
             ),
           );
       return result;
     }
-    return decodeMultipartHeaderScalar(name, value, schema);
+    return decodeMultipartHeaderScalar(name, value, resolved, schemas);
   }
 
-  function decodeMultipartHeaderScalar(name: string, value: string, schema: WireSchema): unknown {
-    if (schema.types?.includes("integer")) {
+  function decodeMultipartHeaderScalar(
+    name: string,
+    value: string,
+    schema: WireSchema,
+    schemas: WireSchemas,
+  ): unknown {
+    const resolved = resolveHeaderSchema(schema, schemas);
+    if (resolved.types?.includes("integer")) {
       const parsed = Number(value);
       if (!Number.isInteger(parsed))
         throw new TypeError(`multipart header ${name} is not an integer`);
       return parsed;
     }
-    if (schema.types?.includes("number")) {
+    if (resolved.types?.includes("number")) {
       const parsed = Number(value);
       if (!Number.isFinite(parsed)) throw new TypeError(`multipart header ${name} is not a number`);
       return parsed;
     }
-    if (schema.types?.includes("boolean")) {
+    if (resolved.types?.includes("boolean")) {
       if (value === "true") return true;
       if (value === "false") return false;
       throw new TypeError(`multipart header ${name} is not a boolean`);
