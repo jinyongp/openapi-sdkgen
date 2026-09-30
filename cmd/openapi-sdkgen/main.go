@@ -83,26 +83,27 @@ type cliApplication struct {
 }
 
 type generateFlagValues struct {
-	config            *string
-	input             *string
-	inputBase         *string
-	targetName        *string
-	output            *string
-	with              repeatedStrings
-	remoteRefs        repeatedStrings
-	schemaExtensions  repeatedStrings
-	httpHeaderEnv     rawStrings
-	refLock           *string
-	updateRefLock     *bool
-	offline           *bool
-	incremental       *bool
-	check             *bool
-	diagnosticsFormat *string
-	diagnosticMode    *string
-	help              *bool
-	tlsClientCert     *string
-	tlsClientKey      *string
-	tlsCAFile         *string
+	config                 *string
+	input                  *string
+	inputBase              *string
+	targetName             *string
+	output                 *string
+	with                   repeatedStrings
+	remoteRefs             repeatedStrings
+	schemaExtensions       repeatedStrings
+	httpHeaderEnv          rawStrings
+	refLock                *string
+	updateRefLock          *bool
+	offline                *bool
+	incremental            *bool
+	check                  *bool
+	diagnosticsFormat      *string
+	diagnosticMode         *string
+	failOnResourceOmission *bool
+	help                   *bool
+	tlsClientCert          *string
+	tlsClientKey           *string
+	tlsCAFile              *string
 }
 
 var defaultGenerationRuntime = generationRuntime{
@@ -288,6 +289,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		return err
 	}
 	options.DiagnosticMode = diagnosticMode
+	options.FailOnResourceOmission = *values.failOnResourceOmission
 	if err := generator.ValidateTargetOptions(target, options); err != nil {
 		return err
 	}
@@ -311,7 +313,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		TLSCAFile:                *values.tlsCAFile,
 	}
 	requestedGeneration := reusableGenerationRequest(*values.input, target.Name(), options, compileOptions)
-	if diagnosticMode == diagnostic.ModeFailFast && *values.incremental && requestedGeneration != nil {
+	if diagnosticMode == diagnostic.ModeFailFast && *values.incremental && !options.FailOnResourceOmission && requestedGeneration != nil {
 		noop, err := incrementalGenerationMatches(*values.output, requestedGeneration)
 		if err != nil {
 			return err
@@ -498,6 +500,10 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		Name: "diagnostic-mode", Metavariable: "mode", Summary: "Diagnostic discovery policy",
 		Available: func() []string { return []string{string(diagnostic.ModeFailFast), string(diagnostic.ModeCollect)} },
 	}, string(diagnostic.ModeFailFast))
+	values.failOnResourceOmission = flags.Bool(optionsGroup, helpOption{
+		Name:    "fail-on-resource-omission",
+		Summary: "Fail when a generated operation loses its resource API capability",
+	}, false)
 	values.help = flags.Bool(optionsGroup, helpOption{
 		Name: "help", Short: "h", Summary: "Show help",
 	}, false)

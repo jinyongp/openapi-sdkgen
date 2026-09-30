@@ -832,6 +832,82 @@ func TestGenerateReportsEditedIncrementalArtifact(t *testing.T) {
 	}
 }
 
+func TestGenerateResourceOmissionPolicyWarnsByDefaultAndBlocksWhenStrict(t *testing.T) {
+	directory := t.TempDir()
+	input := filepath.Join(directory, "openapi.json")
+	document := `{
+  "openapi": "3.1.1",
+  "info": {"title": "Resource omission policy", "version": "1"},
+  "paths": {
+    "/users/{id}/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string"}}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/users/{id}/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"integer"}}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    }
+  }
+}`
+	if err := os.WriteFile(input, []byte(document), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	previousError := standardError
+	t.Cleanup(func() { standardError = previousError })
+
+	defaultOutput := filepath.Join(directory, "default")
+	var defaultReport bytes.Buffer
+	standardError = &defaultReport
+	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", defaultOutput}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(defaultReport.String(), "SDKGEN-W513") || strings.Contains(defaultReport.String(), "SDKGEN-E513") {
+		t.Fatalf("default resource omission report =\n%s", defaultReport.String())
+	}
+	if _, err := os.Stat(filepath.Join(defaultOutput, "index.ts")); err != nil {
+		t.Fatalf("default resource omission did not publish: %v", err)
+	}
+
+	strictOutput := filepath.Join(directory, "strict")
+	var strictReport bytes.Buffer
+	standardError = &strictReport
+	err := run([]string{
+		"generate",
+		"--input", input,
+		"--target", "typescript",
+		"--output", strictOutput,
+		"--fail-on-resource-omission",
+	})
+	if !errors.Is(err, errReportedDiagnostics) {
+		t.Fatalf("strict resource omission error = %v", err)
+	}
+	if !strings.Contains(strictReport.String(), "SDKGEN-E513") || strings.Contains(strictReport.String(), "SDKGEN-W513") {
+		t.Fatalf("strict resource omission report =\n%s", strictReport.String())
+	}
+	if _, err := os.Stat(strictOutput); !os.IsNotExist(err) {
+		t.Fatalf("strict resource omission published output: %v", err)
+	}
+
+	var checkReport bytes.Buffer
+	standardError = &checkReport
+	err = run([]string{
+		"generate",
+		"--input", input,
+		"--target", "typescript",
+		"--check",
+		"--fail-on-resource-omission",
+	})
+	if !errors.Is(err, errReportedDiagnostics) || !strings.Contains(checkReport.String(), "SDKGEN-E513") {
+		t.Fatalf("strict check resource omission = %v\n%s", err, checkReport.String())
+	}
+}
+
 func TestGeneratePrintsRealTargetWarningAndPublishes(t *testing.T) {
 	directory := t.TempDir()
 	input := filepath.Join(directory, "openapi.json")
@@ -888,6 +964,24 @@ func TestGeneratePrintsRealTargetWarningAndPublishes(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(output, "index.ts")); err != nil {
 		t.Fatalf("warning-only generation did not publish: %v", err)
+	}
+
+	strictOutput := filepath.Join(directory, "strict-generated")
+	report.Reset()
+	if err := run([]string{
+		"generate",
+		"--input", input,
+		"--target", "typescript",
+		"--output", strictOutput,
+		"--fail-on-resource-omission",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(report.String(), "SDKGEN-W641") || strings.Contains(report.String(), "SDKGEN-E641") {
+		t.Fatalf("unrelated warning was promoted:\n%s", report.String())
+	}
+	if _, err := os.Stat(filepath.Join(strictOutput, "index.ts")); err != nil {
+		t.Fatalf("strict resource policy blocked unrelated warning: %v", err)
 	}
 }
 
@@ -1487,6 +1581,20 @@ func TestGenerateIncrementalSkipsCompilationForMatchingReusableInput(t *testing.
 		t.Fatal("matching incremental generation replaced the manifest")
 	}
 	assertIncrementalLockReusable(t, output)
+
+	compiled = false
+	err = generateWithRuntime([]string{
+		"--input", input,
+		"--target", "typescript",
+		"--output", output,
+		"--incremental",
+		"--fail-on-resource-omission",
+	}, runtime)
+	if !compiled || err == nil || !strings.Contains(err.Error(), "internal compiler failure") {
+		t.Fatalf("strict resource policy reused incremental no-op: error = %v, compiled = %v", err, compiled)
+	}
+
+	compiled = false
 	if err := os.WriteFile(filepath.Join(output, "index.ts"), []byte("edited\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

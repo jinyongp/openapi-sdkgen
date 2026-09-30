@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -27,6 +28,7 @@ output = "./generated"
 addons = ["server"]
 diagnostics_format = "json"
 diagnostic_mode = "collect"
+fail_on_resource_omission = true
 
 [input]
 base = "./refs"
@@ -98,6 +100,9 @@ extensions = ["./extensions/custom.json"]
 	if compiledOptions.DiagnosticMode != diagnostic.ModeCollect || preparedOptions.DiagnosticMode != diagnostic.ModeCollect {
 		t.Fatalf("diagnostic mode not propagated: compile=%q prepare=%q", compiledOptions.DiagnosticMode, preparedOptions.DiagnosticMode)
 	}
+	if !preparedOptions.FailOnResourceOmission {
+		t.Fatal("resource omission policy was not propagated from config")
+	}
 	if !reflect.DeepEqual(compiledOptions.RemoteRefAllowlist, []string{"https://schemas.example.com"}) {
 		t.Fatalf("remote refs = %#v", compiledOptions.RemoteRefAllowlist)
 	}
@@ -122,6 +127,7 @@ output = "./config-output"
 addons = ["server"]
 incremental = true
 diagnostic_mode = "fail-fast"
+fail_on_resource_omission = true
 
 [input.headers_from_env]
 Authorization = "CONFIG_AUTH"
@@ -152,6 +158,7 @@ extensions = ["./config-extension.json"]
 		"--offline=false",
 		"--incremental=false",
 		"--diagnostic-mode", "collect",
+		"--fail-on-resource-omission=false",
 	}
 	if err := flags.Flags.Parse(args); err != nil {
 		t.Fatal(err)
@@ -171,6 +178,9 @@ extensions = ["./config-extension.json"]
 	if *values.diagnosticMode != "collect" {
 		t.Fatalf("diagnostic mode CLI override lost: %q", *values.diagnosticMode)
 	}
+	if *values.failOnResourceOmission {
+		t.Fatal("explicit false resource omission CLI override was lost")
+	}
 	if !reflect.DeepEqual([]string(values.with), []string{"server"}) {
 		t.Fatalf("addons = %#v", values.with)
 	}
@@ -183,6 +193,86 @@ extensions = ["./config-extension.json"]
 	if !reflect.DeepEqual([]string(values.httpHeaderEnv), []string{"X-Token=CLI_TOKEN"}) {
 		t.Fatalf("header env mappings merged instead of replaced: %#v", values.httpHeaderEnv)
 	}
+}
+
+func TestGenerateProjectConfigCoversPersistentGenerateFlags(t *testing.T) {
+	registries, err := newCLIRegistries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	flags, _ := newGenerateFlagSet(registries)
+	executionOnly := map[string]bool{
+		"config":          true,
+		"check":           true,
+		"update-ref-lock": true,
+		"help":            true,
+	}
+	aliases := make(map[string]bool)
+	for _, group := range flags.Groups {
+		for _, option := range group.Options {
+			if option.Short != "" {
+				aliases[option.Short] = true
+			}
+		}
+	}
+	configToCLI := map[string]string{
+		"source":                    "input",
+		"target":                    "target",
+		"output":                    "output",
+		"addons":                    "with",
+		"incremental":               "incremental",
+		"diagnostics_format":        "diagnostics-format",
+		"diagnostic_mode":           "diagnostic-mode",
+		"fail_on_resource_omission": "fail-on-resource-omission",
+		"input.base":                "input-base",
+		"input.headers_from_env":    "http-header-env",
+		"input.tls_client_cert":     "tls-client-cert",
+		"input.tls_client_key":      "tls-client-key",
+		"input.tls_ca_file":         "tls-ca-file",
+		"references.allow":          "allow-remote-ref",
+		"references.lock":           "ref-lock",
+		"references.offline":        "offline",
+		"schema.extensions":         "schema-extension",
+	}
+	configured := make(map[string]bool, len(configToCLI))
+	for _, key := range generateProjectConfigKeys(reflect.TypeOf(generateProjectConfig{}), "") {
+		cliName, exists := configToCLI[key]
+		if !exists {
+			t.Fatalf("project config key %q has no generate CLI mapping", key)
+		}
+		configured[cliName] = true
+	}
+	var missing []string
+	flags.Flags.VisitAll(func(value *flag.Flag) {
+		if aliases[value.Name] || executionOnly[value.Name] || configured[value.Name] {
+			return
+		}
+		missing = append(missing, value.Name)
+	})
+	if len(missing) != 0 {
+		t.Fatalf("persistent generate flags missing project-config coverage: %v", missing)
+	}
+}
+
+func generateProjectConfigKeys(value reflect.Type, prefix string) []string {
+	var result []string
+	for index := 0; index < value.NumField(); index++ {
+		field := value.Field(index)
+		name := field.Tag.Get("toml")
+		if name == "" || name == "-" {
+			continue
+		}
+		path := name
+		if prefix != "" {
+			path = prefix + "." + name
+		}
+		if field.Type.Kind() == reflect.Struct {
+			result = append(result, generateProjectConfigKeys(field.Type, path)...)
+			continue
+		}
+		result = append(result, path)
+	}
+	return result
 }
 
 func TestGenerateProjectConfigRejectsUnknownFields(t *testing.T) {

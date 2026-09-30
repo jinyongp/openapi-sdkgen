@@ -29,7 +29,10 @@ type Options struct {
 	// DiagnosticMode must match the compiler result for one generation
 	// invocation. The zero value preserves fail-fast behavior.
 	DiagnosticMode diagnostic.Mode
-	addons         map[Addon]struct{}
+	// FailOnResourceOmission promotes TypeScript resource-capability omission
+	// warnings to blocking target diagnostics.
+	FailOnResourceOmission bool
+	addons                 map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.

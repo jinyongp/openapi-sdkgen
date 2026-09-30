@@ -108,6 +108,12 @@ collect는 prerequisite가 유효한 analyzer만 계속 실행하며, blocking d
 그대로 non-zero 종료를 만들고 emit/publish를 막습니다. 따라서 partial SDK를 만들지
 않습니다. 기본값은 `fail-fast`입니다.
 
+operation 자체는 생성되지만 resource member 충돌 때문에 TypeScript resource API
+shortcut만 사라지는 경우에는 `SDKGEN-W513`을 보고하고 정확한 `$operations` /
+`$routes` surface는 유지합니다. CI에서 이런 capability 손실을 실패로 처리하려면
+`--fail-on-resource-omission`을 사용합니다. 프로젝트 설정에서는
+`fail_on_resource_omission = true`를 사용합니다.
+
 종료 코드는 그대로 검증 결과입니다. 0은 성공을 뜻하며, generation diagnostic,
 drift 또는 실행 환경 오류가 있으면 0이 아닌 코드로 종료합니다.
 

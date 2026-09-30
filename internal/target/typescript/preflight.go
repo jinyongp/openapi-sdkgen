@@ -223,6 +223,18 @@ func sourceTargetDiagnostic(document *ir.Document, ownership *sourceOwnershipInd
 	return value
 }
 
+func promoteResourceOmissionDiagnostics(values []diagnostic.Diagnostic) []diagnostic.Diagnostic {
+	result := make([]diagnostic.Diagnostic, len(values))
+	for index, value := range values {
+		result[index] = value
+		if value.Code == "SDKGEN-W513" {
+			result[index].Severity = diagnostic.SeverityError
+			result[index].Code = "SDKGEN-E513"
+		}
+	}
+	return result
+}
+
 func resourceOmissionDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex, omissions []resourceOmission) []diagnostic.Diagnostic {
 	result := make([]diagnostic.Diagnostic, 0, len(omissions))
 	for _, omission := range omissions {

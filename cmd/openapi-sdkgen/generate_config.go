@@ -14,16 +14,17 @@ import (
 )
 
 type generateProjectConfig struct {
-	Source            *string                     `toml:"source"`
-	Target            *string                     `toml:"target"`
-	Output            *string                     `toml:"output"`
-	Addons            []string                    `toml:"addons"`
-	Incremental       *bool                       `toml:"incremental"`
-	DiagnosticsFormat *string                     `toml:"diagnostics_format"`
-	DiagnosticMode    *string                     `toml:"diagnostic_mode"`
-	Input             generateProjectInputConfig  `toml:"input"`
-	References        generateProjectRefConfig    `toml:"references"`
-	Schema            generateProjectSchemaConfig `toml:"schema"`
+	Source                 *string                     `toml:"source"`
+	Target                 *string                     `toml:"target"`
+	Output                 *string                     `toml:"output"`
+	Addons                 []string                    `toml:"addons"`
+	Incremental            *bool                       `toml:"incremental"`
+	DiagnosticsFormat      *string                     `toml:"diagnostics_format"`
+	DiagnosticMode         *string                     `toml:"diagnostic_mode"`
+	FailOnResourceOmission *bool                       `toml:"fail_on_resource_omission"`
+	Input                  generateProjectInputConfig  `toml:"input"`
+	References             generateProjectRefConfig    `toml:"references"`
+	Schema                 generateProjectSchemaConfig `toml:"schema"`
 }
 
 type generateProjectInputConfig struct {
@@ -92,6 +93,9 @@ func applyGenerateProjectConfig(
 	}
 	if !visited["diagnostic-mode"] && config.DiagnosticMode != nil {
 		*values.diagnosticMode = *config.DiagnosticMode
+	}
+	if !visited["fail-on-resource-omission"] && config.FailOnResourceOmission != nil {
+		*values.failOnResourceOmission = *config.FailOnResourceOmission
 	}
 	if !visited["input-base"] && config.Input.Base != nil {
 		*values.inputBase = resolveConfigSource(base, *config.Input.Base)

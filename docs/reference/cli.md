@@ -37,6 +37,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
 | `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
 | `--diagnostic-mode fail-fast|collect` | Select the diagnostic discovery policy; default `fail-fast` preserves existing stop boundaries, while `collect` continues only across independent analyzers with satisfied prerequisites |
+| `--fail-on-resource-omission` | Fail instead of warning when a generated operation loses its TypeScript resource API capability |
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
 directory path; standard output is not a supported generation destination.
@@ -54,6 +55,7 @@ addons = ["server"]
 incremental = true
 diagnostics_format = "human"
 diagnostic_mode = "fail-fast"
+fail_on_resource_omission = true
 
 [input]
 tls_ca_file = "./certs/internal-ca.pem"
@@ -84,6 +86,7 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
+| `fail_on_resource_omission` | `--fail-on-resource-omission` |
 | `input.base` | `--input-base` |
 | `input.headers_from_env` | repeatable `--http-header-env` |
 | `input.tls_client_cert` | `--tls-client-cert` |
@@ -118,9 +121,10 @@ It does not accept a credential value field. Keep the secret in the environment:
 Authorization = "OPENAPI_TOKEN"
 ```
 
-`--check`, `--update-ref-lock`, and `--help` remain CLI-only execution
-controls. Unknown TOML keys are rejected so misspelled settings cannot be
-silently ignored.
+`--config` selects the config file and is not itself a config key. `--check`,
+`--update-ref-lock`, and `--help` remain CLI-only execution controls. Persistent
+generation policies, including `--fail-on-resource-omission`, have matching TOML
+keys. Unknown TOML keys are rejected so misspelled settings cannot be silently ignored.
 
 ## Fresh, incremental, and check modes
 

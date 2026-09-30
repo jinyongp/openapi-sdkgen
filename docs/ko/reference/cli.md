@@ -39,6 +39,7 @@ openapi-sdkgen generate [options]
 | `--with <addon>` | target-specific artifact 추가. 현재 `server`, 반복 가능 |
 | `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
 | `--diagnostic-mode fail-fast|collect` | 진단 탐색 정책 선택. 기본 `fail-fast`는 기존 중단 경계를 유지하고, `collect`는 prerequisite가 충족된 독립 analyzer만 계속 실행 |
+| `--fail-on-resource-omission` | 생성된 operation이 TypeScript resource API capability를 잃으면 warning 대신 실패 |
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
 `--output`은 디렉터리 경로를 받으며 stdout 출력 모드는 제공하지 않습니다.
@@ -58,6 +59,7 @@ addons = ["server"]
 incremental = true
 diagnostics_format = "human"
 diagnostic_mode = "fail-fast"
+fail_on_resource_omission = true
 
 [input]
 tls_ca_file = "./certs/internal-ca.pem"
@@ -89,6 +91,7 @@ Config에서 지원하는 key는 전체 CLI surface를 그대로 복제하지 �
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
+| `fail_on_resource_omission` | `--fail-on-resource-omission` |
 | `input.base` | `--input-base` |
 | `input.headers_from_env` | 반복 가능한 `--http-header-env` |
 | `input.tls_client_cert` | `--tls-client-cert` |
@@ -123,10 +126,11 @@ HTTP header credential은 secret 값이 아니라 **환경 변수 이름만** co
 Authorization = "OPENAPI_TOKEN"
 ```
 
-실제 token은 환경 변수에 보관합니다. `--check`, `--update-ref-lock`,
-`--help`는 실행 시점의 동작을 바꾸는 옵션이므로 config에 넣지 않고 CLI에서만
-사용합니다. 알 수 없는 TOML key는 오류로 처리해 오타가 조용히 무시되지 않게
-합니다.
+실제 token은 환경 변수에 보관합니다. `--config`는 설정 파일 자체를 선택하므로
+config key가 아닙니다. `--check`, `--update-ref-lock`, `--help`는 실행 시점의
+동작을 바꾸는 옵션이므로 CLI에서만 사용합니다. `--fail-on-resource-omission` 같은
+지속적인 generation policy는 대응 TOML key를 제공합니다. 알 수 없는 TOML key는
+오류로 처리해 오타가 조용히 무시되지 않게 합니다.
 
 <span id="fresh-incremental-and-check-modes"></span>
 

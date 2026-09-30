@@ -43,6 +43,8 @@ Options:
   --diagnostics-format <format>   Diagnostic report format (available: human, json)
   --diagnostic-mode <mode>        Diagnostic discovery policy (available: fail-fast,
                                   collect)
+  --fail-on-resource-omission     Fail when a generated operation loses its resource API
+                                  capability
   -h, --help                      Show help
 
 Examples:

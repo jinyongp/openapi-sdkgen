@@ -109,6 +109,13 @@ Collection continues only where analyzer prerequisites remain valid. Blocking
 diagnostics still produce a non-zero exit and prevent emit/publish, so collect
 mode never creates a partial SDK. The default is `fail-fast`.
 
+When an operation remains generated but loses only its TypeScript resource API
+shortcut because resource members collide, generation reports
+`SDKGEN-W513` and keeps the exact `$operations` / `$routes` surface. Use
+`--fail-on-resource-omission` in CI when that capability loss should block
+generation. The matching project-config key is
+`fail_on_resource_omission = true`.
+
 Exit status reports the result: zero means the requested check succeeded; a
 non-zero status reports generation diagnostics, drift, or an operational error.
 

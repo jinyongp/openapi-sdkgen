@@ -132,7 +132,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	if err != nil {
 		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: diagnostic mode: %w", err)
 	}
-	plan, diagnostics, coverage, err := prepareSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode)
+	plan, diagnostics, coverage, err := prepareSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission)
 	if err != nil {
 		return generator.Plan{}, diagnostics, coverage, err
 	}
@@ -275,7 +275,8 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 	return plan, diagnostics, err
 }
 
-func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
+func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, failOnResourceOmission ...bool) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
+	strictResourceOmission := len(failOnResourceOmission) != 0 && failOnResourceOmission[0]
 	if document == nil {
 		return nil, nil, nil, fmt.Errorf("IR document is nil")
 	}
@@ -336,7 +337,11 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 			} else {
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
-				diagnostics = append(diagnostics, resourceOmissionDiagnostics(prepared, plan.ownership, omissions)...)
+				resourceDiagnostics := resourceOmissionDiagnostics(prepared, plan.ownership, omissions)
+				if strictResourceOmission {
+					resourceDiagnostics = promoteResourceOmissionDiagnostics(resourceDiagnostics)
+				}
+				diagnostics = append(diagnostics, resourceDiagnostics...)
 			}
 			coverage = append(coverage, targetAnalysisCoverage("target.resources", diagnostic.CoverageComplete, ""))
 		}
