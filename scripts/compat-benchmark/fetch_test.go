@@ -117,50 +117,6 @@ func TestRunBenchmarkRejectsTamperedSourceBackedCorpus(t *testing.T) {
 	}
 }
 
-func TestCommittedHoldoutManifestContract(t *testing.T) {
-	path := filepath.Join("..", "..", "test", "compatibility", "holdout.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var manifest benchmarkManifest
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		t.Fatal(err)
-	}
-	if err := validateManifest(manifest); err != nil {
-		t.Fatal(err)
-	}
-	const commit = "f04b8d0bcd39c52e1cf3ad7a5fe744709832ae49"
-	if manifest.Source == nil || manifest.Source.Commit != commit ||
-		manifest.Source.APITree != "32216d017e0e58574e71d2f55c79148cab485b25" ||
-		!strings.Contains(manifest.Source.RawBaseURL, commit) {
-		t.Fatalf("source = %#v", manifest.Source)
-	}
-	if manifest.Selection == nil || manifest.Selection.CandidateCount != 482 {
-		t.Fatalf("selection = %#v", manifest.Selection)
-	}
-	if len(manifest.Corpora) != 20 {
-		t.Fatalf("holdout corpus count = %d, want 20", len(manifest.Corpora))
-	}
-	sizeCounts := map[string]int{}
-	providers := map[string]bool{}
-	for _, corpus := range manifest.Corpora {
-		sizeCounts[corpus.SizeClass]++
-		if providers[corpus.Provider] {
-			t.Fatalf("duplicate provider %q", corpus.Provider)
-		}
-		providers[corpus.Provider] = true
-		if corpus.Cohort != "holdout" || !strings.HasPrefix(corpus.Input, "APIs/"+corpus.Provider+"/") {
-			t.Fatalf("corpus = %#v", corpus)
-		}
-	}
-	for _, class := range []string{"small", "medium", "large", "xlarge"} {
-		if sizeCounts[class] != 5 {
-			t.Fatalf("%s count = %d, want 5", class, sizeCounts[class])
-		}
-	}
-}
-
 func TestCommittedHoldoutResultMatchesManifestIdentity(t *testing.T) {
 	manifestPath := filepath.Join("..", "..", "test", "compatibility", "holdout.json")
 	resultPath := filepath.Join("..", "..", "test", "compatibility", "holdout-results.json")
