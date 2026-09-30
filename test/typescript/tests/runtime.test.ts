@@ -161,6 +161,47 @@ describe("generated runtime", () => {
     ).toThrow("must contain unique items");
   });
 
+  it("enforces JSON Schema format assertions without rejecting unknown formats", () => {
+    const cases = [
+      ["date-time", "2024-02-29T23:59:60Z", "2023-02-29T00:00:00Z"],
+      ["date", "2024-02-29", "2023-02-29"],
+      ["time", "23:59:60Z", "24:00:00Z"],
+      ["duration", "P1Y2M3DT4H5M6.7S", "P"],
+      ["email", "user@example.com", "user@example"],
+      ["idn-email", "δοκιμή@παράδειγμα", "not an address"],
+      ["hostname", "api.example.com", "-api.example.com"],
+      ["idn-hostname", "例え.テスト", "bad host"],
+      ["ipv4", "192.0.2.1", "256.0.0.1"],
+      ["ipv6", "2001:db8::1", "not-an-ip"],
+      ["uri", "https://example.com/a?b=1", "/relative"],
+      ["uri-reference", "../relative?b=1", "bad value"],
+      ["iri", "https://例え.テスト/路径", "bad value"],
+      ["iri-reference", "../路径", "bad value"],
+      ["uuid", "123e4567-e89b-12d3-a456-426614174000", "123e4567"],
+      ["uri-template", "https://example.com/{id}", "https://example.com/{id"],
+      ["json-pointer", "/a/~0/~1", "/bad~2"],
+      ["relative-json-pointer", "1/foo", "01/foo"],
+      ["regex", "^(?:a+)$", "["],
+    ] as const;
+
+    for (const [format, valid, invalid] of cases) {
+      const schema: WireSchema = { types: ["string"], format, formatAssertion: true };
+      expect(() => validateWireValue(valid, schema, {}, "decode"), format).not.toThrow();
+      expect(() => validateWireValue(invalid, schema, {}, "decode"), format).toThrow(
+        `must match format ${format}`,
+      );
+    }
+
+    expect(() =>
+      validateWireValue(
+        "application-owned",
+        { types: ["string"], format: "custom-format", formatAssertion: true },
+        {},
+        "decode",
+      ),
+    ).not.toThrow();
+  });
+
   it("resolves OpenAPI Link runtime expressions into target operation input", () => {
     const response = {
       status: 201,
