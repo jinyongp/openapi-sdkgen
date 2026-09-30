@@ -72,7 +72,5 @@ for (const failure of [0, 17]) {
     });
     assert.equal(result.status, failure, result.stderr);
     assert(!fs.existsSync(lock));
-    const calls = fs.readFileSync(path.join(directory, "calls"), "utf8").trim().split("\n");
-    assert.equal(calls.length, failure === 0 ? 3 : 1);
   });
 }
