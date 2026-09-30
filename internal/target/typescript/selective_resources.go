@@ -8,9 +8,9 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-// Browser resource placement uses the already reconciled full-document tree.
+// Selective resource placement uses the already reconciled full-document tree.
 // Removing an operation must never rename or resurrect a conflicting resource.
-type browserResourcePlacement struct {
+type selectiveResourcePlacement struct {
 	Path           []any    `json:"path"`
 	Member         string   `json:"member"`
 	PathParameters []string `json:"pathParameters,omitempty"`
@@ -19,8 +19,8 @@ type browserResourcePlacement struct {
 	Pagination     bool     `json:"pagination,omitempty"`
 }
 
-func browserResourcePlacements(root *resourceNode) map[string][]browserResourcePlacement {
-	result := make(map[string][]browserResourcePlacement)
+func selectiveResourcePlacements(root *resourceNode) map[string][]selectiveResourcePlacement {
+	result := make(map[string][]selectiveResourcePlacement)
 	var visit func(*resourceNode, []any)
 	visit = func(node *resourceNode, path []any) {
 		for _, name := range sortedResourceMemberNames(node) {
@@ -29,7 +29,7 @@ func browserResourcePlacements(root *resourceNode) map[string][]browserResourceP
 				continue
 			}
 			hasInput := operation.InputSections.hasInput(true)
-			placement := browserResourcePlacement{
+			placement := selectiveResourcePlacement{
 				Path: append([]any{}, path...), Member: name,
 				PathParameters: append([]string(nil), operation.PathParameterOrder...),
 				HasInput:       hasInput, InputOptional: hasInput && !operation.prepared.resourceInputRequired,
@@ -39,7 +39,7 @@ func browserResourcePlacements(root *resourceNode) map[string][]browserResourceP
 		}
 		if operation, exists := paginatedResourceNodeOperation(node); exists {
 			route := manifestRouteKey(operation)
-			result[route] = append(result[route], browserResourcePlacement{
+			result[route] = append(result[route], selectiveResourcePlacement{
 				Path: append([]any{}, path...), Member: "paginate", Pagination: true,
 			})
 		}
@@ -97,7 +97,7 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 		if !exists {
 			return "", fmt.Errorf("selected resource route %q has no operation module", route)
 		}
-		specifier, err := plan.relativeModuleSpecifier("browser/types.ts", module)
+		specifier, err := plan.relativeModuleSpecifier("selective/types.ts", module)
 		if err != nil {
 			return "", err
 		}
@@ -157,7 +157,7 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 		nodeValue := memberValue
 		allRoutes := memberRoutes
 		if child := node.parameterChild; child != nil {
-			parameterType, err := resourceParameterType(document, plan, "browser/types.ts", child.parameter)
+			parameterType, err := resourceParameterType(document, plan, "selective/types.ts", child.parameter)
 			if err != nil {
 				return nil, err
 			}

@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 
 const javascript = path.resolve(process.argv[2]);
-const directory = path.join(path.dirname(javascript), "browser-links-native");
+const directory = path.join(path.dirname(javascript), "selective-links-native");
 fs.mkdirSync(directory, { recursive: true });
 const sdk = "../javascript/selection-links";
 const nativeEntry = path.join(directory, "native.mjs");
@@ -14,7 +14,7 @@ const staticEntry = path.join(directory, "static.mjs");
 fs.writeFileSync(
   nativeEntry,
   `
-import * as api from ${JSON.stringify(sdk + "/browser/index.js")};
+import * as api from ${JSON.stringify(sdk + "/selective/index.js")};
 export async function prepare(options) { return api.createClient({...options,operations:await api.loadOperations([api.operations.getSource])}); }
 export async function ready(options) { return api.createClient({...options,operations:await api.loadOperations([api.operations.getSource,api.operations.getItem])}); }
 export async function failure(options) { return api.createClient({...options,operations:await api.loadOperations([api.operations.failureSource])}); }
@@ -23,11 +23,11 @@ export async function failure(options) { return api.createClient({...options,ope
 fs.writeFileSync(
   staticEntry,
   `
-import * as api from ${JSON.stringify(sdk + "/browser/index.js")};
-import {operation as source} from ${JSON.stringify(sdk + "/browser/operations/source/get.js")};
+import * as api from ${JSON.stringify(sdk + "/selective/index.js")};
+import {operation as source} from ${JSON.stringify(sdk + "/selective/operations/source/get.js")};
 export async function prepare(options) { return api.createClient({...options,operations:await api.loadOperations([source])}); }
-export async function ready(options) { const {operation:item}=await import(${JSON.stringify(sdk + "/browser/operations/items/by-id/get.js")}); return api.createClient({...options,operations:await api.loadOperations([source,item])}); }
-export async function failure(options) { const {operation:ref}=await import(${JSON.stringify(sdk + "/browser/operations/failure-source/get.js")}); return api.createClient({...options,operations:await api.loadOperations([ref])}); }
+export async function ready(options) { const {operation:item}=await import(${JSON.stringify(sdk + "/selective/operations/items/by-id/get.js")}); return api.createClient({...options,operations:await api.loadOperations([source,item])}); }
+export async function failure(options) { const {operation:ref}=await import(${JSON.stringify(sdk + "/selective/operations/failure-source/get.js")}); return api.createClient({...options,operations:await api.loadOperations([ref])}); }
 `,
 );
 

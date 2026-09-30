@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import * as lifecycle from "../fixtures/generated/lifecycle/browser/index.js";
-import { operation as echo } from "../fixtures/generated/lifecycle/browser/operations/inline/post.js";
-import { operation as events } from "../fixtures/generated/lifecycle/browser/operations/events/get.js";
-import * as contract from "../fixtures/generated/client/browser/index.js";
-import { operation as widget } from "../fixtures/generated/client/browser/operations/customers/by-customer-id/widgets/by-widget-id/get.js";
-import { operation as createTask } from "../fixtures/generated/client/browser/operations/projects/by-project-id/tasks/post.js";
-import { operation as health } from "../fixtures/generated/client/browser/operations/health/get.js";
-import { operation as tasks } from "../fixtures/generated/client/browser/operations/tasks/get.js";
+import * as lifecycle from "../fixtures/generated/lifecycle/selective/index.js";
+import { operation as echo } from "../fixtures/generated/lifecycle/selective/operations/inline/post.js";
+import { operation as events } from "../fixtures/generated/lifecycle/selective/operations/events/get.js";
+import * as contract from "../fixtures/generated/client/selective/index.js";
+import { operation as widget } from "../fixtures/generated/client/selective/operations/customers/by-customer-id/widgets/by-widget-id/get.js";
+import { operation as createTask } from "../fixtures/generated/client/selective/operations/projects/by-project-id/tasks/post.js";
+import { operation as health } from "../fixtures/generated/client/selective/operations/health/get.js";
+import { operation as tasks } from "../fixtures/generated/client/selective/operations/tasks/get.js";
 import { createClient as fullClient } from "../fixtures/generated/client/index.js";
 
 // Static operation references exercise the same public preparation/assembly API

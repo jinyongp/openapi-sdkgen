@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { APIError } from "../fixtures/generated/selection-links/internal/runtime/errors.js";
-import * as publicAPI from "../fixtures/generated/selection-links/browser/index.js";
+import * as publicAPI from "../fixtures/generated/selection-links/selective/index.js";
 import {
   createOperationLoader,
   staticOperationReference,
@@ -8,8 +8,8 @@ import {
 import { createSelectedClient } from "../fixtures/generated/selection-links/internal/runtime/selected-client.js";
 import { provider as sourceProvider } from "../fixtures/generated/selection-links/internal/executions/source/get.js";
 import { provider as itemProvider } from "../fixtures/generated/selection-links/internal/executions/items/by-id/get.js";
-import { operation as sourceReference } from "../fixtures/generated/selection-links/browser/operations/source/get.js";
-import { operation as itemReference } from "../fixtures/generated/selection-links/browser/operations/items/by-id/get.js";
+import { operation as sourceReference } from "../fixtures/generated/selection-links/selective/operations/source/get.js";
+import { operation as itemReference } from "../fixtures/generated/selection-links/selective/operations/items/by-id/get.js";
 import type { OperationExecutionProvider } from "../fixtures/generated/selection-links/internal/runtime/operation-loader.js";
 import type {
   BaseCall,
@@ -43,7 +43,7 @@ function setup(loadTarget?: () => Promise<OperationExecutionProvider>) {
   };
   const loader = createOperationLoader({
     generation: source.generation,
-    baseURL: new URL("https://assets.test/browser/"),
+    baseURL: new URL("https://assets.test/selective/"),
     loadClient: async () => ({ createSelectedClient }),
     importModule: async () => {
       throw Error("Static Link reference unexpectedly requested a lookup");

@@ -21,7 +21,7 @@ const directory = path.join(root, ".tmp/selection-docs", randomUUID());
 fs.mkdirSync(directory, { recursive: true });
 const write = (name, content) => fs.writeFileSync(path.join(directory, name), content);
 const actual = (text) => text.replaceAll("./generated/api", generated);
-const common = `import {createClient,loadOperations,operations,routes} from ${JSON.stringify(generated + "/browser/index.js")};\n`;
+const common = `import {createClient,loadOperations,operations,routes} from ${JSON.stringify(generated + "/selective/index.js")};\n`;
 write("package.json", '{"type":"module"}\n');
 write("main.ts", actual(examples[0]));
 write("tasks.operations.ts", actual(examples[1]));

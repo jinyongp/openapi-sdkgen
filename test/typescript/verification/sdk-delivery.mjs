@@ -143,7 +143,7 @@ function inventory(files, sdkRoot) {
 }
 function lookup(route) {
   const digest = hash("route\0" + route);
-  return "browser/lookup/r-" + digest.slice(0, 16) + "/" + digest.slice(16) + ".js";
+  return "selective/lookup/r-" + digest.slice(0, 16) + "/" + digest.slice(16) + ".js";
 }
 const report = {
   schemaVersion: 2,
@@ -207,8 +207,8 @@ try {
     }
     const owned = inspectGenerated(source);
     assert(
-      owned.files["browser/index.ts"],
-      "The actual generator does not yet emit the public browser entry",
+      owned.files["selective/index.ts"],
+      "The actual generator does not yet emit the public selective entry",
     );
     const options = {
       target: "ES2022",
@@ -260,7 +260,7 @@ try {
       owned.treeSha256,
       "Strict compilation changed generated sources",
     );
-    const witness = `import { routes, createClient, loadOperations } from "./declarations/browser/index.js";
+    const witness = `import { routes, createClient, loadOperations } from "./declarations/selective/index.js";
 const prepared = await loadOperations([routes["GET /items/item0"], routes["POST /echo"]]);
 const api = createClient({operations:prepared});
 const result: string = (await api.$operations.getItem0()).id;
@@ -278,7 +278,7 @@ const dynamic = createClient({operations:await loadOperations(maybe)});
 // @ts-expect-error Filter does not guarantee either operation.
 dynamic.$operations.getItem0();
 void dynamic.$operations.getItem0?.();
-import { routes as allRoutes } from "./declarations/browser/all.js";
+import { routes as allRoutes } from "./declarations/selective/all.js";
 const every = createClient({operations:await loadOperations(allRoutes)});
 const everyID: string = (await every.$operations.getItem0()).id;
 void every.items.item0.get();
@@ -305,7 +305,7 @@ void possibleID;
       "Consumer read source instead of declarations",
     );
     const bootstrap = inventory(
-      graph([path.join(javascript, "browser/index.js")], javascript),
+      graph([path.join(javascript, "selective/index.js")], javascript),
       javascript,
     );
     const baseline = inventory(graph([path.join(javascript, "index.js")], javascript), javascript);
@@ -354,7 +354,7 @@ void possibleID;
     });
     for (const workload of sdkDeliveryWorkloads(count)) {
       const entries = [
-        path.join(javascript, "browser/index.js"),
+        path.join(javascript, "selective/index.js"),
         path.join(javascript, "internal/runtime/selected-client.js"),
         ...workload.routes.map((route) => path.join(javascript, lookup(route))),
       ];
@@ -377,7 +377,7 @@ void possibleID;
       const worker = path.join(base, `native-${workload.name}.mjs`);
       write(
         worker,
-        `import assert from "node:assert/strict";\nimport {createHash} from "node:crypto";\nconst exercise=${exerciseGeneratedSDK.toString()};\nconst routes=${JSON.stringify(workload.routes)};\nconst selected=await exercise(await import("./javascript/browser/index.js"),routes,{selected:true,followLink:${!values["skip-links"]}});\nconst full=await exercise(await import("./javascript/index.js"),routes,{followLink:${!values["skip-links"]}});\nassert.deepEqual(selected.traces,full.traces);\nconsole.log(JSON.stringify({pass:true,requests:selected.traces.length,tracesSHA256:createHash("sha256").update(JSON.stringify(selected.traces)).digest("hex")}));\n`,
+        `import assert from "node:assert/strict";\nimport {createHash} from "node:crypto";\nconst exercise=${exerciseGeneratedSDK.toString()};\nconst routes=${JSON.stringify(workload.routes)};\nconst selected=await exercise(await import("./javascript/selective/index.js"),routes,{selected:true,followLink:${!values["skip-links"]}});\nconst full=await exercise(await import("./javascript/index.js"),routes,{followLink:${!values["skip-links"]}});\nassert.deepEqual(selected.traces,full.traces);\nconsole.log(JSON.stringify({pass:true,requests:selected.traces.length,tracesSHA256:createHash("sha256").update(JSON.stringify(selected.traces)).digest("hex")}));\n`,
       );
       const executed = run(`${count}-${workload.name}-native`, process.execPath, [worker]);
       const semantic = JSON.parse(executed.stdout);
@@ -403,7 +403,7 @@ void possibleID;
             javascript,
             path.resolve(path.dirname(path.join(javascript, lookup(route))), specifier),
           );
-          return provider.replace(/^internal\/executions\//, "browser/operations/");
+          return provider.replace(/^internal\/executions\//, "selective/operations/");
         });
         const entry = path.join(base, `static-${workload.name}.mjs`);
         write(
@@ -414,7 +414,7 @@ void possibleID;
                 `import {operation as ref${index}} from ${JSON.stringify("./javascript/" + file)};`,
             )
             .join("\n") +
-            `\nimport {loadOperations,createClient} from "./javascript/browser/index.js";\nexport {createClient};\nexport function prepare(){return loadOperations([${providerReferences.map((_, index) => `ref${index}`).join(",")}]);}\n`,
+            `\nimport {loadOperations,createClient} from "./javascript/selective/index.js";\nexport {createClient};\nexport function prepare(){return loadOperations([${providerReferences.map((_, index) => `ref${index}`).join(",")}]);}\n`,
         );
         const build = await rolldown({
           input: entry,

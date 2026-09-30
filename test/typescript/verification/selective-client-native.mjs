@@ -7,11 +7,11 @@ import { createHash } from "node:crypto";
 
 const root = path.resolve(process.argv[2]);
 const load = (fixture, file) => import(pathToFileURL(path.join(root, fixture, file)).href);
-const lifecycle = await load("lifecycle", "browser/index.js");
-const contract = await load("client", "browser/index.js");
+const lifecycle = await load("lifecycle", "selective/index.js");
+const contract = await load("client", "selective/index.js");
 const fullContract = await load("client", "index.js");
-const exact = await load("selection-public", "browser/index.js");
-const exactNames = await load("selection-public", "browser/all.js");
+const exact = await load("selection-public", "selective/index.js");
+const exactNames = await load("selection-public", "selective/all.js");
 const exactFull = await load("selection-public", "index.js");
 const checks = [];
 
@@ -74,7 +74,7 @@ await assert.rejects(first.inline.post({ body: { value: 1 } }, { signal: AbortSi
 assert.equal(calls.length, 2);
 checks.push("public-native-lookup-alias-dedup-getter-and-client-isolation");
 
-const staticReference = (await load("lifecycle", "browser/operations/inline/post.js")).operation;
+const staticReference = (await load("lifecycle", "selective/operations/inline/post.js")).operation;
 const staticClient = lifecycle.createClient({
   operations: await lifecycle.loadOperations([staticReference]),
   baseURL: "https://static.test",
@@ -148,7 +148,7 @@ for (const [kind, keys] of [
 ]) {
   for (const key of keys) {
     const hash = createHash("sha256").update(`${kind}\0${key}`).digest("hex");
-    const relative = `browser/lookup/${kind === "route" ? "r" : "o"}-${hash.slice(0, 16)}/${hash.slice(16)}.js`;
+    const relative = `selective/lookup/${kind === "route" ? "r" : "o"}-${hash.slice(0, 16)}/${hash.slice(16)}.js`;
     assert(
       fs.existsSync(path.join(root, "selection-public", relative)),
       `Go did not emit ${relative}`,
@@ -189,7 +189,7 @@ for (const [label, relative] of [
     `\nglobalThis.__sdkgenLinkedEvaluations[${JSON.stringify(label)}]=(globalThis.__sdkgenLinkedEvaluations[${JSON.stringify(label)}]??0)+1;\n`,
   );
 }
-const linked = await import(pathToFileURL(path.join(linkRoot, "browser/index.js")).href);
+const linked = await import(pathToFileURL(path.join(linkRoot, "selective/index.js")).href);
 const linkedPrepared = await linked.loadOperations([linked.operations.getSource]);
 assert.deepEqual(globalThis.__sdkgenLinkedEvaluations, {});
 const linkedRequests = [];

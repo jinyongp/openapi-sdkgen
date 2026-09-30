@@ -4,13 +4,13 @@ import {
   loadOperations,
   operations,
   routes,
-} from "../fixtures/generated/lifecycle/browser/index.js";
-import * as contract from "../fixtures/generated/client/browser/index.js";
-import * as exact from "../fixtures/generated/selection-public/browser/index.js";
+} from "../fixtures/generated/lifecycle/selective/index.js";
+import * as contract from "../fixtures/generated/client/selective/index.js";
+import * as exact from "../fixtures/generated/selection-public/selective/index.js";
 import type {
   OperationReference,
   OperationSelection,
-} from "../fixtures/generated/lifecycle/browser/index.js";
+} from "../fixtures/generated/lifecycle/selective/index.js";
 import type { OperationInput } from "../fixtures/generated/client/index.js";
 
 type Equal<A, B> =
@@ -133,7 +133,7 @@ async function widenedSelectionTypeChecks(selection: OperationSelection) {
 }
 void widenedSelectionTypeChecks;
 
-import * as linked from "../fixtures/generated/selection-links/browser/index.js";
+import * as linked from "../fixtures/generated/selection-links/selective/index.js";
 async function linkedTypeChecks() {
   const api = linked.createClient({
     operations: await linked.loadOperations([linked.operations.getSource]),

@@ -13,7 +13,7 @@ func operationExecutionArtifactPath(module operationModulePlan) string {
 	return "internal/executions/" + strings.TrimPrefix(module.path, "internal/operations/")
 }
 
-func emitOperationExecutionProvider(plan *semanticModulePlan, module operationModulePlan, item ManifestOperation, execution operationExecutionPlan, generation string, placements []browserResourcePlacement, linkedTargets []string) ([]byte, error) {
+func emitOperationExecutionProvider(plan *semanticModulePlan, module operationModulePlan, item ManifestOperation, execution operationExecutionPlan, generation string, placements []selectiveResourcePlacement, linkedTargets []string) ([]byte, error) {
 	artifact := operationExecutionArtifactPath(module)
 	var output bytes.Buffer
 	importFrom := func(clause, target string) error {
@@ -117,7 +117,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	output.WriteString("\n/** Compiler-owned base execution provider; no client configuration is cached here. */\n")
 	output.WriteString("export const provider = /* @__PURE__ */ Object.freeze({\n")
-	fmt.Fprintf(&output, "  abi: %d, generation: %s,\n", browserExecutionABI, quoteTS(generation))
+	fmt.Fprintf(&output, "  abi: %d, generation: %s,\n", selectiveExecutionABI, quoteTS(generation))
 	if len(placements) > 0 {
 		data, err := json.Marshal(placements)
 		if err != nil {

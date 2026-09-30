@@ -58,7 +58,7 @@ for (const [label, create, filename, staticRef] of [
     let clientLoads = 0;
     const loader = create({
       generation: extra.generation ?? generation,
-      baseURL: new URL("https://assets.test/release/api/browser/"),
+      baseURL: new URL("https://assets.test/release/api/selective/"),
       importModule: async (url) => {
         requests.push(url);
         if (extra.importModule) return extra.importModule(url);
@@ -92,7 +92,7 @@ for (const [label, create, filename, staticRef] of [
       expect(test.requests).toHaveLength(2);
       expect(
         test.requests.every((url) =>
-          url.startsWith("https://assets.test/release/api/browser/lookup/"),
+          url.startsWith("https://assets.test/release/api/selective/lookup/"),
         ),
       ).toBe(true);
       expect(Object.getPrototypeOf(prepared)).toBe(null);

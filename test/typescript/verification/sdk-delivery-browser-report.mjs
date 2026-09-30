@@ -141,7 +141,7 @@ export function validateReport(m, o, records) {
         assert.equal(new Set(names).size, names.length, "Duplicate asset request");
         const expectedFiles =
           entry.variant === "preload"
-            ? [...expected.files, "browser/all.js"].sort()
+            ? [...expected.files, "selective/all.js"].sort()
             : expected.files;
         assert.deepEqual(names, expectedFiles, `Server asset graph differs in ${key}`);
         for (const row of rows) {

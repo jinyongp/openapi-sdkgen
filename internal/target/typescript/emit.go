@@ -514,9 +514,9 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	}
 	publish := validatedArtifactWriter(sink)
 	digest := sha256.New()
-	_, _ = digest.Write([]byte("openapi-sdkgen/browser/v1\x00"))
+	_, _ = digest.Write([]byte("openapi-sdkgen/selective/v1\x00"))
 	write := func(artifact Artifact) error {
-		hashBrowserArtifact(digest, artifact)
+		hashSelectiveArtifact(digest, artifact)
 		return publish(artifact)
 	}
 	typesSource, err := emitSchemaArtifactsTo(document, plan.modules, write)
@@ -597,22 +597,22 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 			return err
 		}
 		for _, artifact := range serverArtifacts {
-			// The optional server add-on is not part of browser execution identity.
+			// The optional server add-on is not part of selective execution identity.
 			// Keep the same client artifacts when only that add-on is selected.
 			if err := publish(artifact); err != nil {
 				return err
 			}
 		}
 	}
-	// Hash the identity-neutral browser artifacts as structured emitter output.
+	// Hash the identity-neutral selective artifacts as structured emitter output.
 	// The second render embeds that fingerprint; it never parses or rewrites JS.
-	if err := emitBrowserArtifactsTo(plan, "", func(artifact Artifact) error {
-		hashBrowserArtifact(digest, artifact)
+	if err := emitSelectiveArtifactsTo(plan, "", func(artifact Artifact) error {
+		hashSelectiveArtifact(digest, artifact)
 		return nil
 	}); err != nil {
 		return err
 	}
-	return emitBrowserArtifactsTo(plan, fmt.Sprintf("%x", digest.Sum(nil)), publish)
+	return emitSelectiveArtifactsTo(plan, fmt.Sprintf("%x", digest.Sum(nil)), publish)
 }
 
 func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {

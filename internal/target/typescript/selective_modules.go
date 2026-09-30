@@ -12,13 +12,13 @@ import (
 	"unicode/utf8"
 )
 
-const browserExecutionABI = 1
+const selectiveExecutionABI = 1
 
 // Lookup names are shared with operationLookupFilename in the runtime. The
 // exact kind and UTF-8 key are framed independently of filesystem characters.
-func browserLookupArtifact(kind, key string) (string, error) {
+func selectiveLookupArtifact(kind, key string) (string, error) {
 	if (kind != "route" && kind != "operation") || !utf8.ValidString(key) {
-		return "", fmt.Errorf("invalid browser lookup identity %q", kind)
+		return "", fmt.Errorf("invalid selective lookup identity %q", kind)
 	}
 	digest := sha256.Sum256([]byte(kind + "\x00" + key))
 	prefix := "o-"
@@ -27,50 +27,50 @@ func browserLookupArtifact(kind, key string) (string, error) {
 	}
 	encoded := hex.EncodeToString(digest[:])
 	// Preserve the full digest while respecting the portable segment limit.
-	return "browser/lookup/" + prefix + encoded[:16] + "/" + encoded[16:] + ".ts", nil
+	return "selective/lookup/" + prefix + encoded[:16] + "/" + encoded[16:] + ".ts", nil
 }
 
-func browserStaticArtifact(module operationModulePlan) string {
-	return "browser/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
+func selectiveStaticArtifact(module operationModulePlan) string {
+	return "selective/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
 }
 
-func (plan *semanticModulePlan) planBrowser(manifest Manifest) error {
+func (plan *semanticModulePlan) planSelective(manifest Manifest) error {
 	for _, name := range []string{"index", "types", "all"} {
-		plan.browser = append(plan.browser, artifactPathCandidate{identity: "browser " + name, base: "browser/" + name + ".ts"})
+		plan.selective = append(plan.selective, artifactPathCandidate{identity: "selective " + name, base: "selective/" + name + ".ts"})
 	}
 	ids := make(map[string]string)
 	for _, item := range manifest.Operations {
 		ids[manifestRouteKey(item)] = item.OperationID
 	}
 	for _, module := range plan.operations {
-		plan.browser = append(plan.browser, artifactPathCandidate{identity: "static reference " + module.routeKey, base: browserStaticArtifact(module)})
+		plan.selective = append(plan.selective, artifactPathCandidate{identity: "static reference " + module.routeKey, base: selectiveStaticArtifact(module)})
 		for _, identity := range []struct{ kind, key string }{{"route", module.routeKey}, {"operation", ids[module.routeKey]}} {
 			if identity.kind == "operation" && identity.key == "" {
 				continue
 			}
-			artifact, err := browserLookupArtifact(identity.kind, identity.key)
+			artifact, err := selectiveLookupArtifact(identity.kind, identity.key)
 			if err != nil {
 				return err
 			}
-			plan.browser = append(plan.browser, artifactPathCandidate{identity: "lookup " + identity.kind + " " + identity.key, base: artifact})
+			plan.selective = append(plan.selective, artifactPathCandidate{identity: "lookup " + identity.kind + " " + identity.key, base: artifact})
 		}
 	}
 	return nil
 }
 
-func hashBrowserArtifact(digest hash.Hash, artifact Artifact) {
+func hashSelectiveArtifact(digest hash.Hash, artifact Artifact) {
 	// Length framing distinguishes every path/data pair without delimiter assumptions.
 	fmt.Fprintf(digest, "%d:%s%d:", len(artifact.Path), artifact.Path, len(artifact.Data))
 	_, _ = digest.Write(artifact.Data)
 }
 
-func emitBrowserArtifactsTo(plan *sourcePlan, generation string, write func(Artifact) error) error {
+func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Artifact) error) error {
 	modules := plan.modules
 	items := make(map[string]ManifestOperation, len(plan.manifest.Operations))
 	for _, item := range plan.manifest.Operations {
 		items[manifestRouteKey(item)] = item
 	}
-	placements := browserResourcePlacements(plan.resourceTree)
+	placements := selectiveResourcePlacements(plan.resourceTree)
 	linksBySource := make(map[string]map[string]bool)
 	for _, link := range plan.links {
 		source := operationRouteKey(link.SourceOperation)
@@ -83,7 +83,7 @@ func emitBrowserArtifactsTo(plan *sourcePlan, generation string, write func(Arti
 		item := items[module.routeKey]
 		execution, exists := plan.executions[module.routeKey]
 		if !exists {
-			return fmt.Errorf("missing prepared browser execution %q", module.routeKey)
+			return fmt.Errorf("missing prepared selective execution %q", module.routeKey)
 		}
 		source, err := emitOperationExecutionProvider(modules, module, item, execution, generation, placements[module.routeKey], sortedStringKeys(linksBySource[module.routeKey]))
 		if err != nil {
@@ -97,7 +97,7 @@ func emitBrowserArtifactsTo(plan *sourcePlan, generation string, write func(Arti
 			if identity.kind == "operation" && identity.key == "" {
 				continue
 			}
-			artifact, err := browserLookupArtifact(identity.kind, identity.key)
+			artifact, err := selectiveLookupArtifact(identity.kind, identity.key)
 			if err != nil {
 				return err
 			}
@@ -105,12 +105,12 @@ func emitBrowserArtifactsTo(plan *sourcePlan, generation string, write func(Arti
 			if err != nil {
 				return err
 			}
-			body := fmt.Sprintf("import { provider } from %s\nexport const entry = { abi: %d, generation: %s, kind: %s, key: %s, provider } as const\n", quoteTS(specifier), browserExecutionABI, quoteTS(generation), quoteTS(identity.kind), quoteTS(identity.key))
+			body := fmt.Sprintf("import { provider } from %s\nexport const entry = { abi: %d, generation: %s, kind: %s, key: %s, provider } as const\n", quoteTS(specifier), selectiveExecutionABI, quoteTS(generation), quoteTS(identity.kind), quoteTS(identity.key))
 			if err := write(Artifact{Path: artifact, Data: generatedSource([]byte(body))}); err != nil {
 				return err
 			}
 		}
-		artifact := browserStaticArtifact(module)
+		artifact := selectiveStaticArtifact(module)
 		providerSpecifier, err := modules.relativeModuleSpecifier(artifact, providerPath)
 		if err != nil {
 			return err
@@ -124,7 +124,7 @@ func emitBrowserArtifactsTo(plan *sourcePlan, generation string, write func(Arti
 			return err
 		}
 	}
-	types, err := emitBrowserTypes(plan)
+	types, err := emitSelectiveTypes(plan)
 	if err != nil {
 		return err
 	}
@@ -157,14 +157,14 @@ export type { OperationReference, OperationSelection } from "../internal/runtime
 export type { ClientOptions } from "../internal/runtime/configuration.js"
 export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
 `, quoteTS(generation))
-	all, err := emitBrowserNames(plan)
+	all, err := emitSelectiveNames(plan)
 	if err != nil {
 		return err
 	}
 	for _, artifact := range []Artifact{
-		{Path: "browser/index.ts", Data: generatedSource([]byte(entry))},
-		{Path: "browser/types.ts", Data: generatedSource(types)},
-		{Path: "browser/all.ts", Data: generatedSource(all)},
+		{Path: "selective/index.ts", Data: generatedSource([]byte(entry))},
+		{Path: "selective/types.ts", Data: generatedSource(types)},
+		{Path: "selective/all.ts", Data: generatedSource(all)},
 	} {
 		if err := write(artifact); err != nil {
 			return err
@@ -173,7 +173,7 @@ export { OperationPreparationError } from "../internal/runtime/operation-loader.
 	return nil
 }
 
-func emitBrowserTypes(plan *sourcePlan) ([]byte, error) {
+func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 	var output bytes.Buffer
 	output.WriteString("import type { OperationReference, GuaranteedSelection, PossibleSelection, SelectedOperationCalls } from \"../internal/runtime/selection-types.js\"\n\n")
 	output.WriteString("/** Full development-time contract; never a runtime operation registry. */\nexport interface RouteCalls {\n")
@@ -182,7 +182,7 @@ func emitBrowserTypes(plan *sourcePlan) ([]byte, error) {
 		items[manifestRouteKey(item)] = item
 	}
 	for _, module := range plan.modules.operations {
-		specifier, err := plan.modules.relativeModuleSpecifier("browser/types.ts", module.path)
+		specifier, err := plan.modules.relativeModuleSpecifier("selective/types.ts", module.path)
 		if err != nil {
 			return nil, err
 		}
@@ -239,7 +239,7 @@ type SelectedLinkIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
 	return output.Bytes(), nil
 }
 
-func emitBrowserNames(plan *sourcePlan) ([]byte, error) {
+func emitSelectiveNames(plan *sourcePlan) ([]byte, error) {
 	var routes, ids []string
 	for _, item := range plan.manifest.Operations {
 		if item.Visibility == "hidden" {

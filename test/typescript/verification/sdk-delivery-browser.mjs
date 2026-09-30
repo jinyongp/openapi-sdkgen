@@ -52,7 +52,7 @@ for (const [index, relative] of reports.entries()) {
     for (const item of inventory)
       assert.equal(assets.get(item.path)?.sha256, item.sha256, `Stale SDK asset ${item.path}`);
   }
-  const entry = assets.get("browser/index.js").data.toString();
+  const entry = assets.get("selective/index.js").data.toString();
   const identity = entry.match(/generation: "([a-f0-9]{64})"/)[1];
   const edges = (name) => {
     const ast = parser.parse(assets.get(name).data.toString(), { sourceType: "module" });
@@ -81,7 +81,7 @@ for (const [index, relative] of reports.entries()) {
   };
   const lookup = (route) => {
     const digest = hash("route\0" + route);
-    return "browser/lookup/r-" + digest.slice(0, 16) + "/" + digest.slice(16) + ".js";
+    return "selective/lookup/r-" + digest.slice(0, 16) + "/" + digest.slice(16) + ".js";
   };
   const provider = (route) => edges(lookup(route))[0];
   const stages = [
@@ -94,7 +94,7 @@ for (const [index, relative] of reports.entries()) {
   ].map((stage) => ({
     ...stage,
     selected: graph([
-      "browser/index.js",
+      "selective/index.js",
       "internal/runtime/selected-client.js",
       ...stage.routes.map(lookup),
       ...(stage.followLink ? [provider("GET /linked/{itemId}")] : []),
@@ -109,7 +109,7 @@ for (const [index, relative] of reports.entries()) {
     lookup,
     stages,
     baseline: graph(["index.js"]),
-    bootstrap: graph(["browser/index.js"]),
+    bootstrap: graph(["selective/index.js"]),
   };
 }
 assert.notEqual(
@@ -179,7 +179,7 @@ function page(entry, moduleOnly = false) {
   const base = assetBase(entry);
   const preload =
     entry.variant === "preload"
-      ? `<link rel="preload" as="script" href="${base}browser/all.js">`
+      ? `<link rel="preload" as="script" href="${base}selective/all.js">`
       : "";
   const script = `
 performance.setResourceTimingBufferSize(10000);
@@ -193,7 +193,7 @@ try {
  const bad=${JSON.stringify(negative.has(entry.variant))};
  if(bad){
   let error,apiCalls=0;
-  try{const sdk=await import(base+'browser/index.js');const prepared=await sdk.loadOperations([sdk.routes['GET /items/item0']]);sdk.createClient({operations:prepared,fetch:async()=>{apiCalls++;return Response.json({});}});}
+  try{const sdk=await import(base+'selective/index.js');const prepared=await sdk.loadOperations([sdk.routes['GET /items/item0']]);sdk.createClient({operations:prepared,fetch:async()=>{apiCalls++;return Response.json({});}});}
   catch(value){error=value;}
   if(!error)throw Error('Expected module failure did not occur');
   const expectedStage=entry.variant==='mixed'?'IDENTITY':(['cors-denied','csp-denied'].includes(entry.variant)?undefined:'MODULE_LOAD');
@@ -203,10 +203,10 @@ try {
   console.log('SDK_BROWSER_CASE '+JSON.stringify(result));document.querySelector('#result').textContent=JSON.stringify(result);parent.postMessage({type:'sdk-result',result},location.origin);
  }else{
   if(!isSecureContext||!crypto.subtle)throw Error('Namespace lookup requires a secure context');
-  const module=await import(base+(entry.kind==='baseline'?'index.js':'browser/index.js'));
+  const module=await import(base+(entry.kind==='baseline'?'index.js':'selective/index.js'));
   record('initial',started);
   for(const step of stages){const time=performance.now();await exercise(module,step.routes,{selected:entry.kind==='selected',followLink:step.followLink===true});if(entry.kind==='selected')for(const name of step.selected)expected.add(name);record(step.name,time);}
-  if(entry.variant==='preload'){await new Promise(resolve=>setTimeout(resolve,100));const rows=snapshot();if(!rows.some(row=>row.path==='browser/all.js'))throw Error('Preloaded names cost was not observed');}
+  if(entry.variant==='preload'){await new Promise(resolve=>setTimeout(resolve,100));const rows=snapshot();if(!rows.some(row=>row.path==='selective/all.js'))throw Error('Preloaded names cost was not observed');}
   const final=snapshot();
   const result={...entry,pass:true,stages:results,elapsedMS:performance.now()-started,paths:final.map(row=>row.path).sort(),body:final.reduce((n,r)=>n+r.body,0),transfer:final.reduce((n,r)=>n+r.transfer,0),secureContext:isSecureContext,protocol:location.protocol,origin:location.origin};
   console.log('SDK_BROWSER_CASE '+JSON.stringify(result));
@@ -292,7 +292,7 @@ const serve = (request, response) => {
     }
     if (
       entry.variant === "mixed" &&
-      (asset.startsWith("browser/lookup/") || asset.startsWith("internal/executions/"))
+      (asset.startsWith("selective/lookup/") || asset.startsWith("internal/executions/"))
     )
       version = versions.v2;
     const value = version.assets.get(asset);

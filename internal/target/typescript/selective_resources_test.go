@@ -42,7 +42,7 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 			if strings.Contains(text, `Member<"item`) {
 				t.Fatal("per-member conditional intersections returned")
 			}
-			browserTypes, err := emitBrowserTypes(plan)
+			selectiveTypes, err := emitSelectiveTypes(plan)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -52,7 +52,7 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 				"SelectedIDs<G<Selection>, P<Selection>>",
 				"SelectedLinkIDs<G<Selection>, P<Selection>>",
 			} {
-				if !strings.Contains(string(browserTypes), expected) {
+				if !strings.Contains(string(selectiveTypes), expected) {
 					t.Fatalf("membership is no longer computed outside the mapped ID table: %s", expected)
 				}
 			}

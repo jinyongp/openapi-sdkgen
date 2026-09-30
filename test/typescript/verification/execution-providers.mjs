@@ -120,15 +120,15 @@ const selectionTypeSource = fs.readFileSync(
 );
 const selectionWitness = selectionTypeSource.replaceAll("../fixtures/generated/", "./");
 write(path.join(output, "source/selection-witness.ts"), selectionWitness);
-const browserTypeSource = fs.readFileSync(
-  path.join(root, "test/typescript/tests/browser-types.ts"),
+const selectiveTypeSource = fs.readFileSync(
+  path.join(root, "test/typescript/tests/selective-types.ts"),
   "utf8",
 );
-const browserWitness = browserTypeSource.replaceAll("../fixtures/generated/", "./");
-write(path.join(output, "source/browser-witness.ts"), browserWitness);
+const selectiveWitness = selectiveTypeSource.replaceAll("../fixtures/generated/", "./");
+write(path.join(output, "source/selective-witness.ts"), selectiveWitness);
 write(
-  path.join(output, "browser-consumer.ts"),
-  browserWitness.replaceAll('from "./', 'from "./declarations/'),
+  path.join(output, "selective-consumer.ts"),
+  selectiveWitness.replaceAll('from "./', 'from "./declarations/'),
 );
 write(path.join(output, "package.json"), '{"type":"module"}\n');
 const options = {
@@ -167,7 +167,7 @@ write(
   path.join(output, "consumer.json"),
   JSON.stringify({
     compilerOptions: { ...options, noEmit: true },
-    files: ["consumer.ts", "selection-consumer.ts", "browser-consumer.ts"],
+    files: ["consumer.ts", "selection-consumer.ts", "selective-consumer.ts"],
   }),
 );
 const inputs = run("declarations-only-consumer", [
@@ -276,7 +276,7 @@ const native = JSON.parse(run("native-esm", [path.join(output, "native.mjs")]));
 const discriminatorRuntime = `
 import assert from "node:assert/strict";
 import {createClient as createFull} from "./javascript/discriminator-dependencies/index.js";
-import {createClient, loadOperations, operations} from "./javascript/discriminator-dependencies/browser/index.js";
+import {createClient, loadOperations, operations} from "./javascript/discriminator-dependencies/selective/index.js";
 const trace = [];
 const configuration = {baseURL:"https://example.test", fetch:async (url, init)=>{
   trace.push({url:String(url), method:init.method, body:init.body});
@@ -317,16 +317,19 @@ const loaderScript = path.join(root, "test/typescript/verification/operation-loa
 const loaderNative = JSON.parse(
   run("native-loader", [loaderScript, path.join(output, "javascript")]),
 );
-const browserClientScript = path.join(
+const selectiveClientScript = path.join(
   root,
-  "test/typescript/verification/browser-client-native.mjs",
+  "test/typescript/verification/selective-client-native.mjs",
 );
-const browserClientNative = JSON.parse(
-  run("native-public-client", [browserClientScript, path.join(output, "javascript")]),
+const selectiveClientNative = JSON.parse(
+  run("native-public-client", [selectiveClientScript, path.join(output, "javascript")]),
 );
-const browserLinksScript = path.join(root, "test/typescript/verification/browser-links-native.mjs");
-const browserLinksNative = JSON.parse(
-  run("native-and-bundled-links", [browserLinksScript, path.join(output, "javascript")]),
+const selectiveLinksScript = path.join(
+  root,
+  "test/typescript/verification/selective-links-native.mjs",
+);
+const selectiveLinksNative = JSON.parse(
+  run("native-and-bundled-links", [selectiveLinksScript, path.join(output, "javascript")]),
 );
 const parser = createRequire(
   path.join(root, "test/typescript/node_modules/.pnpm/node_modules/package.json"),
@@ -431,7 +434,7 @@ for (const [relative, modules] of Object.entries(graphs)) {
 const fullGraph = nativeImports(path.join(output, "javascript/lifecycle/internal/runtime/http.js"));
 assert(fullGraph.some((name) => name.endsWith("/runtime/http-codecs.js")));
 const resourceMembership = verifyResourceMembership(
-  path.join(output, "source/lifecycle/browser/types.ts"),
+  path.join(output, "source/lifecycle/selective/types.ts"),
   path.join(output, "resource-membership"),
 );
 const report = {
@@ -461,11 +464,11 @@ const report = {
   discriminatorWitnessSHA256: sha256(discriminatorRuntime),
   selectionNative,
   loaderNative,
-  browserClientNative,
-  browserLinksNative,
-  browserLinksSHA256: sha256(fs.readFileSync(browserLinksScript)),
-  browserClientWitnessSHA256: sha256(fs.readFileSync(browserClientScript)),
-  browserTypeWitnessSHA256: sha256(browserTypeSource),
+  selectiveClientNative,
+  selectiveLinksNative,
+  selectiveLinksSHA256: sha256(fs.readFileSync(selectiveLinksScript)),
+  selectiveClientWitnessSHA256: sha256(fs.readFileSync(selectiveClientScript)),
+  selectiveTypeWitnessSHA256: sha256(selectiveTypeSource),
   loaderNativeSHA256: sha256(fs.readFileSync(loaderScript)),
   selectionNativeSHA256: sha256(fs.readFileSync(selectionScript)),
   mediaNativeSHA256: sha256(fs.readFileSync(mediaScript)),

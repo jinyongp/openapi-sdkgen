@@ -213,7 +213,7 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
   function namespace(kind: OperationLookupKind): Readonly<Record<string, OperationReference>> {
     const unsupported = () => {
       throw new TypeError(
-        "Reference namespaces have no runtime name list; import browser/all.js to enumerate names",
+        "Reference namespaces have no runtime name list; import selective/all.js to enumerate names",
       );
     };
     const readonly = () => {

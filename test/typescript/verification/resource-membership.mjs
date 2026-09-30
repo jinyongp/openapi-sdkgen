@@ -214,7 +214,7 @@ type Candidates = Assert<Equal<PossibleSelection<Partial<Group>, Routes>, Routes
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   assert(
     process.argv[2] && process.argv[3],
-    "Pass generated browser/types.ts and a fresh evidence directory",
+    "Pass generated selective/types.ts and a fresh evidence directory",
   );
   console.log(JSON.stringify(verifyResourceMembership(process.argv[2], process.argv[3])));
 }
