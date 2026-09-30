@@ -7,12 +7,9 @@ import type {
   WireBodyDefinition,
 } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
 
-const services = createAdvancedHTTPServices(
-  () => {
-    throw new Error("base HTTP services are not used by multipart codec tests");
-  },
-  jsonWireCodec,
-);
+const services = createAdvancedHTTPServices(() => {
+  throw new Error("base HTTP services are not used by multipart codec tests");
+}, jsonWireCodec);
 
 describe("advanced multipart runtime", () => {
   it("round-trips positional multipart JSON, text and binary parts", async () => {
@@ -20,11 +17,7 @@ describe("advanced multipart runtime", () => {
       contentType: "multipart/mixed",
       schema: {
         types: ["array"],
-        prefixItems: [
-          { types: ["object"] },
-          { types: ["string"] },
-          { contentEncoding: "binary" },
-        ],
+        prefixItems: [{ types: ["object"] }, { types: ["string"] }, { contentEncoding: "binary" }],
       },
       prefixEncoding: [
         { contentType: "application/json" },
@@ -68,9 +61,7 @@ describe("advanced multipart runtime", () => {
 
   it("uses custom codecs for declared multipart part media types", async () => {
     const encode = vi.fn(async () => new URLSearchParams({ first: "one", second: "two" }));
-    const codecs = new Map<string, MediaCodec<unknown>>([
-      ["application/x-custom", { encode }],
-    ]);
+    const codecs = new Map<string, MediaCodec<unknown>>([["application/x-custom", { encode }]]);
     const definition: WireBodyDefinition = {
       contentType: "multipart/form-data",
       schema: {
@@ -103,9 +94,6 @@ describe("advanced multipart runtime", () => {
     expect(text).toContain('Content-Disposition: form-data; name="payload"');
     expect(text).toContain("Content-Type: application/x-custom");
     expect(text).toContain("first=one&second=two");
-    expect(encode).toHaveBeenCalledWith(
-      { id: 1 },
-      { contentType: "application/x-custom" },
-    );
+    expect(encode).toHaveBeenCalledWith({ id: 1 }, { contentType: "application/x-custom" });
   });
 });

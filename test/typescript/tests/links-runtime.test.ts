@@ -67,7 +67,11 @@ describe("OpenAPI Link runtime expressions", () => {
             property: "escapedPointer",
             value: "$response.body#/nested/a~1b/~0key/1",
           },
-          { location: "headerParams", property: "responseTrace", value: "$response.header.X-Trace" },
+          {
+            location: "headerParams",
+            property: "responseTrace",
+            value: "$response.header.X-Trace",
+          },
           { location: "path", property: "requestPath", value: "$request.path.id" },
           {
             location: "query",
@@ -141,10 +145,7 @@ describe("OpenAPI Link runtime expressions", () => {
     ).toEqual({ path: { id: "conflict-1" } });
 
     expect(() =>
-      resolveLinkInput(
-        new APIError({ code: "NO_RESPONSE", message: "no response" }),
-        {},
-      ),
+      resolveLinkInput(new APIError({ code: "NO_RESPONSE", message: "no response" }), {}),
     ).toThrow("Link requires an APIError with an HTTP response");
 
     expect(() =>

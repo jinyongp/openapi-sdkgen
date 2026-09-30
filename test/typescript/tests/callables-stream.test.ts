@@ -38,13 +38,10 @@ function streamHandle<Item>(): OperationStream<Item> {
 describe("stream callable binding", () => {
   it("dispatches no-input, required-input and optional-input stream calls", () => {
     const stream = vi.fn(() => streamHandle<unknown>());
-    const request = Object.assign(
-      async () => undefined,
-      {
-        raw: async () => ({}) as RawResponse<unknown>,
-        stream,
-      },
-    ) as unknown as RequestFunction;
+    const request = Object.assign(async () => undefined, {
+      raw: async () => ({}) as RawResponse<unknown>,
+      stream,
+    }) as unknown as RequestFunction;
 
     const noInput = bindStreamOperation<never, unknown>(
       request,
@@ -113,7 +110,12 @@ describe("stream callable binding", () => {
     const links = { follow: vi.fn() };
     const paginate = vi.fn();
 
-    const source = Object.assign(decoded, { raw, stream, links, paginate }) as unknown as InputOperationCall<
+    const source = Object.assign(decoded, {
+      raw,
+      stream,
+      links,
+      paginate,
+    }) as unknown as InputOperationCall<
       FullInput,
       FullInput,
       RequestOptions,
@@ -145,10 +147,7 @@ describe("stream callable binding", () => {
       options?: RequestOptions,
     ) => Promise<RawResponse<FullInput>>;
     await optionalRaw({ timeoutMS: 10 });
-    expect(raw).toHaveBeenLastCalledWith(
-      { path: { id: "item/1" } },
-      { timeoutMS: 10 },
-    );
+    expect(raw).toHaveBeenLastCalledWith({ path: { id: "item/1" } }, { timeoutMS: 10 });
 
     bound.stream({ query: { q: "stream" } }, { timeoutMS: 20 });
     expect(stream).toHaveBeenLastCalledWith(

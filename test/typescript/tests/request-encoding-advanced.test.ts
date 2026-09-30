@@ -6,8 +6,8 @@ import type { OperationDefinition } from "../../../internal/target/typescript/ru
 
 describe("advanced request encoding", () => {
   it("awaits custom parameter codecs across every request location", async () => {
-    const encodeParameter = vi.fn(async (value: unknown, _context: { contentType: string }) =>
-      `encoded:${String(value)}`,
+    const encodeParameter = vi.fn(
+      async (value: unknown, _context: { contentType: string }) => `encoded:${String(value)}`,
     );
     const seen: Array<{ url: URL; headers: Headers }> = [];
     const request = createRequest({
@@ -88,9 +88,7 @@ describe("advanced request encoding", () => {
     expect(seen[0]!.headers.get("X-Custom")).toBe("encoded:header value");
     expect(seen[0]!.headers.get("Cookie")).toBe("session=encoded%3Acookie%20value");
     expect(encodeParameter).toHaveBeenCalledTimes(5);
-    expect(
-      encodeParameter.mock.calls.map(([, context]) => context),
-    ).toEqual([
+    expect(encodeParameter.mock.calls.map(([, context]) => context)).toEqual([
       { contentType: "application/x-param" },
       { contentType: "application/x-param" },
       { contentType: "application/x-param" },
