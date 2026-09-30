@@ -30,6 +30,10 @@ import type {
   RawResponse,
   RequestOptions,
 } from "../../../internal/target/typescript/runtime/internal/request.js";
+import type {
+  SecurityCredential,
+  SecuritySchemeDefinition,
+} from "../../../internal/target/typescript/runtime/internal/security.js";
 
 const testStreamFraming = (
   contentType: string,
@@ -1264,6 +1268,166 @@ describe("generated runtime", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("applies security-provider credentials to the exact transport channel", async () => {
+    const cases: Array<{
+      readonly name: string;
+      readonly scheme: SecuritySchemeDefinition;
+      readonly credential: SecurityCredential;
+      readonly assertRequest: (
+        url: URL,
+        headers: Headers,
+        redirect: RequestRedirect | undefined,
+      ) => void;
+    }> = [
+      {
+        name: "header api key",
+        scheme: {
+          name: "HeaderKey",
+          type: "apiKey",
+          location: "header",
+          parameterName: "X-API-Key",
+        },
+        credential: { kind: "api-key", value: "header-secret" },
+        assertRequest: (_url, headers, redirect) => {
+          expect(headers.get("X-API-Key")).toBe("header-secret");
+          expect(redirect).toBe("error");
+        },
+      },
+      {
+        name: "query api key",
+        scheme: {
+          name: "QueryKey",
+          type: "apiKey",
+          location: "query",
+          parameterName: "access_token",
+        },
+        credential: { kind: "api-key", value: "query secret" },
+        assertRequest: (url, _headers, redirect) => {
+          expect(url.searchParams.get("access_token")).toBe("query secret");
+          expect(redirect).toBe("error");
+        },
+      },
+      {
+        name: "cookie api key",
+        scheme: { name: "CookieKey", type: "apiKey", location: "cookie", parameterName: "session" },
+        credential: { kind: "api-key", value: "cookie secret" },
+        assertRequest: (_url, headers, redirect) => {
+          expect(headers.get("Cookie")).toBe("session=cookie%20secret");
+          expect(redirect).toBe("error");
+        },
+      },
+      {
+        name: "http basic",
+        scheme: { name: "Basic", type: "http", scheme: "basic" },
+        credential: { kind: "http-basic", username: "user", password: "pass" },
+        assertRequest: (_url, headers) => {
+          expect(headers.get("Authorization")).toBe("Basic dXNlcjpwYXNz");
+        },
+      },
+      {
+        name: "http bearer",
+        scheme: { name: "Bearer", type: "http", scheme: "bearer" },
+        credential: { kind: "http-bearer", token: "bearer-token" },
+        assertRequest: (_url, headers) => {
+          expect(headers.get("Authorization")).toBe("Bearer bearer-token");
+        },
+      },
+      {
+        name: "custom http",
+        scheme: { name: "Digest", type: "http", scheme: "Digest" },
+        credential: { kind: "http", value: "digest-value" },
+        assertRequest: (_url, headers) => {
+          expect(headers.get("Authorization")).toBe("Digest digest-value");
+        },
+      },
+      {
+        name: "oauth2",
+        scheme: { name: "OAuth", type: "oauth2" },
+        credential: { kind: "oauth2", token: "oauth-token" },
+        assertRequest: (_url, headers) => {
+          expect(headers.get("Authorization")).toBe("Bearer oauth-token");
+        },
+      },
+      {
+        name: "openid connect",
+        scheme: { name: "OIDC", type: "openIdConnect" },
+        credential: { kind: "openIdConnect", token: "oidc-token" },
+        assertRequest: (_url, headers) => {
+          expect(headers.get("Authorization")).toBe("Bearer oidc-token");
+        },
+      },
+    ];
+
+    for (const test of cases) {
+      const seen: Array<{ url: URL; headers: Headers; redirect: RequestRedirect | undefined }> = [];
+      let providerContext:
+        | { requirement: string; origin: string; route: string; method: string; path: string }
+        | undefined;
+      const request = createRequest({
+        baseURL: "https://api.example.test/v1",
+        transport: {
+          capabilities: { cookieJar: true },
+          fetch: async (input, init) => {
+            seen.push({
+              url: new URL(String(input)),
+              headers: new Headers(init?.headers),
+              redirect: init?.redirect,
+            });
+            return jsonResponse({ ok: true });
+          },
+        },
+        securityProvider: ({ requirement, origin, operation }) => {
+          providerContext = {
+            requirement: requirement.id,
+            origin,
+            route: operation.route,
+            method: operation.method,
+            path: operation.path,
+          };
+          return { [test.scheme.name]: test.credential };
+        },
+      });
+      const secured = operation({
+        route: "GET /secure",
+        method: "GET",
+        path: "/secure",
+        security: [{ id: "selected", schemes: [test.scheme] }],
+      });
+
+      await expect(request(secured)).resolves.toEqual({ ok: true });
+      expect(providerContext).toEqual({
+        requirement: "selected",
+        origin: "https://api.example.test",
+        route: "GET /secure",
+        method: "GET",
+        path: "/secure",
+      });
+      expect(seen).toHaveLength(1);
+      test.assertRequest(seen[0]!.url, seen[0]!.headers, seen[0]!.redirect);
+    }
+
+    const mtls = createRequest({
+      baseURL: "https://api.example.test",
+      securityProvider: () => ({ Certificate: { kind: "mutual-tls" } }),
+      fetch: async () => jsonResponse({ ok: true }),
+    });
+    await expect(
+      mtls(
+        operation({
+          route: "GET /secure",
+          method: "GET",
+          path: "/secure",
+          security: [
+            {
+              id: "mtls",
+              schemes: [{ name: "Certificate", type: "mutualTLS" }],
+            },
+          ],
+        }),
+      ),
+    ).rejects.toMatchObject({ code: TransportErrorCode.TRANSPORT_CAPABILITY_REQUIRED });
   });
 
   it("applies abort and timeout while preparing encoded and secured requests", async () => {
