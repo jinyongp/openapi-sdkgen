@@ -11,5 +11,4 @@ awk -v coverage="$go_coverage" 'BEGIN { exit !(coverage >= 78) }' || {
   exit 1
 }
 agent_note "ok Go coverage threshold ${go_coverage}% >= 78%"
-"$ROOT/scripts/agent/prepare-conformance"
-agent_run "TypeScript coverage" ts_pnpm run coverage
+bash "$ROOT/scripts/agent/typescript-verify" coverage
