@@ -1,7 +1,9 @@
 package typescript
 
 import (
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -219,6 +221,191 @@ func sourceTargetDiagnostic(document *ir.Document, ownership *sourceOwnershipInd
 		value.Operation = operation.OperationID
 	}
 	return value
+}
+
+func resourceOmissionDiagnostics(document *ir.Document, ownership *sourceOwnershipIndex, omissions []resourceOmission) []diagnostic.Diagnostic {
+	result := make([]diagnostic.Diagnostic, 0, len(omissions))
+	for _, omission := range omissions {
+		operation := omission.operation.compiled
+		if operation.Method == "" {
+			operation = findOperation(document, manifestRouteKey(omission.operation))
+		}
+		pointer := operation.Pointer
+		if pointer == "" {
+			pointer = "#/paths/" + escapePointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
+		}
+		if omission.hasParameterConflict {
+			if schemaPointer := resourceParameterSchemaPointer(omission.parameter); schemaPointer != "" {
+				pointer = schemaPointer
+			}
+		}
+		message, hint := resourceOmissionDiagnosticText(document, omission)
+		value := sourceTargetDiagnostic(document, ownership, pointer, "SDKGEN-W513", message, hint)
+		value.Severity = diagnostic.SeverityWarning
+		value.Route = operationRouteKey(operation)
+		value.Operation = operation.OperationID
+		value.Capability = "resource"
+		value.Scope = failure.ScopeCapability
+		value.Effect = failure.EffectOmitCapability
+		if omission.hasParameterConflict {
+			conflictingPointer := resourceParameterSchemaPointer(omission.conflictingParameter)
+			if conflictingPointer == "" {
+				conflictingPointer = omission.conflictingParameter.Pointer
+			}
+			if conflictingPointer == "" {
+				result = append(result, value)
+				continue
+			}
+			location, related := extensionDiagnosticLocation(document, conflictingPointer)
+			if location != value.Location {
+				value.Related = append(value.Related, location)
+			}
+			value.Related = append(value.Related, related...)
+			value.Related = sortTargetLocations(value.Related)
+		}
+		result = append(result, value)
+	}
+	return diagnostic.Sort(result)
+}
+
+func resourceParameterSchemaPointer(parameter operationParameter) string {
+	if parameter.Pointer == "" {
+		return ""
+	}
+	if parameter.ContentType != "" {
+		return parameter.Pointer + "/content/" + escapePointerToken(parameter.ContentType) + "/schema"
+	}
+	return parameter.Pointer + "/schema"
+}
+
+func resourceOmissionDiagnosticText(document *ir.Document, omission resourceOmission) (string, string) {
+	selector := omission.selectorPath
+	if selector == "" {
+		selector = omission.operation.Path
+	}
+	operation := omission.operation.compiled
+	if operation.Method == "" {
+		operation = findOperation(document, manifestRouteKey(omission.operation))
+	}
+	label := operationRouteKey(operation)
+	hint := "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
+	switch omission.reason {
+	case resourceOmissionParameterConflict:
+		details := resourceParameterConflictDetails(document, omission.parameter, omission.conflictingParameter)
+		parameterDetail := "path parameter contracts differ"
+		if omission.parameter.Name != "" && omission.conflictingParameter.Name != "" {
+			if omission.parameter.Name == omission.conflictingParameter.Name {
+				parameterDetail = fmt.Sprintf("path parameter %q contracts differ", omission.parameter.Name)
+			} else {
+				parameterDetail = fmt.Sprintf("path parameter %q conflicts with %q", omission.parameter.Name, omission.conflictingParameter.Name)
+			}
+		}
+		if len(details) > 0 {
+			parameterDetail += ": " + strings.Join(details, "; ")
+		}
+		return fmt.Sprintf("Resource selector %q is omitted for %s because %s.", selector, label, parameterDetail), hint
+	case resourceOmissionDuplicatePathParameter:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because the OpenAPI path repeats one path parameter.", selector, label), hint
+	case resourceOmissionUnsupportedPathSegment:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because one path segment cannot be represented as a resource member.", selector, label), hint
+	case resourceOmissionRootPathParameter:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because a resource selector cannot begin with a path parameter.", selector, label), hint
+	case resourceOmissionLiteralCollision:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because normalized literal resource members collide.", selector, label), hint
+	case resourceOmissionOperationCollision:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because resource operation members collide.", selector, label), hint
+	default:
+		return fmt.Sprintf("Resource selector %q is omitted for %s because the resource member shape collides with another generated capability.", selector, label), hint
+	}
+}
+
+func resourceParameterConflictDetails(document *ir.Document, left, right operationParameter) []string {
+	if left.Name == "" || right.Name == "" {
+		return nil
+	}
+	result := make([]string, 0, 8)
+	leftSchema := resourceParameterCompatibilitySchema(document, left.Schema)
+	rightSchema := resourceParameterCompatibilitySchema(document, right.Schema)
+	collectResourceSchemaDifferences("schema", leftSchema, rightSchema, &result, 6)
+	appendResourceParameterDifference(&result, "style", left.Style, right.Style)
+	appendResourceParameterDifference(&result, "explode", left.Explode, right.Explode)
+	appendResourceParameterDifference(&result, "allowReserved", left.AllowReserved, right.AllowReserved)
+	appendResourceParameterDifference(&result, "allowEmptyValue", left.AllowEmptyValue, right.AllowEmptyValue)
+	appendResourceParameterDifference(&result, "contentType", left.ContentType, right.ContentType)
+	leftType, leftErr := schemaTypeForScope(document, leftSchema, projectionInput, typeRenderContract)
+	rightType, rightErr := schemaTypeForScope(document, rightSchema, projectionInput, typeRenderContract)
+	if leftErr == nil && rightErr == nil && leftType != rightType {
+		result = append(result, "selectorType: "+resourceDifferenceValue(leftType)+" vs "+resourceDifferenceValue(rightType))
+	}
+	if len(result) == 0 {
+		wire := newWireRenderContext(wirePropertiesLiteral)
+		leftWire, leftWireErr := wire.wireSchemaDescriptorForDocument(document, leftSchema, projectionInput)
+		rightWire, rightWireErr := wire.wireSchemaDescriptorForDocument(document, rightSchema, projectionInput)
+		if leftWireErr == nil && rightWireErr == nil && leftWire != rightWire {
+			result = append(result, "wire schema differs")
+		}
+	}
+	return result
+}
+
+func appendResourceParameterDifference[T comparable](result *[]string, name string, left, right T) {
+	if left == right {
+		return
+	}
+	*result = append(*result, name+": "+resourceDifferenceValue(left)+" vs "+resourceDifferenceValue(right))
+}
+
+func collectResourceSchemaDifferences(path string, left, right any, result *[]string, limit int) {
+	if len(*result) >= limit || reflect.DeepEqual(left, right) {
+		return
+	}
+	leftMap, leftMapOK := left.(map[string]any)
+	rightMap, rightMapOK := right.(map[string]any)
+	if leftMapOK && rightMapOK {
+		keys := make(map[string]bool, len(leftMap)+len(rightMap))
+		for key := range leftMap {
+			keys[key] = true
+		}
+		for key := range rightMap {
+			keys[key] = true
+		}
+		sorted := make([]string, 0, len(keys))
+		for key := range keys {
+			sorted = append(sorted, key)
+		}
+		sort.Strings(sorted)
+		for _, key := range sorted {
+			if len(*result) >= limit {
+				return
+			}
+			leftValue, leftExists := leftMap[key]
+			rightValue, rightExists := rightMap[key]
+			childPath := path + "." + key
+			if !leftExists || !rightExists {
+				if !leftExists {
+					*result = append(*result, childPath+": <missing> vs "+resourceDifferenceValue(rightValue))
+				} else {
+					*result = append(*result, childPath+": "+resourceDifferenceValue(leftValue)+" vs <missing>")
+				}
+				continue
+			}
+			collectResourceSchemaDifferences(childPath, leftValue, rightValue, result, limit)
+		}
+		return
+	}
+	*result = append(*result, path+": "+resourceDifferenceValue(left)+" vs "+resourceDifferenceValue(right))
+}
+
+func resourceDifferenceValue(value any) string {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Sprintf("%v", value)
+	}
+	const limit = 120
+	if len(encoded) > limit {
+		return string(encoded[:limit]) + "..."
+	}
+	return string(encoded)
 }
 
 type identityOccurrence struct {

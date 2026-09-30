@@ -647,11 +647,41 @@ func requestBodyMediaValueTypeForScope(document *ir.Document, mediaType string, 
 	return schemaTypeForScope(document, schema, projectionInput, scope)
 }
 
+type resourceOmissionReason string
+
+const (
+	resourceOmissionDuplicatePathParameter resourceOmissionReason = "duplicate-path-parameter"
+	resourceOmissionUnsupportedPathSegment resourceOmissionReason = "unsupported-path-segment"
+	resourceOmissionRootPathParameter      resourceOmissionReason = "root-path-parameter"
+	resourceOmissionParameterConflict      resourceOmissionReason = "parameter-conflict"
+	resourceOmissionLiteralCollision       resourceOmissionReason = "literal-collision"
+	resourceOmissionOperationCollision     resourceOmissionReason = "operation-collision"
+	resourceOmissionMemberCollision        resourceOmissionReason = "member-collision"
+)
+
+type resourceOmission struct {
+	operation            ManifestOperation
+	reason               resourceOmissionReason
+	selectorPath         string
+	parameter            operationParameter
+	conflictingParameter operationParameter
+	hasParameterConflict bool
+}
+
+type resourceParameterConflict struct {
+	selectorPath   string
+	left           operationParameter
+	right          operationParameter
+	leftSignature  string
+	rightSignature string
+}
+
 type resourceNode struct {
 	parameter          *operationParameter
 	parameterSignature string
 	parameterChild     *resourceNode
 	parameterBlocked   bool
+	parameterConflict  *resourceParameterConflict
 	operations         map[string]ManifestOperation
 	blockedOperations  map[string]bool
 	children           map[string]*resourceNode
@@ -672,11 +702,17 @@ func newResourceNode() *resourceNode {
 }
 
 func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ...map[string]map[string]bool) (*resourceNode, error) {
+	tree, _, err := buildResourceTreeWithOmissions(document, manifest, capabilities...)
+	return tree, err
+}
+
+func buildResourceTreeWithOmissions(document *ir.Document, manifest Manifest, capabilities ...map[string]map[string]bool) (*resourceNode, []resourceOmission, error) {
 	fixedMembers := map[string]map[string]bool{}
 	if len(capabilities) != 0 {
 		fixedMembers = capabilities[0]
 	}
 	root := newResourceNode()
+	omissions := make(map[string]resourceOmission)
 	for _, item := range manifest.Operations {
 		if item.Visibility != "public" {
 			continue
@@ -690,10 +726,15 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 			var err error
 			prepared, err = prepareOperation(document, operation)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 		if hasDuplicateStrings(operation.PathParameterOrder) {
+			recordResourceOmission(omissions, resourceOmission{
+				operation:    item,
+				reason:       resourceOmissionDuplicatePathParameter,
+				selectorPath: operation.Path,
+			})
 			continue
 		}
 		parameters := prepared.parametersByLocation["path"]
@@ -707,29 +748,92 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 		for index, part := range parts {
 			name, parameterPart, supported := resourcePathPart(part)
 			if !supported {
+				recordResourceOmission(omissions, resourceOmission{
+					operation:    item,
+					reason:       resourceOmissionUnsupportedPathSegment,
+					selectorPath: resourcePathPrefix(parts, index),
+				})
 				omitted = true
 				break
 			}
 			if parameterPart {
 				parameter, ok := byName[name]
 				if !ok {
-					return nil, fmt.Errorf("resource path %s has undeclared parameter %q", operation.Path, name)
+					return nil, nil, fmt.Errorf("resource path %s has undeclared parameter %q", operation.Path, name)
 				}
-				if index == 0 || node.parameterBlocked {
+				selectorPath := resourcePathPrefix(parts, index)
+				if index == 0 {
+					recordResourceOmission(omissions, resourceOmission{
+						operation:    item,
+						reason:       resourceOmissionRootPathParameter,
+						selectorPath: selectorPath,
+					})
 					omitted = true
 					break
 				}
 				signature, err := resourceParameterSignature(document, parameter)
 				if err != nil {
-					return nil, fmt.Errorf("resource path %s parameter %q: %w", operation.Path, name, err)
+					return nil, nil, fmt.Errorf("resource path %s parameter %q: %w", operation.Path, name, err)
+				}
+				if node.parameterBlocked {
+					value := resourceOmission{
+						operation:            item,
+						reason:               resourceOmissionParameterConflict,
+						selectorPath:         selectorPath,
+						parameter:            parameter,
+						hasParameterConflict: node.parameterConflict != nil,
+					}
+					if conflict := node.parameterConflict; conflict != nil {
+						value.selectorPath = conflict.selectorPath
+						value.conflictingParameter = conflict.left
+						if signature == conflict.leftSignature {
+							value.conflictingParameter = conflict.right
+						}
+					}
+					recordResourceOmission(omissions, value)
+					omitted = true
+					break
 				}
 				if node.parameterChild == nil {
 					node.parameterChild = newResourceNode()
 					node.parameterChild.parameter = &parameter
 					node.parameterSignature = signature
 				} else if node.parameterSignature != signature {
+					previous := node.parameterChild
+					representative := *previous.parameter
+					conflict := &resourceParameterConflict{
+						selectorPath:   selectorPath,
+						left:           representative,
+						right:          parameter,
+						leftSignature:  node.parameterSignature,
+						rightSignature: signature,
+					}
+					for _, previousItem := range resourceNodeManifestOperations(previous) {
+						previousParameter := representative
+						if candidate, ok := resourceOperationPathParameterAt(document, previousItem, index); ok {
+							previousParameter = candidate
+						}
+						recordResourceOmission(omissions, resourceOmission{
+							operation:            previousItem,
+							reason:               resourceOmissionParameterConflict,
+							selectorPath:         selectorPath,
+							parameter:            previousParameter,
+							conflictingParameter: parameter,
+							hasParameterConflict: true,
+						})
+					}
+					recordResourceOmission(omissions, resourceOmission{
+						operation:            item,
+						reason:               resourceOmissionParameterConflict,
+						selectorPath:         selectorPath,
+						parameter:            parameter,
+						conflictingParameter: representative,
+						hasParameterConflict: true,
+					})
 					node.parameterChild = nil
+					node.parameterSignature = ""
 					node.parameterBlocked = true
+					node.parameterConflict = conflict
 					omitted = true
 					break
 				}
@@ -738,17 +842,41 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 			}
 			property, err := naming.Property(part)
 			if err != nil {
+				recordResourceOmission(omissions, resourceOmission{
+					operation:    item,
+					reason:       resourceOmissionUnsupportedPathSegment,
+					selectorPath: resourcePathPrefix(parts, index),
+				})
 				omitted = true
 				break
 			}
 			if node.blockedChildren[property] {
+				recordResourceOmission(omissions, resourceOmission{
+					operation:    item,
+					reason:       resourceOmissionLiteralCollision,
+					selectorPath: resourcePathPrefix(parts, index),
+				})
 				omitted = true
 				break
 			}
 			if source, exists := node.childSources[property]; exists && source != part {
+				if previous := node.children[property]; previous != nil {
+					for _, previousItem := range resourceNodeManifestOperations(previous) {
+						recordResourceOmission(omissions, resourceOmission{
+							operation:    previousItem,
+							reason:       resourceOmissionLiteralCollision,
+							selectorPath: resourcePathPrefix(parts, index),
+						})
+					}
+				}
 				delete(node.children, property)
 				delete(node.childSources, property)
 				node.blockedChildren[property] = true
+				recordResourceOmission(omissions, resourceOmission{
+					operation:    item,
+					reason:       resourceOmissionLiteralCollision,
+					selectorPath: resourcePathPrefix(parts, index),
+				})
 				omitted = true
 				break
 			}
@@ -763,21 +891,136 @@ func buildResourceTree(document *ir.Document, manifest Manifest, capabilities ..
 		}
 		terminal, err := resourceTerminalName(operation, parts)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if node.blockedOperations[terminal] {
+			recordResourceOmission(omissions, resourceOmission{
+				operation:    item,
+				reason:       resourceOmissionOperationCollision,
+				selectorPath: operation.Path,
+			})
 			continue
 		}
-		if _, ok := node.operations[terminal]; ok {
+		if previous, ok := node.operations[terminal]; ok {
 			delete(node.operations, terminal)
 			node.blockedOperations[terminal] = true
+			recordResourceOmission(omissions, resourceOmission{
+				operation:    previous,
+				reason:       resourceOmissionOperationCollision,
+				selectorPath: operation.Path,
+			})
+			recordResourceOmission(omissions, resourceOmission{
+				operation:    item,
+				reason:       resourceOmissionOperationCollision,
+				selectorPath: operation.Path,
+			})
 			continue
 		}
 		node.operations[terminal] = item
 	}
 	resolveResourceNodeCollisions(root, fixedMembers)
 	pruneEmptyResourceNodes(root)
-	return root, nil
+	return root, sortedResourceOmissions(omissions), nil
+}
+
+func recordResourceOmission(values map[string]resourceOmission, value resourceOmission) {
+	key := manifestRouteKey(value.operation)
+	if key == "" {
+		return
+	}
+	if _, exists := values[key]; !exists {
+		values[key] = value
+	}
+}
+
+func sortedResourceOmissions(values map[string]resourceOmission) []resourceOmission {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]resourceOmission, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, values[key])
+	}
+	return result
+}
+
+func resourceNodeManifestOperations(node *resourceNode) []ManifestOperation {
+	byRoute := make(map[string]ManifestOperation)
+	var visit func(*resourceNode)
+	visit = func(current *resourceNode) {
+		if current == nil {
+			return
+		}
+		for _, operation := range current.operations {
+			byRoute[manifestRouteKey(operation)] = operation
+		}
+		if current.pagination != nil {
+			byRoute[manifestRouteKey(*current.pagination)] = *current.pagination
+		}
+		visit(current.parameterChild)
+		for _, child := range current.children {
+			visit(child)
+		}
+	}
+	visit(node)
+	keys := make([]string, 0, len(byRoute))
+	for key := range byRoute {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]ManifestOperation, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, byRoute[key])
+	}
+	return result
+}
+
+func resourceOperationPathParameterAt(document *ir.Document, item ManifestOperation, index int) (operationParameter, bool) {
+	operation := item.compiled
+	if operation.Method == "" {
+		operation = findOperation(document, manifestRouteKey(item))
+	}
+	parts := resourcePathParts(operation.Path)
+	if index < 0 || index >= len(parts) {
+		return operationParameter{}, false
+	}
+	name, parameterPart, supported := resourcePathPart(parts[index])
+	if !supported || !parameterPart {
+		return operationParameter{}, false
+	}
+	prepared := item.prepared
+	if prepared.parametersByLocation == nil {
+		var err error
+		prepared, err = prepareOperation(document, operation)
+		if err != nil {
+			return operationParameter{}, false
+		}
+	}
+	for _, parameter := range prepared.parametersByLocation["path"] {
+		if parameter.Name == name {
+			return parameter, true
+		}
+	}
+	return operationParameter{}, false
+}
+
+func resourcePathPrefix(parts []string, index int) string {
+	if index < 0 || index >= len(parts) {
+		return "/"
+	}
+	segments := make([]string, index+1)
+	for current := 0; current <= index; current++ {
+		name, parameterPart, supported := resourcePathPart(parts[current])
+		if supported && parameterPart {
+			_ = name
+			segments[current] = "{}"
+			continue
+		}
+		segments[current] = parts[current]
+	}
+	return "/" + strings.Join(segments, "/")
 }
 
 func validateOperationIdentities(document *ir.Document) error {

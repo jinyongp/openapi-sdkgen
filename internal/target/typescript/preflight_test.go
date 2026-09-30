@@ -59,6 +59,119 @@ func TestPrepareAccumulatesIndependentTargetSupportDiagnostics(t *testing.T) {
 	}
 }
 
+func TestPrepareReportsResourceCapabilityOmissions(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+  "openapi": "3.1.1",
+  "info": {"title": "Resource omission diagnostics", "version": "1"},
+  "paths": {
+    "/users/{id}/profile": {
+      "get": {
+        "operationId": "getProfile",
+        "parameters": [{"name":"id","in":"path","required":true,"schema":{"type":"string","pattern":"^[a-z]+$"}}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/users/{userID}/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "parameters": [{"name":"userID","in":"path","required":true,"schema":{"type":"integer","format":"int64"}}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/users/{other}/history": {
+      "get": {
+        "operationId": "getHistory",
+        "parameters": [{"name":"other","in":"path","required":true,"schema":{"type":"string","pattern":"^[a-z]+$"}}],
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "getMe",
+        "responses": {"204":{"description":"OK"}}
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {"204":{"description":"OK"}}
+      }
+    }
+  }
+}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, values, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var omissions []diagnostic.Diagnostic
+	for _, value := range values {
+		if value.Code == "SDKGEN-W513" {
+			omissions = append(omissions, value)
+		}
+	}
+	if len(omissions) != 3 {
+		t.Fatalf("resource omission diagnostics = %#v", omissions)
+	}
+	operations := map[string]bool{"getProfile": true, "getSettings": true, "getHistory": true}
+	for _, value := range omissions {
+		if value.Severity != diagnostic.SeverityWarning ||
+			value.Capability != "resource" ||
+			value.Scope != failure.ScopeCapability ||
+			value.Effect != failure.EffectOmitCapability ||
+			!operations[value.Operation] {
+			t.Fatalf("resource omission diagnostic = %#v", value)
+		}
+		delete(operations, value.Operation)
+		if value.Route == "" || !strings.HasSuffix(value.Location.Pointer, "/schema") {
+			t.Fatalf("resource omission location = %#v", value)
+		}
+		if len(value.Related) == 0 || !strings.HasSuffix(value.Related[0].Pointer, "/schema") {
+			t.Fatalf("resource omission related locations = %#v", value.Related)
+		}
+	}
+	if len(operations) != 0 {
+		t.Fatalf("missing resource omission diagnostics for %#v", operations)
+	}
+	human := diagnostic.RenderHuman(values, nil)
+	if !strings.Contains(human, "SDKGEN-W513") ||
+		!strings.Contains(human, "schema.type") ||
+		!strings.Contains(human, "path parameter \"id\" conflicts with \"userID\"") ||
+		!strings.Contains(human, "/users/{}") {
+		t.Fatalf("resource omission report =\n%s", human)
+	}
+	jsonReport, err := diagnostic.RenderJSON(values, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, expected := range []string{
+		`"code": "SDKGEN-W513"`,
+		`"capability": "resource"`,
+		`"scope": "capability"`,
+		`"effect": "omit-capability"`,
+	} {
+		if !strings.Contains(jsonReport, expected) {
+			t.Fatalf("resource omission JSON missing %q:\n%s", expected, jsonReport)
+		}
+	}
+
+	manifest, failures := buildManifestDiagnostics(document, nil)
+	if len(failures) != 0 {
+		t.Fatalf("manifest failures = %v", failures)
+	}
+	calls := manifestCalls(manifest)
+	for _, id := range []string{"getProfile", "getSettings", "getHistory"} {
+		if !strings.HasPrefix(calls[id], `api.$operations["`+id+`"]`) {
+			t.Fatalf("%s call = %q", id, calls[id])
+		}
+	}
+	if calls["getMe"] != "api.users.me.get()" || calls["getHealth"] != "api.health.get()" {
+		t.Fatalf("unrelated resource calls = %#v", calls)
+	}
+}
+
 func TestCollectPrepareReturnsNoEmitCapablePlanAndReportsAnalyzerCoverage(t *testing.T) {
 	document := &ir.Document{
 		Raw: map[string]any{

@@ -330,12 +330,13 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 	if len(manifestErrors) == 0 && !blockingLinkFailure && len(streamErrors) == 0 {
 		if plan.manifest != nil && plan.reservationManifest != nil {
 			resourceReservations := filterManifestOperations(*plan.reservationManifest, plan.resourceReservationExcluded)
-			tree, reachable, reconcileErr := reconcileResourceCapabilities(prepared, resourceReservations, plan.manifest, links, streams)
+			tree, reachable, omissions, reconcileErr := reconcileResourceCapabilitiesWithOmissions(prepared, resourceReservations, plan.manifest, links, streams)
 			if reconcileErr != nil {
 				diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, reconcileErr))
 			} else {
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
+				diagnostics = append(diagnostics, resourceOmissionDiagnostics(prepared, plan.ownership, omissions)...)
 			}
 			coverage = append(coverage, targetAnalysisCoverage("target.resources", diagnostic.CoverageComplete, ""))
 		}
@@ -440,9 +441,14 @@ func filterManifestOperations(manifest Manifest, omitted map[string]bool) Manife
 }
 
 func reconcileResourceCapabilities(document *ir.Document, reservations Manifest, manifest *Manifest, links []generatedLink, streams []generatedStream) (*resourceNode, map[string]bool, error) {
-	tree, err := buildResourceTree(document, reservations, resourceCapabilityMembers(links, streams))
+	tree, reachable, _, err := reconcileResourceCapabilitiesWithOmissions(document, reservations, manifest, links, streams)
+	return tree, reachable, err
+}
+
+func reconcileResourceCapabilitiesWithOmissions(document *ir.Document, reservations Manifest, manifest *Manifest, links []generatedLink, streams []generatedStream) (*resourceNode, map[string]bool, []resourceOmission, error) {
+	tree, recorded, err := buildResourceTreeWithOmissions(document, reservations, resourceCapabilityMembers(links, streams))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	eligible := make(map[string]bool, len(manifest.Operations))
 	for _, operation := range manifest.Operations {
@@ -452,16 +458,27 @@ func reconcileResourceCapabilities(document *ir.Document, reservations Manifest,
 	pruneEmptyResourceNodes(tree)
 	reachable := make(map[string]bool)
 	resourceOperationIDs(tree, reachable)
+	omissions := make(map[string]resourceOmission, len(recorded))
+	for _, omission := range recorded {
+		omissions[manifestRouteKey(omission.operation)] = omission
+	}
 	for index := range manifest.Operations {
 		item := &manifest.Operations[index]
 		if item.Visibility != "public" || reachable[item.RouteKey] {
 			continue
 		}
+		if _, exists := omissions[item.RouteKey]; !exists {
+			omissions[item.RouteKey] = resourceOmission{
+				operation:    *item,
+				reason:       resourceOmissionMemberCollision,
+				selectorPath: item.Path,
+			}
+		}
 		operation := item.compiled
 		item.CallExpression = exactOperationCall(document, operation, item.InputSections)
 		item.ResourceSegments = nil
 	}
-	return tree, reachable, nil
+	return tree, reachable, sortedResourceOmissions(omissions), nil
 }
 
 func retainEligibleResourceOperations(node *resourceNode, eligible map[string]bool) {
