@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { WireSchema } from "../fixtures/generated/client/internal/runtime/codecs.js";
-import { createRequest } from "../fixtures/generated/client/internal/runtime/http.js";
-import type { OperationDefinition } from "../fixtures/generated/client/internal/runtime/operation.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/internal/codecs.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
 
 import {
   streamPerformanceBaseline,

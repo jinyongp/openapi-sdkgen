@@ -3,6 +3,10 @@ import * as lifecycle from "../fixtures/generated/lifecycle/selective/index.js";
 import { operation as echo } from "../fixtures/generated/lifecycle/selective/operations/inline/post.js";
 import { operation as events } from "../fixtures/generated/lifecycle/selective/operations/events/get.js";
 import * as contract from "../fixtures/generated/client/selective/index.js";
+import {
+  operations as allOperations,
+  routes as allRoutes,
+} from "../fixtures/generated/client/selective/all.js";
 import { operation as widget } from "../fixtures/generated/client/selective/operations/customers/by-customer-id/widgets/by-widget-id/get.js";
 import { operation as createTask } from "../fixtures/generated/client/selective/operations/projects/by-project-id/tasks/post.js";
 import { operation as health } from "../fixtures/generated/client/selective/operations/health/get.js";
@@ -12,6 +16,26 @@ import { createClient as fullClient } from "../fixtures/generated/client/index.j
 // Static operation references exercise the same public preparation/assembly API
 // without asking Vitest's transform loader to serve native .js lookup assets.
 describe("generated selective client", () => {
+  it("enumerates names without replacing the default operation references", () => {
+    expect(Object.keys(allOperations).sort()).toEqual([
+      "createTask",
+      "createWidget",
+      "getCustomerWidget",
+      "listTasks",
+      "uploadWidget",
+    ]);
+    expect(Object.keys(allRoutes).sort()).toEqual([
+      "GET /customers/{customerID}/widgets/{widgetID}",
+      "GET /health",
+      "GET /tasks",
+      "POST /projects/{projectID}/tasks",
+      "POST /uploads",
+      "POST /widgets",
+    ]);
+    expect(allOperations.listTasks).toBe(contract.operations.listTasks);
+    expect(allRoutes["GET /health"]).toBe(contract.routes["GET /health"]);
+  });
+
   it("composes features by value and prepares code without sending API requests", async () => {
     let reads = 0;
     const feature = {

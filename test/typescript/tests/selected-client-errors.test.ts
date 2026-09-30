@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createSelectedClient } from "../fixtures/generated/lifecycle/internal/runtime/selected-client.js";
+import { createSelectedClient } from "../../../internal/target/typescript/runtime/internal/selected-client.js";
 import {
   OperationPreparationError,
   type OperationExecutionProvider,
-} from "../fixtures/generated/lifecycle/internal/runtime/operation-loader.js";
+} from "../../../internal/target/typescript/runtime/internal/operation-loader.js";
 
 const callable = () => Object.assign(async () => undefined, { raw: async () => undefined });
 const provider = (route: string): OperationExecutionProvider => ({

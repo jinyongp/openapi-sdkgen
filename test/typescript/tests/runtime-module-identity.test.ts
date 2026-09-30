@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as support from "../../../internal/target/typescript/runtime/internal/runtime-support.js";
+import { SortDirection as sourceSortDirection } from "../../../internal/target/typescript/runtime/internal/constants.js";
 import * as errors from "../../../internal/target/typescript/runtime/internal/errors.js";
 import * as objects from "../../../internal/target/typescript/runtime/internal/objects.js";
 import * as operation from "../../../internal/target/typescript/runtime/internal/operation.js";
@@ -9,6 +10,7 @@ import * as xml from "../../../internal/target/typescript/runtime/internal/wire-
 import * as stream from "../../../internal/target/typescript/runtime/internal/http-stream.js";
 import * as jsonStream from "../../../internal/target/typescript/runtime/internal/http-json-stream.js";
 import * as generatedSupport from "../fixtures/generated/lifecycle/internal/runtime/runtime-support.js";
+import { SortDirection as generatedSortDirection } from "../fixtures/generated/lifecycle/internal/runtime/constants.js";
 import * as generatedErrors from "../fixtures/generated/lifecycle/internal/runtime/errors.js";
 import * as generatedObjects from "../fixtures/generated/lifecycle/internal/runtime/objects.js";
 import * as generatedOperation from "../fixtures/generated/lifecycle/internal/runtime/operation.js";
@@ -17,6 +19,12 @@ import * as generatedCodecs from "../fixtures/generated/lifecycle/internal/runti
 import * as generatedXML from "../fixtures/generated/lifecycle/internal/runtime/wire-xml.js";
 import * as generatedStream from "../fixtures/generated/lifecycle/internal/runtime/http-stream.js";
 import * as generatedJSONStream from "../fixtures/generated/lifecycle/internal/runtime/http-json-stream.js";
+
+describe("runtime constant parity", () => {
+  it("keeps generated sort directions identical to the runtime template", () => {
+    expect(generatedSortDirection).toEqual(sourceSortDirection);
+  });
+});
 
 for (const modules of [
   { name: "source", support, errors, objects, operation, media, codecs, xml, stream, jsonStream },

@@ -5,31 +5,31 @@ import {
   bindOperation,
   bindPathOperation,
   type RequestFunction,
-} from "../fixtures/generated/client/internal/runtime/callables.js";
+} from "../../../internal/target/typescript/runtime/internal/callables.js";
 import {
   TransportErrorCode,
   getErrorCode,
   isAPIError,
   isErrorCode,
-} from "../fixtures/generated/client/internal/runtime/errors.js";
+} from "../../../internal/target/typescript/runtime/internal/errors.js";
 import {
   transformWireValue,
   validateWireValue,
   type StreamFraming,
   type WireBodyDefinition,
   type WireSchema,
-} from "../fixtures/generated/client/internal/runtime/codecs.js";
-import { createRequest } from "../fixtures/generated/client/internal/runtime/http.js";
+} from "../../../internal/target/typescript/runtime/internal/codecs.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
 import {
   mergeLinkInput,
   resolveLinkInput,
-} from "../fixtures/generated/client/internal/runtime/links.js";
-import type { OperationDefinition } from "../fixtures/generated/client/internal/runtime/operation.js";
-import { createPaginator } from "../fixtures/generated/client/internal/runtime/pagination.js";
+} from "../../../internal/target/typescript/runtime/internal/links.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
+import { createPaginator } from "../../../internal/target/typescript/runtime/internal/pagination.js";
 import type {
   RawResponse,
   RequestOptions,
-} from "../fixtures/generated/client/internal/runtime/request.js";
+} from "../../../internal/target/typescript/runtime/internal/request.js";
 
 const testStreamFraming = (
   contentType: string,
