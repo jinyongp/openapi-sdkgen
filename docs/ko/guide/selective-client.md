@@ -149,6 +149,11 @@ export default [operation] as const;
 결정됩니다. OpenAPI 경로에 특수문자나 이름 충돌이 있다면 실제 생성된 파일 경로를
 확인하세요.
 
+생성된 selective entry의 module base는 Vite가 static asset으로 해석하는
+`new URL(<literal>, import.meta.url)` 형태를 사용하지 않습니다. 이 정적 참조 경로는
+저장소의 Vite 8 production build와 실제 request 실행으로 검증하며, 소비자 쪽 Vite
+filter 보완 플러그인은 필요하지 않습니다.
+
 기본 namespace 참조는 실행 중 lookup URL을 계산합니다. 번들러가 이 경로를 보고
 필요한 파일을 자동으로 모두 수집한다고 가정해서는 안 됩니다. 정적 참조를 사용하거나,
 생성된 native ESM 트리를 외부 자산으로 그대로 제공하세요. 번들러의 chunk 분리와

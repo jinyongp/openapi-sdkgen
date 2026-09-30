@@ -152,6 +152,11 @@ module exports one reference named `operation`; the generated operation ID still
 determines the client method. Use the actual generated path, particularly when
 OpenAPI paths require escaping or have naming collisions.
 
+The generated selective entry keeps its module base out of Vite's static-asset
+`new URL(<literal>, import.meta.url)` transform. The repository verifies this
+static-reference path with a Vite 8 production build and runtime request; no
+consumer filter plugin is required for that path.
+
 The default namespace-based references compute lookup URLs at runtime. A bundler
 must not be assumed to discover and copy that entire lookup tree automatically.
 Either use static references, or preserve the generated native ESM tree as an

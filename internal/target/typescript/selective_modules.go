@@ -136,7 +136,7 @@ import type { Operations, RouteReferences, Client } from "./types.js"
 
 const loader = /* @__PURE__ */ createOperationLoader({
   generation: %s,
-  baseURL: new URL("./", import.meta.url),
+  baseURL: new URL(import.meta.url),
   loadClient: () => import("../internal/runtime/selected-client.js"),
 })
 /** References keyed by exact operationId; accessing a key does not load its implementation. */
