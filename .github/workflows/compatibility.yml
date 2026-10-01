@@ -15,9 +15,9 @@ jobs:
   regression:
     name: Generate and typecheck major provider SDKs
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 120
     env:
-      GOMEMLIMIT: 5GiB
+      GOMEMLIMIT: 12GiB
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -36,35 +36,34 @@ jobs:
         run: |
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
+      - name: Add temporary checker swap
+        shell: bash
+        run: |
+          compatibility_swap="$RUNNER_TEMP/openapi-sdkgen-compatibility.swap"
+          sudo fallocate -l 8G "$compatibility_swap"
+          sudo chmod 600 "$compatibility_swap"
+          sudo mkswap "$compatibility_swap"
+          sudo swapon "$compatibility_swap"
+          free -h | tee .tmp/compatibility-ci/checker-memory.txt
       - name: Install TypeScript dependencies
         run: just agent ts-install
       - name: Fetch pinned provider documents
         run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
       - name: Generate SDKs and run full strict typechecks
-        timeout-minutes: 60
+        timeout-minutes: 90
         shell: bash
         run: |
-          python3 -u - <<'PY' &
-          import json, subprocess, time
-          from datetime import datetime, timezone
-          from pathlib import Path
-          while True:
-              row = {
-                  "at": datetime.now(timezone.utc).isoformat(),
-                  "memory": subprocess.check_output(["free", "-m"], text=True),
-                  "processes": subprocess.check_output(["ps", "-eo", "pid,ppid,rss,comm", "--sort=-rss"], text=True).splitlines()[:6],
-              }
-              line = json.dumps(row)
-              with Path(".tmp/compatibility-ci/progress.jsonl").open("a") as output:
-                  output.write(line + "\n")
-              print(line, flush=True)
-              time.sleep(60)
-          PY
-          compatibility_observer=$!
-          trap 'kill "$compatibility_observer" 2>/dev/null || true' EXIT
+          python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             just agent compatibility-benchmark test/compatibility/regression.json \
-            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json 30m
+            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json 60m &
+          compatibility_process=$!
+          python3 -B -u .github/scripts/compatibility_observer.py \
+            --root-pid "$compatibility_process" --typescript-root test/typescript \
+            --output .tmp/compatibility-ci/progress.jsonl &
+          compatibility_observer=$!
+          trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
+          wait "$compatibility_process"
       - name: Require generation and typechecking for every provider
         shell: bash
         run: |
