@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -80,12 +81,23 @@ type corpusSpec struct {
 }
 
 type benchmarkReport struct {
-	SchemaVersion  int              `json:"schemaVersion"`
-	ManifestSHA256 string           `json:"manifestSha256"`
-	FeatureCatalog []string         `json:"featureCatalog"`
-	Documents      []documentResult `json:"documents"`
-	Cohorts        []summaryResult  `json:"cohorts"`
-	Overall        summaryResult    `json:"overall"`
+	SchemaVersion  int                   `json:"schemaVersion"`
+	ManifestSHA256 string                `json:"manifestSha256"`
+	FeatureCatalog []string              `json:"featureCatalog"`
+	Documents      []documentResult      `json:"documents"`
+	Cohorts        []summaryResult       `json:"cohorts"`
+	Overall        summaryResult         `json:"overall"`
+	Measurement    *benchmarkMeasurement `json:"measurement,omitempty"`
+}
+
+type benchmarkMeasurement struct {
+	MeasuredAt      string `json:"measuredAt"`
+	GenerationScope string `json:"generationScope"`
+	Samples         int    `json:"samples"`
+	OS              string `json:"os"`
+	Architecture    string `json:"architecture"`
+	CPU             string `json:"cpu,omitempty"`
+	GoVersion       string `json:"goVersion"`
 }
 
 type documentResult struct {
@@ -160,10 +172,11 @@ type compatibilityMetric struct {
 }
 
 type verificationResult struct {
-	Status        string `json:"status"`
-	ArtifactCount int    `json:"artifactCount,omitempty"`
-	ArtifactBytes int64  `json:"artifactBytes,omitempty"`
-	Detail        string `json:"detail,omitempty"`
+	Status         string   `json:"status"`
+	ArtifactCount  int      `json:"artifactCount,omitempty"`
+	ArtifactBytes  int64    `json:"artifactBytes,omitempty"`
+	Detail         string   `json:"detail,omitempty"`
+	DurationMillis *float64 `json:"durationMillis,omitempty"`
 }
 
 type summaryResult struct {
@@ -257,6 +270,7 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 		Documents:      documents,
 		Cohorts:        summarizeCohorts(documents),
 		Overall:        summarizeDocuments("", documents),
+		Measurement:    measurementEnvironment(),
 	}
 	encoded, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
@@ -270,6 +284,26 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 		return fmt.Errorf("write benchmark report: %w", err)
 	}
 	return nil
+}
+
+func measurementEnvironment() *benchmarkMeasurement {
+	measurement := &benchmarkMeasurement{
+		MeasuredAt:      time.Now().UTC().Format(time.RFC3339),
+		GenerationScope: "compile-prepare-write",
+		Samples:         1,
+		OS:              runtime.GOOS,
+		Architecture:    runtime.GOARCH,
+		GoVersion:       runtime.Version(),
+	}
+	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if key, value, ok := strings.Cut(line, ":"); ok && strings.TrimSpace(key) == "model name" {
+				measurement.CPU = strings.TrimSpace(value)
+				break
+			}
+		}
+	}
+	return measurement
 }
 
 func validateManifest(manifest benchmarkManifest) error {
@@ -392,14 +426,18 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	features, version := detectFeatures(decoded)
 
 	mode := diagnostic.ModeCollect
+	compileStarted := time.Now()
 	compiled, err := sdkgen.CompileInputResultWithOptions(inputPath, sdkgen.CompileOptions{DiagnosticMode: mode})
 	if err != nil {
 		return documentResult{}, fmt.Errorf("internal compile failure: %w", err)
 	}
+	compileDuration := time.Since(compileStarted)
+	prepareStarted := time.Now()
 	prepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, generator.Options{DiagnosticMode: mode})
 	if err != nil {
 		return documentResult{}, fmt.Errorf("internal target preparation failure: %w", err)
 	}
+	prepareDuration := time.Since(prepareStarted)
 	report := diagnostic.NewReport(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage...)
 	normalizeBenchmarkReportSources(&report, inputPath)
 	result := documentResult{
@@ -420,7 +458,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		Coverage:           report.Coverage,
 		SkippedPhases:      report.SkippedPhases,
 	}
-	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, typecheck)
+	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, compileDuration+prepareDuration, typecheck)
 	if err != nil {
 		return documentResult{}, err
 	}
@@ -441,11 +479,13 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 			return documentResult{}, fmt.Errorf("resolve server add-on: %w", err)
 		}
 		serverOptions.DiagnosticMode = mode
+		serverPrepareStarted := time.Now()
 		serverPrepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, serverOptions)
 		if err != nil {
 			return documentResult{}, fmt.Errorf("internal server target preparation failure: %w", err)
 		}
-		serverProfile, err := verifyPreparedProfile("server-addon", compiled.Document != nil, serverPrepared, inputPath, typecheck)
+		serverPrepareDuration := time.Since(serverPrepareStarted)
+		serverProfile, err := verifyPreparedProfile("server-addon", compiled.Document != nil, serverPrepared, inputPath, compileDuration+serverPrepareDuration, typecheck)
 		if err != nil {
 			return documentResult{}, err
 		}
@@ -458,7 +498,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	return result, nil
 }
 
-func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Preparation, inputPath string, typecheck typecheckFunc) (supportProfileResult, error) {
+func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Preparation, inputPath string, preparationDuration time.Duration, typecheck typecheckFunc) (supportProfileResult, error) {
 	report := diagnostic.NewReport(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage...)
 	normalizeBenchmarkReportSources(&report, inputPath)
 	result := supportProfileResult{
@@ -485,6 +525,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 
 	artifactCount := 0
 	var artifactBytes int64
+	emitStarted := time.Now()
 	emitErr := generator.EmitTo(typescript.Generator{}, prepared.Plan, generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
 		path, err := safeArtifactPath(temporary, artifact.Path)
 		if err != nil {
@@ -504,6 +545,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 		artifactBytes += int64(len(data))
 		return nil
 	}))
+	generationMillis := float64(preparationDuration+time.Since(emitStarted)) / float64(time.Millisecond)
 	if emitErr != nil {
 		result.Generation = verificationResult{Status: "fail", Detail: boundedDetail(emitErr.Error())}
 		result.OperationEmission.Available = false
@@ -514,7 +556,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 		return supportProfileResult{}, fmt.Errorf("read emitted operation manifest: %w", err)
 	}
 	result.OperationEmission.Count = len(routes)
-	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes}
+	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes, DurationMillis: &generationMillis}
 	result.Typecheck = typecheck(temporary)
 	result.Success = result.DiscoveryComplete && result.Diagnostics.Errors == 0 &&
 		result.Generation.Status == "pass" && result.Typecheck.Status == "pass"
