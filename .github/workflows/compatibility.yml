@@ -41,8 +41,27 @@ jobs:
       - name: Fetch pinned provider documents
         run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
       - name: Generate SDKs and run full strict typechecks
+        timeout-minutes: 60
         shell: bash
         run: |
+          python3 -u - <<'PY' &
+          import json, subprocess, time
+          from datetime import datetime, timezone
+          from pathlib import Path
+          while True:
+              row = {
+                  "at": datetime.now(timezone.utc).isoformat(),
+                  "memory": subprocess.check_output(["free", "-m"], text=True),
+                  "processes": subprocess.check_output(["ps", "-eo", "pid,ppid,rss,comm", "--sort=-rss"], text=True).splitlines()[:6],
+              }
+              line = json.dumps(row)
+              with Path(".tmp/compatibility-ci/progress.jsonl").open("a") as output:
+                  output.write(line + "\n")
+              print(line, flush=True)
+              time.sleep(60)
+          PY
+          compatibility_observer=$!
+          trap 'kill "$compatibility_observer" 2>/dev/null || true' EXIT
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             just agent compatibility-benchmark test/compatibility/regression.json \
             .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json 30m
