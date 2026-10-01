@@ -95,7 +95,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 88,
-        "artifactBytes": 558798
+        "artifactBytes": 558798,
+        "durationMillis": 30.540229
       },
       "typecheck": {
         "status": "pass"
@@ -330,7 +331,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 350,
-        "artifactBytes": 1847296
+        "artifactBytes": 1847296,
+        "durationMillis": 169.694526
       },
       "typecheck": {
         "status": "pass"
@@ -667,5 +669,14 @@
         "schema.unevaluated-properties"
       ]
     }
+  },
+  "measurement": {
+    "measuredAt": "2026-10-01T06:20:29Z",
+    "generationScope": "compile-prepare-write",
+    "samples": 1,
+    "os": "linux",
+    "architecture": "amd64",
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "goVersion": "go1.27.1"
   }
 }

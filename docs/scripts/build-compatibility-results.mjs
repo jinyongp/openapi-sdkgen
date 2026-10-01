@@ -41,6 +41,12 @@ export function readCompatibilityResults(directory) {
         fail("adjusted success does not match generation profiles");
       }
       const selectedEmission = document.documentSuccess ? document.operationEmission : server?.success ? server.operationEmission : null;
+      const selectedGeneration = document.documentSuccess ? document.generation : server?.success ? server.generation : null;
+      const generationDurationMillis = selectedGeneration?.durationMillis ?? null;
+      if (generationDurationMillis !== null && (!Number.isFinite(generationDurationMillis) || generationDurationMillis < 0 ||
+          report.measurement?.generationScope !== "compile-prepare-write")) {
+        fail("generation timing is invalid or has an unknown scope");
+      }
       if (selectedEmission && (!Number.isSafeInteger(selectedEmission.count) || selectedEmission.count < 0)) {
         fail("generated operation count is invalid");
       }
@@ -54,12 +60,14 @@ export function readCompatibilityResults(directory) {
         adjustedSuccess: document.capabilityAdjustedSuccess,
         emitted: document.operationEmission.count,
         generatedOperations: selectedEmission?.count ?? null,
+        generationDurationMillis,
         receiving: server?.success ? (document.features ?? []).filter((feature) =>
           feature === "document.webhooks" || feature === "operation.callbacks") : [],
       };
     });
 
     const overall = report.overall;
+    const successful = results.filter((document) => document.adjustedSuccess);
     const emission = overall.operationEmission;
     const sum = (field) => documents.reduce((total, document) => total + document.operationEmission[field], 0);
     if (overall.documents !== documents.length ||
@@ -77,6 +85,9 @@ export function readCompatibilityResults(directory) {
       adjustedSuccess: overall.capabilityAdjustedDocuments,
       emitted: emission.count,
       generatedOperations: results.reduce((total, document) => total + (document.generatedOperations ?? 0), 0),
+      generationDurationMillis: successful.length > 0 && successful.every((document) => document.generationDurationMillis !== null)
+        ? successful.reduce((total, document) => total + document.generationDurationMillis, 0) : null,
+      measurement: report.measurement ?? null,
       operationOmissions: emission.operationOmissions,
       helperOmissions: emission.helperOmissions,
       reportSha256: sha256(reportBytes),

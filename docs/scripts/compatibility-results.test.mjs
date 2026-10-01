@@ -128,3 +128,41 @@ test("changed source bytes cannot be published as the measured document", (t) =>
   writeFileSync(resolve(directory, "production32.json"), JSON.stringify(manifest));
   assert.throws(() => publishCompatibilityDocuments(directory, directory), /published document hash mismatch/);
 });
+
+test("generation time follows the same successful server profile as API calls", (t) => {
+  const directory = fixture(t);
+  change(directory, "holdout-results.json", (report) => {
+    const document = report.documents.find((document) => document.id === "listennotes.com");
+    document.generation.durationMillis = 999;
+    document.supportProfiles[0].generation.durationMillis = 7.25;
+  });
+  const document = readCompatibilityResults(directory)[0].results.find((document) => document.id === "listennotes.com");
+  assert.equal(document.generatedOperations, 24);
+  assert.equal(document.generationDurationMillis, 7.25);
+});
+
+test("missing generation timings remain unavailable, including the summary total", (t) => {
+  const directory = fixture(t);
+  change(directory, "holdout-results.json", (report) => {
+    delete report.measurement;
+    for (const document of report.documents) {
+      delete document.generation.durationMillis;
+      for (const profile of document.supportProfiles ?? []) delete profile.generation.durationMillis;
+    }
+  });
+  const corpus = readCompatibilityResults(directory)[0];
+  assert.equal(corpus.generationDurationMillis, null);
+  assert.ok(corpus.results.every((document) => document.generationDurationMillis === null));
+});
+
+test("invalid or differently scoped durations cannot be published as generation time", (t) => {
+  for (const invalid of ["negative", "scope"]) {
+    const directory = fixture(t);
+    change(directory, "holdout-results.json", (report) => {
+      const document = report.documents.find((document) => document.documentSuccess);
+      if (invalid === "negative") document.generation.durationMillis = -1;
+      else report.measurement.generationScope = "compile-only";
+    });
+    assert.throws(() => readCompatibilityResults(directory), /generation timing is invalid/);
+  }
+});

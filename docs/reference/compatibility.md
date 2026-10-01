@@ -14,6 +14,8 @@ Callbacks** also includes code for receiving inbound requests.
 18 of the 20 documents. **Generated API calls** counts the callable operations in
 successfully generated SDKs, including the `--with server` results for documents
 with Webhooks or Callbacks.
+**SDK generation time** measures reading the document and writing the SDK files.
+The summary shows the sum of the individual document times.
 
 <CompatibilityResults />
 

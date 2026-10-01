@@ -15,6 +15,7 @@ const copy = {
     document: "Document", version: "OpenAPI", report: "Results JSON", manifest: "Input manifest",
     details: "Document results",
     receiving: "Generated receiving code", webhooks: "Webhook handlers", callbacks: "Callback handlers",
+    duration: "SDK generation time", seconds: "s", environment: "Measured on",
     holdout: ["Independent holdout", "20 providers · OpenAPI 3.0 / 3.1"],
     production32: ["Provider-published documents", "1 provider · declared OpenAPI 3.2.0"],
     modern: ["Feature examples", "1 real API document + 9 authored examples"],
@@ -26,6 +27,7 @@ const copy = {
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
     details: "문서별 결과",
     receiving: "생성된 수신 코드", webhooks: "웹훅 핸들러", callbacks: "콜백 핸들러",
+    duration: "SDK 생성 시간", seconds: "초", environment: "측정 환경",
     holdout: ["독립 표본", "20개 제공자 · OpenAPI 3.0 / 3.1"],
     production32: ["제공자 공개 문서", "1개 제공자 · OpenAPI 3.2.0 선언"],
     modern: ["기능별 예제 문서", "실문서 1개 + 직접 작성한 예제 9개"],
@@ -40,6 +42,18 @@ const successCount = (count, total) => props.locale === "ko"
 const status = (document) => document.defaultSuccess ? labels.pass : document.adjustedSuccess ? labels.server : labels.fail;
 const receiving = (document) => document.receiving.map((feature) =>
   feature === "document.webhooks" ? labels.webhooks : labels.callbacks).join(", ") || "—";
+const duration = (milliseconds) => {
+  if (milliseconds === null) return "—";
+  const seconds = milliseconds >= 1000;
+  return new Intl.NumberFormat(props.locale, { maximumFractionDigits: seconds || milliseconds < 1 ? 2 : 0 }).format(
+    seconds ? milliseconds / 1000 : milliseconds,
+  ) + ` ${seconds ? labels.seconds : "ms"}`;
+};
+const environmentKey = (measurement) => JSON.stringify([
+  measurement?.cpu, measurement?.os, measurement?.architecture, measurement?.samples,
+]);
+const measurement = results.every((corpus) => corpus.measurement && environmentKey(corpus.measurement) === environmentKey(results[0].measurement))
+  ? results[0].measurement : null;
 </script>
 
 <template>
@@ -49,7 +63,7 @@ const receiving = (document) => document.receiving.map((feature) =>
       <caption>{{ labels.caption }}</caption>
       <colgroup>
         <col class="results-name-column" />
-        <col span="3" />
+        <col span="4" />
       </colgroup>
       <thead>
         <tr>
@@ -57,6 +71,7 @@ const receiving = (document) => document.receiving.map((feature) =>
           <th scope="col">{{ labels.default }}</th>
           <th scope="col">{{ labels.adjusted }}</th>
           <th scope="col">{{ labels.emitted }}</th>
+          <th scope="col">{{ labels.duration }}</th>
         </tr>
       </thead>
       <tbody>
@@ -68,11 +83,16 @@ const receiving = (document) => document.receiving.map((feature) =>
           <td>{{ successCount(corpus.defaultSuccess, corpus.documents) }}</td>
           <td>{{ successCount(corpus.adjustedSuccess, corpus.documents) }}</td>
           <td>{{ number(corpus.generatedOperations) }}</td>
+          <td>{{ duration(corpus.generationDurationMillis) }}</td>
         </tr>
       </tbody>
     </table>
     </div>
-    <template v-else>
+    <p v-if="!evidence && measurement" class="results-environment">
+      {{ labels.environment }}: {{ measurement.cpu || measurement.architecture }} · {{ measurement.os }} ·
+      {{ locale === "ko" ? `문서별 ${measurement.samples}회 측정` : `${measurement.samples} measurement per document` }}
+    </p>
+    <template v-if="evidence">
       <details v-for="corpus in results" :key="corpus.id" class="results-evidence">
         <summary>{{ labels[corpus.id][0] }} — {{ labels.details }}</summary>
         <p class="results-downloads">
@@ -88,6 +108,7 @@ const receiving = (document) => document.receiving.map((feature) =>
               <th scope="col">{{ labels.adjusted }}</th>
               <th scope="col">{{ labels.emitted }}</th>
               <th scope="col">{{ labels.receiving }}</th>
+              <th scope="col">{{ labels.duration }}</th>
             </tr>
           </thead>
           <tbody>
@@ -98,6 +119,7 @@ const receiving = (document) => document.receiving.map((feature) =>
               <td>{{ document.adjustedSuccess ? labels.pass : labels.fail }}</td>
               <td>{{ document.generatedOperations === null ? "—" : number(document.generatedOperations) }}</td>
               <td>{{ receiving(document) }}</td>
+              <td>{{ duration(document.generationDurationMillis) }}</td>
             </tr>
           </tbody>
         </table>
@@ -113,7 +135,7 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-table-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
 .results-table-scroll:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
 .results-summary { display: table; width: 100%; min-width: 36rem; table-layout: fixed; }
-.results-summary .results-name-column { width: 46%; }
+.results-summary .results-name-column { width: 38%; }
 .results-summary :is(th, td) { min-width: 0; }
 .results-summary th { white-space: normal; word-break: keep-all; }
 .results-summary tbody th { text-align: left; }
@@ -124,6 +146,7 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-evidence summary:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 4px; }
 .results-evidence :is(th, td) { white-space: normal; word-break: keep-all; }
 .results-downloads { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.results-environment { font-size: 13px; color: var(--vp-c-text-2); }
 @media (max-width: 639px) {
   .results-summary { min-width: 32rem; }
   .results-summary :is(th, td) { padding: 8px; }

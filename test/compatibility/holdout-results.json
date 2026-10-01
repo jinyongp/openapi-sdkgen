@@ -93,7 +93,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 293,
-        "artifactBytes": 1236031
+        "artifactBytes": 1236031,
+        "durationMillis": 131.113833
       },
       "typecheck": {
         "status": "pass"
@@ -327,7 +328,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 84,
-        "artifactBytes": 531318
+        "artifactBytes": 531318,
+        "durationMillis": 18.632946
       },
       "typecheck": {
         "status": "pass"
@@ -580,7 +582,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 861,
-        "artifactBytes": 3657227
+        "artifactBytes": 3657227,
+        "durationMillis": 404.24114
       },
       "typecheck": {
         "status": "pass"
@@ -1882,7 +1885,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 1692,
-        "artifactBytes": 8905391
+        "artifactBytes": 8905391,
+        "durationMillis": 804.855071
       },
       "typecheck": {
         "status": "pass"
@@ -2583,7 +2587,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 2766,
-        "artifactBytes": 19903994
+        "artifactBytes": 19903994,
+        "durationMillis": 1567.370005
       },
       "typecheck": {
         "status": "pass"
@@ -2812,7 +2817,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 226,
-        "artifactBytes": 1259549
+        "artifactBytes": 1259549,
+        "durationMillis": 114.395936
       },
       "typecheck": {
         "status": "pass"
@@ -3042,7 +3048,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 82,
-        "artifactBytes": 473381
+        "artifactBytes": 473381,
+        "durationMillis": 23.455426
       },
       "typecheck": {
         "status": "pass"
@@ -3278,7 +3285,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 1431,
-        "artifactBytes": 6015215
+        "artifactBytes": 6015215,
+        "durationMillis": 744.371971
       },
       "typecheck": {
         "status": "pass"
@@ -3507,7 +3515,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 64,
-        "artifactBytes": 409720
+        "artifactBytes": 409720,
+        "durationMillis": 15.958336
       },
       "typecheck": {
         "status": "pass"
@@ -3812,7 +3821,8 @@
           "generation": {
             "status": "pass",
             "artifactCount": 302,
-            "artifactBytes": 1687812
+            "artifactBytes": 1687812,
+            "durationMillis": 119.298776
           },
           "typecheck": {
             "status": "pass"
@@ -4316,7 +4326,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 3918,
-        "artifactBytes": 33661141
+        "artifactBytes": 33661141,
+        "durationMillis": 4073.98288
       },
       "typecheck": {
         "status": "pass"
@@ -4547,7 +4558,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 2117,
-        "artifactBytes": 6959379
+        "artifactBytes": 6959379,
+        "durationMillis": 786.426875
       },
       "typecheck": {
         "status": "pass"
@@ -4781,7 +4793,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 127,
-        "artifactBytes": 601088
+        "artifactBytes": 601088,
+        "durationMillis": 53.991783
       },
       "typecheck": {
         "status": "pass"
@@ -5011,7 +5024,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 109,
-        "artifactBytes": 732687
+        "artifactBytes": 732687,
+        "durationMillis": 54.214435
       },
       "typecheck": {
         "status": "pass"
@@ -5247,7 +5261,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 2536,
-        "artifactBytes": 9710788
+        "artifactBytes": 9710788,
+        "durationMillis": 1172.763567
       },
       "typecheck": {
         "status": "pass"
@@ -5542,7 +5557,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 668,
-        "artifactBytes": 3214272
+        "artifactBytes": 3214272,
+        "durationMillis": 441.993391
       },
       "typecheck": {
         "status": "pass"
@@ -5773,7 +5789,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 133,
-        "artifactBytes": 784525
+        "artifactBytes": 784525,
+        "durationMillis": 60.234215
       },
       "typecheck": {
         "status": "pass"
@@ -6005,7 +6022,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 267,
-        "artifactBytes": 1035271
+        "artifactBytes": 1035271,
+        "durationMillis": 94.291704
       },
       "typecheck": {
         "status": "pass"
@@ -6325,7 +6343,8 @@
           "generation": {
             "status": "pass",
             "artifactCount": 1240,
-            "artifactBytes": 11471243
+            "artifactBytes": 11471243,
+            "durationMillis": 921.777315
           },
           "typecheck": {
             "status": "pass"
@@ -6782,7 +6801,8 @@
       "generation": {
         "status": "pass",
         "artifactCount": 276,
-        "artifactBytes": 2351767
+        "artifactBytes": 2351767,
+        "durationMillis": 198.557321
       },
       "typecheck": {
         "status": "pass"
@@ -7107,5 +7127,14 @@
         "schema.unevaluated-properties"
       ]
     }
+  },
+  "measurement": {
+    "measuredAt": "2026-10-01T06:20:27Z",
+    "generationScope": "compile-prepare-write",
+    "samples": 1,
+    "os": "linux",
+    "architecture": "amd64",
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "goVersion": "go1.27.1"
   }
 }
