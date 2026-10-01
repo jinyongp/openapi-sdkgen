@@ -221,7 +221,7 @@ Key는 normalized media type입니다.
 
 ### 재생성 마이그레이션
 
-이 변경은 다음 major generator release에 포함됩니다. 새로 생성한 SSE client는
+이 변경은 generator v9.0.0에 포함됐습니다. 새로 생성한 SSE client는
 Event 객체를 기본값으로 사용합니다. 기존 JSON payload schema를 유지하려면 위의
 `jsonSSEAdapter`를 등록합니다. 표준 Event schema로 전환하면 `data`를 직접 parsing합니다.
 Request도 Event 객체를 기본값으로 받고 같은 adapter로 JSON payload encoding을 유지할 수 있습니다.

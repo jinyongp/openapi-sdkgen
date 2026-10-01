@@ -219,9 +219,15 @@ release workflows.
 manual validation. It covers formatting, vetting, Go tests/build/module
 integrity, TypeScript formatting/lint/typecheck, conformance generation,
 generate-check behavior, pinned consumer compiler versions (5.7.3, 5.9.3, 6.0.3,
-7.0.2), and coverage. Release publishing simulations belong to
-the release path. `just release` runs the full release checks before atomically
-pushing `main` and the release tag.
+7.0.2), and coverage. Release publishing simulations belong to the release path.
+`just release` requires clean `main`, moves the `CHANGELOG.md` Unreleased notes
+under the selected version and UTC date, and creates a preparation commit containing
+only that file. It runs the full release checks on that HEAD before atomically
+pushing `main` and the annotated release tag. The next Unreleased section starts
+empty and needs notes before another release. A failed check or push leaves the
+preparation commit for an explicit same-version retry. Dry runs preview the
+changelog and run checks without editing files or creating commits; `--resume`
+uses the already published annotated tag without preparing new notes.
 
 `just agent check` is the broader integrated gate. In addition to the ordinary
 quality checks it exercises release scripts and workflows, npm package/publish

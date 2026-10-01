@@ -862,6 +862,28 @@ if [ "$DRY_RUN" -eq 0 ] && git ls-remote --exit-code --tags origin "refs/tags/$P
   exit 1
 fi
 
+ui_section "Changelog"
+if [ "$DRY_RUN" -eq 1 ]; then
+  node "$SCRIPT_DIR/changelog.mjs" "$PATCH_TAG" --preview
+  ui_note "Dry run: changelog preparation was previewed; no commit was created."
+else
+  node "$SCRIPT_DIR/changelog.mjs" "$PATCH_TAG" --write
+  if [ "$(git symbolic-ref --short HEAD)" != "main" ] || [ "$(git rev-parse HEAD)" != "$TARGET_SHA" ]; then
+    ui_error "branch or HEAD changed during changelog preparation."
+    exit 1
+  fi
+  if [ -n "$(git status --porcelain -- . ':!CHANGELOG.md')" ]; then
+    ui_error "working tree changed during changelog preparation."
+    exit 1
+  fi
+  if ! git diff --quiet -- CHANGELOG.md; then
+    # Stage only the release notes; checks validate the resulting immutable HEAD.
+    git add -- CHANGELOG.md
+    git commit -m "docs(release): prepare $PATCH_TAG changelog" --only -- CHANGELOG.md
+  fi
+  TARGET_SHA="$(git rev-parse HEAD)"
+fi
+
 run_checks
 if [ "$(git symbolic-ref --short HEAD)" != "main" ] || [ "$(git rev-parse HEAD)" != "$TARGET_SHA" ]; then
   ui_error "branch or HEAD changed while checks ran."

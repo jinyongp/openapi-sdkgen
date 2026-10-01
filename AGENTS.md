@@ -89,7 +89,10 @@ just release -- [--dry-run|-n] [--yes|-y] [--since TAG] [--resume TAG] [patch|mi
 
 `just release` is the user-facing release command, not an agent wrapper. It
 shows the commits and release-note base, recommends a conventional-commit bump,
-runs the full agent check, then atomically pushes `main` and the annotated tag.
+prepares and commits only the dated changelog entry, runs the full agent check
+on that HEAD, then atomically pushes `main` and the annotated tag. Dry runs preview
+the entry without editing or committing; failed checks preserve the preparation
+commit for a same-version retry.
 
 ## Output policy
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+agent_run "changelog preparation tests" node --test "$ROOT/scripts/release/changelog.test.mjs"
 
 test_root="$(mktemp -d "${TMPDIR:-/tmp}/openapi-sdkgen-release-test.XXXXXX")"
 origin="$test_root/origin.git"
@@ -36,12 +37,14 @@ assert_not_contains() {
 }
 
 git init --bare "$origin" >/dev/null
+git --git-dir="$origin" config core.hooksPath "$origin/hooks"
 git init --initial-branch=main "$repository" >/dev/null
 git -C "$repository" config user.name "release test"
 git -C "$repository" config user.email "release-test@example.test"
 git -C "$repository" remote add origin "$origin"
 mkdir -p "$repository/scripts/release" "$repository/scripts/lib" "$mock_bin"
 cp "$ROOT/scripts/release/publish.sh" "$repository/scripts/release/publish.sh"
+cp "$ROOT/scripts/release/changelog.mjs" "$repository/scripts/release/changelog.mjs"
 cp "$ROOT/scripts/lib/ui.sh" "$repository/scripts/lib/ui.sh"
 chmod +x "$repository/scripts/release/publish.sh"
 
@@ -57,8 +60,23 @@ fi
 if [[ "${RELEASE_TEST_MUTATE_HEAD:-}" == "1" ]]; then
   git commit --allow-empty -m "test: mutate release head" >/dev/null
 fi
+if [[ "${RELEASE_TEST_MUTATE_TREE:-}" == "1" ]]; then
+  printf '\n# unexpected check mutation\n' >>scripts/lib/ui.sh
+fi
 EOF
 chmod +x "$repository/scripts/release/check.sh"
+
+cat >"$repository/CHANGELOG.md" <<'EOF'
+# Changelog
+
+## Unreleased
+
+- Fix the main release behavior.
+
+## v1.0.0 — 2026-09-01
+
+- Initial release.
+EOF
 
 cat >"$mock_bin/gh" <<'EOF'
 #!/usr/bin/env bash
@@ -66,7 +84,7 @@ printf '%s\n' "$*" >>"${RELEASE_TEST_GH_ARGS:?}"
 EOF
 chmod +x "$mock_bin/gh"
 
-git -C "$repository" add scripts/release/publish.sh scripts/release/check.sh scripts/lib/ui.sh
+git -C "$repository" add scripts/release/publish.sh scripts/release/check.sh scripts/release/changelog.mjs scripts/lib/ui.sh CHANGELOG.md
 git -C "$repository" commit -m "feat: release helper" >/dev/null
 git -C "$repository" tag -a v1.0.0 -m v1.0.0
 git -C "$repository" push --follow-tags -u origin main >/dev/null
@@ -87,11 +105,16 @@ run_release() {
 }
 
 dry_run_marker="$test_root/dry-run-check"
+dry_run_head="$(git -C "$repository" rev-parse HEAD)"
+dry_run_changelog="$(cat "$repository/CHANGELOG.md")"
 output="$(RELEASE_TEST_CHECK_MARKER="$dry_run_marker" run_release --since v1.0.0 --dry-run patch)"
 assert_contains "$output" "Last stable tag v1.0.0"
 assert_contains "$output" "Tag          v1.0.1"
 assert_contains "$output" "mock release check progress"
 assert_contains "$(cat "$dry_run_marker")" "ran"
+assert_contains "$output" "Dry run: changelog preparation was previewed; no commit was created."
+[[ "$(git -C "$repository" rev-parse HEAD)" == "$dry_run_head" ]] || fail "dry run committed"
+[[ "$(cat "$repository/CHANGELOG.md")" == "$dry_run_changelog" ]] || fail "dry run changed changelog"
 
 if output="$(RELEASE_TEST_FAIL_CHECK=1 run_release --since v1.0.0 --dry-run patch 2>&1)"; then
   fail "accepted a dry run with failing release checks"
@@ -120,7 +143,41 @@ assert_contains "$output" "Tag must be newer than reachable tag v1.1.0-rc.2"
 output="$(run_release --since v1.0.0 --dry-run)"
 assert_contains "$output" "Tag          v1.1.0"
 
-if output="$(RELEASE_TEST_MUTATE_HEAD=1 run_release --since v1.0.0 patch 2>&1)"; then
+if output="$(RELEASE_TEST_FAIL_CHECK=1 run_release --since v1.0.0 --yes v1.1.0 2>&1)"; then
+  fail "released with failing checks"
+fi
+assert_contains "$output" "Checks failed; aborting release."
+[[ "$(git -C "$repository" log -1 --format=%s)" == "docs(release): prepare v1.1.0 changelog" ]] || fail "missing preparation commit"
+[[ "$(git -C "$repository" diff-tree --no-commit-id --name-only -r HEAD)" == "CHANGELOG.md" ]] || fail "preparation committed unrelated files"
+if git -C "$repository" rev-parse -q --verify refs/tags/v1.1.0 >/dev/null; then
+  fail "failed checks created a release tag"
+fi
+
+origin_head="$(git --git-dir="$origin" rev-parse refs/heads/main)"
+prepared_head="$(git -C "$repository" rev-parse HEAD)"
+printf '#!/usr/bin/env bash\nexit 1\n' >"$origin/hooks/pre-receive"
+chmod +x "$origin/hooks/pre-receive"
+if output="$(run_release --since v1.0.0 --yes v1.1.0 2>&1)"; then
+  fail "accepted a rejected atomic push"
+fi
+assert_contains "$output" "Push failed; removed the local tag"
+[[ "$(git -C "$repository" rev-parse HEAD)" == "$prepared_head" ]] || fail "failed push changed prepared HEAD"
+[[ "$(git --git-dir="$origin" rev-parse refs/heads/main)" == "$origin_head" ]] || fail "failed atomic push advanced origin"
+if git -C "$repository" rev-parse -q --verify refs/tags/v1.1.0 >/dev/null; then
+  fail "failed push left a local tag"
+fi
+if git --git-dir="$origin" rev-parse -q --verify refs/tags/v1.1.0 >/dev/null; then
+  fail "failed atomic push left a remote tag"
+fi
+rm "$origin/hooks/pre-receive"
+
+if output="$(RELEASE_TEST_MUTATE_TREE=1 run_release --since v1.0.0 --yes v1.1.0 2>&1)"; then
+  fail "released a tree changed by checks"
+fi
+assert_contains "$output" "working tree changed while checks ran"
+git -C "$repository" restore -- scripts/lib/ui.sh
+
+if output="$(RELEASE_TEST_MUTATE_HEAD=1 run_release --since v1.0.0 v1.1.0 2>&1)"; then
   fail "tagged a HEAD changed by the check command"
 fi
 assert_contains "$output" "branch or HEAD changed while checks ran"
@@ -141,5 +198,17 @@ assert_contains "$release_output" "https://github.com/test/repository/actions/wo
 if [[ -e "$release_args" ]]; then
   fail "normal tag release unexpectedly invoked gh"
 fi
+[[ "$(git -C "$repository" rev-parse 'v1.1.0^{commit}')" == "$(git -C "$repository" rev-parse HEAD)" ]] || fail "tag missed prepared HEAD"
+assert_contains "$(git -C "$repository" show v1.1.0:CHANGELOG.md)" "## v1.1.0 — $(date -u +%Y-%m-%d)"
+[[ "$(git -C "$repository" status --porcelain)" == "" ]] || fail "release left dirty files"
+
+# Dirty trees and conflicting notes must fail before any preparation commit.
+clean_head="$(git -C "$repository" rev-parse HEAD)"
+printf '\n- A later fix.\n' >>"$repository/CHANGELOG.md"
+if output="$(run_release --since v1.1.0 --yes patch 2>&1)"; then
+  fail "accepted a dirty working tree"
+fi
+assert_contains "$output" "Release requires a clean working tree"
+[[ "$(git -C "$repository" rev-parse HEAD)" == "$clean_head" ]] || fail "dirty tree caused preparation"
 
 agent_note "ok release script test"

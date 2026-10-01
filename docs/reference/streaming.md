@@ -220,7 +220,7 @@ Keys are normalized media types.
 
 ### Regeneration migration
 
-This change belongs to the next major generator release. Regenerated SSE clients
+This change shipped in generator v9.0.0. Regenerated SSE clients
 use Event objects by default. Consumers that previously received parsed JSON
 payloads can configure `jsonSSEAdapter` above to retain their application schema,
 or declare an Event schema and parse its `data` explicitly. Request callers send
