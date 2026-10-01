@@ -1,0 +1,14 @@
+{
+  "openapi": "3.2.1",
+  "info": {"title": "Selected API", "version": "1"},
+  "paths": {
+    "/tasks/{task-id}": {"get": {
+      "operationId": "getTask",
+      "parameters": [{"name": "task-id", "in": "path", "required": true, "schema": {"type": "string"}}],
+      "responses": {"200": {"description": "Task", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Task"}}}, "links": {"owner": {"operationId": "getOwner"}}}}
+    }},
+    "/owners": {"get": {"operationId": "getOwner", "responses": {"200": {"description": "Owner", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Task"}}}, "links": {"task": {"operationId": "getTask", "parameters": {"task-id": "$response.body#/id"}}}}}}},
+    "/unused": {"get": {"operationId": "unused", "responses": {"204": {"description": "OK"}}}}
+  },
+  "components": {"schemas": {"Task": {"type": "object", "required": ["id", "state"], "properties": {"id": {"type": "string"}, "state": {"type": "string", "enum": ["open", "closed"]}}}}}
+}

@@ -37,5 +37,8 @@ for version in "${versions[@]}"; do
       "$ROOT/scripts/agent/generate-check" "$input" typescript -- --with server
     skip_build=1
   done
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+    agent_run "TypeScript $version selected SDK with Link dependencies" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask
 done
 agent_note "ok TypeScript consumer compatibility"
