@@ -1,6 +1,7 @@
 package typescript
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -147,6 +148,26 @@ func TestPlanTypeReferencesUsesInlineThenSharedAlias(t *testing.T) {
 	}
 	if byKey["bound"].inline || byKey["bound"].alias == "" {
 		t.Fatalf("bound reference = %#v", byKey["bound"])
+	}
+}
+
+func TestRelativeSpecifierCacheRetainsOnlyTheCurrentModule(t *testing.T) {
+	plan := &semanticModulePlan{}
+	for module := 0; module < 32; module++ {
+		from := fmt.Sprintf("internal/executions/module-%d/get.ts", module)
+		for repeat := 0; repeat < 2; repeat++ {
+			for schema := 0; schema < 64; schema++ {
+				to := fmt.Sprintf("internal/schemas/schema-%d.ts", schema)
+				got, err := plan.relativeModuleSpecifier(from, to)
+				want, wantErr := relativeModuleSpecifier(from, to)
+				if err != nil || wantErr != nil || got != want {
+					t.Fatalf("module %d import %d = %q, %v; want %q, %v", module, schema, got, err, want, wantErr)
+				}
+			}
+		}
+		if len(plan.relativeSpecifiers) != 64 || plan.relativeSpecifierComputes != (module+1)*64 {
+			t.Fatalf("cache retained other modules or missed reuse: entries=%d computations=%d", len(plan.relativeSpecifiers), plan.relativeSpecifierComputes)
+		}
 	}
 }
 

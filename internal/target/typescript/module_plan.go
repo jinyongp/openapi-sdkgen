@@ -20,6 +20,7 @@ type semanticModulePlan struct {
 	operationByRoute          map[string]string
 	operationByQuotedRoute    map[string]string
 	relativeSpecifiers        map[string]string
+	relativeSpecifierFrom     string
 	relativeSpecifierComputes int
 	resourceParameterTypes    map[string]string
 }
@@ -165,15 +166,19 @@ func (plan *semanticModulePlan) relativeModuleSpecifier(fromArtifact, toArtifact
 	if plan.relativeSpecifiers == nil {
 		plan.relativeSpecifiers = make(map[string]string)
 	}
-	key := fromArtifact + "\x00" + toArtifact
-	if value, exists := plan.relativeSpecifiers[key]; exists {
+	// Reuse imports within one emitted module without retaining every document pair.
+	if plan.relativeSpecifierFrom != fromArtifact {
+		clear(plan.relativeSpecifiers)
+		plan.relativeSpecifierFrom = fromArtifact
+	}
+	if value, exists := plan.relativeSpecifiers[toArtifact]; exists {
 		return value, nil
 	}
 	value, err := relativeModuleSpecifier(fromArtifact, toArtifact)
 	if err != nil {
 		return "", err
 	}
-	plan.relativeSpecifiers[key] = value
+	plan.relativeSpecifiers[toArtifact] = value
 	plan.relativeSpecifierComputes++
 	return value, nil
 }
