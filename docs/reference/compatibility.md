@@ -78,38 +78,7 @@ than combined into one compatibility percentage.
 
 ## Inspect the evidence
 
-The summary and document tables are built from the stored JSON reports. The docs
-build verifies report membership, manifest hashes, and aggregate counts before
-publishing them. Downloads preserve the report and manifest bytes, including
-input identities and detailed diagnostics.
+Download the original reports and input manifests to inspect document-level
+results, input identities, and detailed diagnostics.
 
 <CompatibilityResults evidence />
-
-<details class="details custom-block">
-<summary>Reproduce the measurements</summary>
-
-Run these commands from a repository checkout with its development toolchain
-installed. The holdout fetch uses pinned source blobs; generation uses the local
-copies. The other sets use committed local snapshots and fixtures.
-
-```sh
-# Independent holdout
-just agent compatibility-fetch
-just agent compatibility-verify
-just agent compatibility-benchmark
-
-# Provider-published documents
-just agent compatibility-verify test/compatibility/production32.json test
-just agent compatibility-benchmark test/compatibility/production32.json test .tmp/compatibility-production32.json 3m
-
-# Feature and boundary checks
-just agent compatibility-verify test/compatibility/modern.json test
-just agent compatibility-benchmark test/compatibility/modern.json test .tmp/compatibility-modern.json 3m
-```
-
-Fresh runs measure the checked-out source. Compare them with the stored reports
-using the same inputs and TypeScript version. Detailed methodology and historical
-results are in the repository's
-[compatibility notes](https://github.com/jinyongp/openapi-sdkgen/tree/main/test/compatibility).
-
-</details>

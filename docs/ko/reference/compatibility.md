@@ -75,38 +75,7 @@ Fetch의 지원 범위를 확인하는 문서에서는 `TRACE`, `CONNECT`, `TRAC
 
 ## 검증 근거 확인하기
 
-요약과 문서별 표는 저장된 JSON 보고서에서 자동으로 구성합니다. 문서 빌드 시
-입력 목록의 해시, 문서 구성, 집계 수치가 일치하는지 확인합니다. 다운로드 파일은
-원본 바이트를 유지하며, 입력 식별 정보와 상세 진단도 확인할 수 있습니다.
+원본 보고서와 입력 목록을 내려받아 문서별 결과, 입력 식별 정보, 상세 진단을
+확인할 수 있습니다.
 
 <CompatibilityResults locale="ko" evidence />
-
-<details class="details custom-block">
-<summary>직접 재측정하기</summary>
-
-저장소의 개발 도구를 설치한 환경에서 다음 명령을 실행합니다. 독립 표본은
-고정된 원본 파일을 내려받아 검증합니다. 나머지는 저장소에 커밋된 공개 문서의
-고정본과 테스트 문서를 사용합니다.
-
-```sh
-# 독립 표본
-just agent compatibility-fetch
-just agent compatibility-verify
-just agent compatibility-benchmark
-
-# 제공자 공개 문서
-just agent compatibility-verify test/compatibility/production32.json test
-just agent compatibility-benchmark test/compatibility/production32.json test .tmp/compatibility-production32.json 3m
-
-# 기능·지원 경계 검증
-just agent compatibility-verify test/compatibility/modern.json test
-just agent compatibility-benchmark test/compatibility/modern.json test .tmp/compatibility-modern.json 3m
-```
-
-재측정 결과는 실행한 소스 버전에 따라 달라질 수 있습니다. 저장된 결과와
-비교할 때는 같은 입력과 TypeScript 버전을 사용하세요. 자세한 측정 방법과
-과거 결과는 저장소의
-[호환성 검증 기록](https://github.com/jinyongp/openapi-sdkgen/tree/main/test/compatibility)에
-있습니다.
-
-</details>

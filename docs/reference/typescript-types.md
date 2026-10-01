@@ -13,19 +13,18 @@ arrays introduced in [TypeScript 5.7](https://www.typescriptlang.org/docs/handbo
 Your application owns its compiler and bundler; the generator does not install a
 TypeScript compiler into the generated directory.
 
-CI runs `just agent ts-compat` against pinned TypeScript **5.7.3, 5.9.3, 6.0.3,
-and 7.0.2**. Each version checks generated client and server source plus a public
-type consumer probe after removing `@ts-nocheck`, with `strict`,
-`noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `isolatedModules`, and
-`skipLibCheck: false`. These checks cover the 3.2 normative, webhook, and nested
-Schema-reference fixtures. The full runtime/conformance suite and external
-compatibility benchmarks use the repository compiler, TypeScript 7.0.2.
+Generated client and server source and examples using the exported types have
+been checked with TypeScript **5.7.3, 5.9.3, 6.0.3, and 7.0.2** after removing
+`@ts-nocheck`. The checks enable `strict`, `noUncheckedIndexedAccess`,
+`verbatimModuleSyntax`, `isolatedModules`, and `skipLibCheck: false`, and cover
+OpenAPI 3.2, Webhooks, and nested Schema references. The
+[compatibility results](./compatibility.md) use TypeScript 7.0.2.
 
-Newer compiler versions are checked when added to this matrix. The minimum is a
+Newer compiler versions are checked as support is verified. The minimum is a
 consumer source contract, not a promise that every future compiler change is
 already tested. TypeScript 5.6 and earlier are outside this support contract.
 
-This matrix includes the readable-stream iterator correction recorded in
+These checks include the readable-stream iterator correction recorded in
 `CHANGELOG.md`. Generated source from v9.0.0 predates that correction and can
 fail strict checking with older compilers after removing `@ts-nocheck`.
 Regenerate with a generator release containing the correction.

@@ -30,7 +30,7 @@ export async function validateLocaleStructure({ docsRoot = defaultDocsRoot } = {
 
   const publicFiles = new Map([...english.files, ...korean.files]);
   for (const page of [...english.pages, ...korean.pages]) {
-    await validateMarkdownLinks(errors, root, page, publicFiles);
+    await validateMarkdownPage(errors, root, page, publicFiles);
   }
 
   if (errors.length !== 0) {
@@ -114,8 +114,11 @@ function validateNavigation(errors, locale, expected) {
   }
 }
 
-async function validateMarkdownLinks(errors, docsRoot, page, publicFiles) {
+async function validateMarkdownPage(errors, docsRoot, page, publicFiles) {
   const source = await readFile(page.file, "utf8");
+  if (/\bjust[ \t]+(?:agent|docs|release)\b|\bscripts\/agent\b|\b(?:devtools|taskwarrior)\b/i.test(source)) {
+    errors.push(`${page.display} contains internal tooling instructions`);
+  }
   const pattern = /\[([^\]]*)\]\(([^)]+)\)/g;
   for (const match of source.matchAll(pattern)) {
     if (match.index !== undefined && source[match.index - 1] === "!") continue;

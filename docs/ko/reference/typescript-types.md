@@ -13,21 +13,21 @@
 도입됐습니다. 컴파일러와 번들러는 애플리케이션이 관리하며, 생성기가 출력
 디렉터리에 TypeScript 컴파일러를 설치하지는 않습니다.
 
-CI의 `just agent ts-compat`는 **5.7.3, 5.9.3, 6.0.3, 7.0.2**를 고정해 검증합니다.
-각 버전에서 생성된 client·server 소스와 공개 타입 사용 예제의 `@ts-nocheck`를
-제거한 뒤 `strict`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`,
-`isolatedModules`, `skipLibCheck: false`로 검사합니다. 검증 입력은 3.2 normative,
-webhook, nested Schema reference fixture입니다. 전체 runtime/conformance suite와
-외부 compatibility benchmark는 저장소의 TypeScript 7.0.2를 사용합니다.
+생성된 클라이언트·서버 소스와 공개 타입 사용 예제는 TypeScript
+**5.7.3, 5.9.3, 6.0.3, 7.0.2**에서 `@ts-nocheck`를 제거하고 검증했습니다.
+`strict`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `isolatedModules`,
+`skipLibCheck: false`를 적용했으며, OpenAPI 3.2와 웹훅, 중첩 스키마 참조를
+검사했습니다. [호환성 검증 결과](./compatibility.md)는 TypeScript 7.0.2를
+기준으로 측정했습니다.
 
-새 컴파일러 버전은 이 matrix에 추가하면서 검증합니다. 최소 버전 계약이 아직
+새 컴파일러 버전은 검증을 거쳐 지원 범위에 추가합니다. 최소 버전 계약이 아직
 나오지 않은 컴파일러의 변경까지 검증했다는 뜻은 아닙니다. TypeScript 5.6
 이하는 지원 범위 밖입니다.
 
-이 matrix는 `CHANGELOG.md`에 기록한 readable-stream iterator 수정까지 포함합니다.
-v9.0.0으로 생성한 소스에는 이 수정이 없어서 `@ts-nocheck`를 제거하면 이전
-컴파일러의 strict 검사에서 오류가 날 수 있습니다. 수정이 포함된 generator
-release로 다시 생성하면 됩니다.
+위 검증에는 읽기 스트림의 반복자 타입 수정이 포함되어 있습니다. v9.0.0으로
+생성한 소스에는 이 수정이 없어서 `@ts-nocheck`를 제거하면 이전 컴파일러의
+엄격한 타입 검사에서 오류가 날 수 있습니다. 수정이 포함된 생성기 버전으로
+SDK를 다시 생성하세요.
 
 ## 타입 기준 선택
 

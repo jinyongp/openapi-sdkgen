@@ -33,6 +33,26 @@ await expectFailure(
   "guide/client.md links to missing public documentation page ./missing.md",
 );
 
+for (const command of [
+  "just agent compatibility-benchmark",
+  "just docs build",
+  "just release",
+  "scripts/agent/check",
+  "devtools task list",
+  "taskwarrior",
+]) {
+  await expectFailure(
+    `internal tooling instruction: ${command}`,
+    async (fixture) => {
+      await appendFile(
+        resolve(fixture, "ko/reference/compatibility.md"),
+        `\n\`\`\`sh\n${command}\n\`\`\`\n`,
+      );
+    },
+    "ko/reference/compatibility.md contains internal tooling instructions",
+  );
+}
+
 console.log("ok documentation locale validator self-tests");
 
 async function expectFailure(name, mutate, expected) {

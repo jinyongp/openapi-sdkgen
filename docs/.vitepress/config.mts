@@ -80,6 +80,7 @@ export default defineConfig({
   srcExclude: [
     "openapi-feature-inventory.md",
     "openapi-feature-matrix.md",
+    "openapi-compatibility-architecture.md",
     "architecture.md",
   ],
   lastUpdated: true,
