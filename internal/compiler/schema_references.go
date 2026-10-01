@@ -58,8 +58,9 @@ type schemaAnchorIndex struct {
 func (index schemaAnchorIndex) collect(value any, pointer, resource string) error {
 	switch typed := value.(type) {
 	case map[string]any:
+		tokens, tokenErr := schemaPointerTokens(pointer)
 		current := resource
-		if schemaPointerContext(pointer) == openapiwalk.ObjectSchema {
+		if tokenErr == nil && openapiwalk.ObjectContextAt(tokens) == openapiwalk.ObjectSchema {
 			if identifier, _ := typed["$id"].(string); identifier != "" {
 				current = resolveSchemaResourceURI(resource, identifier)
 				if existing, exists := index.resources[current]; exists && existing != pointer {
@@ -80,7 +81,7 @@ func (index schemaAnchorIndex) collect(value any, pointer, resource string) erro
 			}
 		}
 		for key, child := range typed {
-			if schemaReferenceChildOpaque(pointer, key, child) {
+			if tokenErr != nil || openapiwalk.ReferenceChildOpaque(tokens, key, child) {
 				continue
 			}
 			if err := index.collect(child, appendSchemaPointer(pointer, key), current); err != nil {
@@ -100,8 +101,9 @@ func (index schemaAnchorIndex) collect(value any, pointer, resource string) erro
 func (index schemaAnchorIndex) rewrite(value any, pointer, resource string) (any, error) {
 	switch typed := value.(type) {
 	case map[string]any:
+		tokens, tokenErr := schemaPointerTokens(pointer)
 		current := resource
-		candidate := schemaPointerContext(pointer) == openapiwalk.ObjectSchema
+		candidate := tokenErr == nil && openapiwalk.ObjectContextAt(tokens) == openapiwalk.ObjectSchema
 		if candidate {
 			if identifier, _ := typed["$id"].(string); identifier != "" {
 				current = resolveSchemaResourceURI(resource, identifier)
@@ -136,7 +138,7 @@ func (index schemaAnchorIndex) rewrite(value any, pointer, resource string) (any
 					continue
 				}
 			}
-			if schemaReferenceChildOpaque(pointer, key, child) {
+			if tokenErr != nil || openapiwalk.ReferenceChildOpaque(tokens, key, child) {
 				result[key] = child
 				continue
 			}
@@ -350,10 +352,12 @@ func (state *schemaLocationNormalizer) reference(reference string) (string, erro
 func (state *schemaLocationNormalizer) rewrite(value any, pointer string) (any, error) {
 	switch typed := value.(type) {
 	case map[string]any:
+		tokens, tokenErr := schemaPointerTokens(pointer)
+		candidate := tokenErr == nil && openapiwalk.ObjectContextAt(tokens) == openapiwalk.ObjectSchema
 		result := make(map[string]any, len(typed))
 		for _, key := range sortedOpaqueMapKeys(typed) {
 			child := typed[key]
-			if schemaPointerContext(pointer) == openapiwalk.ObjectSchema {
+			if candidate {
 				if key == "$ref" {
 					if reference, ok := child.(string); ok {
 						normalized, err := state.reference(reference)
@@ -376,7 +380,7 @@ func (state *schemaLocationNormalizer) rewrite(value any, pointer string) (any, 
 					}
 				}
 			}
-			if schemaReferenceChildOpaque(pointer, key, child) {
+			if tokenErr != nil || openapiwalk.ReferenceChildOpaque(tokens, key, child) {
 				result[key] = child
 				continue
 			}
@@ -400,11 +404,6 @@ func (state *schemaLocationNormalizer) rewrite(value any, pointer string) (any, 
 	default:
 		return value, nil
 	}
-}
-
-func schemaReferenceChildOpaque(pointer, key string, value any) bool {
-	tokens, err := schemaPointerTokens(pointer)
-	return err != nil || openapiwalk.ReferenceChildOpaque(tokens, key, value)
 }
 
 func schemaReferenceLiteralKey(key string) bool {
@@ -453,7 +452,13 @@ func resolveSchemaLocationPointer(root map[string]any, pointer string) (any, err
 }
 
 func decodeJSONPointerToken(token string) (string, error) {
+	// Most document path tokens have no escape. Share their existing bytes
+	// instead of copying every token at each reference-normalization visit.
+	if !strings.ContainsRune(token, '~') {
+		return token, nil
+	}
 	var result strings.Builder
+	result.Grow(len(token))
 	for index := 0; index < len(token); index++ {
 		if token[index] != '~' {
 			result.WriteByte(token[index])
