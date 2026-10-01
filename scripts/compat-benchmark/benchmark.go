@@ -822,7 +822,7 @@ func validateTypecheckToolchain(typescriptRoot string) error {
 	return nil
 }
 
-func strictTypecheck(directory, typescriptRoot string, timeout time.Duration) verificationResult {
+func strictTypecheck(directory, typescriptRoot string, timeout time.Duration) (result verificationResult) {
 	if err := writeTypecheckFiles(directory); err != nil {
 		return verificationResult{Status: "fail", Detail: boundedDetail(err.Error())}
 	}
@@ -846,6 +846,11 @@ func strictTypecheck(directory, typescriptRoot string, timeout time.Duration) ve
 	debug.FreeOSMemory()
 	command := exec.CommandContext(ctx, "node", args...)
 	command.Dir = directory
+	started := time.Now()
+	defer func() {
+		duration := float64(time.Since(started)) / float64(time.Millisecond)
+		result.DurationMillis = &duration
+	}()
 	output, err := command.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		return verificationResult{Status: "timeout", Detail: boundedDetail(string(output))}

@@ -3,16 +3,47 @@ package main
 import (
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/failure"
 )
+
+func TestStrictTypecheckRecordsElapsedTimeAndKeepsOutcome(t *testing.T) {
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("Node is required to verify benchmark compiler process timing")
+	}
+	for _, test := range []struct {
+		name, script, status string
+		timeout              time.Duration
+	}{
+		{"success", "process.exit(0)", "pass", time.Minute},
+		{"failure", "console.error('compiler failed'); process.exit(1)", "fail", time.Minute},
+		{"timeout", "setInterval(() => {}, 1000)", "timeout", time.Millisecond},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			toolchain := t.TempDir()
+			compiler := filepath.Join(toolchain, "node_modules", "typescript", "lib", "tsc.js")
+			if err := os.MkdirAll(filepath.Dir(compiler), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(compiler, []byte(test.script), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			result := strictTypecheck(t.TempDir(), toolchain, test.timeout)
+			if result.Status != test.status || result.DurationMillis == nil || *result.DurationMillis <= 0 {
+				t.Fatalf("typecheck result = %#v", result)
+			}
+		})
+	}
+}
 
 func TestOperationRetentionDeduplicatesOneOmittedOperation(t *testing.T) {
 	document := &ir.Document{
