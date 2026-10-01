@@ -3,9 +3,53 @@
 The generated SDK includes a selective entry alongside the regular full
 client. Use it when an application needs a small part of a larger API: preparing
 an operation loads its implementation and required runtime code, rather than the
-full client registry. The generator still produces every operation and all of
-its TypeScript types. Changing the application's selection does not require
-regenerating the SDK.
+full client registry. By default the generator produces every operation and all
+of its TypeScript types, so changing the application's selection does not
+require regenerating the SDK. To reduce the generated files themselves, choose
+the APIs during generation as described below.
+
+## Generate only the APIs you need {#generation}
+
+For a large API, specify the operation IDs or routes your application uses in
+its generation configuration:
+
+```toml
+source = "./openapi.yaml"
+target = "typescript"
+output = "./src/generated/api"
+
+[selection]
+operations = ["listTasks"]
+routes = ["GET /tasks/{task-id}"]
+```
+
+Run `openapi-sdkgen generate --config ./openapi-sdkgen.toml` with this file.
+The resulting SDK exposes the union of both lists and includes their required
+types and runtime code. The regular client and selective entry share this
+generated API set; `loadOperations` can prepare APIs within that set.
+
+Names match exactly. Use the original `operationId`, or the method and path
+template from the document, such as `GET /tasks/{task-id}`. A route uses
+`{task-id}` as written in OpenAPI; the value is supplied later through
+`path: { "task-id": "one" }` when calling the API. An API without an operation
+ID can be selected by route. Duplicate names select an API once.
+
+An absent `[selection]` generates the full API. An empty selection, unknown
+name, or hidden API produces an error. Document errors, including duplicate
+operation IDs, must be corrected before generating a subset.
+
+OpenAPI Links remain usable: their targets and required types are included as
+internal dependencies. Select a target explicitly to call it directly or
+prepare it with `loadOperations`. A Link target must be available through the
+document's loaded references; see [Link support](../reference/capabilities.md).
+
+With `--with server`, callbacks belonging to the selected APIs and all top-level
+webhooks are generated. To change the selected set in an existing SDK, use
+`--incremental`; the update replaces owned files and preserves your own files.
+`--check --output` verifies the existing SDK against the requested set.
+
+The CLI also accepts repeatable `--operation` and `--route` flags. See the
+[CLI reference](../reference/cli.md#api-selection) for overrides and syntax.
 
 The examples below assume a document with `GET /tasks` (`operationId: listTasks`)
 and `GET /health` (no operation ID). Generate the SDK as described in

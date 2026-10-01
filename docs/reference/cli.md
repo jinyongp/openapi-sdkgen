@@ -35,6 +35,8 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
 | `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
+| `--operation <operationId>` | Generate an exact operation ID; repeatable |
+| `--route <METHOD /path>` | Generate an exact method/path template; repeatable |
 | `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
 | `--diagnostic-mode fail-fast|collect` | `fail-fast` stops on blocking errors; `collect` reports additional issues where checks remain possible |
 | `--fail-on-resource-omission` | Fail instead of warning when a generated operation loses its TypeScript resource API capability |
@@ -83,6 +85,8 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `target` | `--target` |
 | `output` | `--output` |
 | `addons` | repeatable `--with` |
+| `selection.operations` | repeatable `--operation` |
+| `selection.routes` | repeatable `--route` |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
@@ -109,7 +113,7 @@ their normal source semantics.
 
 CLI flags override config values. For repeatable options, one or more explicit
 CLI occurrences replace the complete config list instead of appending to it.
-This rule applies to add-ons, remote-reference origins, schema extensions, and
+This rule applies to selected operation IDs and routes, add-ons, remote-reference origins, schema extensions, and
 HTTP header environment mappings. Explicit boolean values such as
 `--offline=false` also override config booleans.
 
@@ -125,6 +129,27 @@ Authorization = "OPENAPI_TOKEN"
 `--update-ref-lock`, and `--help` remain CLI-only execution controls. Persistent
 generation policies, including `--fail-on-resource-omission`, have matching TOML
 keys. Unknown TOML keys are rejected so misspelled settings cannot be silently ignored.
+
+## API selection {#api-selection}
+
+Generate a subset by combining exact operation IDs and routes:
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --output ./src/generated/api --operation listTasks --route 'GET /tasks/{task-id}'
+```
+
+The two lists form a union. Route parameters retain their OpenAPI names and
+braces; standard methods use uppercase (`GET`, `POST`, etc.). Names are exact,
+case-sensitive matches, with no wildcards. An absent selection generates all
+APIs; an explicit empty selection or an unmatched name is an error.
+
+In TOML, use `[selection]` with `operations` and `routes` arrays. A CLI
+`--operation` list replaces only `selection.operations`; configured routes
+remain in effect. A CLI `--route` list replaces only `selection.routes`.
+
+See [Generate only the APIs you need](../guide/selective-client.md#generation)
+for Link dependencies, server support, and updating a generated SDK.
 
 ## Fresh, incremental, and check modes
 

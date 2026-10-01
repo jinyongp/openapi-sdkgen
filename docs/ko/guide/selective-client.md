@@ -2,9 +2,50 @@
 
 생성된 SDK에는 기존 전체 클라이언트와 함께 선택형 진입점이 제공됩니다.
 큰 API 중 일부만 사용하는 애플리케이션이라면 이 진입점으로 필요한 operation과
-그 실행에 필요한 코드만 준비할 수 있습니다. 생성기는 모든 operation과 TypeScript
-타입을 그대로 출력합니다. 애플리케이션에서 선택을 바꿀 때마다 SDK를 다시 생성할
-필요는 없습니다.
+그 실행에 필요한 코드만 준비할 수 있습니다. 기본 설정에서는 모든 API와 TypeScript
+타입을 생성하므로 애플리케이션에서 선택을 바꿀 때 SDK를 다시 생성할 필요는 없습니다.
+생성 파일 자체를 줄이려면 생성할 API를 설정에서 지정하세요.
+
+## 필요한 API만 생성하기 {#generation}
+
+큰 API 문서의 일부만 사용한다면 생성 설정에 필요한 operation ID나 경로를 적습니다.
+
+```toml
+source = "./openapi.yaml"
+target = "typescript"
+output = "./src/generated/api"
+
+[selection]
+operations = ["listTasks"]
+routes = ["GET /tasks/{task-id}"]
+```
+
+이 파일로 `openapi-sdkgen generate --config ./openapi-sdkgen.toml`을 실행하면
+두 목록에 있는 API와 필요한 타입·실행 코드를 생성합니다. 일반 클라이언트와 선택형
+진입점 모두 이 API 집합을 사용하며, `loadOperations`로 그 안의 API를 준비할 수 있습니다.
+
+이름은 원문과 정확히 일치해야 합니다. `operations`에는 원래 `operationId`를,
+`routes`에는 `GET /tasks/{task-id}`처럼 메서드와 OpenAPI 경로를 적습니다.
+경로 인자는 원문에 있는 `{task-id}` 형태를 유지하고, 실제 호출할 때
+`path: { "task-id": "one" }`으로 값을 전달합니다. operation ID가 없는 API는
+경로로 선택할 수 있으며, 같은 API를 여러 번 지정해도 한 번만 생성합니다.
+
+`[selection]`을 생략하면 전체 API를 생성합니다. 빈 선택 목록, 존재하지 않는 이름,
+숨겨진 API를 지정하면 오류가 발생합니다. 중복 operation ID를 비롯한 문서 오류는
+선택 생성 전에 수정해야 합니다.
+
+선택한 API의 OpenAPI Link도 사용할 수 있습니다. Link 대상과 필요한 타입은 내부
+의존 코드로 함께 생성됩니다. 대상을 직접 호출하거나 `loadOperations`로 준비하려면
+선택 목록에도 추가하세요. Link 대상은 문서의 참조를 통해 이미 불러온 범위에 있어야
+합니다. 자세한 조건은 [Link 지원 범위](../reference/capabilities.md)에서 확인하세요.
+
+`--with server`를 함께 쓰면 선택한 API에 연결된 콜백과 최상위 웹훅을 생성합니다.
+기존 SDK의 선택 목록을 바꿀 때는 `--incremental`을 사용하세요. 생성기가 관리하는
+파일을 갱신하고 사용자 파일은 보존합니다. `--check --output`으로 기존 SDK가
+현재 선택 목록에 맞는지도 확인할 수 있습니다.
+
+CLI에서는 `--operation`과 `--route`를 반복해서 지정할 수 있습니다.
+문법과 설정 덮어쓰기 규칙은 [CLI 레퍼런스](../reference/cli.md#api-selection)를 참고하세요.
 
 아래 예제는 `GET /tasks`에 `operationId: listTasks`가 있고, `GET /health`에는
 operation ID가 없는 문서를 기준으로 합니다. 먼저 [SDK 생성과 검증](./generate.md)에

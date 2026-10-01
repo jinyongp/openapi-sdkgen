@@ -37,6 +37,8 @@ openapi-sdkgen generate [options]
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 manifest-owned output 갱신 |
 | `--with <addon>` | target-specific artifact 추가. 현재 `server`, 반복 가능 |
+| `--operation <operationId>` | 정확한 operation ID로 생성할 API 지정. 반복 가능 |
+| `--route <METHOD /path>` | 정확한 메서드·경로로 생성할 API 지정. 반복 가능 |
 | `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
 | `--diagnostic-mode fail-fast|collect` | `fail-fast`는 생성을 막는 오류에서 중단. `collect`는 확인 가능한 나머지 문제도 수집 |
 | `--fail-on-resource-omission` | 생성된 operation이 TypeScript resource API capability를 잃으면 warning 대신 실패 |
@@ -88,6 +90,8 @@ Config에서 지원하는 key는 전체 CLI surface를 그대로 복제하지 �
 | `target` | `--target` |
 | `output` | `--output` |
 | `addons` | 반복 가능한 `--with` |
+| `selection.operations` | 반복 가능한 `--operation` |
+| `selection.routes` | 반복 가능한 `--route` |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
@@ -113,7 +117,7 @@ TLS certificate/key/CA, reference lock, schema-extension manifest가 이 규칙�
 그대로 사용합니다.
 
 같은 설정이 CLI에도 있으면 CLI가 우선합니다. 반복 가능한 옵션은 CLI에서 한 번이라도
-명시하면 config 값에 추가하는 대신 **config 목록 전체를 대체**합니다. add-on,
+명시하면 config 값에 추가하는 대신 **config 목록 전체를 대체**합니다. 선택할 operation ID와 경로, add-on,
 remote-reference origin, schema extension, HTTP header 환경 변수 mapping에 같은
 규칙을 적용합니다. `--offline=false`처럼 명시한 boolean 값도 config 값을
 override합니다.
@@ -131,6 +135,27 @@ config key가 아닙니다. `--check`, `--update-ref-lock`, `--help`는 실행 �
 동작을 바꾸는 옵션이므로 CLI에서만 사용합니다. `--fail-on-resource-omission` 같은
 지속적인 generation policy는 대응 TOML key를 제공합니다. 알 수 없는 TOML key는
 오류로 처리해 오타가 조용히 무시되지 않게 합니다.
+
+## 생성할 API 선택 {#api-selection}
+
+operation ID와 경로를 함께 지정해 필요한 API만 생성할 수 있습니다.
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --output ./src/generated/api --operation listTasks --route 'GET /tasks/{task-id}'
+```
+
+두 목록 중 하나에 포함되면 생성 대상이 됩니다. 경로 인자는 원문 이름과 중괄호를
+유지하고, 표준 메서드는 `GET`, `POST`처럼 대문자로 적습니다. 이름은 대소문자를
+구분하며 정확히 일치해야 합니다. 선택 설정을 생략하면 전체 API를 생성하고,
+명시한 목록이 비어 있거나 이름을 찾을 수 없으면 오류가 발생합니다.
+
+TOML에서는 `[selection]`의 `operations`, `routes` 배열을 사용합니다.
+CLI의 `--operation` 목록은 `selection.operations`만 대체하고 설정 파일의 경로는
+유지합니다. `--route` 목록은 `selection.routes`만 대체합니다.
+
+Link 의존 코드, 서버 지원, 기존 SDK 갱신 방법은
+[필요한 API만 생성하기](../guide/selective-client.md#generation)에서 설명합니다.
 
 <span id="fresh-incremental-and-check-modes"></span>
 
