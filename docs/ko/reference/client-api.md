@@ -188,6 +188,13 @@ compiled document closure에 mount한 경우 helper를 생성합니다. Link의 
 helper만 제외하고 원본 response와 다른 helper는 유지합니다. Link 해석은 추가 fetch를
 수행하지 않으며 compiler의 allowlist·lock·offline cache 정책을 따릅니다.
 
+이 조건은 문서 로딩의 신뢰 경계입니다. Link 선언만으로 다른 문서를 읽을
+권한이 생기지는 않습니다. 예를 들어 `operationRef: ./target.json#/paths/~1items/get`은
+Path Item의 `$ref: ./target.json#/paths/~1items`로 `GET /items`를 `/items`에 이미
+로드한 경우 해석할 수 있습니다. Link만 `target.json`을 가리키면 해당 origin이
+allowlist에 있어도 추가 fetch하지 않고 `SDKGEN-W509`로 helper를 생략합니다.
+대상을 선언된 `$ref` closure에 포함해야 helper를 생성할 수 있습니다.
+
 `$links`에는 OpenAPI Link Object에서 생성된 타입 안전 후속 호출이 있습니다.
 각 helper는 Link runtime expression을 해석하는 데 필요한 원본 response context를
 전달합니다.

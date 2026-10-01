@@ -189,6 +189,14 @@ Unresolved targets, relocated paths, and targets mounted more than once produce 
 resolution performs no additional fetch and keeps the compiler's allowlist,
 lock, and offline cache policy.
 
+This is a trust boundary: declaring a Link grants no permission to load another
+document. For example, `operationRef: ./target.json#/paths/~1items/get` can resolve
+when a Path Item `$ref: ./target.json#/paths/~1items` has already loaded and mounted
+`GET /items` at `/items`. If only the Link names `target.json`, the generator does
+not fetch it, even when its origin is allowlisted. It emits `SDKGEN-W509` and
+omits that helper. Make the target part of the declared `$ref` closure to enable
+it; a network allowlist alone does not satisfy this condition.
+
 `$links` contains typed follow-up calls generated from OpenAPI Link Objects.
 Each helper carries the source response context needed to resolve Link runtime
 expressions.
