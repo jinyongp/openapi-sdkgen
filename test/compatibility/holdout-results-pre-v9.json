@@ -1,20 +1,7 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "manifestSha256": "3d0f2255ed74d4b49a64a8bd958624f80ede02a452b6947bb2eaedcfd3edeb30",
   "featureCatalog": [
-    "operation.query",
-    "parameter.querystring",
-    "document.media-types",
-    "media.item-schema",
-    "media.jsonl",
-    "media.json-seq",
-    "media.multipart-positional-encoding",
-    "schema.discriminator-default-mapping",
-    "security.oauth2-metadata",
-    "security.device-authorization",
-    "security.deprecated",
-    "security.requirement-uri",
-    "schema.xml-node-type",
     "oas.version.3.0",
     "oas.version.3.1",
     "oas.version.3.2",
@@ -70,12 +57,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 35,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -92,8 +73,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 293,
-        "artifactBytes": 1236031
+        "artifactCount": 133,
+        "artifactBytes": 987130
       },
       "typecheck": {
         "status": "pass"
@@ -301,12 +282,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 1,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -326,8 +301,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 84,
-        "artifactBytes": 531318
+        "artifactCount": 61,
+        "artifactBytes": 446463
       },
       "typecheck": {
         "status": "pass"
@@ -552,12 +527,6 @@
         "unresolvedOmissions": 0,
         "rate": 0.9940119760479041
       },
-      "operationEmission": {
-        "available": true,
-        "count": 166,
-        "operationOmissions": 1,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 1,
@@ -579,8 +548,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 861,
-        "artifactBytes": 3657227
+        "artifactCount": 343,
+        "artifactBytes": 2985840
       },
       "typecheck": {
         "status": "pass"
@@ -777,1073 +746,9 @@
       "discoveryComplete": true,
       "diagnostics": {
         "errors": 0,
-        "warnings": 52
+        "warnings": 0
       },
-      "findings": [
-        {
-          "id": "f99e4461b103a071599def3aba2bb916865f2385ab254d27565090ad4759d50d",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1issues~1export~1{repo_name}-issues-{task_id}.zip/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/issues/export/{repo_name}-issues-{task_id}.zip",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/issues/export/{repo_name}-issues-{task_id}.zip\" is omitted for GET /repositories/{workspace}/{repo_slug}/issues/export/{repo_name}-issues-{task_id}.zip because one path segment cannot be represented as a resource member.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "d7b4b7fe2776e79bb5d34c9213e114799c1d684cbf643777d2f50e736c629f78",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines-config~1caches/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines-config/caches",
-          "operation": "deleteRepositoryPipelineCaches",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines-config/caches because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "24079a61140855038ce4d096fe6fb0fbae615f1888f0ecf820a8672f471d36d7",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines-config~1caches/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines-config/caches",
-          "operation": "getRepositoryPipelineCaches",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines-config/caches because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "5b8b62e4fd8d4977e5d91a1f5b757000cfc01daf53247e3f833b630bea433a19",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines-config~1caches~1{cache_uuid}/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines-config/caches/{cache_uuid}",
-          "operation": "deleteRepositoryPipelineCache",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines-config/caches/{cache_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "32881d9ce462cbfdbb4088c48e404c7d47d6105b35bc7af2b026e998d4f8c24e",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines-config~1caches~1{cache_uuid}~1content-uri/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines-config/caches/{cache_uuid}/content-uri",
-          "operation": "getRepositoryPipelineCacheContentURI",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines-config/caches/{cache_uuid}/content-uri because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "4ffb7dcad1f32dae6fd012b92dd03cf7cd9a3a273ba90550a2b94651c62ed440",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config",
-          "operation": "getRepositoryPipelineConfig",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "c8b7c62cb0f23016549d0b27b824cacaafcc256fd42d0f79cc207ada07e66d86",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config",
-          "operation": "updateRepositoryPipelineConfig",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "82b4c37f7d2d1cbf2537c8aa042c16890e8c916fda8e02668c773b9fe2378395",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1build_number/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config/build_number",
-          "operation": "updateRepositoryBuildNumber",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config/build_number because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "c66fe60221bf3f4259706f20a9591ec3399fa00539abe8029dbc17c40c01dbbb",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules",
-          "operation": "getRepositoryPipelineSchedules",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "532ffe54f1022c4add58cbe1ff3bd04f0f1d2ed0c235b60af0bd48cb80e36bff",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules/post"
-          },
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pipelines_config/schedules",
-          "operation": "createRepositoryPipelineSchedule",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for POST /repositories/{workspace}/{repo_slug}/pipelines_config/schedules because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "ec5c01514ea64ddf6b1f8a8680e4f83fe82ee08c30ef209fd2be0d979502a30b",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules~1{schedule_uuid}/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid}",
-          "operation": "deleteRepositoryPipelineSchedule",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "bd4a79f7a903c5fc6468014047124eb93655584a7ec0cd17aaa587869159b45e",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules~1{schedule_uuid}/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid}",
-          "operation": "getRepositoryPipelineSchedule",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "46a61a55160ccc8b1ca0d8f4d26da229067d28571afafb907a8d260c10ca8a20",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules~1{schedule_uuid}/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid}",
-          "operation": "updateRepositoryPipelineSchedule",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "967dc7e07321411d0cc36e2f27ed0733d14f46d8aafd980c22715e3da53534da",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1schedules~1{schedule_uuid}~1executions/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid}/executions",
-          "operation": "getRepositoryPipelineScheduleExecutions",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/schedules/{schedule_uuid}/executions because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "6c9da88a9353e0ac27c23d6d80fbc452cbf7595213d6071a3075551229cd75b6",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1key_pair/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair",
-          "operation": "deleteRepositoryPipelineKeyPair",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "7e885069ffc5bd070afd4d5c4eabdc1e628066504c6ad85e392d0316c1183de4",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1key_pair/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair",
-          "operation": "getRepositoryPipelineSshKeyPair",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "a7609e273f68632797fb1ec99903ef34abb3f42e3611d200f1bc4c13bbc5358e",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1key_pair/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair",
-          "operation": "updateRepositoryPipelineKeyPair",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/key_pair because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "91741128d5dc2af3694a0acc3b40daa5b452d82cfc3803d291c9b828bccaddde",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1known_hosts/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts",
-          "operation": "getRepositoryPipelineKnownHosts",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "b472859f39a1e0b06b86a2d622acf1b0fabeda64db566f78563eff9d836a5bba",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1known_hosts/post"
-          },
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts",
-          "operation": "createRepositoryPipelineKnownHost",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for POST /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "a96d5a2774d3a6d8c5f89ff3a04d93bcdf93662d11c9bc3ec62b61c0ea9b1985",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1known_hosts~1{known_host_uuid}/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid}",
-          "operation": "deleteRepositoryPipelineKnownHost",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "a39710242269ce1c31eba02272f127cc53584f0fbd334cfc25abd3803d890f7d",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1known_hosts~1{known_host_uuid}/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid}",
-          "operation": "getRepositoryPipelineKnownHost",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "6a59ab5b922cbd9663a4345ac3b9fa5ede0f6088e0756516eda2bab3bdcbf3d4",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1ssh~1known_hosts~1{known_host_uuid}/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid}",
-          "operation": "updateRepositoryPipelineKnownHost",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config/ssh/known_hosts/{known_host_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "6004803133a440fc53c851cd0fa56b05d5fe80e0c0bcfb8211fb91fccce42b01",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1variables/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/variables",
-          "operation": "getRepositoryPipelineVariables",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/variables because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "023f7b8cd11400b6c112ee2da7482d0fed60879d881b00c7d3e5dfd1de159e62",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1variables/post"
-          },
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pipelines_config/variables",
-          "operation": "createRepositoryPipelineVariable",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for POST /repositories/{workspace}/{repo_slug}/pipelines_config/variables because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "b415bdba0d813d5039ef7432f0eadc0efafe255d2305be321ec1b6bc841afffc",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1variables~1{variable_uuid}/delete"
-          },
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid}",
-          "operation": "deleteRepositoryPipelineVariable",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "8781c68039f858860c6b12c746c68deca5a8d1f8e6e832192e923632dc1678bc",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1variables~1{variable_uuid}/get"
-          },
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid}",
-          "operation": "getRepositoryPipelineVariable",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for GET /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "67933bb134d2002da369cff2d453112e389c5241b082d40d8c3602246660d574",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pipelines_config~1variables~1{variable_uuid}/put"
-          },
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid}",
-          "operation": "updateRepositoryPipelineVariable",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pipelines_config\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pipelines_config/variables/{variable_uuid} because normalized literal resource members collide.",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "d26ffe4e273eaf22cdc1f48e6a9449d2323bfa1b6546e9f5fe58e8c16fc508bb",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "065821837abfdfb55e4d366ac010a91edd5968bcf50ceb5fa823dee8bec827ed",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "93b0558fffb1413879a9d123fbeb2e0aa986d9d95411d2b4d9ada632677b1c3d",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1activity/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/activity because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "11106f7d05df38b12b83fec7a0b5e4a2608797f43cbb96d22de89ca50f9ecbfd",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1approve/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/approve",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/approve because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "c000b37713604bbe3ecc007e436b42fecd92a3a455f7fdb9f0e1c8345b915e36",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1approve/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/approve",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/approve because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "884b05398b54e556824f74451f5f5d26fefd7d7959305e8cc6a0f52a99944e40",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "8688bce77d1cb6efe2fa1ce3ab28b276d4e94ba06bf38b26a3a2df7ffdfaedaa",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "9148a5b92883cc51da9f3f305602527080dadcb2197ac4f2f70c6ff28de4078a",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments~1{comment_id}/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "52740c107220b5fc7ba4809b9ef098cb5c759820792109b0e83b0410d36c8e37",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments~1{comment_id}/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "d0ceae3b70f6fcb8a0b9c72f3ac87b4abda020e0a0f6e39e6fefb60b4f5a810e",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments~1{comment_id}/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "fa5b38b8afd870d508978afb89a2405ce3825d43f91b443437d80459ab28f4e7",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments~1{comment_id}~1resolve/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}/resolve",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}/resolve because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "9d817e0eb0128e0af5509e55ee78967d2e5730515d16ad15f45de2f79a3fe29e",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1comments~1{comment_id}~1resolve/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}/resolve",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/comments/{comment_id}/resolve because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "8baa9db44c55a4efabe154a513bc203472f1a91ef76d22f9ebcf3cc2d968bddf",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1commits/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/commits",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/commits because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "e3479f22640ebc65c347b70189f6bc9ddccb8b0b994fef6e8b0d5c210a9e7752",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1decline/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/decline",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/decline because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "c8e7c1374ea7cf0c21eeb364a5075972808bb1d9a1547b903af0a9b6ed5da8fe",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1diff/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/diff",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/diff because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "317ba115e19f9f68fdc750906ef5d651b0611a2e7d1f6c6359e4cbd88754ce1a",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1diffstat/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/diffstat",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/diffstat because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "f185d4a39ae2025ef5a4f2453251c3f792fb36481f02ee4c8943847be6e29e6f",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1merge/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/merge",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/merge because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "d57c2b830488f2ba8d46caebc2c88cc2d60e71d4696d32481a402341d9c8b3ec",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1merge~1task-status~1{task_id}/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/merge/task-status/{task_id}",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/merge/task-status/{task_id} because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "8a5bf31f445e933ab59e63c4a38f93bbed088add8c2a1c8499ee0c083a61cddf",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1patch/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/patch",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/patch because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "93b196f29856d3f521d0ce6fd9f48c65553baae9daea0c680aa302dec5ae341d",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1request-changes/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/request-changes",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/request-changes because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "f7e07a1b68c65f632dd454443ea9c220c95a3082ca8d98ba0c6ed5d8959842de",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1request-changes/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/request-changes",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for POST /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/request-changes because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "ca376935462d2ebe9a6af99e9c5eb93954723ca1296b1360f57fb69004c997ed",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}~1statuses/parameters/0/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/statuses",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pull_request_id}/statuses because path parameter \"pull_request_id\" conflicts with \"pullrequest_id\": schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "99bab654640b27f94940d6f854894067d08dd7f121e3810209afb1c26f527191",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/delete/parameters/2/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}/parameters/0/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name}",
-          "operation": "deletePullRequestHostedPropertyValue",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for DELETE /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name} because path parameter \"pullrequest_id\" conflicts with \"pull_request_id\": schema.type: \"string\" vs \"integer\"; selectorType: \"string\" vs \"number\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "6f6fa0e4990f0501b0b7021f8855225e5137290fce06448b82e939b48ab6bc52",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/get/parameters/2/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}/parameters/0/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name}",
-          "operation": "getPullRequestHostedPropertyValue",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for GET /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name} because path parameter \"pullrequest_id\" conflicts with \"pull_request_id\": schema.type: \"string\" vs \"integer\"; selectorType: \"string\" vs \"number\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "50fbad42d1b65e143dbd7bad0b19b957de6bcfb0214cb142c5a071c393708766",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pullrequest_id}~1properties~1{app_key}~1{property_name}/put/parameters/2/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1repositories~1{workspace}~1{repo_slug}~1pullrequests~1{pull_request_id}/parameters/0/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name}",
-          "operation": "updatePullRequestHostedPropertyValue",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/repositories/{}/{}/pullrequests/{}\" is omitted for PUT /repositories/{workspace}/{repo_slug}/pullrequests/{pullrequest_id}/properties/{app_key}/{property_name} because path parameter \"pullrequest_id\" conflicts with \"pull_request_id\": schema.type: \"string\" vs \"integer\"; selectorType: \"string\" vs \"number\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        }
-      ],
+      "findings": [],
       "operationRetention": {
         "available": true,
         "total": 305,
@@ -1851,12 +756,6 @@
         "omitted": 0,
         "unresolvedOmissions": 0,
         "rate": 1
-      },
-      "operationEmission": {
-        "available": true,
-        "count": 305,
-        "operationOmissions": 0,
-        "helperOmissions": 45
       },
       "compatibility": {
         "preserved": 0,
@@ -1881,8 +780,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 1692,
-        "artifactBytes": 8905391
+        "artifactCount": 667,
+        "artifactBytes": 7377878
       },
       "typecheck": {
         "status": "pass"
@@ -2553,12 +1452,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 402,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 33,
         "rejected": 0,
@@ -2582,8 +1475,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 2766,
-        "artifactBytes": 19903994
+        "artifactCount": 1138,
+        "artifactBytes": 16718481
       },
       "typecheck": {
         "status": "pass"
@@ -2791,12 +1684,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 30,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -2811,8 +1698,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 226,
-        "artifactBytes": 1259549
+        "artifactCount": 116,
+        "artifactBytes": 1060506
       },
       "typecheck": {
         "status": "pass"
@@ -3006,12 +1893,251 @@
       "gitBlob": "3017755ac9486ff51a4b9f4e0aab328225de96bd",
       "sizeClass": "small",
       "openapiVersion": "3.0.0",
-      "discoveryComplete": true,
+      "discoveryComplete": false,
       "diagnostics": {
-        "errors": 0,
+        "errors": 14,
         "warnings": 0
       },
-      "findings": [],
+      "findings": [
+        {
+          "id": "5f82beeb0f128be02ebc4ab55dc662465602e38cb190be8d238c2f62f2fd34ee",
+          "severity": "error",
+          "code": "SDKGEN-E507",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connect/post"
+          },
+          "target": "typescript",
+          "route": "POST /net/connect",
+          "operation": "connect",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI contract cannot be lowered into a TypeScript operation contract: operation connections media outputs: unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\".",
+          "hint": "Correct the referenced schema, parameter, response, or operation identity shown by this diagnostic."
+        },
+        {
+          "id": "88b1e423cf9138b3ef1655f345e7788ba9a4e391f74f4753dc7779d3a4c520cb",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/chain_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/chain_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "4233f8094f7ad11849e28aa45447df61d6e2a2c24ccac07d87efa8eba4e8faf5",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/head_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/head_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "63a6670c8b0b8dd40121fcfd25ecd64cf0828f5b31661aad27a7be7ff490c86a",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/key/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/key/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/key\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "1f16d1fc44f46b64e659907c993a927b1f7066a6f2c9a63e1df23fbcd3aa3bc1",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/last_irreversible_block_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/last_irreversible_block_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "97cbc8c755dbd62be30377874e1d604e089e3d488fb475a827d3a936e64b5ae2",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/node_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/node_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "6ec66c48ca539416856e66be20a930d74b3ea00ff8b9eb969f0014bd3380eecf",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/sig/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/sig/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/sig\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "5050ccf35039d3a12ead44dcfc9fc215ace8dcb9371b0855ccc80aef93abfef1",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/time/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/time/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/time\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "d62b7b713899003c3a67d14fc051931b73bef4bb5b6d078bd9b54318a34b7759",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/token/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/connections",
+          "operation": "connections",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1connections/post/responses/200/content/application~1json/schema/items/properties/last_handshake/properties/token/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "2278aba5f5d82176153124c9965a31eee14b421c109cf6778456d5de094eba13",
+          "severity": "error",
+          "code": "SDKGEN-E507",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "The OpenAPI contract cannot be lowered into a TypeScript operation contract: operation status media outputs: unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\".",
+          "hint": "Correct the referenced schema, parameter, response, or operation identity shown by this diagnostic."
+        },
+        {
+          "id": "f42874a7cdf93de983450cc5f4604ff224af2d36abd2046a4e9f374261a57954",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/chain_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/chain_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "da79b8d6e0c921b163a56945ddddeb4ea44b8fd7e568a670aa6678baaebe7680",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/head_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/head_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "bac1228c7bbba984283a3baae69ef809d8421b485d1ca15742782d9161917203",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/last_irreversible_block_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/last_irreversible_block_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        },
+        {
+          "id": "c9ed4689eb08494649df15120c81f8f08edfd63150cc3f54d08ea1cc5e53085a",
+          "severity": "error",
+          "code": "SDKGEN-E501",
+          "phase": "target",
+          "location": {
+            "source": "$root",
+            "pointer": "#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/node_id/$ref"
+          },
+          "target": "typescript",
+          "route": "POST /net/status",
+          "operation": "status",
+          "scope": "document",
+          "effect": "block",
+          "message": "TypeScript cannot represent this Schema Object feature at #/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/node_id/$ref (unsupported schema reference \"#/paths/~1net~1status/post/responses/200/content/application~1json/schema/properties/last_handshake/properties/token\").",
+          "hint": "Remove the unsupported keyword or express the contract with supported OpenAPI and JSON Schema features."
+        }
+      ],
       "operationRetention": {
         "available": true,
         "total": 4,
@@ -3019,12 +2145,6 @@
         "omitted": 0,
         "unresolvedOmissions": 0,
         "rate": 1
-      },
-      "operationEmission": {
-        "available": true,
-        "count": 4,
-        "operationOmissions": 0,
-        "helperOmissions": 0
       },
       "compatibility": {
         "preserved": 0,
@@ -3040,15 +2160,13 @@
         "operation.request-body"
       ],
       "generation": {
-        "status": "pass",
-        "artifactCount": 82,
-        "artifactBytes": 473381
+        "status": "blocked"
       },
       "typecheck": {
-        "status": "pass"
+        "status": "not-run"
       },
-      "documentSuccess": true,
-      "capabilityAdjustedSuccess": true,
+      "documentSuccess": false,
+      "capabilityAdjustedSuccess": false,
       "coverage": [
         {
           "phase": "references",
@@ -3162,8 +2280,16 @@
         {
           "phase": "target",
           "analyzer": "target.entry-surface",
-          "status": "complete",
-          "target": "typescript"
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics prevented meaningful-entry validation"
+            }
+          ],
+          "reason": "blocking target diagnostics prevented meaningful-entry validation"
         },
         {
           "phase": "target",
@@ -3186,8 +2312,16 @@
         {
           "phase": "target",
           "analyzer": "target.modules",
-          "status": "complete",
-          "target": "typescript"
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
+            }
+          ],
+          "reason": "blocking target diagnostics or lowering prerequisites prevented immutable module-plan construction"
         },
         {
           "phase": "target",
@@ -3204,8 +2338,16 @@
         {
           "phase": "target",
           "analyzer": "target.resources",
-          "status": "complete",
-          "target": "typescript"
+          "status": "skipped",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "target-analysis-prerequisites",
+              "available": false,
+              "reason": "lowering, Link, or stream prerequisites were unavailable"
+            }
+          ],
+          "reason": "lowering, Link, or stream prerequisites were unavailable"
         },
         {
           "phase": "target",
@@ -3226,7 +2368,16 @@
           "target": "typescript"
         }
       ],
-      "skippedPhases": []
+      "skippedPhases": [
+        {
+          "phase": "emit",
+          "reason": "target preflight reported errors"
+        },
+        {
+          "phase": "publish",
+          "reason": "target preflight reported errors"
+        }
+      ]
     },
     {
       "id": "gerermesaffaires.com",
@@ -3250,12 +2401,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 280,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -3277,8 +2422,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 1431,
-        "artifactBytes": 6015215
+        "artifactCount": 571,
+        "artifactBytes": 4896716
       },
       "typecheck": {
         "status": "pass"
@@ -3486,12 +2631,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 1,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -3506,8 +2645,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 64,
-        "artifactBytes": 409720
+        "artifactCount": 40,
+        "artifactBytes": 325918
       },
       "typecheck": {
         "status": "pass"
@@ -3749,12 +2888,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 0,
-        "operationOmissions": 0,
-        "helperOmissions": 1
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -3811,19 +2944,13 @@
           ],
           "generation": {
             "status": "pass",
-            "artifactCount": 302,
-            "artifactBytes": 1687812
+            "artifactCount": 186,
+            "artifactBytes": 1442343
           },
           "typecheck": {
             "status": "pass"
           },
           "success": true,
-          "operationEmission": {
-            "available": true,
-            "count": 24,
-            "operationOmissions": 0,
-            "helperOmissions": 1
-          },
           "coverage": [
             {
               "phase": "references",
@@ -4231,58 +3358,9 @@
       "discoveryComplete": true,
       "diagnostics": {
         "errors": 0,
-        "warnings": 2
+        "warnings": 0
       },
-      "findings": [
-        {
-          "id": "d81f87a8eb3e05ec860558d990b70bcd62a84bba5759f26856a1503f5dfcd11f",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1providers~1employers~1employees~1employments~1{employmentId}~1payslips~1{payrollrunId}/get/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1providers~1employers~1employees~1employments~1{employmentId}~1payslips~1{year}/get/parameters/1/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /providers/employers/employees/employments/{employmentId}/payslips/{payrollrunId}",
-          "operation": "GetPayslipsByEmploymentIdAndPayrollRunId",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/providers/employers/employees/employments/{}/payslips/{}\" is omitted for GET /providers/employers/employees/employments/{employmentId}/payslips/{payrollrunId} because path parameter \"payrollrunId\" conflicts with \"year\": schema.example: \u003cmissing\u003e vs 2018; schema.format: \"uuid\" vs \"int32\"; schema.maxLength: \u003cmissing\u003e vs 4; schema.type: \"string\" vs \"integer\"; selectorType: \"string\" vs \"number\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        },
-        {
-          "id": "fdcdd42150f57e1854c3057557e35f3928f10c8f820b1a8bf3757e82a3cbed67",
-          "severity": "warning",
-          "code": "SDKGEN-W513",
-          "phase": "target",
-          "location": {
-            "source": "$root",
-            "pointer": "#/paths/~1providers~1employers~1employees~1employments~1{employmentId}~1payslips~1{year}/get/parameters/1/schema"
-          },
-          "related": [
-            {
-              "source": "$root",
-              "pointer": "#/paths/~1providers~1employers~1employees~1employments~1{employmentId}~1payslips~1{payrollrunId}/get/parameters/1/schema"
-            }
-          ],
-          "target": "typescript",
-          "route": "GET /providers/employers/employees/employments/{employmentId}/payslips/{year}",
-          "operation": "GetPayslipsByEmploymentIdAndYear",
-          "capability": "resource",
-          "scope": "capability",
-          "effect": "omit-capability",
-          "message": "Resource selector \"/providers/employers/employees/employments/{}/payslips/{}\" is omitted for GET /providers/employers/employees/employments/{employmentId}/payslips/{year} because path parameter \"year\" conflicts with \"payrollrunId\": schema.example: 2018 vs \u003cmissing\u003e; schema.format: \"int32\" vs \"uuid\"; schema.maxLength: 4 vs \u003cmissing\u003e; schema.type: \"integer\" vs \"string\"; selectorType: \"number\" vs \"string\".",
-          "hint": "Use the exact $operations or $routes surface for this operation, or make the colliding resource contracts compatible."
-        }
-      ],
+      "findings": [],
       "operationRetention": {
         "available": true,
         "total": 663,
@@ -4290,12 +3368,6 @@
         "omitted": 0,
         "unresolvedOmissions": 0,
         "rate": 1
-      },
-      "operationEmission": {
-        "available": true,
-        "count": 663,
-        "operationOmissions": 0,
-        "helperOmissions": 2
       },
       "compatibility": {
         "preserved": 0,
@@ -4315,8 +3387,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 3918,
-        "artifactBytes": 33661141
+        "artifactCount": 1037,
+        "artifactBytes": 29970432
       },
       "typecheck": {
         "status": "pass"
@@ -4524,12 +3596,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 357,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -4546,8 +3612,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 2117,
-        "artifactBytes": 6959379
+        "artifactCount": 669,
+        "artifactBytes": 5219045
       },
       "typecheck": {
         "status": "pass"
@@ -4755,12 +3821,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 12,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -4780,8 +3840,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 127,
-        "artifactBytes": 601088
+        "artifactCount": 59,
+        "artifactBytes": 471928
       },
       "typecheck": {
         "status": "pass"
@@ -4989,12 +4049,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 10,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -5010,8 +4064,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 109,
-        "artifactBytes": 732687
+        "artifactCount": 59,
+        "artifactBytes": 617295
       },
       "typecheck": {
         "status": "pass"
@@ -5219,12 +4273,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 200,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -5246,8 +4294,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 2536,
-        "artifactBytes": 9710788
+        "artifactCount": 1716,
+        "artifactBytes": 8272417
       },
       "typecheck": {
         "status": "pass"
@@ -5512,12 +4560,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 99,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 4,
         "rejected": 0,
@@ -5541,8 +4583,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 668,
-        "artifactBytes": 3214272
+        "artifactCount": 252,
+        "artifactBytes": 2696056
       },
       "typecheck": {
         "status": "pass"
@@ -5750,12 +4792,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 12,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -5772,8 +4808,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 133,
-        "artifactBytes": 784525
+        "artifactCount": 65,
+        "artifactBytes": 650739
       },
       "typecheck": {
         "status": "pass"
@@ -5981,12 +5017,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 42,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -6004,8 +5034,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 267,
-        "artifactBytes": 1035271
+        "artifactCount": 121,
+        "artifactBytes": 798144
       },
       "typecheck": {
         "status": "pass"
@@ -6282,12 +5312,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 0,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -6324,19 +5348,13 @@
           "findings": [],
           "generation": {
             "status": "pass",
-            "artifactCount": 1240,
-            "artifactBytes": 11471243
+            "artifactCount": 588,
+            "artifactBytes": 10560886
           },
           "typecheck": {
             "status": "pass"
           },
           "success": true,
-          "operationEmission": {
-            "available": true,
-            "count": 158,
-            "operationOmissions": 0,
-            "helperOmissions": 0
-          },
           "coverage": [
             {
               "phase": "references",
@@ -6755,12 +5773,6 @@
         "unresolvedOmissions": 0,
         "rate": 1
       },
-      "operationEmission": {
-        "available": true,
-        "count": 28,
-        "operationOmissions": 0,
-        "helperOmissions": 0
-      },
       "compatibility": {
         "preserved": 0,
         "rejected": 0,
@@ -6781,8 +5793,8 @@
       ],
       "generation": {
         "status": "pass",
-        "artifactCount": 276,
-        "artifactBytes": 2351767
+        "artifactCount": 140,
+        "artifactBytes": 2080090
       },
       "typecheck": {
         "status": "pass"
@@ -6973,13 +5985,13 @@
     {
       "cohort": "holdout",
       "documents": 20,
-      "successfulDocuments": 18,
-      "documentSuccessRate": 0.9,
-      "capabilityAdjustedDocuments": 20,
-      "capabilityAdjustedSuccessRate": 1,
-      "discoveryComplete": 18,
-      "generatedDocuments": 18,
-      "typecheckedDocuments": 18,
+      "successfulDocuments": 17,
+      "documentSuccessRate": 0.85,
+      "capabilityAdjustedDocuments": 19,
+      "capabilityAdjustedSuccessRate": 0.95,
+      "discoveryComplete": 17,
+      "generatedDocuments": 17,
+      "typecheckedDocuments": 17,
       "generatedVerificationRate": 1,
       "operations": {
         "availableDocuments": 20,
@@ -6987,12 +5999,6 @@
         "retained": 2829,
         "omitted": 1,
         "rate": 0.9996466431095407
-      },
-      "operationEmission": {
-        "availableDocuments": 20,
-        "count": 2647,
-        "operationOmissions": 1,
-        "helperOmissions": 48
       },
       "compatibility": {
         "preserved": 37,
@@ -7009,22 +6015,9 @@
       },
       "featureCoverage": {
         "observed": 20,
-        "total": 44,
-        "rate": 0.45454545454545453,
+        "total": 31,
+        "rate": 0.6451612903225806,
         "missing": [
-          "operation.query",
-          "parameter.querystring",
-          "document.media-types",
-          "media.item-schema",
-          "media.jsonl",
-          "media.json-seq",
-          "media.multipart-positional-encoding",
-          "schema.discriminator-default-mapping",
-          "security.oauth2-metadata",
-          "security.device-authorization",
-          "security.deprecated",
-          "security.requirement-uri",
-          "schema.xml-node-type",
           "oas.version.3.2",
           "reference.external",
           "media.encoding",
@@ -7042,13 +6035,13 @@
   ],
   "overall": {
     "documents": 20,
-    "successfulDocuments": 18,
-    "documentSuccessRate": 0.9,
-    "capabilityAdjustedDocuments": 20,
-    "capabilityAdjustedSuccessRate": 1,
-    "discoveryComplete": 18,
-    "generatedDocuments": 18,
-    "typecheckedDocuments": 18,
+    "successfulDocuments": 17,
+    "documentSuccessRate": 0.85,
+    "capabilityAdjustedDocuments": 19,
+    "capabilityAdjustedSuccessRate": 0.95,
+    "discoveryComplete": 17,
+    "generatedDocuments": 17,
+    "typecheckedDocuments": 17,
     "generatedVerificationRate": 1,
     "operations": {
       "availableDocuments": 20,
@@ -7056,12 +6049,6 @@
       "retained": 2829,
       "omitted": 1,
       "rate": 0.9996466431095407
-    },
-    "operationEmission": {
-      "availableDocuments": 20,
-      "count": 2647,
-      "operationOmissions": 1,
-      "helperOmissions": 48
     },
     "compatibility": {
       "preserved": 37,
@@ -7078,22 +6065,9 @@
     },
     "featureCoverage": {
       "observed": 20,
-      "total": 44,
-      "rate": 0.45454545454545453,
+      "total": 31,
+      "rate": 0.6451612903225806,
       "missing": [
-        "operation.query",
-        "parameter.querystring",
-        "document.media-types",
-        "media.item-schema",
-        "media.jsonl",
-        "media.json-seq",
-        "media.multipart-positional-encoding",
-        "schema.discriminator-default-mapping",
-        "security.oauth2-metadata",
-        "security.device-authorization",
-        "security.deprecated",
-        "security.requirement-uri",
-        "schema.xml-node-type",
         "oas.version.3.2",
         "reference.external",
         "media.encoding",

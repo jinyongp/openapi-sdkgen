@@ -163,21 +163,10 @@ document's inbound contract requires the existing server capability?"
 
 No provider name or corpus identity participates in this decision.
 
-### Operation retention
-
-The denominator is the compiler IR operation set. The benchmark subtracts
-unique operation-scoped `omit-operation` effects from compiler semantic
-restrictions and target diagnostics.
-
-This is IR retention. It includes operations from documents whose generation is
-blocked, so it does not measure delivered SDK coverage. Existing reports preserve
-this meaning and their original values.
-
-This avoids guessing operation ownership from raw source syntax and prevents
-multiple diagnostics for one omitted operation from being counted multiple
-times.
-
 ### Emitted operations
+
+Use emitted operations as the primary operation coverage metric, alongside
+document success and strict verification.
 
 New reports use `schemaVersion: 2`; corpus manifests remain at version 1.
 `operationEmission.count` counts visible exact routes in the manifest used by
@@ -194,6 +183,14 @@ server-profile operations to default-client coverage.
 
 Consumers branch on the report version. A missing emission field in a historical
 version 1 report means no measurement was made; it does not mean zero operations.
+
+### Historical IR operation retention
+
+The denominator is the compiler IR operation set. The benchmark subtracts
+unique operation-scoped `omit-operation` effects from compiler semantic
+restrictions and target diagnostics. It includes operations from documents whose
+generation is blocked. Use it to explain compiler retention, not delivered SDK
+coverage. Historical version 1 reports retain this meaning and their values.
 
 ### Compatibility semantic preservation
 
@@ -214,28 +211,48 @@ The catalog covers version lines, local/external references, request bodies,
 callbacks/webhooks/links, media types and encodings, security scheme families,
 and material schema composition/dialect constructs.
 
-## Frozen result
+## Current measurement of the frozen holdout
 
 The committed manifest SHA-256 is
 `3d0f2255ed74d4b49a64a8bd958624f80ede02a452b6947bb2eaedcfd3edeb30`.
 
-The committed report is 180,324 bytes with SHA-256
-`7f15c11638405a75fb6572d656d7a9a427f273a34ce43b55f6cb9b526a5c0fbf`.
-An independent rerun produced the exact same bytes.
+The post-v9 measurement on 2026-10-01 uses TypeScript 7.0.2. The committed report
+is 236,314 bytes with SHA-256
+`f3ad5b5297b2d196fda59b31631f7801a34bbc3838b3859b344b0c92f7ee14c3`.
+The original version 1 report is preserved as `holdout-results-pre-v9.json`
+(180,324 bytes, SHA-256
+`7f15c11638405a75fb6572d656d7a9a427f273a34ce43b55f6cb9b526a5c0fbf`).
 
 | Metric | Result |
 | --- | ---: |
 | Holdout documents | 20 |
-| Default client-only success | 17 / 20 (85%) |
-| Capability-adjusted support | 19 / 20 (95%) |
-| Default generated documents passing strict TypeScript | 17 / 17 (100%) |
-| Default discovery complete | 17 / 20 |
-| Operations retained | 2,829 / 2,830 (99.96%) |
+| Default client-only success | 18 / 20 (90%) |
+| Capability-adjusted support | 20 / 20 (100%) |
+| Default generated documents passing strict TypeScript | 18 / 18 (100%) |
+| Default discovery complete | 18 / 20 |
+| Default emitted operations | 2,647 |
+| Diagnosed operation omissions | 1 |
+| Capability/helper omissions | 48 |
+| Historical IR retention metric | 2,829 / 2,830 (99.96%) |
 | Compatibility findings preserved | 37 / 38 (97.37%) |
-| Feature detectors observed | 20 / 31 (64.52%) |
+| Feature detectors observed | 20 / 44 (45.45%) |
 
-The eleven unobserved feature detectors are:
+The detector catalog expanded from 31 to 44 entries; the lower feature proportion
+does not mean a compatibility regression. The 24 unobserved detectors are:
 
+- `operation.query`
+- `parameter.querystring`
+- `document.media-types`
+- `media.item-schema`
+- `media.jsonl`
+- `media.json-seq`
+- `media.multipart-positional-encoding`
+- `schema.discriminator-default-mapping`
+- `security.oauth2-metadata`
+- `security.device-authorization`
+- `security.deprecated`
+- `security.requirement-uri`
+- `schema.xml-node-type`
 - `oas.version.3.2`
 - `reference.external`
 - `media.encoding`
@@ -252,6 +269,11 @@ The eleven unobserved feature detectors are:
 
 Two default failures are supported by an existing add-on rather than representing
 general incompatibility.
+
+The two blocked default documents contribute zero emitted operations, although
+their 182 operations remain in IR retention. Their separate server profiles
+emit 24 and 158 operations. The 100% adjusted document result still permits
+local helper omissions; it does not promise every optional helper is present.
 
 ### Listen Notes
 
@@ -270,9 +292,7 @@ callback contracts.
 With `server` enabled, diagnostic discovery is complete, generation passes,
 and strict TypeScript passes with no diagnostics.
 
-## Remaining holdout failure
-
-One document remains unsupported after capability adjustment.
+## Resolved arbitrary Schema-reference gap
 
 ### eos.local
 
@@ -287,10 +307,12 @@ Reference Object rules:
 
 https://spec.openapis.org/oas/v3.0.3
 
-The current TypeScript target accepts component-schema references for its schema
-registry model but does not lower these nested schema references. The holdout
-therefore records 14 blocking `SDKGEN-E501/E507` diagnostics. This is a
-generic schema-reference support gap, not a provider-specific exception.
+The v9 reference implementation lowers these arbitrary Schema locations while
+preserving stable identities. The unchanged document now completes discovery,
+generation, and strict TypeScript checking with no diagnostics and four emitted
+operations. Its previous 14 `SDKGEN-E501/E507` blockers are retained only in the
+historical report. No holdout document remains unsupported after capability
+adjustment.
 
 ## Resolved holdout defect
 
@@ -309,8 +331,8 @@ logic.
 ## Interpretation boundaries
 
 This holdout is evidence that the generator works across an independent
-cross-section of real OpenAPI documents. It is not a claim that 95% of all
-OpenAPI documents, or 95% of popular APIs, are supported.
+cross-section of real OpenAPI documents. It is not a claim that 100% of all
+OpenAPI documents, or 100% of popular APIs, are supported.
 
 Important limitations:
 
@@ -323,6 +345,6 @@ Important limitations:
 - the existing seven-provider regression cohort remains important for
   multi-file references and provider shapes that this holdout did not sample.
 
-Use the holdout success, operation retention, compatibility preservation,
+Use the holdout success, emitted operations, compatibility preservation,
 feature breadth, and regression-corpus evidence together when making
 compatibility claims.

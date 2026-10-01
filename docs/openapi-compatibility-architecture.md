@@ -904,12 +904,14 @@ Current corrected holdout evidence:
 | Metric | Result |
 | --- | ---: |
 | Documents | 20 |
-| Default client-only end-to-end success | 17 / 20 (85%) |
-| Capability-adjusted support | 19 / 20 (95%) |
-| Strict TypeScript among default generated documents | 17 / 17 (100%) |
-| Operations retained | 2,829 / 2,830 (99.96%) |
+| Default client-only end-to-end success | 18 / 20 (90%) |
+| Capability-adjusted support | 20 / 20 (100%) |
+| Strict TypeScript among default generated documents | 18 / 18 (100%) |
+| Default emitted operations | 2,647 |
+| Diagnosed operation omissions / helper omissions | 1 / 48 |
+| Historical IR retention metric | 2,829 / 2,830 (99.96%) |
 | Explicit compatibility findings preserved | 37 / 38 (97.37%) |
-| Benchmark feature detectors observed | 20 / 31 (64.52%) |
+| Benchmark feature detectors observed | 20 / 44 (45.45%) |
 
 `capability-adjusted support` does not hide the default result. Documents with
 top-level Webhooks or operation Callbacks are additionally verified with the
@@ -918,11 +920,20 @@ UniCourt fail the default client-only profile because inbound contracts require
 that add-on, then both pass generation and strict TypeScript with `server`
 enabled.
 
-One document remains unsupported after capability adjustment:
+`eos.local` uses local Schema Object references to nested Schema Objects under
+response schemas. The v9 implementation lowers these arbitrary Schema locations.
+The unchanged document now completes discovery, generation and strict checking
+with four emitted operations and no diagnostics. No document remains unsupported
+after capability adjustment.
 
-- `eos.local` uses local Schema Object references to nested Schema Objects
-  under response schemas. The TypeScript target currently lowers component
-  schema references but does not yet lower this generic nested-reference shape.
+The current version 2 report measures emitted operations from the actual output
+manifest. The two default blockers contribute zero emitted operations; their
+182 IR operations explain why retention is higher than default emission.
+The separate server profiles emit 24 and 158 operations. Local helper omissions
+remain visible even when a document succeeds. The catalog expanded from 31 to
+44 feature detectors; its lower observed proportion is a broader measurement,
+not a compatibility regression. The pre-v9 report is retained separately as
+`test/compatibility/holdout-results-pre-v9.json`.
 
 The holdout also exposed and now regression-tests a generic emitter bug: schema
 post-processing previously replaced every `Contract.` substring in an
@@ -935,8 +946,8 @@ strict-typechecks successfully without provider-specific behavior.
 
 The holdout currently contains 19 OAS 3.0 documents and one OAS 3.1 document.
 It contains no OAS 3.2 document and no selected external-`$ref` occurrence.
-Accordingly, the 95% capability-adjusted result must **not** be interpreted as
-"95% of all OpenAPI documents" or "95% of popular APIs." It is empirical
+Accordingly, the 100% capability-adjusted result must **not** be interpreted as
+"100% of all OpenAPI documents" or "100% of popular APIs." It is empirical
 evidence over this fixed independent cross-section.
 
 A separate `test/compatibility/production32.json` cohort pins two unchanged

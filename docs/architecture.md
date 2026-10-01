@@ -35,14 +35,13 @@ Two corpus classes are intentionally kept distinct:
   size-stratified APIs.guru holdout selected deterministically from one pinned
   upstream tree before sdkgen pass/fail results are inspected.
 
-The current corrected holdout has 85% default client-only end-to-end success and
-95% capability-adjusted support when existing server generation is enabled for
+The current corrected holdout has 90% default client-only end-to-end success and
+100% capability-adjusted support when existing server generation is enabled for
 documents containing inbound Webhooks or Callbacks. Those numbers are not a
 population-wide compatibility claim. See
 [OpenAPI compatibility architecture](openapi-compatibility-architecture.md#independent-20-provider-holdout-benchmark)
-for selection, metrics, limitations, and remaining generic gaps.
-
-A separate provider-published OpenAPI 3.2 cohort has two documents from
+for selection, metrics, limitations, and the resolved arbitrary Schema-reference
+gap. A separate provider-published OpenAPI 3.2 cohort has two documents from
 Zenith Payments, both passing generation and strict verification with 45 emitted
 operations. Large production 3.2 documents, external reference closures and
 combined security/streaming contracts remain unobserved in that cohort.
@@ -50,8 +49,11 @@ combined security/streaming contracts remain unobserved in that cohort.
 Compatibility report version 2 separates compiler IR retention from emitted
 operation coverage. Emitted counts come from the visible route manifest after
 successful emission; blocked documents contribute zero. Operation and helper
-omissions are reported separately. Stored version 1 holdout results retain their
-historical values and do not contain an emitted-coverage measurement.
+omissions are reported separately. The current holdout emits 2,647 operations
+under the default profile, with one diagnosed operation omission and 48 helper
+omissions. The 2,829 retained IR operations also include the two blocked documents,
+so emitted counts are the primary operation coverage measure. The original
+version 1 report is stored separately as `holdout-results-pre-v9.json`.
 
 ## Pipeline
 
