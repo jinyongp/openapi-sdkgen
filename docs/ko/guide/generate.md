@@ -1,8 +1,8 @@
 # SDK 생성과 검증
 
-생성 명령에는 일반 생성과 check 모드가 있습니다. 일반 생성은 애플리케이션
-소스를 갱신하고, check 모드는 같은 컴파일·target 준비 과정을 실행해 CI, 편집기,
-pre-commit에서 결과를 검증합니다.
+일반 생성은 OpenAPI 문서로 SDK 소스를 만듭니다. check 모드는 문서의 생성
+가능 여부와 기존 생성 파일의 최신 상태를 확인합니다. CI, 편집기,
+pre-commit에서 사용할 수 있습니다.
 
 아래 예시는 [`openapi-sdkgen`](../reference/cli.md)이 PATH에 있다고 가정합니다. 프로젝트 개발
 의존성으로 설치했다면 명령 앞에 `pnpm exec`을 붙이세요.
@@ -56,8 +56,7 @@ openapi-sdkgen generate \
 CI, 편집기, pre-commit 작업에서 OpenAPI 문서의 생성 가능 여부를 확인하려면
 [`--check`](../reference/cli.md#fresh-incremental-and-check-modes)를 사용합니다.
 
-[`--output`](../reference/cli.md#core-options)을 생략하면 입력 로딩, 컴파일, target 준비까지 실행하며 기존 출력은
-그대로 유지됩니다.
+[`--output`](../reference/cli.md#core-options)을 생략하면 OpenAPI 문서로 SDK를 생성할 수 있는지 확인합니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -96,17 +95,14 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-JSON report에는 `schemaVersion`, severity 개수, diagnostics, 실행하지 못한
-pipeline phase와 analyzer 단위 coverage가 포함됩니다. 현재 JSON 계약은
-`schemaVersion: 4`이며 각 diagnostic에는 안정적인 issue `id`가 있습니다.
-coverage는 analyzer별 complete/partial/skipped 상태를 기록합니다. Diagnostic JSON을
-저장하거나 파싱하는 도구는 `schemaVersion`으로 분기해야 합니다. URL credential,
-query, fragment 같은 민감한 source 정보는 렌더링 전에 정리됩니다.
+JSON 보고서에는 `schemaVersion`, 오류·경고 수, 문제별 위치와 메시지, 고정된
+식별자 `id`가 담깁니다. 현재 JSON 형식은 `schemaVersion: 4`입니다. JSON을
+저장하거나 파싱하는 도구는 `schemaVersion`에 맞춰 처리하세요. URL의 인증
+정보, 쿼리, 프래그먼트 같은 민감한 정보는 보고서에 기록하기 전에 정리됩니다.
 
-한 실행에서 독립 문제를 수집하려면 `--diagnostic-mode collect`를 사용합니다.
-collect는 prerequisite가 유효한 analyzer만 계속 실행하며, blocking diagnostic은
-그대로 non-zero 종료를 만들고 emit/publish를 막습니다. 따라서 partial SDK를 만들지
-않습니다. 기본값은 `fail-fast`입니다.
+한 번에 여러 문제를 확인하려면 `--diagnostic-mode collect`를 사용합니다.
+확인 가능한 나머지 검사도 계속하며, 생성을 막는 오류가 있으면 실패 종료하고
+SDK 생성을 중단합니다. 기본값은 `fail-fast`입니다.
 
 operation 자체는 생성되지만 resource member 충돌 때문에 TypeScript resource API
 shortcut만 사라지는 경우에는 `SDKGEN-W513`을 보고하고 정확한 `$operations` /
@@ -238,7 +234,7 @@ Outbound operation으로 구성된 문서는 기본 client artifact set을 사�
 [`--schema-extension`](../reference/cli.md#schema-extension)이 필요합니다. Schema extension은 custom JSON Schema 의미를
 처리하고, OpenAPI `x-*` 필드는 SDK 편의 기능을 설정합니다.
 
-매니페스트, SHA-256, JSON-RPC lowering, integrity lock 흐름과 보안 경계는
+확장 설정, 실행 파일 검증, 권한 범위는
 [사용자 정의 JSON Schema vocabulary](./schema-vocabularies.md)에서 설명합니다.
 
 전체 flag를 빠르게 찾으려면 [CLI 레퍼런스](../reference/cli.md)를 참고하세요.

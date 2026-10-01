@@ -9,29 +9,32 @@ const props = defineProps({
 
 const copy = {
   en: {
-    caption: "Generation and strict TypeScript verification by input set",
-    input: "Input set", default: "Default client", adjusted: "Required add-on", emitted: "Emitted operations",
-    docs: "documents", pass: "Pass", server: "Needs server", fail: "Failed",
+    caption: "Documents with successful SDK generation and typechecking",
+    input: "Document set", default: "API client SDK", adjusted: "SDK with Webhooks and Callbacks", emitted: "Included API operations",
+    docs: "documents", pass: "Succeeded", server: "Use --with server", fail: "Failed",
     document: "Document", version: "OpenAPI", report: "Results JSON", manifest: "Input manifest",
-    digest: "Results SHA-256", details: "Document results and original JSON",
+    details: "Document results",
     holdout: ["Independent holdout", "20 providers · OpenAPI 3.0 / 3.1"],
     production32: ["Provider-published documents", "1 provider · declared OpenAPI 3.2.0"],
-    modern: ["Feature and boundary checks", "1 real document + 9 authored fixtures"],
+    modern: ["Feature examples", "1 real API document + 9 authored examples"],
   },
   ko: {
-    caption: "검증 문서별 SDK 생성·엄격한 TypeScript 타입 검사 결과",
-    input: "검증 문서 모음", default: "기본 클라이언트", adjusted: "필요한 기능 포함", emitted: "생성된 API 작업",
-    docs: "개 문서", pass: "통과", server: "서버 기능 필요", fail: "실패",
+    caption: "SDK 생성과 타입 검사에 성공한 문서 수",
+    input: "문서 모음", default: "API 호출용 SDK", adjusted: "웹훅·콜백 포함 SDK", emitted: "포함된 API 수",
+    docs: "개 문서", pass: "성공", server: "--with server 필요", fail: "실패",
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
-    digest: "결과 SHA-256", details: "문서별 결과와 원본 JSON",
+    details: "문서별 결과",
     holdout: ["독립 표본", "20개 제공자 · OpenAPI 3.0 / 3.1"],
     production32: ["제공자 공개 문서", "1개 제공자 · OpenAPI 3.2.0 선언"],
-    modern: ["기능·지원 경계 검증", "실문서 1개 + 작성한 검증 문서 9개"],
+    modern: ["기능별 예제 문서", "실문서 1개 + 직접 작성한 예제 9개"],
   },
 };
 const labels = copy[props.locale];
 const number = (value) => new Intl.NumberFormat(props.locale).format(value);
 const documentCount = (count) => number(count) + (props.locale === "ko" ? "" : " ") + labels.docs;
+const successCount = (count, total) => props.locale === "ko"
+  ? `${number(total)}개 중 ${number(count)}개 성공`
+  : `${number(count)} of ${number(total)} succeeded`;
 const status = (document) => document.defaultSuccess ? labels.pass : document.adjustedSuccess ? labels.server : labels.fail;
 </script>
 
@@ -58,8 +61,8 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
             {{ labels[corpus.id][0] }}
             <span>{{ documentCount(corpus.documents) }} · {{ labels[corpus.id][1] }}</span>
           </th>
-          <td>{{ corpus.defaultSuccess }} / {{ corpus.documents }}</td>
-          <td>{{ corpus.adjustedSuccess }} / {{ corpus.documents }}</td>
+          <td>{{ successCount(corpus.defaultSuccess, corpus.documents) }}</td>
+          <td>{{ successCount(corpus.adjustedSuccess, corpus.documents) }}</td>
           <td>{{ number(corpus.emitted) }}</td>
         </tr>
       </tbody>
@@ -72,7 +75,6 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
           <a :href="withBase(`/compatibility-results/${corpus.id}-results.json`)" download>{{ labels.report }}</a>
           <a :href="withBase(`/compatibility-results/${corpus.id}.json`)" download>{{ labels.manifest }}</a>
         </p>
-        <p class="results-digest">{{ labels.digest }}<code>{{ corpus.reportSha256 }}</code></p>
         <table>
           <thead>
             <tr>
@@ -110,13 +112,11 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-summary th { white-space: normal; word-break: keep-all; }
 .results-summary tbody th { text-align: left; }
 .results-summary tbody th span { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--vp-c-text-2); }
-.results-summary td { text-align: right; }
+.results-summary td { text-align: right; white-space: normal; word-break: keep-all; }
 .results-evidence { border-bottom: 1px solid var(--vp-c-divider); padding: 16px 0; }
 .results-evidence summary { cursor: pointer; font-weight: 600; }
 .results-evidence summary:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 4px; }
 .results-downloads { display: flex; flex-wrap: wrap; gap: 8px 24px; }
-.results-digest { font-size: 12px; color: var(--vp-c-text-2); }
-.results-digest code { display: block; margin-top: 4px; overflow-wrap: anywhere; white-space: normal; }
 @media (max-width: 639px) {
   .results-summary { min-width: 32rem; }
   .results-summary :is(th, td) { padding: 8px; }

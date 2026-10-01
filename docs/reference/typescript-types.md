@@ -8,26 +8,10 @@ See [Generated client API](./client-api.md) for calling the generated client.
 ## Compiler support
 
 Generated client and server source requires **TypeScript 5.7.3 or later** with
-`ES2022`, `DOM`, and `DOM.Iterable` libraries. The runtime uses the generic typed
-arrays introduced in [TypeScript 5.7](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-7.html).
-Your application owns its compiler and bundler; the generator does not install a
-TypeScript compiler into the generated directory.
+`ES2022`, `DOM`, and `DOM.Iterable` libraries. Compile it with your application's
+existing TypeScript compiler and bundler.
 
-Generated client and server source and examples using the exported types have
-been checked with TypeScript **5.7.3, 5.9.3, 6.0.3, and 7.0.2** after removing
-`@ts-nocheck`. The checks enable `strict`, `noUncheckedIndexedAccess`,
-`verbatimModuleSyntax`, `isolatedModules`, and `skipLibCheck: false`, and cover
-OpenAPI 3.2, Webhooks, and nested Schema references. The
-[compatibility results](./compatibility.md) use TypeScript 7.0.2.
-
-Newer compiler versions are checked as support is verified. The minimum is a
-consumer source contract, not a promise that every future compiler change is
-already tested. TypeScript 5.6 and earlier are outside this support contract.
-
-These checks include the readable-stream iterator correction recorded in
-`CHANGELOG.md`. Generated source from v9.0.0 predates that correction and can
-fail strict checking with older compilers after removing `@ts-nocheck`.
-Regenerate with a generator release containing the correction.
+Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
 ## Choose a type source
 

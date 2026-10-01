@@ -59,7 +59,7 @@ the full validation and generation path.
 
 ## Install
 
-The Releaseway-generated npm launcher requires Node.js 22 or newer; this does
+The npm launcher requires Node.js 22 or newer; this does
 not impose a Node 22 requirement on generated SDK source. The package keeps a
 single launcher for macOS, Linux, and Windows on arm64 and x64. On first
 execution it downloads the matching archive from the exact same-version

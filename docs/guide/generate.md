@@ -1,8 +1,8 @@
 # Generate and verify an SDK
 
-Generation has two modes. Normal generation updates application source. Check
-mode runs the same compiler and target preparation while leaving generated output
-unchanged, which fits CI, editor, and pre-commit validation.
+Normal generation creates SDK source from an OpenAPI document. Check mode verifies
+that SDK generation can succeed and that existing generated files are up to date.
+Use it in CI, an editor, or a pre-commit task.
 
 Examples below use [`openapi-sdkgen`](../reference/cli.md) directly. If the CLI is installed as a
 project dependency, prefix the command with `pnpm exec`.
@@ -57,8 +57,7 @@ an unchanged incremental run can also skip compilation and emission.
 Use [`--check`](../reference/cli.md#fresh-incremental-and-check-modes) when CI, an editor, or a pre-commit task needs to validate whether
 the OpenAPI document can be generated.
 
-Omitting [`--output`](../reference/cli.md#core-options) runs input loading, compilation, and target preparation, then
-exits after the preflight:
+Omit [`--output`](../reference/cli.md#core-options) to check whether the document can generate an SDK:
 
 ```sh
 openapi-sdkgen generate \
@@ -68,8 +67,8 @@ openapi-sdkgen generate \
 ```
 
 If generated source is checked into the repository, add the existing managed
-output directory. The command regenerates the expected artifact set in memory
-and verifies that the managed directory is exact while leaving it unchanged:
+output directory. The command compares the expected SDK with the existing files
+and leaves the directory unchanged:
 
 ```sh
 openapi-sdkgen generate \
@@ -96,18 +95,16 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-The report contains `schemaVersion`, severity counts, diagnostics, skipped
-pipeline phases, and analyzer-level coverage. The current JSON contract is
-`schemaVersion: 4`; each diagnostic has a stable issue `id`, and coverage says
-which analyzers were complete, partial, or skipped. Tooling that persists or
-parses diagnostic JSON should branch on `schemaVersion`. Diagnostic source names
+The report contains `schemaVersion`, severity counts, and diagnostics with issue
+locations, messages, and stable `id` values. The current JSON contract is
+`schemaVersion: 4`. Tooling that persists or parses diagnostic JSON should branch
+on `schemaVersion`. Diagnostic source names
 are sanitized before rendering; URL credentials, queries, and fragments are
 removed from the report.
 
 Use `--diagnostic-mode collect` to inventory independent issues in one run.
-Collection continues only where analyzer prerequisites remain valid. Blocking
-diagnostics still produce a non-zero exit and prevent emit/publish, so collect
-mode never creates a partial SDK. The default is `fail-fast`.
+Collection continues with the checks that remain possible. Blocking diagnostics
+produce a non-zero exit and stop SDK generation. The default is `fail-fast`.
 
 When an operation remains generated but loses only its TypeScript resource API
 shortcut because resource members collide, generation reports
@@ -240,7 +237,7 @@ For documents limited to outbound operations, use the base client artifact set.
 A document that declares a required custom JSON Schema vocabulary needs a trusted
 local [`--schema-extension`](../reference/cli.md#schema-extensions). OpenAPI `x-*` fields configure SDK convenience features.
 
-See [Custom JSON Schema vocabularies](./schema-vocabularies.md) for the manifest,
-SHA-256, JSON-RPC lowering, integrity-lock workflow, and security boundary.
+See [Custom JSON Schema vocabularies](./schema-vocabularies.md) for extension
+configuration, executable verification, and permissions.
 
 For a compact lookup of every flag, see the [CLI reference](../reference/cli.md).

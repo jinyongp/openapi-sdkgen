@@ -32,11 +32,11 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON/YAML source: local path, `file://` URL, HTTP(S) URL, or `-` for stdin |
 | `--target typescript` | Generate the TypeScript target |
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
-| `--check` | Compile and prepare while leaving generated output unchanged; with `--output`, also verify managed-output drift |
+| `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
 | `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
 | `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
-| `--diagnostic-mode fail-fast|collect` | Select the diagnostic discovery policy; default `fail-fast` preserves existing stop boundaries, while `collect` continues only across independent analyzers with satisfied prerequisites |
+| `--diagnostic-mode fail-fast|collect` | `fail-fast` stops on blocking errors; `collect` reports additional issues where checks remain possible |
 | `--fail-on-resource-omission` | Fail instead of warning when a generated operation loses its TypeScript resource API capability |
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
@@ -141,7 +141,7 @@ Use `--incremental` after the first successful generation to update the same
 managed directory. The output manifest controls which files may be replaced or
 removed; unmanaged files are preserved.
 
-Omit `--output` for a compiler/target preflight:
+Omit `--output` to check whether the document can generate an SDK:
 
 ```sh
 openapi-sdkgen generate \
@@ -181,30 +181,19 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-The JSON envelope is versioned and contains counts, diagnostics, skipped
-phases, and analyzer-level discovery coverage. The current envelope is
-`schemaVersion: 4`. Each diagnostic has a stable issue `id`; coverage records
-identify analyzers as `complete`, `partial`, or `skipped` and expose unavailable
-prerequisites. Consumers of diagnostic JSON must branch on `schemaVersion`.
+The JSON report includes counts, diagnostics, and `coverage`, which describes the
+checks completed. Its current format is `schemaVersion: 4`. Each diagnostic has
+a stable issue `id`, a location, and a message. Parse the report according to
+its `schemaVersion`.
 
-Schema v4 preserves the v3 meaning of severity, `rule`, `action`, `capability`,
-`scope`, and `effect`. The migration change is that completeness is now explicit:
-a report with no additional findings but partial/skipped coverage is not an
-exhaustive clean result.
+Use `--diagnostic-mode collect` to report additional issues where checks remain
+possible. Blocking errors produce a non-zero exit and stop SDK generation.
+The default mode is `fail-fast`.
 
-Use `--diagnostic-mode collect` when inventorying independent issues. Collection
-does not downgrade blockers or create partial SDKs. If any blocking diagnostic
-remains, the command exits non-zero and emit/publish do not run. The default
-`fail-fast` mode preserves the previous stop-boundary behavior.
-
-In schema v3/v4, severity and generation effect are separate contracts. An
-`error` remains blocking. A warning can carry `scope: operation` with
-`effect: omit-operation`, or `scope: capability` with
-`effect: omit-capability`, only after that complete unsafe surface has been
-removed from the generated target plan. `scope: document` with `effect: block`
-means the selected target cannot be emitted. Consumers migrating from v2 must
-not treat every compatibility `reject` as a document-global failure; use the
-diagnostic severity plus `scope`/`effect`.
+Read `severity`, `scope`, and `effect` together to understand a diagnostic's
+impact. `scope: document` with `effect: block` stops SDK generation.
+`scope: operation` with `effect: omit-operation` omits the affected operation;
+`scope: capability` with `effect: omit-capability` omits the affected SDK feature.
 
 Diagnostic reports are written to stderr; generated artifacts are written to the
 output directory.

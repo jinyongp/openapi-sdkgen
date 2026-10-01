@@ -12,7 +12,7 @@ API, 옵션, 타입, OpenAPI 기능을 찾아볼 수 있는 문서입니다. 처
 | `.stream()`, `OperationStream`, 요청 스트림, SSE, 프로토콜·어댑터·코덱 | [스트리밍 API](./streaming.md) |
 | 생성된 요청·응답·구성 요소·보조 기능의 타입 | [생성된 TypeScript 타입](./typescript-types.md) |
 | OpenAPI 3.0/3.1/3.2 지원 범위와 버전별 동작 | [OpenAPI 지원 범위](./capabilities.md) |
-| 실문서 호환성 측정 결과, 검증 입력 선정 방법, 재현 근거 | [호환성 검증 결과](./compatibility.md) |
+| SDK 생성 성공 수와 문서별 결과 | [호환성 검증 결과](./compatibility.md) |
 | `x-pagination`, `x-envelope`, `x-sort`, 공개 범위, 오류 분류 | [OpenAPI x-* 확장](./extensions.md) |
 
 ## 공개 API 경계

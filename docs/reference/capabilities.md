@@ -118,10 +118,6 @@ rejected merely because no same-named component exists.
 
 ## Compatibility evidence
 
-Published API documents are checked through SDK generation and strict TypeScript
-typechecking. An independent holdout, provider-published documents, and authored
-feature checks are measured separately because they establish different kinds of
-evidence.
-
-See [Compatibility results](./compatibility.md) for the measured results,
-selection methods, document-level checks, and original JSON reports.
+See [Compatibility results](./compatibility.md) for SDK generation success counts,
+individual document results, and downloadable reports for public API documents
+and feature examples.

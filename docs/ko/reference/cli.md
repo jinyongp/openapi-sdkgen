@@ -34,11 +34,11 @@ openapi-sdkgen generate [options]
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, 3.2.x JSON/YAML 입력. 로컬 경로, `file://` URL, HTTP(S) URL, stdin을 뜻하는 `-` |
 | `--target typescript` | TypeScript target 생성 |
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 managed output 검증 |
-| `--check` | compile/prepare를 실행하고 출력은 유지. `--output`이 있으면 managed-output drift도 검증 |
+| `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 manifest-owned output 갱신 |
 | `--with <addon>` | target-specific artifact 추가. 현재 `server`, 반복 가능 |
 | `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
-| `--diagnostic-mode fail-fast|collect` | 진단 탐색 정책 선택. 기본 `fail-fast`는 기존 중단 경계를 유지하고, `collect`는 prerequisite가 충족된 독립 analyzer만 계속 실행 |
+| `--diagnostic-mode fail-fast|collect` | `fail-fast`는 생성을 막는 오류에서 중단. `collect`는 확인 가능한 나머지 문제도 수집 |
 | `--fail-on-resource-omission` | 생성된 operation이 TypeScript resource API capability를 잃으면 warning 대신 실패 |
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
@@ -149,8 +149,8 @@ openapi-sdkgen generate \
 사용합니다. 출력 매니페스트가 생성기가 교체하거나 삭제할 수 있는 파일을
 관리하며, 매니페스트 밖의 사용자 파일은 보존합니다.
 
-`--output` 없이 `--check`를 사용하면 compiler/target preflight를 수행하고 기존
-출력 디렉터리는 그대로 유지됩니다.
+`--output` 없이 `--check`를 사용하면 문서의 SDK 생성 가능 여부를 확인합니다.
+기존 출력 디렉터리는 그대로 유지됩니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -189,31 +189,19 @@ openapi-sdkgen generate \
   --diagnostics-format json 2> diagnostics.json
 ```
 
-JSON envelope에는 version, severity 개수, diagnostics, 실행하지 못한 phase와
-analyzer 단위 discovery coverage가 포함됩니다. 현재 envelope는
-`schemaVersion: 4`입니다. 각 diagnostic에는 안정적인 issue `id`가 있고,
-coverage는 analyzer별 `complete`, `partial`, `skipped` 상태와 사용할 수 없었던
-prerequisite를 기록합니다. Diagnostic JSON 소비자는 반드시 `schemaVersion`으로
-분기해야 합니다.
+JSON 보고서에는 오류·경고 수, 문제별 진단, 검사 완료 범위를 나타내는
+`coverage`가 담깁니다. 현재 형식은 `schemaVersion: 4`입니다. 각 진단에는
+고정된 식별자 `id`, 위치, 메시지가 있습니다. JSON을 파싱할 때는
+`schemaVersion`에 맞춰 처리하세요.
 
-schema v4는 v3의 severity, `rule`, `action`, `capability`, `scope`, `effect`
-의미를 유지합니다. 마이그레이션에서 새로 중요한 점은 completeness가 명시적이라는
-것입니다. 추가 finding이 없더라도 coverage가 partial/skipped이면 전체를 확인한 clean
-결과로 해석하면 안 됩니다.
+한 번에 여러 문제를 확인하려면 `--diagnostic-mode collect`를 사용합니다.
+확인 가능한 나머지 검사도 계속하며, 생성을 막는 오류가 있으면 실패 종료하고
+SDK 생성을 중단합니다. 기본값은 `fail-fast`입니다.
 
-독립 문제를 한 실행에서 수집하려면 `--diagnostic-mode collect`를 사용합니다.
-collect는 blocker를 warning으로 낮추거나 partial SDK를 만들지 않습니다. blocking
-diagnostic이 하나라도 있으면 non-zero로 종료하고 emit/publish는 실행하지 않습니다.
-기본 `fail-fast`는 기존 stop-boundary 동작을 유지합니다.
-
-schema v3/v4에서는 severity와 generation effect를 별개의 계약으로 봅니다. `error`는
-계속 blocking입니다. `warning`이 `scope: operation` +
-`effect: omit-operation` 또는 `scope: capability` +
-`effect: omit-capability`를 가질 수 있는 것은 해당 unsafe surface 전체가 target
-plan에서 제거된 경우뿐입니다. `scope: document` + `effect: block`은 선택한
-target을 emit할 수 없다는 뜻입니다. v2에서 마이그레이션하는 소비자는 모든
-compatibility `reject`를 document-global failure로 해석하면 안 되며, severity와
-`scope`/`effect`를 함께 읽어야 합니다.
+진단의 영향을 확인하려면 `severity`, `scope`, `effect`를 함께 읽으세요.
+`scope: document`와 `effect: block`은 SDK 생성을 중단합니다.
+`scope: operation`과 `effect: omit-operation`은 해당 API 작업을 생략하며,
+`scope: capability`와 `effect: omit-capability`는 해당 보조 기능을 생략합니다.
 
 Diagnostic report는 stderr에 기록되며, 생성 artifact는 요청한 경우에만 output
 디렉터리에 기록됩니다.
