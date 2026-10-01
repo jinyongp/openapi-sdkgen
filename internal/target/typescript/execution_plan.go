@@ -78,6 +78,8 @@ type operationExecutionPlan struct {
 	reasons       []string
 	inputSchemas  []string
 	outputSchemas []string
+	inputBundle   string
+	outputBundle  string
 	hasStream     bool
 }
 

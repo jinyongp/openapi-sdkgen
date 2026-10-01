@@ -105,6 +105,7 @@ type sourcePlan struct {
 	manifest                    *Manifest
 	modules                     *semanticModulePlan
 	executions                  map[string]operationExecutionPlan
+	executionSchemas            []executionSchemaModule
 	links                       []generatedLink
 	streams                     []generatedStream
 	webhooks                    []webhookDefinition
@@ -381,6 +382,10 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 		}
 		plan.modules = modules
 		plan.executions = executions
+		plan.executionSchemas, executionErr = prepareExecutionSchemaModules(modules, executions)
+		if executionErr != nil {
+			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript execution schema modules: %w", executionErr)
+		}
 		coverage = append(coverage, targetAnalysisCoverage("target.modules", diagnostic.CoverageComplete, ""))
 	} else {
 		coverage = append(coverage, targetAnalysisCoverage(

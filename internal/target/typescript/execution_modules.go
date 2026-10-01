@@ -83,10 +83,18 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		names      []string
 		projection string
 		entries    *[]string
+		bundle     string
+		local      string
 	}{
-		{execution.inputSchemas, "inputWireSchema", &input},
-		{execution.outputSchemas, "outputWireSchema", &out},
+		{execution.inputSchemas, "inputWireSchema", &input, execution.inputBundle, "inputSchemas"},
+		{execution.outputSchemas, "outputWireSchema", &out, execution.outputBundle, "outputSchemas"},
 	} {
+		if group.bundle != "" {
+			if err := importFrom("{ schemas as "+group.local+" }", group.bundle); err != nil {
+				return nil, err
+			}
+			continue
+		}
 		for _, name := range group.names {
 			schemaPath, exists := plan.schemaByName[name]
 			if !exists {
@@ -107,6 +115,12 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		output.WriteString("const services = /* @__PURE__ */ createHTTPServices(xmlWireCodec, bufferedXMLCodecExtensions)\n")
 	}
 	inputArg, outputArg := "undefined", "undefined"
+	if execution.inputBundle != "" {
+		inputArg = "inputSchemas"
+	}
+	if execution.outputBundle != "" {
+		outputArg = "outputSchemas"
+	}
 	if len(input) > 0 {
 		fmt.Fprintf(&output, "const inputSchemas: WireSchemas = /* @__PURE__ */ Object.fromEntries([%s])\n", strings.Join(input, ", "))
 		inputArg = "inputSchemas"

@@ -91,6 +91,15 @@ func hashSelectiveArtifact(digest hash.Hash, artifact Artifact) {
 
 func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Artifact) error) error {
 	modules := plan.modules
+	for _, bundle := range plan.executionSchemas {
+		source, err := emitExecutionSchemaModule(modules, bundle)
+		if err != nil {
+			return err
+		}
+		if err := write(Artifact{Path: bundle.path, Data: generatedSource(source)}); err != nil {
+			return err
+		}
+	}
 	items := make(map[string]ManifestOperation, len(plan.manifest.Operations))
 	for _, item := range plan.manifest.Operations {
 		items[manifestRouteKey(item)] = item
