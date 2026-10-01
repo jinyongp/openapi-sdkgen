@@ -33,8 +33,9 @@ type schemaModulePlan struct {
 }
 
 type operationModulePlan struct {
-	routeKey string
-	path     string
+	routeKey   string
+	path       string
+	staticPath string
 }
 
 type resourceModulePlan struct {

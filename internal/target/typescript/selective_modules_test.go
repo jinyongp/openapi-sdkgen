@@ -52,6 +52,13 @@ func TestSelectiveBoundaryArtifactsAndTheirImportsAreEmitted(t *testing.T) {
 			"get": map[string]any{"operationId": tail, "responses": map[string]any{"204": map[string]any{"description": "ok"}}},
 		}
 	}
+	longRoute := "/" + strings.Repeat("segment/", 26) + "items"
+	fallbackDirectory := "route-" + shortArtifactHash("GET "+longRoute)
+	for _, route := range []string{"/" + fallbackDirectory, "/" + fallbackDirectory + "-1"} {
+		paths[route] = map[string]any{
+			"get": map[string]any{"responses": map[string]any{"204": map[string]any{"description": "ok"}}},
+		}
+	}
 	input, err := json.Marshal(map[string]any{"openapi": "3.0.3", "info": map[string]any{"title": "Boundary", "version": "1"}, "paths": paths})
 	if err != nil {
 		t.Fatal(err)
@@ -82,6 +89,12 @@ func TestSelectiveBoundaryArtifactsAndTheirImportsAreEmitted(t *testing.T) {
 		static := selectiveStaticArtifact(module)
 		if !strings.Contains(byPath[static], "export const operation =") {
 			t.Fatalf("static reference missing at planned path: %s", static)
+		}
+		if strings.HasPrefix(module.routeKey, "GET /"+fallbackDirectory) && static != "selective/operations/"+strings.TrimPrefix(module.path, "internal/operations/") {
+			t.Fatalf("existing portable route moved: %s -> %s", module.routeKey, static)
+		}
+		if module.routeKey == "GET "+longRoute && static != "selective/operations/"+fallbackDirectory+"-2/get.ts" {
+			t.Fatalf("shortened route did not avoid existing directories: %s", static)
 		}
 	}
 	imports := regexp.MustCompile(`(?:\bfrom\s+|\bimport\s*\(?\s*)["'](\.[^"']+)["']`)

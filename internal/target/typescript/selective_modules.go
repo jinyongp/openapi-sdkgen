@@ -32,6 +32,9 @@ func selectiveLookupArtifact(kind, key string) (string, error) {
 }
 
 func selectiveStaticArtifact(module operationModulePlan) string {
+	if module.staticPath != "" {
+		return module.staticPath
+	}
 	result := "selective/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
 	if len(result) <= maxArtifactPathBytes {
 		return result
@@ -40,6 +43,23 @@ func selectiveStaticArtifact(module operationModulePlan) string {
 }
 
 func (plan *semanticModulePlan) planSelective(manifest Manifest) error {
+	// Reserve existing portable paths before allocating shortened directories.
+	used := make(map[string]bool, len(plan.operations))
+	for _, module := range plan.operations {
+		if len("selective/operations/"+strings.TrimPrefix(module.path, "internal/operations/")) <= maxArtifactPathBytes {
+			used[portableArtifactPathKey(selectiveStaticArtifact(module))] = true
+		}
+	}
+	for index, module := range plan.operations {
+		artifact := selectiveStaticArtifact(module)
+		if len("selective/operations/"+strings.TrimPrefix(module.path, "internal/operations/")) > maxArtifactPathBytes {
+			for suffix := 1; used[portableArtifactPathKey(artifact)]; suffix++ {
+				artifact = pathpkg.Join("selective", "operations", fmt.Sprintf("route-%s-%d", shortArtifactHash(module.routeKey), suffix), pathpkg.Base(module.path))
+			}
+			used[portableArtifactPathKey(artifact)] = true
+		}
+		plan.operations[index].staticPath = artifact
+	}
 	for _, name := range []string{"index", "types", "all"} {
 		plan.selective = append(plan.selective, artifactPathCandidate{identity: "selective " + name, base: "selective/" + name + ".ts"})
 	}
