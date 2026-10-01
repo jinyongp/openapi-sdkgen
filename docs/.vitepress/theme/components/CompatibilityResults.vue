@@ -19,18 +19,19 @@ const copy = {
     modern: ["Feature and boundary checks", "1 real document + 9 authored fixtures"],
   },
   ko: {
-    caption: "검증 입력별 SDK 생성·TypeScript strict 검사 결과",
-    input: "검증 입력", default: "기본 클라이언트", adjusted: "필요한 기능 포함", emitted: "생성 operation",
-    docs: "문서", pass: "통과", server: "server 필요", fail: "실패",
+    caption: "검증 문서별 SDK 생성·엄격한 TypeScript 타입 검사 결과",
+    input: "검증 문서 모음", default: "기본 클라이언트", adjusted: "필요한 기능 포함", emitted: "생성된 API 작업",
+    docs: "개 문서", pass: "통과", server: "서버 기능 필요", fail: "실패",
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
     digest: "결과 SHA-256", details: "문서별 결과와 원본 JSON",
-    holdout: ["독립 holdout", "20개 제공자 · OpenAPI 3.0 / 3.1"],
+    holdout: ["독립 표본", "20개 제공자 · OpenAPI 3.0 / 3.1"],
     production32: ["제공자 공개 문서", "1개 제공자 · OpenAPI 3.2.0 선언"],
     modern: ["기능·지원 경계 검증", "실문서 1개 + 작성한 검증 문서 9개"],
   },
 };
 const labels = copy[props.locale];
 const number = (value) => new Intl.NumberFormat(props.locale).format(value);
+const documentCount = (count) => number(count) + (props.locale === "ko" ? "" : " ") + labels.docs;
 const status = (document) => document.defaultSuccess ? labels.pass : document.adjustedSuccess ? labels.server : labels.fail;
 </script>
 
@@ -50,7 +51,7 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
         <tr v-for="corpus in results" :key="corpus.id">
           <th scope="row">
             {{ labels[corpus.id][0] }}
-            <span>{{ corpus.documents }} {{ labels.docs }} · {{ labels[corpus.id][1] }}</span>
+            <span>{{ documentCount(corpus.documents) }} · {{ labels[corpus.id][1] }}</span>
           </th>
           <td>{{ corpus.defaultSuccess }} / {{ corpus.documents }}</td>
           <td>{{ corpus.adjustedSuccess }} / {{ corpus.documents }}</td>

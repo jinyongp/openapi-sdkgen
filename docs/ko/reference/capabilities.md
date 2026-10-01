@@ -1,94 +1,94 @@
 # OpenAPI 지원 범위
 
-openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고 문서에 선언된 버전에
-맞춰 기능을 해석합니다. 생성은 fail-closed 방식이며, 선택한 TypeScript target이
-사용된 기능을 안전하게 표현할 수 없으면 해당 OpenAPI 위치를 알려 주고
-중단합니다.
+openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고, 문서에 선언된 버전에
+맞춰 SDK를 생성합니다. 선택한 생성 대상이 사용된 기능을 안전하게 표현할 수
+없으면, 문제가 있는 OpenAPI 위치를 알려 주고 생성을 중단합니다.
 
-이 페이지는 주요 공개 capability를 요약합니다. 실제 생성 흐름과 flag는
-[CLI 레퍼런스](./cli.md)를 참고하세요.
-실문서 측정 결과와 검증 근거는 [호환성 검증 결과](./compatibility.md)에서
-확인할 수 있습니다.
+이 페이지는 지원하는 기능과 사용 조건을 설명합니다. 생성 명령과 옵션은
+[CLI 레퍼런스](./cli.md), 실제 문서로 측정한 결과는
+[호환성 검증 결과](./compatibility.md)에서 확인할 수 있습니다.
 
 <span id="supported-openapi-versions"></span>
 
 ## 지원 OpenAPI 버전
 
-| OpenAPI | SDK 생성 | Sequential media |
+| OpenAPI | SDK 생성 | 연속 데이터 처리 |
 | --- | --- | --- |
-| 3.0.x | 지원 | 알려진 sequential content type에 일반 `schema`를 선언하면 complete buffered value로 처리할 수 있습니다. |
-| 3.1.x | 지원 | 3.0.x와 같은 complete-value 처리를 지원하며 3.1 JSON Schema 모델을 사용합니다. |
-| 3.2.x | 지원 | Media Type Object의 `itemSchema`, `prefixEncoding`, `itemEncoding`을 사용해 typed incremental stream과 positional/streaming multipart를 표현할 수 있습니다. |
+| 3.0.x | 지원 | 전체 데이터를 모아 하나의 값으로 처리 |
+| 3.1.x | 지원 | 전체 값 처리에 3.1 스키마 규칙 적용 |
+| 3.2.x | 지원 | 항목별 타입과 순차 처리 지원 |
 
-따라서 생성기 전체가 OpenAPI 3.2에만 한정되는 것은 아닙니다. OpenAPI 3.2
-`itemSchema`가 typed incremental streaming을 추가하고, 3.0/3.1은 complete
-`schema` value에 built-in sequential framing을 사용할 수 있습니다. 정확한
-streaming 계약은 [스트리밍 API](./streaming.md#openapi-version-support)를
-참고하세요.
+OpenAPI 3.0과 3.1에서도 지원되는 연속 데이터 형식을 사용할 수 있습니다.
+일반 `schema`를 선언하면 전체 데이터를 모아 하나의 값으로 처리합니다.
+3.2의 `itemSchema`는 각 항목에 타입을 지정하고, 도착한 항목부터 처리할 수
+있도록 확장합니다. `prefixEncoding`과 `itemEncoding`으로 순서가 있는
+multipart 데이터와 스트리밍 multipart 데이터도 표현할 수 있습니다. 자세한 동작은
+[스트리밍 API](./streaming.md#openapi-version-support)를 참고하세요.
 
-3.2 전용 필드는
-[OpenAPI Media Type Object](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)에
-정의되어 있습니다.
+3.2 전용 필드의 정의는
+[OpenAPI의 미디어 타입 객체 명세](https://spec.openapis.org/oas/v3.2.0.html#media-type-object)에
+있습니다.
 
-## Client 요청과 응답
+## 클라이언트 요청과 응답
 
-TypeScript target은 다음 내용을 타입과 실행 가능한 client 동작으로 생성합니다.
+TypeScript를 생성 대상으로 선택하면 요청과 응답에 필요한 타입 및 실행 코드를
+생성합니다. 경로와 HTTP 메서드, 경로·쿼리·헤더·쿠키 매개변수, 요청 본문을
+지원합니다. JSON, 텍스트, 바이너리, 폼, multipart 데이터와 지원되는 스트리밍
+형식도 처리합니다.
 
-- path, HTTP method, path/query/header/cookie parameter, request body
-- JSON, text, binary, form, multipart, 지원되는 streaming media
-- status별 response, response header, raw response 접근
-- 적용되는 OpenAPI/JSON Schema 계약에 따른 request 및 decoded response validation
+응답은 상태 코드별로 구분하며, 응답 헤더와 원본 응답에 접근할 수 있습니다.
+요청 값과 해석된 응답 값은 해당 문서의 OpenAPI 및 JSON Schema 규칙에 따라
+검증합니다.
 
-Operation은 generated resource method, `"METHOD /path"` route, `operationId` 중
+API 작업은 생성된 메서드, `"METHOD /path"` 형태의 경로, `operationId` 중
 필요한 방식으로 호출할 수 있습니다.
 [생성된 클라이언트 사용](../guide/client.md)에서 실제 호출 흐름을 설명합니다.
 
-## Server와 security
+## 접속 주소와 인증
 
-OpenAPI Server Object와 server variable을 지원하며 operation/path/root 범위의
-우선순위를 반영합니다. 호출자가 지정한
-[`baseURL`](./client-api.md#clientoptions)은 server selection을 override합니다.
+문서에 선언된 서버 주소와 서버 변수를 지원합니다. 서버 주소는 API 작업,
+경로, 문서 전체 순으로 우선 적용됩니다. 호출할 때
+[`baseURL`](./client-api.md#clientoptions)을 지정하면 그 주소를 사용합니다.
 
-OpenAPI API key, HTTP Basic/Bearer, OAuth2, OpenID Connect, mutual TLS security
-scheme을 지원합니다. 여러 Security Requirement Object가 대안으로 적용되면
-생성된 요청 옵션이 사용할 수 있는
-[`securityRequirement`](./client-api.md#security-requirement) 값을 TypeScript union으로
-노출합니다.
+API 키, HTTP Basic·Bearer, OAuth2, OpenID Connect, 상호 TLS 인증을 지원합니다.
+여러 인증 요구 사항 중 하나를 선택할 수 있는 경우,
+[`securityRequirement`](./client-api.md#security-requirement)에 지정할 수 있는
+값을 TypeScript 타입으로 제공합니다.
 
-Credential 획득은 애플리케이션이 담당합니다.
+인증 정보나 토큰을 발급받는 과정은 애플리케이션에서 구현합니다.
 [인증, 전송, 스트림](../guide/transport.md)을 참고하세요.
 
-## Link, pagination, stream
+## 후속 호출, 페이지 조회, 스트리밍
 
-OpenAPI Link Object는 [`$links`](./client-api.md#link) 아래의 타입 안전 후속 호출
-helper로 생성됩니다. `x-pagination`을 선언하면 pagination helper가 생성됩니다.
+OpenAPI의 Link 객체는 [`$links`](./client-api.md#link) 아래에 타입을 검사할 수
+있는 후속 호출 함수로 생성됩니다. `x-pagination`을 선언하면 여러 페이지에
+걸친 데이터를 조회하는 보조 기능이 생성됩니다.
 [OpenAPI x-* 확장](./extensions.md#x-pagination)을 참고하세요.
 
-Sequential media는 generated operation-centric stream surface를 사용합니다.
-`.stream()`, request source, built-in protocol, adapter, frame limit, lifecycle은
+연속 데이터는 해당 API 작업의 스트리밍 기능으로 처리합니다. `.stream()` 호출,
+요청 데이터 공급, 기본 프로토콜, 어댑터, 프레임 크기 제한, 시작과 종료 동작은
 [스트리밍 API](./streaming.md)에 정리되어 있습니다.
 
-## Webhook과 Callback
+## 웹훅과 콜백 수신
 
-Webhook과 Callback Object는 inbound request를 설명합니다. 기본 target은 outbound
-client artifact를 만들고, [`--with server`](./cli.md#typescript-server-add-on)가
-inbound contract를 추가합니다. Add-on은 Fetch 기반 handler/router API를
-만듭니다. HTTP listener, framework 연결, 공개 route, 인증 정책은
-애플리케이션이 담당합니다.
+OpenAPI의 웹훅과 콜백은 애플리케이션이 받는 요청을 설명합니다. 기본 SDK는
+외부 API를 호출하는 클라이언트를 생성합니다.
+[`--with server`](./cli.md#typescript-server-add-on)를 지정하면 수신 요청을
+처리하는 타입과 Fetch 기반 처리 함수·라우터도 생성합니다.
 
-Lookup 정보는 [생성된 서버 API](./server-api.md), 실제 연결 흐름은
-[Webhook과 Callback 수신](../guide/server.md)을 참고하세요.
+HTTP 서버 실행, 프레임워크 연결, 공개 경로 설정, 인증 정책은 애플리케이션에서
+구현합니다. API의 자세한 사용법은 [생성된 서버 API](./server-api.md), 연동
+과정은 [웹훅과 콜백 수신](../guide/server.md)을 참고하세요.
 
-## JSON Schema vocabulary
+## JSON Schema 어휘
 
-생성기는 지원하는 OpenAPI 버전의 표준 JSON Schema vocabulary를 처리합니다.
-Required custom vocabulary에는 추가 schema semantics가 필요하므로 신뢰된
-compile-time schema extension을 등록합니다. Extension은 생성 중에
-custom vocabulary를 표준 JSON Schema로 낮추고, generated runtime은 변환된 schema
-의미를 사용합니다.
+지원하는 OpenAPI 버전에 정의된 표준 JSON Schema 어휘를 처리합니다. 문서가
+알 수 없는 사용자 정의 어휘를 필수로 요구하면, 그 의미를 해석할 수 있는
+신뢰된 스키마 확장을 등록해야 합니다.
 
-[사용자 정의 JSON Schema vocabulary](../guide/schema-vocabularies.md)를
-참고하세요.
+확장은 SDK 생성 시 사용자 정의 어휘를 표준 JSON Schema로 변환합니다.
+생성된 실행 코드는 변환된 스키마를 사용합니다.
+[사용자 정의 JSON Schema 어휘](../guide/schema-vocabularies.md)를 참고하세요.
 
 ## SDK 전용 OpenAPI 확장
 
@@ -96,56 +96,34 @@ custom vocabulary를 표준 JSON Schema로 낮추고, generated runtime은 변�
 [`x-envelope`](./extensions.md#x-envelope),
 [`x-sdk-visibility`](./extensions.md#x-sdk-visibility),
 [`x-sort`](./extensions.md#x-sort),
-[`x-error-category`](./extensions.md#x-error-category) 같은 지원 `x-*` 필드는
-선택적인 SDK 편의 기능을 추가합니다.
-Custom JSON Schema vocabulary extension은 schema 의미를 처리합니다.
+[`x-error-category`](./extensions.md#x-error-category)를 선언하면 SDK에 편의
+기능을 추가할 수 있습니다. 사용자 정의 JSON Schema 어휘 확장은 스키마의
+의미를 해석하는 용도로 사용합니다.
 
-[OpenAPI x-* 확장](./extensions.md)을 참고하세요.
+각 필드의 사용법은 [OpenAPI x-* 확장](./extensions.md)에 있습니다.
 
-## Feature coverage
+## 생성이 중단되거나 일부 기능이 생략되는 경우
 
-프로젝트는 지원 OpenAPI 버전에 대한 실행 가능한 feature evidence를 유지합니다.
-문서 사이트는 지원 기능을 사용하는 방법에 집중하며, generation diagnostic이
-특정 문서와 설치된 버전의 생성 가능 여부를 판정합니다.
+특정 문서를 설치된 버전으로 생성할 수 있는지는 생성 명령의 진단 결과로
+확인합니다. 경고에 `effect: omit-operation`이 있으면 해당 API 작업을,
+`effect: omit-capability`가 있으면 해당 보조 기능을 생략합니다. 나머지 SDK는
+계속 생성할 수 있습니다. `effect: block`은 생성을 중단한다는 뜻입니다.
 
-Compatibility 진단은 scope-aware입니다. `effect: omit-operation` 또는
-`effect: omit-capability` warning은 해당 surface 전체를 의도적으로 생성하지
-않으면서 나머지 안전한 SDK는 계속 생성할 수 있다는 뜻입니다. `effect: block`
-진단은 선택한 target의 emit을 막습니다.
+예를 들어 경로에 쓰인 매개변수 이름과 선언된 이름이 다르면 `COMP-PARAM-005`로
+알리고 해당 API 작업만 생략합니다. OpenAPI 3.0·3.1에서 API 작업의 인증 요구
+사항이 선언되지 않은 인증 방식을 참조하면 `COMP-SEC-001`로 알리고 그 작업을
+생략합니다. 같은 문제가 문서 전체의 인증 설정에 있으면 생성을 중단합니다.
 
-예를 들어 path template과 path Parameter 이름이 일치하지 않으면
-`COMP-PARAM-005`로 보고하고 잘못된 operation만 생략합니다. OAS 3.0/3.1에서
-operation이 명시한 Security Requirement가 선언되지 않은 scheme을 참조하면
-`COMP-SEC-001` operation omission이 되지만, 같은 문제가 root security에 있으면
-document block입니다. sdkgen은 복구를 위해 path parameter 이름을 추측해 바꾸거나
-security scheme을 만들어내지 않습니다. OAS 3.2의 Security Scheme URI 이름은 같은
-이름의 component가 없다는 이유만으로 거부하지 않습니다.
+생성기는 잘못된 입력을 복구하려고 매개변수 이름을 추측하거나 인증 방식을
+만들어 넣지 않습니다. OpenAPI 3.2에서 URI로 지정한 인증 방식은 같은 이름의
+구성 요소가 없다는 이유만으로 거부하지 않습니다. 진단 형식은
+[CLI 진단 결과](./cli.md#diagnostics)를 참고하세요.
 
-## Compatibility 근거
+## 실문서 검증 결과
 
-Feature manifest는 기능별 정식 계약입니다. 프로젝트는 여기에 더해 실제 문서 기반
-근거를 두 종류로 유지합니다.
+다양한 제공자의 공개 문서로 SDK 생성과 엄격한 TypeScript 타입 검사를
+수행합니다. 개발에 사용한 문서와 별도로 선정한 독립 표본, 제공자가 공개한
+문서, 특정 기능을 확인하도록 작성한 테스트 문서를 구분해 검증합니다.
 
-- compatibility 작업 중 regression probe로 사용한 7개 provider corpus
-- sdkgen 결과를 보기 전에 고정한 별도 20-provider APIs.guru holdout
-
-현재 교정된 holdout에서 기본 TypeScript client profile은 20개 중 17개 문서를
-생성하고 strict typecheck까지 통과합니다. Webhook 또는 Callback을 포함한 문서를
-기존 `server` add-on으로 추가 검증하면 capability-adjusted support는 20개 중
-19개입니다. 같은 holdout에서 2,830개 operation 중 2,829개가 유지되고, 명시적인
-compatibility finding 38개 중 37개는 의미를 보존하는 처리로 끝납니다.
-
-이 수치는 전체 OpenAPI 생태계에 대한 지원률 약속이 아니라 engineering evidence입니다.
-Holdout은 인기도가 아니라 문서 크기로 층화되어 있고, OAS 3.0 문서 19개와 OAS 3.1
-문서 1개로 구성됩니다. 현재 OAS 3.2 문서와 선택된 external-`$ref` 사례는 없습니다.
-Capability-adjusted 기준으로 남은 실패는 generic nested Schema `$ref` 지원 공백입니다.
-
-표본 선택 규칙, 고정 identity, 정확한 지표, 알려진 공백, 재현 명령은 저장소의
-`docs/openapi-compatibility-architecture.md`와
-`test/compatibility/README.md`를 참고하세요.
-
-버전이 있는 JSON 계약은
-[CLI diagnostics 레퍼런스](./cli.md#diagnostics)를 참고하세요.
-
-SDK 생성에 사용한 원본 OpenAPI 문서는 generated metadata 진입점에서도 확인할 수
-있습니다.
+각 검증 모음의 측정 결과와 의미, 문서별 결과, 원본 JSON은
+[호환성 검증 결과](./compatibility.md)에서 확인할 수 있습니다.

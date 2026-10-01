@@ -12,6 +12,9 @@ hero:
     - theme: alt
       text: Open Playground
       link: /playground
+    - theme: alt
+      text: Compatibility results
+      link: /reference/compatibility
 
 features:
   - icon: ◇

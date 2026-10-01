@@ -35,13 +35,13 @@ const sidebarGroups = [
       },
       {
         route: "/guide/server",
-        labels: { en: "Receive webhooks and callbacks", ko: "Webhook과 Callback 수신" },
+        labels: { en: "Receive webhooks and callbacks", ko: "웹훅과 콜백 수신" },
       },
       {
         route: "/guide/schema-vocabularies",
         labels: {
           en: "Custom JSON Schema vocabularies",
-          ko: "사용자 정의 JSON Schema vocabulary",
+          ko: "사용자 정의 JSON Schema 어휘",
         },
       },
     ],
@@ -57,7 +57,7 @@ const sidebarGroups = [
       },
       {
         route: "/examples/webhook-server",
-        labels: { en: "Webhook receiver", ko: "Webhook 수신" },
+        labels: { en: "Webhook receiver", ko: "웹훅 수신" },
       },
     ],
   },

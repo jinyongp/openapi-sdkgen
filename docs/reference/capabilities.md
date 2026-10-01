@@ -118,33 +118,10 @@ rejected merely because no same-named component exists.
 
 ## Compatibility evidence
 
-The feature manifest is the canonical feature-by-feature contract. The project
-also keeps two real-document evidence sets:
+Published API documents are checked through SDK generation and strict TypeScript
+typechecking. An independent holdout, provider-published documents, and authored
+feature checks are measured separately because they establish different kinds of
+evidence.
 
-- seven provider corpora used as regression probes during compatibility work;
-- a separate 20-provider APIs.guru holdout selected before sdkgen results were
-  inspected.
-
-On the current corrected holdout, the default TypeScript client profile
-generates and strict-typechecks 17 of 20 documents. When documents that contain
-Webhooks or Callbacks are rechecked with the existing `server` add-on, current
-capability-adjusted support is 19 of 20. Across the same holdout, 2,829 of 2,830
-operations are retained and 37 of 38 explicit compatibility findings preserve
-semantics rather than reject them.
-
-These numbers are engineering evidence, not a population-wide support promise.
-The holdout is size-stratified rather than popularity-weighted, contains 19 OAS
-3.0 documents and one OAS 3.1 document, and currently contains no OAS 3.2 or
-selected external-`$ref` case. The remaining capability-adjusted failure
-exercises a generic nested Schema `$ref` support gap.
-
-For selection rules, identities, exact metrics, known gaps, and reproduction
-commands, maintainers can inspect
-`docs/openapi-compatibility-architecture.md` and
-`test/compatibility/README.md` in the repository.
-
-See the [CLI diagnostics reference](./cli.md#diagnostics) for the versioned JSON
-contract.
-
-The source OpenAPI document used for generation is also available through the
-generated metadata entry point.
+See [Compatibility results](./compatibility.md) for the measured results,
+selection methods, document-level checks, and original JSON reports.
