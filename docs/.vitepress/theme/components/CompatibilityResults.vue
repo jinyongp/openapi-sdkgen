@@ -10,20 +10,22 @@ const props = defineProps({
 const copy = {
   en: {
     caption: "Documents with successful SDK generation and typechecking",
-    input: "Document set", default: "API client SDK", adjusted: "SDK with Webhooks and Callbacks", emitted: "Included API operations",
+    input: "Document set", default: "API client SDK", adjusted: "SDK with Webhooks and Callbacks", emitted: "Generated API calls",
     docs: "documents", pass: "Succeeded", server: "Use --with server", fail: "Failed",
     document: "Document", version: "OpenAPI", report: "Results JSON", manifest: "Input manifest",
     details: "Document results",
+    receiving: "Generated receiving code", webhooks: "Webhook handlers", callbacks: "Callback handlers",
     holdout: ["Independent holdout", "20 providers · OpenAPI 3.0 / 3.1"],
     production32: ["Provider-published documents", "1 provider · declared OpenAPI 3.2.0"],
     modern: ["Feature examples", "1 real API document + 9 authored examples"],
   },
   ko: {
     caption: "SDK 생성과 타입 검사에 성공한 문서 수",
-    input: "문서 모음", default: "API 호출용 SDK", adjusted: "웹훅·콜백 포함 SDK", emitted: "포함된 API 수",
+    input: "문서 모음", default: "API 호출용 SDK", adjusted: "웹훅·콜백 포함 SDK", emitted: "생성된 호출 API 수",
     docs: "개 문서", pass: "성공", server: "--with server 필요", fail: "실패",
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
     details: "문서별 결과",
+    receiving: "생성된 수신 코드", webhooks: "웹훅 핸들러", callbacks: "콜백 핸들러",
     holdout: ["독립 표본", "20개 제공자 · OpenAPI 3.0 / 3.1"],
     production32: ["제공자 공개 문서", "1개 제공자 · OpenAPI 3.2.0 선언"],
     modern: ["기능별 예제 문서", "실문서 1개 + 직접 작성한 예제 9개"],
@@ -36,6 +38,8 @@ const successCount = (count, total) => props.locale === "ko"
   ? `${number(total)}개 중 ${number(count)}개 성공`
   : `${number(count)} of ${number(total)} succeeded`;
 const status = (document) => document.defaultSuccess ? labels.pass : document.adjustedSuccess ? labels.server : labels.fail;
+const receiving = (document) => document.receiving.map((feature) =>
+  feature === "document.webhooks" ? labels.webhooks : labels.callbacks).join(", ") || "—";
 </script>
 
 <template>
@@ -63,7 +67,7 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
           </th>
           <td>{{ successCount(corpus.defaultSuccess, corpus.documents) }}</td>
           <td>{{ successCount(corpus.adjustedSuccess, corpus.documents) }}</td>
-          <td>{{ number(corpus.emitted) }}</td>
+          <td>{{ number(corpus.generatedOperations) }}</td>
         </tr>
       </tbody>
     </table>
@@ -83,6 +87,7 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
               <th scope="col">{{ labels.default }}</th>
               <th scope="col">{{ labels.adjusted }}</th>
               <th scope="col">{{ labels.emitted }}</th>
+              <th scope="col">{{ labels.receiving }}</th>
             </tr>
           </thead>
           <tbody>
@@ -91,7 +96,8 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
               <td>{{ document.version }}</td>
               <td>{{ status(document) }}</td>
               <td>{{ document.adjustedSuccess ? labels.pass : labels.fail }}</td>
-              <td>{{ number(document.emitted) }}</td>
+              <td>{{ document.generatedOperations === null ? "—" : number(document.generatedOperations) }}</td>
+              <td>{{ receiving(document) }}</td>
             </tr>
           </tbody>
         </table>
@@ -116,6 +122,7 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-evidence { border-bottom: 1px solid var(--vp-c-divider); padding: 16px 0; }
 .results-evidence summary { cursor: pointer; font-weight: 600; }
 .results-evidence summary:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 4px; }
+.results-evidence :is(th, td) { white-space: normal; word-break: keep-all; }
 .results-downloads { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 @media (max-width: 639px) {
   .results-summary { min-width: 32rem; }

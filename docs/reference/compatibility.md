@@ -11,13 +11,16 @@ An **API client SDK** sends requests to an API. An **SDK with Webhooks and
 Callbacks** also includes code for receiving inbound requests.
 
 **18 of 20 succeeded** means SDK generation and typechecking succeeded for
-18 of the 20 documents. **Included API operations** counts the callable operations
-generated in the API client SDK.
+18 of the 20 documents. **Generated API calls** counts the callable operations in
+successfully generated SDKs, including the `--with server` results for documents
+with Webhooks or Callbacks.
 
 <CompatibilityResults />
 
 For documents with Webhooks or Callbacks, use `--with server` to generate the
-receiving code alongside the client. See [Receive Webhooks and Callbacks](../guide/server.md).
+receiving code alongside the client. This code parses and validates incoming
+requests before passing typed values to your handlers.
+See [Receive Webhooks and Callbacks](../guide/server.md).
 
 ## Documents covered
 
@@ -43,7 +46,8 @@ For individual feature support, see [OpenAPI support](./capabilities.md).
 
 ## Document results
 
-Expand a set to see individual results or download its original report and input
-manifest.
+Expand a set to see API call counts and generated Webhook or Callback handlers.
+A document containing only Webhooks has zero API calls and generated Webhook
+handlers. You can also download the original report and input manifest.
 
 <CompatibilityResults evidence />
