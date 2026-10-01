@@ -372,7 +372,7 @@ func TestSortWithoutExtensionKeepsExactStandardEnumInput(t *testing.T) {
 	if !strings.Contains(client, `"createdAt:asc" | "createdAt:desc"`) || !strings.Contains(client, `readonly "filter"?: string | undefined`) || strings.Contains(client, `readonly field: "createdAt"`) {
 		t.Fatalf("standard enum sort was projected without x-sort:\n%s", client)
 	}
-	metadata := string(artifactByPath(t, artifacts, "metadata.ts"))
+	metadata := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))
 	if !strings.Contains(metadata, `"x-filter"`) || !strings.Contains(metadata, `"domain-specific"`) {
 		t.Fatalf("inert filter metadata was not preserved:\n%s", metadata)
 	}

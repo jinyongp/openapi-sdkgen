@@ -299,7 +299,7 @@ func TestGeneratedExplicitPaginationPreservesCustomControlsEnvelopeAndQueryMode(
 	if err != nil {
 		t.Fatal(err)
 	}
-	metadata := string(artifactByPath(t, artifacts, "metadata.ts"))
+	metadata := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))
 	for _, expected := range []string{`"x-pagination"`, `"cursorToken"`, `"/meta/pagination/nextCursor"`} {
 		if !strings.Contains(metadata, expected) {
 			t.Fatalf("explicit pagination metadata missing %q:\n%s", expected, metadata)

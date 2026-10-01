@@ -85,8 +85,8 @@ func TestSchemaDeprecationEmitsAcrossSupportedVersionLines(t *testing.T) {
 			if !strings.Contains(schemaSource, "@deprecated This OpenAPI schema is deprecated.") || !strings.Contains(schemaSource, "@deprecated This OpenAPI value is deprecated.") {
 				t.Fatalf("%s schema deprecation missing from generated source:\n%s", version, schemaSource)
 			}
-			metadataSource := string(artifactByPath(t, artifacts, "metadata.ts"))
-			if !strings.Contains(metadataSource, `["deprecated", true]`) {
+			metadataSource := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))
+			if !strings.Contains(metadataSource, `"deprecated":true`) {
 				t.Fatalf("%s schema deprecation missing from metadata:\n%s", version, metadataSource)
 			}
 		})

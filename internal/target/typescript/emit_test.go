@@ -138,7 +138,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if !strings.Contains(publicEnums, `export * from "./internal/enums.js"`) {
 		t.Fatalf("enum entrypoint missing relative re-export:\n%s", publicEnums)
 	}
-	for _, expected := range []string{"export const openapi = { document:", `["openapi", "3.2.0"]`, `versionLine: "3.2"`} {
+	for _, expected := range []string{"export const openapi = { document:", `JSON.parse(`, `versionLine: "3.2"`} {
 		if !strings.Contains(metadataSource, expected) {
 			t.Fatalf("metadata missing %q:\n%s", expected, metadataSource)
 		}

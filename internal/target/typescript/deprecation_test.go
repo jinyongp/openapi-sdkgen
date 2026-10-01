@@ -99,8 +99,8 @@ func TestSourceArtifactsPropagateUnconditionalSchemaDeprecation(t *testing.T) {
 	if !jsDocForMarkerContains(clientSource, "Query parameter `legacyParameter`.", "@deprecated This OpenAPI value is deprecated.") {
 		t.Fatalf("parameter schema deprecation missing:\n%s", clientSource)
 	}
-	metadataSource := string(artifactByPath(t, artifacts, "metadata.ts"))
-	if !strings.Contains(metadataSource, `["deprecated", true]`) {
+	metadataSource := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))
+	if !strings.Contains(metadataSource, `"deprecated":true`) {
 		t.Fatalf("lossless metadata dropped schema deprecation:\n%s", metadataSource)
 	}
 }

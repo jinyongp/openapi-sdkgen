@@ -51,7 +51,7 @@ func TestCompatibilityIgnoredConsumerSemanticsDoNotReachTypeScriptContracts(t *t
 			t.Fatalf("generated client missing control semantic %q:\n%s", expected, client)
 		}
 	}
-	metadata := string(artifactByPath(t, artifacts, "metadata.ts"))
+	metadata := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))
 	for _, expected := range []string{`"Accept"`, `"content-type"`, `"AUTHORIZATION"`, `"Content-Type"`, `"encoding"`} {
 		if !strings.Contains(metadata, expected) {
 			t.Fatalf("source metadata lost %q:\n%s", expected, metadata)

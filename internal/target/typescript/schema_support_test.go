@@ -457,7 +457,7 @@ func TestSourceArtifactsPreservesJSONSchemaCommentsAsMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if source := string(artifactByPath(t, artifacts, "metadata.ts")); !strings.Contains(source, `["$comment", "validation note"]`) {
+	if source := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts")); !strings.Contains(source, `"$comment":"validation note"`) {
 		t.Fatalf("JSON Schema comment missing from metadata:\n%s", source)
 	}
 }

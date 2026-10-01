@@ -182,7 +182,7 @@ func TestSourceArtifactsProjectEnvironmentControlledHeadersAsOptionalClientInput
 					}
 				}
 			}
-			if metadata := string(artifactByPath(t, artifacts, "metadata.ts")); !strings.Contains(metadata, `"Origin"`) {
+			if metadata := metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts")); !strings.Contains(metadata, `"Origin"`) {
 				t.Fatalf("metadata lost the OpenAPI Origin parameter:\n%s", metadata)
 			}
 		})
