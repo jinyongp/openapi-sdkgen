@@ -6,18 +6,41 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: openapi-sdkgen-compatibility-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  prepare:
-    name: Prepare all pinned corpora
+  plan:
+    name: Select all compatibility jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     outputs:
       documents: ${{ steps.matrix.outputs.documents }}
+      corpora: ${{ steps.matrix.outputs.corpora }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate and select jobs
+        id: matrix
+        shell: bash
+        run: |
+          python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
+          python3 -B .github/scripts/compatibility_matrix.py
+
+  prepare:
+    name: Prepare ${{ matrix.corpus }}
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.corpora) }}
+    env:
+      COMPATIBILITY_CORPUS: ${{ matrix.corpus }}
+      COMPATIBILITY_ARTIFACT: ${{ matrix.artifact }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -27,61 +50,68 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1.58.0"
-      - name: Validate and select all document jobs
-        id: matrix
+      - name: Find reusable pinned corpus
+        id: artifact
+        run: python3 -B .github/scripts/compatibility_artifact.py find "$COMPATIBILITY_ARTIFACT"
+      - name: Restore prior corpus artifact
+        id: restore
+        if: steps.artifact.outputs.artifact-id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          artifact-ids: ${{ steps.artifact.outputs.artifact-id }}
+          run-id: ${{ steps.artifact.outputs.source-run }}
+          github-token: ${{ github.token }}
+          path: .tmp/compatibility-restore
+      - name: Verify restored inputs before reuse
+        id: verified
+        if: steps.restore.outcome == 'success'
+        run: python3 -B .github/scripts/compatibility_artifact.py restore "$COMPATIBILITY_CORPUS"
+      - name: Fetch pinned corpus documents and references
+        if: steps.verified.outputs.reused != 'true' && matrix.fetch
         shell: bash
         run: |
-          python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
-          python3 -B .github/scripts/compatibility_matrix.py
-      - name: Fetch pinned holdout documents
-        run: just agent compatibility-fetch test/compatibility/holdout.json .tmp/compatibility-corpora/holdout
-      - name: Fetch pinned regression documents
-        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-corpora/regression
-      - name: Prepare and verify checked-in snapshots
+          just agent compatibility-fetch "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS"
+      - name: Prepare checked-in snapshots
+        if: steps.verified.outputs.reused != 'true' && !matrix.fetch
+        run: python3 -B .github/scripts/compatibility_artifact.py local "$COMPATIBILITY_CORPUS"
+      - name: Verify the complete pinned corpus
         shell: bash
         run: |
-          python3 -B <<'PY'
-          import json
-          import shutil
-          from pathlib import Path
-          for name in ('modern', 'production32'):
-              manifest = json.loads(Path(f'test/compatibility/{name}.json').read_text())
-              destination = Path('.tmp/compatibility-corpora') / name
-              for entry in manifest['corpora'] + manifest.get('files', []):
-                  target = destination / entry['input']
-                  target.parent.mkdir(parents=True, exist_ok=True)
-                  shutil.copyfile(Path('test') / entry['input'], target)
-          PY
-          just agent compatibility-verify test/compatibility/modern.json .tmp/compatibility-corpora/modern
-          just agent compatibility-verify test/compatibility/production32.json .tmp/compatibility-corpora/production32
-      - name: Share verified corpora
+          just agent compatibility-verify "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS"
+      - name: Save fresh corpus for this and later runs
+        if: steps.verified.outputs.reused != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pinned-corpora
-          path: .tmp/compatibility-corpora/
+          name: ${{ matrix.artifact }}
+          path: .tmp/compatibility-corpora/${{ matrix.corpus }}/
           include-hidden-files: true
           retention-days: 7
-      - name: Upload fetch diagnostics
+      - name: Upload preparation diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: provider-fetch-diagnostics
+          name: corpus-preparation-${{ matrix.corpus }}
           path: .tmp/agent-logs/
           include-hidden-files: true
           retention-days: 7
 
   documents:
     name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
-    needs: prepare
+    needs: [plan, prepare]
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.prepare.outputs.documents) }}
+      matrix: ${{ fromJSON(needs.plan.outputs.documents) }}
     env:
       GOMEMLIMIT: 12GiB
       COMPATIBILITY_CORPUS: ${{ matrix.corpus }}
       COMPATIBILITY_DOCUMENT: ${{ matrix.document }}
+      COMPATIBILITY_ARTIFACT: ${{ matrix.artifact }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -95,11 +125,16 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1.58.0"
+      - name: Find the prepared corpus artifact
+        id: artifact
+        run: python3 -B .github/scripts/compatibility_artifact.py find "$COMPATIBILITY_ARTIFACT" --required
       - name: Download verified corpus
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: pinned-corpora
-          path: .tmp/compatibility-corpora
+          artifact-ids: ${{ steps.artifact.outputs.artifact-id }}
+          run-id: ${{ steps.artifact.outputs.source-run }}
+          github-token: ${{ github.token }}
+          path: .tmp/compatibility-corpora/${{ matrix.corpus }}
       - name: Record runner resources
         shell: bash
         run: |
@@ -151,7 +186,7 @@ jobs:
 
   report:
     name: Combine all corpus results
-    needs: [prepare, documents]
+    needs: [plan, prepare, documents]
     if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
