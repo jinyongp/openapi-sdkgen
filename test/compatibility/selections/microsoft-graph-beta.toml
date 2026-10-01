@@ -1,0 +1,16 @@
+document = "microsoft-graph-beta"
+input_sha256 = "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec"
+runtime_probe = "microsoft-graph-beta.mjs"
+
+[selection]
+routes = [
+  "GET /users",
+  "POST /users",
+  "GET /users/{user-id}",
+  "PATCH /users/{user-id}",
+  "DELETE /users/{user-id}",
+  "GET /groups",
+  "GET /groups/{group-id}",
+  "GET /drives",
+  "GET /drives/{drive-id}",
+]

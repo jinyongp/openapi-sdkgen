@@ -16,6 +16,7 @@ func main() {
 	var typecheckTimeout time.Duration
 	var offline bool
 	var documentID string
+	var selectionPath string
 
 	flag.StringVar(&mode, "mode", "run", "compatibility benchmark mode: run, fetch, or merge")
 	flag.StringVar(&manifestPath, "manifest", "", "benchmark corpus manifest JSON")
@@ -25,6 +26,7 @@ func main() {
 	flag.DurationVar(&typecheckTimeout, "typecheck-timeout", 3*time.Minute, "strict TypeScript timeout per document")
 	flag.BoolVar(&offline, "offline", false, "verify an existing fetched corpus without network access")
 	flag.StringVar(&documentID, "document", "", "benchmark only this document from the original manifest")
+	flag.StringVar(&selectionPath, "selection", "", "pinned API generation selection and runtime probe TOML; requires --document")
 	flag.Parse()
 
 	if manifestPath == "" {
@@ -33,7 +35,7 @@ func main() {
 
 	switch mode {
 	case "fetch":
-		if corpusRoot == "" || documentID != "" || len(flag.Args()) != 0 {
+		if corpusRoot == "" || documentID != "" || selectionPath != "" || len(flag.Args()) != 0 {
 			fatal(fmt.Errorf("fetch requires --corpus-root and does not accept --document or report paths"))
 		}
 		if outputPath != "" {
@@ -55,11 +57,11 @@ func main() {
 		if typecheckTimeout <= 0 {
 			fatal(fmt.Errorf("--typecheck-timeout must be positive"))
 		}
-		if err := runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot, typecheckTimeout, documentID); err != nil {
+		if err := runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot, typecheckTimeout, documentID, selectionPath); err != nil {
 			fatal(err)
 		}
 	case "merge":
-		if outputPath == "" || len(flag.Args()) == 0 || offline || documentID != "" || corpusRoot != "" {
+		if outputPath == "" || len(flag.Args()) == 0 || offline || documentID != "" || selectionPath != "" || corpusRoot != "" {
 			fatal(fmt.Errorf("merge requires --output and report paths; --corpus-root, --offline, and --document are not valid"))
 		}
 		if err := mergeBenchmarkReports(manifestPath, flag.Args(), outputPath); err != nil {

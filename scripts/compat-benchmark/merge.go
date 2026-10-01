@@ -63,8 +63,17 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 				(corpus.OpenAPIVersion != "" && document.OpenAPIVersion != corpus.OpenAPIVersion) {
 				return fmt.Errorf("shard document %q provenance differs from the original input", document.ID)
 			}
-			success := document.DiscoveryComplete && document.Diagnostics.Errors == 0 &&
-				document.Generation.Status == "pass" && document.Typecheck.Status == "pass"
+			var selection *benchmarkSelection
+			if document.GenerationScope == "selected" {
+				selection, err = loadBenchmarkSelection(filepath.Join(filepath.Dir(manifestPath), "selections", corpus.ID+".toml"))
+				if err != nil {
+					return fmt.Errorf("selected scope policy for %s: %w", corpus.ID, err)
+				}
+			}
+			if err := validateSelectionEvidence(document, corpus, selection); err != nil {
+				return err
+			}
+			success := documentVerificationSuccess(document)
 			if document.DocumentSuccess != success {
 				return fmt.Errorf("shard document %q has inconsistent verification status", document.ID)
 			}
@@ -72,6 +81,9 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 			for _, profile := range document.SupportProfiles {
 				profileSuccess := profile.DiscoveryComplete && profile.Diagnostics.Errors == 0 &&
 					profile.Generation.Status == "pass" && profile.Typecheck.Status == "pass"
+				if document.GenerationScope == "selected" {
+					profileSuccess = profileSuccess && document.Selection != nil && document.Selection.Runtime.Status == "pass"
+				}
 				if profile.Success != profileSuccess {
 					return fmt.Errorf("shard document %q has inconsistent profile verification", document.ID)
 				}

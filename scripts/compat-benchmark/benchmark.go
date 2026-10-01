@@ -93,6 +93,8 @@ type benchmarkReport struct {
 }
 
 type benchmarkMeasurement struct {
+	SourceCommit    string `json:"sourceCommit,omitempty"`
+	SourceDirty     bool   `json:"sourceDirty"`
 	MeasuredAt      string `json:"measuredAt"`
 	GenerationScope string `json:"generationScope"`
 	Samples         int    `json:"samples"`
@@ -103,6 +105,8 @@ type benchmarkMeasurement struct {
 }
 
 type documentResult struct {
+	GenerationScope           string                        `json:"generationScope,omitempty"`
+	Selection                 *generationSelectionEvidence  `json:"generationSelection,omitempty"`
 	EvidenceKind              string                        `json:"evidenceKind,omitempty"`
 	ID                        string                        `json:"id"`
 	Cohort                    string                        `json:"cohort"`
@@ -182,6 +186,8 @@ type verificationResult struct {
 }
 
 type summaryResult struct {
+	SelectedDocuments             int                 `json:"selectedDocuments,omitempty"`
+	SelectedSuccessfulDocuments   int                 `json:"selectedSuccessfulDocuments,omitempty"`
 	Cohort                        string              `json:"cohort,omitempty"`
 	Documents                     int                 `json:"documents"`
 	SuccessfulDocuments           int                 `json:"successfulDocuments"`
@@ -232,6 +238,17 @@ func selectBenchmarkCorpora(corpora []corpusSpec, documentID string) ([]corpusSp
 }
 
 func runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration, documentID string) error {
+	return runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot, timeout, documentID, "")
+}
+
+func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration, documentID, selectionPath string) error {
+	selection, err := loadBenchmarkSelection(selectionPath)
+	if err != nil {
+		return err
+	}
+	if selection != nil && (documentID == "" || documentID != selection.Document) {
+		return fmt.Errorf("generation selection must match --document")
+	}
 	manifestData, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("read manifest: %w", err)
@@ -272,7 +289,10 @@ func runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot s
 		if err != nil {
 			return fmt.Errorf("%s: %w", corpus.ID, err)
 		}
-		result, err := benchmarkDocument(corpus, inputPath, typecheck)
+		runtimeCheck := func(directory string) verificationResult {
+			return verifySelectionRuntime(directory, typescriptRoot, selection)
+		}
+		result, err := benchmarkDocumentSelected(corpus, inputPath, typecheck, selection, runtimeCheck)
 		if err != nil {
 			return fmt.Errorf("%s: %w", corpus.ID, err)
 		}
@@ -320,6 +340,12 @@ func measurementEnvironment() *benchmarkMeasurement {
 		OS:              runtime.GOOS,
 		Architecture:    runtime.GOARCH,
 		GoVersion:       runtime.Version(),
+	}
+	if data, err := exec.Command("git", "rev-parse", "HEAD").Output(); err == nil {
+		measurement.SourceCommit = strings.TrimSpace(string(data))
+		if status, err := exec.Command("git", "status", "--porcelain", "--untracked-files=normal").Output(); err == nil {
+			measurement.SourceDirty = len(bytes.TrimSpace(status)) != 0
+		}
 	}
 	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
@@ -440,11 +466,18 @@ func safeCorpusPath(root, input string) (string, error) {
 }
 
 func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckFunc) (documentResult, error) {
+	return benchmarkDocumentSelected(corpus, inputPath, typecheck, nil, nil)
+}
+
+func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck typecheckFunc, selection *benchmarkSelection, runtimeCheck typecheckFunc) (documentResult, error) {
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		return documentResult{}, fmt.Errorf("read input: %w", err)
 	}
 	sum := sha256.Sum256(data)
+	if selection != nil && (selection.Document != corpus.ID || selection.InputSHA256 != hex.EncodeToString(sum[:])) {
+		return documentResult{}, fmt.Errorf("selection does not match pinned document %s", corpus.ID)
+	}
 	decoded, err := decodeFeatureInput(data)
 	if err != nil {
 		return documentResult{}, fmt.Errorf("decode feature input: %w", err)
@@ -467,6 +500,12 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	}
 
 	mode := diagnostic.ModeCollect
+	options := generator.Options{DiagnosticMode: mode}
+	if selection != nil {
+		options.Selection = selection.options
+		result.GenerationScope = "selected"
+		result.Selection = &generationSelectionEvidence{FixtureSHA256: selection.fixtureSHA256, RuntimeProbeSHA256: selection.probeSHA256, Requested: selection.options, Runtime: verificationResult{Status: "not-run"}}
+	}
 	compileStarted := time.Now()
 	compiled, err := sdkgen.CompileInputResultWithOptions(inputPath, sdkgen.CompileOptions{DiagnosticMode: mode})
 	if err != nil {
@@ -475,7 +514,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	}
 	compileDuration := time.Since(compileStarted)
 	prepareStarted := time.Now()
-	prepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, generator.Options{DiagnosticMode: mode})
+	prepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, options)
 	if err != nil {
 		result.Generation.Detail = boundedDetail(fmt.Sprintf("internal target preparation failure: %v", err))
 		report := diagnostic.NewReport(compiled.Diagnostics, compiled.SkippedPhases, compiled.Coverage...)
@@ -489,6 +528,12 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		return result, nil
 	}
 	prepareDuration := time.Since(prepareStarted)
+	if selection != nil && !diagnostic.HasErrors(prepared.Diagnostics) {
+		result.Selection, err = selection.evidence(prepared.Plan, len(compiled.Document.Operations))
+		if err != nil {
+			return documentResult{}, err
+		}
+	}
 	report := diagnostic.NewReport(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage...)
 	normalizeBenchmarkReportSources(&report, inputPath)
 	result.DiscoveryComplete = discoveryComplete(report)
@@ -504,7 +549,15 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		if !hasInbound {
 			compiled = sdkgen.Result{}
 		}
-		return typecheck(directory)
+		checked := typecheck(directory)
+		if selection != nil && checked.Status == "pass" {
+			if runtimeCheck == nil {
+				result.Selection.Runtime = verificationResult{Status: "fail", Detail: "selected runtime verification unavailable"}
+			} else {
+				result.Selection.Runtime = runtimeCheck(directory)
+			}
+		}
+		return checked
 	}
 	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, compileDuration+prepareDuration, defaultTypecheck)
 	prepared = generator.Preparation{}
@@ -516,6 +569,9 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	result.OperationEmission.OperationOmissions = result.OperationRetention.Omitted
 	result.Typecheck = defaultProfile.Typecheck
 	result.DocumentSuccess = defaultProfile.Success
+	if selection != nil {
+		result.DocumentSuccess = result.DocumentSuccess && result.Selection.Runtime.Status == "pass" && result.OperationEmission.Count == len(result.Selection.Routes)
+	}
 	result.CapabilityAdjustedSuccess = result.DocumentSuccess
 
 	if hasInbound {
@@ -528,6 +584,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 			return documentResult{}, fmt.Errorf("resolve server add-on: %w", err)
 		}
 		serverOptions.DiagnosticMode = mode
+		serverOptions.Selection = options.Selection
 		serverPrepareStarted := time.Now()
 		serverPrepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, serverOptions)
 		if err != nil {
@@ -552,6 +609,9 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 			return documentResult{}, err
 		}
 		serverProfile.OperationEmission.OperationOmissions = serverOmissions
+		if selection != nil {
+			serverProfile.Success = serverProfile.Success && result.Selection.Runtime.Status == "pass" && serverProfile.OperationEmission.Count == len(result.Selection.Routes)
+		}
 		result.SupportProfiles = append(result.SupportProfiles, serverProfile)
 		if serverProfile.Success {
 			result.CapabilityAdjustedSuccess = true
@@ -991,6 +1051,14 @@ func summarizeDocuments(cohort string, documents []documentResult) summaryResult
 	}
 	observed := map[string]bool{}
 	for _, document := range documents {
+		if document.GenerationScope == "selected" {
+			result.Documents--
+			result.SelectedDocuments++
+			if document.DocumentSuccess {
+				result.SelectedSuccessfulDocuments++
+			}
+			continue
+		}
 		if document.DocumentSuccess {
 			result.SuccessfulDocuments++
 		}
