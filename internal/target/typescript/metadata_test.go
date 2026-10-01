@@ -67,6 +67,7 @@ func TestEmitMetadataPreservesEntryValuesAndRuntimeContracts(t *testing.T) {
 			}
 			executable := strings.TrimSuffix(string(source), " as const\n")
 			if typescript {
+				executable = strings.Replace(executable, " as { [key: string]: any }", "", 1)
 				executable += "\n"
 			}
 			directory := t.TempDir()
@@ -142,6 +143,12 @@ func TestMetadataConsumerKeepsDocumentAndVersionTypes(t *testing.T) {
 const version: "3.2.0" = openapi.version;
 const line: "3.2" = openapi.versionLine;
 const title: string = openapi.document.info.title;
+type Equal<Left, Right> =
+  (<Value>() => Value extends Left ? 1 : 2) extends
+  (<Value>() => Value extends Right ? 1 : 2) ? true : false;
+const documentType: Equal<typeof openapi.document, { [key: string]: any }> = true;
+// @ts-expect-error the document root remains an object
+const scalarDocument: typeof openapi.document = 1;
 // @ts-expect-error public metadata wrapper is readonly
 openapi.version = "3.2.0";
 `

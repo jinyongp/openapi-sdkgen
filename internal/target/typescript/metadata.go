@@ -28,6 +28,11 @@ func emitMetadata(document *ir.Document, typescript bool) ([]byte, error) {
 		return nil, fmt.Errorf("encode OpenAPI metadata: %w", err)
 	}
 	raw := "/* @__PURE__ */ JSON.parse(" + quoteTS(string(compact)) + ")"
+	if typescript {
+		// Object.fromEntries inferred an indexable object rather than any at
+		// the document root. Keep that boundary while leaving fields dynamic.
+		raw += " as { [key: string]: any }"
+	}
 	var output bytes.Buffer
 	output.WriteString("/** Lossless OpenAPI metadata, kept separate from the client call surface. */\n")
 	if typescript {
