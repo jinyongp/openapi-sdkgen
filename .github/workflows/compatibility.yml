@@ -12,12 +12,66 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  regression:
-    name: Generate and typecheck major provider SDKs
+  prepare:
+    name: Fetch pinned provider documents
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      providers: ${{ steps.matrix.outputs.providers }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: "1.58.0"
+      - name: Fetch and verify the complete corpus
+        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
+      - name: Select provider jobs
+        id: matrix
+        shell: bash
+        run: |
+          python3 -B <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          manifest = json.loads(Path('test/compatibility/regression.json').read_text())
+          providers = [document['id'] for document in manifest['corpora']]
+          assert len(providers) == 7 and len(set(providers)) == 7
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('providers=' + json.dumps(providers) + '\n')
+          PY
+      - name: Share verified corpus
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pinned-provider-corpus
+          path: .tmp/compatibility-regression/
+          include-hidden-files: true
+          retention-days: 7
+      - name: Upload fetch diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: provider-fetch-diagnostics
+          path: .tmp/agent-logs/
+          include-hidden-files: true
+          retention-days: 7
+
+  providers:
+    name: Verify ${{ matrix.provider }}
+    needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 7
+      matrix:
+        provider: ${{ fromJSON(needs.prepare.outputs.providers) }}
     env:
       GOMEMLIMIT: 12GiB
+      COMPATIBILITY_PROVIDER: ${{ matrix.provider }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -31,32 +85,37 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1.58.0"
+      - name: Download verified corpus
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: pinned-provider-corpus
+          path: .tmp/compatibility-regression
       - name: Record runner resources
         shell: bash
         run: |
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
-      - name: Add temporary checker swap
+      - name: Add temporary Graph checker swap
+        if: matrix.provider == 'microsoft-graph-beta'
         shell: bash
         run: |
           compatibility_swap="$RUNNER_TEMP/openapi-sdkgen-compatibility.swap"
-          sudo fallocate -l 8G "$compatibility_swap"
+          sudo fallocate -l 16G "$compatibility_swap"
           sudo chmod 600 "$compatibility_swap"
           sudo mkswap "$compatibility_swap"
           sudo swapon "$compatibility_swap"
           free -h | tee .tmp/compatibility-ci/checker-memory.txt
       - name: Install TypeScript dependencies
         run: just agent ts-install
-      - name: Fetch pinned provider documents
-        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
-      - name: Generate SDKs and run full strict typechecks
+      - name: Generate provider SDK and run its full strict typecheck
         timeout-minutes: 90
         shell: bash
         run: |
           python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             just agent compatibility-benchmark test/compatibility/regression.json \
-            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json 60m &
+            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json \
+            60m "$COMPATIBILITY_PROVIDER" &
           compatibility_process=$!
           python3 -B -u .github/scripts/compatibility_observer.py \
             --root-pid "$compatibility_process" --typescript-root test/typescript \
@@ -64,7 +123,67 @@ jobs:
           compatibility_observer=$!
           trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
           wait "$compatibility_process"
-      - name: Require generation and typechecking for every provider
+      - name: Require generation and typechecking for this provider
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('.tmp/compatibility-ci/regression-results.json'));
+          assert.equal(report.documents.length, 1);
+          assert.equal(report.documents[0].id, process.env.COMPATIBILITY_PROVIDER);
+          const rows = report.documents.map(document =>
+            `| ${document.id} | ${document.generation.status} | ${document.typecheck.status} | ${document.operationEmission.count} |`);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            `## Major provider compatibility\n\n| Provider | Generation | Strict typecheck | API calls |\n| --- | --- | --- | ---: |\n${rows.join('\n')}\n`);
+          for (const document of report.documents) {
+            console.log(`${document.id}: generation=${document.generation.status}, typecheck=${document.typecheck.status}`);
+            if (!document.documentSuccess) console.error(document.typecheck.detail || document.generation.detail);
+          }
+          assert.equal(report.overall.successfulDocuments, 1, 'the provider SDK must generate and pass full strict typechecking');
+          NODE
+      - name: Upload measurement and diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: provider-shard-${{ matrix.provider }}
+          path: |
+            .tmp/compatibility-ci/
+            .tmp/agent-logs/
+          include-hidden-files: true
+          retention-days: 7
+
+  report:
+    name: Combine provider results
+    needs: [prepare, providers]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: "1.58.0"
+      - name: Download provider measurements
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: provider-shard-*
+          path: .tmp/compatibility-shards
+      - name: Combine complete verified results
+        shell: bash
+        run: |
+          just agent compatibility-merge test/compatibility/regression.json \
+            .tmp/compatibility-ci/regression-results.json \
+            .tmp/compatibility-shards/*/compatibility-ci/regression-results.json
+      - name: Require all seven providers to pass
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -76,13 +195,9 @@ jobs:
             `| ${document.id} | ${document.generation.status} | ${document.typecheck.status} | ${document.operationEmission.count} |`);
           appendFileSync(process.env.GITHUB_STEP_SUMMARY,
             `## Major provider compatibility\n\n| Provider | Generation | Strict typecheck | API calls |\n| --- | --- | --- | ---: |\n${rows.join('\n')}\n`);
-          for (const document of report.documents) {
-            console.log(`${document.id}: generation=${document.generation.status}, typecheck=${document.typecheck.status}`);
-            if (!document.documentSuccess) console.error(document.typecheck.detail || document.generation.detail);
-          }
           assert.equal(report.overall.successfulDocuments, 7, 'every SDK must generate and pass full strict typechecking');
           NODE
-      - name: Upload measurement and diagnostics
+      - name: Upload combined measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
