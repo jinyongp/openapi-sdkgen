@@ -131,7 +131,7 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
 		output.WriteString("  value: unknown,\n")
 		output.WriteString("): value is EnumValues extends Iterable<infer Value> ? Value : never {\n")
 		output.WriteString("  try {\n")
-		output.WriteString("    for (const candidate of enumValues) {\n")
+		output.WriteString("    for (const candidate of enumValues as Iterable<unknown>) {\n")
 		output.WriteString("      if (__sdkgen_enumValueEquals(candidate, value)) return true\n")
 		output.WriteString("    }\n")
 		output.WriteString("  } catch {\n")
