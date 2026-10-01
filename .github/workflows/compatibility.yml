@@ -1,5 +1,5 @@
 name: compatibility
-run-name: Major provider compatibility ${{ github.ref_name }}
+run-name: Full corpus compatibility ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -13,11 +13,11 @@ concurrency:
 
 jobs:
   prepare:
-    name: Fetch pinned provider documents
+    name: Prepare all pinned corpora
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
-      providers: ${{ steps.matrix.outputs.providers }}
+      documents: ${{ steps.matrix.outputs.documents }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -27,27 +27,38 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1.58.0"
-      - name: Fetch and verify the complete corpus
-        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
-      - name: Select provider jobs
+      - name: Validate and select all document jobs
         id: matrix
+        shell: bash
+        run: |
+          python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
+          python3 -B .github/scripts/compatibility_matrix.py
+      - name: Fetch pinned holdout documents
+        run: just agent compatibility-fetch test/compatibility/holdout.json .tmp/compatibility-corpora/holdout
+      - name: Fetch pinned regression documents
+        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-corpora/regression
+      - name: Prepare and verify checked-in snapshots
         shell: bash
         run: |
           python3 -B <<'PY'
           import json
-          import os
+          import shutil
           from pathlib import Path
-          manifest = json.loads(Path('test/compatibility/regression.json').read_text())
-          providers = [document['id'] for document in manifest['corpora']]
-          assert len(providers) == 7 and len(set(providers)) == 7
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('providers=' + json.dumps(providers) + '\n')
+          for name in ('modern', 'production32'):
+              manifest = json.loads(Path(f'test/compatibility/{name}.json').read_text())
+              destination = Path('.tmp/compatibility-corpora') / name
+              for entry in manifest['corpora'] + manifest.get('files', []):
+                  target = destination / entry['input']
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copyfile(Path('test') / entry['input'], target)
           PY
-      - name: Share verified corpus
+          just agent compatibility-verify test/compatibility/modern.json .tmp/compatibility-corpora/modern
+          just agent compatibility-verify test/compatibility/production32.json .tmp/compatibility-corpora/production32
+      - name: Share verified corpora
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pinned-provider-corpus
-          path: .tmp/compatibility-regression/
+          name: pinned-corpora
+          path: .tmp/compatibility-corpora/
           include-hidden-files: true
           retention-days: 7
       - name: Upload fetch diagnostics
@@ -59,19 +70,18 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  providers:
-    name: Verify ${{ matrix.provider }}
+  documents:
+    name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 7
-      matrix:
-        provider: ${{ fromJSON(needs.prepare.outputs.providers) }}
+      matrix: ${{ fromJSON(needs.prepare.outputs.documents) }}
     env:
       GOMEMLIMIT: 12GiB
-      COMPATIBILITY_PROVIDER: ${{ matrix.provider }}
+      COMPATIBILITY_CORPUS: ${{ matrix.corpus }}
+      COMPATIBILITY_DOCUMENT: ${{ matrix.document }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -88,15 +98,15 @@ jobs:
       - name: Download verified corpus
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: pinned-provider-corpus
-          path: .tmp/compatibility-regression
+          name: pinned-corpora
+          path: .tmp/compatibility-corpora
       - name: Record runner resources
         shell: bash
         run: |
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
       - name: Add temporary Graph checker swap
-        if: matrix.provider == 'microsoft-graph-beta'
+        if: matrix.corpus == 'regression' && matrix.document == 'microsoft-graph-beta'
         shell: bash
         run: |
           compatibility_swap="$RUNNER_TEMP/openapi-sdkgen-compatibility.swap"
@@ -107,15 +117,14 @@ jobs:
           free -h | tee .tmp/compatibility-ci/checker-memory.txt
       - name: Install TypeScript dependencies
         run: just agent ts-install
-      - name: Generate provider SDK and run its full strict typecheck
+      - name: Generate SDKs and run full strict typechecks
         timeout-minutes: 90
         shell: bash
         run: |
-          python3 -B -m unittest discover -s .github/scripts -p '*_test.py'
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
-            just agent compatibility-benchmark test/compatibility/regression.json \
-            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json \
-            60m "$COMPATIBILITY_PROVIDER" &
+            just agent compatibility-benchmark "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
+            .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" &
           compatibility_process=$!
           python3 -B -u .github/scripts/compatibility_observer.py \
             --root-pid "$compatibility_process" --typescript-root test/typescript \
@@ -123,30 +132,17 @@ jobs:
           compatibility_observer=$!
           trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
           wait "$compatibility_process"
-      - name: Require generation and typechecking for this provider
+      - name: Require a verified supported SDK profile
         shell: bash
         run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { readFileSync, appendFileSync } from 'node:fs';
-          const report = JSON.parse(readFileSync('.tmp/compatibility-ci/regression-results.json'));
-          assert.equal(report.documents.length, 1);
-          assert.equal(report.documents[0].id, process.env.COMPATIBILITY_PROVIDER);
-          const rows = report.documents.map(document =>
-            `| ${document.id} | ${document.generation.status} | ${document.typecheck.status} | ${document.operationEmission.count} |`);
-          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-            `## Major provider compatibility\n\n| Provider | Generation | Strict typecheck | API calls |\n| --- | --- | --- | ---: |\n${rows.join('\n')}\n`);
-          for (const document of report.documents) {
-            console.log(`${document.id}: generation=${document.generation.status}, typecheck=${document.typecheck.status}`);
-            if (!document.documentSuccess) console.error(document.typecheck.detail || document.generation.detail);
-          }
-          assert.equal(report.overall.successfulDocuments, 1, 'the provider SDK must generate and pass full strict typechecking');
-          NODE
+          python3 -B .github/scripts/compatibility_gate.py \
+            --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            --report .tmp/compatibility-ci/report.json --document "$COMPATIBILITY_DOCUMENT"
       - name: Upload measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: provider-shard-${{ matrix.provider }}
+          name: document-shard-${{ matrix.corpus }}-${{ matrix.document }}
           path: |
             .tmp/compatibility-ci/
             .tmp/agent-logs/
@@ -154,8 +150,8 @@ jobs:
           retention-days: 7
 
   report:
-    name: Combine provider results
-    needs: [prepare, providers]
+    name: Combine all corpus results
+    needs: [prepare, documents]
     if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -172,36 +168,32 @@ jobs:
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
         with:
           just-version: "1.58.0"
-      - name: Download provider measurements
+      - name: Download document measurements
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: provider-shard-*
+          pattern: document-shard-*
           path: .tmp/compatibility-shards
-      - name: Combine complete verified results
+      - name: Combine and verify every corpus
         shell: bash
         run: |
-          just agent compatibility-merge test/compatibility/regression.json \
-            .tmp/compatibility-ci/regression-results.json \
-            .tmp/compatibility-shards/*/compatibility-ci/regression-results.json
-      - name: Require all seven providers to pass
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { readFileSync, appendFileSync } from 'node:fs';
-          const report = JSON.parse(readFileSync('.tmp/compatibility-ci/regression-results.json'));
-          assert.equal(report.documents.length, 7);
-          const rows = report.documents.map(document =>
-            `| ${document.id} | ${document.generation.status} | ${document.typecheck.status} | ${document.operationEmission.count} |`);
-          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-            `## Major provider compatibility\n\n| Provider | Generation | Strict typecheck | API calls |\n| --- | --- | --- | ---: |\n${rows.join('\n')}\n`);
-          assert.equal(report.overall.successfulDocuments, 7, 'every SDK must generate and pass full strict typechecking');
-          NODE
+          compatibility_failed=0
+          for corpus in holdout modern production32 regression; do
+            if just agent compatibility-merge "test/compatibility/$corpus.json" \
+              ".tmp/compatibility-ci/$corpus-results.json" \
+              .tmp/compatibility-shards/document-shard-"$corpus"-*/compatibility-ci/report.json; then
+              python3 -B .github/scripts/compatibility_gate.py \
+                --manifest "test/compatibility/$corpus.json" \
+                --report ".tmp/compatibility-ci/$corpus-results.json" || compatibility_failed=1
+            else
+              compatibility_failed=1
+            fi
+          done
+          exit "$compatibility_failed"
       - name: Upload combined measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: major-provider-compatibility
+          name: full-corpus-compatibility
           path: |
             .tmp/compatibility-ci/
             .tmp/agent-logs/
