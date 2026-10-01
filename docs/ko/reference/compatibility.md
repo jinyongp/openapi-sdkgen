@@ -22,11 +22,11 @@ OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
 수신 코드는 들어온 요청을 파싱·검증하고 타입이 지정된 핸들러에 전달합니다.
 사용 방법은 [웹훅·콜백 수신 가이드](../guide/server.md)를 참고하세요.
 
-## Microsoft Graph: 필요한 API만 생성하기 {#graph-selection}
+## 필요한 API만 생성하기 {#graph-selection}
 
-같은 Microsoft Graph beta 문서에서 사용자·그룹·드라이브 API만 선택하면 생성되는
-SDK가 줄어듭니다. 아래 표는 저장된 전체 생성 결과와 별도로 측정한 API 9개의
-선택 생성 결과를 비교합니다.
+생성할 API를 지정하면 필요한 호출과 의존 코드만 SDK에 포함됩니다.
+Microsoft Graph beta를 예로, 사용자·그룹·드라이브 API 9개를 선택해 측정했습니다.
+아래 표에서 같은 문서의 전체 생성 결과와 비교할 수 있습니다.
 
 <GraphSelection locale="ko" />
 

@@ -24,11 +24,12 @@ receiving code alongside the client. This code parses and validates incoming
 requests before passing typed values to your handlers.
 See [Receive Webhooks and Callbacks](../guide/server.md).
 
-## Microsoft Graph: generate the APIs you use {#graph-selection}
+## Generate only the APIs you need {#graph-selection}
 
-Selecting the user, group, and drive APIs produces a smaller SDK from the same
-Microsoft Graph beta document. The comparison below shows the recorded full
-generation and the separately measured selection of nine APIs.
+Choose which APIs to generate to include their calls and required dependencies
+in the SDK. As an example, we selected nine user, group, and drive APIs from
+Microsoft Graph beta. The table compares this selection with full generation
+from the same document.
 
 <GraphSelection />
 
