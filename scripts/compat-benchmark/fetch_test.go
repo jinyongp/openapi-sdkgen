@@ -117,6 +117,82 @@ func TestRunBenchmarkRejectsTamperedSourceBackedCorpus(t *testing.T) {
 	}
 }
 
+func TestFetchPinnedDocumentURLsAndAuxiliaryFiles(t *testing.T) {
+	rootData := []byte("openapi: 3.0.4\ninfo: {title: Pinned, version: '1'}\npaths: {}\n")
+	auxiliaryData := []byte("type: string\n")
+	checksum := func(data []byte) string {
+		sum := sha256.Sum256(data)
+		return hex.EncodeToString(sum[:])
+	}
+	for _, damaged := range []string{"", "root", "auxiliary"} {
+		t.Run("damaged-"+damaged, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+				switch request.URL.Path {
+				case "/revision/spec/openapi.yaml":
+					if damaged == "root" {
+						_, _ = response.Write([]byte("tampered"))
+					} else {
+						_, _ = response.Write(rootData)
+					}
+				case "/revision/spec/components/model #1.yaml":
+					if damaged == "auxiliary" {
+						_, _ = response.Write([]byte("tampered"))
+					} else {
+						_, _ = response.Write(auxiliaryData)
+					}
+				default:
+					http.NotFound(response, request)
+				}
+			}))
+			defer server.Close()
+			manifest := benchmarkManifest{
+				SchemaVersion: benchmarkSchemaVersion,
+				Pinned:        true,
+				Corpora: []corpusSpec{{
+					ID: "pinned", Cohort: "regression", Input: "provider/spec/openapi.yaml",
+					SourceURL: server.URL + "/revision/spec/openapi.yaml", Revision: "revision",
+					SHA256: checksum(rootData), OpenAPIVersion: "3.0.4", EvidenceKind: "real-document", Trust: "fixture",
+				}},
+				Files: []pinnedCorpusFile{{Input: "provider/spec/components/model #1.yaml", SHA256: checksum(auxiliaryData)}},
+			}
+			manifestData, err := json.Marshal(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			manifestPath := filepath.Join(t.TempDir(), "manifest.json")
+			if err := os.WriteFile(manifestPath, manifestData, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			destination := filepath.Join(t.TempDir(), "corpus")
+			err = fetchCorpus(manifestPath, destination, false)
+			if damaged != "" {
+				if err == nil || !strings.Contains(err.Error(), "sha256 mismatch") {
+					t.Fatalf("fetch error = %v, want hash mismatch", err)
+				}
+				if _, err := os.Stat(destination); !os.IsNotExist(err) {
+					t.Fatal("failed fetch published the destination")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := fetchCorpus(manifestPath, destination, true); err != nil {
+				t.Fatal(err)
+			}
+			if err := fetchCorpus(manifestPath, destination, false); err == nil {
+				t.Fatal("fresh fetch overwrote an existing corpus")
+			}
+			if err := os.WriteFile(filepath.Join(destination, "provider/spec/components/model #1.yaml"), []byte("tampered"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := fetchCorpus(manifestPath, destination, true); err == nil {
+				t.Fatal("offline verification accepted a tampered auxiliary file")
+			}
+		})
+	}
+}
+
 func TestCommittedHoldoutResultMatchesManifestIdentity(t *testing.T) {
 	manifestPath := filepath.Join("..", "..", "test", "compatibility", "holdout.json")
 	resultPath := filepath.Join("..", "..", "test", "compatibility", "holdout-results.json")

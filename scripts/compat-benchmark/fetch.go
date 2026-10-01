@@ -43,10 +43,10 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 	if offline {
 		return verifyMaterializedCorpus(destination, manifest, manifestSHA)
 	}
-	if manifest.Source == nil {
+	if manifest.Source == nil && !manifest.Pinned {
 		return errors.New("corpus fetch requires manifest source metadata; pinned local corpora use --offline")
 	}
-	if manifest.Source.RawBaseURL == "" {
+	if manifest.Source != nil && manifest.Source.RawBaseURL == "" {
 		return errors.New("corpus source rawBaseUrl is required for fetch")
 	}
 	if _, err := os.Stat(destination); err == nil {
@@ -67,7 +67,11 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 
 	client := &http.Client{Timeout: 2 * time.Minute}
 	for _, corpus := range manifest.Corpora {
-		data, err := fetchCorpusFile(client, manifest.Source.RawBaseURL, corpus.Input)
+		base, input := corpus.SourceURL, ""
+		if manifest.Source != nil {
+			base, input = manifest.Source.RawBaseURL, corpus.Input
+		}
+		data, err := fetchCorpusFile(client, base, input)
 		if err != nil {
 			return fmt.Errorf("%s: %w", corpus.ID, err)
 		}
@@ -85,11 +89,40 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 			return err
 		}
 	}
+	for _, file := range manifest.Files {
+		var base, input string
+		if manifest.Source != nil {
+			base, input = manifest.Source.RawBaseURL, file.Input
+		} else {
+			base, err = pinnedAuxiliaryURL(manifest.Corpora, file.Input)
+			if err != nil {
+				return err
+			}
+		}
+		data, err := fetchCorpusFile(client, base, input)
+		if err != nil {
+			return fmt.Errorf("%s: %w", file.Input, err)
+		}
+		if err := verifyCorpusBytes(corpusSpec{SHA256: file.SHA256}, data); err != nil {
+			return fmt.Errorf("%s: %w", file.Input, err)
+		}
+		path, err := safeCorpusPath(staging, file.Input)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			return err
+		}
+	}
 	receipt := corpusReceipt{
 		SchemaVersion:  corpusReceiptSchemaVersion,
-		Repository:     manifest.Source.Repository,
-		Commit:         manifest.Source.Commit,
 		ManifestSHA256: manifestSHA,
+	}
+	if manifest.Source != nil {
+		receipt.Repository, receipt.Commit = manifest.Source.Repository, manifest.Source.Commit
 	}
 	encoded, err := json.MarshalIndent(receipt, "", "  ")
 	if err != nil {
@@ -102,6 +135,26 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 		return fmt.Errorf("publish corpus: %w", err)
 	}
 	return nil
+}
+
+func pinnedAuxiliaryURL(corpora []corpusSpec, input string) (string, error) {
+	var owner *corpusSpec
+	for i := range corpora {
+		directory := filepath.ToSlash(filepath.Dir(corpora[i].Input))
+		if (directory == "." || strings.HasPrefix(input, directory+"/")) &&
+			(owner == nil || len(directory) > len(filepath.Dir(owner.Input))) {
+			owner = &corpora[i]
+		}
+	}
+	if owner == nil {
+		return "", fmt.Errorf("auxiliary file %q has no pinned document directory", input)
+	}
+	base, err := url.Parse(owner.SourceURL)
+	if err != nil {
+		return "", err
+	}
+	relative := strings.TrimPrefix(input, filepath.ToSlash(filepath.Dir(owner.Input))+"/")
+	return base.ResolveReference(&url.URL{Path: relative}).String(), nil
 }
 
 func fetchCorpusFile(client *http.Client, rawBaseURL, input string) ([]byte, error) {
