@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"time"
@@ -424,6 +425,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		return documentResult{}, fmt.Errorf("decode feature input: %w", err)
 	}
 	features, version := detectFeatures(decoded)
+	data, decoded = nil, nil
 	result := documentResult{
 		EvidenceKind:      corpus.EvidenceKind,
 		ID:                corpus.ID,
@@ -471,7 +473,16 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	result.Compatibility = compatibilityMetrics(prepared.Diagnostics)
 	result.Coverage = report.Coverage
 	result.SkippedPhases = report.SkippedPhases
-	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, compileDuration+prepareDuration, typecheck)
+	hasInbound := hasInboundContractFeature(features)
+	defaultTypecheck := func(directory string) verificationResult {
+		prepared = generator.Preparation{}
+		if !hasInbound {
+			compiled = sdkgen.Result{}
+		}
+		return typecheck(directory)
+	}
+	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, compileDuration+prepareDuration, defaultTypecheck)
+	prepared = generator.Preparation{}
 	if err != nil {
 		return documentResult{}, err
 	}
@@ -482,7 +493,7 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 	result.DocumentSuccess = defaultProfile.Success
 	result.CapabilityAdjustedSuccess = result.DocumentSuccess
 
-	if hasInboundContractFeature(features) {
+	if hasInbound {
 		registry, err := generator.NewAddonRegistry(generator.AddonServer)
 		if err != nil {
 			return documentResult{}, fmt.Errorf("create add-on registry: %w", err)
@@ -505,11 +516,17 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 			return result, nil
 		}
 		serverPrepareDuration := time.Since(serverPrepareStarted)
-		serverProfile, err := verifyPreparedProfile("server-addon", compiled.Document != nil, serverPrepared, inputPath, compileDuration+serverPrepareDuration, typecheck)
+		serverOmissions := operationRetention(compiled.Document, serverPrepared.Diagnostics).Omitted
+		serverTypecheck := func(directory string) verificationResult {
+			serverPrepared = generator.Preparation{}
+			compiled = sdkgen.Result{}
+			return typecheck(directory)
+		}
+		serverProfile, err := verifyPreparedProfile("server-addon", compiled.Document != nil, serverPrepared, inputPath, compileDuration+serverPrepareDuration, serverTypecheck)
 		if err != nil {
 			return documentResult{}, err
 		}
-		serverProfile.OperationEmission.OperationOmissions = operationRetention(compiled.Document, serverPrepared.Diagnostics).Omitted
+		serverProfile.OperationEmission.OperationOmissions = serverOmissions
 		result.SupportProfiles = append(result.SupportProfiles, serverProfile)
 		if serverProfile.Success {
 			result.CapabilityAdjustedSuccess = true
@@ -577,6 +594,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 	}
 	result.OperationEmission.Count = len(routes)
 	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes, DurationMillis: &generationMillis}
+	prepared = generator.Preparation{}
 	result.Typecheck = typecheck(temporary)
 	result.Success = result.DiscoveryComplete && result.Diagnostics.Errors == 0 &&
 		result.Generation.Status == "pass" && result.Typecheck.Status == "pass"
@@ -789,7 +807,19 @@ func strictTypecheck(directory, typescriptRoot string, timeout time.Duration) ve
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	command := exec.CommandContext(ctx, "node", tsc, "--project", filepath.Join(directory, "tsconfig.json"))
+	args := []string{tsc, "--project", filepath.Join(directory, "tsconfig.json")}
+	// The native compiler can otherwise fill memory with concurrent checker jobs
+	// for large corpora. Older JavaScript compilers do not expose this option.
+	metadata, err := os.ReadFile(filepath.Join(typescriptRoot, "node_modules", "typescript", "package.json"))
+	var compilerPackage struct {
+		Version string `json:"version"`
+	}
+	if err == nil && json.Unmarshal(metadata, &compilerPackage) == nil && strings.HasPrefix(compilerPackage.Version, "7.") {
+		args = append(args, "--singleThreaded")
+	}
+	// Return the now-unreferenced generation heap before starting the checker.
+	debug.FreeOSMemory()
+	command := exec.CommandContext(ctx, "node", args...)
 	command.Dir = directory
 	output, err := command.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
