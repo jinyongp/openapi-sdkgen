@@ -4183,6 +4183,11 @@ func compileTypeScriptArtifactsWithProbe(t *testing.T, document *ir.Document, pr
 	if err != nil {
 		t.Fatal(err)
 	}
+	return compileTypeScriptArtifactSet(t, artifacts, probeName, probe)
+}
+
+func compileTypeScriptArtifactSet(t *testing.T, artifacts []generator.Artifact, probeName, probe string) string {
+	t.Helper()
 	directory := t.TempDir()
 	source := filepath.Join(directory, "source")
 	writeTargetArtifacts(t, source, artifacts)

@@ -18,6 +18,10 @@ Generation:
   --incremental                   Update a manifest-owned output directory
   --with <addon>                  Add generated artifacts (available: server)
                                   (repeatable)
+  --operation <id>                Generate an exact OpenAPI operationId; combine with
+                                  --route (repeatable)
+  --route <METHOD /path>          Generate an exact HTTP method and OpenAPI path
+                                  template (repeatable)
 
 Input:
   --input-base <source>           Base location for relative references from stdin

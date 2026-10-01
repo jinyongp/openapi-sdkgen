@@ -14,17 +14,18 @@ import (
 )
 
 type generateProjectConfig struct {
-	Source                 *string                     `toml:"source"`
-	Target                 *string                     `toml:"target"`
-	Output                 *string                     `toml:"output"`
-	Addons                 []string                    `toml:"addons"`
-	Incremental            *bool                       `toml:"incremental"`
-	DiagnosticsFormat      *string                     `toml:"diagnostics_format"`
-	DiagnosticMode         *string                     `toml:"diagnostic_mode"`
-	FailOnResourceOmission *bool                       `toml:"fail_on_resource_omission"`
-	Input                  generateProjectInputConfig  `toml:"input"`
-	References             generateProjectRefConfig    `toml:"references"`
-	Schema                 generateProjectSchemaConfig `toml:"schema"`
+	Source                 *string                         `toml:"source"`
+	Target                 *string                         `toml:"target"`
+	Output                 *string                         `toml:"output"`
+	Addons                 []string                        `toml:"addons"`
+	Incremental            *bool                           `toml:"incremental"`
+	DiagnosticsFormat      *string                         `toml:"diagnostics_format"`
+	DiagnosticMode         *string                         `toml:"diagnostic_mode"`
+	FailOnResourceOmission *bool                           `toml:"fail_on_resource_omission"`
+	Input                  generateProjectInputConfig      `toml:"input"`
+	References             generateProjectRefConfig        `toml:"references"`
+	Schema                 generateProjectSchemaConfig     `toml:"schema"`
+	Selection              *generateProjectSelectionConfig `toml:"selection"`
 }
 
 type generateProjectInputConfig struct {
@@ -43,6 +44,11 @@ type generateProjectRefConfig struct {
 
 type generateProjectSchemaConfig struct {
 	Extensions []string `toml:"extensions"`
+}
+
+type generateProjectSelectionConfig struct {
+	Operations []string `toml:"operations"`
+	Routes     []string `toml:"routes"`
 }
 
 func loadGenerateProjectConfig(path string) (generateProjectConfig, string, error) {
@@ -73,6 +79,15 @@ func applyGenerateProjectConfig(
 	values *generateFlagValues,
 	visited map[string]bool,
 ) {
+	if config.Selection != nil {
+		values.selectionExplicit = true
+		if !visited["operation"] {
+			values.operations = append(rawStrings(nil), config.Selection.Operations...)
+		}
+		if !visited["route"] {
+			values.routes = append(rawStrings(nil), config.Selection.Routes...)
+		}
+	}
 	if !visited["input"] && config.Source != nil {
 		*values.input = resolveConfigSource(base, *config.Source)
 	}

@@ -59,10 +59,11 @@ func (value *StageError) Unwrap() error { return value.Err }
 
 // Generation fingerprints the generator inputs that produced a managed output.
 type Generation struct {
-	Generator   string   `json:"generator"`
-	Target      string   `json:"target"`
-	Addons      []string `json:"addons,omitempty"`
-	InputSHA256 string   `json:"inputSha256"`
+	Generator       string   `json:"generator"`
+	Target          string   `json:"target"`
+	Addons          []string `json:"addons,omitempty"`
+	InputSHA256     string   `json:"inputSha256"`
+	SelectionRoutes []string `json:"selectionRoutes,omitempty"`
 }
 
 // Manifest records generator-owned output files and their content hashes.
@@ -320,11 +321,16 @@ func GenerationEqual(left, right *Generation) bool {
 	if left == nil || right == nil {
 		return left == right
 	}
-	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) {
+	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) || len(left.SelectionRoutes) != len(right.SelectionRoutes) {
 		return false
 	}
 	for index := range left.Addons {
 		if left.Addons[index] != right.Addons[index] {
+			return false
+		}
+	}
+	for index := range left.SelectionRoutes {
+		if left.SelectionRoutes[index] != right.SelectionRoutes[index] {
 			return false
 		}
 	}
@@ -341,6 +347,11 @@ func validateGeneration(generation Generation) error {
 	for index, addon := range generation.Addons {
 		if addon == "" || (index > 0 && generation.Addons[index-1] >= addon) {
 			return errors.New("add-ons are not unique stable names")
+		}
+	}
+	for index, route := range generation.SelectionRoutes {
+		if route == "" || (index > 0 && generation.SelectionRoutes[index-1] >= route) {
+			return errors.New("selection routes are not unique stable names")
 		}
 	}
 	return nil

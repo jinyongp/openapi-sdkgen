@@ -69,6 +69,8 @@ export interface OperationLoaderConfiguration {
   readonly generation: string;
   readonly baseURL: URL;
   readonly loadClient: () => Promise<PreparedClientModule>;
+  /** Public roots of a generation selection; Link dependencies resolve privately. */
+  readonly publicRoutes?: readonly string[];
   /** Internal seam for deterministic module-loading tests; never a consumer option. */
   readonly importModule?: (url: string) => Promise<unknown>;
 }
@@ -152,6 +154,8 @@ export function staticOperationReference<Route extends string>(
 /** Creates one generated document's small reference facade and code preparation boundary. */
 export function createOperationLoader(configuration: OperationLoaderConfiguration) {
   const generation = configuration.generation;
+  const publicRoutes =
+    configuration.publicRoutes === undefined ? undefined : new Set(configuration.publicRoutes);
   const baseURL = new URL("./lookup/", configuration.baseURL);
   const importModule =
     configuration.importModule ?? ((url: string) => import(/* @vite-ignore */ url));
@@ -338,7 +342,24 @@ export function createOperationLoader(configuration: OperationLoaderConfiguratio
     // No SDK module request starts until the entire selection has been collected.
     // Application getter exceptions intentionally retain their original identity.
     const selected = collectSelectionReferences(selection, readReference);
+    for (const data of selected) {
+      if (data.kind === "route" && publicRoutes !== undefined && !publicRoutes.has(data.key)) {
+        throw new OperationPreparationError(
+          "INPUT",
+          "Operation is outside the generated public selection",
+        );
+      }
+    }
     const providers = await Promise.all(selected.map((data) => load(data)));
+    if (
+      publicRoutes !== undefined &&
+      providers.some((provider) => !publicRoutes.has(provider.route))
+    ) {
+      throw new OperationPreparationError(
+        "INPUT",
+        "Operation is outside the generated public selection",
+      );
+    }
     if (clientModule === undefined) {
       const pending = Promise.resolve().then(() => configuration.loadClient());
       clientModule = pending;

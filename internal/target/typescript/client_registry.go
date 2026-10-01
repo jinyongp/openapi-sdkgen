@@ -35,7 +35,23 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	fmt.Fprintf(&output, "import { assignCallableProperties, type RequestFunction } from %s\n", quoteTS(callables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(codecs))
 	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
-	fmt.Fprintf(&output, "import type { Routes } from %s\n", quoteTS(routes))
+	if plan.selection == nil {
+		fmt.Fprintf(&output, "import type { Routes } from %s\n", quoteTS(routes))
+	} else {
+		output.WriteString("/** Private contracts including response-Link execution dependencies. */\ntype Routes = {\n")
+		for _, operation := range manifest.Operations {
+			if operation.Visibility == "hidden" {
+				continue
+			}
+			route := manifestRouteKey(operation)
+			specifier, err := operationModuleSpecifier(artifact, route, plan)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&output, "  readonly %s: import(%s).Contract\n", quoteTS(route), quoteTS(specifier))
+		}
+		output.WriteString("}\n")
+	}
 
 	operationsByRoute := make(map[string]ir.Operation, len(document.Operations))
 	for _, operation := range document.Operations {
@@ -85,7 +101,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	output.WriteString("export interface CallableRegistry {\n")
 	output.WriteString("  readonly routes: {\n")
 	for _, operation := range manifest.Operations {
-		if operation.Visibility == "hidden" {
+		if operation.Visibility == "hidden" || operation.dependencyOnly {
 			continue
 		}
 		route := manifestRouteKey(operation)
@@ -94,7 +110,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	output.WriteString("  }\n")
 	output.WriteString("  readonly operations: {\n")
 	for _, operation := range manifest.Operations {
-		if operation.Visibility == "hidden" || operation.OperationID == "" {
+		if operation.Visibility == "hidden" || operation.dependencyOnly || operation.OperationID == "" {
 			continue
 		}
 		route := manifestRouteKey(operation)
@@ -102,7 +118,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	}
 	output.WriteString("  }\n")
 	output.WriteString("  readonly links: {\n")
-	for _, source := range linkSourceOperations(links) {
+	for _, source := range linkSourceOperations(plan.selection.publicLinks(links)) {
 		if source.OperationID == "" {
 			continue
 		}
@@ -172,6 +188,9 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		}
 		route := manifestRouteKey(operation)
 		routeValues = append(routeValues, runtimeProperty{key: route, value: factories[route].value})
+		if operation.dependencyOnly {
+			continue
+		}
 		if operation.OperationID != "" {
 			operationValues = append(operationValues, runtimeProperty{key: operation.OperationID, value: factories[route].value})
 			if factories[route].links != "" {
@@ -185,6 +204,14 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	for _, property := range routeValues {
 		fmt.Fprintf(&output, "  defineOwnDataProperty(completed as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)
 	}
+	if plan.selection != nil {
+		output.WriteString("  const publicRoutes = {} as CallableRegistry[\"routes\"]\n")
+		for _, property := range routeValues {
+			if plan.selection.direct[property.key] {
+				fmt.Fprintf(&output, "  defineOwnDataProperty(publicRoutes as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)
+			}
+		}
+	}
 	for _, property := range operationValues {
 		fmt.Fprintf(&output, "  defineOwnDataProperty(operations, %s, %s)\n", quoteTS(property.key), property.value)
 	}
@@ -192,7 +219,11 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		fmt.Fprintf(&output, "  defineOwnDataProperty(linkCalls, %s, %s)\n", quoteTS(property.key), property.value)
 	}
 	output.WriteString("  return {\n")
-	output.WriteString("    routes: completed,\n")
+	if plan.selection == nil {
+		output.WriteString("    routes: completed,\n")
+	} else {
+		output.WriteString("    routes: publicRoutes,\n")
+	}
 	output.WriteString("    operations: operations as CallableRegistry[\"operations\"],\n")
 	output.WriteString("    links: linkCalls as CallableRegistry[\"links\"],\n")
 	output.WriteString("  }\n")

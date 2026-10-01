@@ -64,10 +64,15 @@ func (plan *semanticModulePlan) planSelective(manifest Manifest) error {
 		plan.selective = append(plan.selective, artifactPathCandidate{identity: "selective " + name, base: "selective/" + name + ".ts"})
 	}
 	ids := make(map[string]string)
+	dependencies := make(map[string]bool)
 	for _, item := range manifest.Operations {
 		ids[manifestRouteKey(item)] = item.OperationID
+		dependencies[manifestRouteKey(item)] = item.dependencyOnly
 	}
 	for _, module := range plan.operations {
+		if dependencies[module.routeKey] {
+			continue
+		}
 		plan.selective = append(plan.selective, artifactPathCandidate{identity: "static reference " + module.routeKey, base: selectiveStaticArtifact(module)})
 		for _, identity := range []struct{ kind, key string }{{"route", module.routeKey}, {"operation", ids[module.routeKey]}} {
 			if identity.kind == "operation" && identity.key == "" {
@@ -126,6 +131,9 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		providerPath := operationExecutionArtifactPath(module)
 		if err := write(Artifact{Path: providerPath, Data: generatedSource(source)}); err != nil {
 			return err
+		}
+		if item.dependencyOnly {
+			continue
 		}
 		for _, identity := range []struct{ kind, key string }{{"route", module.routeKey}, {"operation", item.OperationID}} {
 			if identity.kind == "operation" && identity.key == "" {
@@ -191,6 +199,13 @@ export type { OperationReference, OperationSelection } from "../internal/runtime
 export type { ClientOptions } from "../internal/runtime/configuration.js"
 export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
 `, quoteTS(generation))
+	if plan.selection != nil {
+		names, err := json.Marshal(sortedStringKeys(plan.selection.direct))
+		if err != nil {
+			return err
+		}
+		entry = strings.Replace(entry, "  generation: "+quoteTS(generation)+",", "  generation: "+quoteTS(generation)+",\n  publicRoutes: "+string(names)+",", 1)
+	}
 	all, err := emitSelectiveNames(plan)
 	if err != nil {
 		return err
@@ -216,6 +231,9 @@ func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 		items[manifestRouteKey(item)] = item
 	}
 	for _, module := range plan.modules.operations {
+		if items[module.routeKey].dependencyOnly {
+			continue
+		}
 		specifier, err := plan.modules.relativeModuleSpecifier("selective/types.ts", module.path)
 		if err != nil {
 			return nil, err
@@ -225,6 +243,9 @@ func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 	output.WriteString("}\nexport type RouteKey = keyof RouteCalls\n\nexport interface OperationRoutes {\n")
 	for _, module := range plan.modules.operations {
 		item := items[module.routeKey]
+		if item.dependencyOnly {
+			continue
+		}
 		if item.OperationID != "" {
 			fmt.Fprintf(&output, "  readonly %s: %s\n", quoteTS(item.OperationID), quoteTS(module.routeKey))
 		}
@@ -233,7 +254,7 @@ func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 	linkIDs := make(map[string]string)
 	for _, link := range plan.links {
 		route := operationRouteKey(link.SourceOperation)
-		if item, exists := items[route]; exists && item.OperationID != "" {
+		if item, exists := items[route]; exists && !item.dependencyOnly && item.OperationID != "" {
 			linkIDs[item.OperationID] = route
 		}
 	}
@@ -276,7 +297,7 @@ type SelectedLinkIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
 func emitSelectiveNames(plan *sourcePlan) ([]byte, error) {
 	var routes, ids []string
 	for _, item := range plan.manifest.Operations {
-		if item.Visibility == "hidden" {
+		if item.Visibility == "hidden" || item.dependencyOnly {
 			continue
 		}
 		routes = append(routes, manifestRouteKey(item))

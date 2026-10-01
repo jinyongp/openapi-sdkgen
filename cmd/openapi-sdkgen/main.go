@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"sort"
 	"strings"
 
 	compiler "openapi-sdkgen/internal/compiler"
@@ -89,6 +90,9 @@ type generateFlagValues struct {
 	targetName             *string
 	output                 *string
 	with                   repeatedStrings
+	operations             rawStrings
+	routes                 rawStrings
+	selectionExplicit      bool
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -290,6 +294,13 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	}
 	options.DiagnosticMode = diagnosticMode
 	options.FailOnResourceOmission = *values.failOnResourceOmission
+	visited := visitedGenerateFlags(flags.Flags)
+	if values.selectionExplicit || visited["operation"] || visited["route"] {
+		options.Selection, err = (&generator.Selection{Operations: values.operations, Routes: values.routes}).Canonical()
+		if err != nil {
+			return generateUsageError(err.Error())
+		}
+	}
 	if err := generator.ValidateTargetOptions(target, options); err != nil {
 		return err
 	}
@@ -453,6 +464,8 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",
 		Repeatable: true, Available: registries.addons.Names,
 	}, &values.with)
+	flags.Var(generationGroup, helpOption{Name: "operation", Metavariable: "id", Summary: "Generate an exact OpenAPI operationId; combine with --route", Repeatable: true}, &values.operations)
+	flags.Var(generationGroup, helpOption{Name: "route", Metavariable: "METHOD /path", Summary: "Generate an exact HTTP method and OpenAPI path template", Repeatable: true}, &values.routes)
 	values.inputBase = flags.String(inputGroup, helpOption{
 		Name: "input-base", Metavariable: "source",
 		Summary: "Base location for relative references from stdin",
@@ -628,6 +641,11 @@ func reusableGeneratorIdentity() string {
 }
 
 func reusableGenerationRequest(input, target string, options generator.Options, compileOptions compiler.CompileOptions) *artifactGeneration {
+	// Resolve selector identities against the compiler document before treating
+	// a selected output as reusable (IDs and routes may name the same API).
+	if options.Selection != nil {
+		return nil
+	}
 	identity := reusableGeneratorIdentity()
 	path, ok := localGenerationInputPath(input)
 	if identity == "" || !ok || !reusableCompileOptions(compileOptions) {
@@ -646,7 +664,29 @@ func reusableGenerationResult(result compiler.Result, target string, options gen
 	if identity == "" || result.ReusableInput == nil || !reusableCompileOptions(compileOptions) {
 		return nil
 	}
-	return newArtifactGeneration(identity, target, options, result.ReusableInput.SHA256)
+	generation := newArtifactGeneration(identity, target, options, result.ReusableInput.SHA256)
+	if options.Selection != nil && result.Document != nil {
+		ids := make(map[string]bool)
+		routes := make(map[string]bool)
+		for _, id := range options.Selection.Operations {
+			ids[id] = true
+		}
+		for _, route := range options.Selection.Routes {
+			routes[route] = true
+		}
+		generation.SelectionRoutes = make([]string, 0)
+		for _, operation := range result.Document.Operations {
+			route := operation.RouteKey
+			if route == "" {
+				route = operation.Method + " " + operation.Path
+			}
+			if routes[route] || (operation.OperationID != "" && ids[operation.OperationID]) {
+				generation.SelectionRoutes = append(generation.SelectionRoutes, route)
+			}
+		}
+		sort.Strings(generation.SelectionRoutes)
+	}
+	return generation
 }
 
 func reusableCompileOptions(options compiler.CompileOptions) bool {

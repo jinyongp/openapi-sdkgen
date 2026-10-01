@@ -233,6 +233,8 @@ func TestGenerateProjectConfigCoversPersistentGenerateFlags(t *testing.T) {
 		"references.lock":           "ref-lock",
 		"references.offline":        "offline",
 		"schema.extensions":         "schema-extension",
+		"selection.operations":      "operation",
+		"selection.routes":          "route",
 	}
 	configured := make(map[string]bool, len(configToCLI))
 	for _, key := range generateProjectConfigKeys(reflect.TypeOf(generateProjectConfig{}), "") {
@@ -266,8 +268,12 @@ func generateProjectConfigKeys(value reflect.Type, prefix string) []string {
 		if prefix != "" {
 			path = prefix + "." + name
 		}
-		if field.Type.Kind() == reflect.Struct {
-			result = append(result, generateProjectConfigKeys(field.Type, path)...)
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Pointer {
+			fieldType = fieldType.Elem()
+		}
+		if fieldType.Kind() == reflect.Struct {
+			result = append(result, generateProjectConfigKeys(fieldType, path)...)
 			continue
 		}
 		result = append(result, path)

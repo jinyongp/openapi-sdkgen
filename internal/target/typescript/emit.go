@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -112,6 +113,7 @@ type sourcePlan struct {
 	callbacks                   []callbackDefinition
 	resourceTree                *resourceNode
 	resourceReachable           map[string]bool
+	selection                   *generationSelection
 }
 
 // Prepare validates author input for the TypeScript target using the
@@ -133,7 +135,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	if err != nil {
 		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: diagnostic mode: %w", err)
 	}
-	plan, diagnostics, coverage, err := prepareSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission)
+	plan, diagnostics, coverage, err := prepareSelectedSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission, options.Selection)
 	if err != nil {
 		return generator.Plan{}, diagnostics, coverage, err
 	}
@@ -236,6 +238,7 @@ type ManifestOperation struct {
 	paginationRequest  ir.PaginationRequestPlan
 	compiled           ir.Operation
 	prepared           preparedOperation
+	dependencyOnly     bool
 }
 
 const generatedFileHeader = `// cspell:disable
@@ -278,6 +281,10 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 
 func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, failOnResourceOmission ...bool) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	strictResourceOmission := len(failOnResourceOmission) != 0 && failOnResourceOmission[0]
+	return prepareSelectedSourcePlanWithCoverage(document, includeServer, mode, strictResourceOmission, nil)
+}
+
+func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, strictResourceOmission bool, selectors *generator.Selection) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	if document == nil {
 		return nil, nil, nil, fmt.Errorf("IR document is nil")
 	}
@@ -285,18 +292,41 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 		return nil, nil, nil, err
 	}
 	var coverage []diagnostic.AnalysisCoverage
+	sourceDocument := document
+	document, selection, selectionDiagnostics, err := selectGenerationDocument(document, selectors)
+	if err != nil {
+		return nil, nil, coverage, err
+	}
+	if selectors != nil {
+		coverage = append(coverage, targetAnalysisCoverage("target.selection", diagnostic.CoverageComplete, ""))
+	}
+	if diagnostic.HasErrors(selectionDiagnostics) {
+		return &sourcePlan{document: document, selection: selection}, selectionDiagnostics, coverage, nil
+	}
+	document = selectedServerDocument(document, selection)
 	prepared, diagnostics, err := prepareKnownExtensions(document)
 	if err != nil {
 		return nil, nil, coverage, err
 	}
 	coverage = append(coverage, targetAnalysisCoverage("target.extensions", diagnostic.CoverageComplete, ""))
-	plan := &sourcePlan{document: prepared, ownership: newSourceOwnershipIndex(prepared), includeServer: includeServer}
+	diagnostics = scopeSelectionDiagnostics(sourceDocument, selection, diagnostics)
+	plan := &sourcePlan{document: prepared, ownership: newSourceOwnershipIndex(prepared), includeServer: includeServer, selection: selection}
 	targetDiagnostics := prepareTargetDiagnostics(plan)
-	diagnostics = append(diagnostics, targetDiagnostics...)
+	diagnostics = append(diagnostics, scopeSelectionDiagnostics(sourceDocument, selection, targetDiagnostics)...)
+	if selection != nil {
+		for route := range selection.dependencies {
+			plan.resourceReservationExcluded[route] = true
+		}
+	}
 	coverage = append(coverage, targetAnalysisCoverage("target.support", diagnostic.CoverageComplete, ""))
 	diagnostics = append(diagnostics, validateVisibilityDependencies(prepared, plan.omittedOperations)...)
 	coverage = append(coverage, targetAnalysisCoverage("target.visibility", diagnostic.CoverageComplete, ""))
 	manifest, manifestErrors := buildManifestDiagnostics(prepared, plan.resourceReservationExcluded)
+	if selection != nil {
+		for index := range manifest.Operations {
+			manifest.Operations[index].dependencyOnly = selection.dependencies[manifestRouteKey(manifest.Operations[index])]
+		}
+	}
 	for _, manifestErr := range manifestErrors {
 		diagnostics = append(diagnostics, loweringPreparationDiagnostic(prepared, plan.ownership, manifestErr))
 	}
@@ -381,6 +411,7 @@ func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mo
 			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript execution plan: %w", executionErr)
 		}
 		plan.modules = modules
+		plan.modules.selection = selection
 		plan.executions = executions
 		plan.executionSchemas, executionErr = prepareExecutionSchemaModules(modules, executions)
 		if executionErr != nil {
@@ -420,7 +451,7 @@ func hasMeaningfulEntrySurface(plan *sourcePlan) bool {
 		return false
 	}
 	for _, operation := range plan.manifest.Operations {
-		if operation.Visibility != "hidden" {
+		if operation.Visibility != "hidden" && !operation.dependencyOnly {
 			return true
 		}
 	}
@@ -474,7 +505,7 @@ func reconcileResourceCapabilitiesWithOmissions(document *ir.Document, reservati
 	}
 	for index := range manifest.Operations {
 		item := &manifest.Operations[index]
-		if item.Visibility != "public" || reachable[item.RouteKey] {
+		if item.dependencyOnly || item.Visibility != "public" || reachable[item.RouteKey] {
 			continue
 		}
 		if _, exists := omissions[item.RouteKey]; !exists {
@@ -529,6 +560,8 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no manifest")
 	}
 	manifest := *plan.manifest
+	publicManifest := plan.selection.publicManifest(manifest)
+	publicLinks := plan.selection.publicLinks(plan.links)
 	if plan.modules == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
@@ -553,7 +586,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.executions, plan.resourceTree, plan.resourceReachable, plan.links, plan.streams, write); err != nil {
 		return err
 	}
-	if err := emitRouteArtifactsTo(manifest, plan.modules, write); err != nil {
+	if err := emitRouteArtifactsTo(publicManifest, plan.modules, write); err != nil {
 		return err
 	}
 	registrySource, err := emitClientRegistry(document, manifest, plan.modules, plan.links, plan.streams)
@@ -579,10 +612,17 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err != nil {
 		return err
 	}
+	if plan.selection != nil {
+		selectionJSON, err := json.Marshal(map[string][]string{"routes": sortedStringKeys(plan.selection.direct), "dependencyRoutes": sortedStringKeys(plan.selection.dependencies)})
+		if err != nil {
+			return fmt.Errorf("encode generation selection metadata: %w", err)
+		}
+		metadataSource = append(metadataSource, []byte("\n/** Public API selection and response-Link execution dependencies. */\nexport const generationSelection = "+string(selectionJSON)+" as const\n")...)
+	}
 	if err := emitResourceArtifactsTo(document, plan.modules, plan.resourceTree, write); err != nil {
 		return err
 	}
-	clientIndexSource, err := emitClientArtifactsTo(document, manifest, plan.modules, plan.links, plan.streams, write)
+	clientIndexSource, err := emitClientArtifactsTo(document, publicManifest, plan.modules, publicLinks, plan.streams, write)
 	if err != nil {
 		return err
 	}

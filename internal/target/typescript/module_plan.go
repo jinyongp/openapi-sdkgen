@@ -23,6 +23,7 @@ type semanticModulePlan struct {
 	relativeSpecifierFrom     string
 	relativeSpecifierComputes int
 	resourceParameterTypes    map[string]string
+	selection                 *generationSelection
 }
 
 type schemaModulePlan struct {
