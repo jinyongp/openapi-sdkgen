@@ -37,8 +37,13 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
 
 <template>
   <div class="compatibility-results">
-    <table v-if="!evidence" class="results-summary">
+    <div v-if="!evidence" class="results-table-scroll" role="region" :aria-label="labels.caption" tabindex="0">
+    <table class="results-summary">
       <caption>{{ labels.caption }}</caption>
+      <colgroup>
+        <col class="results-name-column" />
+        <col span="3" />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">{{ labels.input }}</th>
@@ -59,6 +64,7 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
         </tr>
       </tbody>
     </table>
+    </div>
     <template v-else>
       <details v-for="corpus in results" :key="corpus.id" class="results-evidence">
         <summary>{{ labels[corpus.id][0] }} — {{ labels.details }}</summary>
@@ -96,8 +102,13 @@ const status = (document) => document.defaultSuccess ? labels.pass : document.ad
 .compatibility-results { margin: 24px 0; }
 table { font-size: 14px; font-variant-numeric: tabular-nums; }
 caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
-.results-summary th { white-space: normal; }
-.results-summary tbody th { min-width: 13rem; text-align: left; }
+.results-table-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.results-table-scroll:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
+.results-summary { display: table; width: 100%; min-width: 36rem; table-layout: fixed; }
+.results-summary .results-name-column { width: 46%; }
+.results-summary :is(th, td) { min-width: 0; }
+.results-summary th { white-space: normal; word-break: keep-all; }
+.results-summary tbody th { text-align: left; }
 .results-summary tbody th span { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--vp-c-text-2); }
 .results-summary td { text-align: right; }
 .results-evidence { border-bottom: 1px solid var(--vp-c-divider); padding: 16px 0; }
@@ -107,7 +118,7 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-digest { font-size: 12px; color: var(--vp-c-text-2); }
 .results-digest code { display: block; margin-top: 4px; overflow-wrap: anywhere; white-space: normal; }
 @media (max-width: 639px) {
-  .results-summary tbody th { min-width: 10rem; }
-  .results-summary :is(th, td) { min-width: 5rem; padding: 8px; }
+  .results-summary { min-width: 32rem; }
+  .results-summary :is(th, td) { padding: 8px; }
 }
 </style>

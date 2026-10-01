@@ -15,6 +15,7 @@ const koreanNavigation = buildDocsNavigation("ko");
 const englishTheme = {
   socialLinks,
   ...englishNavigation,
+  aside: false,
   search: { provider: "local" },
   outline: { level: [2, 3], label: "On this page" },
   editLink: {
@@ -29,6 +30,7 @@ const englishTheme = {
 const koreanTheme = {
   socialLinks,
   ...koreanNavigation,
+  aside: false,
   search: {
     provider: "local",
     options: {
