@@ -1,0 +1,671 @@
+{
+  "schemaVersion": 2,
+  "manifestSha256": "9dfa5d81fcd1831d464b85b6a86aa26b34a6f82aae98f74ce5ceb4c575b76257",
+  "featureCatalog": [
+    "operation.query",
+    "parameter.querystring",
+    "document.media-types",
+    "media.item-schema",
+    "media.jsonl",
+    "media.json-seq",
+    "media.multipart-positional-encoding",
+    "schema.discriminator-default-mapping",
+    "security.oauth2-metadata",
+    "security.device-authorization",
+    "security.deprecated",
+    "security.requirement-uri",
+    "schema.xml-node-type",
+    "oas.version.3.0",
+    "oas.version.3.1",
+    "oas.version.3.2",
+    "reference.local",
+    "reference.external",
+    "operation.request-body",
+    "operation.required-request-body",
+    "operation.callbacks",
+    "operation.servers",
+    "document.webhooks",
+    "response.links",
+    "media.multipart",
+    "media.url-encoded",
+    "media.binary",
+    "media.encoding",
+    "security.api-key",
+    "security.http",
+    "security.oauth2",
+    "security.openid-connect",
+    "schema.allOf",
+    "schema.oneOf",
+    "schema.anyOf",
+    "schema.not",
+    "schema.discriminator",
+    "schema.additional-properties.boolean",
+    "schema.additional-properties.schema",
+    "schema.type-array",
+    "schema.const",
+    "schema.null-type",
+    "schema.prefix-items",
+    "schema.unevaluated-properties"
+  ],
+  "documents": [
+    {
+      "evidenceKind": "real-document",
+      "id": "zenith-customer-v3",
+      "cohort": "production-3.2",
+      "input": "compatibility/oas32-real/zenith-customer-v3.json",
+      "inputSha256": "5edee175042fa3c765080804bd0cfa3ca1d63dd533eb6e7198b210c16d9b61a5",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 5,
+        "retained": 5,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 5,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "response.links",
+        "media.url-encoded",
+        "security.http"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 88,
+        "artifactBytes": 558798
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    },
+    {
+      "evidenceKind": "real-document",
+      "id": "zenith-merchant-v2",
+      "cohort": "production-3.2",
+      "input": "compatibility/oas32-real/zenith-merchant-v2.json",
+      "inputSha256": "e0c24b03198b985022465f22180cae6a1d65f31e2291bde85de97b75575d4e7f",
+      "openapiVersion": "3.2.0",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 40,
+        "retained": 40,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 40,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.2",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "response.links",
+        "media.url-encoded",
+        "security.api-key",
+        "security.http",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "status": "pass",
+        "artifactCount": 350,
+        "artifactBytes": 1847296
+      },
+      "typecheck": {
+        "status": "pass"
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    }
+  ],
+  "cohorts": [
+    {
+      "cohort": "production-3.2",
+      "documents": 2,
+      "successfulDocuments": 2,
+      "documentSuccessRate": 1,
+      "capabilityAdjustedDocuments": 2,
+      "capabilityAdjustedSuccessRate": 1,
+      "discoveryComplete": 2,
+      "generatedDocuments": 2,
+      "typecheckedDocuments": 2,
+      "generatedVerificationRate": 1,
+      "operations": {
+        "availableDocuments": 2,
+        "total": 45,
+        "retained": 45,
+        "omitted": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "availableDocuments": 2,
+        "count": 45,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 9,
+        "total": 44,
+        "rate": 0.20454545454545456,
+        "missing": [
+          "operation.query",
+          "parameter.querystring",
+          "document.media-types",
+          "media.item-schema",
+          "media.jsonl",
+          "media.json-seq",
+          "media.multipart-positional-encoding",
+          "schema.discriminator-default-mapping",
+          "security.oauth2-metadata",
+          "security.device-authorization",
+          "security.deprecated",
+          "security.requirement-uri",
+          "schema.xml-node-type",
+          "oas.version.3.0",
+          "oas.version.3.1",
+          "reference.external",
+          "operation.callbacks",
+          "operation.servers",
+          "document.webhooks",
+          "media.multipart",
+          "media.binary",
+          "media.encoding",
+          "security.oauth2",
+          "security.openid-connect",
+          "schema.allOf",
+          "schema.oneOf",
+          "schema.anyOf",
+          "schema.not",
+          "schema.discriminator",
+          "schema.additional-properties.boolean",
+          "schema.type-array",
+          "schema.const",
+          "schema.null-type",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    }
+  ],
+  "overall": {
+    "documents": 2,
+    "successfulDocuments": 2,
+    "documentSuccessRate": 1,
+    "capabilityAdjustedDocuments": 2,
+    "capabilityAdjustedSuccessRate": 1,
+    "discoveryComplete": 2,
+    "generatedDocuments": 2,
+    "typecheckedDocuments": 2,
+    "generatedVerificationRate": 1,
+    "operations": {
+      "availableDocuments": 2,
+      "total": 45,
+      "retained": 45,
+      "omitted": 0,
+      "rate": 1
+    },
+    "operationEmission": {
+      "availableDocuments": 2,
+      "count": 45,
+      "operationOmissions": 0,
+      "helperOmissions": 0
+    },
+    "compatibility": {
+      "preserved": 0,
+      "rejected": 0,
+      "total": 0,
+      "rate": null,
+      "actions": {},
+      "rules": {}
+    },
+    "featureCoverage": {
+      "observed": 9,
+      "total": 44,
+      "rate": 0.20454545454545456,
+      "missing": [
+        "operation.query",
+        "parameter.querystring",
+        "document.media-types",
+        "media.item-schema",
+        "media.jsonl",
+        "media.json-seq",
+        "media.multipart-positional-encoding",
+        "schema.discriminator-default-mapping",
+        "security.oauth2-metadata",
+        "security.device-authorization",
+        "security.deprecated",
+        "security.requirement-uri",
+        "schema.xml-node-type",
+        "oas.version.3.0",
+        "oas.version.3.1",
+        "reference.external",
+        "operation.callbacks",
+        "operation.servers",
+        "document.webhooks",
+        "media.multipart",
+        "media.binary",
+        "media.encoding",
+        "security.oauth2",
+        "security.openid-connect",
+        "schema.allOf",
+        "schema.oneOf",
+        "schema.anyOf",
+        "schema.not",
+        "schema.discriminator",
+        "schema.additional-properties.boolean",
+        "schema.type-array",
+        "schema.const",
+        "schema.null-type",
+        "schema.prefix-items",
+        "schema.unevaluated-properties"
+      ]
+    }
+  }
+}

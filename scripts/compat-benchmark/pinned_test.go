@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -68,5 +69,37 @@ func TestOpenAPI32FeatureDetectorsUseSemanticLocations(t *testing.T) {
 		if name != "oas.version.3.2" {
 			t.Errorf("literal example counted as feature %s", name)
 		}
+	}
+}
+
+func TestPinnedDocumentCohortAllowsOneProviderWithDistinctAPIs(t *testing.T) {
+	data, err := os.ReadFile("../../test/compatibility/production32.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest benchmarkManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateManifest(manifest); err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Corpora) != 2 || manifest.Corpora[0].Provider != manifest.Corpora[1].Provider {
+		t.Fatal("production evidence must remain two documents from one provider")
+	}
+	if err := verifyMaterializedCorpus("../../test", manifest, "local"); err != nil {
+		t.Fatal(err)
+	}
+	manifest.Source = &corpusSource{Repository: "example/specs", Commit: "pinned"}
+	for index := range manifest.Corpora {
+		manifest.Corpora[index].GitBlob = "pinned-blob"
+	}
+	if err := validateManifest(manifest); err == nil {
+		t.Fatal("source-backed holdout accepted duplicate providers")
+	}
+	manifest.Source = nil
+	manifest.Corpora[1].ID = manifest.Corpora[0].ID
+	if err := validateManifest(manifest); err == nil {
+		t.Fatal("pinned document cohort accepted duplicate ids")
 	}
 }

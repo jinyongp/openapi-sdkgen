@@ -939,6 +939,15 @@ Accordingly, the 95% capability-adjusted result must **not** be interpreted as
 "95% of all OpenAPI documents" or "95% of popular APIs." It is empirical
 evidence over this fixed independent cross-section.
 
+A separate `test/compatibility/production32.json` cohort pins two unchanged
+OpenAPI 3.2.0 documents from Zenith Payments' official API reference. Both pass
+generation and strict TypeScript with 45 emitted operations and no omissions.
+They are two documents from one provider, with API-key/HTTP security and local
+references, and have no external reference or streaming observation. This
+adds production evidence without claiming large-document, multi-file, or
+security/streaming coverage. Source provenance, reproduction commands, and
+remaining gaps are recorded in `test/compatibility/README.md`.
+
 The feature manifest remains the canonical feature-by-feature contract. The
 holdout benchmark answers a different question: whether complete real external
 documents survive diagnostic discovery, generation, and strict target

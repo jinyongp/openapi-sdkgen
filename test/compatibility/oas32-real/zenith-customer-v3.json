@@ -1,0 +1,972 @@
+{
+	"info": {
+		"version": "v3",
+		"title": "Customer APIs",
+		"description": "Self-service REST API for merchant customers, using a Bearer token issued by the customer through their own portal account (distinct from the Merchant API's ZenPay-issued Basic/Api-Key credentials).",
+		"x-swagger-net-version": "8.4.19.001",
+		"contact": {
+			"name": "ZenPay Integrations Team",
+			"email": "integrations@zenithpayments.com.au",
+			"url": "https://docs.zenithpayments.support"
+		}
+	},
+	"paths": {
+		"/v3/diagnostics/ping": {
+			"get": {
+				"tags": [
+					"Diagnostics"
+				],
+				"summary": "Ping method to get the server date time and version information",
+				"operationId": "Diagnostics_Ping",
+				"responses": {
+					"200": {
+						"description": "Self check endpoing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PingResponse"
+								},
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": {
+											"serverDateTime": "2026-09-16T21:59:52.0270103",
+											"version": "v3.0",
+											"timeZoneInfo": "Australian Eastern Standard Time",
+											"buildVersion": "1.137.1.19365"
+										}
+									}
+								}
+							},
+							"text/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PingResponse"
+								}
+							},
+							"application/xml": {
+								"schema": {
+									"$ref": "#/components/schemas/PingResponse"
+								}
+							},
+							"text/xml": {
+								"schema": {
+									"$ref": "#/components/schemas/PingResponse"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				]
+			}
+		},
+		"/v3/{customerCode}/payments/{paymentReference}": {
+			"get": {
+				"tags": [
+					"Payments"
+				],
+				"operationId": "Payments_GetPaymentByReference",
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "customerCode",
+						"in": "path",
+						"required": true
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "paymentReference",
+						"in": "path",
+						"required": true
+					},
+					{
+						"schema": {},
+						"name": "cancellationToken",
+						"in": "header",
+						"required": true
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								},
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": {
+											"paymentReference": "68227",
+											"customerCode": "TR20621497",
+											"customerName": "Ian Menethil",
+											"baseAmount": 0,
+											"customerFee": 100,
+											"fundsToMerchant": 0,
+											"processedAmount": 100,
+											"paymentCard": "MasterCard",
+											"cardType": 2,
+											"cardTypeString": "MasterCard",
+											"paymentCardString": "MasterCard",
+											"processingDate": "2024-05-24T14:20:33",
+											"paymentStatus": 3,
+											"paymentStatusString": "Successful",
+											"settlementDate": "2024-05-27",
+											"paymentMethod": 0,
+											"paymentMethodString": "Credit / Debit Card",
+											"processorReference": "7165244335466997604953",
+											"isPaymentSettledToMerchant": false,
+											"merchantName": "Aqua Travel Group",
+											"merchantCode": "Aquatrvl",
+											"isPaymentRetryScheduled": false,
+											"processorRetryCount": 0,
+											"isPaymentRecalled": false,
+											"isPaymentRefunded": false,
+											"cardCategory": "International Cards",
+											"paymentType": 1,
+											"paymentTypeString": "Charge",
+											"isPaymentChargeBacked": false,
+											"paymentSource": 9,
+											"paymentSourceString": "Setup Fee - Customer",
+											"hasPendingRefundRequest": false,
+											"isPartialRefund": false,
+											"refundedAmount": 0,
+											"refundedCustomerFeeAmount": 0
+										}
+									}
+								}
+							},
+							"text/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"application/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"text/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							}
+						}
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": ""
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				],
+				"summary": "Get a payment by reference",
+				"description": "Returns the payment for the specified customer and payment reference."
+			}
+		},
+		"/v3/{customerCode}/uniquePaymentId/{uniquePaymentId}": {
+			"get": {
+				"tags": [
+					"Payments"
+				],
+				"operationId": "Payments_GetPayment",
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "customerCode",
+						"in": "path",
+						"required": true
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "uniquePaymentId",
+						"in": "path",
+						"required": true
+					},
+					{
+						"schema": {},
+						"name": "cancellationToken",
+						"in": "header",
+						"required": true
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								},
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": {
+											"paymentReference": "246805",
+											"uniquePaymentId": "v3-collection-test-001",
+											"customerCode": "TR20621497",
+											"customerName": "Ian Menethil",
+											"customerReference": "v3-collection-test",
+											"baseAmount": 1,
+											"customerFee": 0.4,
+											"fundsToMerchant": 1,
+											"processedAmount": 1.4,
+											"paymentCard": "MasterCard",
+											"cardType": 2,
+											"cardTypeString": "MasterCard",
+											"paymentCardString": "MasterCard",
+											"processingDate": "2026-09-16T22:03:34",
+											"paymentStatus": 3,
+											"paymentStatusString": "Successful",
+											"settlementDate": "2026-09-18",
+											"paymentMethod": 0,
+											"paymentMethodString": "Credit / Debit Card",
+											"processorReference": "7895602138736758003814",
+											"isPaymentSettledToMerchant": false,
+											"merchantName": "Menethil",
+											"merchantCode": "1337",
+											"isPaymentRetryScheduled": false,
+											"processorRetryCount": 0,
+											"isPaymentRecalled": false,
+											"isPaymentRefunded": false,
+											"cardCategory": "International Cards",
+											"paymentType": 1,
+											"paymentTypeString": "Charge",
+											"isPaymentChargeBacked": false,
+											"paymentSource": 58,
+											"paymentSourceString": "Cust.Api Payment",
+											"hasPendingRefundRequest": false,
+											"isPartialRefund": false,
+											"refundedAmount": 0,
+											"refundedCustomerFeeAmount": 0
+										}
+									}
+								}
+							},
+							"text/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"application/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"text/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				],
+				"summary": "Get a payment by unique ID",
+				"description": "Returns the payment for the specified customer and unique payment ID."
+			}
+		},
+		"/v3/{customerCode}/payments": {
+			"get": {
+				"tags": [
+					"Payments"
+				],
+				"summary": "Get all the payments",
+				"operationId": "Payments_Get",
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "customerCode",
+						"in": "path",
+						"description": "Customer code",
+						"required": true
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "uniqueCustomerId",
+						"in": "query",
+						"description": "Unique Customer ID. This can be configured at the customer portal.",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "paymentReference",
+						"in": "query",
+						"description": "Payment reference",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "customerReference",
+						"in": "query",
+						"description": "Customer reference",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "uniquePaymentId",
+						"in": "query",
+						"description": "Unique payment id.",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "string",
+							"format": "date-time"
+						},
+						"name": "fromProcessedDate",
+						"in": "query",
+						"description": "From date",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "string",
+							"format": "date-time"
+						},
+						"name": "toProcessedDate",
+						"in": "query",
+						"description": "To date",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "integer",
+							"format": "int32",
+							"default": 0
+						},
+						"name": "pageOffset",
+						"in": "query",
+						"description": "Record start",
+						"required": false
+					},
+					{
+						"schema": {
+							"type": "integer",
+							"format": "int32",
+							"default": 20
+						},
+						"name": "pageLimit",
+						"in": "query",
+						"description": "Number of records",
+						"required": false
+					},
+					{
+						"schema": {},
+						"name": "cancellationToken",
+						"in": "header",
+						"required": false
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								},
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": {
+											"items": [
+												{
+													"paymentReference": "68227",
+													"customerCode": "TR20621497",
+													"customerName": "Ian Menethil",
+													"baseAmount": 0,
+													"customerFee": 100,
+													"fundsToMerchant": 0,
+													"processedAmount": 100,
+													"paymentCard": "MasterCard",
+													"cardType": 2,
+													"cardTypeString": "MasterCard",
+													"paymentCardString": "MasterCard",
+													"processingDate": "2024-05-24T14:20:33",
+													"paymentStatus": 3,
+													"paymentStatusString": "Successful",
+													"settlementDate": "2024-05-27",
+													"paymentMethod": 0,
+													"paymentMethodString": "Credit / Debit Card",
+													"processorReference": "7165244335466997604953",
+													"isPaymentSettledToMerchant": false,
+													"merchantName": "Aqua Travel Group",
+													"merchantCode": "Aquatrvl",
+													"isPaymentRetryScheduled": false,
+													"processorRetryCount": 0,
+													"isPaymentRecalled": false,
+													"isPaymentRefunded": false,
+													"cardCategory": "International Cards",
+													"paymentType": 1,
+													"paymentTypeString": "Charge",
+													"isPaymentChargeBacked": false,
+													"paymentSource": 9,
+													"paymentSourceString": "Setup Fee - Customer",
+													"hasPendingRefundRequest": false,
+													"isPartialRefund": false,
+													"refundedAmount": 0,
+													"refundedCustomerFeeAmount": 0
+												},
+												{
+													"paymentReference": "39331",
+													"customerCode": "TR20621497",
+													"customerName": "Ian Menethil",
+													"customerReference": "v1test",
+													"baseAmount": 250,
+													"customerFee": 0,
+													"fundsToMerchant": 240,
+													"processedAmount": 250,
+													"paymentCard": "Visa",
+													"cardType": 1,
+													"cardTypeString": "Visa",
+													"paymentCardString": "Visa",
+													"processingDate": "2021-08-26T16:08:15",
+													"paymentStatus": 6,
+													"paymentStatusString": "Suppressed",
+													"settlementDate": "2021-08-27",
+													"paymentMethod": 0,
+													"paymentMethodString": "Credit / Debit Card",
+													"processorReference": "6299580949926369203004",
+													"isPaymentSettledToMerchant": false,
+													"merchantName": "Menethil - v1 api test",
+													"merchantCode": "v1test",
+													"isPaymentRetryScheduled": false,
+													"processorRetryCount": 0,
+													"isPaymentRecalled": false,
+													"isPaymentRefunded": false,
+													"cardCategory": "International Cards",
+													"paymentType": 1,
+													"paymentTypeString": "Charge",
+													"isPaymentChargeBacked": false,
+													"paymentSource": 39,
+													"paymentSourceString": "Api Tokenised Payment",
+													"hasPendingRefundRequest": false,
+													"isPartialRefund": false,
+													"refundedAmount": 0,
+													"refundedCustomerFeeAmount": 0
+												},
+												{
+													"paymentReference": "39330",
+													"customerCode": "TR20621497",
+													"customerName": "Ian Menethil",
+													"customerReference": "v1test",
+													"baseAmount": 100,
+													"customerFee": 0,
+													"fundsToMerchant": 90,
+													"processedAmount": 100,
+													"paymentCard": "Visa",
+													"cardType": 1,
+													"cardTypeString": "Visa",
+													"paymentCardString": "Visa",
+													"processingDate": "2021-08-26T16:01:01",
+													"paymentStatus": 6,
+													"paymentStatusString": "Suppressed",
+													"settlementDate": "2021-08-27",
+													"paymentMethod": 0,
+													"paymentMethodString": "Credit / Debit Card",
+													"processorReference": "6299576607686362303006",
+													"isPaymentSettledToMerchant": false,
+													"merchantName": "Menethil - v1 api test",
+													"merchantCode": "v1test",
+													"isPaymentRetryScheduled": false,
+													"processorRetryCount": 0,
+													"isPaymentRecalled": false,
+													"isPaymentRefunded": false,
+													"cardCategory": "International Cards",
+													"paymentType": 1,
+													"paymentTypeString": "Charge",
+													"isPaymentChargeBacked": false,
+													"paymentSource": 0,
+													"paymentSourceString": "Cust.WebPay",
+													"hasPendingRefundRequest": false,
+													"isPartialRefund": false,
+													"refundedAmount": 0,
+													"refundedCustomerFeeAmount": 0
+												},
+												{
+													"paymentReference": "39329",
+													"customerCode": "TR20621497",
+													"customerName": "Ian Menethil",
+													"customerReference": "v1test",
+													"baseAmount": 0,
+													"customerFee": 100,
+													"fundsToMerchant": 0,
+													"processedAmount": 100,
+													"paymentCard": "Visa",
+													"cardType": 1,
+													"cardTypeString": "Visa",
+													"paymentCardString": "Visa",
+													"processingDate": "2021-08-26T15:59:44",
+													"paymentStatus": 6,
+													"paymentStatusString": "Suppressed",
+													"settlementDate": "2021-08-27",
+													"paymentMethod": 0,
+													"paymentMethodString": "Credit / Debit Card",
+													"processorReference": "6299575836156352103005",
+													"isPaymentSettledToMerchant": false,
+													"merchantName": "Menethil - v1 api test",
+													"merchantCode": "v1test",
+													"isPaymentRetryScheduled": false,
+													"processorRetryCount": 0,
+													"isPaymentRecalled": false,
+													"isPaymentRefunded": false,
+													"cardCategory": "International Cards",
+													"paymentType": 1,
+													"paymentTypeString": "Charge",
+													"isPaymentChargeBacked": false,
+													"paymentSource": 9,
+													"paymentSourceString": "Setup Fee - Customer",
+													"hasPendingRefundRequest": false,
+													"isPartialRefund": false,
+													"refundedAmount": 0,
+													"refundedCustomerFeeAmount": 0
+												}
+											],
+											"itemCount": 4,
+											"pageOffset": 0,
+											"pageLimit": 10
+										}
+									}
+								}
+							},
+							"text/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"application/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"text/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				]
+			},
+			"post": {
+				"tags": [
+					"Payments"
+				],
+				"operationId": "Payments_Post",
+				"parameters": [
+					{
+						"schema": {
+							"type": "string"
+						},
+						"name": "customerCode",
+						"in": "path",
+						"required": true
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"text/json": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"application/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							},
+							"text/xml": {
+								"schema": {
+									"description": "Defines a command that asynchronously creates an {System.Net.Http.HttpResponseMessage}.",
+									"type": "object"
+								}
+							}
+						}
+					},
+					"201": {
+						"links": {
+							"GetPaymentByReference": {
+								"operationId": "Payments_GetPaymentByReference",
+								"parameters": {
+									"customerCode": "$response.body#/customerCode",
+									"paymentReference": "$response.body#/paymentReference"
+								},
+								"description": "Reads the same payment back by its gateway-assigned reference."
+							},
+							"GetPayment": {
+								"operationId": "Payments_GetPayment",
+								"parameters": {
+									"customerCode": "$response.body#/customerCode",
+									"uniquePaymentId": "$response.body#/uniquePaymentId"
+								},
+								"description": "Reads the same payment back by the uniquePaymentId the caller supplied at creation."
+							}
+						},
+						"content": {
+							"application/json": {
+								"examples": {
+									"sandbox": {
+										"summary": "Real sandbox response",
+										"value": {
+											"paymentReference": "246805",
+											"uniquePaymentId": "v3-collection-test-001",
+											"customerCode": "TR20621497",
+											"customerName": "Ian Menethil",
+											"customerReference": "v3-collection-test",
+											"baseAmount": 1,
+											"customerFee": 0.4,
+											"fundsToMerchant": 0,
+											"processedAmount": 1.4,
+											"paymentCard": "555555XXXXXX4444",
+											"cardType": 2,
+											"cardTypeString": "MasterCard",
+											"subCardType": 2,
+											"subCardTypeString": "MasterCard",
+											"processingDate": "2026-09-16T22:03:34",
+											"paymentStatus": 3,
+											"paymentStatusString": "Successful",
+											"settlementDate": "2026-09-18",
+											"processorReference": "7895602138736758003814",
+											"isPaymentSettledToMerchant": false,
+											"merchantName": "Menethil",
+											"merchantCode": "1337",
+											"isPaymentRetryScheduled": false,
+											"processorRetryCount": 0,
+											"isPaymentRecalled": false,
+											"isPaymentRefunded": false,
+											"paymentType": 1,
+											"paymentTypeString": "Charge",
+											"isPaymentChargeBacked": false,
+											"paymentSource": 58,
+											"paymentSourceString": "Cust.Api Payment",
+											"hasPendingRefundRequest": false,
+											"isPartialRefund": false,
+											"refundedAmount": 0,
+											"refundedCustomerFeeAmount": 0
+										}
+									}
+								}
+							}
+						}
+					},
+					"300": {
+						"content": {
+							"application/json": {
+								"examples": {
+									"duplicateId": {
+										"summary": "Real sandbox response",
+										"value": {
+											"message": "The Payment unique id already exists."
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PaymentRequest"
+							},
+							"examples": {
+								"sandbox": {
+									"summary": "Real sandbox request",
+									"value": {
+										"merchantCode": "1337",
+										"customerReference": "v3-collection-test",
+										"paymentAmount": 1,
+										"uniquePaymentId": "v3-collection-test-001",
+										"sendPaymentConfirmation": false
+									}
+								},
+								"duplicateId": {
+									"summary": "Real sandbox request",
+									"value": {
+										"merchantCode": "1337",
+										"customerReference": "v3-collection-test",
+										"paymentAmount": 1,
+										"uniquePaymentId": "v3-collection-test-001",
+										"sendPaymentConfirmation": false
+									}
+								}
+							}
+						},
+						"text/json": {
+							"schema": {
+								"$ref": "#/components/schemas/PaymentRequest"
+							}
+						},
+						"application/xml": {
+							"schema": {
+								"$ref": "#/components/schemas/PaymentRequest"
+							}
+						},
+						"text/xml": {
+							"schema": {
+								"$ref": "#/components/schemas/PaymentRequest"
+							}
+						},
+						"application/x-www-form-urlencoded": {
+							"schema": {
+								"$ref": "#/components/schemas/PaymentRequest"
+							}
+						}
+					},
+					"required": true
+				},
+				"summary": "Create a payment",
+				"description": "Creates a payment from the supplied request payload."
+			}
+		}
+	},
+	"tags": [
+		{
+			"name": "Diagnostics",
+			"description": "System Diagnostics"
+		},
+		{
+			"name": "Payments"
+		}
+	],
+	"openapi": "3.2.0",
+	"servers": [
+		{
+			"url": "https://{subdomain}.{baseDomain}",
+			"description": "Customer APIs — choose an environment prefix and brand domain",
+			"variables": {
+				"subdomain": {
+					"default": "api.sandbox",
+					"enum": [
+						"api",
+						"apiuat",
+						"api.sandbox"
+					],
+					"description": "Environment prefix"
+				},
+				"baseDomain": {
+					"default": "travelpay.com.au",
+					"enum": [
+						"travelpay.com.au",
+						"b2bpay.com.au",
+						"childcareeasypay.com.au",
+						"schooleasypay.com.au",
+						"rentalrewards.com.au",
+						"zenpay.com.au",
+						"thoroughbredpayments.com.au"
+					],
+					"description": "Brand domain"
+				}
+			}
+		}
+	],
+	"components": {
+		"schemas": {
+			"PingResponse": {
+				"description": "Ping result",
+				"properties": {
+					"serverDateTime": {
+						"description": "Server Date Time",
+						"type": "string",
+						"format": "date-time"
+					},
+					"version": {
+						"description": "API version",
+						"type": "string"
+					},
+					"timeZoneInfo": {
+						"description": "DateTime Time Zone",
+						"type": "string"
+					},
+					"buildVersion": {
+						"description": "Build version",
+						"type": "string"
+					}
+				},
+				"xml": {
+					"name": "PingResponse"
+				},
+				"type": "object"
+			},
+			"CancellationToken": {
+				"properties": {
+					"isCancellationRequested": {
+						"readOnly": true,
+						"type": "boolean"
+					},
+					"canBeCanceled": {
+						"readOnly": true,
+						"type": "boolean"
+					},
+					"waitHandle": {
+						"$ref": "#/components/schemas/WaitHandle",
+						"readOnly": true
+					}
+				},
+				"xml": {
+					"name": "CancellationToken"
+				},
+				"type": "object"
+			},
+			"WaitHandle": {
+				"properties": {
+					"handle": {
+						"type": "object"
+					},
+					"safeWaitHandle": {
+						"$ref": "#/components/schemas/SafeWaitHandle"
+					}
+				},
+				"xml": {
+					"name": "WaitHandle"
+				},
+				"type": "object"
+			},
+			"SafeWaitHandle": {
+				"properties": {
+					"isInvalid": {
+						"readOnly": true,
+						"type": "boolean"
+					},
+					"isClosed": {
+						"readOnly": true,
+						"type": "boolean"
+					}
+				},
+				"xml": {
+					"name": "SafeWaitHandle"
+				},
+				"type": "object"
+			},
+			"PaymentRequest": {
+				"required": [
+					"merchantCode",
+					"customerReference",
+					"paymentAmount",
+					"uniquePaymentId"
+				],
+				"properties": {
+					"merchantCode": {
+						"type": "string"
+					},
+					"customerReference": {
+						"type": "string"
+					},
+					"paymentAmount": {
+						"type": "number",
+						"format": "double"
+					},
+					"uniquePaymentId": {
+						"type": "string",
+						"maxLength": 50
+					},
+					"oneOffPaymentReference": {
+						"type": "string"
+					},
+					"additionalReference": {
+						"type": "string"
+					},
+					"sendPaymentConfirmation": {
+						"type": "boolean"
+					},
+					"uniqueCustomerId": {
+						"description": "Unique Customer ID. This can be configured at the customer portal.",
+						"type": "string",
+						"maxLength": 20
+					}
+				},
+				"xml": {
+					"name": "PaymentRequest"
+				},
+				"type": "object"
+			}
+		},
+		"securitySchemes": {
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer"
+			}
+		}
+	},
+	"x-zp-conversion": {
+		"converter": "@scalar/openapi-upgrader@0.2.11",
+		"sourceHash": "sha256:93fecc1354e1e91f466f3fcb2ccb654d997cf3bca154e5aa980121a2996ceebd",
+		"status": "ok"
+	},
+	"security": [
+		{
+			"BearerAuth": []
+		}
+	]
+}

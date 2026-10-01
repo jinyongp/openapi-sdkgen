@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "pinned": true,
+  "selection": {
+    "method": "Both publicly downloadable API specifications linked by Zenith Payments' official v2/v3 reference, frozen by exact bytes, OpenAPI declaration and SHA-256 on 2026-10-01 before generator execution. One provider, two documents; a separate production-document cohort, not a holdout or a popularity sample.",
+    "candidateCount": 2
+  },
+  "corpora": [
+    {
+      "id": "zenith-merchant-v2",
+      "cohort": "production-3.2",
+      "evidenceKind": "real-document",
+      "input": "compatibility/oas32-real/zenith-merchant-v2.json",
+      "sha256": "e0c24b03198b985022465f22180cae6a1d65f31e2291bde85de97b75575d4e7f",
+      "bytes": 298755,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://docs.zenithpayments.support/openapi-v2.json",
+      "revision": "provider-published-snapshot-2026-10-01",
+      "trust": "unchanged provider-published self-contained local snapshot; compiler remote allowlist empty; no live API requests",
+      "provider": "zenithpayments.com.au"
+    },
+    {
+      "id": "zenith-customer-v3",
+      "cohort": "production-3.2",
+      "evidenceKind": "real-document",
+      "input": "compatibility/oas32-real/zenith-customer-v3.json",
+      "sha256": "5edee175042fa3c765080804bd0cfa3ca1d63dd533eb6e7198b210c16d9b61a5",
+      "bytes": 27093,
+      "openapiVersion": "3.2.0",
+      "sourceUrl": "https://docs.zenithpayments.support/openapi-v3.json",
+      "revision": "provider-published-snapshot-2026-10-01",
+      "trust": "unchanged provider-published self-contained local snapshot; compiler remote allowlist empty; no live API requests",
+      "provider": "zenithpayments.com.au"
+    }
+  ]
+}

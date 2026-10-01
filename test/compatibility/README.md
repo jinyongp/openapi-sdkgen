@@ -49,6 +49,39 @@ Microsoft Graph beta, DigitalOcean, and Twilio. Those inputs are useful
 regression tests, but they are not independent holdout evidence because they
 influenced implementation work.
 
+### Provider-published OpenAPI 3.2 documents
+
+`production32.json` freezes both downloadable specifications from Zenith
+Payments' official [Merchant API reference](https://docs.zenithpayments.support/docs/integration-options/rest-api/openapi/v2/merchant-apis)
+and [Customer API reference](https://docs.zenithpayments.support/docs/integration-options/rest-api/openapi/v3/customer-apis).
+Their top-level `openapi` is `3.2.0`; service versions `v2` and `v3` are
+separate. These are unchanged provider-published bytes captured on 2026-10-01,
+with source URLs, byte counts, SHA-256, and trust policy frozen before generation.
+The live download URLs are mutable; committed snapshots and hashes are the
+reproduction inputs. No local conversion or version rewrite is applied.
+
+```sh
+just agent compatibility-verify test/compatibility/production32.json test
+just agent compatibility-benchmark test/compatibility/production32.json test .tmp/compatibility-production32.json 3m
+```
+
+`production32-results.json` records generation and strict TypeScript success for
+both documents, with 45 emitted operations and no operation/helper omissions.
+This adds production-document evidence independently of authored fixtures:
+**two documents from one provider**, rather than a two-provider holdout. The
+20-provider holdout and its membership remain separate.
+
+The 298,755-byte Merchant document contains API-key and HTTP Basic security;
+the 27,093-byte Customer document contains HTTP Bearer security. Both contain
+local references and Links. Their detectors observe 9/44 features. Neither
+contains external `$ref`, sequential media, or the new 3.2 QUERY/querystring
+constructs. Production evidence for documents at least 1 MB, multi-file reference
+closures, and combined OAuth/streaming contracts remains a gap. Normative
+fixtures exercise supported constructs separately and do not fill that
+production-evidence gap. Further providers must have verifiable public source
+and exact top-level version, frozen input/closure hashes and trust policy before
+their generation results are inspected.
+
 `holdout.json` freezes a separate 20-provider sample from
 `APIs-guru/openapi-directory` commit
 `f04b8d0bcd39c52e1cf3ad7a5fe744709832ae49`.

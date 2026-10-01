@@ -316,7 +316,9 @@ func validateManifest(manifest benchmarkManifest) error {
 			strings.HasPrefix(input, "//") || strings.Contains(input, "://") || clean != input {
 			return fmt.Errorf("corpus %q has non-canonical relative input %q", corpus.ID, corpus.Input)
 		}
-		if corpus.Provider != "" {
+		// Pinned document cohorts may cover several APIs from one provider. The
+		// source-backed holdout keeps its one-document-per-provider contract.
+		if corpus.Provider != "" && !(manifest.Pinned && manifest.Source == nil) {
 			if providers[corpus.Provider] {
 				return fmt.Errorf("duplicate corpus provider %q", corpus.Provider)
 			}
