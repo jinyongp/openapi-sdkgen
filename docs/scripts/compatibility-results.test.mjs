@@ -32,9 +32,12 @@ test("Graph selection publishes separate measured evidence and rejects stale or 
   assert.equal(data.selected.operationEmission.count, 9);
   assert.equal(data.selected.generationSelection.runtime.status, "pass");
   const ci = readGraphSelection(directory, "graph-selected-ci-results.json");
-  assert.equal(ci.measurement.sourceCommit, data.measurement.sourceCommit);
   assert.deepEqual(ci.selected.generationSelection.requested, data.selected.generationSelection.requested);
   assert.equal(ci.selected.generationSelection.runtime.status, "pass");
+  // Each environment retains the version that produced its own measurement.
+  change(directory, "graph-selected-ci-results.json", report => report.measurement.sourceCommit = "1".repeat(40));
+  assert.equal(readGraphSelection(directory, "graph-selected-ci-results.json").measurement.sourceCommit, "1".repeat(40));
+  assert.equal(readGraphSelection(directory).measurement.sourceCommit, data.measurement.sourceCommit);
   for (const mutate of [
     report => report.documents[0].generationScope = "full",
     report => report.documents[0].generationSelection.fixtureSha256 = "wrong",

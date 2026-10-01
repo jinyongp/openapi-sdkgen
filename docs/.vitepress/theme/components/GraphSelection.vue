@@ -33,8 +33,8 @@ const date = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZo
       <p><a :href="data.sourceUrl">{{ ko ? "OpenAPI 원문" : "OpenAPI document" }}</a> · <a :href="withBase('/compatibility-results/graph-selected-results.json')">{{ ko ? "선택 SDK 결과 JSON" : "Selected SDK results JSON" }}</a></p>
       <ul><li v-for="route in selected.generationSelection.routes" :key="route"><code>{{ route }}</code></li></ul>
       <p>{{ data.measurement.cpu }} · {{ data.measurement.os }}/{{ data.measurement.architecture }} · {{ ko ? "검증 최대 메모리" : "Verification peak RSS" }} {{ size(data.resources.peakRssBytes) }}</p>
-      <p v-if="ko"><a :href="data.ci.ciRunUrl">GitHub Actions 검증</a>에서도 생성·타입 검사·모의 호출을 통과했습니다. 생성 {{ time(data.ci.selected.generation.durationMillis) }}, 타입 검사 {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions 결과 JSON</a></p>
-      <p v-else><a :href="data.ci.ciRunUrl">GitHub Actions verification</a> also passed generation, typechecking, and mock calls. Generation {{ time(data.ci.selected.generation.durationMillis) }}, typecheck {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions results JSON</a></p>
+      <p v-if="ko"><a :href="data.ci.ciRunUrl">GitHub Actions 검증</a> · 버전 <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: 생성·타입 검사·모의 호출 통과. 생성 {{ time(data.ci.selected.generation.durationMillis) }}, 타입 검사 {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions 결과 JSON</a></p>
+      <p v-else><a :href="data.ci.ciRunUrl">GitHub Actions verification</a> · Version <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: generation, typechecking, and mock calls passed. Generation {{ time(data.ci.selected.generation.durationMillis) }}, typecheck {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions results JSON</a></p>
     </details>
   </div>
 </template>

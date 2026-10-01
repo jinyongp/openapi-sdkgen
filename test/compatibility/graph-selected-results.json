@@ -82,7 +82,7 @@
         "runtime": {
           "status": "pass",
           "detail": "pass: Graph selected loadOperations, query/path/body, model decoding and mock Fetch",
-          "durationMillis": 7348.703333
+          "durationMillis": 7276.506343
         }
       },
       "evidenceKind": "real-document",
@@ -134,12 +134,12 @@
       "generation": {
         "status": "pass",
         "artifactCount": 6993,
-        "artifactBytes": 126161388,
-        "durationMillis": 12752.18484
+        "artifactBytes": 104447274,
+        "durationMillis": 10451.909614
       },
       "typecheck": {
         "status": "pass",
-        "durationMillis": 26511.246424
+        "durationMillis": 11166.648881
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -506,9 +506,9 @@
     }
   },
   "measurement": {
-    "sourceCommit": "a7cb6745169ce87a253283b2304786eb5c07c69f",
+    "sourceCommit": "1161c89a108a496fafb1a39993bbee0767a62466",
     "sourceDirty": false,
-    "measuredAt": "2026-10-01T17:52:46Z",
+    "measuredAt": "2026-10-01T23:46:31Z",
     "generationScope": "compile-prepare-write",
     "samples": 1,
     "os": "linux",
@@ -517,14 +517,14 @@
     "goVersion": "go1.27.1"
   },
   "resources": {
-    "cpuUserSeconds": 66.02,
-    "cpuSystemSeconds": 9.58,
-    "cpuPercent": 138.0,
-    "wallSeconds": 54.66,
-    "peakRssBytes": 5847207936,
-    "majorPageFaults": 18,
-    "filesystemInputBlocks": 56,
-    "filesystemOutputBlocks": 323720,
+    "cpuUserSeconds": 45.91,
+    "cpuSystemSeconds": 6.94,
+    "cpuPercent": 144,
+    "wallSeconds": 36.68,
+    "peakRssBytes": 3747364864,
+    "majorPageFaults": 14,
+    "filesystemInputBlocks": 0,
+    "filesystemOutputBlocks": 281256,
     "exitCode": 0
   }
 }
