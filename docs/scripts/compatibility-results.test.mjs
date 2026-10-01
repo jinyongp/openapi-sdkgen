@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults } from "./build-compatibility-results.mjs";
+import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection } from "./build-compatibility-results.mjs";
 
 const sourceDirectory = new URL("../../test/compatibility/", import.meta.url);
 
@@ -17,8 +17,43 @@ function fixture(t) {
       copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
     }
   }
+  mkdirSync(resolve(directory, "selections"));
+  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs"]) {
+    copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
+  }
   return directory;
 }
+
+test("Graph selection publishes separate measured evidence and rejects stale or inflated claims", (t) => {
+  const directory = fixture(t);
+  const data = readGraphSelection(directory);
+  assert.equal(data.full.operationEmission.count, 29581);
+  assert.equal(data.full.generation.durationMillis, 276562.598521);
+  assert.equal(data.selected.operationEmission.count, 9);
+  assert.equal(data.selected.generationSelection.runtime.status, "pass");
+  const ci = readGraphSelection(directory, "graph-selected-ci-results.json");
+  assert.equal(ci.measurement.sourceCommit, data.measurement.sourceCommit);
+  assert.deepEqual(ci.selected.generationSelection.requested, data.selected.generationSelection.requested);
+  assert.equal(ci.selected.generationSelection.runtime.status, "pass");
+  for (const mutate of [
+    report => report.documents[0].generationScope = "full",
+    report => report.documents[0].generationSelection.fixtureSha256 = "wrong",
+    report => report.documents[0].generationSelection.runtime.status = "fail",
+    report => report.documents[0].operationEmission.count++,
+    report => report.documents[0].generationSelection.excludedOperations++,
+    report => report.measurement.sourceDirty = true,
+    report => {
+      report.documents[0].generationSelection.routes.pop();
+      report.documents[0].generationSelection.requested.routes.pop();
+      report.documents[0].operationEmission.count--;
+      report.documents[0].generationSelection.excludedOperations++;
+    },
+  ]) {
+    const directory = fixture(t);
+    change(directory, "graph-selected-results.json", mutate);
+    assert.throws(() => readGraphSelection(directory), /Graph selection/);
+  }
+});
 
 function change(directory, name, mutate) {
   const path = resolve(directory, name);

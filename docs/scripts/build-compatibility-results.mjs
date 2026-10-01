@@ -147,15 +147,57 @@ export function publishCompatibilityDocuments(directory, outputDirectory) {
   }
 }
 
+export function readGraphSelection(directory, reportName = "graph-selected-results.json") {
+  const report = JSON.parse(readFileSync(resolve(directory, reportName)));
+  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const manifest = JSON.parse(manifestBytes);
+  const full = JSON.parse(readFileSync(resolve(directory, "regression-results.json"))).documents.find((item) => item.id === "microsoft-graph-beta");
+  const selected = report.documents?.[0];
+  const entry = manifest.corpora.find((item) => item.id === "microsoft-graph-beta");
+  const selection = selected?.generationSelection;
+  const fixture = readFileSync(resolve(directory, "selections/microsoft-graph-beta.toml"));
+  const probe = readFileSync(resolve(directory, "selections/microsoft-graph-beta.mjs"));
+  // This pinned route-only fixture uses a JSON-compatible array of basic strings.
+  // Reject other forms instead of accepting an unverified selection policy.
+  const policyArray = fixture.toString().match(/^routes\s*=\s*\[([\s\S]*?)^\]/m);
+  if (!policyArray) throw new Error("Graph selection route policy is unavailable");
+  const policyRoutes = [...new Set(JSON.parse(`[${policyArray[1].replace(/,\s*$/, "")}]`))].sort();
+  if (report.schemaVersion !== 2 || report.manifestSha256 !== sha256(manifestBytes) || report.documents.length !== 1 ||
+      selected.id !== entry.id || selected.inputSha256 !== entry.sha256 || full.inputSha256 !== selected.inputSha256 ||
+      selected.generationScope !== "selected" || selection?.fixtureSha256 !== sha256(fixture) ||
+      selection.runtimeProbeSha256 !== sha256(probe) || !selected.documentSuccess || !selected.capabilityAdjustedSuccess ||
+      selected.generation.status !== "pass" || selected.typecheck.status !== "pass" || selection.runtime.status !== "pass" ||
+      !/^[a-f0-9]{40}$/.test(report.measurement?.sourceCommit) || report.measurement.sourceDirty !== false ||
+      report.overall.documents !== 0 || report.overall.selectedSuccessfulDocuments !== 1) {
+    throw new Error("Graph selection provenance or verification mismatch");
+  }
+  const routes = selection.routes, dependencies = selection.dependencyRoutes;
+  if (!routes.length || JSON.stringify(routes) !== JSON.stringify([...new Set(routes)].sort()) ||
+      JSON.stringify(routes) !== JSON.stringify(policyRoutes) ||
+      JSON.stringify(selection.requested) !== JSON.stringify({ routes }) ||
+      JSON.stringify(dependencies) !== JSON.stringify([...new Set(dependencies)].sort()) ||
+      routes.some((route) => dependencies.includes(route)) || selection.excludedOperations < 0 ||
+      selected.operationEmission.count !== routes.length ||
+      selected.operationRetention.total !== routes.length + dependencies.length + selection.excludedOperations) {
+    throw new Error("Graph selection membership mismatch");
+  }
+  return { full, selected, measurement: report.measurement, resources: report.resources, sourceUrl: entry.sourceUrl, ciRunUrl: report.ciRunUrl };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const docsDirectory = fileURLToPath(new URL("..", import.meta.url));
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
   const data = readCompatibilityResults(sourceDirectory);
+  const graph = readGraphSelection(sourceDirectory);
+  graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
   const generatedDirectory = resolve(docsDirectory, ".vitepress/generated");
   const publicDirectory = resolve(docsDirectory, "public/compatibility-results");
   mkdirSync(generatedDirectory, { recursive: true });
   mkdirSync(publicDirectory, { recursive: true });
   writeFileSync(resolve(generatedDirectory, "compatibility-results.json"), `${JSON.stringify(data, null, 2)}\n`);
+  writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
+  copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
+  copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
   for (const id of corpusNames) {
     for (const name of [`${id}.json`, `${id}-results.json`]) {
       copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
