@@ -98,6 +98,11 @@ html[lang="ko-KR"] .VPHome .vp-doc > h2:first-of-type + p {
   min-width: 7rem;
 }
 
+.vp-doc tbody tr:nth-child(2n),
+.vp-doc tbody th {
+  background-color: var(--vp-c-bg);
+}
+
 .vp-doc thead th {
   white-space: normal;
   word-break: keep-all;
