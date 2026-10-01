@@ -47,6 +47,7 @@ For individual feature support, see [OpenAPI support](./capabilities.md).
 ## Document results
 
 Expand a set to see API call counts and generated Webhook or Callback handlers.
+Select a document name to open the OpenAPI source (JSON or YAML) used for its results.
 A document containing only Webhooks has zero API calls and generated Webhook
 handlers. You can also download the original report and input manifest.
 

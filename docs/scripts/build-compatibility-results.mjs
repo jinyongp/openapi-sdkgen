@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const corpusNames = ["holdout", "production32", "modern"];
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const documentPath = (entry) => `documents/${encodeURIComponent(entry.id)}/${encodeURIComponent(basename(entry.input))}`;
 
 export function readCompatibilityResults(directory) {
   return corpusNames.map((id) => {
@@ -46,6 +47,9 @@ export function readCompatibilityResults(directory) {
       return {
         id: document.id,
         version: document.openapiVersion,
+        sourceUrl: manifest.source?.rawBaseUrl
+          ? new URL(entry.input.split("/").map(encodeURIComponent).join("/"), manifest.source.rawBaseUrl).href
+          : `/compatibility-results/${documentPath(entry)}`,
         defaultSuccess: document.documentSuccess,
         adjustedSuccess: document.capabilityAdjustedSuccess,
         emitted: document.operationEmission.count,
@@ -82,6 +86,29 @@ export function readCompatibilityResults(directory) {
   });
 }
 
+export function publishCompatibilityDocuments(directory, outputDirectory) {
+  const testDirectory = resolve(directory, "..");
+  for (const id of corpusNames) {
+    const manifest = JSON.parse(readFileSync(resolve(directory, `${id}.json`)));
+    if (manifest.source?.rawBaseUrl) continue;
+    for (const entry of manifest.corpora) {
+      const files = [entry, ...(manifest.files ?? []).filter((file) => dirname(file.input) === dirname(entry.input))];
+      for (const file of files) {
+        const source = resolve(testDirectory, file.input);
+        const sourceRelative = relative(testDirectory, source);
+        if (sourceRelative.startsWith(`..${sep}`) || sourceRelative === "..") {
+          throw new Error(`${id}: document is outside the input directory`);
+        }
+        const bytes = readFileSync(source);
+        if (sha256(bytes) !== file.sha256) throw new Error(`${id}: published document hash mismatch`);
+        const destination = resolve(outputDirectory, "documents", entry.id, basename(file.input));
+        mkdirSync(dirname(destination), { recursive: true });
+        writeFileSync(destination, bytes);
+      }
+    }
+  }
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const docsDirectory = fileURLToPath(new URL("..", import.meta.url));
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
@@ -96,5 +123,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
     }
   }
+  publishCompatibilityDocuments(sourceDirectory, publicDirectory);
   console.log("Compatibility results: 3 verified reports; summaries and original JSON prepared.");
 }

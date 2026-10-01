@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { corpusNames, readCompatibilityResults } from "./build-compatibility-results.mjs";
+import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults } from "./build-compatibility-results.mjs";
 
 const sourceDirectory = new URL("../../test/compatibility/", import.meta.url);
 
@@ -91,4 +91,40 @@ test("an unsuccessful generation shows no call count or receiving code", (t) => 
   const document = readCompatibilityResults(directory)[0].results.find((document) => document.id === "listennotes.com");
   assert.equal(document.generatedOperations, null);
   assert.deepEqual(document.receiving, []);
+});
+
+test("all document links open the measured source rather than the standard or provider homepage", () => {
+  const data = readCompatibilityResults(fileURLToPath(sourceDirectory));
+  assert.equal(data.flatMap((corpus) => corpus.results).length, 32);
+  for (const document of data[0].results) {
+    assert.match(document.sourceUrl, /^https:\/\/raw\.githubusercontent\.com\/APIs-guru\/openapi-directory\/[a-f0-9]{40}\/APIs\/.+\/openapi\.(yaml|json)$/);
+  }
+  for (const corpus of data.slice(1)) for (const document of corpus.results) {
+    assert.match(document.sourceUrl, /^\/compatibility-results\/documents\/.+\.json$/);
+    assert.ok(document.sourceUrl.includes(`/${document.id}/`));
+  }
+});
+
+test("published multi-file examples retain the exact source and relative reference targets", (t) => {
+  const directory = fixture(t);
+  publishCompatibilityDocuments(fileURLToPath(sourceDirectory), directory);
+  for (const filename of ["root.json", "source.json", "target.json"]) {
+    const published = readFileSync(resolve(directory, "documents/external-link", filename));
+    const original = readFileSync(new URL(`../fixtures/support-gaps/links/${filename}`, sourceDirectory));
+    assert.ok(published.equals(original));
+  }
+  for (const [id,filename] of [["zenith-merchant-v2","zenith-merchant-v2.json"],["resend-3.1","resend.json"]]) {
+    assert.equal(typeof JSON.parse(readFileSync(resolve(directory, "documents", id, filename))).openapi, "string");
+  }
+});
+
+test("changed source bytes cannot be published as the measured document", (t) => {
+  const directory = fixture(t);
+  const manifest = JSON.parse(readFileSync(resolve(directory, "production32.json")));
+  const first = manifest.corpora[0];
+  const original = first.input;
+  first.input = `${basename(directory)}/changed.json`;
+  writeFileSync(resolve(directory, "changed.json"), readFileSync(new URL(`../${original}`, sourceDirectory)) + "\n");
+  writeFileSync(resolve(directory, "production32.json"), JSON.stringify(manifest));
+  assert.throws(() => publishCompatibilityDocuments(directory, directory), /published document hash mismatch/);
 });

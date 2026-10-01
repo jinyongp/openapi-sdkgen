@@ -92,7 +92,7 @@ const receiving = (document) => document.receiving.map((feature) =>
           </thead>
           <tbody>
             <tr v-for="document in corpus.results" :key="document.id">
-              <th scope="row">{{ document.id }}</th>
+              <th scope="row"><a :href="withBase(document.sourceUrl)">{{ document.id }}</a></th>
               <td>{{ document.version }}</td>
               <td>{{ status(document) }}</td>
               <td>{{ document.adjustedSuccess ? labels.pass : labels.fail }}</td>
