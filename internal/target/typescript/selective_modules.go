@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
+	pathpkg "path"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -31,7 +32,11 @@ func selectiveLookupArtifact(kind, key string) (string, error) {
 }
 
 func selectiveStaticArtifact(module operationModulePlan) string {
-	return "selective/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
+	result := "selective/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
+	if len(result) <= maxArtifactPathBytes {
+		return result
+	}
+	return pathpkg.Join("selective", "operations", "route-"+shortArtifactHash(module.routeKey), pathpkg.Base(module.path))
 }
 
 func (plan *semanticModulePlan) planSelective(manifest Manifest) error {

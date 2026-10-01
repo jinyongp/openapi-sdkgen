@@ -3,7 +3,9 @@ package typescript
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
+	pathpkg "path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -12,6 +14,89 @@ import (
 	"openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 )
+
+func TestSelectiveStaticArtifactBoundsTheFinalPath(t *testing.T) {
+	paths := make(map[string]bool)
+	for _, tail := range []string{"ite", "item", "items", "other"} {
+		route := "/" + strings.Repeat("segment/", 26) + tail
+		module := operationModulePlan{routeKey: "GET " + route, path: operationArtifactBase(route, "GET")}
+		unbounded := "selective/operations/" + strings.TrimPrefix(module.path, "internal/operations/")
+		got := selectiveStaticArtifact(module)
+		if err := validateArtifactPath(got); err != nil {
+			t.Fatalf("final path %q (%d bytes): %v", got, len(got), err)
+		}
+		if len(unbounded) <= maxArtifactPathBytes && got != unbounded {
+			t.Fatalf("existing portable path changed: %q -> %q", unbounded, got)
+		}
+		if len(unbounded) > maxArtifactPathBytes && !strings.HasPrefix(got, "selective/operations/route-") {
+			t.Fatalf("overlong static path was not shortened: %q", got)
+		}
+		if got != selectiveStaticArtifact(module) || paths[got] {
+			t.Fatalf("static path is unstable or collides: %q", got)
+		}
+		paths[got] = true
+		if pathpkg.Base(got) != pathpkg.Base(module.path) {
+			t.Fatalf("allocated filename changed: %q -> %q", module.path, got)
+		}
+	}
+	module := operationModulePlan{routeKey: "GET /long", path: "internal/operations/" + strings.Repeat("segment/", 24) + "boundary/get-123456789abc.ts"}
+	if got := selectiveStaticArtifact(module); !strings.HasPrefix(got, "selective/operations/route-") || pathpkg.Base(got) != "get-123456789abc.ts" {
+		t.Fatalf("collision suffix was lost: %q", got)
+	}
+}
+
+func TestSelectiveBoundaryArtifactsAndTheirImportsAreEmitted(t *testing.T) {
+	paths := make(map[string]any)
+	for _, tail := range []string{"ite", "item", "items", "other"} {
+		paths["/"+strings.Repeat("segment/", 26)+tail] = map[string]any{
+			"get": map[string]any{"operationId": tail, "responses": map[string]any{"204": map[string]any{"description": "ok"}}},
+		}
+	}
+	input, err := json.Marshal(map[string]any{"openapi": "3.0.3", "info": map[string]any{"title": "Boundary", "version": "1"}, "paths": paths})
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := sdkgen.Compile(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, diagnostics, err := prepareSourcePlan(document, false)
+	if err != nil || diagnostic.HasErrors(diagnostics) {
+		t.Fatalf("prepare: %v %v", err, diagnostics)
+	}
+	artifacts, err := emitSourcePlan(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byPath := make(map[string]string)
+	for _, artifact := range artifacts {
+		if err := validateArtifactPath(artifact.Path); err != nil {
+			t.Fatalf("%s: %v", artifact.Path, err)
+		}
+		if _, exists := byPath[artifact.Path]; exists {
+			t.Fatalf("duplicate emitted path: %s", artifact.Path)
+		}
+		byPath[artifact.Path] = string(artifact.Data)
+	}
+	for _, module := range plan.modules.operations {
+		static := selectiveStaticArtifact(module)
+		if !strings.Contains(byPath[static], "export const operation =") {
+			t.Fatalf("static reference missing at planned path: %s", static)
+		}
+	}
+	imports := regexp.MustCompile(`(?:\bfrom\s+|\bimport\s*\(?\s*)["'](\.[^"']+)["']`)
+	for artifact, source := range byPath {
+		for _, match := range imports.FindAllStringSubmatch(source, -1) {
+			if !strings.HasSuffix(match[1], ".js") {
+				continue
+			}
+			target := pathpkg.Join(pathpkg.Dir(artifact), strings.TrimSuffix(match[1], ".js")+".ts")
+			if _, exists := byPath[target]; !exists {
+				t.Fatalf("%s imports missing target %s", artifact, target)
+			}
+		}
+	}
+}
 
 func TestSelectiveLookupPathsPreserveExactKeysAndPortableSegments(t *testing.T) {
 	for _, kind := range []string{"operation", "route"} {
