@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
@@ -50,6 +51,31 @@ test("a report without emission measurement cannot publish zero as measured cove
   assert.throws(() => readCompatibilityResults(directory), /emission-aware report is required/);
 });
 
+test("an internal generation failure publishes unavailable counts and times while other inputs remain visible", (t) => {
+  const directory = fixture(t);
+  change(directory, "holdout-results.json", (report) => {
+    const document = report.documents.find((document) => document.documentSuccess);
+    report.overall.successfulDocuments--;
+    report.overall.capabilityAdjustedDocuments--;
+    report.overall.operationEmission.availableDocuments--;
+    report.overall.operationEmission.count -= document.operationEmission.count;
+    report.overall.operationEmission.operationOmissions -= document.operationEmission.operationOmissions;
+    report.overall.operationEmission.helperOmissions -= document.operationEmission.helperOmissions;
+    document.documentSuccess = false;
+    document.capabilityAdjustedSuccess = false;
+    document.generation = { status: "fail", detail: "internal target preparation failure" };
+    document.typecheck = { status: "not-run" };
+    document.operationEmission = { available: false, count: 0, operationOmissions: 0, helperOmissions: 0 };
+  });
+  const corpus = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout");
+  assert.equal(corpus.results.length, 20);
+  const failed = corpus.results.find((document) => !document.adjustedSuccess);
+  assert.equal(failed.generatedOperations, null);
+  assert.equal(failed.generationDurationMillis, null);
+  assert.deepEqual(failed.receiving, []);
+  assert.ok(corpus.results.some((document) => document.adjustedSuccess && document.generatedOperations > 0));
+});
+
 test("server-required documents publish the successful generation counts and receiving code", () => {
   const data = readCompatibilityResults(fileURLToPath(sourceDirectory));
   const holdout = data.find((corpus) => corpus.id === "holdout");
@@ -88,18 +114,29 @@ test("an unsuccessful generation shows no call count or receiving code", (t) => 
     document.capabilityAdjustedSuccess = false;
     report.overall.capabilityAdjustedDocuments--;
   });
-  const document = readCompatibilityResults(directory)[0].results.find((document) => document.id === "listennotes.com");
+  const document = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout").results.find((document) => document.id === "listennotes.com");
   assert.equal(document.generatedOperations, null);
   assert.deepEqual(document.receiving, []);
 });
 
 test("all document links open the measured source rather than the standard or provider homepage", () => {
   const data = readCompatibilityResults(fileURLToPath(sourceDirectory));
-  assert.equal(data.flatMap((corpus) => corpus.results).length, 32);
-  for (const document of data[0].results) {
+  assert.equal(data.flatMap((corpus) => corpus.results).length, 39);
+  const regression = data.find((corpus) => corpus.id === "regression");
+  const manifest = JSON.parse(readFileSync(new URL("regression.json", sourceDirectory)));
+  assert.equal(data[0].id, "regression");
+  assert.deepEqual(regression.results.map((document) => document.name), [
+    "GitHub", "Stripe", "Cloudflare", "GitLab", "Microsoft Graph beta", "DigitalOcean", "Twilio",
+  ]);
+  for (const document of regression.results) {
+    const entry = manifest.corpora.find((entry) => entry.id === document.id);
+    assert.equal(document.sourceUrl, entry.sourceUrl);
+    assert.ok(document.sourceUrl.includes(`/${entry.revision}/`));
+  }
+  for (const document of data.find((corpus) => corpus.id === "holdout").results) {
     assert.match(document.sourceUrl, /^https:\/\/raw\.githubusercontent\.com\/APIs-guru\/openapi-directory\/[a-f0-9]{40}\/APIs\/.+\/openapi\.(yaml|json)$/);
   }
-  for (const corpus of data.slice(1)) for (const document of corpus.results) {
+  for (const corpus of data.filter((corpus) => ["modern", "production32"].includes(corpus.id))) for (const document of corpus.results) {
     assert.match(document.sourceUrl, /^\/compatibility-results\/documents\/.+\.json$/);
     assert.ok(document.sourceUrl.includes(`/${document.id}/`));
   }
@@ -115,6 +152,21 @@ test("published multi-file examples retain the exact source and relative referen
   }
   for (const [id,filename] of [["zenith-merchant-v2","zenith-merchant-v2.json"],["resend-3.1","resend.json"]]) {
     assert.equal(typeof JSON.parse(readFileSync(resolve(directory, "documents", id, filename))).openapi, "string");
+  }
+});
+
+test("upstream links require the measured input hash and an immutable HTTPS revision", (t) => {
+  for (const invalid of ["revision", "url", "hash", "mode"]) {
+    const directory = fixture(t);
+    change(directory, "regression.json", (manifest) => {
+      if (invalid === "revision") manifest.corpora[0].revision = "main";
+      if (invalid === "url") manifest.corpora[0].sourceUrl = manifest.corpora[0].sourceUrl.replace("https:", "http:");
+      if (invalid === "hash") manifest.corpora[0].sha256 = "";
+      if (invalid === "mode") manifest.publication.documents = "unknown";
+    });
+    const digest = createHash("sha256").update(readFileSync(resolve(directory, "regression.json"))).digest("hex");
+    change(directory, "regression-results.json", (report) => report.manifestSha256 = digest);
+    assert.throws(() => readCompatibilityResults(directory), /upstream document links require|unknown document publication/);
   }
 });
 
@@ -136,7 +188,7 @@ test("generation time follows the same successful server profile as API calls", 
     document.generation.durationMillis = 999;
     document.supportProfiles[0].generation.durationMillis = 7.25;
   });
-  const document = readCompatibilityResults(directory)[0].results.find((document) => document.id === "listennotes.com");
+  const document = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout").results.find((document) => document.id === "listennotes.com");
   assert.equal(document.generatedOperations, 24);
   assert.equal(document.generationDurationMillis, 7.25);
 });
@@ -150,7 +202,7 @@ test("missing generation timings remain unavailable, including the summary total
       for (const profile of document.supportProfiles ?? []) delete profile.generation.durationMillis;
     }
   });
-  const corpus = readCompatibilityResults(directory)[0];
+  const corpus = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout");
   assert.equal(corpus.generationDurationMillis, null);
   assert.ok(corpus.results.every((document) => document.generationDurationMillis === null));
 });

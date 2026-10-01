@@ -16,6 +16,7 @@ const copy = {
     details: "Document results",
     receiving: "Generated receiving code", webhooks: "Webhook handlers", callbacks: "Callback handlers",
     duration: "SDK generation time", seconds: "s", environment: "Measured on",
+    regression: ["Major API providers", "7 providers · OpenAPI 3.0"],
     holdout: ["Independent holdout", "20 providers · OpenAPI 3.0 / 3.1"],
     production32: ["Provider-published documents", "1 provider · declared OpenAPI 3.2.0"],
     modern: ["Feature examples", "1 real API document + 9 authored examples"],
@@ -28,6 +29,7 @@ const copy = {
     details: "문서별 결과",
     receiving: "생성된 수신 코드", webhooks: "웹훅 핸들러", callbacks: "콜백 핸들러",
     duration: "SDK 생성 시간", seconds: "초", environment: "측정 환경",
+    regression: ["주요 API 제공자", "7개 제공자 · OpenAPI 3.0"],
     holdout: ["독립 표본", "20개 제공자 · OpenAPI 3.0 / 3.1"],
     production32: ["제공자 공개 문서", "1개 제공자 · OpenAPI 3.2.0 선언"],
     modern: ["기능별 예제 문서", "실문서 1개 + 직접 작성한 예제 9개"],
@@ -93,7 +95,7 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
       {{ locale === "ko" ? `문서별 ${measurement.samples}회 측정` : `${measurement.samples} measurement per document` }}
     </p>
     <template v-if="evidence">
-      <details v-for="corpus in results" :key="corpus.id" class="results-evidence">
+      <details v-for="corpus in results" :key="corpus.id" :open="corpus.id === 'regression'" class="results-evidence">
         <summary>{{ labels[corpus.id][0] }} — {{ labels.details }}</summary>
         <p class="results-downloads">
           <a :href="withBase(`/compatibility-results/${corpus.id}-results.json`)" download>{{ labels.report }}</a>
@@ -113,7 +115,7 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
           </thead>
           <tbody>
             <tr v-for="document in corpus.results" :key="document.id">
-              <th scope="row"><a :href="withBase(document.sourceUrl)">{{ document.id }}</a></th>
+              <th scope="row"><a :href="withBase(document.sourceUrl)">{{ document.name }}</a></th>
               <td>{{ document.version }}</td>
               <td>{{ status(document) }}</td>
               <td>{{ document.adjustedSuccess ? labels.pass : labels.fail }}</td>

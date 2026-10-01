@@ -26,6 +26,14 @@ See [Receive Webhooks and Callbacks](../guide/server.md).
 
 ## Documents covered
 
+### Major API providers
+
+Public API documents from GitHub, Stripe, Cloudflare, GitLab, Microsoft Graph
+beta, DigitalOcean, and Twilio cover large APIs and multi-file schemas. The first
+document table shows each provider's generation results and timing.
+SDK generation and typechecking succeeded for six documents. Microsoft Graph
+beta failed because generated file paths exceeded the length limit.
+
 ### Independent holdout
 
 This set contains public OpenAPI 3.0 and 3.1 documents from 20 providers selected

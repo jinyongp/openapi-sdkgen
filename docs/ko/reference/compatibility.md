@@ -23,6 +23,14 @@ OpenAPI 문서로 SDK를 생성하고 TypeScript 타입 검사를 통과한 결�
 
 ## 어떤 문서를 확인했나
 
+### 주요 API 제공자
+
+GitHub, Stripe, Cloudflare, GitLab, Microsoft Graph beta, DigitalOcean,
+Twilio의 공개 API 문서입니다. 대규모 API와 여러 파일로 나뉜 스키마를 포함합니다.
+각 제공자의 생성 결과와 시간은 아래 첫 번째 표에서 확인할 수 있습니다.
+6개 문서에서 SDK 생성과 타입 검사가 성공했습니다. Microsoft Graph beta
+문서는 생성 파일의 경로 길이 제한으로 실패했습니다.
+
 ### 독립 표본
 
 APIs.guru에서 선정한 20개 제공자의 OpenAPI 3.0·3.1 공개 문서입니다.

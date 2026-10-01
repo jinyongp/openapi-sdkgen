@@ -49,6 +49,31 @@ Microsoft Graph beta, DigitalOcean, and Twilio. Those inputs are useful
 regression tests, but they are not independent holdout evidence because they
 influenced implementation work.
 
+### Major provider results
+
+`regression.json` makes those seven provider families available as a separate
+published cohort. Official upstream revisions, entry hashes, and DigitalOcean's
+multi-file inputs are pinned before execution. GitHub, Microsoft Graph beta,
+and Cloudflare retain the exact input hashes from the earlier regression
+evidence; the other providers use the upstream revisions listed in the manifest.
+The generated `regression-results.json` records generation, strict typechecking,
+operation emission, and SDK generation time for these inputs.
+
+Materialize each entry's `sourceUrl` at its `input` path under
+`.tmp/compatibility-regression`. For DigitalOcean, use the official repository
+revision in its entry and preserve the specification tree at
+`digitalocean/specification`; `files` pins the auxiliary JSON and YAML files.
+Then verify and measure:
+
+```sh
+just agent compatibility-verify test/compatibility/regression.json .tmp/compatibility-regression
+just agent compatibility-benchmark test/compatibility/regression.json .tmp/compatibility-regression test/compatibility/regression-results.json 10m
+```
+
+The public page lists this cohort first, in manifest order, and links to each
+immutable upstream document. The independent holdout retains its own membership
+and measurements.
+
 ### Provider-published OpenAPI 3.2 documents
 
 `production32.json` freezes both downloadable specifications from Zenith

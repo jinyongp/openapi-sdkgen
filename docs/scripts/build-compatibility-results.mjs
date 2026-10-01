@@ -3,10 +3,22 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const corpusNames = ["holdout", "production32", "modern"];
+export const corpusNames = ["regression", "holdout", "production32", "modern"];
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const documentPath = (entry) => `documents/${encodeURIComponent(entry.id)}/${encodeURIComponent(basename(entry.input))}`;
+
+function upstreamDocumentUrl(manifest, entry) {
+  if (!manifest.publication) return null;
+  if (manifest.publication.documents !== "upstream") throw new Error("unknown document publication mode");
+  const url = new URL(entry.sourceUrl);
+  if (!manifest.pinned || !/^[a-f0-9]{64}$/.test(entry.sha256) ||
+      !/^[a-f0-9]{40}$/.test(entry.revision) || url.protocol !== "https:" ||
+      !url.pathname.split("/").includes(entry.revision)) {
+    throw new Error("upstream document links require a pinned HTTPS revision and input hash");
+  }
+  return url.href;
+}
 
 export function readCompatibilityResults(directory) {
   return corpusNames.map((id) => {
@@ -19,6 +31,7 @@ export function readCompatibilityResults(directory) {
     if (report.schemaVersion !== 2) fail("an emission-aware report is required");
     if (report.manifestSha256 !== sha256(manifestBytes)) fail("report/manifest hash mismatch");
     const entries = new Map(manifest.corpora.map((entry) => [entry.id, entry]));
+    const order = new Map(manifest.corpora.map((entry, index) => [entry.id, index]));
     const documents = report.documents;
     if (entries.size !== manifest.corpora.length ||
         new Set(documents.map((document) => document.id)).size !== entries.size ||
@@ -31,7 +44,12 @@ export function readCompatibilityResults(directory) {
           (entry.gitBlob && entry.gitBlob !== document.gitBlob)) fail("document provenance mismatch");
       if (document.documentSuccess && (document.generation.status !== "pass" ||
           document.typecheck.status !== "pass")) fail("success without generation/typecheck evidence");
-      if (!document.operationEmission.available) fail("operation emission is unavailable");
+      if (!document.operationEmission || (document.documentSuccess && !document.operationEmission.available)) {
+        fail("operation emission is unavailable");
+      }
+      if (!document.operationEmission.available && document.operationEmission.count !== 0) {
+        fail("unavailable emission has a measured count");
+      }
       const server = document.supportProfiles?.find((profile) => profile.name === "server-addon" && profile.applicable);
       if (server?.success && (server.generation.status !== "pass" ||
           server.typecheck.status !== "pass" || !server.operationEmission?.available)) {
@@ -52,10 +70,11 @@ export function readCompatibilityResults(directory) {
       }
       return {
         id: document.id,
+        name: entry.displayName ?? document.id,
         version: document.openapiVersion,
-        sourceUrl: manifest.source?.rawBaseUrl
+        sourceUrl: upstreamDocumentUrl(manifest, entry) ?? (manifest.source?.rawBaseUrl
           ? new URL(entry.input.split("/").map(encodeURIComponent).join("/"), manifest.source.rawBaseUrl).href
-          : `/compatibility-results/${documentPath(entry)}`,
+          : `/compatibility-results/${documentPath(entry)}`),
         defaultSuccess: document.documentSuccess,
         adjustedSuccess: document.capabilityAdjustedSuccess,
         emitted: document.operationEmission.count,
@@ -64,7 +83,7 @@ export function readCompatibilityResults(directory) {
         receiving: server?.success ? (document.features ?? []).filter((feature) =>
           feature === "document.webhooks" || feature === "operation.callbacks") : [],
       };
-    });
+    }).sort((a, b) => order.get(a.id) - order.get(b.id));
 
     const overall = report.overall;
     const successful = results.filter((document) => document.adjustedSuccess);
@@ -73,7 +92,7 @@ export function readCompatibilityResults(directory) {
     if (overall.documents !== documents.length ||
         overall.successfulDocuments !== documents.filter((document) => document.documentSuccess).length ||
         overall.capabilityAdjustedDocuments !== documents.filter((document) => document.capabilityAdjustedSuccess).length ||
-        emission.availableDocuments !== documents.length ||
+        emission.availableDocuments !== documents.filter((document) => document.operationEmission.available).length ||
         ["count", "operationOmissions", "helperOmissions"].some((field) => emission[field] !== sum(field))) {
       fail("summary does not match document results");
     }
@@ -103,6 +122,7 @@ export function publishCompatibilityDocuments(directory, outputDirectory) {
     const manifest = JSON.parse(readFileSync(resolve(directory, `${id}.json`)));
     if (manifest.source?.rawBaseUrl) continue;
     for (const entry of manifest.corpora) {
+      if (upstreamDocumentUrl(manifest, entry)) continue;
       const files = [entry, ...(manifest.files ?? []).filter((file) => dirname(file.input) === dirname(entry.input))];
       for (const file of files) {
         const source = resolve(testDirectory, file.input);
@@ -135,5 +155,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     }
   }
   publishCompatibilityDocuments(sourceDirectory, publicDirectory);
-  console.log("Compatibility results: 3 verified reports; summaries and original JSON prepared.");
+  console.log(`Compatibility results: ${corpusNames.length} verified reports; summaries and original JSON prepared.`);
 }
