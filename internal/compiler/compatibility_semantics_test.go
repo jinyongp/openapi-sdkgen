@@ -320,7 +320,7 @@ func TestCompatibilityPreservesNonConflictingPathItemReferenceSiblings(t *testin
   "openapi":"3.1.1",
   "info":{"title":"Path merge","version":"1"},
   "paths":{
-    "/base":{"get":{"operationId":"base","responses":{"204":{"description":"OK"}}}},
+    "/base":{"get":{"responses":{"204":{"description":"OK"}}}},
     "/alias":{"$ref":"#/paths/~1base","summary":"Alias"}
   }
 }`)

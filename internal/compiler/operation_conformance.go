@@ -15,6 +15,7 @@ import (
 const (
 	pathParameterConformanceAnalyzer       = "openapi.path-parameter-conformance"
 	securityRequirementConformanceAnalyzer = "openapi.security-requirement-conformance"
+	operationIdentityConformanceAnalyzer   = "openapi.operation-identity-conformance"
 )
 
 type operationConformanceFinding struct {
@@ -22,6 +23,7 @@ type operationConformanceFinding struct {
 	ownerPointer string
 	route        string
 	operation    string
+	related      []diagnostic.Location
 }
 
 func finalizeCompilerDocument(document *ir.Document, fallbackSource string, options *CompileOptions) error {
@@ -30,6 +32,7 @@ func finalizeCompilerDocument(document *ir.Document, fallbackSource string, opti
 	}
 	findings := pathParameterConformanceFindings(document, fallbackSource)
 	findings = append(findings, securityRequirementConformanceFindings(document, fallbackSource)...)
+	findings = append(findings, operationIdentityConformanceFindings(document, fallbackSource)...)
 	sort.Slice(findings, func(i, j int) bool {
 		left := findings[i]
 		right := findings[j]
@@ -48,6 +51,7 @@ func finalizeCompilerDocument(document *ir.Document, fallbackSource string, opti
 		diagnosticValue := compatibilityDiagnostic(value.finding)
 		diagnosticValue.Route = value.route
 		diagnosticValue.Operation = value.operation
+		diagnosticValue.Related = value.related
 		if options != nil && options.diagnostics != nil {
 			options.diagnostics.Add(diagnosticValue)
 		} else if diagnosticValue.Severity == diagnostic.SeverityError {
@@ -75,6 +79,50 @@ func finalizeCompilerDocument(document *ir.Document, fallbackSource string, opti
 		return left.RuleID < right.RuleID
 	})
 	return nil
+}
+
+func operationIdentityConformanceFindings(document *ir.Document, fallbackSource string) []operationConformanceFinding {
+	type occurrence struct {
+		route    string
+		location ir.SourceLocation
+	}
+	seen := make(map[string]occurrence)
+	var result []operationConformanceFinding
+	for _, operation := range document.Operations {
+		if operation.OperationID == "" {
+			continue
+		}
+		route := operationRouteIdentity(operation)
+		location := conformanceLocation(document, fallbackSource, operation.Pointer+"/operationId")
+		previous, exists := seen[operation.OperationID]
+		if !exists {
+			seen[operation.OperationID] = occurrence{route: route, location: location}
+			continue
+		}
+		// Repeated resolution of the same effective operation is one occurrence.
+		// A Path Item reused at another route still declares another operation.
+		if previous.route == route && previous.location == location {
+			continue
+		}
+		result = append(result, operationConformanceFinding{
+			finding: compatibility.Finding{
+				RuleID:      compatibility.RuleOperationIDUnique,
+				Conformance: compatibility.ConformanceNonconforming,
+				Disposition: compatibility.DispositionInvalid,
+				Action:      compatibility.ActionReject,
+				Impact:      compatibility.ImpactRouting,
+				Scope:       failure.ScopeDocument,
+				Effect:      failure.EffectBlock,
+				Source:      location.Source,
+				Pointer:     location.Pointer,
+				Message:     fmt.Sprintf("operationId %q is duplicated; every declared operationId must be unique.", operation.OperationID),
+			},
+			route:     route,
+			operation: operation.OperationID,
+			related:   []diagnostic.Location{{Source: previous.location.Source, Pointer: previous.location.Pointer}},
+		})
+	}
+	return result
 }
 
 func securityRequirementConformanceFindings(document *ir.Document, fallbackSource string) []operationConformanceFinding {

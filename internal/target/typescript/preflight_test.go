@@ -255,7 +255,7 @@ func TestCollectPrepareReturnsNoEmitCapablePlanAndReportsAnalyzerCoverage(t *tes
 	}
 }
 
-func TestCollectPipelineKeepsBlockingTargetPlanNonEmitCapable(t *testing.T) {
+func TestCollectPipelineBlocksDuplicateIDsBeforeTargetPreparation(t *testing.T) {
 	compiled, err := sdkgen.CompileResultWithOptions([]byte(`{
   "openapi":"3.1.1",
   "info":{"title":"Collect target pipeline","version":"1"},
@@ -274,7 +274,7 @@ func TestCollectPipelineKeepsBlockingTargetPlanNonEmitCapable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if compiled.Document == nil || diagnostic.HasErrors(compiled.Diagnostics) {
+	if compiled.Document == nil || !diagnostic.HasErrors(compiled.Diagnostics) {
 		t.Fatalf("compiler result = %#v", compiled)
 	}
 
@@ -289,14 +289,16 @@ func TestCollectPipelineKeepsBlockingTargetPlanNonEmitCapable(t *testing.T) {
 	if _, err := prepared.Plan.Value("typescript"); err == nil {
 		t.Fatal("pipeline retained an emit-capable plan after collect-mode target blockers")
 	}
-	var detailedCoverage bool
+	var skippedTarget bool
 	for _, item := range prepared.Coverage {
-		if item.Analyzer == "target.support" && item.Status == diagnostic.CoverageComplete {
-			detailedCoverage = true
-			break
+		if item.Analyzer == "target.support" {
+			t.Fatal("target support analysis ran on a compiler-blocked document")
+		}
+		if item.Analyzer == "target.prepare" && item.Status == diagnostic.CoverageSkipped {
+			skippedTarget = true
 		}
 	}
-	if !detailedCoverage {
+	if !skippedTarget || len(prepared.Diagnostics) != len(compiled.Diagnostics) {
 		t.Fatalf("pipeline coverage = %#v", prepared.Coverage)
 	}
 }

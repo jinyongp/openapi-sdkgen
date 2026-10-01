@@ -89,6 +89,7 @@ func postIRConformanceAnalyzers() []string {
 	return []string{
 		pathParameterConformanceAnalyzer,
 		securityRequirementConformanceAnalyzer,
+		operationIdentityConformanceAnalyzer,
 	}
 }
 
