@@ -100,7 +100,9 @@ pnpm exec openapi-sdkgen generate \
 
 The generated directory contains normal application source, including the source
 runtime. Your existing TypeScript compiler or bundler builds it together with the
-rest of the application.
+rest of the application. Use TypeScript 5.7.3 or later with the ES2022 and DOM
+libraries. See [compiler support](../reference/typescript-types.md#compiler-support)
+for the tested versions and strict checking options.
 
 Regenerate generator-owned files through the CLI. When the OpenAPI document
 changes, use [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) to update the same managed directory safely. See

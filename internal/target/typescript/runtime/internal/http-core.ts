@@ -2431,7 +2431,10 @@ export function createHTTPServices(
       async next(): Promise<IteratorResult<unknown>> {
         try {
           const next = await reader.read();
-          if (next.done) release();
+          if (next.done) {
+            release();
+            return { done: true, value: undefined };
+          }
           return next;
         } catch (cause) {
           release();

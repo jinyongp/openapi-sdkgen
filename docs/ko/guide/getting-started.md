@@ -101,6 +101,8 @@ pnpm exec openapi-sdkgen generate \
 
 생성된 디렉터리는 client, type, source runtime을 포함한 일반 애플리케이션
 소스입니다. 기존 TypeScript 컴파일러나 번들러가 나머지 코드와 함께 빌드합니다.
+TypeScript 5.7.3 이상과 ES2022·DOM 라이브러리를 사용합니다. 검증하는 버전과
+strict 옵션은 [컴파일러 지원](../reference/typescript-types.md#컴파일러-지원)에서 확인할 수 있습니다.
 
 생성기가 소유한 파일은 CLI로 다시 생성합니다. OpenAPI 문서가 바뀌어 같은
 디렉터리를 갱신할 때는 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes)을 사용합니다. 안전한 재생성과 CI

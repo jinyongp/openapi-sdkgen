@@ -9,7 +9,8 @@ release includes the `typescript` target.
 
 The TypeScript target generates the client, types, and source runtime inside your
 application. Your existing TypeScript toolchain compiles them with the rest of the
-project.
+project. Generated source requires TypeScript 5.7.3 or later; see the
+[compiler support contract](docs/reference/typescript-types.md#compiler-support).
 
 Generate a client from a Node-based project:
 

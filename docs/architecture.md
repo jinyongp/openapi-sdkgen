@@ -218,7 +218,8 @@ release workflows.
 `just agent ci` is the ordinary pull-request gate and remains available for
 manual validation. It covers formatting, vetting, Go tests/build/module
 integrity, TypeScript formatting/lint/typecheck, conformance generation,
-generate-check behavior, and coverage. Release publishing simulations belong to
+generate-check behavior, pinned consumer compiler versions (5.7.3, 5.9.3, 6.0.3,
+7.0.2), and coverage. Release publishing simulations belong to
 the release path. `just release` runs the full release checks before atomically
 pushing `main` and the release tag.
 

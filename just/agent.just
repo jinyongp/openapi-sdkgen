@@ -124,6 +124,9 @@ ts-lint:
 ts-typecheck:
     ./scripts/agent/ts-typecheck
 
+ts-compat version='all':
+    bash ./scripts/agent/ts-compat {{quote(version)}}
+
 ts-test:
     ./scripts/agent/ts-test
 

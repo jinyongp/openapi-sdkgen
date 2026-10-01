@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+
+versions=(5.7.3 5.9.3 6.0.3 7.0.2)
+if [[ "${1:-all}" != "all" ]]; then
+  case "$1" in
+    5.7.3|5.9.3|6.0.3|7.0.2) versions=("$1") ;;
+    *) echo "supported checks: all, 5.7.3, 5.9.3, 6.0.3, 7.0.2" >&2; exit 2 ;;
+  esac
+fi
+
+compiler="$(mktemp "$ROOT/.tmp/typescript-compat-tsc.XXXXXX")"
+trap 'rm -f "$compiler"' EXIT
+export SDKGEN_COMPAT_ROOT="$ROOT"
+cat >"$compiler" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$SDKGEN_COMPAT_ROOT/scripts/agent/lib.sh"
+ts_node node "$SDKGEN_COMPAT_TSC_PATH" "$@"
+EOF
+chmod 700 "$compiler"
+skip_build=0
+for version in "${versions[@]}"; do
+  case "$version" in
+    5.7.3) package=typescript-5-7 ;;
+    5.9.3) package=typescript-5-9 ;;
+    6.0.3) package=typescript-6 ;;
+    7.0.2) package=typescript ;;
+  esac
+  # generate-check invokes an executable; keep the pinned Node selection here.
+  export SDKGEN_COMPAT_TSC_PATH="$TYPESCRIPT_ROOT/node_modules/$package/lib/tsc.js"
+  agent_run "TypeScript $version version" "$compiler" --version
+  for input in test/fixtures/support-gaps/oas32-normative.json test/fixtures/support-gaps/boundary-webhook.json test/fixtures/support-gaps/schema-array.json; do
+    SDKGEN_GENERATE_CHECK_SKIP_BUILD="$skip_build" SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+      agent_run "TypeScript $version generated client and server: $input" \
+      "$ROOT/scripts/agent/generate-check" "$input" typescript -- --with server
+    skip_build=1
+  done
+done
+agent_note "ok TypeScript consumer compatibility"

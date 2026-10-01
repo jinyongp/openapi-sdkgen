@@ -5,6 +5,30 @@
 생성된 클라이언트의 호출 방법은
 [생성된 클라이언트 API](./client-api.md)에서 확인할 수 있습니다.
 
+## 컴파일러 지원
+
+생성된 client와 server 소스는 **TypeScript 5.7.3 이상**과 `ES2022`, `DOM`,
+`DOM.Iterable` 라이브러리를 사용합니다. Runtime의 generic typed array는
+[TypeScript 5.7](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-7.html)에서
+도입됐습니다. 컴파일러와 번들러는 애플리케이션이 관리하며, 생성기가 출력
+디렉터리에 TypeScript 컴파일러를 설치하지는 않습니다.
+
+CI의 `just agent ts-compat`는 **5.7.3, 5.9.3, 6.0.3, 7.0.2**를 고정해 검증합니다.
+각 버전에서 생성된 client·server 소스와 공개 타입 사용 예제의 `@ts-nocheck`를
+제거한 뒤 `strict`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`,
+`isolatedModules`, `skipLibCheck: false`로 검사합니다. 검증 입력은 3.2 normative,
+webhook, nested Schema reference fixture입니다. 전체 runtime/conformance suite와
+외부 compatibility benchmark는 저장소의 TypeScript 7.0.2를 사용합니다.
+
+새 컴파일러 버전은 이 matrix에 추가하면서 검증합니다. 최소 버전 계약이 아직
+나오지 않은 컴파일러의 변경까지 검증했다는 뜻은 아닙니다. TypeScript 5.6
+이하는 지원 범위 밖입니다.
+
+이 matrix는 `CHANGELOG.md`에 기록한 readable-stream iterator 수정까지 포함합니다.
+v9.0.0으로 생성한 소스에는 이 수정이 없어서 `@ts-nocheck`를 제거하면 이전
+컴파일러의 strict 검사에서 오류가 날 수 있습니다. 수정이 포함된 generator
+release로 다시 생성하면 됩니다.
+
 ## 타입 기준 선택
 
 | 기준 | Helper |
