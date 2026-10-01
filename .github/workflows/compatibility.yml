@@ -42,6 +42,8 @@ jobs:
       COMPATIBILITY_ARTIFACT: ${{ matrix.artifact }}
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Record preparation start
+        run: echo "COMPATIBILITY_PREPARE_STARTED=$(date +%s)" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -89,6 +91,10 @@ jobs:
           path: .tmp/compatibility-corpora/${{ matrix.corpus }}/
           include-hidden-files: true
           retention-days: 7
+      - name: Summarize preparation
+        env:
+          COMPATIBILITY_REUSED: ${{ steps.verified.outputs.reused }}
+        run: python3 -B .github/scripts/compatibility_artifact.py summary "$COMPATIBILITY_CORPUS"
       - name: Upload preparation diagnostics
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -153,6 +159,7 @@ jobs:
       - name: Install TypeScript dependencies
         run: just agent ts-install
       - name: Generate SDKs and run full strict typechecks
+        id: benchmark
         timeout-minutes: 90
         shell: bash
         run: |
@@ -168,11 +175,13 @@ jobs:
           trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
           wait "$compatibility_process"
       - name: Require a verified supported SDK profile
+        if: always() && steps.benchmark.outcome != 'skipped'
         shell: bash
         run: |
           python3 -B .github/scripts/compatibility_gate.py \
             --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
-            --report .tmp/compatibility-ci/report.json --document "$COMPATIBILITY_DOCUMENT"
+            --report .tmp/compatibility-ci/report.json --document "$COMPATIBILITY_DOCUMENT" \
+            --resources-directory .tmp/compatibility-ci
       - name: Upload measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -218,7 +227,8 @@ jobs:
               .tmp/compatibility-shards/document-shard-"$corpus"-*/compatibility-ci/report.json; then
               python3 -B .github/scripts/compatibility_gate.py \
                 --manifest "test/compatibility/$corpus.json" \
-                --report ".tmp/compatibility-ci/$corpus-results.json" || compatibility_failed=1
+                --report ".tmp/compatibility-ci/$corpus-results.json" \
+                --resource-shards .tmp/compatibility-shards || compatibility_failed=1
             else
               compatibility_failed=1
             fi
