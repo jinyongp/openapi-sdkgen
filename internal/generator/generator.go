@@ -32,7 +32,9 @@ type Options struct {
 	// FailOnResourceOmission promotes TypeScript resource-capability omission
 	// warnings to blocking target diagnostics.
 	FailOnResourceOmission bool
-	addons                 map[Addon]struct{}
+	// Selection restricts public API generation. Nil generates the full SDK.
+	Selection *Selection
+	addons    map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.
