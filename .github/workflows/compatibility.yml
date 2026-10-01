@@ -1,0 +1,76 @@
+name: compatibility
+run-name: Major provider compatibility ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openapi-sdkgen-compatibility-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    name: Generate and typecheck major provider SDKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GOMEMLIMIT: 5GiB
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+        with:
+          just-version: "1.58.0"
+      - name: Record runner resources
+        shell: bash
+        run: |
+          mkdir -p .tmp/compatibility-ci
+          { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
+      - name: Install TypeScript dependencies
+        run: just agent ts-install
+      - name: Fetch pinned provider documents
+        run: just agent compatibility-fetch test/compatibility/regression.json .tmp/compatibility-regression
+      - name: Generate SDKs and run full strict typechecks
+        shell: bash
+        run: |
+          /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
+            just agent compatibility-benchmark test/compatibility/regression.json \
+            .tmp/compatibility-regression .tmp/compatibility-ci/regression-results.json 30m
+      - name: Require generation and typechecking for every provider
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, appendFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('.tmp/compatibility-ci/regression-results.json'));
+          assert.equal(report.documents.length, 7);
+          const rows = report.documents.map(document =>
+            `| ${document.id} | ${document.generation.status} | ${document.typecheck.status} | ${document.operationEmission.count} |`);
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            `## Major provider compatibility\n\n| Provider | Generation | Strict typecheck | API calls |\n| --- | --- | --- | ---: |\n${rows.join('\n')}\n`);
+          for (const document of report.documents) {
+            console.log(`${document.id}: generation=${document.generation.status}, typecheck=${document.typecheck.status}`);
+            if (!document.documentSuccess) console.error(document.typecheck.detail || document.generation.detail);
+          }
+          assert.equal(report.overall.successfulDocuments, 7, 'every SDK must generate and pass full strict typechecking');
+          NODE
+      - name: Upload measurement and diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: major-provider-compatibility
+          path: |
+            .tmp/compatibility-ci/
+            .tmp/agent-logs/
+          include-hidden-files: true
+          retention-days: 7
