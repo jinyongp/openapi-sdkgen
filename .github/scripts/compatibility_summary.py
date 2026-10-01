@@ -98,9 +98,16 @@ def render_resources(resources):
 def render_report(manifest, report, resources=None):
     resources = resources or {}
     documents = report["documents"]
-    client = sum(item["documentSuccess"] for item in documents)
-    supported = sum(item["capabilityAdjustedSuccess"] for item in documents)
-    result = f"**{supported}/{len(documents)} verified with a supported SDK profile · {client}/{len(documents)} client SDKs verified**\n\n"
+    full = [item for item in documents if item.get("generationScope", "full") == "full"]
+    selected = [item for item in documents if item.get("generationScope") == "selected"]
+    client = sum(item["documentSuccess"] for item in full)
+    supported = sum(item["capabilityAdjustedSuccess"] for item in full)
+    result = f"**Full documents: {supported}/{len(full)} verified with a supported SDK profile · {client}/{len(full)} client SDKs verified**\n\n"
+    if selected:
+        result += f"**Selected SDKs: {sum(item['capabilityAdjustedSuccess'] for item in selected)}/{len(selected)} verified**\n\n"
+        result += table(["Document", "Public APIs", "Link dependencies", "Excluded APIs", "Mock runtime"],
+            [[item["id"], len(item["generationSelection"]["routes"] or []), len(item["generationSelection"]["dependencyRoutes"] or []),
+              item["generationSelection"]["excludedOperations"], item["generationSelection"]["runtime"]["status"]] for item in selected])
     environment = report.get("measurement") or {}
     cpus = {value["cpu"] for value in report.get("documentMeasurements", {}).values() if value and value.get("cpu")}
     cpu = environment.get("cpu") or ("Varies by runner" if len(cpus) > 1 else next(iter(cpus), None))
@@ -109,8 +116,8 @@ def render_report(manifest, report, resources=None):
     profiles = [(item, name, profile) for item in documents for name, profile in
                 [("client", item)] + [(p["name"], p) for p in item.get("supportProfiles", [])]]
     result += "\n### SDK verification\n\n"
-    result += table(["Document", "Profile", "Generation", "Strict typecheck", "API calls", "Generation time", "Check time"],
-        [[item["id"], name, profile["generation"]["status"], profile["typecheck"]["status"],
+    result += table(["Document", "Scope", "Profile", "Generation", "Strict typecheck", "API calls", "Generation time", "Check time"],
+        [[item["id"], item.get("generationScope", "full"), name, profile["generation"]["status"], profile["typecheck"]["status"],
           (profile.get("operationEmission") or {}).get("count") if (profile.get("operationEmission") or {}).get("available") else None,
           seconds(profile["generation"].get("durationMillis") / 1000) if profile["generation"].get("durationMillis") is not None else "—",
           seconds(profile["typecheck"].get("durationMillis") / 1000) if profile["typecheck"].get("durationMillis") is not None else "—"] for item, name, profile in profiles])
@@ -123,6 +130,10 @@ def render_report(manifest, report, resources=None):
     if resources:
         result += render_resources(resources)
     details = []
+    for item in selected:
+        runtime = item["generationSelection"]["runtime"]
+        if runtime["status"] != "pass" and runtime.get("detail"):
+            details.append(f"**{cell(item['id'])} / mock runtime**\n\n<pre>{html.escape(runtime['detail'])}</pre>\n")
     for item, name, profile in profiles:
         for phase in ("generation", "typecheck"):
             if profile[phase].get("detail"):

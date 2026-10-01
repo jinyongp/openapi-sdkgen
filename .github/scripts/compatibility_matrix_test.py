@@ -1,5 +1,7 @@
 import copy
+import hashlib
 import json
+import tomllib
 from pathlib import Path
 import unittest
 
@@ -50,6 +52,39 @@ class CompatibilityMatrixTests(unittest.TestCase):
         for report in invalid:
             with self.assertRaises(ValueError):
                 check_report(manifest, report)
+
+    def test_selected_scope_requires_policy_runtime_and_distinct_summary(self):
+        directory = ROOT / "test/compatibility/selections"
+        path = directory / "microsoft-graph-beta.toml"
+        policy = tomllib.loads(path.read_text())
+        report = self.load("regression", "-results")
+        item = next(item for item in report["documents"] if item["id"] == policy["document"])
+        routes = sorted(policy["selection"]["routes"])
+        item.update(generationScope="selected", documentSuccess=True, capabilityAdjustedSuccess=True,
+                    generationSelection=dict(fixtureSha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                        runtimeProbeSha256=hashlib.sha256((directory / policy["runtime_probe"]).read_bytes()).hexdigest(),
+                        requested=dict(routes=routes), routes=routes, dependencyRoutes=[],
+                        excludedOperations=item["operationRetention"]["total"]-len(routes), runtime=dict(status="pass")))
+        item["typecheck"]["status"] = "pass"
+        item["operationEmission"]["count"] = len(routes)
+        manifest = self.load("regression")
+        summary, failures = check_report(manifest, report, selection_directory=directory)
+        self.assertEqual(failures, [])
+        self.assertIn("Full documents: 6/6", summary)
+        self.assertIn("Selected SDKs: 1/1", summary)
+        for field, value in [("fixtureSha256", "bad"), ("runtimeProbeSha256", "bad"), ("excludedOperations", 0), ("routes", routes[1:])]:
+            invalid = copy.deepcopy(report)
+            selected = next(item for item in invalid["documents"] if item.get("generationScope") == "selected")
+            selected["generationSelection"][field] = value
+            with self.assertRaises(ValueError):
+                check_report(manifest, invalid, selection_directory=directory)
+        item["generationSelection"]["runtime"]["status"] = "fail"
+        item["documentSuccess"] = item["capabilityAdjustedSuccess"] = False
+        _, failures = check_report(manifest, report, selection_directory=directory)
+        self.assertEqual(failures, ["microsoft-graph-beta"])
+        item.pop("generationScope")
+        with self.assertRaises(ValueError):
+            check_report(manifest, report, selection_directory=directory)
 
 
 if __name__ == "__main__":

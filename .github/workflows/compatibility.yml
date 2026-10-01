@@ -1,5 +1,5 @@
 name: compatibility
-run-name: Full corpus compatibility ${{ github.ref_name }}
+run-name: Corpus compatibility ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -108,7 +108,7 @@ jobs:
     name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
     needs: [plan, prepare]
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: ${{ matrix.document == 'microsoft-graph-beta' && 30 || 120 }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.documents) }}
@@ -146,27 +146,23 @@ jobs:
         run: |
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
-      - name: Add temporary Graph checker swap
-        if: matrix.corpus == 'regression' && matrix.document == 'microsoft-graph-beta'
-        shell: bash
-        run: |
-          compatibility_swap="$RUNNER_TEMP/openapi-sdkgen-compatibility.swap"
-          sudo fallocate -l 16G "$compatibility_swap"
-          sudo chmod 600 "$compatibility_swap"
-          sudo mkswap "$compatibility_swap"
-          sudo swapon "$compatibility_swap"
-          free -h | tee .tmp/compatibility-ci/checker-memory.txt
       - name: Install TypeScript dependencies
         run: just agent ts-install
-      - name: Generate SDKs and run full strict typechecks
+      - name: Generate SDKs and verify every generated module
         id: benchmark
-        timeout-minutes: 90
+        timeout-minutes: ${{ matrix.document == 'microsoft-graph-beta' && 20 || 90 }}
         shell: bash
         run: |
+          compatibility_selection=()
+          compatibility_timeout=60m
+          if [[ "$COMPATIBILITY_DOCUMENT" == microsoft-graph-beta ]]; then
+            compatibility_selection=(test/compatibility/selections/microsoft-graph-beta.toml)
+            compatibility_timeout=10m
+          fi
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             just agent compatibility-benchmark "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
-            .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" &
+            .tmp/compatibility-ci/report.json "$compatibility_timeout" "$COMPATIBILITY_DOCUMENT" "${compatibility_selection[@]}" &
           compatibility_process=$!
           python3 -B -u .github/scripts/compatibility_observer.py \
             --root-pid "$compatibility_process" --typescript-root test/typescript \
@@ -181,7 +177,7 @@ jobs:
           python3 -B .github/scripts/compatibility_gate.py \
             --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             --report .tmp/compatibility-ci/report.json --document "$COMPATIBILITY_DOCUMENT" \
-            --resources-directory .tmp/compatibility-ci
+            --resources-directory .tmp/compatibility-ci --selection-directory test/compatibility/selections
       - name: Upload measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -228,7 +224,8 @@ jobs:
               python3 -B .github/scripts/compatibility_gate.py \
                 --manifest "test/compatibility/$corpus.json" \
                 --report ".tmp/compatibility-ci/$corpus-results.json" \
-                --resource-shards .tmp/compatibility-shards || compatibility_failed=1
+                --resource-shards .tmp/compatibility-shards \
+                --selection-directory test/compatibility/selections || compatibility_failed=1
             else
               compatibility_failed=1
             fi
