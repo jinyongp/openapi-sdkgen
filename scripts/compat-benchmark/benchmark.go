@@ -424,40 +424,53 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		return documentResult{}, fmt.Errorf("decode feature input: %w", err)
 	}
 	features, version := detectFeatures(decoded)
+	result := documentResult{
+		EvidenceKind:      corpus.EvidenceKind,
+		ID:                corpus.ID,
+		Cohort:            corpus.Cohort,
+		Input:             filepath.ToSlash(corpus.Input),
+		InputSHA256:       hex.EncodeToString(sum[:]),
+		GitBlob:           corpus.GitBlob,
+		SizeClass:         corpus.SizeClass,
+		OpenAPIVersion:    version,
+		Features:          features,
+		Generation:        verificationResult{Status: "fail"},
+		Typecheck:         verificationResult{Status: "not-run"},
+		OperationEmission: &emissionMetric{},
+	}
 
 	mode := diagnostic.ModeCollect
 	compileStarted := time.Now()
 	compiled, err := sdkgen.CompileInputResultWithOptions(inputPath, sdkgen.CompileOptions{DiagnosticMode: mode})
 	if err != nil {
-		return documentResult{}, fmt.Errorf("internal compile failure: %w", err)
+		result.Generation.Detail = boundedDetail(fmt.Sprintf("internal compile failure: %v", err))
+		return result, nil
 	}
 	compileDuration := time.Since(compileStarted)
 	prepareStarted := time.Now()
 	prepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, generator.Options{DiagnosticMode: mode})
 	if err != nil {
-		return documentResult{}, fmt.Errorf("internal target preparation failure: %w", err)
+		result.Generation.Detail = boundedDetail(fmt.Sprintf("internal target preparation failure: %v", err))
+		report := diagnostic.NewReport(compiled.Diagnostics, compiled.SkippedPhases, compiled.Coverage...)
+		normalizeBenchmarkReportSources(&report, inputPath)
+		result.Diagnostics = report.Counts
+		result.Findings = report.Diagnostics
+		result.Coverage = report.Coverage
+		result.SkippedPhases = report.SkippedPhases
+		result.OperationRetention = operationRetention(compiled.Document, compiled.Diagnostics)
+		result.Compatibility = compatibilityMetrics(compiled.Diagnostics)
+		return result, nil
 	}
 	prepareDuration := time.Since(prepareStarted)
 	report := diagnostic.NewReport(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage...)
 	normalizeBenchmarkReportSources(&report, inputPath)
-	result := documentResult{
-		EvidenceKind:       corpus.EvidenceKind,
-		ID:                 corpus.ID,
-		Cohort:             corpus.Cohort,
-		Input:              filepath.ToSlash(corpus.Input),
-		InputSHA256:        hex.EncodeToString(sum[:]),
-		GitBlob:            corpus.GitBlob,
-		SizeClass:          corpus.SizeClass,
-		OpenAPIVersion:     version,
-		DiscoveryComplete:  discoveryComplete(report),
-		Diagnostics:        report.Counts,
-		Findings:           report.Diagnostics,
-		OperationRetention: operationRetention(compiled.Document, prepared.Diagnostics),
-		Compatibility:      compatibilityMetrics(prepared.Diagnostics),
-		Features:           features,
-		Coverage:           report.Coverage,
-		SkippedPhases:      report.SkippedPhases,
-	}
+	result.DiscoveryComplete = discoveryComplete(report)
+	result.Diagnostics = report.Counts
+	result.Findings = report.Diagnostics
+	result.OperationRetention = operationRetention(compiled.Document, prepared.Diagnostics)
+	result.Compatibility = compatibilityMetrics(prepared.Diagnostics)
+	result.Coverage = report.Coverage
+	result.SkippedPhases = report.SkippedPhases
 	defaultProfile, err := verifyPreparedProfile("default-client", compiled.Document != nil, prepared, inputPath, compileDuration+prepareDuration, typecheck)
 	if err != nil {
 		return documentResult{}, err
@@ -482,7 +495,14 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 		serverPrepareStarted := time.Now()
 		serverPrepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, serverOptions)
 		if err != nil {
-			return documentResult{}, fmt.Errorf("internal server target preparation failure: %w", err)
+			result.SupportProfiles = append(result.SupportProfiles, supportProfileResult{
+				Name:              "server-addon",
+				Applicable:        true,
+				Generation:        verificationResult{Status: "fail", Detail: boundedDetail(fmt.Sprintf("internal server target preparation failure: %v", err))},
+				Typecheck:         verificationResult{Status: "not-run"},
+				OperationEmission: &emissionMetric{},
+			})
+			return result, nil
 		}
 		serverPrepareDuration := time.Since(serverPrepareStarted)
 		serverProfile, err := verifyPreparedProfile("server-addon", compiled.Document != nil, serverPrepared, inputPath, compileDuration+serverPrepareDuration, typecheck)
