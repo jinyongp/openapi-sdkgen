@@ -32,7 +32,8 @@ just agent generate-check INPUT [TARGET] [-- GENERATOR_OPTIONS...]
 just agent generate-check-test
 just agent compatibility-fetch [MANIFEST] [CORPUS_DIRECTORY]
 just agent compatibility-verify [MANIFEST] [CORPUS_DIRECTORY]
-just agent compatibility-benchmark [MANIFEST] [CORPUS_DIRECTORY] [OUTPUT] [TYPECHECK_TIMEOUT]
+just agent compatibility-benchmark [MANIFEST] [CORPUS_DIRECTORY] [OUTPUT] [TYPECHECK_TIMEOUT] [DOCUMENT_ID]
+just agent compatibility-merge MANIFEST OUTPUT REPORT...
 just agent conformance
 just agent representation-check --baseline BINARY --candidate BINARY [OPTIONS]
 just agent representation-artifacts --report REPORT [OPTIONS]

@@ -82,13 +82,14 @@ type corpusSpec struct {
 }
 
 type benchmarkReport struct {
-	SchemaVersion  int                   `json:"schemaVersion"`
-	ManifestSHA256 string                `json:"manifestSha256"`
-	FeatureCatalog []string              `json:"featureCatalog"`
-	Documents      []documentResult      `json:"documents"`
-	Cohorts        []summaryResult       `json:"cohorts"`
-	Overall        summaryResult         `json:"overall"`
-	Measurement    *benchmarkMeasurement `json:"measurement,omitempty"`
+	SchemaVersion        int                              `json:"schemaVersion"`
+	ManifestSHA256       string                           `json:"manifestSha256"`
+	FeatureCatalog       []string                         `json:"featureCatalog"`
+	Documents            []documentResult                 `json:"documents"`
+	Cohorts              []summaryResult                  `json:"cohorts"`
+	Overall              summaryResult                    `json:"overall"`
+	Measurement          *benchmarkMeasurement            `json:"measurement,omitempty"`
+	DocumentMeasurements map[string]*benchmarkMeasurement `json:"documentMeasurements,omitempty"`
 }
 
 type benchmarkMeasurement struct {
@@ -215,6 +216,22 @@ type featureCoverage struct {
 type typecheckFunc func(string) verificationResult
 
 func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration) error {
+	return runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot, timeout, "")
+}
+
+func selectBenchmarkCorpora(corpora []corpusSpec, documentID string) ([]corpusSpec, error) {
+	if documentID == "" {
+		return corpora, nil
+	}
+	for _, corpus := range corpora {
+		if corpus.ID == documentID {
+			return []corpusSpec{corpus}, nil
+		}
+	}
+	return nil, fmt.Errorf("unknown --document %q", documentID)
+}
+
+func runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration, documentID string) error {
 	manifestData, err := os.ReadFile(manifestPath)
 	if err != nil {
 		return fmt.Errorf("read manifest: %w", err)
@@ -224,6 +241,10 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 		return fmt.Errorf("decode manifest: %w", err)
 	}
 	if err := validateManifest(manifest); err != nil {
+		return err
+	}
+	corpora, err := selectBenchmarkCorpora(manifest.Corpora, documentID)
+	if err != nil {
 		return err
 	}
 	manifestDigest := sha256.Sum256(manifestData)
@@ -245,8 +266,8 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 		return strictTypecheck(directory, typescriptRoot, timeout)
 	}
 
-	documents := make([]documentResult, 0, len(manifest.Corpora))
-	for _, corpus := range manifest.Corpora {
+	documents := make([]documentResult, 0, len(corpora))
+	for _, corpus := range corpora {
 		inputPath, err := safeCorpusPath(corpusRoot, corpus.Input)
 		if err != nil {
 			return fmt.Errorf("%s: %w", corpus.ID, err)
@@ -273,6 +294,10 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 		Overall:        summarizeDocuments("", documents),
 		Measurement:    measurementEnvironment(),
 	}
+	return writeBenchmarkReport(report, outputPath)
+}
+
+func writeBenchmarkReport(report benchmarkReport, outputPath string) error {
 	encoded, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode benchmark report: %w", err)
