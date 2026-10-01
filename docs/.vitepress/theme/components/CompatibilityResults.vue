@@ -12,6 +12,7 @@ const copy = {
     caption: "Documents with successful SDK generation and typechecking",
     input: "Document set", default: "API client SDK", adjusted: "SDK with Webhooks and Callbacks", emitted: "Generated API calls",
     docs: "documents", pass: "Succeeded", server: "Use --with server", fail: "Failed",
+    generatedOnly: "Generated · typecheck not passed",
     document: "Document", version: "OpenAPI", report: "Results JSON", manifest: "Input manifest",
     details: "Document results",
     receiving: "Generated receiving code", webhooks: "Webhook handlers", callbacks: "Callback handlers",
@@ -25,6 +26,7 @@ const copy = {
     caption: "SDK 생성과 타입 검사에 성공한 문서 수",
     input: "문서 모음", default: "API 호출용 SDK", adjusted: "웹훅·콜백 포함 SDK", emitted: "생성된 호출 API 수",
     docs: "개 문서", pass: "성공", server: "--with server 필요", fail: "실패",
+    generatedOnly: "생성 성공 · 타입 검사 미통과",
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
     details: "문서별 결과",
     receiving: "생성된 수신 코드", webhooks: "웹훅 핸들러", callbacks: "콜백 핸들러",
@@ -41,7 +43,10 @@ const documentCount = (count) => number(count) + (props.locale === "ko" ? "" : "
 const successCount = (count, total) => props.locale === "ko"
   ? `${number(total)}개 중 ${number(count)}개 성공`
   : `${number(count)} of ${number(total)} succeeded`;
-const status = (document) => document.defaultSuccess ? labels.pass : document.adjustedSuccess ? labels.server : labels.fail;
+const status = (document) => document.defaultSuccess ? labels.pass : document.clientGenerated ? labels.generatedOnly
+  : document.serverGenerated ? labels.server : labels.fail;
+const adjustedStatus = (document) => document.adjustedSuccess ? labels.pass
+  : document.clientGenerated || document.serverGenerated ? labels.generatedOnly : labels.fail;
 const receiving = (document) => document.receiving.map((feature) =>
   feature === "document.webhooks" ? labels.webhooks : labels.callbacks).join(", ") || "—";
 const duration = (milliseconds) => {
@@ -118,7 +123,7 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
               <th scope="row"><a :href="withBase(document.sourceUrl)">{{ document.name }}</a></th>
               <td>{{ document.version }}</td>
               <td>{{ status(document) }}</td>
-              <td>{{ document.adjustedSuccess ? labels.pass : labels.fail }}</td>
+              <td>{{ adjustedStatus(document) }}</td>
               <td>{{ document.generatedOperations === null ? "—" : number(document.generatedOperations) }}</td>
               <td>{{ receiving(document) }}</td>
               <td>{{ duration(document.generationDurationMillis) }}</td>

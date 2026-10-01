@@ -119,6 +119,44 @@ test("an unsuccessful generation shows no call count or receiving code", (t) => 
   assert.deepEqual(document.receiving, []);
 });
 
+test("generated SDK counts and timings remain visible when typechecking does not pass", (t) => {
+  const directory = fixture(t);
+  let expectedCount, expectedTime;
+  change(directory, "holdout-results.json", (report) => {
+    const document = report.documents.find((document) => document.documentSuccess);
+    expectedCount = document.operationEmission.count;
+    expectedTime = document.generation.durationMillis;
+    document.documentSuccess = false;
+    document.capabilityAdjustedSuccess = false;
+    document.typecheck = { status: "timeout" };
+    report.overall.successfulDocuments--;
+    report.overall.capabilityAdjustedDocuments--;
+  });
+  const corpus = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout");
+  const document = corpus.results.find((document) => document.clientGenerated && !document.defaultSuccess);
+  assert.equal(document.generatedOperations, expectedCount);
+  assert.equal(document.generationDurationMillis, expectedTime);
+  assert.equal(corpus.generatedOperations, 2829);
+  assert.equal(corpus.adjustedSuccess, 19);
+  assert.ok(corpus.generationDurationMillis >= expectedTime);
+});
+
+test("generated server handlers remain visible when server typechecking does not pass", (t) => {
+  const directory = fixture(t);
+  change(directory, "holdout-results.json", (report) => {
+    const document = report.documents.find((document) => document.id === "listennotes.com");
+    document.supportProfiles[0].success = false;
+    document.supportProfiles[0].typecheck.status = "timeout";
+    document.capabilityAdjustedSuccess = false;
+    report.overall.capabilityAdjustedDocuments--;
+  });
+  const document = readCompatibilityResults(directory).find((corpus) => corpus.id === "holdout").results.find((document) => document.id === "listennotes.com");
+  assert.equal(document.adjustedSuccess, false);
+  assert.equal(document.serverGenerated, true);
+  assert.equal(document.generatedOperations, 24);
+  assert.deepEqual(document.receiving, ["document.webhooks"]);
+});
+
 test("all document links open the measured source rather than the standard or provider homepage", () => {
   const data = readCompatibilityResults(fileURLToPath(sourceDirectory));
   assert.equal(data.flatMap((corpus) => corpus.results).length, 39);

@@ -44,7 +44,7 @@ export function readCompatibilityResults(directory) {
           (entry.gitBlob && entry.gitBlob !== document.gitBlob)) fail("document provenance mismatch");
       if (document.documentSuccess && (document.generation.status !== "pass" ||
           document.typecheck.status !== "pass")) fail("success without generation/typecheck evidence");
-      if (!document.operationEmission || (document.documentSuccess && !document.operationEmission.available)) {
+      if (!document.operationEmission || (document.generation.status === "pass" && !document.operationEmission.available)) {
         fail("operation emission is unavailable");
       }
       if (!document.operationEmission.available && document.operationEmission.count !== 0) {
@@ -55,11 +55,16 @@ export function readCompatibilityResults(directory) {
           server.typecheck.status !== "pass" || !server.operationEmission?.available)) {
         fail("server success without generation/typecheck/emission evidence");
       }
+      if (server?.generation.status === "pass" && !server.operationEmission?.available) {
+        fail("server generation without emission evidence");
+      }
       if (document.capabilityAdjustedSuccess !== Boolean(document.documentSuccess || server?.success)) {
         fail("adjusted success does not match generation profiles");
       }
-      const selectedEmission = document.documentSuccess ? document.operationEmission : server?.success ? server.operationEmission : null;
-      const selectedGeneration = document.documentSuccess ? document.generation : server?.success ? server.generation : null;
+      const clientGenerated = document.generation.status === "pass";
+      const serverGenerated = server?.generation.status === "pass";
+      const selectedEmission = clientGenerated ? document.operationEmission : serverGenerated ? server.operationEmission : null;
+      const selectedGeneration = clientGenerated ? document.generation : serverGenerated ? server.generation : null;
       const generationDurationMillis = selectedGeneration?.durationMillis ?? null;
       if (generationDurationMillis !== null && (!Number.isFinite(generationDurationMillis) || generationDurationMillis < 0 ||
           report.measurement?.generationScope !== "compile-prepare-write")) {
@@ -77,16 +82,18 @@ export function readCompatibilityResults(directory) {
           : `/compatibility-results/${documentPath(entry)}`),
         defaultSuccess: document.documentSuccess,
         adjustedSuccess: document.capabilityAdjustedSuccess,
+        clientGenerated,
+        serverGenerated: Boolean(serverGenerated),
         emitted: document.operationEmission.count,
         generatedOperations: selectedEmission?.count ?? null,
         generationDurationMillis,
-        receiving: server?.success ? (document.features ?? []).filter((feature) =>
+        receiving: serverGenerated ? (document.features ?? []).filter((feature) =>
           feature === "document.webhooks" || feature === "operation.callbacks") : [],
       };
     }).sort((a, b) => order.get(a.id) - order.get(b.id));
 
     const overall = report.overall;
-    const successful = results.filter((document) => document.adjustedSuccess);
+    const generated = results.filter((document) => document.clientGenerated || document.serverGenerated);
     const emission = overall.operationEmission;
     const sum = (field) => documents.reduce((total, document) => total + document.operationEmission[field], 0);
     if (overall.documents !== documents.length ||
@@ -104,8 +111,8 @@ export function readCompatibilityResults(directory) {
       adjustedSuccess: overall.capabilityAdjustedDocuments,
       emitted: emission.count,
       generatedOperations: results.reduce((total, document) => total + (document.generatedOperations ?? 0), 0),
-      generationDurationMillis: successful.length > 0 && successful.every((document) => document.generationDurationMillis !== null)
-        ? successful.reduce((total, document) => total + document.generationDurationMillis, 0) : null,
+      generationDurationMillis: generated.length > 0 && generated.every((document) => document.generationDurationMillis !== null)
+        ? generated.reduce((total, document) => total + document.generationDurationMillis, 0) : null,
       measurement: report.measurement ?? null,
       operationOmissions: emission.operationOmissions,
       helperOmissions: emission.helperOmissions,

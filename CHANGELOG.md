@@ -4,6 +4,10 @@
 
 - Generated runtime source now strict-typechecks with TypeScript 5.7.3 and later.
   CI checks pinned 5.7.3, 5.9.3, 6.0.3, and 7.0.2 consumer compilers.
+- Selective operation modules use shorter directories for long API routes while
+  preserving existing portable import paths and allocated file names.
+- Large SDKs share repeated execution schema maps and retain relative import
+  caches for one module at a time, reducing generated source size and memory use.
 
 ## v9.0.0 — 2026-10-01
 

@@ -1,7 +1,7 @@
 # Compatibility results
 
-These results show which OpenAPI documents generated an SDK and passed
-TypeScript typechecking.
+These results show SDK generation and TypeScript typechecking for each OpenAPI
+document.
 
 Last measured: **October 1, 2026** · Generator: **development version after v9.0.0**
 
@@ -12,8 +12,8 @@ Callbacks** also includes code for receiving inbound requests.
 
 **18 of 20 succeeded** means SDK generation and typechecking succeeded for
 18 of the 20 documents. **Generated API calls** counts the callable operations in
-successfully generated SDKs, including the `--with server` results for documents
-with Webhooks or Callbacks.
+successfully generated SDKs, including SDKs with incomplete typechecking and
+the `--with server` results for documents with Webhooks or Callbacks.
 **SDK generation time** measures reading the document and writing the SDK files.
 The summary shows the sum of the individual document times.
 
@@ -31,8 +31,9 @@ See [Receive Webhooks and Callbacks](../guide/server.md).
 Public API documents from GitHub, Stripe, Cloudflare, GitLab, Microsoft Graph
 beta, DigitalOcean, and Twilio cover large APIs and multi-file schemas. The first
 document table shows each provider's generation results and timing.
-SDK generation and typechecking succeeded for six documents. Microsoft Graph
-beta failed because generated file paths exceeded the length limit.
+SDK generation succeeded for all seven documents, and six passed typechecking.
+Microsoft Graph beta generated 29,581 API calls; its full typecheck reached the
+measurement environment's memory limit.
 
 ### Independent holdout
 
