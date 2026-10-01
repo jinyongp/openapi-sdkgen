@@ -10,3 +10,5 @@ coverage
 .DS_Store
 **/.vitepress/cache
 /docs/public/playground/
+/docs/public/compatibility-results/
+/docs/.vitepress/generated/

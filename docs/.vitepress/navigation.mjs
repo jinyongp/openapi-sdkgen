@@ -88,6 +88,10 @@ const sidebarGroups = [
         labels: { en: "OpenAPI support", ko: "OpenAPI 지원 범위" },
       },
       {
+        route: "/reference/compatibility",
+        labels: { en: "Compatibility results", ko: "호환성 검증 결과" },
+      },
+      {
         route: "/reference/extensions",
         labels: { en: "OpenAPI x-* extensions", ko: "OpenAPI x-* 확장" },
       },

@@ -6,6 +6,8 @@ used feature safely, the command reports the OpenAPI location and stops.
 
 This page summarizes the main public capability groups. For generation
 workflows and flags, use the [CLI reference](./cli.md).
+Measured document compatibility and the evidence behind it are published in
+[Compatibility results](./compatibility.md).
 
 ## Supported OpenAPI versions
 

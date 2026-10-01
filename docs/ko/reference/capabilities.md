@@ -7,6 +7,8 @@ openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x 문서를 읽고 문서에 선언�
 
 이 페이지는 주요 공개 capability를 요약합니다. 실제 생성 흐름과 flag는
 [CLI 레퍼런스](./cli.md)를 참고하세요.
+실문서 측정 결과와 검증 근거는 [호환성 검증 결과](./compatibility.md)에서
+확인할 수 있습니다.
 
 <span id="supported-openapi-versions"></span>
 

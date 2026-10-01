@@ -13,6 +13,7 @@ lookup 문서입니다. 작업 흐름은 [사용 가이드](../guide/getting-sta
 | `.stream()`, `OperationStream`, request stream, SSE, protocol/adapter/codec | [스트리밍 API](./streaming.md) |
 | generated request/response/component/helper 타입 | [생성된 TypeScript 타입](./typescript-types.md) |
 | OpenAPI 3.0/3.1/3.2 지원 범위와 버전별 동작 | [OpenAPI 지원 범위](./capabilities.md) |
+| 실문서 호환성 측정 결과, 검증 입력 선정 방법, 재현 근거 | [호환성 검증 결과](./compatibility.md) |
 | `x-pagination`, `x-envelope`, `x-sort`, visibility, error category | [OpenAPI x-* 확장](./extensions.md) |
 
 ## 공개 API 경계

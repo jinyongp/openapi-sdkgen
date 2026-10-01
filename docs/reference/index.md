@@ -12,6 +12,7 @@ complete multi-codebase integrations live in [Examples](../examples/index.md).
 | `.stream()`, `OperationStream`, request streams, SSE, protocols/adapters/codecs | [Streaming API](./streaming.md) |
 | generated request/response/component/helper types | [Generated TypeScript types](./typescript-types.md) |
 | OpenAPI 3.0/3.1/3.2 support and version-specific behavior | [OpenAPI support](./capabilities.md) |
+| Measured compatibility, document selection, and reproducible evidence | [Compatibility results](./compatibility.md) |
 | `x-pagination`, `x-envelope`, `x-sort`, visibility, error categories | [OpenAPI x-* extensions](./extensions.md) |
 
 ## Public API boundaries
