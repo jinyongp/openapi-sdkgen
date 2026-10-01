@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -65,29 +66,17 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 	}
 	defer os.RemoveAll(staging)
 
-	client := &http.Client{Timeout: 2 * time.Minute}
+	type download struct {
+		base, input string
+		corpus      corpusSpec
+	}
+	downloads := make([]download, 0, len(manifest.Corpora)+len(manifest.Files))
 	for _, corpus := range manifest.Corpora {
 		base, input := corpus.SourceURL, ""
 		if manifest.Source != nil {
 			base, input = manifest.Source.RawBaseURL, corpus.Input
 		}
-		data, err := fetchCorpusFile(client, base, input)
-		if err != nil {
-			return fmt.Errorf("%s: %w", corpus.ID, err)
-		}
-		if err := verifyCorpusBytes(corpus, data); err != nil {
-			return fmt.Errorf("%s: %w", corpus.ID, err)
-		}
-		path, err := safeCorpusPath(staging, corpus.Input)
-		if err != nil {
-			return fmt.Errorf("%s: %w", corpus.ID, err)
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			return err
-		}
+		downloads = append(downloads, download{base, input, corpus})
 	}
 	for _, file := range manifest.Files {
 		var base, input string
@@ -99,23 +88,54 @@ func fetchCorpus(manifestPath, destination string, offline bool) error {
 				return err
 			}
 		}
-		data, err := fetchCorpusFile(client, base, input)
-		if err != nil {
-			return fmt.Errorf("%s: %w", file.Input, err)
+		downloads = append(downloads, download{base, input, corpusSpec{Input: file.Input, SHA256: file.SHA256}})
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	client := &http.Client{Timeout: 2 * time.Minute}
+	var workers sync.WaitGroup
+	var firstError error
+	var failed sync.Once
+	jobs := make(chan download)
+	for range min(8, len(downloads)) {
+		workers.Go(func() {
+			for job := range jobs {
+				data, err := fetchCorpusFile(ctx, client, job.base, job.input)
+				if err == nil {
+					err = verifyCorpusBytes(job.corpus, data)
+				}
+				var path string
+				if err == nil {
+					path, err = safeCorpusPath(staging, job.corpus.Input)
+				}
+				if err == nil {
+					err = os.MkdirAll(filepath.Dir(path), 0o755)
+				}
+				if err == nil {
+					err = os.WriteFile(path, data, 0o644)
+				}
+				if err != nil {
+					failed.Do(func() {
+						firstError = fmt.Errorf("%s: %w", job.corpus.Input, err)
+						cancel()
+					})
+					return
+				}
+			}
+		})
+	}
+schedule:
+	for _, job := range downloads {
+		select {
+		case jobs <- job:
+		case <-ctx.Done():
+			break schedule
 		}
-		if err := verifyCorpusBytes(corpusSpec{SHA256: file.SHA256}, data); err != nil {
-			return fmt.Errorf("%s: %w", file.Input, err)
-		}
-		path, err := safeCorpusPath(staging, file.Input)
-		if err != nil {
-			return err
-		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			return err
-		}
+	}
+	close(jobs)
+	workers.Wait()
+	if firstError != nil {
+		return firstError
 	}
 	receipt := corpusReceipt{
 		SchemaVersion:  corpusReceiptSchemaVersion,
@@ -157,7 +177,7 @@ func pinnedAuxiliaryURL(corpora []corpusSpec, input string) (string, error) {
 	return base.ResolveReference(&url.URL{Path: relative}).String(), nil
 }
 
-func fetchCorpusFile(client *http.Client, rawBaseURL, input string) ([]byte, error) {
+func fetchCorpusFile(parent context.Context, client *http.Client, rawBaseURL, input string) ([]byte, error) {
 	base, err := url.Parse(rawBaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse raw base URL: %w", err)
@@ -170,7 +190,7 @@ func fetchCorpusFile(client *http.Client, rawBaseURL, input string) ([]byte, err
 		return nil, err
 	}
 	target := base.ResolveReference(relative)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(parent, 2*time.Minute)
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target.String(), nil)
 	if err != nil {

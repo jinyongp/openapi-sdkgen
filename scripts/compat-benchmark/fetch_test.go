@@ -4,14 +4,82 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+func TestFetchCorpusDownloadsRootsAndAuxiliaryFilesWithBoundedConcurrency(t *testing.T) {
+	data := []byte("openapi: 3.0.4\ninfo: {title: Parallel, version: '1'}\npaths: {}\n")
+	checksum := sha256.Sum256(data)
+	sha := hex.EncodeToString(checksum[:])
+	var active, maximum atomic.Int32
+	started := make(chan struct{}, 16)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		count := active.Add(1)
+		defer active.Add(-1)
+		for previous := maximum.Load(); count > previous; previous = maximum.Load() {
+			if maximum.CompareAndSwap(previous, count) {
+				break
+			}
+		}
+		started <- struct{}{}
+		<-release
+		_, _ = response.Write(data)
+	}))
+	defer server.Close()
+	manifest := benchmarkManifest{SchemaVersion: benchmarkSchemaVersion, Pinned: true,
+		Corpora: []corpusSpec{{ID: "parallel", Cohort: "regression", Input: "spec/root.yaml",
+			SourceURL: server.URL + "/spec/root.yaml", SHA256: sha, OpenAPIVersion: "3.0.4",
+			Revision: "fixture-1", Trust: "fixture", EvidenceKind: "real-document"}},
+	}
+	for i := range 15 {
+		manifest.Files = append(manifest.Files, pinnedCorpusFile{Input: fmt.Sprintf("spec/aux-%d.yaml", i), SHA256: sha})
+	}
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	manifestPath := filepath.Join(root, "manifest.json")
+	if err := os.WriteFile(manifestPath, encoded, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	finished := make(chan error, 1)
+	destination := filepath.Join(root, "corpus")
+	go func() { finished <- fetchCorpus(manifestPath, destination, false) }()
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	for range 8 {
+		select {
+		case <-started:
+		case err := <-finished:
+			close(release)
+			t.Fatalf("fetch returned before concurrent requests: %v", err)
+		case <-deadline.C:
+			close(release)
+			<-finished
+			t.Fatal("eight independent requests did not start concurrently")
+		}
+	}
+	close(release)
+	if err := <-finished; err != nil {
+		t.Fatal(err)
+	}
+	if maximum.Load() != 8 {
+		t.Fatalf("maximum requests = %d, want bounded concurrency of eight", maximum.Load())
+	}
+	if err := fetchCorpus(manifestPath, destination, true); err != nil {
+		t.Fatalf("published roots and auxiliary files failed verification: %v", err)
+	}
+}
 
 func TestFetchCorpusPublishesVerifiedInputsAndOfflineDetectsTamper(t *testing.T) {
 	files := map[string][]byte{
