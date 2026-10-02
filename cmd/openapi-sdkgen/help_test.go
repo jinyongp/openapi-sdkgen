@@ -347,7 +347,7 @@ func TestCLIHelperProcess(t *testing.T) {
 		if argument == "--" {
 			os.Args = append([]string{"openapi-sdkgen"}, os.Args[index+1:]...)
 			main()
-			return
+			os.Exit(0)
 		}
 	}
 	t.Fatal("missing helper-process argument separator")

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -212,6 +213,36 @@ func TestInspectSafeTableAndLosslessMachineOutputs(t *testing.T) {
 type inspectFailWriter struct{}
 
 func (inspectFailWriter) Write([]byte) (int, error) { return 0, errors.New("broken pipe") }
+
+func TestInspectTargetSubprocessKeepsMachineOutputIsolated(t *testing.T) {
+	dir := t.TempDir()
+	entry := filepath.Join(dir, "root.json")
+	if err := os.WriteFile(entry, []byte(`{"openapi":"3.2.1","info":{"title":"Refs","version":"1"},"paths":{"/items":{"get":{"responses":{"200":{"description":"OK","content":{"application/json":{"schema":{"$ref":"defs.json#/Item"}}}}}}}},"components":{"schemas":{"Base":{"type":"string"}}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "defs.json"), []byte(`{"Item":{"allOf":[{"$ref":"#/components/schemas/Base"}]}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	command := exec.Command(os.Args[0], "-test.run=^TestCLIHelperProcess$", "--", "inspect", "--input", entry, "--target", "typescript", "--format", "json", "--diagnostics-format", "json")
+	command.Env = append(os.Environ(), "OPENAPI_SDKGEN_TEST_HELPER=1")
+	var stdout, stderr bytes.Buffer
+	command.Stdout = &stdout
+	command.Stderr = &stderr
+	err := command.Run()
+	if err == nil {
+		var report inspectReport
+		if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+			t.Fatalf("machine output polluted: %v\n%s", err, stdout.String())
+		}
+	} else {
+		if stdout.Len() != 0 {
+			t.Fatalf("failed inspection wrote stdout: %s", stdout.String())
+		}
+		if !json.Valid(stderr.Bytes()) {
+			t.Fatalf("invalid diagnostic report: %s", stderr.String())
+		}
+	}
+}
 
 func TestInspectDoesNotCompilePrepareOrPublishByDefault(t *testing.T) {
 	output, _ := captureCLIOutput(t)

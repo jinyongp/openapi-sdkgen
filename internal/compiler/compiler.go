@@ -7,6 +7,8 @@ import (
 	jsonv2 "encoding/json/v2"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"sort"
@@ -193,6 +195,9 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		}
 	}
 	bundlerConfiguration := &datamodel.DocumentConfiguration{
+		// Expected findings are returned as structured compiler diagnostics.
+		// Library-owned logs must not write to the caller's output streams.
+		Logger:                 slog.New(slog.NewTextHandler(io.Discard, nil)),
 		BasePath:               source.fileBase,
 		SpecFilePath:           source.filePath,
 		AllowFileReferences:    source.fileBase != "",

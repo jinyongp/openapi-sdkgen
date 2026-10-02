@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"regexp"
 
 	"github.com/pb33f/libopenapi"
@@ -95,7 +96,7 @@ func ReadParsed(raw map[string]any, validateModel bool) (*Document, error) {
 
 // ValidateModel performs libopenapi's model validation without retaining it.
 func ValidateModel(data []byte) error {
-	configuration := &datamodel.DocumentConfiguration{SkipMetadataCollection: true}
+	configuration := &datamodel.DocumentConfiguration{SkipMetadataCollection: true, Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
 	document, err := libopenapi.NewDocumentWithConfiguration(data, configuration)
 	if err != nil {
 		return fmt.Errorf("parse OpenAPI document: %w", err)
