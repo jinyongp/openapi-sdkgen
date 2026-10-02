@@ -272,10 +272,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")
 	inputSchemas, outputSchemas := "inputSchemas", "outputSchemas"
-	if !strings.Contains(definition, "inputSchemas") {
+	usedSchemas := generatedIdentifiers(definition)
+	if usedSchemas["inputSchemas"] == 0 {
 		inputSchemas = "_inputSchemas"
 	}
-	if !strings.Contains(definition, "outputSchemas") {
+	if usedSchemas["outputSchemas"] == 0 {
 		outputSchemas = "_outputSchemas"
 	}
 	fmt.Fprintf(&output, "export function bindBase(request: BufferedRequestFunction, %s?: WireSchemas, %s?: WireSchemas): BaseCall {\n", inputSchemas, outputSchemas)
