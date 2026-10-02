@@ -281,6 +281,23 @@ export function bindPathOperation<
   ) as OperationCall<Input, Output, Options, Raw>;
 }
 
+/** Binds a generated exact call without re-expanding its recursive public types. */
+export function bindGeneratedPathOperation(
+  operation: object,
+  path: Readonly<Record<string, unknown>>,
+  hasInput: boolean,
+  inputOptional = false,
+): unknown {
+  // Generated resource modules declare their exact callable surface. Only
+  // this runtime boundary merges path values; those public types stay intact.
+  return bindPathOperation<unknown, unknown, unknown, RequestOptions, unknown>(
+    operation as Pick<InputOperationCall<unknown, unknown, RequestOptions, unknown>, "raw">,
+    path,
+    hasInput,
+    inputOptional,
+  );
+}
+
 /**
  * Adds namespace members without colliding with Function prototype properties.
  * Generated runtime callables may expose only capabilities in their public type

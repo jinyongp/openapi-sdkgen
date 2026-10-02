@@ -81,7 +81,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	childIdentities := resourceChildIdentities(module.identity, module.node)
 	names := newLocalIdentifierPlan(module.path)
-	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindPathOperation", "Surface", "build", "registry", "bound", "members"); err != nil {
+	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindGeneratedPathOperation", "Surface", "build", "registry", "bound", "members"); err != nil {
 		return nil, err
 	}
 	for _, node := range append([]*resourceNode{module.node}, resourceChildNodes(module.node)...) {
@@ -122,7 +122,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 			imports = append(imports, "assignCallableProperties")
 		}
 		if needsPath {
-			imports = append(imports, "bindPathOperation")
+			imports = append(imports, "bindGeneratedPathOperation")
 		}
 		fmt.Fprintf(&output, "import { %s } from %s\n", strings.Join(imports, ", "), quoteTS(callablesSpecifier))
 	}
@@ -353,13 +353,8 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 		output.WriteString(call + " as unknown as " + resourceCall)
 		return nil
 	}
-	path, exists := plan.operationByRoute[route]
-	if !exists {
+	if _, exists := plan.operationByRoute[route]; !exists {
 		return fmt.Errorf("resource operation %q has no operation module", route)
-	}
-	specifier, err := plan.relativeModuleSpecifier(artifact, path)
-	if err != nil {
-		return err
 	}
 	values := make([]string, 0, len(operation.PathParameterOrder))
 	for index, parameter := range operation.PathParameterOrder {
@@ -370,7 +365,7 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	if hasInput {
 		inputOptional = !operation.prepared.resourceInputRequired
 	}
-	fmt.Fprintf(output, "bindPathOperation<import(%s).Input, import(%s).ResourceInput, import(%s).Output, import(%s).Options, import(%s).RawResponse>(%s, { %s }, %t, %t) as unknown as %s", quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), quoteTS(specifier), call, strings.Join(values, ", "), hasInput, inputOptional, resourceCall)
+	fmt.Fprintf(output, "bindGeneratedPathOperation(%s, { %s }, %t, %t) as %s", call, strings.Join(values, ", "), hasInput, inputOptional, resourceCall)
 	return nil
 }
 

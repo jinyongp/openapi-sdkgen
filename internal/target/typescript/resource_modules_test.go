@@ -78,7 +78,7 @@ func TestResourceArtifactsComposeCompletedCallsWithoutRebindingCapabilities(t *t
 		t.Fatalf("resource selector does not reference its schema owner directly:\n%s", teamSelector)
 	}
 	users := byPath[resourcePathForIdentity(t, prepared.modules, "literal:teams/{teamId}/users")]
-	if !strings.Contains(users, "bindPathOperation<import(") || !strings.Contains(users, `registry.routes["GET /teams/{teamId}/users"]`) {
+	if !strings.Contains(users, "bindGeneratedPathOperation(") || !strings.Contains(users, `registry.routes["GET /teams/{teamId}/users"]`) {
 		t.Fatalf("path-bound resource does not wrap the completed exact call:\n%s", users)
 	}
 	if _, exists := byPath["internal/client.ts"]; exists {
