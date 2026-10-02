@@ -235,6 +235,41 @@ export function readMetadataComparison(directory) {
   return data;
 }
 
+export function readRuntimeQuality(directory) {
+  const data = JSON.parse(readFileSync(resolve(directory, "runtime-quality-results.json")));
+  const fail = () => { throw new Error("Runtime quality measurement provenance or validation mismatch"); };
+  const options = JSON.parse(readFileSync(new URL("../../internal/tscheck/strict-options.json", import.meta.url))).compilerOptions;
+  if (data.schemaVersion !== 1 || data.status !== "pass" || data.sourceDirty !== false ||
+      !/^[a-f0-9]{40}$/.test(data.sourceCommit) || !/^[a-f0-9]{40}$/.test(data.baselineCommit) ||
+      !Number.isFinite(Date.parse(data.measuredAt)) || data.matrix?.total !== 104 || data.matrix.diagnostics !== 0 ||
+      JSON.stringify(data.matrix.versions) !== JSON.stringify(["5.7.3", "5.9.3", "6.0.3", "7.0.2"]) ||
+      Object.entries(options).some(([key, value]) => data.strictCompilerOptions?.[key] !== value) ||
+      JSON.stringify(data.delivery?.map(row => row.count)) !== "[100,1000,10000]") fail();
+  for (const row of data.delivery) {
+    if (row.status !== "pass" || row.checkedFiles !== row.source.files ||
+        !/^[a-f0-9]{64}$/.test(row.inputSHA256) ||
+        [row.generationMS, row.compileMS, row.source.bytes, row.declarations.bytes,
+          row.compileResources?.peakRSSKiB].some(value => !Number.isFinite(value) || value <= 0)) fail();
+  }
+  const expectedCompilerCases = [100, 1000].flatMap(count => ["baseline", "candidate"].flatMap(kind => ["5.7.3", "7.0.2"].map(version => `${kind}:${count}:${version}`))).sort();
+  if (JSON.stringify(data.compilerComparisons?.map(row => `${row.kind}:${row.count}:${row.typescript}`).sort()) !== JSON.stringify(expectedCompilerCases)) fail();
+  for (const row of data.compilerComparisons) {
+    const input = data.delivery.find(sample => sample.count === row.count);
+    if (row.inputSHA256 !== input.inputSHA256 || row.samples?.length !== 3 ||
+        !Number.isFinite(row.medianMS) || !Number.isFinite(row.medianRSSKiB) ||
+        (row.kind === "candidate" && row.samples.some(sample => sample.status !== 0 || sample.errorCount !== 0))) fail();
+  }
+  if (data.graph?.inputSHA256 !== "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec" ||
+      ["selection", "clients"].some(name => data.graph.cases?.[name]?.strictTypecheck?.status !== "pass")) fail();
+  for (const kind of ["baseline", "candidate"]) {
+    const rows = data.sse?.filter(row => row.kind === kind);
+    const expected = [32768, 65536, 131072, 262144].flatMap(bytes => [64, 1024, bytes + 64].map(chunk => `${bytes}:${chunk}`)).sort();
+    if (JSON.stringify(rows?.map(row => `${row.dataBytes}:${row.chunkBytes}`).sort()) !== JSON.stringify(expected) ||
+        rows.some(row => row.samplesMS?.length !== 3 || !Number.isFinite(row.medianMS))) fail();
+  }
+  return data;
+}
+
 export function readInspectMeasurements(directory) {
   const data = JSON.parse(readFileSync(resolve(directory, "inspect-results.json")));
   const manifestBytes = readFileSync(resolve(directory, "regression.json"));
@@ -286,6 +321,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
   const data = readCompatibilityResults(sourceDirectory);
   const inspect = readInspectMeasurements(sourceDirectory);
+  const quality = readRuntimeQuality(sourceDirectory);
   const graph = readGraphSelection(sourceDirectory);
   graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
   graph.metadata = readGraphSelection(sourceDirectory, "graph-metadata-results.json");
@@ -299,6 +335,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   writeFileSync(resolve(generatedDirectory, "compatibility-results.json"), `${JSON.stringify(data, null, 2)}\n`);
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
   writeFileSync(resolve(generatedDirectory, "inspect-measurements.json"), `${JSON.stringify(inspect, null, 2)}\n`);
+  writeFileSync(resolve(generatedDirectory, "runtime-quality.json"), `${JSON.stringify(quality, null, 2)}\n`);
+  copyFileSync(resolve(sourceDirectory, "runtime-quality-results.json"), resolve(publicDirectory, "runtime-quality-results.json"));
   copyFileSync(resolve(sourceDirectory, "inspect-results.json"), resolve(publicDirectory, "inspect-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));

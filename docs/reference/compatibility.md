@@ -3,7 +3,7 @@
 These results show SDK generation and TypeScript typechecking for each OpenAPI
 document.
 
-Last measured: **October 1, 2026** · Generator: **development version after v9.0.0**
+Last measured: **October 2, 2026** · Generator: **development version `caccb91`**
 
 ## SDK generation results
 
@@ -39,6 +39,14 @@ for when to include it and the next major release's generation settings.
 
 Use [API selection](../guide/selective-client.md#generation) to generate the
 subset your application needs. The document results below show full API generation.
+
+## Generated source and streaming measurements {#runtime-quality}
+
+The development version supports checking generated implementation code with
+[strict TypeScript options](./typescript-types.md#source-checking). These
+measurements cover complete SDK source, declaration output, and fragmented SSE calls.
+
+<RuntimeQuality />
 
 ## Documents covered
 

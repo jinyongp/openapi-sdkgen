@@ -5,9 +5,25 @@ import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection, readInspectMeasurements, readMetadataComparison } from "./build-compatibility-results.mjs";
+import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection, readInspectMeasurements, readMetadataComparison, readRuntimeQuality } from "./build-compatibility-results.mjs";
 
 const sourceDirectory = new URL("../../test/compatibility/", import.meta.url);
+
+test("runtime quality results require complete strict checks and measured output", (t) => {
+  const directory = fixture(t);
+  assert.equal(readRuntimeQuality(directory).delivery.length, 3);
+  for (const corrupt of [
+    data => { data.strictCompilerOptions.noUnusedLocals = false; },
+    data => { data.matrix.diagnostics = 1; },
+    data => { data.delivery[2].checkedFiles--; },
+    data => { data.graph.cases.clients.strictTypecheck.status = "fail"; },
+    data => { data.compilerComparisons.find(row => row.kind === "candidate").samples[0].errorCount = 1; },
+  ]) {
+    const invalid = fixture(t);
+    change(invalid, "runtime-quality-results.json", corrupt);
+    assert.throws(() => readRuntimeQuality(invalid), /Runtime quality measurement/);
+  }
+});
 
 function fixture(t) {
   const directory = mkdtempSync(resolve(tmpdir(), "sdkgen-docs-results-"));
@@ -19,6 +35,7 @@ function fixture(t) {
   }
   mkdirSync(resolve(directory, "selections"));
   copyFileSync(new URL("inspect-results.json", sourceDirectory), resolve(directory, "inspect-results.json"));
+  copyFileSync(new URL("runtime-quality-results.json", sourceDirectory), resolve(directory, "runtime-quality-results.json"));
   for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs", "selections/microsoft-graph-count.toml", "selections/microsoft-graph-count.mjs"]) {
     copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
   }

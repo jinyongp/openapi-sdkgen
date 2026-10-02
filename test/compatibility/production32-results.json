@@ -49,6 +49,7 @@
   ],
   "documents": [
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "zenith-customer-v3",
       "cohort": "production-3.2",
@@ -93,13 +94,16 @@
         "security.http"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 4,
         "status": "pass",
-        "artifactCount": 88,
-        "artifactBytes": 558798,
-        "durationMillis": 30.540229
+        "artifactCount": 89,
+        "artifactBytes": 539978,
+        "durationMillis": 36.372787
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 370.504788
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -115,6 +119,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -283,6 +302,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "zenith-merchant-v2",
       "cohort": "production-3.2",
@@ -329,13 +349,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 63,
         "status": "pass",
-        "artifactCount": 350,
-        "artifactBytes": 1847296,
-        "durationMillis": 169.694526
+        "artifactCount": 356,
+        "artifactBytes": 1529749,
+        "durationMillis": 161.325396
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 756.078129
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -351,6 +374,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -671,7 +709,10 @@
     }
   },
   "measurement": {
-    "measuredAt": "2026-10-01T06:20:29Z",
+    "typescriptVersion": "7.0.2",
+    "sourceCommit": "caccb91a54e52f67aa0b1226714e73b37b9aaefc",
+    "sourceDirty": false,
+    "measuredAt": "2026-10-02T10:57:12Z",
     "generationScope": "compile-prepare-write",
     "samples": 1,
     "os": "linux",
