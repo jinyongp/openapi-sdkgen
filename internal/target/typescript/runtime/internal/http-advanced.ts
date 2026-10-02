@@ -12,34 +12,14 @@ import type {
   WireSchema,
   WireSchemas,
 } from "./wire-engine.js";
-import type { ClientOptions } from "./configuration.js";
-import { TransportErrorCode, isAPIError } from "./runtime-support.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
-import { operationDiagnosticName } from "./runtime-support.js";
-import type { OperationDefinition } from "./operation.js";
-import type { OperationStream, RequestOptions, StreamResponseMetadata } from "./request.js";
 import {
   decodeResponseStreamItems as decodeFramedResponseStreamItems,
   parseStreamJSON,
 } from "./streaming.js";
-import {
-  applyOperationSecurity,
-  assertReadableResponseHeaders,
-  awaitAbortable,
-  cancelResponseBody,
-  cancelTrackedRequestBody,
-  createAbortContext,
-  isPromise,
-  isReadableStream,
-  normalizeMediaType,
-  requestMetadata,
-  selectResponseDefinition,
-  serverError,
-  transportError,
-} from "./http-core.js";
+import { awaitAbortable, isPromise, normalizeMediaType } from "./http-core.js";
 import type {
   CompleteSequentialRequestOptions,
-  EncodedRequest,
   EncodedStreamRequestBody,
   IncrementalStreamRequestOptions,
   MultipartStreamPart,
@@ -54,13 +34,12 @@ export function createAdvancedHTTPServices(
   getBase: () => RequestExecutionServices,
   wire: WireCodec,
 ): AdvancedHTTPServices {
-  const { decodeWireValue, transformWireValue, validateWireValue } = wire;
+  const { transformWireValue, validateWireValue } = wire;
   const createOperationStream = createOperationStreamService(
     getBase,
     decodeResponseStreamItems,
     wire,
   );
-  const tolerantResponseTransformOptions = { unknownProperties: "preserve" } as const;
 
   async function* decodeResponseStreamItems(
     body: ReadableStream<Uint8Array>,
@@ -609,7 +588,7 @@ export function createAdvancedHTTPServices(
       if (field !== "data" && field !== "event" && field !== "id" && field !== "retry")
         throw new TypeError(`SSE stream item contains unsupported field ${field}`);
     }
-    if (!Object.hasOwn(value, "data") || typeof value.data !== "string")
+    if (!Object.hasOwn(value, "data") || typeof value["data"] !== "string")
       throw new TypeError("SSE stream item data must be a string");
 
     const event = sseRequestStringField(value, "event");
@@ -620,15 +599,19 @@ export function createAdvancedHTTPServices(
       throw new TypeError("SSE stream item id must not contain NUL or a line break");
 
     let retry: number | undefined;
-    if (Object.hasOwn(value, "retry") && value.retry !== undefined) {
-      if (typeof value.retry !== "number" || !Number.isSafeInteger(value.retry) || value.retry < 0)
+    if (Object.hasOwn(value, "retry") && value["retry"] !== undefined) {
+      if (
+        typeof value["retry"] !== "number" ||
+        !Number.isSafeInteger(value["retry"]) ||
+        value["retry"] < 0
+      )
         throw new TypeError("SSE stream item retry must be a non-negative safe integer");
-      retry = value.retry;
+      retry = value["retry"];
     }
 
     const lines: string[] = [];
     if (event !== undefined) lines.push(`event: ${event}`);
-    for (const line of value.data.split(/\r\n|\r|\n/)) lines.push(`data: ${line}`);
+    for (const line of value["data"].split(/\r\n|\r|\n/)) lines.push(`data: ${line}`);
     if (id !== undefined) lines.push(`id: ${id}`);
     if (retry !== undefined) lines.push(`retry: ${retry}`);
     return lines.join("\n") + "\n\n";

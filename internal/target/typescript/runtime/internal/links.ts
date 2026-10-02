@@ -116,9 +116,9 @@ function evaluateLinkValue(
 ): unknown {
   if (isRecord(value) && isRecord(value["x-sdkgen-link-request-parameter"])) {
     const parameter = value["x-sdkgen-link-request-parameter"];
-    const section = typeof parameter.section === "string" ? parameter.section : undefined;
-    const property = typeof parameter.property === "string" ? parameter.property : undefined;
-    const pointer = typeof parameter.pointer === "string" ? parameter.pointer : undefined;
+    const section = typeof parameter["section"] === "string" ? parameter["section"] : undefined;
+    const property = typeof parameter["property"] === "string" ? parameter["property"] : undefined;
+    const pointer = typeof parameter["pointer"] === "string" ? parameter["pointer"] : undefined;
     if (section === undefined || property === undefined || pointer === undefined)
       throw new TypeError("invalid generated Link request parameter expression");
     const input =
@@ -136,10 +136,10 @@ function evaluateLinkValue(
   const header = /^\$response\.header\.([A-Za-z0-9!#$%&'*+.^_`|~-]+)$/i.exec(value);
   if (header !== null) return response.response.headers.get(header[1]!);
   const requestBodyPrefix = "$request.body";
-  if (value === requestBodyPrefix) return isRecord(sourceInput) ? sourceInput.body : undefined;
+  if (value === requestBodyPrefix) return isRecord(sourceInput) ? sourceInput["body"] : undefined;
   if (value.startsWith(requestBodyPrefix + "#"))
     return jsonPointerValue(
-      isRecord(sourceInput) ? sourceInput.body : undefined,
+      isRecord(sourceInput) ? sourceInput["body"] : undefined,
       value.slice(requestBodyPrefix.length + 1),
     );
   const requestParameter = /^\$request\.(path|query|header|cookie)\.([^#]+)(#.*)?$/.exec(value);

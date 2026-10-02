@@ -632,7 +632,7 @@ function transformWireValueWithContext(
     );
     const selected =
       schema.discriminator !== undefined
-        ? (discriminatorVariant(transformed, schema, components, direction) ?? matches[0])
+        ? (discriminatorVariant(transformed, schema) ?? matches[0])
         : matches[0];
     if (selected !== undefined)
       transformed = transformWireValueWithContext(
@@ -1243,12 +1243,7 @@ function matchesWireURITemplate(value: string): boolean {
   return depth === 0;
 }
 
-function discriminatorVariant(
-  value: unknown,
-  schema: WireSchema,
-  components: WireSchemas,
-  direction: "encode" | "decode",
-): WireSchema | undefined {
+function discriminatorVariant(value: unknown, schema: WireSchema): WireSchema | undefined {
   if (!isRecord(value) || schema.discriminator === undefined) return undefined;
   const property = schema.discriminator.property;
   const candidate = value[property];

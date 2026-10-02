@@ -673,12 +673,12 @@ export function isReadableStream(value: unknown): value is ReadableStream<Uint8A
 
 /** Preserves response body and metadata in an API failure. */
 export function serverError(response: Response, request: RequestMetadata, body: unknown): APIError {
-  const envelope = isRecord(body) && isRecord(body.error) ? body.error : body;
+  const envelope = isRecord(body) && isRecord(body["error"]) ? body["error"] : body;
   const error = isRecord(envelope) ? envelope : {};
-  const code = typeof error.code === "string" ? error.code : `HTTP_${response.status}`;
+  const code = typeof error["code"] === "string" ? error["code"] : `HTTP_${response.status}`;
   const message =
-    typeof error.message === "string"
-      ? error.message
+    typeof error["message"] === "string"
+      ? error["message"]
       : typeof body === "string" && body.trim() !== ""
         ? body
         : `HTTP request failed with status ${response.status}`;
@@ -687,8 +687,8 @@ export function serverError(response: Response, request: RequestMetadata, body: 
     message,
     request,
     status: response.status,
-    details: error.details ?? error.fields,
-    fields: error.fields,
+    details: error["details"] ?? error["fields"],
+    fields: error["fields"],
     data: body,
     response,
   });
@@ -1051,14 +1051,14 @@ export function createHTTPServices(
         continue;
       const source =
         parameter.location === "path"
-          ? values.path
+          ? values["path"]
           : parameter.location === "header"
-            ? values.headerParams
+            ? values["headerParams"]
             : parameter.location === "cookie"
-              ? values.cookieParams
+              ? values["cookieParams"]
               : parameter.location === "querystring"
-                ? values.querystring
-                : values.query;
+                ? values["querystring"]
+                : values["query"];
       if (isRecord(source) && source[parameter.property] !== undefined) return true;
     }
     return false;
@@ -1093,7 +1093,7 @@ export function createHTTPServices(
     options: RequestOptions,
   ): EncodedRequest | Promise<EncodedRequest> {
     const values = isRecord(input) ? input : {};
-    const pathValues = isRecord(values.path) ? values.path : {};
+    const pathValues = isRecord(values["path"]) ? values["path"] : {};
     rejectUndefinedArrayValues(pathValues);
     const path = operation.path.replaceAll(/\{([^}]+)\}/g, (_, name: string) => {
       const parameter = findParameter(operation, "path", name);
@@ -1113,8 +1113,8 @@ export function createHTTPServices(
       resolveOperationBaseURL(options.baseURL ?? baseURL, client.origin, client.server, operation) +
         (path.startsWith("/") ? path : `/${path}`),
     );
-    const queryValues = isRecord(values.query) ? values.query : {};
-    const querystringValues = isRecord(values.querystring) ? values.querystring : {};
+    const queryValues = isRecord(values["query"]) ? values["query"] : {};
+    const querystringValues = isRecord(values["querystring"]) ? values["querystring"] : {};
     rejectUndefinedArrayValues(queryValues);
     rejectUndefinedArrayValues(querystringValues);
     const query = [
@@ -1134,7 +1134,7 @@ export function createHTTPServices(
     const headers = new Headers();
     appendRawHeaders(headers, client.headers, contractHeaderNames);
     appendRawHeaders(headers, options.headers, contractHeaderNames);
-    const headerParams = { ...(isRecord(values.headerParams) ? values.headerParams : {}) };
+    const headerParams = { ...(isRecord(values["headerParams"]) ? values["headerParams"] : {}) };
     rejectUndefinedArrayValues(headerParams);
     for (const [property, value] of Object.entries(headerParams)) {
       if (value === undefined) continue;
@@ -1158,7 +1158,7 @@ export function createHTTPServices(
     setHeader(headers, "Accept", options.accept);
     setHeader(headers, "X-CSRF-Token", options.csrfToken);
     setHeader(headers, "X-Request-Id", options.requestID);
-    const cookieValues = isRecord(values.cookieParams) ? values.cookieParams : {};
+    const cookieValues = isRecord(values["cookieParams"]) ? values["cookieParams"] : {};
     rejectUndefinedArrayValues(cookieValues);
     assertRequiredParameters(
       operation,
@@ -1180,31 +1180,31 @@ export function createHTTPServices(
         );
       headers.set("Cookie", cookies.join("; "));
     }
-    if (!Object.hasOwn(values, "body") || values.body === undefined) {
+    if (!Object.hasOwn(values, "body") || values["body"] === undefined) {
       if (operation.requestBodyRequired) throw new TypeError("Missing required request body");
       return { url: url.href, headers };
     }
-    rejectUndefinedArrayValues(values.body);
+    rejectUndefinedArrayValues(values["body"]);
     let contentType = operation.contentType ?? "application/json";
-    let bodyValue: unknown = values.body;
+    let bodyValue: unknown = values["body"];
     const requestBodies = operation.requestBodies;
     const needsSelection =
       requestBodies !== undefined &&
       (requestBodies.length > 1 || requestBodies.some((body) => body.contentType.includes("*")));
     if (needsSelection) {
       if (
-        !isRecord(values.body) ||
-        typeof values.body.contentType !== "string" ||
-        !Object.hasOwn(values.body, "value")
+        !isRecord(values["body"]) ||
+        typeof values["body"]["contentType"] !== "string" ||
+        !Object.hasOwn(values["body"], "value")
       )
         throw new TypeError("request body media range requires { contentType, value }");
-      const selected = selectRequestBodyDefinition(requestBodies!, values.body.contentType);
+      const selected = selectRequestBodyDefinition(requestBodies!, values["body"]["contentType"]);
       if (selected === undefined)
         throw new TypeError(
-          `request body content type ${values.body.contentType} is not declared by this operation`,
+          `request body content type ${values["body"]["contentType"]} is not declared by this operation`,
         );
-      contentType = values.body.contentType;
-      bodyValue = values.body.value;
+      contentType = values["body"]["contentType"];
+      bodyValue = values["body"]["value"];
     }
     const definition =
       requestBodies === undefined
@@ -1299,7 +1299,7 @@ export function createHTTPServices(
     options: RequestOptions,
   ): Promise<EncodedRequest> {
     const values = isRecord(input) ? input : {};
-    const pathValues = isRecord(values.path) ? values.path : {};
+    const pathValues = isRecord(values["path"]) ? values["path"] : {};
     rejectUndefinedArrayValues(pathValues);
     let path = operation.path;
     for (const match of operation.path.matchAll(/\{([^}]+)\}/g)) {
@@ -1324,8 +1324,8 @@ export function createHTTPServices(
       operation,
     );
     const url = new URL(operationBaseURL + (path.startsWith("/") ? path : `/${path}`));
-    const queryValues = isRecord(values.query) ? values.query : {};
-    const querystringValues = isRecord(values.querystring) ? values.querystring : {};
+    const queryValues = isRecord(values["query"]) ? values["query"] : {};
+    const querystringValues = isRecord(values["querystring"]) ? values["querystring"] : {};
     rejectUndefinedArrayValues(queryValues);
     rejectUndefinedArrayValues(querystringValues);
     const query = [
@@ -1348,7 +1348,7 @@ export function createHTTPServices(
     appendRawHeaders(headers, options.headers, contractHeaderNames);
 
     const headerParams = {
-      ...(isRecord(values.headerParams) ? values.headerParams : {}),
+      ...(isRecord(values["headerParams"]) ? values["headerParams"] : {}),
     };
     rejectUndefinedArrayValues(headerParams);
     for (const [property, value] of Object.entries(headerParams)) {
@@ -1373,7 +1373,7 @@ export function createHTTPServices(
     setHeader(headers, "X-CSRF-Token", options.csrfToken);
     setHeader(headers, "X-Request-Id", options.requestID);
 
-    const cookieValues = isRecord(values.cookieParams) ? values.cookieParams : {};
+    const cookieValues = isRecord(values["cookieParams"]) ? values["cookieParams"] : {};
     rejectUndefinedArrayValues(cookieValues);
     assertRequiredParameters(
       operation,
@@ -1398,31 +1398,31 @@ export function createHTTPServices(
       headers.set("Cookie", cookies.join("; "));
     }
 
-    if (!Object.hasOwn(values, "body") || values.body === undefined) {
+    if (!Object.hasOwn(values, "body") || values["body"] === undefined) {
       if (operation.requestBodyRequired) throw new TypeError("Missing required request body");
       return { url: url.href, headers };
     }
-    rejectUndefinedArrayValues(values.body);
+    rejectUndefinedArrayValues(values["body"]);
     let contentType = operation.contentType ?? "application/json";
-    let bodyValue: unknown = values.body;
+    let bodyValue: unknown = values["body"];
     const requestBodies = operation.requestBodies;
     const needsSelection =
       requestBodies !== undefined &&
       (requestBodies.length > 1 || requestBodies.some((body) => body.contentType.includes("*")));
     if (needsSelection) {
       if (
-        !isRecord(values.body) ||
-        typeof values.body.contentType !== "string" ||
-        !Object.hasOwn(values.body, "value")
+        !isRecord(values["body"]) ||
+        typeof values["body"]["contentType"] !== "string" ||
+        !Object.hasOwn(values["body"], "value")
       )
         throw new TypeError("request body media range requires { contentType, value }");
-      const selected = selectRequestBodyDefinition(requestBodies!, values.body.contentType);
+      const selected = selectRequestBodyDefinition(requestBodies!, values["body"]["contentType"]);
       if (selected === undefined)
         throw new TypeError(
-          `request body content type ${values.body.contentType} is not declared by this operation`,
+          `request body content type ${values["body"]["contentType"]} is not declared by this operation`,
         );
-      contentType = values.body.contentType;
-      bodyValue = values.body.value;
+      contentType = values["body"]["contentType"];
+      bodyValue = values["body"]["value"];
     }
     const definition =
       requestBodies === undefined
@@ -1563,12 +1563,12 @@ export function createHTTPServices(
       value = value.map((entry) => {
         if (
           !isRecord(entry) ||
-          typeof entry.field !== "string" ||
-          typeof entry.direction !== "string"
+          typeof entry["field"] !== "string" ||
+          typeof entry["direction"] !== "string"
         ) {
           throw new TypeError(`Invalid structured sort value for ${parameter.name}`);
         }
-        const wire = parameter.sort?.[`${entry.field}\u0000${entry.direction}`];
+        const wire = parameter.sort?.[`${entry["field"]}\u0000${entry["direction"]}`];
         if (wire === undefined)
           throw new TypeError(`Invalid structured sort value for ${parameter.name}`);
         return wire;
@@ -1920,8 +1920,12 @@ export function createHTTPServices(
     value: unknown,
     allowReserved: boolean,
   ): void {
-    if (isRecord(value) && typeof value.field === "string" && typeof value.direction === "string") {
-      query.push({ name, value: `${value.field}:${value.direction}`, allowReserved });
+    if (
+      isRecord(value) &&
+      typeof value["field"] === "string" &&
+      typeof value["direction"] === "string"
+    ) {
+      query.push({ name, value: `${value["field"]}:${value["direction"]}`, allowReserved });
       return;
     }
     if (typeof value === "object" && value !== null) {
@@ -2665,7 +2669,7 @@ export function createRequestCore(
       }
       const data =
         operation.envelope === "data" && isRecord(body) && Object.hasOwn(body, "data")
-          ? (body.data as Output)
+          ? (body["data"] as Output)
           : (body as Output);
       if (!raw) return data;
       const contentType = responseContentType(response);

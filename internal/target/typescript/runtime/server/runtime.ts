@@ -1229,13 +1229,13 @@ export function collectInboundSecurityCandidates(
     for (const name of Object.keys(alternative)) {
       if (result[name] !== undefined) continue;
       const scheme = schemes[name];
-      if (scheme === undefined || typeof scheme.type !== "string") continue;
-      if (scheme.type === "apiKey") {
+      if (scheme === undefined || typeof scheme["type"] !== "string") continue;
+      if (scheme["type"] === "apiKey") {
         const location =
-          scheme.in === "header" || scheme.in === "query" || scheme.in === "cookie"
-            ? scheme.in
+          scheme["in"] === "header" || scheme["in"] === "query" || scheme["in"] === "cookie"
+            ? scheme["in"]
             : undefined;
-        const parameterName = typeof scheme.name === "string" ? scheme.name : undefined;
+        const parameterName = typeof scheme["name"] === "string" ? scheme["name"] : undefined;
         if (location === undefined || parameterName === undefined) continue;
         const value =
           location === "header"
@@ -1255,7 +1255,7 @@ export function collectInboundSecurityCandidates(
       const authorization = request.headers.get("authorization") ?? undefined;
       defineOwnDataProperty(result, name, {
         scheme: name,
-        type: scheme.type,
+        type: scheme["type"],
         ...(authorization === undefined ? {} : { value: authorization }),
       });
     }

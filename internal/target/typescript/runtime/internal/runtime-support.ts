@@ -60,7 +60,7 @@ export interface APIErrorOptions<Code extends string, Details = unknown> {
  */
 export class APIError<Code extends string = string, Details = unknown> extends Error {
   /** Standard JavaScript error name. */
-  readonly name = "APIError";
+  override readonly name = "APIError";
   /** Stable server or transport error code. */
   readonly code: Code;
   /** Metadata for the request that produced the error. */
@@ -76,7 +76,7 @@ export class APIError<Code extends string = string, Details = unknown> extends E
   /** Original Fetch API response, when available. */
   readonly response?: Response;
   /** Original exception, when this error wraps another failure. */
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
 
   /** Creates a normalized API or transport error. */
   constructor(options: APIErrorOptions<Code, Details>) {

@@ -118,10 +118,10 @@ export function createPaginator<
   return (input, ...options) => ({
     async *[Symbol.asyncIterator]() {
       const root: Record<string, unknown> = isRecord(input) ? { ...input } : {};
-      const requestedMode = root.mode;
-      delete root.mode;
+      const requestedMode = root["mode"];
+      delete root["mode"];
       const mode = resolvePaginationMode(plan.mode, requestedMode);
-      const query = isRecord(root.query) ? { ...root.query } : {};
+      const query = isRecord(root["query"]) ? { ...root["query"] } : {};
       const cursorName = plan.request.cursor;
       const offsetName = plan.request.offset;
       const limitName = plan.request.limit;
@@ -131,7 +131,7 @@ export function createPaginator<
       if (mode === "offset" && cursorName !== undefined && query[cursorName] !== undefined) {
         throw new TypeError(`offset pagination does not accept ${cursorName}`);
       }
-      root.query = query;
+      root["query"] = query;
       const seenCursors = new Set<string>();
       if (cursorName !== undefined && typeof query[cursorName] === "string") {
         seenCursors.add(query[cursorName]);
