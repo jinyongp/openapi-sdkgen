@@ -33,6 +33,7 @@ import type {
   StreamCall,
 } from "../fixtures/generated/client/index.js";
 import { openapi } from "../fixtures/generated/client/metadata.js";
+import { openapi as defaultOpenapi } from "../fixtures/generated/baseline-oas32/metadata.js";
 
 type Expect<Value extends true> = Value;
 type Equal<Left, Right> =
@@ -147,6 +148,11 @@ void [
 ];
 
 describe("generated TypeScript source", () => {
+  it("keeps only version metadata in default generation", () => {
+    expect(defaultOpenapi.version).toBe("3.2.0");
+    expect(defaultOpenapi.versionLine).toBe("3.2");
+    expect(defaultOpenapi).not.toHaveProperty("document");
+  });
   it("keeps lossless OpenAPI metadata behind its explicit entry", () => {
     expect(openapi.version).toBe("3.2.0");
     expect(openapi.versionLine).toBe("3.2");

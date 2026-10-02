@@ -3,10 +3,14 @@
 This matrix is the implementation contract for `openapi-sdkgen`. It covers
 every normative OpenAPI 3.x feature family and every Schema Object keyword
 family. `generated` means observable generated source/runtime behavior;
-`metadata` means exported source metadata/documentation; `omitted` means a
+`metadata` means generated documentation or source exports; `omitted` means a
 scoped operation/capability is deliberately absent from generated call surfaces
 with an explicit diagnostic; `error` means the selected target remains blocked.
-No valid feature may be silently dropped. [The canonical feature manifest](openapi-feature-manifest.json)
+Version information and generated JSDoc are included by default. Lossless
+`openapi.document` exports require `--with metadata`; source-only entries record
+this condition through `requiresAddons`. Optional source exports do not omit or
+block API operations. No valid API semantics may be silently dropped.
+[The canonical feature manifest](openapi-feature-manifest.json)
 is the field-level register for the active TypeScript target; this matrix and
 the [capability inventory](openapi-feature-inventory.md) are readable views of it.
 JavaScript output is not a supported generator target.
@@ -42,7 +46,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | --- | --- | --- | --- | --- | --- | --- |
 | `openapi` minor/patch detection | yes | yes | yes | Generated for SemVer `3.0.x`, `3.1.x`, `3.2.x` lines | detect each supported minor line; reject other minors/majors explicitly | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
 | Feature outside declared minor line | reject | reject | reject | Error: `COMP-VERSION-003`, `scope=document`, `effect=block` | precise version-feature diagnostic; no scoped recovery | `internal/compiler/version_reject_diagnostic_test.go::TestVersionFeatureRejectCarriesStructuredCompatibilityDiagnostic` |
-| `info` (`title`, `summary`, `description`, `termsOfService`, `contact`, `license`, `version`) | common; `summary`/license identifier later | yes | yes | Metadata: lossless `metadata.js` `openapi.document` export | generated API metadata/docs | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
+| `info` (`title`, `summary`, `description`, `termsOfService`, `contact`, `license`, `version`) | common; `summary`/license identifier later | yes | yes | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` | generated API metadata/docs | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
 | root `servers` and defaults | yes | yes | yes | Generated server selector, variable expansion, and defaults | generated server selector + defaults | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSelectsAndExpandsOpenAPIServerVariables` |
 | root `paths` | required | optional with another API entry point | optional with another API entry point | Generated when present; optional absence preserved | generated operations | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
 | root `webhooks` | no | yes | yes | TypeScript `--with server`: generated handler contracts; otherwise document-scoped blocking error | generated webhook handler contracts | `internal/target/typescript/server_test.go::TestGeneratedWebhookRouterExecutesThroughFetch` |
@@ -50,7 +54,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | root `security`, `tags`, `externalDocs` | yes | yes | yes | Client Security Requirement Objects generated through host-owned credentials; tags/docs export through metadata | generated credential plan + docs | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesOpenAPISecurityRequirementsAndOperationOverride` |
 | `jsonSchemaDialect` | no | yes | yes | Generated dialect metadata drives schema lowering and vocabulary handling | version/dialect-aware schema lowering | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsAcceptsJSONSchemaResourceScopeMetadata` |
 | `$self` | no | no | yes | Generated as the document schema-resource base URI | base URI for references | `internal/compiler/compiler_test.go::TestCompileUsesOpenAPI32SelfAsSchemaResourceBase` |
-| `x-*` extensions | yes | yes | yes | Metadata: lossless `metadata.js` `openapi.document` export plus selected project extensions | preserved metadata; documented extensions affect behavior | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
+| `x-*` extensions | yes | yes | yes | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` plus selected project extensions | preserved metadata; documented extensions affect behavior | `internal/compiler/openapi/read_test.go::TestReadBuildsSupportedOpenAPI3Models` |
 
 ## Reuse, References, and Servers
 
@@ -58,7 +62,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | --- | --- | --- | --- | --- |
 | Local JSON Pointer `$ref` | all | Generated for Path Items, component schemas/responses/parameters/request bodies/Links; Security forms generated | resolve each supported object context | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksFollowTypedTargetOperations` |
 | External document `$ref` | all | Contained local refs; allowlisted HTTPS refs with lock/cache/offline support; out-of-root file refs error | complete-document resolution under explicit resource policy | `internal/compiler/references_test.go::TestCompileFileWithOptionsUsesLockedOfflineRemoteReference` |
-| Reference Object summary/description siblings | 3.1+ | Metadata: lossless `metadata.js` `openapi.document` export | preserve generated docs/metadata | `internal/compiler/compiler_test.go::TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine` |
+| Reference Object summary/description siblings | 3.1+ | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` | preserve generated docs/metadata | `internal/compiler/compiler_test.go::TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine` |
 | Schema `$id`, `$anchor`, `$dynamicAnchor`, `$dynamicRef` | 3.1+ | Generated: canonical pointers and dynamic-scope runtime selection across contained and locked remote schema resources | JSON Schema 2020-12 local and locked remote resource resolution | `internal/target/typescript/runtime_parity_test.go::TestRuntimeResolvesDynamicReferencesAcrossLockedRemoteSchemaResources` |
 | `$self` URI and relative references | 3.2 | Generated: `$self` establishes the document schema-resource base for relative `$id`/anchor resolution | 3.2 base URI resolution | `internal/compiler/compiler_test.go::TestCompileUsesOpenAPI32SelfAsSchemaResourceBase` |
 | Path Item references | all | Generated local references with sibling merge; external forms error | resolve and merge version-correctly | `internal/compiler/compiler_test.go::TestCompileFileBundlesInDirectoryReferencesForEverySupportedVersionLine` |
@@ -77,7 +81,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | Fetch-native operation eligibility | OAS 3.0 unsafe body restrictions | GET/HEAD body and TRACE target restrictions | same plus CONNECT/TRACK `additionalOperations` controls | Omitted at operation scope with `effect=omit-operation`; surviving public/artifact reservations remain stable | no route/operation/resource/helper surface for the omitted operation | `internal/target/typescript/operation_omission_test.go::TestOperationOmissionRemovesUnsupportedCallablesAndKeepsSupportedSiblings` |
 | `additionalOperations` | no | no | yes | Generated arbitrary methods when target-eligible; version-gated to 3.2 | generated arbitrary-method calls | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsGenerateOpenAPI32QueryAndAdditionalOperations` |
 | Path Item summary/description/servers | version-dependent | yes | yes | Metadata plus selected server alternatives and variables generated | operation docs/server override | `internal/target/typescript/runtime_parity_test.go::TestRuntimeSelectsOperationScopedServerAlternatives` |
-| Operation tags/summary/description/externalDocs/operationId | all | all | all | Metadata plus stable generated operation names | stable public names + metadata/docs | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesDocumentationExamplesAndExtensions` |
+| Operation tags/summary/description/externalDocs/operationId | all | all | all | Metadata plus stable generated operation names | stable public names + metadata/docs | `internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts` |
 | Operation `deprecated` | yes | yes | yes | Propagated to generated operation call surfaces, including 3.2 `query`/`additionalOperations` | IDE-visible deprecation without changing callability | `internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines` |
 | Operation security/server override | all | all | all | server URL override and Security Requirement Objects generated | per-call auth/server options | `internal/target/typescript/runtime_parity_test.go::TestRuntimeAppliesOpenAPISecurityRequirementsAndOperationOverride` |
 | Security Requirement declaration conformance | requirement names must match declared component schemes; explicit operation defect is omitted, root defect blocks | same | Security Scheme URI names are not rejected solely for lacking a same-named component | Omitted for operation-local invalid requirements; Error/block for invalid root requirements; valid/declared cases remain generated or target-owned | operation-local W140 omission or root E140 block; declared-but-target-unsupported schemes remain target-owned | `internal/compiler/operation_conformance_test.go::TestSecurityRequirementConformanceScopesOperationAndRootFailures` |
@@ -113,8 +117,8 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | Link Object (`operationId`/local `operationRef`, parameters, requestBody, response/request body/header/status expressions) | all | Generated typed follow-up helper plus status-dispatch and `byStatus` helpers | follow-up operation helper | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksDispatchSameNameByStatus` |
 | Invalid Link target identity (missing/both/empty `operationId` or `operationRef`) | all | Capability-scoped omission with `COMP-LINK-001`; base response and valid sibling Links remain generated | omit only the invalid Link helper | `internal/compiler/link_compatibility_test.go::TestCompatibilityQuarantinesInvalidInlineLinkTargetIdentity` |
 | Link request-header expressions for Fetch-managed names | all | Generated; source expressions observe caller input and target assignments flow to Fetch | caller-input observation without a final-wire guarantee | `internal/target/typescript/runtime_parity_test.go::TestGeneratedResponseLinksDelegateEnvironmentControlledRequestHeaders` |
-| Example Object (`value`, `externalValue`, summary, description) | all | Metadata: lossless `metadata.js` `openapi.document` export | generated metadata/test vectors | `internal/target/typescript/types_test.go::TestOperationOutputTypesIncludeDefaultResponses` |
-| `dataValue`/`serializedValue` examples | 3.1+ | Metadata: lossless `metadata.js` `openapi.document` export | serialization test vectors | `internal/target/typescript/types_test.go::TestOperationOutputTypesIncludeDefaultResponses` |
+| Example Object (`value`, `externalValue`, summary, description) | all | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` | generated metadata/test vectors | `internal/target/typescript/types_test.go::TestOperationOutputTypesIncludeDefaultResponses` |
+| `dataValue`/`serializedValue` examples | 3.1+ | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` | serialization test vectors | `internal/target/typescript/types_test.go::TestOperationOutputTypesIncludeDefaultResponses` |
 
 ## Components, Security, XML, and Metadata
 
@@ -133,7 +137,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | Security Scheme `deprecated` | 3.2 | Generated security definition retains deprecation; rejected as a later-minor field in 3.0/3.1 | deprecation metadata without changing credential application | `internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines` |
 | XML Object (`name`, namespace, prefix, attribute, wrapped) | all | Generated XML request/response codecs; legacy `attribute`/`wrapped` remain valid in 3.2 | XML codecs and backward compatibility | `internal/target/typescript/runtime_parity_test.go::TestRuntimeOpenAPI32XMLNodeTypeReplacesDeprecatedLegacyFields` |
 | 3.2 XML `nodeType` and legacy replacements | 3.2 | `nodeType: attribute` and array `nodeType: element` match deprecated legacy semantics; `nodeType` with `attribute`/`wrapped` is an exact-path error | version-aware XML codec plus conflict diagnostics | `internal/target/typescript/runtime_parity_test.go::TestRuntimeOpenAPI32XMLNodeTypeReplacesDeprecatedLegacyFields` |
-| Tags/contact/license/docs/terms | all | Metadata: lossless `metadata.js` `openapi.document` export | generated API metadata/docs | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsRejectsUnsupportedReusableComponentFeatures` |
+| Tags/contact/license/docs/terms | all | Metadata: lossless `metadata.js` `openapi.document` export with `--with metadata` | generated API metadata/docs | `internal/target/typescript/openapi_support_test.go::TestSourceArtifactsRejectsUnsupportedReusableComponentFeatures` |
 
 ## Schema Object Keywords
 

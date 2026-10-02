@@ -211,7 +211,10 @@ fingerprints have drifted.
 `docs/openapi-feature-manifest.json` is the canonical field-level capability
 register. Every entry has a version scope, state, and executable evidence.
 Conditional support, such as Webhooks and Callbacks under `--with server`, is
-recorded in the capability contract while the base client contract stays stable.
+recorded in the capability contract. Source-only metadata fields declare
+`requiresAddons: ["metadata"]`; generated JSDoc and version exports remain
+available in the base client. This condition does not imply an operation omission
+or a blocking diagnostic.
 
 The manifest tests enforce feature IDs, supported states, version scopes, and
 references to executable evidence. The manifest remains the source of truth;

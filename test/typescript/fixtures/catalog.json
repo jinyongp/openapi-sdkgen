@@ -47,7 +47,7 @@
       "id": "contract",
       "input": "contract.openapi.json",
       "output": "client",
-      "addons": [],
+      "addons": ["metadata"],
       "profiles": ["conformance", "preimplementation"],
       "characteristics": ["path-query-header-body", "pagination", "envelope", "binary"],
       "scenario": "contract"
@@ -72,7 +72,7 @@
       "id": "bundle-isolation",
       "input": "bundle-isolation.openapi.json",
       "output": "bundle-isolation",
-      "addons": [],
+      "addons": ["metadata"],
       "profiles": ["conformance", "preimplementation"],
       "characteristics": ["optional-runtime-isolation", "stream"],
       "scenario": "surface"
@@ -81,7 +81,7 @@
       "id": "transport-native-headers",
       "input": "transport-native-headers.openapi.json",
       "output": "transport-native-headers",
-      "addons": ["server"],
+      "addons": ["server", "metadata"],
       "profiles": ["conformance", "preimplementation"],
       "characteristics": ["security", "headers", "custom-codecs", "inbound"],
       "scenario": "surface"

@@ -69,7 +69,10 @@ export function validateCatalog(catalog) {
         assert.match(entry.output, segment);
         assert.ok(!outputs.has(entry.output), `duplicate output: ${entry.output}`);
         outputs.add(entry.output);
-        assert.ok(Array.isArray(entry.addons) && entry.addons.every((x) => x === "server"));
+        assert.ok(
+          Array.isArray(entry.addons) &&
+            entry.addons.every((x) => ["server", "metadata"].includes(x)),
+        );
         assert.equal(new Set(entry.addons).size, entry.addons.length);
         if (entry.expectedFailure) {
           assert.equal(entry.scenario, undefined);

@@ -40,5 +40,11 @@ for version in "${versions[@]}"; do
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version selected SDK with Link dependencies" \
     "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+    agent_run "TypeScript $version original metadata with server" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --with server --with metadata
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+    agent_run "TypeScript $version selected SDK with original metadata" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask --with metadata
 done
 agent_note "ok TypeScript consumer compatibility"
