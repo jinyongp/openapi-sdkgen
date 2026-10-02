@@ -1,0 +1,27 @@
+{
+  "openapi": "3.2.1",
+  "info": {"title": "Scoped errors", "version": "1"},
+  "paths": {
+    "/root": {
+      "get": {"operationId": "root", "responses": {
+        "200": {"description": "OK", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RootOnly"}}}}
+      }}
+    },
+    "/named": {
+      "get": {"operationId": "named", "responses": {
+        "204": {"description": "OK"},
+        "400": {"description": "Invalid", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/NamedError"}}}}
+      }}
+    }
+  },
+  "components": {"schemas": {
+    "RootOnly": {"type": "object", "properties": {"marker": {"const": "ROOT_ONLY"}}},
+    "NamedError": {"type": "object", "required": ["error"], "properties": {
+      "error": {"type": "object", "required": ["code", "details"], "properties": {
+        "code": {"const": "named_only"},
+        "details": {"$ref": "#/components/schemas/NamedDetails"}
+      }}
+    }},
+    "NamedDetails": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
+  }}
+}

@@ -117,3 +117,37 @@ assert.equal(Object.keys(api.$routes).length,5);assert.equal(Object.keys(api.$op
 		t.Fatalf("named route execution: %v\n%s", err, result)
 	}
 }
+
+func TestNamedClientsKeepErrorContractsIndependentOfRootCatalog(t *testing.T) {
+	input, err := os.ReadFile("../../../test/fixtures/named-clients-errors.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := sdkgen.Compile(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := generator.Options{Selection: &generator.Selection{Operations: []string{"root"}}, Clients: map[string]generator.Client{"named": {Selection: &generator.Selection{Operations: []string{"named"}}}}}
+	probe := `import {createClient,type ComponentOutput} from './clients/named/index.js';
+import type {ServerErrorCode} from './index.js';
+const details:ComponentOutput<'NamedDetails'>={id:'detail'};
+// @ts-expect-error The root catalog preserves its own error-code selection.
+const rootCode:ServerErrorCode='named_only';
+// @ts-expect-error Named models do not include root-only schemas.
+type RootOnly=ComponentOutput<'RootOnly'>;
+createClient({baseURL:'https://example.test'}).named.get();
+`
+	output := compileSelectedTypeScriptArtifacts(t, document, options, probe)
+	script := `import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';import fs from 'node:fs';
+const directory=process.argv[1];globalThis.evaluations=new Set();
+for(const file of fs.readdirSync(directory,{recursive:true}))if(file.endsWith('.js'))fs.appendFileSync(directory+'/'+file,'\nglobalThis.evaluations.add('+JSON.stringify(file)+');\n');
+const {createClient}=await import(pathToFileURL(directory+'/clients/named/index.js'));
+const api=createClient({baseURL:'https://example.test',fetch:async()=>Response.json({error:{code:'named_only',details:{id:'detail'}}},{status:400})});
+await assert.rejects(api.named.get(),error=>error.code==='named_only'&&error.details.id==='detail');
+assert(![...globalThis.evaluations].some(file=>/schema-projections.*(?:root-only|rootonly)/.test(file)));
+assert([...globalThis.evaluations].some(file=>/schema-projections.*(?:named-details|nameddetails)/.test(file)));
+`
+	if result, err := exec.Command("node", "--input-type=module", "--eval", script, output).CombinedOutput(); err != nil {
+		t.Fatalf("named error runtime: %v\n%s", err, result)
+	}
+}

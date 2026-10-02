@@ -1,0 +1,5 @@
+[selection]
+operations = ["root"]
+
+[clients.named.selection]
+operations = ["named"]

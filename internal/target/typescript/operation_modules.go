@@ -197,7 +197,15 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "import type { OperationTypeIdentity, RouteTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
 	fmt.Fprintf(&output, "import type { OperationPublicType, OperationResourceRawCapability } from %s\n", quoteTS(contractTypes))
 	fmt.Fprintf(&output, "import type * as ContractSchemas from %s\n", quoteTS(schemaIndex))
-	fmt.Fprintf(&output, "import type * as Errors from %s\n", quoteTS(errorCatalog))
+	if plan.splitSchemaProjections {
+		// Named operations have exact code/detail contracts independent of the
+		// root SDK's selected error catalog. Keep its public catalog scoped.
+		if strings.Contains(item.renderError(typeRenderContract), "Errors.ServerError<") {
+			fmt.Fprintf(&output, "declare namespace Errors { export type ServerError<Code extends string, Details> = import(%s).APIError<Code, Details> }\n", quoteTS(runtimeErrors))
+		}
+	} else {
+		fmt.Fprintf(&output, "import type * as Errors from %s\n", quoteTS(errorCatalog))
+	}
 	if operation.PaginationPlan != nil {
 		runtimePagination, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/pagination.ts")
 		if err != nil {
