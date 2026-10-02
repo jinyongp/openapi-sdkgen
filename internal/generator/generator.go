@@ -38,7 +38,10 @@ type Options struct {
 	Selection *Selection
 	// Clients assigns APIs to independent named entries in the same source tree.
 	Clients map[string]Client
-	addons  map[Addon]struct{}
+	// TypeScriptNoCheck controls the generated TypeScript directive. Nil keeps
+	// the historical default, which emits @ts-nocheck.
+	TypeScriptNoCheck *bool
+	addons            map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.
@@ -117,6 +120,9 @@ type ClientTarget interface {
 // ValidateTargetOptions rejects a selected add-on before document compilation
 // when the chosen target cannot generate it.
 func ValidateTargetOptions(target Target, options Options) error {
+	if options.TypeScriptNoCheck != nil && target.Name() != "typescript" {
+		return fmt.Errorf("SDK target %q does not support --ts-nocheck", target.Name())
+	}
 	if options.Clients != nil {
 		if _, err := CanonicalClients(options.Clients); err != nil {
 			return err

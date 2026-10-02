@@ -105,6 +105,7 @@ type sourcePlan struct {
 	ownership                   *sourceOwnershipIndex
 	includeServer               bool
 	includeMetadata             bool
+	omitTypeCheckDirective      bool
 	omittedOperations           map[string]bool
 	resourceReservationExcluded map[string]bool
 	reservationManifest         *Manifest
@@ -148,6 +149,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 		return generator.Plan{}, diagnostics, coverage, err
 	}
 	plan.includeMetadata = options.HasAddon(generator.AddonMetadata)
+	plan.omitTypeCheckDirective = options.TypeScriptNoCheck != nil && !*options.TypeScriptNoCheck
 	if !diagnostic.HasErrors(diagnostics) {
 		if !hasMeaningfulEntrySurface(plan) {
 			diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
@@ -589,7 +591,18 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 			return fmt.Errorf("internal TypeScript target: missing prepared execution for %q", module.routeKey)
 		}
 	}
-	publish := validatedArtifactWriter(sink)
+	header := generatedFileHeaderFor(!shared.omitTypeCheckDirective)
+	// Compiler directives affect published file hashes and the output manifest,
+	// while the selective execution identity remains independent of this policy.
+	validated := validatedArtifactWriter(sink, header)
+	publish := func(artifact Artifact) error {
+		if shared.omitTypeCheckDirective && bytes.HasPrefix(artifact.Data, []byte(generatedFileHeader)) {
+			data := make([]byte, 0, len(header)+len(artifact.Data)-len(generatedFileHeader))
+			data = append(data, header...)
+			artifact.Data = append(data, artifact.Data[len(generatedFileHeader):]...)
+		}
+		return validated(artifact)
+	}
 	digest := sha256.New()
 	_, _ = digest.Write([]byte("openapi-sdkgen/selective/v1\x00"))
 	write := func(artifact Artifact) error {
@@ -714,7 +727,11 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	return emitSelectiveArtifactsTo(shared, fmt.Sprintf("%x", digest.Sum(nil)), publish)
 }
 
-func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {
+func validatedArtifactWriter(sink func(Artifact) error, headers ...string) func(Artifact) error {
+	header := generatedFileHeader
+	if len(headers) > 0 {
+		header = headers[0]
+	}
 	seen := make(map[string]string)
 	return func(artifact Artifact) error {
 		if err := validateArtifactPath(artifact.Path); err != nil {
@@ -725,7 +742,7 @@ func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {
 			return fmt.Errorf("generated artifact %q collides with %q", artifact.Path, previous)
 		}
 		seen[key] = artifact.Path
-		if !bytes.HasPrefix(artifact.Data, []byte(generatedFileHeader)) {
+		if !bytes.HasPrefix(artifact.Data, []byte(header)) {
 			return fmt.Errorf("generated artifact %q is missing the standard header", artifact.Path)
 		}
 		return sink(artifact)
@@ -776,6 +793,13 @@ func generatedSource(source []byte) []byte {
 	copy(result, generatedFileHeader)
 	copy(result[len(generatedFileHeader):], source)
 	return result
+}
+
+func generatedFileHeaderFor(noCheck bool) string {
+	if noCheck {
+		return generatedFileHeader
+	}
+	return strings.Replace(generatedFileHeader, "// @ts-nocheck\n", "", 1)
 }
 
 func validateSourceExportSymbols(modules map[string][]byte) error {

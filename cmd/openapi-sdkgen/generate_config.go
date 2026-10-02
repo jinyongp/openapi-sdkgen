@@ -29,6 +29,11 @@ type generateProjectConfig struct {
 	Schema                 generateProjectSchemaConfig            `toml:"schema"`
 	Selection              *generateProjectSelectionConfig        `toml:"selection"`
 	Clients                map[string]generateProjectClientConfig `toml:"clients"`
+	TypeScript             generateProjectTypeScriptConfig        `toml:"typescript"`
+}
+
+type generateProjectTypeScriptConfig struct {
+	NoCheck *bool `toml:"nocheck"`
 }
 
 type generateProjectClientConfig struct {
@@ -86,6 +91,13 @@ func applyGenerateProjectConfig(
 	values *generateFlagValues,
 	visited map[string]bool,
 ) {
+	if config.TypeScript.NoCheck != nil && !visited["ts-nocheck"] {
+		if values.tsNoCheck == nil {
+			values.tsNoCheck = new(bool)
+		}
+		*values.tsNoCheck = *config.TypeScript.NoCheck
+		values.tsNoCheckExplicit = true
+	}
 	if config.Clients != nil {
 		values.clients = make(map[string]generator.Client, len(config.Clients))
 		for name, client := range config.Clients {

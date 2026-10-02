@@ -424,7 +424,7 @@ func validateGeneratedArtifacts(artifacts []Artifact) error {
 			return fmt.Errorf("generated artifact %q collides with %q", artifact.Path, previous)
 		}
 		seen[key] = artifact.Path
-		if !strings.HasPrefix(string(artifact.Data), generatedFileHeader) {
+		if !strings.HasPrefix(string(artifact.Data), generatedFileHeader) && !strings.HasPrefix(string(artifact.Data), generatedFileHeaderFor(false)) {
 			return fmt.Errorf("generated artifact %q is missing the standard header", artifact.Path)
 		}
 	}

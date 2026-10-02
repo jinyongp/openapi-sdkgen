@@ -96,6 +96,8 @@ type generateFlagValues struct {
 	routes                 rawStrings
 	selectionExplicit      bool
 	clients                map[string]generator.Client
+	tsNoCheck              *bool
+	tsNoCheckExplicit      bool
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -308,6 +310,9 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		return generateUsageError(err.Error())
 	}
 	visited := visitedGenerateFlags(flags.Flags)
+	if values.tsNoCheckExplicit || visited["ts-nocheck"] {
+		options.TypeScriptNoCheck = values.tsNoCheck
+	}
 	if values.selectionExplicit || visited["operation"] || visited["route"] {
 		options.Selection, err = (&generator.Selection{Operations: values.operations, Routes: values.routes}).Canonical()
 		if err != nil {
@@ -473,6 +478,9 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 	values.incremental = flags.Bool(generationGroup, helpOption{
 		Name: "incremental", Summary: "Update a manifest-owned output directory",
 	}, false)
+	values.tsNoCheck = flags.Bool(generationGroup, helpOption{
+		Name: "ts-nocheck", Summary: "Emit @ts-nocheck in TypeScript source; set false to enable consumer type checks",
+	}, true)
 	flags.Var(generationGroup, helpOption{
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",
 		Repeatable: true, Available: registries.addons.Names,
@@ -728,7 +736,12 @@ func newArtifactGeneration(identity, target string, options generator.Options, i
 	for index, addon := range addons {
 		addonNames[index] = string(addon)
 	}
-	return &artifactGeneration{Generator: identity, Target: target, Addons: addonNames, InputSHA256: inputDigest}
+	result := &artifactGeneration{Generator: identity, Target: target, Addons: addonNames, InputSHA256: inputDigest}
+	if options.TypeScriptNoCheck != nil && !*options.TypeScriptNoCheck {
+		checked := false
+		result.TypeScriptNoCheck = &checked
+	}
+	return result
 }
 
 func localGenerationInputPath(input string) (string, bool) {

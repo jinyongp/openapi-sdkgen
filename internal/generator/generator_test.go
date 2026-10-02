@@ -75,6 +75,21 @@ func TestValidateTargetOptionsRequiresExplicitAddonSupport(t *testing.T) {
 	}
 }
 
+func TestNoCheckSettingRequiresTypeScriptTarget(t *testing.T) {
+	for _, choice := range []bool{false, true} {
+		options := Options{TypeScriptNoCheck: &choice}
+		if err := ValidateTargetOptions(testTarget("plain"), options); err == nil {
+			t.Fatal("non-TypeScript target accepted TypeScript settings")
+		}
+		if err := ValidateTargetOptions(testTarget("typescript"), options); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := ValidateTargetOptions(testTarget("plain"), Options{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 type streamingTestTarget struct{ testTarget }
 
 func (streamingTestTarget) EmitTo(_ Plan, sink ArtifactSink) error {

@@ -28,6 +28,17 @@ import { sdkDeliveryDocument } from "./verification/sdk-delivery-fixture.mjs";
 for (const count of [100, 1000]) fs.writeFileSync(`${process.argv[2]}/${count}.json`, JSON.stringify(sdkDeliveryDocument(count)));
 EOF
 skip_build=0
+check_sdk() {
+  local has_separator=0 argument
+  for argument in "$@"; do
+    if [[ "$argument" == "--" ]]; then has_separator=1; fi
+  done
+  if ((has_separator)); then
+    "$ROOT/scripts/agent/generate-check" "$@" "--ts-nocheck=$policy"
+  else
+    "$ROOT/scripts/agent/generate-check" "$@" -- "--ts-nocheck=$policy"
+  fi
+}
 for version in "${versions[@]}"; do
   case "$version" in
     5.7.3) package=typescript-5-7 ;;
@@ -38,40 +49,43 @@ for version in "${versions[@]}"; do
   # generate-check invokes an executable; keep the pinned Node selection here.
   export SDKGEN_COMPAT_TSC_PATH="$TYPESCRIPT_ROOT/node_modules/$package/lib/tsc.js"
   agent_run "TypeScript $version version" "$compiler" --version
+  for policy in true false; do
+  agent_note "checking TypeScript $version with ts-nocheck=$policy"
   for input in test/fixtures/support-gaps/oas32-normative.json test/fixtures/support-gaps/boundary-webhook.json test/fixtures/support-gaps/schema-array.json; do
     SDKGEN_GENERATE_CHECK_SKIP_BUILD="$skip_build" SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
       agent_run "TypeScript $version generated client and server: $input" \
-      "$ROOT/scripts/agent/generate-check" "$input" typescript -- --with server
+      check_sdk "$input" typescript -- --with server
     skip_build=1
   done
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version selected SDK with Link dependencies" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask
+    check_sdk test/fixtures/generation-selection.json typescript -- --operation getTask
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version original metadata with server" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --with server --with metadata
+    check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --with server --with metadata
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version selected SDK with original metadata" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask --with metadata
+    check_sdk test/fixtures/generation-selection.json typescript -- --operation getTask --with metadata
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version named clients with normative streams and XML" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --config "$ROOT/test/fixtures/named-clients-normative.toml" --with server
+    check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --config "$ROOT/test/fixtures/named-clients-normative.toml" --with server
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version named clients with private Link dependencies and metadata" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
+    check_sdk test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version named-only error codes and detail models" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
+    check_sdk test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
   for count in 100 1000; do
     SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
       agent_run "TypeScript $version strict $count API SDK" \
-      "$ROOT/scripts/agent/generate-check" "$scale_inputs/$count.json"
+      check_sdk "$scale_inputs/$count.json"
   done
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler \
     agent_run "TypeScript $version Bundler client and server" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --with server
+    check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --with server
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler \
     agent_run "TypeScript $version Bundler named clients and metadata" \
-    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
+    check_sdk test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
+  done
 done
-agent_note "ok TypeScript consumer compatibility"
+agent_note "ok TypeScript consumer compatibility (both header policies)"

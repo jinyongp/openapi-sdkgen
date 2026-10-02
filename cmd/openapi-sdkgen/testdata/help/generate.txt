@@ -16,6 +16,8 @@ Generation:
                                   managed output
   --check                         Validate generation without writing output
   --incremental                   Update a manifest-owned output directory
+  --ts-nocheck                    Emit @ts-nocheck in TypeScript source; set false to
+                                  enable consumer type checks
   --with <addon>                  Add generated artifacts (available: metadata, server)
                                   (repeatable)
   --operation <id>                Generate an exact OpenAPI operationId; combine with
