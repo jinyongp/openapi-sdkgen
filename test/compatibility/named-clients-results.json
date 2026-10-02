@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "sourceCommit": "b7dbdf7ca2b7f9bf79c0821b52c710f2a8a2d846",
-  "measuredAt": "2026-10-02T06:03:06.055Z",
+  "sourceCommit": "d01038e05a88727f2162f0ddac925f3e4817ed18",
+  "measuredAt": "2026-10-02T06:29:36.264Z",
   "node": "v24.21.0",
   "typescript": "7.0.2",
   "scope": "Actual TOML-configured named entries emitted by the built generator, strict source/consumer checks and native/default Vite production delivery.",
   "generation": {
     "plain": {
-      "wallMS": 31.478606999999997,
+      "wallMS": 33.455285,
       "inputSHA256": "1b712bf3f38f49c6c2f5c0263ec5740e3bd1c45a3b0ebb7d799e35cb500a6950"
     },
     "-linked": {
-      "wallMS": 33.92130499999999,
+      "wallMS": 30.701673,
       "inputSHA256": "eb412e8006d40bf2f16a7b7b1c2dc15c9a43ac3de7682db17a30f77d1894a665"
     }
   },
@@ -55,21 +55,21 @@
   "multiEntryBundle": {
     "staticCChunks": [
       "c.mjs",
-      "chunks/get-DVhpnGdB.mjs",
-      "chunks/named-client-D2aKq5WY.mjs"
+      "chunks/get-DDhKh_0C.mjs",
+      "chunks/named-client-DfMJ0kBZ.mjs"
     ],
     "otherClientSchemaMarkers": [],
-    "commonSchemaChunk": "chunks/named-client-D2aKq5WY.mjs",
-    "commonOperationChunk": "chunks/get-DVhpnGdB.mjs",
+    "commonSchemaChunk": "chunks/named-client-DfMJ0kBZ.mjs",
+    "commonOperationChunk": "chunks/get-DDhKh_0C.mjs",
     "commonModuleDeduplication": "pass",
     "runtimeModuleDeduplication": "pass",
     "runtimeModules": 7
   },
   "lazyPages": {
     "cChunks": [
-      "chunks/c-EZG7I3z5.mjs",
-      "chunks/get-DVhpnGdB.mjs",
-      "chunks/named-client-D2aKq5WY.mjs"
+      "chunks/c-CfcV1NH0.mjs",
+      "chunks/get-DDhKh_0C.mjs",
+      "chunks/named-client-DfMJ0kBZ.mjs"
     ],
     "otherClientSchemaExclusion": "pass"
   },
@@ -80,7 +80,7 @@
     "bundledTargetInitiallyDeferred": "pass",
     "initialCChunks": [
       "c.mjs",
-      "chunks/shared-CQ8CFA4S.mjs"
+      "chunks/shared-Bw33nkGm.mjs"
     ]
   },
   "graph": {
@@ -104,19 +104,19 @@
         "prepareCalls": 1,
         "emitCalls": 1,
         "moduleAnalysisPasses": 1,
-        "compileMS": 8030.111,
-        "prepareMS": 618.438,
-        "emitPublishMS": 862.601,
+        "compileMS": 14700.818,
+        "prepareMS": 616.545,
+        "emitPublishMS": 913.77,
         "generatedFiles": 6994,
         "generatedBytes": 40539799,
         "operationModules": 9,
-        "userSeconds": 11.46,
-        "systemSeconds": 2.01,
-        "peakRSSKiB": 1975720,
-        "wallMS": 9622.276539999999,
+        "userSeconds": 12.36,
+        "systemSeconds": 8.27,
+        "peakRSSKiB": 1960464,
+        "wallMS": 16333.999224,
         "entries": {
           "root": {
-            "bundleWallMS": 798.3493150000013,
+            "bundleWallMS": 1150.9182660000006,
             "initialBytes": 15059073,
             "initialChunks": [
               "entry.mjs"
@@ -132,19 +132,19 @@
         "prepareCalls": 1,
         "emitCalls": 1,
         "moduleAnalysisPasses": 1,
-        "compileMS": 7751.785,
-        "prepareMS": 978.665,
-        "emitPublishMS": 1183.008,
+        "compileMS": 8171.174,
+        "prepareMS": 1006.908,
+        "emitPublishMS": 1231.631,
         "generatedFiles": 13887,
-        "generatedBytes": 49847128,
+        "generatedBytes": 49846690,
         "operationModules": 9,
-        "userSeconds": 12.33,
-        "systemSeconds": 2.35,
-        "peakRSSKiB": 1951828,
-        "wallMS": 10004.460161999998,
+        "userSeconds": 12.55,
+        "systemSeconds": 2.81,
+        "peakRSSKiB": 1654068,
+        "wallMS": 10513.848843000003,
         "entries": {
           "users": {
-            "bundleWallMS": 1078.4839649999994,
+            "bundleWallMS": 1439.9127200000003,
             "initialBytes": 14230949,
             "initialChunks": [
               "entry.mjs"
@@ -154,7 +154,7 @@
             "moduleInventorySHA256": "ffa7a10645c1aa338d7700d0181e3164cc53682cfcbbec6730746b6712324628"
           },
           "groups": {
-            "bundleWallMS": 373.0147739999993,
+            "bundleWallMS": 311.7746330000009,
             "initialBytes": 8233016,
             "initialChunks": [
               "entry.mjs"
@@ -164,7 +164,7 @@
             "moduleInventorySHA256": "7ee438437b925beacd4d1f16bfc0fbe359e05b3d759e9018c53a1a0b0cc50ccd"
           },
           "drives": {
-            "bundleWallMS": 344.7410720000007,
+            "bundleWallMS": 376.73478199999954,
             "initialBytes": 8232596,
             "initialChunks": [
               "entry.mjs"
@@ -195,7 +195,7 @@
     }
   },
   "recordFormat": "named-client-delivery-summary/v1",
-  "rawReportSHA256": "5fd1153072eabcdab05d36390ad62c20fa4f27b0ed10391c73989c4b45f8da22",
+  "rawReportSHA256": "f1afd58a5d80856ebfc94a1a9d9cd5f8c8de6e6a6fc440349198c0779ed0f833",
   "vite": "8.3.0",
   "bundleOptions": {
     "mode": "production",
