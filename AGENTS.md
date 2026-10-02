@@ -80,6 +80,10 @@ TypeScript source and generated TypeScript use named interfaces or type aliases
 for object shapes, explicit function return types (including callbacks), and
 explicit variable types. Keep inference at language boundaries where annotations
 are unavailable, such as `for...of` bindings; preserve exact public literal types.
+Give each internal object contract one canonical interface or type alias. Import
+and reuse it, or derive a view with indexed, mapped, or utility types. Avoid
+copying its fields into another declaration; separate public schema identities
+keep their own contracts.
 
 ## Documentation commands
 

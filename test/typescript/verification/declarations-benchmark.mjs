@@ -28,6 +28,12 @@ const groups = [
     files: [...sourceFiles(runtime), ...catalogRoots.flatMap(generatedFiles)],
   },
 ];
+const toolFiles = Object.fromEntries(
+  ["declarations.mjs", "type-reuse.mjs"].map((name) => [
+    name,
+    sha256(readFileSync(new URL(name, import.meta.url))),
+  ]),
+);
 const report = {
   version: 1,
   repetitions: 5,
@@ -47,7 +53,8 @@ const report = {
       cwd: repositoryRoot,
       encoding: "utf8",
     }).stdout.trim().length > 0,
-  toolSha256: sha256(readFileSync(new URL("./declarations.mjs", import.meta.url))),
+  toolFiles,
+  toolSha256: sha256(JSON.stringify(toolFiles)),
   generatorSha256: sha256(readFileSync(binary)),
   build: {
     command: "just agent build",

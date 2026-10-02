@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { performance } from "node:perf_hooks";
 import ts from "typescript-6";
 import { containedPath, sha256 } from "./catalog.mjs";
+import { createTypeReuseChecks } from "./type-reuse.mjs";
 
 assert.equal(ts.version, "6.0.3", "declaration parser version changed; requalify syntax fixtures");
 const returnKinds = new Set([
@@ -22,7 +23,7 @@ const returnKinds = new Set([
 ]);
 
 /** Syntax only: never create a Program or request a TypeChecker. */
-export function inspectSource(file, text, add, counters = {}) {
+export function inspectSource(file, text, add, counters = {}, reuse) {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const diagnostic = (rule, node, message = rule, offset = node.getStart(source)) => {
     const position = source.getLineAndCharacterOfPosition(offset);
@@ -91,6 +92,7 @@ export function inspectSource(file, text, add, counters = {}) {
     ts.forEachChild(node, visit);
   }
   visit(source);
+  (reuse ?? createTypeReuseChecks([file]))(source, add);
 }
 
 /** Refuse symlinks and discover every source, including new runtime subdirectories. */
@@ -146,7 +148,7 @@ export function generatedFiles(root) {
   return files;
 }
 
-export function checkFiles(inputs, diagnosticLimit = 200) {
+export function checkFiles(inputs, diagnosticLimit = 200, roots = []) {
   assert.ok(Array.isArray(inputs) && inputs.length, "empty TypeScript input list");
   assert.ok(
     inputs.every((file) => typeof file === "string" && file.endsWith(".ts")),
@@ -157,7 +159,7 @@ export function checkFiles(inputs, diagnosticLimit = 200) {
   const result = {
     version: 1,
     parser: `typescript-${ts.version}`,
-    rulesVersion: 1,
+    rulesVersion: 2,
     node: process.version,
     files: 0,
     bytes: 0,
@@ -168,6 +170,7 @@ export function checkFiles(inputs, diagnosticLimit = 200) {
     truncated: 0,
   };
   const hash = createHash("sha256");
+  const reuse = createTypeReuseChecks(files, roots);
   const started = performance.now();
   const add = (item) => {
     if (["parse-error", "input-error"].includes(item.rule)) result.errors++;
@@ -184,7 +187,7 @@ export function checkFiles(inputs, diagnosticLimit = 200) {
       hash.update(file).update("\0").update(bytes).update("\0");
       result.files++;
       result.bytes += bytes.length;
-      inspectSource(file, text, add, result);
+      inspectSource(file, text, add, result, reuse);
     } catch (error) {
       add({
         file,
@@ -245,7 +248,10 @@ export function main(args) {
       }
     }
     const inventoryMillis = performance.now() - started;
-    const result = checkFiles(files);
+    const roots = sources
+      .filter(([option]) => option !== "--files")
+      .map(([, value]) => resolve(value));
+    const result = checkFiles(files, 200, roots);
     result.inventoryMillis = inventoryMillis;
     result.toolMillis = performance.now() - started;
     if (json) writeFileSync(json, JSON.stringify(result, null, 2) + "\n");
@@ -263,7 +269,7 @@ export function main(args) {
       const report = {
         version: 1,
         parser: `typescript-${ts.version}`,
-        rulesVersion: 1,
+        rulesVersion: 2,
         node: process.version,
         files: 0,
         bytes: 0,
