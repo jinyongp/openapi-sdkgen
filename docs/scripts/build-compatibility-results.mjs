@@ -235,10 +235,57 @@ export function readMetadataComparison(directory) {
   return data;
 }
 
+export function readInspectMeasurements(directory) {
+  const data = JSON.parse(readFileSync(resolve(directory, "inspect-results.json")));
+  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const manifest = JSON.parse(manifestBytes);
+  const fail = () => { throw new Error("Inspect measurement provenance or sample mismatch"); };
+  const measurement = data.measurement;
+  const expected = ["selection-fixture", "github", "stripe", "digitalocean", "microsoft-graph-beta"];
+  if (data.schemaVersion !== 1 || !measurement || measurement.sourceDirty !== false ||
+      !/^[a-f0-9]{40}$/.test(measurement.sourceCommit) ||
+      !Number.isFinite(Date.parse(measurement.measuredAt)) ||
+      measurement.manifestSha256 !== sha256(manifestBytes) ||
+      measurement.inventoryScope !== "entry paths and mounted Path Item references" ||
+      measurement.targetScope !== "full-document-client" || measurement.target !== "typescript" ||
+      !Array.isArray(data.cases) || data.cases.length !== expected.length ||
+      new Set(data.cases.map(item => item.id)).size !== expected.length ||
+      data.cases.some(item => !expected.includes(item.id))) fail();
+  for (const item of data.cases) {
+    if (!Number.isInteger(item.operationCount) || item.operationCount < 1 ||
+        !/^[a-f0-9]{64}$/.test(item.routeIdentitySha256) ||
+        item.identityComparison !== "pass" || item.filteredRouteComparison !== "pass") fail();
+    if (item.id === "selection-fixture") {
+      const fixture = readFileSync(new URL("../../test/fixtures/generation-selection.json", import.meta.url));
+      if (item.input !== "test/fixtures/generation-selection.json" || item.inputSha256 !== sha256(fixture) ||
+          item.sourceUrl !== null || item.revision !== null) fail();
+    } else {
+      const entry = manifest.corpora.find(entry => entry.id === item.id);
+      if (!entry || item.input !== entry.input || item.inputSha256 !== entry.sha256 ||
+          item.sourceUrl !== entry.sourceUrl || item.revision !== entry.revision) fail();
+    }
+    for (const [name, mode] of [["inventory", item.inventory], ["typescriptAnalysis", item.typescriptAnalysis]]) {
+      const repetitions = item.id === "selection-fixture" ? 5 : 3;
+      if (!mode || mode.repetitions !== repetitions || !Array.isArray(mode.samples) || mode.samples.length !== repetitions) fail();
+      for (const sample of mode.samples) {
+        if (sample.exitCode !== 0 ||
+            [sample.wallMillis, sample.cpuUserMillis, sample.cpuSystemMillis].some(value => !Number.isFinite(value) || value < 0) ||
+            !Number.isInteger(sample.peakRssBytes) || sample.peakRssBytes <= 0 ||
+            (name === "inventory" ? !Number.isInteger(sample.documentsRead) || sample.documentsRead < 1 : sample.documentsRead !== null)) fail();
+      }
+      const walls = mode.samples.map(sample => sample.wallMillis).sort((a, b) => a - b);
+      if (mode.wallMedianMillis !== walls[Math.floor(repetitions / 2)] || mode.wallMinMillis !== walls[0] ||
+          mode.wallMaxMillis !== walls.at(-1) || mode.peakRssBytes !== Math.max(...mode.samples.map(sample => sample.peakRssBytes))) fail();
+    }
+  }
+  return data;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const docsDirectory = fileURLToPath(new URL("..", import.meta.url));
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
   const data = readCompatibilityResults(sourceDirectory);
+  const inspect = readInspectMeasurements(sourceDirectory);
   const graph = readGraphSelection(sourceDirectory);
   graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
   graph.metadata = readGraphSelection(sourceDirectory, "graph-metadata-results.json");
@@ -251,6 +298,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   mkdirSync(publicDirectory, { recursive: true });
   writeFileSync(resolve(generatedDirectory, "compatibility-results.json"), `${JSON.stringify(data, null, 2)}\n`);
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
+  writeFileSync(resolve(generatedDirectory, "inspect-measurements.json"), `${JSON.stringify(inspect, null, 2)}\n`);
+  copyFileSync(resolve(sourceDirectory, "inspect-results.json"), resolve(publicDirectory, "inspect-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
   for (const name of ["graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json"]) {

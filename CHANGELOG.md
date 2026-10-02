@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `inspect` lists and filters API declarations, exports routes as a TOML
+  selection, and optionally analyzes TypeScript client call paths. The default
+  lookup reads mounted Path Item references independently of SDK generation.
 - Text responses decode declared numeric, boolean, and nullable scalar values
   before schema validation, including referenced count responses such as
   Microsoft Graph's `GET /users/$count`. String responses retain their text;

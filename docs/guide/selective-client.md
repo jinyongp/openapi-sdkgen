@@ -10,6 +10,9 @@ the APIs during generation as described below.
 
 ## Generate only the APIs you need {#generation}
 
+Use [Find APIs](./inspect.md) to browse operation IDs and routes and export a
+selection for this configuration.
+
 For a large API, specify the operation IDs or routes your application uses in
 its generation configuration:
 

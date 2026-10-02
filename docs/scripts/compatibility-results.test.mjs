@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection, readMetadataComparison } from "./build-compatibility-results.mjs";
+import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection, readInspectMeasurements, readMetadataComparison } from "./build-compatibility-results.mjs";
 
 const sourceDirectory = new URL("../../test/compatibility/", import.meta.url);
 
@@ -18,6 +18,7 @@ function fixture(t) {
     }
   }
   mkdirSync(resolve(directory, "selections"));
+  copyFileSync(new URL("inspect-results.json", sourceDirectory), resolve(directory, "inspect-results.json"));
   for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs", "selections/microsoft-graph-count.toml", "selections/microsoft-graph-count.mjs"]) {
     copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
   }
@@ -78,6 +79,29 @@ test("metadata comparisons retain matched source, settings, API and schema scope
   }
   change(directory, "graph-selected-results.json", data => delete data.documents[0].generationAddons);
   assert.throws(() => readGraphSelection(directory), /metadata setting/);
+});
+
+test("inspect measurements bind pinned input, full-client scope, comparisons, and displayed resource summaries", (t) => {
+  const data = readInspectMeasurements(fileURLToPath(sourceDirectory));
+  assert.equal(data.cases.length, 5);
+  assert.equal(data.cases.find(item => item.id === "microsoft-graph-beta").operationCount, 29581);
+  for (const mutate of [
+    report => report.measurement.sourceDirty = true,
+    report => report.measurement.targetScope = "selected-client",
+    report => report.measurement.manifestSha256 = "0".repeat(64),
+    report => report.cases[0].inputSha256 = "0".repeat(64),
+    report => report.cases[1].sourceUrl = "https://example.test/openapi.json",
+    report => report.cases[1].identityComparison = "fail",
+    report => report.cases[2].filteredRouteComparison = "fail",
+    report => report.cases[2].inventory.wallMedianMillis++,
+    report => report.cases[3].typescriptAnalysis.peakRssBytes++,
+    report => report.cases[3].typescriptAnalysis.samples[0].exitCode = 1,
+    report => report.cases[4].typescriptAnalysis.samples[0].documentsRead = 0,
+  ]) {
+    const directory = fixture(t);
+    change(directory, "inspect-results.json", mutate);
+    assert.throws(() => readInspectMeasurements(directory), /Inspect measurement/);
+  }
 });
 
 function change(directory, name, mutate) {

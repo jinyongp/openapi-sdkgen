@@ -8,12 +8,76 @@ walkthrough, start with [Getting started](../guide/getting-started.md) or
 
 ```sh
 openapi-sdkgen --help
+openapi-sdkgen inspect --help
 openapi-sdkgen generate --help
 openapi-sdkgen --version
 ```
 
 `generate --help` lists the targets, add-ons, and flags supported by the installed
 CLI.
+
+## `inspect` {#inspect}
+
+```text
+openapi-sdkgen inspect [options]
+```
+
+List APIs, filter their declarations, or export routes for selected generation.
+See [Find APIs](../guide/inspect.md) for the workflow. Available in the next release.
+
+| Option | Meaning |
+| --- | --- |
+| `--input <source>` | JSON/YAML file, `file://` or HTTP(S) URL, or `-` for stdin |
+| `--config <path>` | Reuse input and reference settings from an explicit generation TOML file |
+| `--search <text>` | Case-insensitive substring in path, operation ID, or summary; repeatable |
+| `--method <method>` | HTTP method; standard methods ignore case, custom methods match exact case; repeatable |
+| `--tag <tag>` | Exact tag; repeatable |
+| `--operation <operationId>` | Exact operation ID; repeatable |
+| `--route <METHOD /path>` | Exact method and OpenAPI path template; repeatable |
+| `--deprecated true\|false` | Deprecated status; an undeclared value matches false |
+| `--format table\|json\|selection` | Table by default, versioned JSON, or a `[selection]` TOML fragment |
+| `--target typescript` | Analyze call surfaces of the full-document client before filtering |
+| `--schema-extension <path>` | Schema vocabulary manifest for explicit TypeScript analysis; repeatable |
+| `--diagnostics-format human\|json` | Diagnostics on standard error |
+| `--diagnostic-mode fail-fast\|collect` | Diagnostic collection mode |
+
+`--input` is required unless the configuration supplies `source`. The
+configuration's input and reference paths follow the same relative-path and
+CLI override rules as generation. Its `selection`, `target`, `output`, and
+add-ons are generation settings. Enable analysis with an explicit CLI target;
+that analysis also reuses configured schema extensions.
+
+Repeated filter values match any value within that group. Different groups
+must all match. Operation IDs and routes belong to one combined group.
+Unknown exact IDs or routes fail; searches with no matches succeed in table
+and JSON formats. Selection output requires a nonempty result.
+
+Input authentication, TLS, stdin base, reference allowlist, lock, and offline
+options are shared with [generation input options](#input-source-options).
+The command preserves the configuration, reference lock, and SDK output;
+reference caches follow the existing input policy.
+
+### JSON result
+
+| Field | Value |
+| --- | --- |
+| `schemaVersion` | `1` |
+| `document` | `title`, document `version`, and `openapiVersion` |
+| `total`, `matched` | API count before and after filters |
+| `operations` | Rows sorted by path, then method |
+| `documentsRead` | Decoded document count when measured by the lookup |
+| `target`, `analysisScope` | Present for explicit analysis: `typescript`, `full-document-client` |
+
+Each row contains `method`, `path`, `route`, `operationId` (string or `null`),
+`tags`, `summary`, `deprecated`, `source`, and its mounted JSON `pointer`.
+TypeScript rows add a `typescript` object: `status` is `exposed`, `hidden`, or
+`omitted`; `resourceCall` is a call expression or `null`; `routes` and
+`operations` indicate public access through `$routes` and `$operations`.
+`resourceOmission` gives the reason when a public API lacks a resource call.
+
+Standard output contains only the selected result format. Warnings and errors
+go to standard error. Input, declaration, target analysis, and output errors
+return a nonzero exit status. Use `generate --check` to verify SDK generation.
 
 ## `generate`
 

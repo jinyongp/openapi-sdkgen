@@ -8,12 +8,75 @@
 
 ```sh
 openapi-sdkgen --help
+openapi-sdkgen inspect --help
 openapi-sdkgen generate --help
 openapi-sdkgen --version
 ```
 
 설치된 CLI가 지원하는 target, add-on, flag는 `generate --help`에서 확인할 수
 있습니다.
+
+## `inspect` {#inspect}
+
+```text
+openapi-sdkgen inspect [options]
+```
+
+API 목록을 조회하고 필터링하거나, 선택 생성에 쓸 경로를 출력합니다.
+사용 흐름은 [생성할 API 찾기](../guide/inspect.md)를 참고하세요.
+다음 릴리스부터 제공되는 명령입니다.
+
+| 옵션 | 의미 |
+| --- | --- |
+| `--input <source>` | JSON/YAML 파일, `file://` 또는 HTTP(S) URL, stdin을 뜻하는 `-` |
+| `--config <path>` | 생성용 TOML 파일의 입력·참조 설정 재사용 |
+| `--search <text>` | 경로·operation ID·요약의 부분 문자열 검색. 대소문자 구분 없이 반복 가능 |
+| `--method <method>` | HTTP 메서드. 표준 메서드는 대소문자 구분 없이, custom 메서드는 정확히 일치. 반복 가능 |
+| `--tag <tag>` | 정확히 일치하는 태그. 반복 가능 |
+| `--operation <operationId>` | 정확히 일치하는 operation ID. 반복 가능 |
+| `--route <METHOD /path>` | 정확히 일치하는 메서드·OpenAPI 경로. 반복 가능 |
+| `--deprecated true\|false` | 사용 중단 여부. 미선언 상태는 false로 조회 |
+| `--format table\|json\|selection` | 기본 표, 버전이 있는 JSON, `[selection]` TOML 블록 |
+| `--target typescript` | 문서 전체 클라이언트의 호출 경로를 분석한 뒤 조회 필터 적용 |
+| `--schema-extension <path>` | 명시적인 TypeScript 분석에 쓸 스키마 어휘 manifest. 반복 가능 |
+| `--diagnostics-format human\|json` | 표준 오류로 출력할 진단 형식 |
+| `--diagnostic-mode fail-fast\|collect` | 진단 수집 방식 |
+
+설정 파일에 `source`가 없다면 `--input`이 필수입니다. 입력·참조의 상대 경로와
+CLI 덮어쓰기 규칙은 생성 명령과 같습니다. 설정 파일의 `selection`, `target`,
+`output`, add-on은 생성에 적용됩니다. 분석은 CLI에 target을 지정해서 요청하며,
+이때 설정 파일의 스키마 확장도 재사용합니다.
+
+같은 필터의 여러 값은 그중 하나와 일치하면 되고, 서로 다른 필터는 모두 만족해야
+합니다. operation ID와 경로는 하나의 선택 그룹입니다. 존재하지 않는 정확한 ID나
+경로를 지정하면 실패합니다. 일반 검색의 결과가 없으면 표·JSON은 정상적으로 반환하고,
+`selection` 출력은 하나 이상의 API를 요구합니다.
+
+인증, TLS, stdin 기준 경로, 참조 허용 목록·lock·offline은
+[생성 입력 옵션](#input-source-options)을 공유합니다. 설정 파일, 참조 lock과 SDK 출력은
+유지하며, 참조 캐시는 기존 입력 정책에 따라 사용합니다.
+
+### JSON 결과
+
+| 필드 | 값 |
+| --- | --- |
+| `schemaVersion` | `1` |
+| `document` | `title`, 문서의 `version`, `openapiVersion` |
+| `total`, `matched` | 필터 적용 전 전체 API 수, 검색 결과 수 |
+| `operations` | 경로·메서드 순으로 정렬된 항목 |
+| `documentsRead` | 목록 조회에서 측정한 디코딩 문서 수. 측정된 경우에 포함 |
+| `target`, `analysisScope` | 명시적인 분석에 포함: `typescript`, `full-document-client` |
+
+각 항목에는 `method`, `path`, `route`, 문자열 또는 `null`인 `operationId`,
+`tags`, `summary`, `deprecated`, `source`, 입력 문서에 연결된 JSON `pointer`가
+들어갑니다. TypeScript 분석 항목의 `typescript` 객체에는 `exposed`, `hidden`,
+`omitted` 중 하나인 `status`, 호출식 또는 `null`인 `resourceCall`, `$routes`와
+`$operations`로 공개 호출할 수 있는지를 나타내는 `routes`, `operations`가 있습니다.
+공개 API의 resource 호출식이 없으면 `resourceOmission`에 이유를 담습니다.
+
+표준 출력에는 선택한 형식의 결과만, 표준 오류에는 경고와 오류를 출력합니다.
+입력·API 선언·target 분석·출력 오류는 0이 아닌 종료 코드를 반환합니다.
+SDK 생성 가능 여부는 `generate --check`로 확인하세요.
 
 ## `generate`
 

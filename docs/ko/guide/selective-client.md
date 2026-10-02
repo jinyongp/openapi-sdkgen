@@ -8,6 +8,9 @@
 
 ## 필요한 API만 생성하기 {#generation}
 
+operation ID와 경로는 [생성할 API 찾기](./inspect.md)에서 조회할 수 있습니다.
+검색 결과를 생성 설정에 넣을 선택 목록으로 출력할 수도 있습니다.
+
 큰 API 문서의 일부만 사용한다면 생성 설정에 필요한 operation ID나 경로를 적습니다.
 
 ```toml
