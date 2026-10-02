@@ -4,6 +4,7 @@ Usage:
   openapi-sdkgen <command> [options]
 
 Commands:
+  inspect   List and filter API operations
   generate  Generate SDK source
 
 Options:

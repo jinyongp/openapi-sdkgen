@@ -149,6 +149,12 @@ func newCLIApplication(runtime generationRuntime, registries cliRegistries) *cli
 	application := &cliApplication{registries: registries}
 	application.commands = []cliCommand{
 		{
+			Name:    "inspect",
+			Summary: "List and filter API operations",
+			Run:     func(args []string) error { return inspectWithRegistries(args, runtime, registries) },
+			Help:    func() error { flags, _, _ := newInspectFlagSet(registries); return writeInspectHelp(flags) },
+		},
+		{
 			Name:    "generate",
 			Summary: "Generate SDK source",
 			Run: func(args []string) error {
