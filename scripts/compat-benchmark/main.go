@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -17,6 +18,7 @@ func main() {
 	var offline bool
 	var documentID string
 	var selectionPath string
+	var addons benchmarkAddons
 
 	flag.StringVar(&mode, "mode", "run", "compatibility benchmark mode: run, fetch, or merge")
 	flag.StringVar(&manifestPath, "manifest", "", "benchmark corpus manifest JSON")
@@ -27,6 +29,7 @@ func main() {
 	flag.BoolVar(&offline, "offline", false, "verify an existing fetched corpus without network access")
 	flag.StringVar(&documentID, "document", "", "benchmark only this document from the original manifest")
 	flag.StringVar(&selectionPath, "selection", "", "pinned API generation selection and runtime probe TOML; requires --document")
+	flag.Var(&addons, "with", "optional generated artifacts: metadata (repeatable)")
 	flag.Parse()
 
 	if manifestPath == "" {
@@ -35,7 +38,7 @@ func main() {
 
 	switch mode {
 	case "fetch":
-		if corpusRoot == "" || documentID != "" || selectionPath != "" || len(flag.Args()) != 0 {
+		if corpusRoot == "" || documentID != "" || selectionPath != "" || len(addons) != 0 || len(flag.Args()) != 0 {
 			fatal(fmt.Errorf("fetch requires --corpus-root and does not accept --document or report paths"))
 		}
 		if outputPath != "" {
@@ -57,11 +60,11 @@ func main() {
 		if typecheckTimeout <= 0 {
 			fatal(fmt.Errorf("--typecheck-timeout must be positive"))
 		}
-		if err := runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot, typecheckTimeout, documentID, selectionPath); err != nil {
+		if err := runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot, typecheckTimeout, documentID, selectionPath, addons...); err != nil {
 			fatal(err)
 		}
 	case "merge":
-		if outputPath == "" || len(flag.Args()) == 0 || offline || documentID != "" || selectionPath != "" || corpusRoot != "" {
+		if outputPath == "" || len(flag.Args()) == 0 || offline || documentID != "" || selectionPath != "" || corpusRoot != "" || len(addons) != 0 {
 			fatal(fmt.Errorf("merge requires --output and report paths; --corpus-root, --offline, and --document are not valid"))
 		}
 		if err := mergeBenchmarkReports(manifestPath, flag.Args(), outputPath); err != nil {
@@ -70,6 +73,14 @@ func main() {
 	default:
 		fatal(fmt.Errorf("unsupported --mode %q (available: run, fetch, merge)", mode))
 	}
+}
+
+type benchmarkAddons []string
+
+func (values *benchmarkAddons) String() string { return strings.Join(*values, ",") }
+func (values *benchmarkAddons) Set(value string) error {
+	*values = append(*values, value)
+	return nil
 }
 
 func fatal(err error) {

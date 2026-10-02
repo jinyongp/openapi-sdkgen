@@ -51,6 +51,13 @@ def check_report(manifest, report, document=None, resources=None, selection_dire
         raise ValueError("report has missing, duplicate or unexpected documents")
     failures = []
     for item in report["documents"]:
+        if "generationAddons" in item:
+            addons = item["generationAddons"]
+            if addons not in ([], ["metadata"]):
+                raise ValueError(f"invalid generation add-ons for {item['id']}")
+            for profile in item.get("supportProfiles", []):
+                if profile["name"] == "server-addon" and profile.get("generationAddons") != addons + ["server"]:
+                    raise ValueError(f"server add-on settings differ for {item['id']}")
         if selection_directory is not None:
             check_selection(item, selection_directory)
         scope = item.get("generationScope", "full")

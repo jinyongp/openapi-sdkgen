@@ -93,18 +93,20 @@ type benchmarkReport struct {
 }
 
 type benchmarkMeasurement struct {
-	SourceCommit    string `json:"sourceCommit,omitempty"`
-	SourceDirty     bool   `json:"sourceDirty"`
-	MeasuredAt      string `json:"measuredAt"`
-	GenerationScope string `json:"generationScope"`
-	Samples         int    `json:"samples"`
-	OS              string `json:"os"`
-	Architecture    string `json:"architecture"`
-	CPU             string `json:"cpu,omitempty"`
-	GoVersion       string `json:"goVersion"`
+	TypeScriptVersion string `json:"typescriptVersion,omitempty"`
+	SourceCommit      string `json:"sourceCommit,omitempty"`
+	SourceDirty       bool   `json:"sourceDirty"`
+	MeasuredAt        string `json:"measuredAt"`
+	GenerationScope   string `json:"generationScope"`
+	Samples           int    `json:"samples"`
+	OS                string `json:"os"`
+	Architecture      string `json:"architecture"`
+	CPU               string `json:"cpu,omitempty"`
+	GoVersion         string `json:"goVersion"`
 }
 
 type documentResult struct {
+	GenerationAddons          *[]string                     `json:"generationAddons,omitempty"`
 	GenerationScope           string                        `json:"generationScope,omitempty"`
 	Selection                 *generationSelectionEvidence  `json:"generationSelection,omitempty"`
 	EvidenceKind              string                        `json:"evidenceKind,omitempty"`
@@ -132,6 +134,7 @@ type documentResult struct {
 }
 
 type supportProfileResult struct {
+	GenerationAddons  *[]string                     `json:"generationAddons,omitempty"`
 	Name              string                        `json:"name"`
 	Applicable        bool                          `json:"applicable"`
 	DiscoveryComplete bool                          `json:"discoveryComplete"`
@@ -178,11 +181,13 @@ type compatibilityMetric struct {
 }
 
 type verificationResult struct {
-	Status         string   `json:"status"`
-	ArtifactCount  int      `json:"artifactCount,omitempty"`
-	ArtifactBytes  int64    `json:"artifactBytes,omitempty"`
-	Detail         string   `json:"detail,omitempty"`
-	DurationMillis *float64 `json:"durationMillis,omitempty"`
+	MetadataBytes       int64    `json:"metadataBytes,omitempty"`
+	SchemaArtifactCount int      `json:"schemaArtifactCount,omitempty"`
+	Status              string   `json:"status"`
+	ArtifactCount       int      `json:"artifactCount,omitempty"`
+	ArtifactBytes       int64    `json:"artifactBytes,omitempty"`
+	Detail              string   `json:"detail,omitempty"`
+	DurationMillis      *float64 `json:"durationMillis,omitempty"`
 }
 
 type summaryResult struct {
@@ -241,7 +246,15 @@ func runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot s
 	return runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot, timeout, documentID, "")
 }
 
-func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration, documentID, selectionPath string) error {
+func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot string, timeout time.Duration, documentID, selectionPath string, addons ...string) error {
+	registry, err := generator.NewAddonRegistry(generator.AddonMetadata)
+	if err != nil {
+		return err
+	}
+	options, err := registry.Resolve(addons)
+	if err != nil {
+		return err
+	}
 	selection, err := loadBenchmarkSelection(selectionPath)
 	if err != nil {
 		return err
@@ -292,7 +305,7 @@ func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot 
 		runtimeCheck := func(directory string) verificationResult {
 			return verifySelectionRuntime(directory, typescriptRoot, selection)
 		}
-		result, err := benchmarkDocumentSelected(corpus, inputPath, typecheck, selection, runtimeCheck)
+		result, err := benchmarkDocumentWithOptions(corpus, inputPath, typecheck, selection, runtimeCheck, options)
 		if err != nil {
 			return fmt.Errorf("%s: %w", corpus.ID, err)
 		}
@@ -314,6 +327,17 @@ func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot 
 		Overall:        summarizeDocuments("", documents),
 		Measurement:    measurementEnvironment(),
 	}
+	packageData, err := os.ReadFile(filepath.Join(typescriptRoot, "node_modules", "typescript", "package.json"))
+	if err != nil {
+		return err
+	}
+	var compilerPackage struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(packageData, &compilerPackage); err != nil {
+		return err
+	}
+	report.Measurement.TypeScriptVersion = compilerPackage.Version
 	return writeBenchmarkReport(report, outputPath)
 }
 
@@ -470,6 +494,10 @@ func benchmarkDocument(corpus corpusSpec, inputPath string, typecheck typecheckF
 }
 
 func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck typecheckFunc, selection *benchmarkSelection, runtimeCheck typecheckFunc) (documentResult, error) {
+	return benchmarkDocumentWithOptions(corpus, inputPath, typecheck, selection, runtimeCheck, generator.Options{})
+}
+
+func benchmarkDocumentWithOptions(corpus corpusSpec, inputPath string, typecheck typecheckFunc, selection *benchmarkSelection, runtimeCheck typecheckFunc, options generator.Options) (documentResult, error) {
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		return documentResult{}, fmt.Errorf("read input: %w", err)
@@ -485,6 +513,7 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 	features, version := detectFeatures(decoded)
 	data, decoded = nil, nil
 	result := documentResult{
+		GenerationAddons:  generationAddons(options),
 		EvidenceKind:      corpus.EvidenceKind,
 		ID:                corpus.ID,
 		Cohort:            corpus.Cohort,
@@ -500,7 +529,7 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 	}
 
 	mode := diagnostic.ModeCollect
-	options := generator.Options{DiagnosticMode: mode}
+	options.DiagnosticMode = mode
 	if selection != nil {
 		options.Selection = selection.options
 		result.GenerationScope = "selected"
@@ -575,11 +604,11 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 	result.CapabilityAdjustedSuccess = result.DocumentSuccess
 
 	if hasInbound {
-		registry, err := generator.NewAddonRegistry(generator.AddonServer)
+		registry, err := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 		if err != nil {
 			return documentResult{}, fmt.Errorf("create add-on registry: %w", err)
 		}
-		serverOptions, err := registry.Resolve([]string{string(generator.AddonServer)})
+		serverOptions, err := registry.Resolve(append(addonNames(options), string(generator.AddonServer)))
 		if err != nil {
 			return documentResult{}, fmt.Errorf("resolve server add-on: %w", err)
 		}
@@ -589,6 +618,7 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 		serverPrepared, err := generator.PrepareCompilation(typescript.Generator{}, compiled, serverOptions)
 		if err != nil {
 			result.SupportProfiles = append(result.SupportProfiles, supportProfileResult{
+				GenerationAddons:  generationAddons(serverOptions),
 				Name:              "server-addon",
 				Applicable:        true,
 				Generation:        verificationResult{Status: "fail", Detail: boundedDetail(fmt.Sprintf("internal server target preparation failure: %v", err))},
@@ -609,6 +639,7 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 			return documentResult{}, err
 		}
 		serverProfile.OperationEmission.OperationOmissions = serverOmissions
+		serverProfile.GenerationAddons = generationAddons(serverOptions)
 		if selection != nil {
 			serverProfile.Success = serverProfile.Success && result.Selection.Runtime.Status == "pass" && serverProfile.OperationEmission.Count == len(result.Selection.Routes)
 		}
@@ -618,6 +649,19 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 		}
 	}
 	return result, nil
+}
+
+func addonNames(options generator.Options) []string {
+	names := make([]string, 0, len(options.Addons()))
+	for _, addon := range options.Addons() {
+		names = append(names, string(addon))
+	}
+	return names
+}
+
+func generationAddons(options generator.Options) *[]string {
+	names := addonNames(options)
+	return &names
 }
 
 func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Preparation, inputPath string, preparationDuration time.Duration, typecheck typecheckFunc) (supportProfileResult, error) {
@@ -647,6 +691,8 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 
 	artifactCount := 0
 	var artifactBytes int64
+	var metadataBytes int64
+	schemaArtifacts := 0
 	emitStarted := time.Now()
 	emitErr := generator.EmitTo(typescript.Generator{}, prepared.Plan, generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
 		path, err := safeArtifactPath(temporary, artifact.Path)
@@ -665,6 +711,12 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 		}
 		artifactCount++
 		artifactBytes += int64(len(data))
+		if artifact.Path == "metadata.ts" {
+			metadataBytes = int64(len(data))
+		}
+		if strings.HasPrefix(artifact.Path, "internal/schemas/") {
+			schemaArtifacts++
+		}
 		return nil
 	}))
 	generationMillis := float64(preparationDuration+time.Since(emitStarted)) / float64(time.Millisecond)
@@ -678,7 +730,7 @@ func verifyPreparedProfile(name string, hasDocument bool, prepared generator.Pre
 		return supportProfileResult{}, fmt.Errorf("read emitted operation manifest: %w", err)
 	}
 	result.OperationEmission.Count = len(routes)
-	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes, DurationMillis: &generationMillis}
+	result.Generation = verificationResult{Status: "pass", ArtifactCount: artifactCount, ArtifactBytes: artifactBytes, MetadataBytes: metadataBytes, SchemaArtifactCount: schemaArtifacts, DurationMillis: &generationMillis}
 	prepared = generator.Preparation{}
 	result.Typecheck = typecheck(temporary)
 	result.Success = result.DiscoveryComplete && result.Diagnostics.Errors == 0 &&

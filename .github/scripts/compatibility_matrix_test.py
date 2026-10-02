@@ -12,6 +12,24 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class CompatibilityMatrixTests(unittest.TestCase):
+
+    def test_recorded_metadata_settings_are_validated(self):
+        manifest, report = self.load("holdout"), self.load("holdout", "-results")
+        for item in report["documents"]:
+            item["generationAddons"] = ["metadata"]
+            for profile in item.get("supportProfiles", []):
+                profile["generationAddons"] = ["metadata", "server"]
+        check_report(manifest, report)
+        for addons in (None, ["server"], ["metadata", "metadata"], ["unknown"]):
+            invalid = copy.deepcopy(report)
+            invalid["documents"][0]["generationAddons"] = addons
+            with self.assertRaises(ValueError):
+                check_report(manifest, invalid)
+        invalid = copy.deepcopy(report)
+        item = next(item for item in invalid["documents"] if item.get("supportProfiles"))
+        item["supportProfiles"][0]["generationAddons"] = ["server"]
+        with self.assertRaises(ValueError):
+            check_report(manifest, invalid)
     def load(self, name, suffix=""):
         return json.loads((ROOT / "test/compatibility" / f"{name}{suffix}.json").read_text())
 

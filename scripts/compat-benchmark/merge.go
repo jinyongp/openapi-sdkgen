@@ -53,6 +53,9 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 			return fmt.Errorf("shard %s: %w", path, err)
 		}
 		for _, document := range shard.Documents {
+			if err := validateGenerationAddons(document); err != nil {
+				return err
+			}
 			corpus, exists := expected[document.ID]
 			if !exists || seen[document.ID] {
 				return fmt.Errorf("unknown or repeated shard document %q", document.ID)
@@ -129,8 +132,8 @@ func mergeMeasurement(report *benchmarkReport, measurement *benchmarkMeasurement
 		return nil
 	}
 	combined := report.Measurement
-	if combined.OS != measurement.OS || combined.Architecture != measurement.Architecture || combined.GoVersion != measurement.GoVersion {
-		return fmt.Errorf("shards use different platforms or Go versions")
+	if combined.OS != measurement.OS || combined.Architecture != measurement.Architecture || combined.GoVersion != measurement.GoVersion || combined.TypeScriptVersion != measurement.TypeScriptVersion {
+		return fmt.Errorf("shards use different platforms or compiler versions")
 	}
 	if combined.CPU != measurement.CPU {
 		combined.CPU = ""
@@ -138,6 +141,27 @@ func mergeMeasurement(report *benchmarkReport, measurement *benchmarkMeasurement
 	previous, _ := time.Parse(time.RFC3339, combined.MeasuredAt)
 	if measuredAt.After(previous) {
 		combined.MeasuredAt = measurement.MeasuredAt
+	}
+	return nil
+}
+
+func validateGenerationAddons(document documentResult) error {
+	// Historical evidence has no recorded add-on setting. Keep it unknown.
+	if document.GenerationAddons == nil {
+		return nil
+	}
+	addons := *document.GenerationAddons
+	if !slices.Equal(addons, []string{}) && !slices.Equal(addons, []string{"metadata"}) {
+		return fmt.Errorf("invalid generation add-ons for %s", document.ID)
+	}
+	for _, profile := range document.SupportProfiles {
+		if profile.Name != "server-addon" {
+			continue
+		}
+		expected := append(slices.Clone(addons), "server")
+		if profile.GenerationAddons == nil || !slices.Equal(*profile.GenerationAddons, expected) {
+			return fmt.Errorf("server add-on settings differ for %s", document.ID)
+		}
 	}
 	return nil
 }

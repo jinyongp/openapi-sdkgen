@@ -122,8 +122,11 @@ def render_report(manifest, report, resources=None):
           seconds(profile["generation"].get("durationMillis") / 1000) if profile["generation"].get("durationMillis") is not None else "—",
           seconds(profile["typecheck"].get("durationMillis") / 1000) if profile["typecheck"].get("durationMillis") is not None else "—"] for item, name, profile in profiles])
     result += "\n<details><summary>Generated files and diagnostics</summary>\n\n"
-    result += table(["Document", "OpenAPI", "Profile", "Files", "SDK size", "API omissions", "Helper omissions", "Errors / warnings"],
-        [[item["id"], item.get("openapiVersion"), name, profile["generation"].get("artifactCount"), size(profile["generation"].get("artifactBytes")),
+    result += table(["Document", "OpenAPI", "Profile", "Add-ons", "Files", "SDK size", "Metadata size", "Schema files", "API omissions", "Helper omissions", "Errors / warnings"],
+        [[item["id"], item.get("openapiVersion"), name,
+          ", ".join(profile["generationAddons"]) or "none" if profile.get("generationAddons") is not None else "—",
+          profile["generation"].get("artifactCount"), size(profile["generation"].get("artifactBytes")),
+          size(profile["generation"].get("metadataBytes")), profile["generation"].get("schemaArtifactCount"),
           (profile.get("operationEmission") or {}).get("operationOmissions"), (profile.get("operationEmission") or {}).get("helperOmissions"),
           f"{profile['diagnostics']['errors']} / {profile['diagnostics']['warnings']}"] for item, name, profile in profiles])
     result += "\n</details>\n"
