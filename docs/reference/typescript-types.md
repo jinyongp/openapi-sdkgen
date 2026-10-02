@@ -13,6 +13,20 @@ existing TypeScript compiler and bundler.
 
 Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
+The development version supports these module configurations with `strict`
+enabled or disabled, and with or without `isolatedDeclarations`:
+
+| Module format | `module` / `moduleResolution` | Settings |
+| --- | --- | --- |
+| ESM for Node.js | `NodeNext` / `NodeNext` | `"type": "module"` in `package.json` |
+| ESM for a bundler | `ESNext` / `Bundler` | Your application's bundler |
+| CommonJS for Node.js | `NodeNext` / `NodeNext` | `"type": "commonjs"` and `verbatimModuleSyntax: false` |
+
+With `strict: false`, set `exactOptionalPropertyTypes: false`. Declaration
+generation with `isolatedDeclarations: true` requires `declaration: true`.
+These configurations cover the root SDK, API selections, named clients, server
+code, and optional metadata.
+
 ## Typecheck generated source {#source-checking}
 
 Starting in the next release, use `--typecheck` to check the generated
@@ -38,13 +52,14 @@ retain the same API types and runtime behavior. The setting applies to the
 root SDK, named clients, server code, and metadata together. Use `--incremental`
 to change it in an existing managed output directory.
 
-The development version passes source and declaration checks with NodeNext and
-Bundler resolution, `strict`, `exactOptionalPropertyTypes`,
+The development version passes source and declaration checks with the module
+configurations above, `strict`, `exactOptionalPropertyTypes`,
 `noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`,
 `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`,
 `noImplicitOverride`, and `noFallthroughCasesInSwitch`.
-It also supports `verbatimModuleSyntax` and `isolatedModules`, with library
-checking enabled and unreachable code and unused labels disallowed.
+The ESM configurations also support `verbatimModuleSyntax`. All configurations
+support `isolatedModules`, with library checking enabled and unreachable code
+and unused labels disallowed.
 See [compatibility results](./compatibility.md) for measured SDKs.
 
 ## Choose a type source

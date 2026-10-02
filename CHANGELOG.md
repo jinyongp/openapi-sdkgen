@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Support compiling generated SDKs as CommonJS and emitting isolated declarations,
+  with explicit execution-provider and runtime interfaces. Consumer checks cover strict and
+  non-strict NodeNext and Bundler configurations across supported TypeScript versions.
+- Keep Microsoft Graph as generation-time and size evidence outside the
+  typechecking corpus, including selected SDKs and named clients.
 - Choose whether generated TypeScript includes `@ts-nocheck` with
   `--typecheck` or `[typescript] typecheck = true`. The default remains
   `false`; generated implementations are verified without the directive using

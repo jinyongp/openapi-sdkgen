@@ -27,8 +27,6 @@ const countDate = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", t
         </tbody>
       </table>
     </div>
-    <p v-if="ko">선택 SDK는 전체 파일 타입 검사를 {{ time(selected.typecheck.durationMillis) }}에 통과했습니다. <code>loadOperations</code>로 준비한 클라이언트의 경로·쿼리·본문·응답 처리도 모의 호출로 확인했습니다.</p>
-    <p v-else>The selected SDK passed typechecking of every generated file in {{ time(selected.typecheck.durationMillis) }}. Mock calls also verified path, query, body, and response handling through a client prepared with <code>loadOperations</code>.</p>
     <p v-if="ko">원문이 필요한 경우 <code>--with metadata</code>로 포함할 수 있습니다. 아래는 같은 API를 생성했을 때의 용량과 생성 시간입니다. 기본 설정에서도 API 호출과 필요한 타입은 모두 제공됩니다. Graph API 9개의 타입을 위해 스키마 파일 {{ number(selected.generation.schemaArtifactCount) }}개가 생성됐습니다.</p>
     <p v-else>Include the original document with <code>--with metadata</code> when you need it. The comparison below shows size and generation time for the same selected APIs. Default generation includes all API calls and required types. The nine Graph APIs generate {{ number(selected.generation.schemaArtifactCount) }} schema files for their types.</p>
     <div class="graph-table" role="region" :aria-label="ko ? '원문 포함 여부에 따른 크기와 시간' : 'Size and time with optional source metadata'" tabindex="0">
@@ -37,19 +35,19 @@ const countDate = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", t
         <tbody><tr v-for="item in data.comparison.cases" :key="item.name"><th scope="row">{{ item.displayName }} · {{ number(item.routes.length) }} {{ ko ? "개" : "APIs" }}</th><td>{{ size(item.default.generation.artifactBytes) }} / {{ time(item.default.generation.durationMillis) }}</td><td>{{ size(item.metadata.generation.artifactBytes) }} / {{ time(item.metadata.generation.durationMillis) }}</td></tr></tbody>
       </table>
     </div>
-    <p v-if="ko">네 선택 SDK 모두 타입 검사를 통과했습니다. Graph 1개 표본은 <code>GET /users/$count</code>를 생성한 결과입니다. 전체 API 행은 기존 전체 생성 측정값입니다.</p>
-    <p v-else>All four selections passed typechecking. The single Graph API sample generates <code>GET /users/$count</code>. The all-API row retains the earlier full-generation measurement.</p>
+    <p v-if="ko">Graph 1개 표본은 <code>GET /users/$count</code>를 생성한 결과입니다. 전체 API 행은 기존 전체 생성 측정값입니다.</p>
+    <p v-else>The single Graph API sample generates <code>GET /users/$count</code>. The all-API row retains the earlier full-generation measurement.</p>
     <details>
       <summary>{{ ko ? "선택한 경로와 측정 자료" : "Selected routes and measurement data" }}</summary>
       <p><a :href="data.sourceUrl">{{ ko ? "OpenAPI 원문" : "OpenAPI document" }}</a> · <a :href="withBase('/compatibility-results/graph-selected-results.json')">{{ ko ? "선택 SDK 결과 JSON" : "Selected SDK results JSON" }}</a></p>
       <p><a :href="withBase('/compatibility-results/graph-metadata-results.json')">{{ ko ? "원문 포함 결과 JSON" : "Source-included results JSON" }}</a> · <a :href="withBase('/compatibility-results/metadata-comparison-results.json')">{{ ko ? "네 표본 비교 JSON" : "Four-sample comparison JSON" }}</a></p>
-      <p v-if="ko"><code>GET /users/$count</code>: {{ countDate }} · 버전 <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>. 기본 SDK와 원문 포함 SDK 모두 타입 검사와 숫자 응답·잘못된 응답 처리의 모의 호출을 통과했습니다.</p>
-      <p v-else><code>GET /users/$count</code>: {{ countDate }} · Version <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>. Both default and source-included SDKs passed typechecking and mock calls for numeric responses and malformed-body handling.</p>
+      <p v-if="ko"><code>GET /users/$count</code> 생성 측정: {{ countDate }} · 버전 <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>.</p>
+      <p v-else><code>GET /users/$count</code> generation measurement: {{ countDate }} · Version <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>.</p>
       <p><a :href="withBase('/compatibility-results/graph-count-results.json')">{{ ko ? "사용자 수 조회 결과 JSON" : "Count call results JSON" }}</a> · <a :href="withBase('/compatibility-results/graph-count-metadata-results.json')">{{ ko ? "원문 포함 사용자 수 조회 결과 JSON" : "Source-included count call results JSON" }}</a></p>
       <ul><li v-for="route in selected.generationSelection.routes" :key="route"><code>{{ route }}</code></li></ul>
-      <p>{{ data.measurement.cpu }} · {{ data.measurement.os }}/{{ data.measurement.architecture }} · {{ ko ? "검증 최대 메모리" : "Verification peak RSS" }} {{ size(data.resources.peakRssBytes) }}</p>
-      <p v-if="ko"><a :href="data.ci.ciRunUrl">GitHub Actions 검증</a> · 버전 <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: 생성·타입 검사·모의 호출 통과. 생성 {{ time(data.ci.selected.generation.durationMillis) }}, 타입 검사 {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions 결과 JSON</a></p>
-      <p v-else><a :href="data.ci.ciRunUrl">GitHub Actions verification</a> · Version <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: generation, typechecking, and mock calls passed. Generation {{ time(data.ci.selected.generation.durationMillis) }}, typecheck {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions results JSON</a></p>
+      <p>{{ data.measurement.cpu }} · {{ data.measurement.os }}/{{ data.measurement.architecture }}</p>
+      <p v-if="ko"><a :href="data.ci.ciRunUrl">GitHub Actions 측정</a> · 버전 <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: 생성 {{ time(data.ci.selected.generation.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions 결과 JSON</a></p>
+      <p v-else><a :href="data.ci.ciRunUrl">GitHub Actions measurement</a> · Version <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: generation {{ time(data.ci.selected.generation.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions results JSON</a></p>
     </details>
   </div>
 </template>

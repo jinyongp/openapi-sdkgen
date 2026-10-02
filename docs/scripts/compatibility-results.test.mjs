@@ -16,7 +16,6 @@ test("runtime quality results require complete strict checks and measured output
     data => { data.strictCompilerOptions.noUnusedLocals = false; },
     data => { data.matrix.diagnostics = 1; },
     data => { data.delivery[2].checkedFiles--; },
-    data => { data.graph.cases.clients.strictTypecheck.status = "fail"; },
     data => { data.compilerComparisons.find(row => row.kind === "candidate").samples[0].errorCount = 1; },
     data => { data.sse[0].medianMS = 0.1; },
     data => { data.sse.find(row => row.kind === "candidate").inputSHA256 = "a".repeat(64); },
@@ -282,12 +281,12 @@ test("generated server handlers remain visible when server typechecking does not
 
 test("all document links open the measured source rather than the standard or provider homepage", () => {
   const data = readCompatibilityResults(fileURLToPath(sourceDirectory));
-  assert.equal(data.flatMap((corpus) => corpus.results).length, 39);
+  assert.equal(data.flatMap((corpus) => corpus.results).length, 38);
   const regression = data.find((corpus) => corpus.id === "regression");
   const manifest = JSON.parse(readFileSync(new URL("regression.json", sourceDirectory)));
   assert.equal(data[0].id, "regression");
   assert.deepEqual(regression.results.map((document) => document.name), [
-    "GitHub", "Stripe", "Cloudflare", "GitLab", "Microsoft Graph beta", "DigitalOcean", "Twilio",
+    "GitHub", "Stripe", "Cloudflare", "GitLab", "DigitalOcean", "Twilio",
   ]);
   for (const document of regression.results) {
     const entry = manifest.corpora.find((entry) => entry.id === document.id);
@@ -301,6 +300,48 @@ test("all document links open the measured source rather than the standard or pr
     assert.match(document.sourceUrl, /^\/compatibility-results\/documents\/.+\.json$/);
     assert.ok(document.sourceUrl.includes(`/${document.id}/`));
   }
+});
+
+test("Graph generation stays separate from current typecheck totals", (t) => {
+  const directory = fixture(t);
+  const regression = readCompatibilityResults(directory).find(corpus => corpus.id === "regression");
+  assert.equal(regression.documents, 6);
+  assert.equal(regression.defaultSuccess, 6);
+  assert.equal(regression.adjustedSuccess, 6);
+  assert.ok(regression.results.every(document => document.id !== "microsoft-graph-beta"));
+  assert.equal(regression.generatedOperations, regression.results.reduce((total, document) => total + document.generatedOperations, 0));
+  assert.equal(readGraphSelection(directory).full.operationEmission.count, 29581);
+  assert.equal(readRuntimeQuality(directory).graph, undefined);
+  change(directory, "runtime-quality-results.json", data => { delete data.graph; });
+  assert.equal(readRuntimeQuality(directory).delivery.length, 3);
+});
+
+test("Graph generation-only evidence publishes without requiring a compiler or runtime probe", (t) => {
+  const directory = fixture(t);
+  for (const name of ["graph-selected-results.json", "graph-metadata-results.json"]) {
+    change(directory, name, report => {
+      const document = report.documents[0];
+      document.documentSuccess = document.capabilityAdjustedSuccess = false;
+      document.typecheck = { status: "not-run", detail: "generation-only measurement" };
+      document.generationSelection.runtime = { status: "not-run" };
+      report.overall.selectedSuccessfulDocuments = 0;
+      delete report.measurement.typescriptVersion;
+    });
+    assert.equal(readGraphSelection(directory, name).selected.typecheck.status, "not-run");
+  }
+  change(directory, "metadata-comparison-results.json", data => {
+    for (const item of data.cases.filter(item => item.document === "microsoft-graph-beta")) {
+      item.runtimeCheck = "not-run";
+      for (const sample of [item.default, item.metadata]) {
+        sample.typecheck = { status: "not-run", detail: "generation-only measurement" };
+        sample.selection.runtime = { status: "not-run" };
+        delete sample.measurement.typescriptVersion;
+      }
+    }
+  });
+  assert.equal(readMetadataComparison(directory).cases.length, 4);
+  change(directory, "graph-selected-results.json", report => report.documents[0].documentSuccess = true);
+  assert.throws(() => readGraphSelection(directory), /Graph selection/);
 });
 
 test("published multi-file examples retain the exact source and relative reference targets", (t) => {

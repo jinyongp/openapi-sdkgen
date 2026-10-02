@@ -41,7 +41,7 @@ const sse = data.sse.filter(row => row.dataBytes === 262144 && row.chunkBytes ==
         <tbody><tr v-for="row in sse" :key="row.kind"><th scope="row">{{ (row.kind === 'baseline' ? data.baselineCommit : data.sourceCommit).slice(0, 7) }}</th><td>{{ number(row.medianMS) }} ms</td></tr></tbody>
       </table>
       <p>{{ data.environment.cpu }} · {{ data.environment.os }} / {{ data.environment.architecture }} · Node.js {{ data.node }} · {{ size(data.environment.totalMemoryBytes) }} RAM</p>
-      <p><a :href="withBase('/compatibility-results/runtime-quality-results.json')">{{ ko ? "컴파일러별 비교·Graph 결과·원본 측정 JSON" : "Compiler comparisons, Graph results, and measurement JSON" }}</a></p>
+      <p><a :href="withBase('/compatibility-results/runtime-quality-results.json')">{{ ko ? "컴파일러별 비교·원본 측정 JSON" : "Compiler comparisons and measurement JSON" }}</a></p>
     </details>
   </div>
 </template>

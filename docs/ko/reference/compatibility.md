@@ -11,7 +11,7 @@ OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
 
 표의 **20개 중 18개 성공**은 전체 문서 20개 중 18개에서 SDK 생성과 타입
 검사가 성공했다는 뜻입니다. **생성된 호출 API 수**는 생성에 성공한 SDK의
-호출 메서드 수이며, 타입 검사가 미완료인 SDK도 생성된 수를 표시합니다.
+호출 메서드 수입니다.
 웹훅·콜백이 있는 문서는 `--with server` 결과를 포함합니다.
 **SDK 생성 시간**은 문서를 읽고 SDK 파일을 저장하는 데 걸린 시간이며,
 요약 표에는 문서별 시간의 합계를 표시합니다.
@@ -49,12 +49,11 @@ GitHub·Stripe도 API를 선택해 원문 포함 여부에 따른 용량을 비�
 
 ### 주요 API 제공자
 
-GitHub, Stripe, Cloudflare, GitLab, Microsoft Graph beta, DigitalOcean,
-Twilio의 공개 API 문서입니다. 대규모 API와 여러 파일로 나뉜 스키마를 포함합니다.
+GitHub, Stripe, Cloudflare, GitLab, DigitalOcean, Twilio의 공개 API 문서입니다.
+대규모 API와 여러 파일로 나뉜 스키마를 포함합니다.
 각 제공자의 생성 결과와 시간은 아래 첫 번째 표에서 확인할 수 있습니다.
-7개 문서 모두 SDK 생성에 성공했고, 6개 문서는 타입 검사까지 통과했습니다.
-Microsoft Graph beta는 호출 API 29,581개를 생성했으며, 전체 타입 검사 결과는
-측정 시간 한도 초과입니다.
+6개 문서 모두 SDK 생성과 타입 검사를 통과했습니다. Microsoft Graph beta는
+[필요한 API만 생성하기](#graph-selection)에서 생성 시간과 용량을 별도로 비교합니다.
 
 ### 독립 표본
 

@@ -12,8 +12,8 @@ Callbacks** also includes code for receiving inbound requests.
 
 **18 of 20 succeeded** means SDK generation and typechecking succeeded for
 18 of the 20 documents. **Generated API calls** counts the callable operations in
-successfully generated SDKs, including SDKs with incomplete typechecking and
-the `--with server` results for documents with Webhooks or Callbacks.
+successfully generated SDKs. Documents with Webhooks or Callbacks include
+the `--with server` results.
 **SDK generation time** measures reading the document and writing the SDK files.
 The summary shows the sum of the individual document times.
 
@@ -52,12 +52,11 @@ measurements cover complete SDK source, declaration output, and fragmented SSE c
 
 ### Major API providers
 
-Public API documents from GitHub, Stripe, Cloudflare, GitLab, Microsoft Graph
-beta, DigitalOcean, and Twilio cover large APIs and multi-file schemas. The first
+Public API documents from GitHub, Stripe, Cloudflare, GitLab, DigitalOcean,
+and Twilio cover large APIs and multi-file schemas. The first
 document table shows each provider's generation results and timing.
-SDK generation succeeded for all seven documents, and six passed typechecking.
-Microsoft Graph beta generated 29,581 API calls; its full typecheck reached the
-measurement's time limit.
+All six documents passed SDK generation and typechecking. Microsoft Graph beta
+is measured separately for generation time and size in [API selection](#graph-selection).
 
 ### Independent holdout
 

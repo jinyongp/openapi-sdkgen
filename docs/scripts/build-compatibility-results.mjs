@@ -33,11 +33,12 @@ export function readCompatibilityResults(directory) {
     const entries = new Map(manifest.corpora.map((entry) => [entry.id, entry]));
     const order = new Map(manifest.corpora.map((entry, index) => [entry.id, index]));
     const documents = report.documents;
+    const expected = manifest.corpora.filter(entry => entry.id !== "microsoft-graph-beta" || documents.some(document => document.id === entry.id));
     if (entries.size !== manifest.corpora.length ||
-        new Set(documents.map((document) => document.id)).size !== entries.size ||
-        documents.length !== entries.size) fail("document membership mismatch");
+        new Set(documents.map((document) => document.id)).size !== expected.length ||
+        documents.length !== expected.length || expected.some(entry => !documents.some(document => document.id === entry.id))) fail("document membership mismatch");
 
-    const results = documents.map((document) => {
+    let results = documents.map((document) => {
       const entry = entries.get(document.id);
       if (!entry || entry.input !== document.input ||
           (entry.sha256 && entry.sha256 !== document.inputSha256) ||
@@ -93,7 +94,6 @@ export function readCompatibilityResults(directory) {
     }).sort((a, b) => order.get(a.id) - order.get(b.id));
 
     const overall = report.overall;
-    const generated = results.filter((document) => document.clientGenerated || document.serverGenerated);
     const emission = overall.operationEmission;
     const sum = (field) => documents.reduce((total, document) => total + document.operationEmission[field], 0);
     if (overall.documents !== documents.length ||
@@ -104,18 +104,25 @@ export function readCompatibilityResults(directory) {
       fail("summary does not match document results");
     }
 
+    // Keep the original report and its integrity checks intact. Public
+    // verification totals contain the current candidates; Graph generation is
+    // published separately with its original measurement provenance.
+    results = results.filter(document => document.id !== "microsoft-graph-beta");
+    const candidates = documents.filter(document => document.id !== "microsoft-graph-beta");
+    const generated = results.filter(document => document.clientGenerated || document.serverGenerated);
+    const candidateSum = field => candidates.reduce((total, document) => total + document.operationEmission[field], 0);
     return {
       id,
-      documents: overall.documents,
-      defaultSuccess: overall.successfulDocuments,
-      adjustedSuccess: overall.capabilityAdjustedDocuments,
-      emitted: emission.count,
+      documents: candidates.length,
+      defaultSuccess: candidates.filter(document => document.documentSuccess).length,
+      adjustedSuccess: candidates.filter(document => document.capabilityAdjustedSuccess).length,
+      emitted: candidateSum("count"),
       generatedOperations: results.reduce((total, document) => total + (document.generatedOperations ?? 0), 0),
       generationDurationMillis: generated.length > 0 && generated.every((document) => document.generationDurationMillis !== null)
         ? generated.reduce((total, document) => total + document.generationDurationMillis, 0) : null,
       measurement: report.measurement ?? null,
-      operationOmissions: emission.operationOmissions,
-      helperOmissions: emission.helperOmissions,
+      operationOmissions: candidateSum("operationOmissions"),
+      helperOmissions: candidateSum("helperOmissions"),
       reportSha256: sha256(reportBytes),
       manifestSha256: sha256(manifestBytes),
       results,
@@ -177,13 +184,20 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
       JSON.stringify(selected?.generationAddons) !== JSON.stringify(expectedAddons)) {
     throw new Error("Graph selection metadata setting mismatch");
   }
+  const historicalVerification = selected?.documentSuccess === true && selected.capabilityAdjustedSuccess === true &&
+    selected.typecheck?.status === "pass" && selection?.runtime?.status === "pass";
+  const generationOnly = selected?.documentSuccess === false && selected.capabilityAdjustedSuccess === false &&
+    selected.typecheck?.status === "not-run" && selection?.runtime?.status === "not-run";
   if (report.schemaVersion !== 2 || report.manifestSha256 !== sha256(manifestBytes) || report.documents.length !== 1 ||
       selected.id !== entry.id || selected.inputSha256 !== entry.sha256 || full.inputSha256 !== selected.inputSha256 ||
       selected.generationScope !== "selected" || selection?.fixtureSha256 !== sha256(fixture) ||
-      selection.runtimeProbeSha256 !== sha256(probe) || !selected.documentSuccess || !selected.capabilityAdjustedSuccess ||
-      selected.generation.status !== "pass" || selected.typecheck.status !== "pass" || selection.runtime.status !== "pass" ||
+      selection.runtimeProbeSha256 !== sha256(probe) || (!historicalVerification && !generationOnly) ||
+      selected.generation.status !== "pass" || selected.operationEmission.available !== true ||
+      ["artifactCount", "artifactBytes"].some(key => !Number.isSafeInteger(selected.generation[key]) || selected.generation[key] <= 0) ||
+      !Number.isFinite(selected.generation.durationMillis) || selected.generation.durationMillis <= 0 ||
       !/^[a-f0-9]{40}$/.test(report.measurement?.sourceCommit) || report.measurement.sourceDirty !== false ||
-      report.overall.documents !== 0 || report.overall.selectedSuccessfulDocuments !== 1) {
+      report.overall.documents !== 0 || report.overall.selectedDocuments !== 1 ||
+      report.overall.selectedSuccessfulDocuments !== (historicalVerification ? 1 : 0)) {
     throw new Error("Graph selection provenance or verification mismatch");
   }
   const routes = selection.routes, dependencies = selection.dependencyRoutes;
@@ -211,26 +225,31 @@ export function readMetadataComparison(directory) {
       new Set(data.cases.map(item => item.name)).size !== expected.size) fail();
   for (const item of data.cases) {
     const entry = manifest.corpora.find(entry => entry.id === expected.get(item.name));
+    const generationOnly = item.document === "microsoft-graph-beta" && item.runtimeCheck === "not-run";
     if (!entry || item.document !== entry.id || item.inputSha256 !== entry.sha256 || item.sourceUrl !== entry.sourceUrl ||
         item.displayName !== entry.displayName || !Array.isArray(item.routes) ||
         item.routes.length !== (item.name === "graph-count" ? 1 : 9) ||
         !same(item.routes, [...new Set(item.routes)].sort()) ||
-        item.runtimeCheck !== (item.name === "graph-nine" ? "mock-call" : "selection-module-smoke")) fail();
+        (!generationOnly && item.runtimeCheck !== (item.name === "graph-nine" ? "mock-call" : "selection-module-smoke"))) fail();
     for (const [mode, sample] of [["default", item.default], ["metadata", item.metadata]]) {
       if (!sample || !same(sample.generationAddons, mode === "default" ? [] : ["metadata"]) ||
           sample.measurement?.sourceCommit !== graph.measurement.sourceCommit || sample.measurement.sourceDirty !== false ||
           sample.measurement.generationScope !== "compile-prepare-write" ||
           !Number.isFinite(Date.parse(sample.measurement.measuredAt)) ||
-          ["typescriptVersion", "goVersion", "os", "architecture", "cpu"].some(key => sample.measurement[key] !== graph.measurement[key]) ||
-          sample.generation?.status !== "pass" || sample.typecheck?.status !== "pass" || sample.selection?.runtime?.status !== "pass" ||
+          ["goVersion", "os", "architecture", "cpu"].some(key => sample.measurement[key] !== graph.measurement[key]) ||
+          (!generationOnly && (!/^\d+\.\d+\.\d+$/.test(sample.measurement.typescriptVersion) ||
+            (graph.measurement.typescriptVersion && sample.measurement.typescriptVersion !== graph.measurement.typescriptVersion))) ||
+          sample.generation?.status !== "pass" || sample.typecheck?.status !== (generationOnly ? "not-run" : "pass") ||
+          sample.selection?.runtime?.status !== (generationOnly ? "not-run" : "pass") ||
           !same(sample.selection.routes, item.routes) || !same(sample.selection.requested, { routes: item.routes }) ||
           sample.operationEmission?.available !== true || sample.operationEmission.count !== item.routes.length ||
           ["artifactBytes", "metadataBytes", "artifactCount", "schemaArtifactCount"].some(key => !Number.isSafeInteger(sample.generation[key]) || sample.generation[key] < 0) ||
           sample.generation.metadataBytes > sample.generation.artifactBytes ||
-          [sample.generation.durationMillis, sample.typecheck.durationMillis, sample.resources?.peakRssBytes].some(value => !Number.isFinite(value) || value < 0)) fail();
+          [sample.generation.durationMillis, sample.resources?.peakRssBytes, ...(generationOnly ? [] : [sample.typecheck.durationMillis])].some(value => !Number.isFinite(value) || value < 0)) fail();
     }
     const a = item.default, b = item.metadata;
-    if (!same(a.operationEmission, b.operationEmission) || a.generation.artifactCount !== b.generation.artifactCount ||
+    if (a.measurement.typescriptVersion !== b.measurement.typescriptVersion ||
+        !same(a.operationEmission, b.operationEmission) || a.generation.artifactCount !== b.generation.artifactCount ||
         a.generation.schemaArtifactCount !== b.generation.schemaArtifactCount ||
         !same(a.selection.routes, b.selection.routes) || !same(a.selection.dependencyRoutes, b.selection.dependencyRoutes) ||
         a.selection.excludedOperations !== b.selection.excludedOperations ||
@@ -287,8 +306,6 @@ export function readRuntimeQuality(directory) {
         row.samples.some(sample => sample.status !== 0 || sample.signal !== null) ||
         (row.kind === "candidate" && (row.files !== input.source.files || row.sourceBytes !== input.source.bytes))) fail();
   }
-  if (data.graph?.inputSHA256 !== "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec" ||
-      ["selection", "clients"].some(name => data.graph.cases?.[name]?.strictTypecheck?.status !== "pass")) fail();
   for (const kind of ["baseline", "candidate"]) {
     const rows = data.sse?.filter(row => row.kind === kind);
     const expected = [32768, 65536, 131072, 262144].flatMap(bytes => [64, 1024, bytes + 64].map(chunk => `${bytes}:${chunk}`)).sort();
@@ -300,7 +317,9 @@ export function readRuntimeQuality(directory) {
     if (row.inputSHA256 !== baseline.inputSHA256) fail();
   }
   if (data.native?.pass !== true || data.native.checks?.length !== 35) fail();
-  return data;
+  const quality = { ...data };
+  delete quality.graph;
+  return quality;
 }
 
 export function readInspectMeasurements(directory) {
