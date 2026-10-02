@@ -93,13 +93,14 @@ func (Generator) Name() string { return "typescript" }
 
 // SupportsAddon reports artifact sets available for TypeScript source output.
 func (Generator) SupportsAddon(addon generator.Addon) bool {
-	return addon == generator.AddonServer
+	return addon == generator.AddonServer || addon == generator.AddonMetadata
 }
 
 type sourcePlan struct {
 	document                    *ir.Document
 	ownership                   *sourceOwnershipIndex
 	includeServer               bool
+	includeMetadata             bool
 	omittedOperations           map[string]bool
 	resourceReservationExcluded map[string]bool
 	reservationManifest         *Manifest
@@ -139,6 +140,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	if err != nil {
 		return generator.Plan{}, diagnostics, coverage, err
 	}
+	plan.includeMetadata = options.HasAddon(generator.AddonMetadata)
 	if !diagnostic.HasErrors(diagnostics) {
 		if !hasMeaningfulEntrySurface(plan) {
 			diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
@@ -608,7 +610,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err != nil {
 		return err
 	}
-	metadataSource, err := emitMetadata(document, true)
+	metadataSource, err := emitMetadata(document, true, plan.includeMetadata)
 	if err != nil {
 		return err
 	}

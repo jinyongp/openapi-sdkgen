@@ -760,11 +760,11 @@ func TestServerAddOnPreservesEnvironmentControlledInboundHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	registry, err := generator.NewAddonRegistry(generator.AddonServer)
+	registry, err := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 	if err != nil {
 		t.Fatal(err)
 	}
-	options, err := registry.Resolve([]string{"server"})
+	options, err := registry.Resolve([]string{"server", "metadata"})
 	if err != nil {
 		t.Fatal(err)
 	}

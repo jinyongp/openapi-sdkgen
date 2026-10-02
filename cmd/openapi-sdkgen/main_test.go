@@ -1148,6 +1148,7 @@ func TestGenerateParsesRepeatableWithAddons(t *testing.T) {
 	}{
 		{name: "unknown", args: []string{"--with", "worker"}, want: "unsupported SDK add-on"},
 		{name: "duplicate", args: []string{"--with", "server", "--with", "server"}, want: "specified more than once"},
+		{name: "duplicate-metadata", args: []string{"--with", "metadata", "--with", "metadata"}, want: "specified more than once"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := filepath.Join(directory, test.name)

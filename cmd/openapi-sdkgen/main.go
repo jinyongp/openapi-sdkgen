@@ -411,7 +411,7 @@ func newCLIRegistries() (cliRegistries, error) {
 	if err != nil {
 		return cliRegistries{}, err
 	}
-	addons, err := generator.NewAddonRegistry(generator.AddonServer)
+	addons, err := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 	if err != nil {
 		return cliRegistries{}, err
 	}

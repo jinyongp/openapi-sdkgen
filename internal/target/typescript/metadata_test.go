@@ -12,8 +12,22 @@ import (
 	"testing"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
 )
+
+// Source-preservation tests explicitly request the optional document export.
+func sourceArtifactsWithMetadata(document *ir.Document) ([]Artifact, error) {
+	plan, diagnostics, err := prepareSourcePlan(document, false)
+	if err != nil {
+		return nil, err
+	}
+	if diagnostic.HasErrors(diagnostics) {
+		return nil, fmt.Errorf("%s", strings.TrimSpace(diagnostic.RenderHuman(diagnostics, nil)))
+	}
+	plan.includeMetadata = true
+	return emitSourcePlan(plan)
+}
 
 // metadataJSON unwraps the generated string to inspect source values rather
 // than the JavaScript escape representation.
@@ -37,7 +51,7 @@ func TestEmitMetadataPreservesEntryValuesAndRuntimeContracts(t *testing.T) {
 	snapshot := bytes.Clone(original)
 	for _, typescript := range []bool{false, true} {
 		t.Run(fmt.Sprint(typescript), func(t *testing.T) {
-			source, err := emitMetadata(document, typescript)
+			source, err := emitMetadata(document, typescript, true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -105,7 +119,7 @@ func TestEmitMetadataSyntheticFallbackAndDeterminism(t *testing.T) {
 	document := &ir.Document{OpenAPIVersion: "3.2.0", OpenAPIVersionLine: "3.2", Raw: map[string]any{
 		"info": map[string]any{"title": "Synthetic", "version": "1"}, "openapi": "3.2.0", "paths": map[string]any{},
 	}}
-	source, err := emitMetadata(document, true)
+	source, err := emitMetadata(document, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +127,7 @@ func TestEmitMetadataSyntheticFallbackAndDeterminism(t *testing.T) {
 		t.Fatal("Raw fallback lost")
 	}
 	document.SourceMetadataJSON = []byte(` { "paths": {}, "openapi":"3.2.0", "info": { "version": "1", "title":"Synthetic" } } `)
-	second, err := emitMetadata(document, true)
+	second, err := emitMetadata(document, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,18 +138,18 @@ func TestEmitMetadataSyntheticFallbackAndDeterminism(t *testing.T) {
 
 func TestEmitMetadataRejectsInvalidJSON(t *testing.T) {
 	for _, data := range []string{`{"x":`, `{} {}`, `{"x":NaN}`, `{"x":1,"x":2}`} {
-		if _, err := emitMetadata(&ir.Document{SourceMetadataJSON: []byte(data)}, true); err == nil {
+		if _, err := emitMetadata(&ir.Document{SourceMetadataJSON: []byte(data)}, true, true); err == nil {
 			t.Fatalf("invalid metadata accepted: %s", data)
 		}
 	}
-	if _, err := emitMetadata(&ir.Document{Raw: map[string]any{"invalid": func() {}}}, true); err == nil {
+	if _, err := emitMetadata(&ir.Document{Raw: map[string]any{"invalid": func() {}}}, true, true); err == nil {
 		t.Fatal("non-JSON Raw accepted")
 	}
 }
 
 func TestMetadataConsumerKeepsDocumentAndVersionTypes(t *testing.T) {
 	document := &ir.Document{OpenAPIVersion: "3.2.0", OpenAPIVersionLine: "3.2", Raw: map[string]any{"info": map[string]any{"title": "Metadata"}}}
-	source, err := emitMetadata(document, true)
+	source, err := emitMetadata(document, true, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,4 +167,27 @@ const scalarDocument: typeof openapi.document = 1;
 openapi.version = "3.2.0";
 `
 	compileTypeScriptArtifactSet(t, []generator.Artifact{{Path: "metadata.ts", Data: source}}, "consumer.ts", probe)
+}
+
+func TestDefaultMetadataSkipsSourceSerialization(t *testing.T) {
+	// Invalid snapshots and non-JSON synthetic values prove the default does
+	// not enter either source formatting or Raw fallback serialization.
+	for _, document := range []*ir.Document{
+		{SourceMetadataJSON: []byte(strings.Repeat("invalid source", 100000))},
+		{Raw: map[string]any{"invalid": func() {}}},
+	} {
+		document.OpenAPIVersion, document.OpenAPIVersionLine = "3.2.1", "3.2"
+		for _, typescript := range []bool{false, true} {
+			source, err := emitMetadata(document, typescript, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(source) > 300 || bytes.Contains(source, []byte("document")) || bytes.Contains(source, []byte("JSON.parse")) {
+				t.Fatalf("default serialized source: %s", source)
+			}
+			if !bytes.Contains(source, []byte(`version: "3.2.1"`)) || !bytes.Contains(source, []byte(`versionLine: "3.2"`)) {
+				t.Fatalf("version lost: %s", source)
+			}
+		}
+	}
 }

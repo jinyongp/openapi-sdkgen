@@ -16,7 +16,7 @@ Generation:
                                   managed output
   --check                         Validate generation without writing output
   --incremental                   Update a manifest-owned output directory
-  --with <addon>                  Add generated artifacts (available: server)
+  --with <addon>                  Add generated artifacts (available: metadata, server)
                                   (repeatable)
   --operation <id>                Generate an exact OpenAPI operationId; combine with
                                   --route (repeatable)

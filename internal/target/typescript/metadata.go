@@ -9,11 +9,16 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 )
 
-// emitMetadata publishes the lossless entry document independently of client
-// execution. One JSON string avoids a TypeScript syntax tree and nested runtime
-// construction calls for every source object. JSON.parse retains ordinary own
-// properties such as __proto__, just like the previous Object.fromEntries form.
-func emitMetadata(document *ir.Document, typescript bool) ([]byte, error) {
+// emitMetadata always publishes the declared version. The optional document is
+// independent of client execution; its JSON string retains the source values
+// without constructing a TypeScript syntax tree for every source object.
+func emitMetadata(document *ir.Document, typescript, includeDocument bool) ([]byte, error) {
+	if !includeDocument {
+		if typescript {
+			return []byte(fmt.Sprintf("/** Declared OpenAPI version. */\nexport const openapi = { version: %s, versionLine: %s } as const\n", quoteTS(document.OpenAPIVersion), quoteTS(document.OpenAPIVersionLine))), nil
+		}
+		return []byte(fmt.Sprintf("/** Declared OpenAPI version. */\nexport const openapi = Object.freeze({ version: %s, versionLine: %s })\n", quoteTS(document.OpenAPIVersion), quoteTS(document.OpenAPIVersionLine))), nil
+	}
 	data := document.SourceMetadataJSON
 	if len(data) == 0 {
 		var err error

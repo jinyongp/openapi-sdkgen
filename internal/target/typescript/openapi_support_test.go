@@ -136,7 +136,7 @@ func TestSourceArtifactsProjectEnvironmentControlledHeadersAsOptionalClientInput
 				t.Fatalf("oauth input types = %v, want header and body input", oauth.InputSections)
 			}
 
-			artifacts, err := SourceArtifacts(document)
+			artifacts, err := sourceArtifactsWithMetadata(document)
 			if err != nil {
 				t.Fatal(err)
 			}

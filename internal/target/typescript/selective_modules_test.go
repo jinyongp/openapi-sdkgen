@@ -215,7 +215,7 @@ func TestSelectiveGenerationCoversOutputAndIsSharedByProviders(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		artifacts, err := SourceArtifacts(document)
+		artifacts, err := sourceArtifactsWithMetadata(document)
 		if err != nil {
 			t.Fatal(err)
 		}

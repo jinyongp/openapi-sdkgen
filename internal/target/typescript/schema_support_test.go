@@ -453,7 +453,7 @@ func TestSourceArtifactsPreservesJSONSchemaCommentsAsMetadata(t *testing.T) {
 	document := &ir.Document{ComponentSchemas: map[string]map[string]any{
 		"Commented": {"type": "string", "$comment": "validation note"},
 	}, Raw: map[string]any{"components": map[string]any{"schemas": map[string]any{"Commented": map[string]any{"type": "string", "$comment": "validation note"}}}}}
-	artifacts, err := SourceArtifacts(document)
+	artifacts, err := sourceArtifactsWithMetadata(document)
 	if err != nil {
 		t.Fatal(err)
 	}

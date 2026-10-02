@@ -22,6 +22,8 @@ const (
 	// AddonServer emits server-facing TypeScript artifacts alongside the default
 	// client source tree.
 	AddonServer Addon = "server"
+	// AddonMetadata includes the lossless entry document in the metadata export.
+	AddonMetadata Addon = "metadata"
 )
 
 // Options are shared target options selected by the CLI.
