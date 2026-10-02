@@ -52,6 +52,29 @@ const catalogSchema: WireSchema = {
 };
 
 describe("XML runtime codecs", () => {
+  it.each(["p", ""])("declares %s namespaces on each unwrapped array item", (prefix) => {
+    const schema: WireSchema = {
+      types: ["object"],
+      xml: { name: "root" },
+      properties: {
+        items: {
+          property: "items",
+          schema: {
+            types: ["array"],
+            xml: { name: "items", prefix, namespace: "urn:items", wrapped: false },
+            items: { types: ["string"], xml: { name: "item", prefix, namespace: "urn:items" } },
+          },
+        },
+      },
+    };
+    const value = { items: ["one", "two"] };
+    const name = prefix ? "p:item" : "item";
+    const declaration = prefix ? 'xmlns:p="urn:items"' : 'xmlns="urn:items"';
+    const xml = `<root><${name} ${declaration}>one</${name}><${name} ${declaration}>two</${name}></root>`;
+    expect(encodeXML(value, schema, {})).toBe(xml);
+    expect(decodeXML(xml, schema, {})).toEqual(value);
+    expect(decodeXML(encodeXML(value, schema, {}), schema, {})).toEqual(value);
+  });
   it("rejects XML properties whose text cannot be assigned unambiguously", () => {
     const schema: WireSchema = {
       types: ["object"],

@@ -181,16 +181,35 @@ function encodeXMLElement(
     string
   >;
   const declarations = namespaceAttributes(xml, namespaces);
-  expandedXMLName(name, namespaces, false);
   if (Array.isArray(value)) {
-    const itemSchema = xmlRepresentation(schema.items ?? {}, schemas, scope);
+    let itemSchema = xmlRepresentation(schema.items ?? {}, schemas, scope);
     const wrapped = xmlArrayWrapped(xml);
     const itemName = itemSchema.xml?.name ?? (wrapped ? fallbackName : name);
+    if (wrapped) expandedXMLName(name, namespaces, false);
+    else
+      itemSchema = {
+        ...itemSchema,
+        xml: {
+          ...(xml?.prefix === undefined ? {} : { prefix: xml.prefix }),
+          ...(xml?.namespace === undefined ? {} : { namespace: xml.namespace }),
+          ...itemSchema.xml,
+        },
+      };
     const values = value
-      .map((item) => encodeXMLElement(item, itemSchema, schemas, itemName, scope, namespaces))
+      .map((item) =>
+        encodeXMLElement(
+          item,
+          itemSchema,
+          schemas,
+          itemName,
+          scope,
+          wrapped ? namespaces : inheritedNamespaces,
+        ),
+      )
       .join("");
     return wrapped ? wrapXML(name, declarations, values) : values;
   }
+  expandedXMLName(name, namespaces, false);
   if (!isRecord(value)) return wrapXML(name, declarations, escapeXMLText(xmlScalar(value)));
   const attributes: string[] = [];
   const children: string[] = [];
