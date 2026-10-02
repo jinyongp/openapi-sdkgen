@@ -43,6 +43,7 @@ func emitSchemaArtifactsWithRegistriesTo(document *ir.Document, plan, index, reg
 					return nil, err
 				}
 			}
+			continue
 		}
 		source, err := emitSchemaLeaf(document, plan, schema)
 		if err != nil {
@@ -70,9 +71,6 @@ func emitSchemaArtifactsWithRegistriesTo(document *ir.Document, plan, index, reg
 }
 
 func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan) ([]byte, error) {
-	if plan.splitSchemaProjections {
-		return emitSchemaProjectionFacade(plan, schema)
-	}
 	value := componentSchemaValue(document, schema.name)
 	var projections renderedSchemaProjections
 	var err error
@@ -137,7 +135,10 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 	return output.Bytes(), nil
 }
 
-func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any) (renderedSchemaProjections, error) {
+func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, directions ...projection) (renderedSchemaProjections, error) {
+	if len(directions) == 0 {
+		directions = []projection{projectionInput, projectionOutput}
+	}
 	names := newLocalIdentifierPlan(schema.path)
 	if err := names.reserve("Input", "Output", "WireSchema", "WireProperty", "inputWireSchema", "outputWireSchema"); err != nil {
 		return renderedSchemaProjections{}, err
@@ -161,6 +162,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 			}
 			return "unknown"
 		}
+		path = plan.schemaProjectionPath(name, direction)
 		exportName := "Output"
 		if direction == projectionInput {
 			exportName = "Input"
@@ -171,11 +173,10 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		return "unknown"
 	}
 	countScope := typeRenderModule(schema.name, countReference)
-	if _, err := schemaTypeForScope(document, value, projectionInput, countScope); err != nil {
-		return renderedSchemaProjections{}, err
-	}
-	if _, err := schemaTypeForScope(document, value, projectionOutput, countScope); err != nil {
-		return renderedSchemaProjections{}, err
+	for _, direction := range directions {
+		if _, err := schemaTypeForScope(document, value, direction, countScope); err != nil {
+			return renderedSchemaProjections{}, err
+		}
 	}
 	if referenceErr != nil {
 		return renderedSchemaProjections{}, referenceErr
@@ -218,7 +219,7 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		if direction == projectionInput {
 			exportName = "Input"
 		}
-		if reference.modulePath != plan.schemaByName[name] || reference.exportName != exportName {
+		if reference.modulePath != plan.schemaProjectionPath(name, direction) || reference.exportName != exportName {
 			if referenceErr == nil {
 				referenceErr = fmt.Errorf("component reference %q (%s) resolves to a different planned target in %q", name, exportName, schema.path)
 			}
@@ -230,13 +231,17 @@ func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, sc
 		return reference.alias
 	}
 	renderScope := typeRenderModule(schema.name, renderReference)
-	input, err := schemaTypeForScope(document, value, projectionInput, renderScope)
-	if err != nil {
-		return renderedSchemaProjections{}, err
-	}
-	output, err := schemaTypeForScope(document, value, projectionOutput, renderScope)
-	if err != nil {
-		return renderedSchemaProjections{}, err
+	var input, output string
+	for _, direction := range directions {
+		rendered, err := schemaTypeForScope(document, value, direction, renderScope)
+		if err != nil {
+			return renderedSchemaProjections{}, err
+		}
+		if direction == projectionInput {
+			input = rendered
+		} else {
+			output = rendered
+		}
 	}
 	if referenceErr != nil {
 		return renderedSchemaProjections{}, referenceErr
@@ -281,15 +286,19 @@ func emitSchemaIndex(document *ir.Document, plan *semanticModulePlan) ([]byte, e
 		} else {
 			fmt.Fprintf(&output, "  /** OpenAPI component `%s`. */\n", sanitizeComment(schema.name))
 		}
-		specifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-index"], schema.path)
+		inputSpecifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-index"], plan.schemaProjectionPath(schema.name, projectionInput))
 		if err != nil {
 			return nil, fmt.Errorf("component %s registry reference: %w", schema.name, err)
 		}
+		outputSpecifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-index"], plan.schemaProjectionPath(schema.name, projectionOutput))
+		if err != nil {
+			return nil, err
+		}
 		fmt.Fprintf(&output, "  readonly %s: {\n", quoteTS(schema.name))
 		output.WriteString("    /** Request/input projection. */\n")
-		fmt.Fprintf(&output, "    readonly input: import(%s).Input\n", quoteTS(specifier))
+		fmt.Fprintf(&output, "    readonly input: import(%s).Input\n", quoteTS(inputSpecifier))
 		output.WriteString("    /** Response/output projection. */\n")
-		fmt.Fprintf(&output, "    readonly output: import(%s).Output\n", quoteTS(specifier))
+		fmt.Fprintf(&output, "    readonly output: import(%s).Output\n", quoteTS(outputSpecifier))
 		output.WriteString("  }\n")
 	}
 	output.WriteString("}\n\n")
@@ -311,6 +320,29 @@ func emitSchemaWireRegistry(plan *semanticModulePlan) ([]byte, error) {
 	outputProperties := make([]runtimeProperty, 0, len(plan.schemas))
 	for _, schema := range plan.schemas {
 		if !schema.inputWire && !schema.outputWire {
+			continue
+		}
+		if plan.splitSchemaProjections {
+			for _, direction := range []projection{projectionInput, projectionOutput} {
+				used, identifier := schema.inputWire, names[schema.name].input
+				if direction == projectionOutput {
+					used, identifier = schema.outputWire, names[schema.name].output
+				}
+				if !used {
+					continue
+				}
+				specifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-wire"], plan.schemaProjectionPath(schema.name, direction))
+				if err != nil {
+					return nil, err
+				}
+				fmt.Fprintf(&output, "import { %sWireSchema as %s } from %s\n", direction, identifier, quoteTS(specifier))
+				property := runtimeProperty{key: schema.name, value: identifier}
+				if direction == projectionInput {
+					inputProperties = append(inputProperties, property)
+				} else {
+					outputProperties = append(outputProperties, property)
+				}
+			}
 			continue
 		}
 		specifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-wire"], schema.path)

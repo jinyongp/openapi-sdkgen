@@ -267,8 +267,10 @@ func (plan *semanticModulePlan) validate() error {
 		}
 	}
 	for _, schema := range plan.schemas {
-		if err := add("schema "+schema.name, schema.path); err != nil {
-			return err
+		if !plan.splitSchemaProjections {
+			if err := add("schema "+schema.name, schema.path); err != nil {
+				return err
+			}
 		}
 	}
 	for _, operation := range plan.operations {

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/generator"
 )
 
@@ -42,6 +43,37 @@ routes = ["GET /idless"]
 		!reflect.DeepEqual(clients["orders"].Selection.Operations, []string{"listOrders"}) ||
 		!reflect.DeepEqual(clients["catalog"].Selection.Routes, []string{"GET /idless"}) {
 		t.Fatalf("root %v clients %#v", values.operations, clients)
+	}
+}
+
+func TestNamedClientsCLICompilesAndPreparesOneSharedDocument(t *testing.T) {
+	directory := t.TempDir()
+	config := filepath.Join(directory, "sdk.toml")
+	if err := os.WriteFile(filepath.Join(directory, "input.json"), []byte(selectionPublicationInput), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(config, []byte("source='./input.json'\ntarget='typescript'\noutput='./sdk'\n[selection]\noperations=['a']\n[clients.first.selection]\noperations=['b']\n[clients.second.selection]\nroutes=['GET /a','GET /b']\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	runtime := defaultGenerationRuntime
+	compile, prepare := runtime.compile, runtime.prepare
+	compiledCalls, preparedCalls := 0, 0
+	runtime.compile = func(input string, options compiler.CompileOptions) (compiler.Result, error) {
+		compiledCalls++
+		return compile(input, options)
+	}
+	runtime.prepare = func(target generator.Target, result compiler.Result, options generator.Options) (generator.Preparation, error) {
+		preparedCalls++
+		if len(options.Clients) != 2 || options.Selection.Operations[0] != "a" {
+			t.Fatalf("independent options not forwarded: %#v", options)
+		}
+		return prepare(target, result, options)
+	}
+	if err := generateWithRuntime([]string{"--config", config}, runtime); err != nil {
+		t.Fatal(err)
+	}
+	if compiledCalls != 1 || preparedCalls != 1 {
+		t.Fatalf("compile=%d prepare=%d", compiledCalls, preparedCalls)
 	}
 }
 
