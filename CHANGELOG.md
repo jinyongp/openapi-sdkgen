@@ -3,8 +3,8 @@
 ## Unreleased
 
 - Choose whether generated TypeScript includes `@ts-nocheck` with
-  `--ts-nocheck=true|false` or `[typescript] nocheck = false`. The default remains
-  `true`; generated implementations are verified without the directive using
+  `--typecheck` or `[typescript] typecheck = true`. The default remains
+  `false`; generated implementations are verified without the directive using
   strict consumer options, including unused declarations and exact optional properties.
 - Correct XML namespace/token parsing, composed XML and OpenAPI 3.2 text/CDATA
   mapping, required nullable parameters, binary response decoding, overlapping

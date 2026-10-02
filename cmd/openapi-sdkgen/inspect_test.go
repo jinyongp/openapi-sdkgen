@@ -113,7 +113,7 @@ func TestInspectConfigUsesInputSettingsAndExportsUsableSelection(t *testing.T) {
 	if err := os.WriteFile(input, []byte(inspectFixture), 0600); err != nil {
 		t.Fatal(err)
 	}
-	configText := "source = 'input.json'\ntarget = 'typescript'\noutput = 'sdk'\naddons = ['metadata']\n[selection]\noperations = ['listOrders']\n[typescript]\nnocheck = false\n"
+	configText := "source = 'input.json'\ntarget = 'typescript'\noutput = 'sdk'\naddons = ['metadata']\n[selection]\noperations = ['listOrders']\n[typescript]\ntypecheck = true\n"
 	if err := os.WriteFile(config, []byte(configText), 0600); err != nil {
 		t.Fatal(err)
 	}

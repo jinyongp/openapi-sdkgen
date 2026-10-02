@@ -75,9 +75,9 @@ func TestValidateTargetOptionsRequiresExplicitAddonSupport(t *testing.T) {
 	}
 }
 
-func TestNoCheckSettingRequiresTypeScriptTarget(t *testing.T) {
+func TestTypeCheckSettingRequiresTypeScriptTarget(t *testing.T) {
 	for _, choice := range []bool{false, true} {
-		options := Options{TypeScriptNoCheck: &choice}
+		options := Options{TypeScriptTypeCheck: &choice}
 		if err := ValidateTargetOptions(testTarget("plain"), options); err == nil {
 			t.Fatal("non-TypeScript target accepted TypeScript settings")
 		}

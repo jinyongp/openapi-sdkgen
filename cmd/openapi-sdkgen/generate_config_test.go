@@ -235,7 +235,7 @@ func TestGenerateProjectConfigCoversPersistentGenerateFlags(t *testing.T) {
 		"schema.extensions":         "schema-extension",
 		"selection.operations":      "operation",
 		"selection.routes":          "route",
-		"typescript.nocheck":        "ts-nocheck",
+		"typescript.typecheck":      "typecheck",
 	}
 	configured := make(map[string]bool, len(configToCLI))
 	for _, key := range generateProjectConfigKeys(reflect.TypeOf(generateProjectConfig{}), "") {

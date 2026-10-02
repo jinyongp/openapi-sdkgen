@@ -17,22 +17,24 @@
 
 ## 생성 소스 타입 검사 {#source-checking}
 
-다음 릴리스부터 `--ts-nocheck=false`를 지정하면 애플리케이션의 컴파일러로
+다음 릴리스부터 `--typecheck`를 지정하면 애플리케이션의 컴파일러로
 생성된 SDK의 구현 코드까지 타입 검사할 수 있습니다.
 
 ```sh
 openapi-sdkgen generate --input ./openapi.yaml --target typescript \
-  --output ./src/generated/api --ts-nocheck=false
+  --output ./src/generated/api --typecheck
 ```
 
 반복해서 생성한다면 TOML 설정 파일에 같은 값을 지정하세요.
 
 ```toml
 [typescript]
-nocheck = false
+typecheck = true
 ```
 
-기본값인 `true`는 각 생성 파일에 `@ts-nocheck`를 넣습니다. 어느 값을 선택해도
+기본값은 `false`이며 각 생성 파일에 `@ts-nocheck`를 넣습니다. `--typecheck`를
+켜면 이 지시를 제거해 애플리케이션의 컴파일러가 생성 소스를 검사합니다.
+`--typecheck=false`를 명시하면 TOML의 `true` 설정보다 우선합니다. 어느 값을 선택해도
 API 타입과 런타임 동작은 같습니다. 루트 SDK, 클라이언트별 코드, 서버 코드,
 메타데이터에 함께 적용되며, 기존 출력의 설정은 `--incremental`로 바꿀 수 있습니다.
 

@@ -96,8 +96,8 @@ type generateFlagValues struct {
 	routes                 rawStrings
 	selectionExplicit      bool
 	clients                map[string]generator.Client
-	tsNoCheck              *bool
-	tsNoCheckExplicit      bool
+	typeCheck              *bool
+	typeCheckExplicit      bool
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -310,8 +310,8 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		return generateUsageError(err.Error())
 	}
 	visited := visitedGenerateFlags(flags.Flags)
-	if values.tsNoCheckExplicit || visited["ts-nocheck"] {
-		options.TypeScriptNoCheck = values.tsNoCheck
+	if values.typeCheckExplicit || visited["typecheck"] {
+		options.TypeScriptTypeCheck = values.typeCheck
 	}
 	if values.selectionExplicit || visited["operation"] || visited["route"] {
 		options.Selection, err = (&generator.Selection{Operations: values.operations, Routes: values.routes}).Canonical()
@@ -478,9 +478,9 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 	values.incremental = flags.Bool(generationGroup, helpOption{
 		Name: "incremental", Summary: "Update a manifest-owned output directory",
 	}, false)
-	values.tsNoCheck = flags.Bool(generationGroup, helpOption{
-		Name: "ts-nocheck", Summary: "Emit @ts-nocheck in TypeScript source; set false to enable consumer type checks",
-	}, true)
+	values.typeCheck = flags.Bool(generationGroup, helpOption{
+		Name: "typecheck", Summary: "Enable consumer type checks of generated TypeScript source (default false)",
+	}, false)
 	flags.Var(generationGroup, helpOption{
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",
 		Repeatable: true, Available: registries.addons.Names,
@@ -737,9 +737,9 @@ func newArtifactGeneration(identity, target string, options generator.Options, i
 		addonNames[index] = string(addon)
 	}
 	result := &artifactGeneration{Generator: identity, Target: target, Addons: addonNames, InputSHA256: inputDigest}
-	if options.TypeScriptNoCheck != nil && !*options.TypeScriptNoCheck {
-		checked := false
-		result.TypeScriptNoCheck = &checked
+	if options.TypeScriptTypeCheck != nil && *options.TypeScriptTypeCheck {
+		checked := true
+		result.TypeScriptTypeCheck = &checked
 	}
 	return result
 }

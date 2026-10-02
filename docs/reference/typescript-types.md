@@ -15,22 +15,25 @@ Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
 ## Typecheck generated source {#source-checking}
 
-Starting in the next release, use `--ts-nocheck=false` to check the generated
+Starting in the next release, use `--typecheck` to check the generated
 SDK's implementation with your application's compiler:
 
 ```sh
 openapi-sdkgen generate --input ./openapi.yaml --target typescript \
-  --output ./src/generated/api --ts-nocheck=false
+  --output ./src/generated/api --typecheck
 ```
 
 For repeated generation, put the same choice in your TOML configuration:
 
 ```toml
 [typescript]
-nocheck = false
+typecheck = true
 ```
 
-The default `true` includes `@ts-nocheck` in each generated file. Both choices
+The default `false` includes `@ts-nocheck` in each generated file. Enabling
+`--typecheck` removes this directive; your application's compiler checks the
+generated source. An explicit `--typecheck=false` overrides a TOML value of
+`true`. Both choices
 retain the same API types and runtime behavior. The setting applies to the
 root SDK, named clients, server code, and metadata together. Use `--incremental`
 to change it in an existing managed output directory.

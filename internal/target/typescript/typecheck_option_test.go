@@ -10,7 +10,7 @@ import (
 	"openapi-sdkgen/internal/generator"
 )
 
-func TestNoCheckPolicyCoversEveryArtifactAndIsFrozenBeforeEmission(t *testing.T) {
+func TestTypeCheckPolicyCoversEveryArtifactAndIsFrozenBeforeEmission(t *testing.T) {
 	for _, selected := range []bool{false, true} {
 		t.Run(map[bool]string{false: "full", true: "selected"}[selected], func(t *testing.T) {
 			registry, _ := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
@@ -21,7 +21,7 @@ func TestNoCheckPolicyCoversEveryArtifactAndIsFrozenBeforeEmission(t *testing.T)
 			}
 			emit := func(choice *bool) []generator.Artifact {
 				t.Helper()
-				options.TypeScriptNoCheck = choice
+				options.TypeScriptTypeCheck = choice
 				// The selection fixture deliberately contains an invalid, excluded
 				// extension. Use a valid complete input for both header policies.
 				document, err := sdkgen.Compile(bytes.ReplaceAll([]byte(generationSelectionFixture), []byte(`,"x-envelope":false`), nil))
@@ -60,10 +60,10 @@ func TestNoCheckPolicyCoversEveryArtifactAndIsFrozenBeforeEmission(t *testing.T)
 				return artifacts
 			}
 			defaults := emit(nil)
-			noCheck, checked := true, false
-			explicit, without := emit(&noCheck), emit(&checked)
+			unchecked, checked := false, true
+			explicit, without := emit(&unchecked), emit(&checked)
 			if !reflect.DeepEqual(defaults, explicit) {
-				t.Fatal("explicit true changed default bytes")
+				t.Fatal("explicit false changed default bytes")
 			}
 			if len(defaults) != len(without) {
 				t.Fatal("header option changed artifact inventory")

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestNoCheckConfigAndCLIOverride(t *testing.T) {
+func TestTypeCheckConfigAndCLIOverride(t *testing.T) {
 	registries, err := newCLIRegistries()
 	if err != nil {
 		t.Fatal(err)
@@ -18,11 +18,14 @@ func TestNoCheckConfigAndCLIOverride(t *testing.T) {
 		flags          []string
 		want, explicit bool
 	}{
-		{"", nil, true, false},
-		{"[typescript]\nnocheck = true", nil, true, true},
-		{"[typescript]\nnocheck = false", nil, false, true},
-		{"[typescript]\nnocheck = false", []string{"--ts-nocheck=true"}, true, true},
-		{"[typescript]\nnocheck = true", []string{"--ts-nocheck=false"}, false, true},
+		{"", nil, false, false},
+		{"", []string{"--typecheck"}, true, true},
+		{"", []string{"--typecheck=false"}, false, true},
+		{"[typescript]\ntypecheck = true", nil, true, true},
+		{"[typescript]\ntypecheck = false", nil, false, true},
+		{"[typescript]\ntypecheck = false", []string{"--typecheck"}, true, true},
+		{"[typescript]\ntypecheck = false", []string{"--typecheck=true"}, true, true},
+		{"[typescript]\ntypecheck = true", []string{"--typecheck=false"}, false, true},
 	} {
 		path := filepath.Join(t.TempDir(), "sdk.toml")
 		if err := os.WriteFile(path, []byte(tc.config), 0600); err != nil {
@@ -38,11 +41,11 @@ func TestNoCheckConfigAndCLIOverride(t *testing.T) {
 		}
 		visited := visitedGenerateFlags(flags.Flags)
 		applyGenerateProjectConfig(config, base, values, visited)
-		if *values.tsNoCheck != tc.want || (values.tsNoCheckExplicit || visited["ts-nocheck"]) != tc.explicit {
+		if *values.typeCheck != tc.want || (values.typeCheckExplicit || visited["typecheck"]) != tc.explicit {
 			t.Fatalf("config %q flags %v: wrong policy", tc.config, tc.flags)
 		}
 	}
-	for _, text := range []string{"[typescript]\nnocheck = 'false'", "[typescript]\nno_check = false", "[clients.a.typescript]\nnocheck = false"} {
+	for _, text := range []string{"[typescript]\ntypecheck = 'false'", "[typescript]\ntype_check = false", "[clients.a.typescript]\ntypecheck = false", "[typescript]\nnocheck = false"} {
 		path := filepath.Join(t.TempDir(), "sdk.toml")
 		if err := os.WriteFile(path, []byte(text), 0600); err != nil {
 			t.Fatal(err)
@@ -53,7 +56,7 @@ func TestNoCheckConfigAndCLIOverride(t *testing.T) {
 	}
 }
 
-func TestNoCheckTransitionsPreserveManagedOutput(t *testing.T) {
+func TestTypeCheckTransitionsPreserveManagedOutput(t *testing.T) {
 	directory := t.TempDir()
 	input, output := filepath.Join(directory, "openapi.json"), filepath.Join(directory, "sdk")
 	if err := os.WriteFile(input, []byte(metadataAddonInput), 0600); err != nil {
@@ -70,11 +73,11 @@ func TestNoCheckTransitionsPreserveManagedOutput(t *testing.T) {
 	if err := os.WriteFile(user, []byte("export const user = true;\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	for _, policy := range []bool{false, true, false} {
+	for _, policy := range []bool{true, false, true} {
 		before := snapshotGeneratedDirectory(t, output)
-		flag := "--ts-nocheck=false"
+		flag := "--typecheck=false"
 		if policy {
-			flag = "--ts-nocheck=true"
+			flag = "--typecheck"
 		}
 		args := append(append([]string{}, base...), flag)
 		if err := generate(append(args, "--check")); err == nil {
@@ -94,7 +97,7 @@ func TestNoCheckTransitionsPreserveManagedOutput(t *testing.T) {
 			if path == "user.ts" || !strings.HasSuffix(path, ".ts") {
 				continue
 			}
-			if strings.Contains(data, "// @ts-nocheck\n") != policy {
+			if strings.Contains(data, "// @ts-nocheck\n") == policy {
 				t.Fatalf("wrong policy: %s", path)
 			}
 			if strings.ReplaceAll(before[path], "// @ts-nocheck\n", "") != strings.ReplaceAll(data, "// @ts-nocheck\n", "") {
@@ -105,7 +108,7 @@ func TestNoCheckTransitionsPreserveManagedOutput(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got := manifest.Generation.TypeScriptNoCheck == nil || *manifest.Generation.TypeScriptNoCheck
+		got := manifest.Generation.TypeScriptTypeCheck != nil && *manifest.Generation.TypeScriptTypeCheck
 		if got != policy {
 			t.Fatal("publication identity missed header policy")
 		}
@@ -123,7 +126,7 @@ func TestNoCheckTransitionsPreserveManagedOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 	edited := snapshotGeneratedDirectory(t, output)
-	if err := generate(append(append([]string{}, base...), "--ts-nocheck=true", "--incremental")); err == nil {
+	if err := generate(append(append([]string{}, base...), "--typecheck=false", "--incremental")); err == nil {
 		t.Fatal("edited managed file was replaced")
 	}
 	if !reflect.DeepEqual(edited, snapshotGeneratedDirectory(t, output)) {

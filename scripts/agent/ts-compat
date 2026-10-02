@@ -34,9 +34,9 @@ check_sdk() {
     if [[ "$argument" == "--" ]]; then has_separator=1; fi
   done
   if ((has_separator)); then
-    "$ROOT/scripts/agent/generate-check" "$@" "--ts-nocheck=$policy"
+    "$ROOT/scripts/agent/generate-check" "$@" "--typecheck=$policy"
   else
-    "$ROOT/scripts/agent/generate-check" "$@" -- "--ts-nocheck=$policy"
+    "$ROOT/scripts/agent/generate-check" "$@" -- "--typecheck=$policy"
   fi
 }
 for version in "${versions[@]}"; do
@@ -49,8 +49,8 @@ for version in "${versions[@]}"; do
   # generate-check invokes an executable; keep the pinned Node selection here.
   export SDKGEN_COMPAT_TSC_PATH="$TYPESCRIPT_ROOT/node_modules/$package/lib/tsc.js"
   agent_run "TypeScript $version version" "$compiler" --version
-  for policy in true false; do
-  agent_note "checking TypeScript $version with ts-nocheck=$policy"
+  for policy in false true; do
+  agent_note "checking TypeScript $version with typecheck=$policy"
   for input in test/fixtures/support-gaps/oas32-normative.json test/fixtures/support-gaps/boundary-webhook.json test/fixtures/support-gaps/schema-array.json; do
     SDKGEN_GENERATE_CHECK_SKIP_BUILD="$skip_build" SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
       agent_run "TypeScript $version generated client and server: $input" \

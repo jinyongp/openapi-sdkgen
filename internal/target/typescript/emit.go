@@ -105,7 +105,7 @@ type sourcePlan struct {
 	ownership                   *sourceOwnershipIndex
 	includeServer               bool
 	includeMetadata             bool
-	omitTypeCheckDirective      bool
+	typeCheck                   bool
 	omittedOperations           map[string]bool
 	resourceReservationExcluded map[string]bool
 	reservationManifest         *Manifest
@@ -149,7 +149,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 		return generator.Plan{}, diagnostics, coverage, err
 	}
 	plan.includeMetadata = options.HasAddon(generator.AddonMetadata)
-	plan.omitTypeCheckDirective = options.TypeScriptNoCheck != nil && !*options.TypeScriptNoCheck
+	plan.typeCheck = options.TypeScriptTypeCheck != nil && *options.TypeScriptTypeCheck
 	if !diagnostic.HasErrors(diagnostics) {
 		if !hasMeaningfulEntrySurface(plan) {
 			diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
@@ -591,12 +591,12 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 			return fmt.Errorf("internal TypeScript target: missing prepared execution for %q", module.routeKey)
 		}
 	}
-	header := generatedFileHeaderFor(!shared.omitTypeCheckDirective)
+	header := generatedFileHeaderFor(!shared.typeCheck)
 	// Compiler directives affect published file hashes and the output manifest,
 	// while the selective execution identity remains independent of this policy.
 	validated := validatedArtifactWriter(sink, header)
 	publish := func(artifact Artifact) error {
-		if shared.omitTypeCheckDirective && bytes.HasPrefix(artifact.Data, []byte(generatedFileHeader)) {
+		if shared.typeCheck && bytes.HasPrefix(artifact.Data, []byte(generatedFileHeader)) {
 			data := make([]byte, 0, len(header)+len(artifact.Data)-len(generatedFileHeader))
 			data = append(data, header...)
 			artifact.Data = append(data, artifact.Data[len(generatedFileHeader):]...)

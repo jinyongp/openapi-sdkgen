@@ -60,13 +60,13 @@ func (value *StageError) Unwrap() error { return value.Err }
 
 // Generation fingerprints the generator inputs that produced a managed output.
 type Generation struct {
-	Generator         string             `json:"generator"`
-	Target            string             `json:"target"`
-	Addons            []string           `json:"addons,omitempty"`
-	InputSHA256       string             `json:"inputSha256"`
-	SelectionRoutes   []string           `json:"selectionRoutes,omitempty"`
-	Clients           []ClientGeneration `json:"clients,omitempty"`
-	TypeScriptNoCheck *bool              `json:"tsNoCheck,omitempty"`
+	Generator           string             `json:"generator"`
+	Target              string             `json:"target"`
+	Addons              []string           `json:"addons,omitempty"`
+	InputSHA256         string             `json:"inputSha256"`
+	SelectionRoutes     []string           `json:"selectionRoutes,omitempty"`
+	Clients             []ClientGeneration `json:"clients,omitempty"`
+	TypeScriptTypeCheck *bool              `json:"tsTypecheck,omitempty"`
 }
 
 // ClientGeneration preserves API assignment, independently of the shared union.
@@ -330,8 +330,8 @@ func GenerationEqual(left, right *Generation) bool {
 	if left == nil || right == nil {
 		return left == right
 	}
-	noCheck := func(value *Generation) bool { return value.TypeScriptNoCheck == nil || *value.TypeScriptNoCheck }
-	if noCheck(left) != noCheck(right) {
+	typeCheck := func(value *Generation) bool { return value.TypeScriptTypeCheck != nil && *value.TypeScriptTypeCheck }
+	if typeCheck(left) != typeCheck(right) {
 		return false
 	}
 	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) || len(left.SelectionRoutes) != len(right.SelectionRoutes) || len(left.Clients) != len(right.Clients) {
@@ -356,7 +356,7 @@ func GenerationEqual(left, right *Generation) bool {
 }
 
 func validateGeneration(generation Generation) error {
-	if generation.TypeScriptNoCheck != nil && generation.Target != "typescript" {
+	if generation.TypeScriptTypeCheck != nil && generation.Target != "typescript" {
 		return fmt.Errorf("TypeScript directive policy requires the typescript target")
 	}
 	if generation.Generator == "" || generation.Target == "" || len(generation.InputSHA256) != sha256.Size*2 {
