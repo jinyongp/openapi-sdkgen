@@ -24,6 +24,7 @@ just agent fuzz
 just agent race
 just agent test
 just agent build
+just agent inspect-benchmark CORPUS_DIRECTORY REPORT_JSON
 just agent mod-tidy
 just agent mod-tidy-check
 just agent mod-verify

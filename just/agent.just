@@ -38,6 +38,9 @@ test:
 build:
     ./scripts/agent/build
 
+inspect-benchmark corpus output:
+    bash ./scripts/agent/inspect-benchmark {{quote(corpus)}} {{quote(output)}}
+
 mod-tidy:
     ./scripts/agent/mod-tidy
 
