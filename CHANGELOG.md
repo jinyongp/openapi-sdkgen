@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Breaking:** SDK regeneration exports the original OpenAPI document through
+  `openapi.document` when `--with metadata` or `addons = ["metadata"]` is enabled.
+  Default metadata keeps version and selection information, reducing generated
+  size without changing API calls or required types. Existing generated SDKs
+  retain their exports. See [metadata migration](docs/reference/client-api.md#metadata-migration).
 - Generated runtime source now strict-typechecks with TypeScript 5.7.3 and later.
   CI checks pinned 5.7.3, 5.9.3, 6.0.3, and 7.0.2 consumer compilers.
 - Selective operation modules use shorter directories for long API routes while

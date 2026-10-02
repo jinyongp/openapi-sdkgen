@@ -17,8 +17,8 @@ Invalid declarations stop generation with a diagnostic.
 - Query, header, cookie, and path parameters keep their OpenAPI names.
 - Schema constraints such as `required`, `minimum`, `pattern`, and `enum`
   apply to generated request and response validation.
-- Unknown `x-*` fields remain available in metadata and have no effect on SDK
-  behavior.
+- With `--with metadata`, unknown `x-*` fields remain available in
+  `openapi.document`. These fields have no effect on SDK behavior.
 
 Declare filters as query parameters and `If-Match` or `Idempotency-Key` as header
 parameters. The supported `x-*` fields on this page define the available SDK

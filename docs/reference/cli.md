@@ -34,7 +34,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
-| `--with <addon>` | Add target-specific artifacts; currently `server`; repeatable |
+| `--with <addon>` | Enable `metadata` or `server` artifacts; repeatable |
 | `--operation <operationId>` | Generate an exact operation ID; repeatable |
 | `--route <METHOD /path>` | Generate an exact method/path template; repeatable |
 | `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
@@ -301,6 +301,21 @@ credentials scoped to the root OpenAPI origin. Root redirects must remain on
 that exact origin (scheme, host, and port), and only same-origin requests receive
 the protected transport settings. Cross-origin remote references use the separate
 `--allow-remote-ref` policy.
+
+## OpenAPI source metadata {#metadata-addon}
+
+Include the original OpenAPI document in the SDK when a documentation tool or
+script needs to read it. Add `--with metadata` to generation:
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --with metadata --output ./src/generated/api
+```
+
+For a configuration file, set `addons = ["metadata"]`. To also generate server
+handlers, use `addons = ["server", "metadata"]` or repeat `--with` for both.
+See [OpenAPI metadata and migration](./client-api.md#openapi-metadata) for the
+exports and the next major release's regeneration change.
 
 ## TypeScript server add-on
 

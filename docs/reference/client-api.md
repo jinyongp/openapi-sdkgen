@@ -6,7 +6,7 @@ use `./generated/api`.
 | Import path | Use it for |
 | --- | --- |
 | `./generated/api` | API calls, generated types, errors, Links, and streams |
-| `./generated/api/metadata` | Reading the source OpenAPI file and version |
+| `./generated/api/metadata` | OpenAPI version and optional source document |
 
 For inbound Webhook and Callback imports, see
 [Generated server API](./server-api.md).
@@ -232,15 +232,33 @@ Security selection uses `SECURITY_REQUIREMENT_REQUIRED` and
 
 ## OpenAPI metadata
 
+Every SDK exports the input document's OpenAPI version. API descriptions and
+generated types remain available with the default generation settings.
+
 ```ts
 import { openapi } from "./generated/api/metadata";
 
-openapi.document;
 openapi.version;
 openapi.versionLine;
 ```
 
-`openapi.document` contains the decoded entry OpenAPI document exactly as supplied
-for generation. Compatibility normalization does not rewrite this metadata, and
-external reference documents are not folded into `openapi.document`; they remain
-separate reference/provenance inputs.
+To read the original document from the SDK, enable
+[`--with metadata`](./cli.md#metadata-addon). This is useful for documentation
+tools or scripts that inspect the source description and extensions.
+
+```ts
+import { openapi } from "./generated/api/metadata";
+
+console.log(openapi.document.info.title);
+```
+
+The export contains the whole decoded JSON or YAML entry document, including APIs
+excluded by selection. External `$ref` values keep their original paths. YAML
+comments and formatting belong to the source file.
+
+### Regeneration migration {#metadata-migration}
+
+In the next major release, SDK regeneration includes the source document when
+`--with metadata` is enabled. If your code reads `openapi.document`, add this
+option or `addons = ["metadata"]` to your configuration before regenerating.
+Existing generated SDKs retain their exports.

@@ -19,11 +19,17 @@ openapi-sdkgen generate \
 ```
 
 The TypeScript target writes the client, generated types, source runtime, and
-OpenAPI metadata. Fresh generation creates a new output directory.
+OpenAPI version information. Fresh generation creates a new output directory.
 
 Generated source belongs to the application repository. Regenerate generator-owned
 files through the CLI; managed-output validation detects manual edits. Generation
 publishes the output atomically after the full operation succeeds.
+
+To also export the original document for documentation tools or custom scripts,
+add [`--with metadata`](../reference/cli.md#metadata-addon). This includes the
+whole entry document, even when generating selected APIs. See
+[metadata migration](../reference/client-api.md#metadata-migration) before
+regenerating code that reads `openapi.document` with the next major release.
 
 ## Regenerate an existing SDK
 

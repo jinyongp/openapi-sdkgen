@@ -36,7 +36,7 @@ openapi-sdkgen generate [options]
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 managed output 검증 |
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 manifest-owned output 갱신 |
-| `--with <addon>` | target-specific artifact 추가. 현재 `server`, 반복 가능 |
+| `--with <addon>` | `metadata` 또는 `server` 추가. 반복 가능 |
 | `--operation <operationId>` | 정확한 operation ID로 생성할 API 지정. 반복 가능 |
 | `--route <METHOD /path>` | 정확한 메서드·경로로 생성할 API 지정. 반복 가능 |
 | `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
@@ -311,6 +311,20 @@ Mapping된 header, client certificate, private CA는 루트 OpenAPI origin에 �
 보호 credential입니다. 루트 redirect는 정확히 같은 origin(scheme, host, port)
 안에서만 허용되며 보호 transport 설정도 same-origin 요청에만 적용됩니다.
 Cross-origin 원격 참조는 별도의 `--allow-remote-ref` 정책을 사용합니다.
+
+## OpenAPI 원문 포함 {#metadata-addon}
+
+문서 도구나 스크립트에서 원문을 읽으려면 생성할 때 `--with metadata`를 추가하세요.
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --with metadata --output ./src/generated/api
+```
+
+설정 파일에서는 `addons = ["metadata"]`로 지정합니다. 서버 핸들러도 함께
+생성하려면 `addons = ["server", "metadata"]`를 사용하거나 두 옵션을 각각
+`--with`로 지정하세요. 생성되는 값과 다음 메이저 버전의 이전 방법은
+[OpenAPI 메타데이터](./client-api.md#openapi-메타데이터)를 참고하세요.
 
 ## TypeScript server add-on
 

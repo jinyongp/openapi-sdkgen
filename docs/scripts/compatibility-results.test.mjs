@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection } from "./build-compatibility-results.mjs";
+import { corpusNames, publishCompatibilityDocuments, readCompatibilityResults, readGraphSelection, readMetadataComparison } from "./build-compatibility-results.mjs";
 
 const sourceDirectory = new URL("../../test/compatibility/", import.meta.url);
 
@@ -18,7 +18,7 @@ function fixture(t) {
     }
   }
   mkdirSync(resolve(directory, "selections"));
-  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs"]) {
+  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs"]) {
     copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
   }
   return directory;
@@ -56,6 +56,28 @@ test("Graph selection publishes separate measured evidence and rejects stale or 
     change(directory, "graph-selected-results.json", mutate);
     assert.throws(() => readGraphSelection(directory), /Graph selection/);
   }
+});
+
+test("metadata comparisons retain matched source, settings, API and schema scope", (t) => {
+  const directory = fixture(t);
+  const comparison = readMetadataComparison(directory);
+  assert.equal(comparison.cases.length, 4);
+  assert.ok(comparison.cases.every(item => item.default.generation.artifactBytes < item.metadata.generation.artifactBytes));
+  for (const mutate of [
+    data => data.cases[0].default.generationAddons.push("metadata"),
+    data => data.cases[0].metadata.measurement.sourceCommit = "0".repeat(40),
+    data => data.cases[1].default.generation.schemaArtifactCount--,
+    data => data.cases[1].default.generation.artifactBytes--,
+    data => data.cases[2].default.selection.routes.pop(),
+    data => data.cases[2].inputSha256 = "0".repeat(64),
+    data => data.cases[3].metadata.typecheck.status = "fail",
+  ]) {
+    const directory = fixture(t);
+    change(directory, "metadata-comparison-results.json", mutate);
+    assert.throws(() => readMetadataComparison(directory), /Metadata comparison/);
+  }
+  change(directory, "graph-selected-results.json", data => delete data.documents[0].generationAddons);
+  assert.throws(() => readGraphSelection(directory), /metadata setting/);
 });
 
 function change(directory, name, mutate) {

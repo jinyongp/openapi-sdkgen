@@ -49,7 +49,9 @@
   ],
   "documents": [
     {
-      "generationAddons": [],
+      "generationAddons": [
+        "metadata"
+      ],
       "generationScope": "selected",
       "generationSelection": {
         "fixtureSha256": "7235b0bf5b14245ba8ecdd94423bc975deef44cb11054a305ced5427802bcbfc",
@@ -83,7 +85,7 @@
         "runtime": {
           "status": "pass",
           "detail": "pass: Graph selected loadOperations, query/path/body, model decoding and mock Fetch",
-          "durationMillis": 7143.383027
+          "durationMillis": 7137.102598
         }
       },
       "evidenceKind": "real-document",
@@ -133,16 +135,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
-        "metadataBytes": 813,
+        "metadataBytes": 64016328,
         "schemaArtifactCount": 6889,
         "status": "pass",
         "artifactCount": 6993,
-        "artifactBytes": 40431759,
-        "durationMillis": 10441.663367
+        "artifactBytes": 104447274,
+        "durationMillis": 10581.643801
       },
       "typecheck": {
         "status": "pass",
-        "durationMillis": 12349.219786
+        "durationMillis": 12323.938724
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -512,7 +514,7 @@
     "typescriptVersion": "7.0.2",
     "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
     "sourceDirty": false,
-    "measuredAt": "2026-10-02T00:49:29Z",
+    "measuredAt": "2026-10-02T00:50:06Z",
     "generationScope": "compile-prepare-write",
     "samples": 1,
     "os": "linux",
@@ -521,14 +523,14 @@
     "goVersion": "go1.27.1"
   },
   "resources": {
-    "cpuUserSeconds": 45.49,
-    "cpuSystemSeconds": 6.67,
-    "cpuPercent": 137.0,
-    "wallSeconds": 37.85,
-    "peakRssBytes": 3544403968,
-    "majorPageFaults": 29,
-    "filesystemInputBlocks": 59216,
-    "filesystemOutputBlocks": 156432,
+    "cpuUserSeconds": 46.65,
+    "cpuSystemSeconds": 6.89,
+    "cpuPercent": 143.0,
+    "wallSeconds": 37.22,
+    "peakRssBytes": 3744636928,
+    "majorPageFaults": 0,
+    "filesystemInputBlocks": 8,
+    "filesystemOutputBlocks": 233456,
     "exitCode": 0
   }
 }

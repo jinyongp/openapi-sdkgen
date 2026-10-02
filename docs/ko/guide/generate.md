@@ -18,11 +18,17 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-TypeScript target은 클라이언트, 생성 타입, 소스 runtime, OpenAPI 메타데이터를
+TypeScript target은 클라이언트, 생성 타입, 소스 runtime, OpenAPI 버전 정보를
 출력합니다. 생성기가 관리하는 파일은 CLI로 다시 생성하며, 출력 디렉터리는
 애플리케이션 저장소에서 일반 소스로 관리합니다.
 
 생성 결과는 전체 작업이 성공한 뒤 한 번에 반영됩니다.
+
+문서 도구나 스크립트에서 원문도 읽으려면
+[`--with metadata`](../reference/cli.md#metadata-addon)를 추가하세요. API를 선택해
+생성할 때도 입력 문서 전체가 포함됩니다. 다음 메이저 버전으로
+`openapi.document`를 사용하는 SDK를 재생성할 때는
+[이전 방법](../reference/client-api.md#metadata-migration)을 확인하세요.
 
 ## 기존 SDK 다시 생성
 

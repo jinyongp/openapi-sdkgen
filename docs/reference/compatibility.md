@@ -31,6 +31,10 @@ in the SDK. As an example, we selected nine user, group, and drive APIs from
 Microsoft Graph beta. The table compares this selection with full generation
 from the same document.
 
+The comparison also covers selected GitHub and Stripe APIs, with and without
+the original OpenAPI document. See [source metadata](./cli.md#metadata-addon)
+for when to include it and the next major release's generation settings.
+
 <GraphSelection />
 
 Use [API selection](../guide/selective-client.md#generation) to generate the

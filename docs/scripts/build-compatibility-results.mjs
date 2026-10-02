@@ -162,6 +162,11 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
   const policyArray = fixture.toString().match(/^routes\s*=\s*\[([\s\S]*?)^\]/m);
   if (!policyArray) throw new Error("Graph selection route policy is unavailable");
   const policyRoutes = [...new Set(JSON.parse(`[${policyArray[1].replace(/,\s*$/, "")}]`))].sort();
+  const expectedAddons = reportName === "graph-metadata-results.json" ? ["metadata"] : [];
+  if (reportName !== "graph-selected-ci-results.json" &&
+      JSON.stringify(selected?.generationAddons) !== JSON.stringify(expectedAddons)) {
+    throw new Error("Graph selection metadata setting mismatch");
+  }
   if (report.schemaVersion !== 2 || report.manifestSha256 !== sha256(manifestBytes) || report.documents.length !== 1 ||
       selected.id !== entry.id || selected.inputSha256 !== entry.sha256 || full.inputSha256 !== selected.inputSha256 ||
       selected.generationScope !== "selected" || selection?.fixtureSha256 !== sha256(fixture) ||
@@ -184,12 +189,60 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
   return { full, selected, measurement: report.measurement, resources: report.resources, sourceUrl: entry.sourceUrl, ciRunUrl: report.ciRunUrl };
 }
 
+export function readMetadataComparison(directory) {
+  const data = JSON.parse(readFileSync(resolve(directory, "metadata-comparison-results.json")));
+  const manifest = JSON.parse(readFileSync(resolve(directory, "regression.json")));
+  const graph = readGraphSelection(directory);
+  const metadata = readGraphSelection(directory, "graph-metadata-results.json");
+  const expected = new Map([["graph-nine", "microsoft-graph-beta"], ["graph-count", "microsoft-graph-beta"], ["github-nine", "github"], ["stripe-nine", "stripe"]]);
+  const fail = () => { throw new Error("Metadata comparison provenance or measurement mismatch"); };
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  if (data.schemaVersion !== 1 || !Array.isArray(data.cases) || data.cases.length !== expected.size ||
+      new Set(data.cases.map(item => item.name)).size !== expected.size) fail();
+  for (const item of data.cases) {
+    const entry = manifest.corpora.find(entry => entry.id === expected.get(item.name));
+    if (!entry || item.document !== entry.id || item.inputSha256 !== entry.sha256 || item.sourceUrl !== entry.sourceUrl ||
+        item.displayName !== entry.displayName || !Array.isArray(item.routes) ||
+        item.routes.length !== (item.name === "graph-count" ? 1 : 9) ||
+        !same(item.routes, [...new Set(item.routes)].sort()) ||
+        item.runtimeCheck !== (item.name === "graph-nine" ? "mock-call" : "selection-module-smoke")) fail();
+    for (const [mode, sample] of [["default", item.default], ["metadata", item.metadata]]) {
+      if (!sample || !same(sample.generationAddons, mode === "default" ? [] : ["metadata"]) ||
+          sample.measurement?.sourceCommit !== graph.measurement.sourceCommit || sample.measurement.sourceDirty !== false ||
+          sample.measurement.generationScope !== "compile-prepare-write" ||
+          !Number.isFinite(Date.parse(sample.measurement.measuredAt)) ||
+          ["typescriptVersion", "goVersion", "os", "architecture", "cpu"].some(key => sample.measurement[key] !== graph.measurement[key]) ||
+          sample.generation?.status !== "pass" || sample.typecheck?.status !== "pass" || sample.selection?.runtime?.status !== "pass" ||
+          !same(sample.selection.routes, item.routes) || !same(sample.selection.requested, { routes: item.routes }) ||
+          sample.operationEmission?.available !== true || sample.operationEmission.count !== item.routes.length ||
+          ["artifactBytes", "metadataBytes", "artifactCount", "schemaArtifactCount"].some(key => !Number.isSafeInteger(sample.generation[key]) || sample.generation[key] < 0) ||
+          sample.generation.metadataBytes > sample.generation.artifactBytes ||
+          [sample.generation.durationMillis, sample.typecheck.durationMillis, sample.resources?.peakRssBytes].some(value => !Number.isFinite(value) || value < 0)) fail();
+    }
+    const a = item.default, b = item.metadata;
+    if (!same(a.operationEmission, b.operationEmission) || a.generation.artifactCount !== b.generation.artifactCount ||
+        a.generation.schemaArtifactCount !== b.generation.schemaArtifactCount ||
+        !same(a.selection.routes, b.selection.routes) || !same(a.selection.dependencyRoutes, b.selection.dependencyRoutes) ||
+        a.selection.excludedOperations !== b.selection.excludedOperations ||
+        b.generation.artifactBytes - a.generation.artifactBytes !== b.generation.metadataBytes - a.generation.metadataBytes) fail();
+    if (item.name === "graph-nine") {
+      for (const [sample, report] of [[a, graph], [b, metadata]]) {
+        if (!same(sample.generation, report.selected.generation) || !same(sample.selection, report.selected.generationSelection) ||
+            !same(sample.measurement, report.measurement) || !same(sample.operationEmission, report.selected.operationEmission)) fail();
+      }
+    }
+  }
+  return data;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const docsDirectory = fileURLToPath(new URL("..", import.meta.url));
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
   const data = readCompatibilityResults(sourceDirectory);
   const graph = readGraphSelection(sourceDirectory);
   graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
+  graph.metadata = readGraphSelection(sourceDirectory, "graph-metadata-results.json");
+  graph.comparison = readMetadataComparison(sourceDirectory);
   const generatedDirectory = resolve(docsDirectory, ".vitepress/generated");
   const publicDirectory = resolve(docsDirectory, "public/compatibility-results");
   mkdirSync(generatedDirectory, { recursive: true });
@@ -198,6 +251,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
   copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
+  for (const name of ["graph-metadata-results.json", "metadata-comparison-results.json"]) {
+    copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
+  }
   for (const id of corpusNames) {
     for (const name of [`${id}.json`, `${id}-results.json`]) {
       copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));

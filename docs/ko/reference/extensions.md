@@ -17,8 +17,8 @@ openapi-sdkgen은 지원하는 `x-*` 선언을 코드를 쓰기 전에 검증합
   사용합니다.
 - `required`, `minimum`, `pattern`, `enum` 같은 스키마 제약은 생성된 코드의
   요청·응답 검사에 반영됩니다.
-- openapi-sdkgen이 알지 못하는 `x-*` 필드는 메타데이터에 보존되고 SDK 동작은
-  그대로 유지됩니다.
+- `--with metadata`를 지정하면 알지 못하는 `x-*` 필드도 `openapi.document`에서
+  읽을 수 있습니다. 이 필드는 SDK 동작에 영향을 주지 않습니다.
 
 필터는 query 매개변수로, `If-Match`와 `Idempotency-Key`는 header 매개변수로
 선언하세요. 이 페이지의 지원 `x-*` 필드가 SDK 확장 동작을 정의합니다.

@@ -28,6 +28,10 @@ OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
 Microsoft Graph beta를 예로, 사용자·그룹·드라이브 API 9개를 선택해 측정했습니다.
 아래 표에서 같은 문서의 전체 생성 결과와 비교할 수 있습니다.
 
+GitHub·Stripe도 API를 선택해 원문 포함 여부에 따른 용량을 비교했습니다.
+원문이 필요한 경우와 다음 메이저 버전의 생성 설정은
+[OpenAPI 원문 포함](./cli.md#metadata-addon)을 참고하세요.
+
 <GraphSelection locale="ko" />
 
 [API 선택 설정](../guide/selective-client.md#generation)으로 애플리케이션에 필요한

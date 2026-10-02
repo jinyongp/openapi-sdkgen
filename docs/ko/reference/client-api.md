@@ -6,7 +6,7 @@ TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 
 | 경로 | 용도 |
 | --- | --- |
 | `./generated/api` | API 호출, 생성 타입, 오류, Link, 스트림 |
-| `./generated/api/metadata` | 원본 OpenAPI 파일과 버전 확인 |
+| `./generated/api/metadata` | OpenAPI 버전과 선택적으로 포함한 원문 확인 |
 
 Inbound Webhook/Callback import는
 [생성된 서버 API](./server-api.md)를 참고하세요.
@@ -230,15 +230,31 @@ Security Requirement 선택 오류는 `SECURITY_REQUIREMENT_REQUIRED`와
 
 ## OpenAPI 메타데이터
 
+모든 SDK에서 입력 문서의 OpenAPI 버전을 확인할 수 있습니다. API 설명과
+생성 타입은 기본 설정에서도 제공됩니다.
+
 ```ts
 import { openapi } from "./generated/api/metadata";
 
-openapi.document;
 openapi.version;
 openapi.versionLine;
 ```
 
-`openapi.document`에는 생성 입력으로 전달한 entry OpenAPI 문서를 디코딩한
-내용이 그대로 포함됩니다. Compatibility normalization은 이 메타데이터를
-재작성하지 않으며, 외부 reference 문서는 `openapi.document`에 합쳐지지 않고
-별도의 reference/provenance 입력으로 유지됩니다.
+SDK에서 원문을 읽으려면 [`--with metadata`](./cli.md#metadata-addon)를 지정하세요.
+원문의 설명이나 확장 필드를 읽는 문서 도구·스크립트에서 사용할 수 있습니다.
+
+```ts
+import { openapi } from "./generated/api/metadata";
+
+console.log(openapi.document.info.title);
+```
+
+`openapi.document`에는 입력 JSON·YAML 문서 전체를 디코딩한 값이 들어갑니다.
+API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다. 외부 `$ref`는
+원래 경로를 유지하며, YAML의 주석과 서식은 원본 파일에서 확인할 수 있습니다.
+
+### SDK 재생성 시 이전 방법 {#metadata-migration}
+
+다음 메이저 버전부터는 `--with metadata`를 지정하면 SDK에 원문이 포함됩니다.
+`openapi.document`를 사용하는 코드는 재생성 전에 이 옵션을 추가하거나 설정
+파일에 `addons = ["metadata"]`를 넣으세요. 이미 생성한 SDK의 export는 유지됩니다.

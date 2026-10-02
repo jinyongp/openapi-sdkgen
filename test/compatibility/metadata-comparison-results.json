@@ -1,0 +1,681 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "graph-nine",
+      "document": "microsoft-graph-beta",
+      "displayName": "Microsoft Graph beta",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/7b2914c8ad1340129f52aa785f13c074cb46fd7c/openapi/beta/openapi.yaml",
+      "routes": [
+        "DELETE /users/{user-id}",
+        "GET /drives",
+        "GET /drives/{drive-id}",
+        "GET /groups",
+        "GET /groups/{group-id}",
+        "GET /users",
+        "GET /users/{user-id}",
+        "PATCH /users/{user-id}",
+        "POST /users"
+      ],
+      "runtimeCheck": "mock-call",
+      "default": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:49:29Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [],
+        "generation": {
+          "metadataBytes": 813,
+          "schemaArtifactCount": 6889,
+          "status": "pass",
+          "artifactCount": 6993,
+          "artifactBytes": 40431759,
+          "durationMillis": 10441.663367
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 12349.219786
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "7235b0bf5b14245ba8ecdd94423bc975deef44cb11054a305ced5427802bcbfc",
+          "runtimeProbeSha256": "3fe507ea4110f07c85a92aac405a6e6d1b88eccbf4fa9a936c5567f629803491",
+          "requested": {
+            "routes": [
+              "DELETE /users/{user-id}",
+              "GET /drives",
+              "GET /drives/{drive-id}",
+              "GET /groups",
+              "GET /groups/{group-id}",
+              "GET /users",
+              "GET /users/{user-id}",
+              "PATCH /users/{user-id}",
+              "POST /users"
+            ]
+          },
+          "routes": [
+            "DELETE /users/{user-id}",
+            "GET /drives",
+            "GET /drives/{drive-id}",
+            "GET /groups",
+            "GET /groups/{group-id}",
+            "GET /users",
+            "GET /users/{user-id}",
+            "PATCH /users/{user-id}",
+            "POST /users"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 29572,
+          "runtime": {
+            "status": "pass",
+            "detail": "pass: Graph selected loadOperations, query/path/body, model decoding and mock Fetch",
+            "durationMillis": 7143.383027
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 45.49,
+          "cpuSystemSeconds": 6.67,
+          "cpuPercent": 137.0,
+          "wallSeconds": 37.85,
+          "peakRssBytes": 3544403968,
+          "majorPageFaults": 29,
+          "filesystemInputBlocks": 59216,
+          "filesystemOutputBlocks": 156432,
+          "exitCode": 0
+        }
+      },
+      "metadata": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:50:06Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [
+          "metadata"
+        ],
+        "generation": {
+          "metadataBytes": 64016328,
+          "schemaArtifactCount": 6889,
+          "status": "pass",
+          "artifactCount": 6993,
+          "artifactBytes": 104447274,
+          "durationMillis": 10581.643801
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 12323.938724
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "7235b0bf5b14245ba8ecdd94423bc975deef44cb11054a305ced5427802bcbfc",
+          "runtimeProbeSha256": "3fe507ea4110f07c85a92aac405a6e6d1b88eccbf4fa9a936c5567f629803491",
+          "requested": {
+            "routes": [
+              "DELETE /users/{user-id}",
+              "GET /drives",
+              "GET /drives/{drive-id}",
+              "GET /groups",
+              "GET /groups/{group-id}",
+              "GET /users",
+              "GET /users/{user-id}",
+              "PATCH /users/{user-id}",
+              "POST /users"
+            ]
+          },
+          "routes": [
+            "DELETE /users/{user-id}",
+            "GET /drives",
+            "GET /drives/{drive-id}",
+            "GET /groups",
+            "GET /groups/{group-id}",
+            "GET /users",
+            "GET /users/{user-id}",
+            "PATCH /users/{user-id}",
+            "POST /users"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 29572,
+          "runtime": {
+            "status": "pass",
+            "detail": "pass: Graph selected loadOperations, query/path/body, model decoding and mock Fetch",
+            "durationMillis": 7137.102598
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 46.65,
+          "cpuSystemSeconds": 6.89,
+          "cpuPercent": 143.0,
+          "wallSeconds": 37.22,
+          "peakRssBytes": 3744636928,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 8,
+          "filesystemOutputBlocks": 233456,
+          "exitCode": 0
+        }
+      }
+    },
+    {
+      "name": "graph-count",
+      "document": "microsoft-graph-beta",
+      "displayName": "Microsoft Graph beta",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/7b2914c8ad1340129f52aa785f13c074cb46fd7c/openapi/beta/openapi.yaml",
+      "routes": [
+        "GET /users/$count"
+      ],
+      "runtimeCheck": "selection-module-smoke",
+      "default": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:55:30Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [],
+        "generation": {
+          "metadataBytes": 654,
+          "schemaArtifactCount": 7,
+          "status": "pass",
+          "artifactCount": 65,
+          "artifactBytes": 411513,
+          "durationMillis": 8399.709598
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 348.152481
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 1,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "9271776f87773ac718633d0472f810041f179b9ff574a24a9e7461ba87fb6262",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "GET /users/$count"
+            ]
+          },
+          "routes": [
+            "GET /users/$count"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 29580,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 349.482283
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 18.43,
+          "cpuSystemSeconds": 2.64,
+          "cpuPercent": 128.0,
+          "wallSeconds": 16.38,
+          "peakRssBytes": 1975205888,
+          "majorPageFaults": 1,
+          "filesystemInputBlocks": 1896,
+          "filesystemOutputBlocks": 1208,
+          "exitCode": 0
+        }
+      },
+      "metadata": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:55:47Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [
+          "metadata"
+        ],
+        "generation": {
+          "metadataBytes": 64016169,
+          "schemaArtifactCount": 7,
+          "status": "pass",
+          "artifactCount": 65,
+          "artifactBytes": 64427028,
+          "durationMillis": 8954.981929
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 504.321411
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 1,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "9271776f87773ac718633d0472f810041f179b9ff574a24a9e7461ba87fb6262",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "GET /users/$count"
+            ]
+          },
+          "routes": [
+            "GET /users/$count"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 29580,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 351.559749
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 19.6,
+          "cpuSystemSeconds": 2.87,
+          "cpuPercent": 133.0,
+          "wallSeconds": 16.78,
+          "peakRssBytes": 1960218624,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 8,
+          "filesystemOutputBlocks": 126208,
+          "exitCode": 0
+        }
+      }
+    },
+    {
+      "name": "github-nine",
+      "document": "github",
+      "displayName": "GitHub",
+      "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "sourceUrl": "https://raw.githubusercontent.com/github/rest-api-description/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.2022-11-28.json",
+      "routes": [
+        "DELETE /app/installations/{installation_id}",
+        "DELETE /app/installations/{installation_id}/suspended",
+        "DELETE /applications/{client_id}/grant",
+        "DELETE /applications/{client_id}/token",
+        "DELETE /enterprises/{enterprise}/actions/oidc/customization/properties/repo/{custom_property_name}",
+        "DELETE /enterprises/{enterprise}/code-security/configurations/{configuration_id}",
+        "DELETE /enterprises/{enterprise}/copilot/policies/coding_agent/organizations",
+        "DELETE /gists/{gist_id}",
+        "DELETE /gists/{gist_id}/comments/{comment_id}"
+      ],
+      "runtimeCheck": "selection-module-smoke",
+      "default": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:55:52Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [],
+        "generation": {
+          "metadataBytes": 1155,
+          "schemaArtifactCount": 5,
+          "status": "pass",
+          "artifactCount": 129,
+          "artifactBytes": 600054,
+          "durationMillis": 712.507455
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 361.434436
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "c5ca09c8a29cf9b8c9099cf7f2ff6987ec11f4d03f20b2867b9bb8ed77d404b8",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "DELETE /app/installations/{installation_id}",
+              "DELETE /app/installations/{installation_id}/suspended",
+              "DELETE /applications/{client_id}/grant",
+              "DELETE /applications/{client_id}/token",
+              "DELETE /enterprises/{enterprise}/actions/oidc/customization/properties/repo/{custom_property_name}",
+              "DELETE /enterprises/{enterprise}/code-security/configurations/{configuration_id}",
+              "DELETE /enterprises/{enterprise}/copilot/policies/coding_agent/organizations",
+              "DELETE /gists/{gist_id}",
+              "DELETE /gists/{gist_id}/comments/{comment_id}"
+            ]
+          },
+          "routes": [
+            "DELETE /app/installations/{installation_id}",
+            "DELETE /app/installations/{installation_id}/suspended",
+            "DELETE /applications/{client_id}/grant",
+            "DELETE /applications/{client_id}/token",
+            "DELETE /enterprises/{enterprise}/actions/oidc/customization/properties/repo/{custom_property_name}",
+            "DELETE /enterprises/{enterprise}/code-security/configurations/{configuration_id}",
+            "DELETE /enterprises/{enterprise}/copilot/policies/coding_agent/organizations",
+            "DELETE /gists/{gist_id}",
+            "DELETE /gists/{gist_id}/comments/{comment_id}"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 1212,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 387.661092
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 5.73,
+          "cpuSystemSeconds": 0.86,
+          "cpuPercent": 127.0,
+          "wallSeconds": 5.15,
+          "peakRssBytes": 1199939584,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 8,
+          "filesystemOutputBlocks": 1904,
+          "exitCode": 0
+        }
+      },
+      "metadata": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:55:57Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [
+          "metadata"
+        ],
+        "generation": {
+          "metadataBytes": 7639377,
+          "schemaArtifactCount": 5,
+          "status": "pass",
+          "artifactCount": 129,
+          "artifactBytes": 8238276,
+          "durationMillis": 799.966264
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 371.772534
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "c5ca09c8a29cf9b8c9099cf7f2ff6987ec11f4d03f20b2867b9bb8ed77d404b8",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "DELETE /app/installations/{installation_id}",
+              "DELETE /app/installations/{installation_id}/suspended",
+              "DELETE /applications/{client_id}/grant",
+              "DELETE /applications/{client_id}/token",
+              "DELETE /enterprises/{enterprise}/actions/oidc/customization/properties/repo/{custom_property_name}",
+              "DELETE /enterprises/{enterprise}/code-security/configurations/{configuration_id}",
+              "DELETE /enterprises/{enterprise}/copilot/policies/coding_agent/organizations",
+              "DELETE /gists/{gist_id}",
+              "DELETE /gists/{gist_id}/comments/{comment_id}"
+            ]
+          },
+          "routes": [
+            "DELETE /app/installations/{installation_id}",
+            "DELETE /app/installations/{installation_id}/suspended",
+            "DELETE /applications/{client_id}/grant",
+            "DELETE /applications/{client_id}/token",
+            "DELETE /enterprises/{enterprise}/actions/oidc/customization/properties/repo/{custom_property_name}",
+            "DELETE /enterprises/{enterprise}/code-security/configurations/{configuration_id}",
+            "DELETE /enterprises/{enterprise}/copilot/policies/coding_agent/organizations",
+            "DELETE /gists/{gist_id}",
+            "DELETE /gists/{gist_id}/comments/{comment_id}"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 1212,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 382.317205
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 5.69,
+          "cpuSystemSeconds": 1.07,
+          "cpuPercent": 129.0,
+          "wallSeconds": 5.23,
+          "peakRssBytes": 1227513856,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 0,
+          "filesystemOutputBlocks": 16848,
+          "exitCode": 0
+        }
+      }
+    },
+    {
+      "name": "stripe-nine",
+      "document": "stripe",
+      "displayName": "Stripe",
+      "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+      "sourceUrl": "https://raw.githubusercontent.com/stripe/openapi/ce576d4f145edeef361a64d9d51b2153e3696b0b/openapi/spec3.sdk.json",
+      "routes": [
+        "DELETE /v1/accounts/{account}",
+        "DELETE /v1/accounts/{account}/external_accounts/{id}",
+        "DELETE /v1/accounts/{account}/persons/{person}",
+        "DELETE /v1/apple_pay/domains/{domain}",
+        "DELETE /v1/coupons/{coupon}",
+        "DELETE /v1/customers/{customer}",
+        "DELETE /v1/customers/{customer}/discount",
+        "DELETE /v1/customers/{customer}/sources/{id}",
+        "DELETE /v1/customers/{customer}/tax_ids/{id}"
+      ],
+      "runtimeCheck": "selection-module-smoke",
+      "default": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:56:05Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [],
+        "generation": {
+          "metadataBytes": 1011,
+          "schemaArtifactCount": 933,
+          "status": "pass",
+          "artifactCount": 1049,
+          "artifactBytes": 4987314,
+          "durationMillis": 937.307336
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 916.926617
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "7f7801cf2ef72f54e9185730b08414cd92289a6193fec49d78d856d1f266f2cd",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "DELETE /v1/accounts/{account}",
+              "DELETE /v1/accounts/{account}/external_accounts/{id}",
+              "DELETE /v1/accounts/{account}/persons/{person}",
+              "DELETE /v1/apple_pay/domains/{domain}",
+              "DELETE /v1/coupons/{coupon}",
+              "DELETE /v1/customers/{customer}",
+              "DELETE /v1/customers/{customer}/discount",
+              "DELETE /v1/customers/{customer}/sources/{id}",
+              "DELETE /v1/customers/{customer}/tax_ids/{id}"
+            ]
+          },
+          "routes": [
+            "DELETE /v1/accounts/{account}",
+            "DELETE /v1/accounts/{account}/external_accounts/{id}",
+            "DELETE /v1/accounts/{account}/persons/{person}",
+            "DELETE /v1/apple_pay/domains/{domain}",
+            "DELETE /v1/coupons/{coupon}",
+            "DELETE /v1/customers/{customer}",
+            "DELETE /v1/customers/{customer}/discount",
+            "DELETE /v1/customers/{customer}/sources/{id}",
+            "DELETE /v1/customers/{customer}/tax_ids/{id}"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 550,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 1484.153735
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 8.35,
+          "cpuSystemSeconds": 1.61,
+          "cpuPercent": 139.0,
+          "wallSeconds": 7.16,
+          "peakRssBytes": 1628364800,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 0,
+          "filesystemOutputBlocks": 14536,
+          "exitCode": 0
+        }
+      },
+      "metadata": {
+        "measurement": {
+          "typescriptVersion": "7.0.2",
+          "sourceCommit": "7d812bb4d7d08866fc19b0de265043029e2d0a19",
+          "sourceDirty": false,
+          "measuredAt": "2026-10-02T00:56:11Z",
+          "generationScope": "compile-prepare-write",
+          "samples": 1,
+          "os": "linux",
+          "architecture": "amd64",
+          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+          "goVersion": "go1.27.1"
+        },
+        "generationAddons": [
+          "metadata"
+        ],
+        "generation": {
+          "metadataBytes": 6380544,
+          "schemaArtifactCount": 933,
+          "status": "pass",
+          "artifactCount": 1049,
+          "artifactBytes": 11366847,
+          "durationMillis": 626.524065
+        },
+        "typecheck": {
+          "status": "pass",
+          "durationMillis": 929.546487
+        },
+        "operationEmission": {
+          "available": true,
+          "count": 9,
+          "operationOmissions": 0,
+          "helperOmissions": 0
+        },
+        "selection": {
+          "fixtureSha256": "7f7801cf2ef72f54e9185730b08414cd92289a6193fec49d78d856d1f266f2cd",
+          "runtimeProbeSha256": "93ac0ffaded7e89ef1f069fc0521e8665a8b7e736c09deff81e7de3ed854c91c",
+          "requested": {
+            "routes": [
+              "DELETE /v1/accounts/{account}",
+              "DELETE /v1/accounts/{account}/external_accounts/{id}",
+              "DELETE /v1/accounts/{account}/persons/{person}",
+              "DELETE /v1/apple_pay/domains/{domain}",
+              "DELETE /v1/coupons/{coupon}",
+              "DELETE /v1/customers/{customer}",
+              "DELETE /v1/customers/{customer}/discount",
+              "DELETE /v1/customers/{customer}/sources/{id}",
+              "DELETE /v1/customers/{customer}/tax_ids/{id}"
+            ]
+          },
+          "routes": [
+            "DELETE /v1/accounts/{account}",
+            "DELETE /v1/accounts/{account}/external_accounts/{id}",
+            "DELETE /v1/accounts/{account}/persons/{person}",
+            "DELETE /v1/apple_pay/domains/{domain}",
+            "DELETE /v1/coupons/{coupon}",
+            "DELETE /v1/customers/{customer}",
+            "DELETE /v1/customers/{customer}/discount",
+            "DELETE /v1/customers/{customer}/sources/{id}",
+            "DELETE /v1/customers/{customer}/tax_ids/{id}"
+          ],
+          "dependencyRoutes": [],
+          "excludedOperations": 550,
+          "runtime": {
+            "status": "pass",
+            "detail": "Selection module smoke test passed",
+            "durationMillis": 1485.173048
+          }
+        },
+        "resources": {
+          "cpuUserSeconds": 7.9,
+          "cpuSystemSeconds": 1.47,
+          "cpuPercent": 138.0,
+          "wallSeconds": 6.74,
+          "peakRssBytes": 1241587712,
+          "majorPageFaults": 0,
+          "filesystemInputBlocks": 0,
+          "filesystemOutputBlocks": 26992,
+          "exitCode": 0
+        }
+      }
+    }
+  ]
+}
