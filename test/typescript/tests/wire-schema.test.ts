@@ -11,6 +11,18 @@ const validate = (value: unknown, schema: WireSchema) =>
   validateWireValue(value, schema, {}, "decode");
 
 describe("wire schema constraints", () => {
+  it.each(["B", "A"])("preserves composed mapping destinations that overlap sources (%s)", (b) => {
+    const schema: WireSchema = {
+      allOf: [
+        { properties: { x: { property: "a", schema: { types: ["string"] } } } },
+        { properties: { a: { property: "b", schema: { types: ["string"] } } } },
+      ],
+    };
+    const client = { a: "A", b };
+    const wire = { x: "A", a: b };
+    expect(encodeWireValue(client, schema, {})).toEqual(wire);
+    expect(decodeWireValue(wire, schema, {})).toEqual(client);
+  });
   it.each(["declared", "patterns", "allOf"])(
     "composes %s mappings from the original nested value",
     (kind) => {

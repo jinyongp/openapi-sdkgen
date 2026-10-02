@@ -405,6 +405,7 @@ interface ValidationContext {
   readonly finiteSeen: WeakSet<object>;
   readonly validatedObjects: WeakMap<object, WeakMap<WireSchema, Map<string, Evaluation>>>;
   readonly schemaIDs: WeakMap<WireSchema, number>;
+  mappedProperties?: WeakMap<object, ReadonlySet<string>>;
   nextSchemaID: number;
 }
 
@@ -579,8 +580,16 @@ function transformWireValueWithContext(
   ) {
     const source = transformed;
     const result = Object.create(null) as Record<string, unknown>;
+    let targets: Set<string> | undefined;
     for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item);
-    for (const classified of classifyWireProperties(source, schema, direction)) {
+    const properties = classifyWireProperties(source, schema, direction);
+    for (const { sourceName, targetName } of properties) {
+      if (sourceName === targetName) continue;
+      delete result[sourceName];
+      targets ??= new Set<string>();
+      targets.add(targetName);
+    }
+    for (const classified of properties) {
       const { sourceName, targetName } = classified;
       const item = mergeWireRepresentations(
         source[sourceName],
@@ -595,9 +604,14 @@ function transformWireValueWithContext(
             context,
           ),
         ),
+        context,
       );
-      if (sourceName !== targetName) delete result[sourceName];
-      defineOwnDataProperty(result, targetName, item);
+      if (sourceName !== targetName || !targets?.has(targetName))
+        defineOwnDataProperty(result, targetName, item);
+    }
+    if (targets !== undefined) {
+      context.mappedProperties ??= new WeakMap<object, ReadonlySet<string>>();
+      context.mappedProperties.set(result, targets);
     }
     transformed = result;
   }
@@ -662,11 +676,15 @@ function transformWireValueWithContext(
   }
   return representations === undefined
     ? transformed
-    : mergeWireRepresentations(value, representations);
+    : mergeWireRepresentations(value, representations, context);
 }
 
 /** Combines mappings of one original instance without applying a mapping twice. */
-function mergeWireRepresentations(original: unknown, values: readonly unknown[]): unknown {
+function mergeWireRepresentations(
+  original: unknown,
+  values: readonly unknown[],
+  context: ValidationContext,
+): unknown {
   if (values.length === 0) return original;
   if (values.length === 1) return values[0];
   if (values.every((value) => value === original)) return original;
@@ -676,6 +694,7 @@ function mergeWireRepresentations(original: unknown, values: readonly unknown[])
       mergeWireRepresentations(
         source[index],
         values.map((value) => value[index]),
+        context,
       ),
     );
   }
@@ -683,18 +702,32 @@ function mergeWireRepresentations(original: unknown, values: readonly unknown[])
     const source = isRecord(original) ? original : (Object.create(null) as Record<string, unknown>);
     const result = Object.create(null) as Record<string, unknown>;
     const keys = new Set(values.flatMap((value) => Object.keys(value)));
+    const targets = new Set<string>();
     for (const key of keys) {
-      // A mapped source key stays removed even when another schema preserves it.
-      if (Object.hasOwn(source, key) && values.some((value) => !Object.hasOwn(value, key)))
+      const mapped = values.filter((value) => context.mappedProperties?.get(value)?.has(key));
+      // Explicit destinations survive removal of the same name as a source elsewhere.
+      if (
+        mapped.length === 0 &&
+        Object.hasOwn(source, key) &&
+        values.some((value) => !Object.hasOwn(value, key))
+      )
         continue;
+      if (mapped.length > 0) targets.add(key);
       defineOwnDataProperty(
         result,
         key,
         mergeWireRepresentations(
           source[key],
-          values.filter((value) => Object.hasOwn(value, key)).map((value) => value[key]),
+          (mapped.length > 0 ? mapped : values.filter((value) => Object.hasOwn(value, key))).map(
+            (value) => value[key],
+          ),
+          context,
         ),
       );
+    }
+    if (targets.size > 0) {
+      context.mappedProperties ??= new WeakMap<object, ReadonlySet<string>>();
+      context.mappedProperties.set(result, targets);
     }
     return result;
   }
