@@ -17,6 +17,23 @@ type ParameterCase = {
 };
 
 const cases: ParameterCase[] = [
+  ...(["path", "query", "querystring", "header", "cookie"] as const).map(
+    (location): ParameterCase => ({
+      name: `required nullable JSON ${location}`,
+      parameter: {
+        location,
+        required: true,
+        contentType: "application/json",
+        schema: { types: ["string", "null"] },
+      },
+      value: null,
+      ...(location === "path" ? { path: "/items/null" } : {}),
+      ...(location === "query" ? { search: "?value=null" } : {}),
+      ...(location === "querystring" ? { search: "?null" } : {}),
+      ...(location === "header" ? { header: "null" } : {}),
+      ...(location === "cookie" ? { header: "value=null" } : {}),
+    }),
+  ),
   {
     name: "text path",
     parameter: { location: "path", contentType: "text/plain" },
@@ -273,6 +290,28 @@ function setup(test: ParameterCase, customCodec: boolean) {
 }
 
 describe.each([false, true])("parameter serialization with custom codec = %s", (customCodec) => {
+  it.each(["path", "query", "querystring", "header", "cookie"] as const)(
+    "rejects absent and disallowed null %s parameters",
+    async (location) => {
+      const test: ParameterCase = {
+        name: "required",
+        parameter: {
+          location,
+          required: true,
+          contentType: "application/json",
+          schema: { types: ["string"] },
+        },
+        value: null,
+      };
+      const { request, fetch, operation, input } = setup(test, customCodec);
+      await expect(request(operation, input)).rejects.toThrow();
+      input[sections[location]] = { value: undefined };
+      await expect(request(operation, input)).rejects.toThrow();
+      input[sections[location]] = Object.create({ value: "inherited" }) as Record<string, unknown>;
+      await expect(request(operation, input)).rejects.toThrow();
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
   it.each(cases)("preserves $name on the wire", async (test) => {
     const { request, fetch, operation, input } = setup(test, customCodec);
     await request(operation, input);

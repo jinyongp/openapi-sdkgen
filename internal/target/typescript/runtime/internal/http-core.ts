@@ -1099,7 +1099,7 @@ export function createHTTPServices(
       const parameter = findParameter(operation, "path", name);
       const property = parameter?.property ?? name;
       const rawValue = pathValues[property];
-      if (rawValue === undefined || rawValue === null)
+      if (!Object.hasOwn(pathValues, property) || rawValue === undefined)
         throw new TypeError(`Missing path parameter ${name}`);
       return serializePathParameterSync(
         parameter,
@@ -1307,7 +1307,7 @@ export function createHTTPServices(
       const parameter = findParameter(operation, "path", name);
       const property = parameter?.property ?? name;
       const rawValue = pathValues[property];
-      if (rawValue === undefined || rawValue === null) {
+      if (!Object.hasOwn(pathValues, property) || rawValue === undefined) {
         throw new TypeError(`Missing path parameter ${name}`);
       }
       const value = encodeParameterWireValue(operation, parameter, rawValue);
@@ -1533,7 +1533,7 @@ export function createHTTPServices(
               : parameter.location === "header"
                 ? headerValues
                 : cookieValues;
-      if (values[parameter.property] === undefined || values[parameter.property] === null) {
+      if (!Object.hasOwn(values, parameter.property) || values[parameter.property] === undefined) {
         throw new TypeError(`Missing required ${parameter.location} parameter ${parameter.name}`);
       }
     }
