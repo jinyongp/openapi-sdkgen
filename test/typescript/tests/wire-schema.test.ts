@@ -11,6 +11,55 @@ const validate = (value: unknown, schema: WireSchema) =>
   validateWireValue(value, schema, {}, "decode");
 
 describe("wire schema constraints", () => {
+  it("uses every matching pattern and excludes those properties from additional schemas", () => {
+    const schema: WireSchema = {
+      types: ["object"],
+      patternProperties: { "^s": { types: ["string"] }, r$: { minLength: 2 } },
+      additionalProperties: { types: ["number"] },
+    };
+    for (const apply of [encodeWireValue, decodeWireValue]) {
+      expect(apply({ str: "ok", num: 1 }, schema, {})).toEqual({ str: "ok", num: 1 });
+      expect(() => apply({ str: "x", num: 1 }, schema, {})).toThrow();
+      expect(() => apply({ str: 1 }, schema, {})).toThrow();
+      expect(() => apply({ num: "x" }, schema, {})).toThrow();
+    }
+  });
+
+  it("matches wire names after classifying renamed declared properties", () => {
+    const schema: WireSchema = {
+      properties: { wire_value: { property: "wireValue", schema: { types: ["string"] } } },
+      patternProperties: { "^wire_": { minLength: 2 } },
+      additionalProperties: false,
+      propertyNames: { pattern: "^wire_" },
+    };
+    expect(encodeWireValue({ wireValue: "ok" }, schema, {})).toEqual({ wire_value: "ok" });
+    expect(decodeWireValue({ wire_value: "ok" }, schema, {})).toEqual({ wireValue: "ok" });
+    expect(() => encodeWireValue({ wireValue: "x" }, schema, {})).toThrow();
+  });
+
+  it("transforms pattern property values while preserving each allOf additional scope", () => {
+    const child: WireSchema = {
+      properties: { wire_value: { property: "wireValue", schema: { types: ["string"] } } },
+    };
+    const schema: WireSchema = { patternProperties: { "^s": child }, additionalProperties: false };
+    expect(encodeWireValue({ sample: { wireValue: "ok" } }, schema, {})).toEqual({
+      sample: { wire_value: "ok" },
+    });
+    expect(decodeWireValue({ sample: { wire_value: "ok" } }, schema, {})).toEqual({
+      sample: { wireValue: "ok" },
+    });
+    expect(() =>
+      validate(
+        { a: 1, b: 2 },
+        {
+          allOf: [
+            { properties: { a: { property: "a", schema: {} } }, additionalProperties: false },
+            { properties: { b: { property: "b", schema: {} } } },
+          ],
+        },
+      ),
+    ).toThrow();
+  });
   it.each<{ name: string; schema: WireSchema; valid: unknown; invalid: unknown }>([
     { name: "decimal multiples", schema: { multipleOf: 0.1 }, valid: 0.3, invalid: 0.35 },
     { name: "minimum", schema: { minimum: 2 }, valid: 2, invalid: 1 },

@@ -547,51 +547,28 @@ function transformWireValueWithContext(
   }
   if (
     isRecord(transformed) &&
-    (schema.properties !== undefined || schema.additionalProperties !== undefined)
+    (schema.properties !== undefined ||
+      schema.patternProperties !== undefined ||
+      schema.additionalProperties !== undefined)
   ) {
     const source = transformed;
     const result = Object.create(null) as Record<string, unknown>;
     for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item);
-    const known = new Set<string>();
-    for (const [wireName, propertyDefinition] of Object.entries(schema.properties ?? {})) {
-      const sourceName = direction === "encode" ? propertyDefinition.property : wireName;
-      const targetName = direction === "encode" ? wireName : propertyDefinition.property;
-      known.add(sourceName);
-      known.add(targetName);
-      if (!Object.hasOwn(source, sourceName)) continue;
-      if (sourceName !== targetName) delete result[sourceName];
-      defineOwnDataProperty(
-        result,
-        targetName,
-        transformWireValueWithContext(
-          source[sourceName],
-          propertyDefinition.schema,
+    for (const classified of classifyWireProperties(source, schema, direction)) {
+      const { sourceName, targetName } = classified;
+      let item = source[sourceName];
+      for (const child of classified.schemas)
+        item = transformWireValueWithContext(
+          item,
+          child,
           components,
           direction,
           options,
           scope,
           context,
-        ),
-      );
-    }
-    if (schema.additionalProperties !== undefined && schema.additionalProperties !== false) {
-      for (const [key, item] of Object.entries(result)) {
-        if (!known.has(key)) {
-          defineOwnDataProperty(
-            result,
-            key,
-            transformWireValueWithContext(
-              item,
-              schema.additionalProperties,
-              components,
-              direction,
-              options,
-              scope,
-              context,
-            ),
-          );
-        }
-      }
+        );
+      if (sourceName !== targetName) delete result[sourceName];
+      defineOwnDataProperty(result, targetName, item);
     }
     transformed = result;
   }
@@ -656,6 +633,54 @@ function transformWireValueWithContext(
       );
   }
   return transformed;
+}
+
+interface ClassifiedWireProperty {
+  readonly sourceName: string;
+  readonly targetName: string;
+  readonly wireName: string;
+  readonly schemas: readonly WireSchema[];
+  readonly additional: boolean;
+}
+
+/** Classifies an instance's keys within this schema object, before name mapping. */
+function classifyWireProperties(
+  value: Readonly<Record<string, unknown>>,
+  schema: WireSchema,
+  direction: "encode" | "decode",
+): ClassifiedWireProperty[] {
+  const declared = new Map(
+    Object.entries(schema.properties ?? {}).map(
+      ([wireName, definition]) =>
+        [
+          direction === "encode" ? definition.property : wireName,
+          { wireName, definition },
+        ] as const,
+    ),
+  );
+  const patterns = Object.entries(schema.patternProperties ?? {}).map(
+    ([pattern, child]) => [new RegExp(pattern, "u"), child] as const,
+  );
+  return Object.keys(value).map((sourceName) => {
+    const property = declared.get(sourceName);
+    const wireName = property?.wireName ?? sourceName;
+    const schemas: WireSchema[] = property === undefined ? [] : [property.definition.schema];
+    for (const [pattern, child] of patterns) if (pattern.test(wireName)) schemas.push(child);
+    const additional = schemas.length === 0;
+    if (
+      additional &&
+      schema.additionalProperties !== undefined &&
+      schema.additionalProperties !== false
+    )
+      schemas.push(schema.additionalProperties);
+    return {
+      sourceName,
+      wireName,
+      targetName: direction === "encode" ? wireName : (property?.definition.property ?? sourceName),
+      schemas,
+      additional,
+    };
+  });
 }
 
 function validateWireValueWithContext(
@@ -966,27 +991,24 @@ function validateWireValueWithContext(
         context,
       );
   }
-  for (const [pattern, propertySchema] of Object.entries(schema.patternProperties ?? {})) {
-    const expression = new RegExp(pattern, "u");
-    for (const [key, item] of Object.entries(value)) {
-      if (expression.test(key)) {
-        allowed.add(key);
-        validateWireValueWithContext(
-          item,
-          propertySchema,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-        );
-      }
-    }
+  const classified = classifyWireProperties(value, schema, direction);
+  for (const property of classified) {
+    if (!property.additional) allowed.add(property.sourceName);
+    for (const child of property.schemas)
+      validateWireValueWithContext(
+        value[property.sourceName],
+        child,
+        components,
+        direction,
+        options,
+        scope,
+        context,
+      );
   }
   if (schema.propertyNames !== undefined) {
-    for (const key of Object.keys(value))
+    for (const property of classified)
       validateWireValueWithContext(
-        key,
+        property.wireName,
         schema.propertyNames,
         components,
         direction,
@@ -998,19 +1020,6 @@ function validateWireValueWithContext(
   if (schema.additionalProperties === false && options.unknownProperties === "reject") {
     for (const key of Object.keys(value)) {
       if (!allowed.has(key)) throw new TypeError(`unexpected property ${key}`);
-    }
-  } else if (schema.additionalProperties !== undefined && schema.additionalProperties !== false) {
-    for (const [key, item] of Object.entries(value)) {
-      if (!allowed.has(key))
-        validateWireValueWithContext(
-          item,
-          schema.additionalProperties,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-        );
     }
   }
   if (schema.unevaluatedProperties !== undefined) {
