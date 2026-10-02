@@ -12,6 +12,7 @@ import { brotliCompressSync, gzipSync, constants } from "node:zlib";
 import { inspectGenerated, managedDeclarationStats } from "./catalog.mjs";
 import os from "node:os";
 import { requireVerificationSpace } from "./sdk-delivery-compile.mjs";
+import { runMeasured } from "./measured-process.mjs";
 import { writeFixedInput } from "./sdk-delivery-input.mjs";
 import {
   sdkDeliveryDocument,
@@ -71,29 +72,10 @@ const write = (name, data) => {
   fs.mkdirSync(path.dirname(name), { recursive: true });
   fs.writeFileSync(name, data);
 };
-const run = (label, command, args, timeout = 240000) => {
+const run = async (label, command, args, timeout = 240000) => {
   const resourceFile = path.join(directory, `${label}.resources.json`);
-  const timed = fs.existsSync("/usr/bin/time");
   const started = performance.now();
-  const result = spawnSync(
-    timed ? "/usr/bin/time" : command,
-    timed
-      ? [
-          "-f",
-          '{"userSeconds":%U,"systemSeconds":%S,"peakRSSKiB":%M}',
-          "-o",
-          resourceFile,
-          command,
-          ...args,
-        ]
-      : args,
-    {
-      cwd: root,
-      encoding: "utf8",
-      timeout,
-      maxBuffer: 16 * 1024 * 1024,
-    },
-  );
+  const result = await runMeasured(command, args, { cwd: root, resourceFile, timeout });
   write(path.join(directory, `${label}.log`), (result.stdout ?? "") + (result.stderr ?? ""));
   assert.equal(
     result.status,
@@ -103,7 +85,7 @@ const run = (label, command, args, timeout = 240000) => {
   return {
     stdout: result.stdout ?? "",
     elapsedMS: performance.now() - started,
-    resources: timed ? JSON.parse(fs.readFileSync(resourceFile, "utf8")) : null,
+    resources: result.resources,
   };
 };
 const stat = (bytes) => ({
@@ -230,7 +212,7 @@ try {
       report.reusedSource = path.relative(root, source);
     } else {
       writeFixedInput(input, inputBytes);
-      generated = run(`${count}-generate`, generator, [
+      generated = await run(`${count}-generate`, generator, [
         "generate",
         "--input",
         input,
@@ -272,7 +254,7 @@ try {
         include: [path.join(source, "**/*.ts")],
       }),
     );
-    const compiled = run(
+    const compiled = await run(
       `${count}-strict-declarations`,
       process.execPath,
       [
@@ -330,7 +312,7 @@ void possibleID;
       path.join(base, "consumer.json"),
       JSON.stringify({ compilerOptions: { ...options, noEmit: true }, files: ["consumer.ts"] }),
     );
-    const consumed = run(`${count}-declaration-consumer`, process.execPath, [
+    const consumed = await run(`${count}-declaration-consumer`, process.execPath, [
       compiler,
       "--project",
       path.join(base, "consumer.json"),
@@ -420,7 +402,7 @@ void possibleID;
         worker,
         `import assert from "node:assert/strict";\nimport {createHash} from "node:crypto";\nconst exercise=${exerciseGeneratedSDK.toString()};\nconst routes=${JSON.stringify(workload.routes)};\nconst selected=await exercise(await import("./javascript/selective/index.js"),routes,{selected:true,followLink:${!values["skip-links"]}});\nconst full=await exercise(await import("./javascript/index.js"),routes,{followLink:${!values["skip-links"]}});\nassert.deepEqual(selected.traces,full.traces);\nconsole.log(JSON.stringify({pass:true,requests:selected.traces.length,tracesSHA256:createHash("sha256").update(JSON.stringify(selected.traces)).digest("hex")}));\n`,
       );
-      const executed = run(`${count}-${workload.name}-native`, process.execPath, [worker]);
+      const executed = await run(`${count}-${workload.name}-native`, process.execPath, [worker]);
       const semantic = JSON.parse(executed.stdout);
       const row = {
         count,
@@ -487,7 +469,7 @@ void possibleID;
           `const module=await import(${JSON.stringify("./bundle-" + workload.name + "/index.js")});\nconst prepared=await module.prepare();\nconst exercise=${exerciseGeneratedSDK.toString()};\nconst result=await exercise({loadOperations:async()=>prepared,createClient:module.createClient,routes:{}},${JSON.stringify(workload.routes)},{selected:true});\nconsole.log(JSON.stringify({pass:true,requests:result.traces.length}));\n`,
         );
         row.staticBundle.semantic = JSON.parse(
-          run(`${count}-${workload.name}-bundle`, process.execPath, [bundleWorker]).stdout,
+          (await run(`${count}-${workload.name}-bundle`, process.execPath, [bundleWorker])).stdout,
         );
       }
       report.workloads.push(row);

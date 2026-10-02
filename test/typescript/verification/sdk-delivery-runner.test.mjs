@@ -7,8 +7,27 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import { requireVerificationSpace } from "./sdk-delivery-compile.mjs";
+import { runMeasured } from "./measured-process.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
+
+test("a timed measurement terminates its workload before releasing ownership", async (t) => {
+  const directory = path.join(root, ".tmp/sdk-runner-tests", randomUUID());
+  fs.mkdirSync(directory, { recursive: true });
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const marker = path.join(directory, "late-write");
+  const result = await runMeasured(
+    process.execPath,
+    [
+      "-e",
+      `setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'late'),1000)`,
+    ],
+    { cwd: directory, resourceFile: path.join(directory, "resources.json"), timeout: 300 },
+  );
+  assert.equal(result.error?.code, "ETIMEDOUT");
+  await new Promise((resolve) => setTimeout(resolve, 1100));
+  assert(!fs.existsSync(marker), "timed-out child continued writing");
+});
 
 test("storage preflight uses account-available bytes rather than reserved free blocks", () => {
   assert.throws(
