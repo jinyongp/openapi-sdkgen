@@ -2461,9 +2461,9 @@ export function createHTTPServices(
   }
 
   function readableStreamIterator(source: ReadableStream<unknown>): AsyncIterator<unknown> {
-    const reader = source.getReader();
-    let released = false;
-    const release = (): void => {
+    const reader: ReadableStreamDefaultReader<unknown> = source.getReader();
+    let released: boolean = false;
+    const release: () => void = (): void => {
       if (released) return;
       released = true;
       reader.releaseLock();
@@ -2471,13 +2471,13 @@ export function createHTTPServices(
     return {
       async next(): Promise<IteratorResult<unknown>> {
         try {
-          const next = await reader.read();
+          const next: ReadableStreamReadResult<unknown> = await reader.read();
           if (next.done) {
             release();
             return { done: true, value: undefined };
           }
-          return next;
-        } catch (cause) {
+          return { done: false, value: next.value };
+        } catch (cause: unknown) {
           release();
           throw cause;
         }
