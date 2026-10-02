@@ -9,7 +9,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
-import { inspectGenerated } from "./catalog.mjs";
+import { inspectGenerated, managedDeclarationStats } from "./catalog.mjs";
+import os from "node:os";
 import { requireVerificationSpace } from "./sdk-delivery-compile.mjs";
 import { writeFixedInput } from "./sdk-delivery-input.mjs";
 import {
@@ -71,20 +72,39 @@ const write = (name, data) => {
   fs.writeFileSync(name, data);
 };
 const run = (label, command, args, timeout = 240000) => {
+  const resourceFile = path.join(directory, `${label}.resources.json`);
+  const timed = fs.existsSync("/usr/bin/time");
   const started = performance.now();
-  const result = spawnSync(command, args, {
-    cwd: root,
-    encoding: "utf8",
-    timeout,
-    maxBuffer: 16 * 1024 * 1024,
-  });
+  const result = spawnSync(
+    timed ? "/usr/bin/time" : command,
+    timed
+      ? [
+          "-f",
+          '{"userSeconds":%U,"systemSeconds":%S,"peakRSSKiB":%M}',
+          "-o",
+          resourceFile,
+          command,
+          ...args,
+        ]
+      : args,
+    {
+      cwd: root,
+      encoding: "utf8",
+      timeout,
+      maxBuffer: 16 * 1024 * 1024,
+    },
+  );
   write(path.join(directory, `${label}.log`), (result.stdout ?? "") + (result.stderr ?? ""));
   assert.equal(
     result.status,
     0,
     `${label} failed (${result.error?.message ?? result.signal ?? result.status}); see ${directory}/${label}.log`,
   );
-  return { stdout: result.stdout ?? "", elapsedMS: performance.now() - started };
+  return {
+    stdout: result.stdout ?? "",
+    elapsedMS: performance.now() - started,
+    resources: timed ? JSON.parse(fs.readFileSync(resourceFile, "utf8")) : null,
+  };
 };
 const stat = (bytes) => ({
   raw: bytes.length,
@@ -156,6 +176,20 @@ const report = {
   node: process.version,
   typescript: tsPackage.version,
   generatorSHA256: hash(fs.readFileSync(generator)),
+  sourceCommit: spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+  }).stdout.trim(),
+  sourceDirty:
+    spawnSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" }).stdout.trim() !==
+    "",
+  environment: {
+    os: os.platform(),
+    architecture: os.arch(),
+    cpu: os.cpus()[0]?.model,
+    totalMemoryBytes: os.totalmem(),
+  },
+  strictCompilerOptions,
   sizes,
   skipped: values["skip-links"] ? ["lazy-Link invocation"] : [],
   workloads: [],
@@ -346,9 +380,14 @@ void possibleID;
       inputSHA256: hash(fs.readFileSync(input)),
       ownedTreeSHA256: owned.treeSha256,
       generationMS: generated.elapsedMS,
+      generationResources: generated.resources ?? null,
       compileMS: compiled.elapsedMS,
+      compileResources: compiled.resources,
+      source: { files: owned.fileCount, bytes: owned.typescriptBytes },
+      declarations: managedDeclarationStats(path.join(base, "declarations"), owned.files),
       compilation,
       declarationConsumerMS: consumed.elapsedMS,
+      declarationConsumerResources: consumed.resources,
       bootstrap,
       baseline,
       fullBundle,

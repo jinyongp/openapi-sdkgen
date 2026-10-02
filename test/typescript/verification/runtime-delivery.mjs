@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { brotliCompressSync, gzipSync, constants } from "node:zlib";
 import { exerciseRuntimeDelivery } from "./runtime-delivery-fixture.mjs";
+import { strictCompilerOptions, assertCheckedSources } from "./strict-options.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const runtimePath = "internal/target/typescript/runtime/internal";
@@ -147,11 +148,16 @@ function compileSources(kind, baseline) {
     write(path.join(runDir, kind, "source", path.basename(filename)), source);
   }
   const configFile = path.join(runDir, kind, "tsconfig.json");
+  if (kind === "candidate")
+    assertCheckedSources(
+      paths.map((name) => path.join(runDir, kind, "source", path.basename(name))),
+    );
   write(
     configFile,
     JSON.stringify(
       {
         compilerOptions: {
+          ...(kind === "candidate" ? strictCompilerOptions : {}),
           target: "ES2022",
           module: "ESNext",
           moduleResolution: "Bundler",

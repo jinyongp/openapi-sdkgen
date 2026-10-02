@@ -317,6 +317,10 @@ const discriminatorNative = JSON.parse(
 );
 const mediaScript = path.join(root, "test/typescript/verification/execution-media-native.mjs");
 const mediaNative = JSON.parse(run("native-media", [mediaScript, path.join(output, "javascript")]));
+const qualityScript = path.join(root, "test/typescript/verification/runtime-quality-native.mjs");
+const runtimeQuality = JSON.parse(
+  run("native-runtime-quality", [qualityScript, path.join(output, "javascript")]),
+);
 const selectionScript = path.join(root, "test/typescript/verification/selection-native.mjs");
 const selectionNative = JSON.parse(
   run("native-selection", [selectionScript, path.join(output, "javascript")]),
@@ -468,6 +472,8 @@ const report = {
   nativeSHA256: sha256(runtime),
   native,
   mediaNative,
+  runtimeQuality,
+  runtimeQualitySHA256: sha256(fs.readFileSync(qualityScript)),
   discriminatorNative,
   discriminatorWitnessSHA256: sha256(discriminatorRuntime),
   selectionNative,
