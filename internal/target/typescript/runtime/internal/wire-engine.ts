@@ -403,16 +403,26 @@ const strictWireTransformOptions: WireTransformOptions = { unknownProperties: "r
 interface ValidationContext {
   readonly decodeContent: SchemaContentDecoder;
   readonly finiteSeen: WeakSet<object>;
-  readonly validatedObjects: WeakMap<object, WeakMap<WireSchema, Set<string>>>;
+  readonly validatedObjects: WeakMap<object, WeakMap<WireSchema, Map<string, Evaluation>>>;
   readonly schemaIDs: WeakMap<WireSchema, number>;
   nextSchemaID: number;
+}
+
+interface Evaluation {
+  readonly properties: Set<string>;
+  readonly indexes: Set<number>;
+}
+
+function mergeEvaluation(target: Evaluation, source: Evaluation): void {
+  for (const name of source.properties) target.properties.add(name);
+  for (const index of source.indexes) target.indexes.add(index);
 }
 
 function createValidationContext(decodeContent: SchemaContentDecoder): ValidationContext {
   return {
     decodeContent,
     finiteSeen: new WeakSet<object>(),
-    validatedObjects: new WeakMap<object, WeakMap<WireSchema, Set<string>>>(),
+    validatedObjects: new WeakMap<object, WeakMap<WireSchema, Map<string, Evaluation>>>(),
     schemaIDs: new WeakMap<WireSchema, number>(),
     nextSchemaID: 1,
   };
@@ -437,7 +447,7 @@ function validationCacheKey(
   return `${direction}:${options.unknownProperties}:${ignoreContentMediaType ? "ignore-content-media" : "content-media"}:${scope}`;
 }
 
-function hasCachedValidation(
+function cachedValidation(
   context: ValidationContext,
   value: unknown,
   schema: WireSchema,
@@ -445,16 +455,12 @@ function hasCachedValidation(
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
   ignoreContentMediaType: boolean,
-): boolean {
-  if (typeof value !== "object" || value === null) return false;
-  return (
-    context.validatedObjects
-      .get(value)
-      ?.get(schema)
-      ?.has(
-        validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType),
-      ) ?? false
-  );
+): Evaluation | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  return context.validatedObjects
+    .get(value)
+    ?.get(schema)
+    ?.get(validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType));
 }
 
 function cacheValidation(
@@ -465,19 +471,23 @@ function cacheValidation(
   options: WireTransformOptions,
   dynamicScope: DynamicScope,
   ignoreContentMediaType: boolean,
+  evaluation: Evaluation,
 ): void {
   if (typeof value !== "object" || value === null) return;
   let schemas = context.validatedObjects.get(value);
   if (schemas === undefined) {
-    schemas = new WeakMap<WireSchema, Set<string>>();
+    schemas = new WeakMap<WireSchema, Map<string, Evaluation>>();
     context.validatedObjects.set(value, schemas);
   }
   let keys = schemas.get(schema);
   if (keys === undefined) {
-    keys = new Set<string>();
+    keys = new Map<string, Evaluation>();
     schemas.set(schema, keys);
   }
-  keys.add(validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType));
+  keys.set(
+    validationCacheKey(context, direction, options, dynamicScope, ignoreContentMediaType),
+    evaluation,
+  );
 }
 
 function transformWireValueWithContext(
@@ -692,48 +702,53 @@ function validateWireValueWithContext(
   dynamicScope: DynamicScope,
   context: ValidationContext,
   ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
-): void {
-  if (
-    hasCachedValidation(
-      context,
-      value,
-      schema,
-      direction,
-      options,
-      dynamicScope,
-      ignoreContentMediaType,
-    )
-  )
-    return;
+): Evaluation {
+  const cached = cachedValidation(
+    context,
+    value,
+    schema,
+    direction,
+    options,
+    dynamicScope,
+    ignoreContentMediaType,
+  );
+  if (cached !== undefined) return cached;
+  const evaluation: Evaluation = { properties: new Set(), indexes: new Set() };
   assertFiniteJSONNumbers(value, context.finiteSeen);
   const scope = extendDynamicScope(dynamicScope, schema);
   if (schema.boolean === false) throw new TypeError("schema is false");
-  if (value === undefined) return;
+  if (value === undefined) return evaluation;
   const dynamicTarget = resolveDynamicReference(schema, scope);
   if (dynamicTarget !== undefined) {
-    validateWireValueWithContext(
-      value,
-      dynamicTarget,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-      ignoreContentMediaType,
-    );
-  }
-  if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
-    if (referenced !== undefined)
+    mergeEvaluation(
+      evaluation,
       validateWireValueWithContext(
         value,
-        referenced,
+        dynamicTarget,
         components,
         direction,
         options,
         scope,
         context,
         ignoreContentMediaType,
+      ),
+    );
+  }
+  if (schema.reference !== undefined) {
+    const referenced = components[schema.reference];
+    if (referenced !== undefined)
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(
+          value,
+          referenced,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+          ignoreContentMediaType,
+        ),
       );
   }
   if (schema.types !== undefined && !schema.types.some((type) => valueMatchesType(value, type))) {
@@ -786,10 +801,14 @@ function validateWireValueWithContext(
     );
     if (matches.length !== 1)
       throw new TypeError(`oneOf requires exactly one matching schema, got ${matches.length}`);
+    for (const branch of matches)
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(value, branch, components, direction, options, scope, context),
+      );
   }
-  if (
-    schema.anyOf !== undefined &&
-    matchingSchemasForControlFlow(
+  if (schema.anyOf !== undefined) {
+    const matches = matchingSchemasForControlFlow(
       value,
       schema.anyOf,
       components,
@@ -797,9 +816,13 @@ function validateWireValueWithContext(
       options,
       scope,
       context,
-    ).length === 0
-  ) {
-    throw new TypeError("anyOf requires at least one matching schema");
+    );
+    if (matches.length === 0) throw new TypeError("anyOf requires at least one matching schema");
+    for (const branch of matches)
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(value, branch, components, direction, options, scope, context),
+      );
   }
   if (
     schema.not !== undefined &&
@@ -808,7 +831,7 @@ function validateWireValueWithContext(
     throw new TypeError("must not match negated schema");
   }
   if (schema.if !== undefined) {
-    const branch = schemaMatchesForControlFlow(
+    const matches = schemaMatchesForControlFlow(
       value,
       schema.if,
       components,
@@ -816,14 +839,32 @@ function validateWireValueWithContext(
       options,
       scope,
       context,
-    )
-      ? schema.then
-      : schema.else;
+    );
+    if (matches)
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(
+          value,
+          schema.if,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+        ),
+      );
+    const branch = matches ? schema.then : schema.else;
     if (branch !== undefined)
-      validateWireValueWithContext(value, branch, components, direction, options, scope, context);
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(value, branch, components, direction, options, scope, context),
+      );
   }
   for (const branch of schema.allOf ?? [])
-    validateWireValueWithContext(value, branch, components, direction, options, scope, context);
+    mergeEvaluation(
+      evaluation,
+      validateWireValueWithContext(value, branch, components, direction, options, scope, context),
+    );
   if (!ignoreContentMediaType && schema.contentSchema !== undefined && typeof value === "string") {
     validateWireValueWithContext(
       context.decodeContent(value, schema, components, ignoreContentMediaType),
@@ -846,8 +887,8 @@ function validateWireValueWithContext(
     if (schema.uniqueItems && !hasUniqueWireValues(value))
       throw new TypeError("must contain unique items");
     if (schema.contains !== undefined) {
-      const matches = value.filter((item) =>
-        schemaMatchesForControlFlow(
+      const matches = value.filter((item, index) => {
+        const matches = schemaMatchesForControlFlow(
           item,
           schema.contains!,
           components,
@@ -855,8 +896,10 @@ function validateWireValueWithContext(
           options,
           scope,
           context,
-        ),
-      ).length;
+        );
+        if (matches) evaluation.indexes.add(index);
+        return matches;
+      }).length;
       const minimum = schema.minContains ?? 1;
       if (matches < minimum) throw new TypeError(`must contain at least ${minimum} matching items`);
       if (schema.maxContains !== undefined && matches > schema.maxContains)
@@ -864,7 +907,7 @@ function validateWireValueWithContext(
     }
     for (const [index, item] of value.entries()) {
       const itemSchema = schema.prefixItems?.[index] ?? schema.items;
-      if (itemSchema !== undefined)
+      if (itemSchema !== undefined) {
         validateWireValueWithContext(
           item,
           itemSchema,
@@ -874,19 +917,12 @@ function validateWireValueWithContext(
           scope,
           context,
         );
+        evaluation.indexes.add(index);
+      }
     }
     if (schema.unevaluatedItems !== undefined) {
-      const evaluated = evaluatedArrayIndexes(
-        value,
-        schema,
-        components,
-        direction,
-        options,
-        scope,
-        context,
-      );
       for (const [index, item] of value.entries()) {
-        if (evaluated.has(index)) continue;
+        if (evaluation.indexes.has(index)) continue;
         if (schema.unevaluatedItems === false)
           throw new TypeError(`unexpected unevaluated item ${index}`);
         validateWireValueWithContext(
@@ -898,6 +934,7 @@ function validateWireValueWithContext(
           scope,
           context,
         );
+        evaluation.indexes.add(index);
       }
     }
     cacheValidation(
@@ -908,8 +945,9 @@ function validateWireValueWithContext(
       options,
       dynamicScope,
       ignoreContentMediaType,
+      evaluation,
     );
-    return;
+    return evaluation;
   }
   if (!isRecord(value)) {
     cacheValidation(
@@ -920,8 +958,9 @@ function validateWireValueWithContext(
       options,
       dynamicScope,
       ignoreContentMediaType,
+      evaluation,
     );
-    return;
+    return evaluation;
   }
   if (schema.minProperties !== undefined && Object.keys(value).length < schema.minProperties)
     throw new TypeError(`must contain at least ${schema.minProperties} properties`);
@@ -943,6 +982,7 @@ function validateWireValueWithContext(
           scope,
           context,
         );
+        evaluation.properties.add(sourceName);
       } catch (cause) {
         throw new TypeError(
           `property ${wireName}: ${cause instanceof Error ? cause.message : "invalid value"}`,
@@ -981,14 +1021,17 @@ function validateWireValueWithContext(
         ? properties[property].property
         : property;
     if (Object.hasOwn(value, sourceProperty) && value[sourceProperty] !== undefined)
-      validateWireValueWithContext(
-        value,
-        dependency,
-        components,
-        direction,
-        options,
-        scope,
-        context,
+      mergeEvaluation(
+        evaluation,
+        validateWireValueWithContext(
+          value,
+          dependency,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+        ),
       );
   }
   const classified = classifyWireProperties(value, schema, direction);
@@ -1004,6 +1047,7 @@ function validateWireValueWithContext(
         scope,
         context,
       );
+    if (property.schemas.length !== 0) evaluation.properties.add(property.sourceName);
   }
   if (schema.propertyNames !== undefined) {
     for (const property of classified)
@@ -1023,17 +1067,8 @@ function validateWireValueWithContext(
     }
   }
   if (schema.unevaluatedProperties !== undefined) {
-    const evaluated = evaluatedPropertyNames(
-      value,
-      schema,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-    );
     for (const [key, item] of Object.entries(value)) {
-      if (evaluated.has(key)) continue;
+      if (evaluation.properties.has(key)) continue;
       if (schema.unevaluatedProperties === false) {
         if (options.unknownProperties === "reject")
           throw new TypeError(`unexpected unevaluated property ${key}`);
@@ -1048,9 +1083,20 @@ function validateWireValueWithContext(
         scope,
         context,
       );
+      evaluation.properties.add(key);
     }
   }
-  cacheValidation(context, value, schema, direction, options, dynamicScope, ignoreContentMediaType);
+  cacheValidation(
+    context,
+    value,
+    schema,
+    direction,
+    options,
+    dynamicScope,
+    ignoreContentMediaType,
+    evaluation,
+  );
+  return evaluation;
 }
 
 /** Implements the standard JSON Schema 2020-12 format-assertion registry. Unknown formats remain application-defined annotations. */
@@ -1202,229 +1248,6 @@ function discriminatorVariant(
   const candidate = value[property];
   if (typeof candidate !== "string") return schema.discriminator.defaultMapping;
   return schema.discriminator.mapping?.[candidate] ?? schema.discriminator.defaultMapping;
-}
-
-function evaluatedArrayIndexes(
-  value: readonly unknown[],
-  schema: WireSchema,
-  components: WireSchemas,
-  direction: "encode" | "decode",
-  options: WireTransformOptions,
-  dynamicScope: DynamicScope,
-  context: ValidationContext,
-  seen = new Set<WireSchema>(),
-): Set<number> {
-  if (seen.has(schema)) return new Set();
-  seen.add(schema);
-  const result = new Set<number>();
-  const scope = extendDynamicScope(dynamicScope, schema);
-  const dynamicTarget = resolveDynamicReference(schema, scope);
-  if (dynamicTarget !== undefined)
-    mergeIndexes(
-      result,
-      evaluatedArrayIndexes(
-        value,
-        dynamicTarget,
-        components,
-        direction,
-        options,
-        scope,
-        context,
-        seen,
-      ),
-    );
-  if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
-    if (referenced !== undefined)
-      mergeIndexes(
-        result,
-        evaluatedArrayIndexes(
-          value,
-          referenced,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-          seen,
-        ),
-      );
-  }
-  for (let index = 0; index < Math.min(value.length, schema.prefixItems?.length ?? 0); index++)
-    result.add(index);
-  if (schema.items !== undefined) {
-    for (let index = schema.prefixItems?.length ?? 0; index < value.length; index++)
-      result.add(index);
-  }
-  if (schema.contains !== undefined) {
-    value.forEach((item, index) => {
-      if (
-        schemaMatchesForControlFlow(
-          item,
-          schema.contains!,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-        )
-      )
-        result.add(index);
-    });
-  }
-  for (const child of schema.allOf ?? [])
-    mergeIndexes(
-      result,
-      evaluatedArrayIndexes(value, child, components, direction, options, scope, context, seen),
-    );
-  for (const variants of [schema.oneOf, schema.anyOf]) {
-    if (variants === undefined) continue;
-    for (const child of matchingSchemasForControlFlow(
-      value,
-      variants,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-    ))
-      mergeIndexes(
-        result,
-        evaluatedArrayIndexes(value, child, components, direction, options, scope, context, seen),
-      );
-  }
-  if (schema.if !== undefined) {
-    const child = schemaMatchesForControlFlow(
-      value,
-      schema.if,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-    )
-      ? schema.then
-      : schema.else;
-    if (child !== undefined)
-      mergeIndexes(
-        result,
-        evaluatedArrayIndexes(value, child, components, direction, options, scope, context, seen),
-      );
-  }
-  return result;
-}
-
-function evaluatedPropertyNames(
-  value: Readonly<Record<string, unknown>>,
-  schema: WireSchema,
-  components: WireSchemas,
-  direction: "encode" | "decode",
-  options: WireTransformOptions,
-  dynamicScope: DynamicScope,
-  context: ValidationContext,
-  seen = new Set<WireSchema>(),
-): Set<string> {
-  if (seen.has(schema)) return new Set();
-  seen.add(schema);
-  const result = new Set<string>();
-  const scope = extendDynamicScope(dynamicScope, schema);
-  const dynamicTarget = resolveDynamicReference(schema, scope);
-  if (dynamicTarget !== undefined)
-    mergeProperties(
-      result,
-      evaluatedPropertyNames(
-        value,
-        dynamicTarget,
-        components,
-        direction,
-        options,
-        scope,
-        context,
-        seen,
-      ),
-    );
-  if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
-    if (referenced !== undefined)
-      mergeProperties(
-        result,
-        evaluatedPropertyNames(
-          value,
-          referenced,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-          seen,
-        ),
-      );
-  }
-  for (const [wireName, definition] of Object.entries(schema.properties ?? {})) {
-    const name = direction === "encode" ? definition.property : wireName;
-    if (Object.hasOwn(value, name)) result.add(name);
-  }
-  for (const pattern of Object.keys(schema.patternProperties ?? {})) {
-    const expression = new RegExp(pattern, "u");
-    for (const key of Object.keys(value)) if (expression.test(key)) result.add(key);
-  }
-  if (schema.additionalProperties !== undefined)
-    for (const key of Object.keys(value)) result.add(key);
-  for (const child of schema.allOf ?? [])
-    mergeProperties(
-      result,
-      evaluatedPropertyNames(value, child, components, direction, options, scope, context, seen),
-    );
-  for (const variants of [schema.oneOf, schema.anyOf]) {
-    if (variants === undefined) continue;
-    for (const child of matchingSchemasForControlFlow(
-      value,
-      variants,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-    ))
-      mergeProperties(
-        result,
-        evaluatedPropertyNames(value, child, components, direction, options, scope, context, seen),
-      );
-  }
-  if (schema.if !== undefined) {
-    const child = schemaMatchesForControlFlow(
-      value,
-      schema.if,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-    )
-      ? schema.then
-      : schema.else;
-    if (child !== undefined)
-      mergeProperties(
-        result,
-        evaluatedPropertyNames(value, child, components, direction, options, scope, context, seen),
-      );
-  }
-  for (const [property, child] of Object.entries(schema.dependentSchemas ?? {})) {
-    if (Object.hasOwn(value, property))
-      mergeProperties(
-        result,
-        evaluatedPropertyNames(value, child, components, direction, options, scope, context, seen),
-      );
-  }
-  return result;
-}
-
-function mergeIndexes(target: Set<number>, source: ReadonlySet<number>): void {
-  for (const value of source) target.add(value);
-}
-
-function mergeProperties(target: Set<string>, source: ReadonlySet<string>): void {
-  for (const value of source) target.add(value);
 }
 
 function valueMatchesType(value: unknown, type: string): boolean {
