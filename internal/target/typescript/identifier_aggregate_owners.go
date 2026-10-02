@@ -157,7 +157,7 @@ func planSchemaWireIdentifiers(module *semanticModulePlan) (map[string]schemaWir
 
 func planEnumIdentifiers(values []enumValuesPlan) error {
 	plan := newAggregateIdentifierPlan("internal/enums.ts")
-	if err := plan.reserve("Enums", "EnumValue", "isEnumValue", "EnumValues", "Value", "Name", "__sdkgen_createJSONRecord", "__sdkgen_createEnumValues", "__sdkgen_enumValueEquals", "entries", "values", "enumValues", "value", "left", "right", "seen", "compared", "candidate", "leftArray", "rightArray", "leftPrototype", "rightPrototype", "leftKeys", "rightKeys", "key", "rightKey", "leftItem", "rightItem", "index"); err != nil {
+	if err := plan.reserve("Enums", "EnumDefinitions", "EnumValue", "isEnumValue", "EnumValues", "Value", "Name", "__sdkgen_createJSONRecord", "__sdkgen_createEnumValues", "__sdkgen_enumValueEquals", "entries", "values", "enumValues", "value", "left", "right", "seen", "compared", "candidate", "leftArray", "rightArray", "leftPrototype", "rightPrototype", "leftKeys", "rightKeys", "key", "rightKey", "leftItem", "rightItem", "index"); err != nil {
 		return err
 	}
 	entities := make([]aggregateEntityKey, len(values))

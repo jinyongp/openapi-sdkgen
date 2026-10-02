@@ -294,7 +294,12 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 		output.WriteString("\n/** Creates this operation's paginator from its single base call. */\n")
 		output.WriteString("export function bindPagination(base: BaseCall): Pagination {\n")
-		fmt.Fprintf(&output, "  return createPaginator<%s, Input, unknown, %s, %s, %s, Options, %t>((input, requestOptions) => base.raw(input, requestOptions).then((response) => response.data), %s)\n", itemType, quoteTS(operation.PaginationPlan.Mode), quoteTS(operation.PaginationPlan.Request.Cursor), quoteTS(operation.PaginationPlan.Request.Offset), item.optionsRequired, runtimePlan)
+		fmt.Fprintf(&output, "  type PaginationItem = %s\n", itemType)
+		optionsType := "Options | undefined"
+		if item.optionsRequired {
+			optionsType = "Options"
+		}
+		fmt.Fprintf(&output, "  return createPaginator<PaginationItem, Input, unknown, %s, %s, %s, Options, %t>((input: Input, requestOptions: %s): Promise<RawResponse[\"data\"]> => base.raw(input, requestOptions).then((response: RawResponse): RawResponse[\"data\"] => response.data), %s)\n", quoteTS(operation.PaginationPlan.Mode), quoteTS(operation.PaginationPlan.Request.Cursor), quoteTS(operation.PaginationPlan.Request.Offset), item.optionsRequired, optionsType, runtimePlan)
 		output.WriteString("}\n")
 	}
 	if hasStream {
@@ -305,7 +310,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		}
 		output.WriteString("\n/** Creates this operation's streaming capability. */\n")
 		fmt.Fprintf(&output, "export function bindStream(request: RequestFunction, %s?: WireSchemas, %s?: WireSchemas): Stream {\n", inputSchemas, outputSchemas)
-		fmt.Fprintf(&output, "  return bindStreamOperation<Input, %s, Options>(request, %s, %t, %t, %s) as Stream\n", streamItemType, definition, hasInput, inputOptional, defaultAccept)
+		fmt.Fprintf(&output, "  type StreamItem = %s\n", streamItemType)
+		fmt.Fprintf(&output, "  return bindStreamOperation<Input, StreamItem, Options>(request, %s, %t, %t, %s) as Stream\n", definition, hasInput, inputOptional, defaultAccept)
 		output.WriteString("}\n")
 	}
 
@@ -368,7 +374,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	output.WriteString("export type LinkInvoker = (route: keyof LinkTargets, args: readonly unknown[]) => Promise<unknown>\n\n")
 	output.WriteString("/** Creates this operation's response-link container from ready or lazy targets. */\n")
 	output.WriteString("export function bindLinks(targets: LinkTargets | LinkInvoker): Links {\n")
-	output.WriteString("  const invoke: LinkInvoker = typeof targets === \"function\" ? targets : (route, args) => Reflect.apply(targets[route], targets, args) as Promise<unknown>\n")
+	output.WriteString("  const invoke: LinkInvoker = typeof targets === \"function\" ? targets : (route: keyof LinkTargets, args: readonly unknown[]): Promise<unknown> => Reflect.apply(targets[route], targets, args) as Promise<unknown>\n")
 	var body bytes.Buffer
 	targetReference := func(route string) (string, error) {
 		if !targets[route] {
@@ -390,7 +396,7 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 		if target.TargetHasInput {
 			arguments = "input: " + qualified + "Input, " + arguments
 		}
-		return "((...args: [" + arguments + "]) => invoke(" + quoteTS(route) + ", args) as Promise<" + qualified + "Output>)", nil
+		return "((...args: [" + arguments + "]): Promise<" + qualified + "Output> => invoke(" + quoteTS(route) + ", args) as Promise<" + qualified + "Output>)", nil
 	}
 	if err := emitLinkValuesForGroups(&body, document, links, groups, targetReference, names); err != nil {
 		return nil, err

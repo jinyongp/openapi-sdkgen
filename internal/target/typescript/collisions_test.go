@@ -326,9 +326,10 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 	for _, expected := range []string{
 		`function __sdkgen_createJSONRecord<Value extends object>`,
 		`return Object.fromEntries(entries) as Value`,
-		`/* @__PURE__ */ __sdkgen_createJSONRecord<{ readonly "__proto__": true }>([["__proto__", true]])`,
+		`readonly "__proto__": true`,
+		`>([["__proto__", true]])`,
 		`function __sdkgen_createEnumValues(values: readonly unknown[]): object`,
-		`const enumValues = Object.create(null)`,
+		`const enumValues: Record<PropertyKey, unknown> = Object.create(null)`,
 		`Object.defineProperty(enumValues, Symbol.iterator`,
 		`readonly "foo-bar": "foo-bar"`,
 		`readonly "__proto__": "__proto__"`,
@@ -344,7 +345,7 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 		}
 	}
 	recordBinding, valuesBinding := generatedEnumBindings(t, generated)
-	if !strings.Contains(generated, `["Status", `+recordBinding+`]`) || !strings.Contains(generated, "const "+valuesBinding+" = [") {
+	if !strings.Contains(generated, `["Status", `+recordBinding+`]`) || !strings.Contains(generated, "const "+valuesBinding+": "+valuesBinding+"Values = [") {
 		t.Fatalf("exact enum key does not resolve to its declared value record:\n%s", generated)
 	}
 	if !strings.Contains(generated, `, ["x", "y"], "foo-bar"] as const`) {

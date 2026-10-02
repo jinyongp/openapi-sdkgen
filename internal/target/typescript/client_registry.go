@@ -137,22 +137,22 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		route := manifestRouteKey(operation)
 		names := factories[route]
 		base := factories[route].baseValue
-		fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", base, names.base)
+		emitTypedConstant(&output, "  ", base, "ReturnType<typeof "+names.base+">", names.base+"(request, inputSchemas, outputSchemas)")
 		if names.pagination != "" {
-			fmt.Fprintf(&output, "  const %s = %s(%s)\n", factories[route].paginationValue, names.pagination, base)
+			emitTypedConstant(&output, "  ", factories[route].paginationValue, "ReturnType<typeof "+names.pagination+">", names.pagination+"("+base+")")
 		}
 		if names.stream != "" {
-			fmt.Fprintf(&output, "  const %s = %s(request, inputSchemas, outputSchemas)\n", factories[route].streamValue, names.stream)
+			emitTypedConstant(&output, "  ", factories[route].streamValue, "ReturnType<typeof "+names.stream+">", names.stream+"(request, inputSchemas, outputSchemas)")
 		}
 	}
-	output.WriteString("  const completed = {} as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }\n")
+	emitTypedConstant(&output, "  ", "completed", "{ -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }", "{} as { -readonly [Route in keyof Routes]: Routes[Route][\"call\"] }")
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue
 		}
 		route := manifestRouteKey(operation)
 		if factories[route].links != "" {
-			fmt.Fprintf(&output, "  const %s = %s(completed)\n", factories[route].linksValue, factories[route].links)
+			emitTypedConstant(&output, "  ", factories[route].linksValue, "ReturnType<typeof "+factories[route].links+">", factories[route].links+"(completed)")
 		}
 	}
 	for _, operation := range manifest.Operations {
@@ -172,9 +172,9 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		}
 		value := factories[route].baseValue
 		if len(properties) > 0 {
-			fmt.Fprintf(&output, "  const %s = assignCallableProperties(%s, %s) as unknown as Routes[%s][\"call\"]\n", factories[route].value, value, runtimeObjectExpression(properties), quoteTS(route))
+			emitTypedConstant(&output, "  ", factories[route].value, "Routes["+quoteTS(route)+"][\"call\"]", "assignCallableProperties("+value+", "+runtimeObjectExpression(properties)+") as unknown as Routes["+quoteTS(route)+"][\"call\"]")
 		} else {
-			fmt.Fprintf(&output, "  const %s = %s as Routes[%s][\"call\"]\n", factories[route].value, value, quoteTS(route))
+			emitTypedConstant(&output, "  ", factories[route].value, "Routes["+quoteTS(route)+"][\"call\"]", value+" as Routes["+quoteTS(route)+"][\"call\"]")
 		}
 	}
 	output.WriteString("  const operations: Record<string, unknown> = {}\n")
@@ -205,7 +205,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		fmt.Fprintf(&output, "  defineOwnDataProperty(completed as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)
 	}
 	if plan.selection != nil {
-		output.WriteString("  const publicRoutes = {} as CallableRegistry[\"routes\"]\n")
+		emitTypedConstant(&output, "  ", "publicRoutes", "CallableRegistry[\"routes\"]", "{} as CallableRegistry[\"routes\"]")
 		for _, property := range routeValues {
 			if plan.selection.direct[property.key] {
 				fmt.Fprintf(&output, "  defineOwnDataProperty(publicRoutes as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)

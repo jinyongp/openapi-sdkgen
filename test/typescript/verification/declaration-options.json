@@ -1,0 +1,45 @@
+[
+  {
+    "id": "normative",
+    "input": "test/fixtures/support-gaps/oas32-normative.json",
+    "args": ["--with", "server", "--with", "metadata"]
+  },
+  {
+    "id": "selected",
+    "input": "test/fixtures/generation-selection.json",
+    "args": ["--operation", "getTask", "--with", "metadata"]
+  },
+  {
+    "id": "named-links",
+    "input": "test/fixtures/generation-selection.json",
+    "config": "test/fixtures/named-clients-linked.toml",
+    "args": ["--operation", "getTask", "--with", "metadata"]
+  },
+  {
+    "id": "named-streams",
+    "input": "test/fixtures/support-gaps/oas32-normative.json",
+    "config": "test/fixtures/named-clients-normative.toml",
+    "args": ["--with", "server"]
+  },
+  {
+    "id": "named-errors",
+    "input": "test/fixtures/named-clients-errors.json",
+    "config": "test/fixtures/named-clients-errors.toml",
+    "args": []
+  },
+  {
+    "id": "callbacks",
+    "input": "test/typescript/fixtures/collisions.openapi.json",
+    "args": ["--with", "server"]
+  },
+  {
+    "id": "webhooks",
+    "input": "test/typescript/fixtures/baseline-oas31.openapi.json",
+    "args": ["--with", "server"]
+  },
+  {
+    "id": "inbound-bodies",
+    "input": "test/typescript/fixtures/transport-native-headers.openapi.json",
+    "args": ["--with", "server", "--with", "metadata"]
+  }
+]

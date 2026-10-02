@@ -564,10 +564,10 @@ func emitLinkValuesForGroups(output *bytes.Buffer, document *ir.Document, links 
 			options = "{ ...(invocation.options ?? {}), baseURL: new URL(" + quoteTS(link.ServerURL) + ", response.response?.url).href }"
 		}
 		if !targetHasInput {
-			fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<never, %s, %s>%s): Promise<%s> => { resolveLinkInput<never>(response, %s, invocation.sourceInput); return %s(%s) }\n", name, sourceRawResponse, invocationType, targetOptions, sourceInput, invocationDefault, targetOutput, link.Definition, targetProperty, options)
+			fmt.Fprintf(output, "  const %s: (response: %s | APIError, %s) => Promise<%s> = (response: %s | APIError, invocation: %s<never, %s, %s>%s): Promise<%s> => { resolveLinkInput<never>(response, %s, invocation.sourceInput); return %s(%s) }\n", name, sourceRawResponse, linkInvocationParameter("never", targetOptions, sourceInput, targetRequiresOptions), targetOutput, sourceRawResponse, invocationType, targetOptions, sourceInput, invocationDefault, targetOutput, link.Definition, targetProperty, options)
 			continue
 		}
-		fmt.Fprintf(output, "  const %s = (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => %s(mergeLinkInput(resolveLinkInput<%s>(response, %s, invocation.sourceInput), invocation.input), %s)\n", name, sourceRawResponse, invocationType, targetInput, targetOptions, sourceInput, invocationDefault, targetOutput, targetProperty, targetInput, link.Definition, options)
+		fmt.Fprintf(output, "  const %s: (response: %s | APIError, %s) => Promise<%s> = (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => %s(mergeLinkInput(resolveLinkInput<%s>(response, %s, invocation.sourceInput), invocation.input), %s)\n", name, sourceRawResponse, linkInvocationParameter(targetInput, targetOptions, sourceInput, targetRequiresOptions), targetOutput, sourceRawResponse, invocationType, targetInput, targetOptions, sourceInput, invocationDefault, targetOutput, targetProperty, targetInput, link.Definition, options)
 	}
 	for _, group := range groups {
 		if err := emitLinkGroupValue(output, document, group, names); err != nil {
@@ -608,7 +608,8 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 		invocationType = "RequiredLinkInvocation"
 		invocationDefault = ""
 	}
-	fmt.Fprintf(output, "  const %s: %s = Object.assign(async (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => {\n", variable, contract, operationSlotType(operationRouteKey(group.SourceOperation), "rawResponse"), invocationType, sortedStringSet(targetInputs), sortedStringIntersection(targetOptions), sourceInput, invocationDefault, sortedStringSet(targetOutputs))
+	fmt.Fprintf(output, "  type %sContract = %s\n", variable, contract)
+	fmt.Fprintf(output, "  const %s: %sContract = Object.assign(async (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => {\n", variable, variable, operationSlotType(operationRouteKey(group.SourceOperation), "rawResponse"), invocationType, sortedStringSet(targetInputs), sortedStringIntersection(targetOptions), sourceInput, invocationDefault, sortedStringSet(targetOutputs))
 	for _, link := range group.Links {
 		if link.Status == "default" {
 			continue

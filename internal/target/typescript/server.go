@@ -480,6 +480,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	}
 	output.WriteString("\n")
 	if len(callbacks) > 0 {
+		output.WriteString("interface CallbackDefinition { readonly operationID: string; readonly method: string; readonly parameters: readonly InboundParameterDefinition[]; readonly responses: readonly import(\"./runtime.js\").InboundResponseDefinition[]; readonly security: unknown }\n")
 		if err := emitInboundSchemas(&output, document); err != nil {
 			return nil, err
 		}
@@ -510,7 +511,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 		if err != nil {
 			return nil, fmt.Errorf("%s security metadata: %w", callback.name, err)
 		}
-		fmt.Fprintf(&output, "const %s = { operationID: %s, method: %s, parameters: %s satisfies readonly InboundParameterDefinition[], responses: %s, security: %s } as const\n", callbackDefinitionSymbol(callback), quoteTS(callback.operationID), quoteTS(callback.method), callback.parameters, callback.responsePlan, security)
+		fmt.Fprintf(&output, "const %s: CallbackDefinition = { operationID: %s, method: %s, parameters: %s satisfies readonly InboundParameterDefinition[], responses: %s, security: %s } as const\n", callbackDefinitionSymbol(callback), quoteTS(callback.operationID), quoteTS(callback.method), callback.parameters, callback.responsePlan, security)
 	}
 	output.WriteString("\n/** Application handlers keyed by exact Callback identity. */\nexport interface CallbackHandlers {\n  readonly routeCallbacks?: ")
 	emitCallbackTree(&output, routeTree, nil, "RouteCallbacks", callbackTreeHandlers)
@@ -530,9 +531,10 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreeEndpoints)
 	output.WriteString("\n  readonly componentCallbacks: ")
 	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreeEndpoints)
-	output.WriteString("\n}\n\n/**\n * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.\n * The host chooses each concrete route and mounts the matching endpoint.\n */\nexport function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs = normalizeInboundStreamCodecs(options.streamCodecs)\n")
+	output.WriteString("\n}\n\n/**\n * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.\n * The host chooses each concrete route and mounts the matching endpoint.\n */\nexport function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {\n  const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = normalizeInboundStreamCodecs(options.streamCodecs)\n")
 	for _, callback := range callbacks {
 		definition := callbackDefinitionSymbol(callback)
+		handlerType := "((context: " + callback.typeName + "Context) => " + callback.typeName + "Response | Promise<" + callback.typeName + "Response>) | undefined"
 		routeHandler := callbackAccess("handlers."+callbackRootField(callback, true), callback, true)
 		aliasHandler := "undefined"
 		if callback.componentName != "" {
@@ -549,15 +551,16 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 		}
 		fmt.Fprintf(&output, "  const %s: CallbackEndpoint = {\n    async fetch(request: Request): Promise<Response> {\n", callbackEndpointSymbol(callback))
 		fmt.Fprintf(&output, "      if (request.method !== %s) return new Response(\"Method Not Allowed\", { status: 405, headers: { allow: %s } })\n", quoteTS(callback.method), quoteTS(callback.method))
-		fmt.Fprintf(&output, "      const routeHandler = %s\n      const operationHandler = %s\n      if (routeHandler !== undefined && operationHandler !== undefined && routeHandler !== operationHandler) throw new TypeError(\"callback handler was supplied through both routeCallbacks and callbacks\")\n      const handler = routeHandler ?? operationHandler\n      if (handler === undefined) return new Response(\"Not Found\", { status: 404 })\n", routeHandler, aliasHandler)
-		fmt.Fprintf(&output, "      const routePathParams = %s\n      const operationPathParams = %s\n      if (routePathParams !== undefined && operationPathParams !== undefined && routePathParams !== operationPathParams) throw new TypeError(\"callback path parameters were supplied through both routeCallbacks and callbacks\")\n      const pathParams = routePathParams ?? operationPathParams\n", routePathParams, aliasPathParams)
-		fmt.Fprintf(&output, "      let params: %s\n      try { params = await decodeInboundParameters(request, %s.parameters, inputSchemas, inputWireSchemas, inboundCodecs, pathParams) as %s } catch (error) { if (error instanceof InboundRequestError) return error.response; throw error }\n      const context = { request, operationID: %s.operationID, method: %s.method, path: new URL(request.url).pathname, params, security: %s.security, securityCandidates: collectInboundSecurityCandidates(request, %s.security, securitySchemes) } as Omit<%sContext, \"body\">\n", callback.paramsType, definition, callback.paramsType, definition, definition, definition, definition, callback.typeName)
-		output.WriteString("      if (requiresInboundAuthentication(context.security)) {\n        if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n        try { const denied = await options.authenticate(context); if (denied instanceof Response) return denied }\n        catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n      }\n")
+		fmt.Fprintf(&output, "      const routeHandler: "+handlerType+" = %s\n      const operationHandler: "+handlerType+" = %s\n      if (routeHandler !== undefined && operationHandler !== undefined && routeHandler !== operationHandler) throw new TypeError(\"callback handler was supplied through both routeCallbacks and callbacks\")\n      const handler: "+handlerType+" = routeHandler ?? operationHandler\n      if (handler === undefined) return new Response(\"Not Found\", { status: 404 })\n", routeHandler, aliasHandler)
+		fmt.Fprintf(&output, "      const routePathParams: Readonly<Record<string, string>> | undefined = %s\n      const operationPathParams: Readonly<Record<string, string>> | undefined = %s\n      if (routePathParams !== undefined && operationPathParams !== undefined && routePathParams !== operationPathParams) throw new TypeError(\"callback path parameters were supplied through both routeCallbacks and callbacks\")\n      const pathParams: Readonly<Record<string, string>> | undefined = routePathParams ?? operationPathParams\n", routePathParams, aliasPathParams)
+		paramsType := callback.typeName + "Context[\"params\"]"
+		fmt.Fprintf(&output, "      let params: %s\n      try { params = await decodeInboundParameters(request, %s.parameters, inputSchemas, inputWireSchemas, inboundCodecs, pathParams) as %s } catch (error: unknown) { if (error instanceof InboundRequestError) return error.response; throw error }\n      const context: Omit<"+callback.typeName+"Context, \"body\"> = { request, operationID: %s.operationID, method: %s.method, path: new URL(request.url).pathname, params, security: %s.security, securityCandidates: collectInboundSecurityCandidates(request, %s.security, securitySchemes) } as Omit<%sContext, \"body\">\n", paramsType, definition, paramsType, definition, definition, definition, definition, callback.typeName)
+		output.WriteString("      if (requiresInboundAuthentication(context.security)) {\n        if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n        try { const denied: void | Response = await options.authenticate(context); if (denied instanceof Response) return denied }\n        catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n      }\n")
 		if callback.hasBody {
 			output.WriteString("      try {\n")
-			fmt.Fprintf(&output, "        const body = await decodeInboundBody(request, { required: %t, plans: %s, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxBodyBytes: options.maxBodyBytes, maxStreamFrameBytes: options.maxStreamFrameBytes }) as %s\n", callback.bodyRequired, callback.bodyPlans, callback.bodyType)
+			fmt.Fprintf(&output, "        const body: "+callback.typeName+"Context[\"body\"] = await decodeInboundBody(request, { required: %t, plans: %s, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxBodyBytes: options.maxBodyBytes, maxStreamFrameBytes: options.maxStreamFrameBytes }) as %s\n", callback.bodyRequired, callback.bodyPlans, callback.typeName+"Context[\"body\"]")
 			fmt.Fprintf(&output, "        return await responseFromHandler(await handler({ ...context, body }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", definition)
-			output.WriteString("      } catch (error) {\n        if (error instanceof InboundRequestError) return error.response\n        return new Response(\"Internal Server Error\", { status: 500 })\n      }\n")
+			output.WriteString("      } catch (error: unknown) {\n        if (error instanceof InboundRequestError) return error.response\n        return new Response(\"Internal Server Error\", { status: 500 })\n      }\n")
 		} else {
 			output.WriteString("      try {\n")
 			fmt.Fprintf(&output, "        return await responseFromHandler(await handler({ ...context, body: undefined }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", definition)
@@ -578,11 +581,11 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 			source = strings.Replace(source, name+", ", "", 1)
 		}
 		source = strings.Replace(source, "(handlers: CallbackHandlers", "(_handlers: CallbackHandlers", 1)
-		source = strings.Replace(source, "const inboundCodecs = ", "", 1)
+		source = strings.Replace(source, "const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = ", "", 1)
 	}
 	if !callbacksHaveBodies(callbacks) {
 		source = strings.Replace(source, "decodeInboundBody, ", "", 1)
-		source = strings.Replace(source, "const inboundStreamCodecs = ", "", 1)
+		source = strings.Replace(source, "const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = ", "", 1)
 	}
 	return []byte(generatedTypeImports(source)), nil
 }
@@ -974,6 +977,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	}
 	output.WriteString("\n")
 	if len(webhooks) > 0 {
+		output.WriteString("interface WebhookDefinition { readonly operationID: string; readonly method: string; readonly parameters: readonly InboundParameterDefinition[]; readonly responses: readonly import(\"./runtime.js\").InboundResponseDefinition[]; readonly security: unknown; readonly requestBodyPlans: readonly import(\"./runtime.js\").InboundBodyPlan[]; readonly requestBodyRequired: boolean }\n")
 		if err := emitInboundSchemas(&output, document); err != nil {
 			return nil, err
 		}
@@ -1024,40 +1028,41 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 		if err != nil {
 			return nil, fmt.Errorf("%s security metadata: %w", openAPIPointer("webhooks", webhook.name), err)
 		}
-		fmt.Fprintf(&output, "const %s = { operationID: %s, method: %s, parameters: %s satisfies readonly InboundParameterDefinition[], requestBodyPlans: %s, requestBodyRequired: %t, responses: %s, security: %s } as const\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.operationID), quoteTS(webhook.method), webhook.parameters, webhook.bodyPlansOrEmpty(), webhook.bodyRequired, webhook.responsePlan, security)
+		fmt.Fprintf(&output, "const %s: WebhookDefinition = { operationID: %s, method: %s, parameters: %s satisfies readonly InboundParameterDefinition[], requestBodyPlans: %s, requestBodyRequired: %t, responses: %s, security: %s } as const\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.operationID), quoteTS(webhook.method), webhook.parameters, webhook.bodyPlansOrEmpty(), webhook.bodyRequired, webhook.responsePlan, security)
 	}
 	if len(webhooks) > 0 {
 		output.WriteString("\n")
 	}
 	output.WriteString("/**\n * Creates a Fetch-native router for the generated root Webhook Objects.\n * Webhook names are OpenAPI identifiers, so the host supplies their concrete paths.\n * Authentication policy stays in the host callback; generated code never verifies credentials.\n */\n")
 	output.WriteString("export function createWebhookRouter(handlers: WebhookHandlers, options: WebhookRouterOptions): WebhookRouter {\n")
-	output.WriteString("  const routes = options.routes\n  const inboundCodecs = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs = normalizeInboundStreamCodecs(options.streamCodecs)\n  const registrations = new Set<string>()\n")
+	output.WriteString("  const routes: WebhookRoutes = options.routes\n  const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = normalizeInboundStreamCodecs(options.streamCodecs)\n  const registrations: Set<string> = new Set<string>()\n")
 	for _, webhook := range webhooks {
 		symbol := webhookDefinitionSymbol(webhook)
-		fmt.Fprintf(&output, "  const %sHandlers = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", symbol, quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "  const %sHandlers: WebhookHandlers["+quoteTS(webhook.name)+"] = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", symbol, quoteTS(webhook.name), quoteTS(webhook.name))
 		fmt.Fprintf(&output, "  if (%sHandlers != null && Object.hasOwn(%sHandlers, %s) && %sHandlers[%s] !== undefined) {\n", symbol, symbol, quoteTS(webhook.method), symbol, quoteTS(webhook.method))
-		fmt.Fprintf(&output, "    const path = Object.hasOwn(routes, %s) ? routes[%s] : undefined\n", quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "    const path: string | undefined = Object.hasOwn(routes, %s) ? routes[%s] : undefined\n", quoteTS(webhook.name), quoteTS(webhook.name))
 		fmt.Fprintf(&output, "    if (typeof path !== \"string\" || !path.startsWith(\"/\") || path.includes(\"?\") || path.includes(\"#\")) throw new TypeError(%s)\n", quoteTS("Webhook route for "+webhook.name+" must be an absolute path without query or fragment"))
-		fmt.Fprintf(&output, "    const key = %s + \" \" + path\n", quoteTS(webhook.method))
+		fmt.Fprintf(&output, "    const key: string = %s + \" \" + path\n", quoteTS(webhook.method))
 		fmt.Fprintf(&output, "    if (registrations.has(key)) throw new TypeError(%s + key)\n", quoteTS("Duplicate generated Webhook route: "))
 		output.WriteString("    registrations.add(key)\n  }\n")
 	}
-	output.WriteString("  return {\n    async fetch(request: Request): Promise<Response> {\n      const pathname = new URL(request.url).pathname\n")
+	output.WriteString("  return {\n    async fetch(request: Request): Promise<Response> {\n      const pathname: string = new URL(request.url).pathname\n")
 	for _, webhook := range webhooks {
 		handlersSymbol := webhookDefinitionSymbol(webhook) + "Handlers"
-		fmt.Fprintf(&output, "      const %sPathParameters = matchInboundRoute(Object.hasOwn(routes, %s) ? routes[%s] : undefined, pathname)\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.name), quoteTS(webhook.name))
-		fmt.Fprintf(&output, "      const %s = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", handlersSymbol, quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "      const %sPathParameters: ReturnType<typeof matchInboundRoute> = matchInboundRoute(Object.hasOwn(routes, %s) ? routes[%s] : undefined, pathname)\n", webhookDefinitionSymbol(webhook), quoteTS(webhook.name), quoteTS(webhook.name))
+		fmt.Fprintf(&output, "      const %s: WebhookHandlers["+quoteTS(webhook.name)+"] = Object.hasOwn(handlers, %s) ? handlers[%s] : undefined\n", handlersSymbol, quoteTS(webhook.name), quoteTS(webhook.name))
 		fmt.Fprintf(&output, "      if (%s != null && Object.hasOwn(%s, %s) && %s[%s] !== undefined && request.method === %s && %sPathParameters !== undefined) {\n", handlersSymbol, handlersSymbol, quoteTS(webhook.method), handlersSymbol, quoteTS(webhook.method), quoteTS(webhook.method), webhookDefinitionSymbol(webhook))
-		fmt.Fprintf(&output, "        const handler = %s[%s]\n", handlersSymbol, quoteTS(webhook.method))
+		fmt.Fprintf(&output, "        const handler: NonNullable<WebhookHandlers["+quoteTS(webhook.name)+"]>["+quoteTS(webhook.method)+"] = %s[%s]\n", handlersSymbol, quoteTS(webhook.method))
 		output.WriteString("        if (handler === undefined) return new Response(\"Not Found\", { status: 404 })\n")
 		symbol := webhookDefinitionSymbol(webhook)
-		fmt.Fprintf(&output, "        let params: %s\n        try { params = await decodeInboundParameters(request, %s.parameters, inputSchemas, inputWireSchemas, inboundCodecs, %sPathParameters) as %s } catch (error) { if (error instanceof InboundRequestError) return error.response; throw error }\n        const context = { request, operationID: %s.operationID, method: %s.method, path: pathname, params, security: %s.security, securityCandidates: collectInboundSecurityCandidates(request, %s.security, securitySchemes) } as Omit<%sContext, \"body\">\n", webhook.paramsType, symbol, symbol, webhook.paramsType, symbol, symbol, symbol, symbol, webhook.typeName)
-		output.WriteString("        if (requiresInboundAuthentication(context.security)) {\n          if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n          try { const denied = await options.authenticate(context); if (denied instanceof Response) return denied }\n          catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n        }\n")
+		paramsType := webhook.typeName + "Context[\"params\"]"
+		fmt.Fprintf(&output, "        let params: %s\n        try { params = await decodeInboundParameters(request, %s.parameters, inputSchemas, inputWireSchemas, inboundCodecs, %sPathParameters) as %s } catch (error: unknown) { if (error instanceof InboundRequestError) return error.response; throw error }\n        const context: Omit<"+webhook.typeName+"Context, \"body\"> = { request, operationID: %s.operationID, method: %s.method, path: pathname, params, security: %s.security, securityCandidates: collectInboundSecurityCandidates(request, %s.security, securitySchemes) } as Omit<%sContext, \"body\">\n", paramsType, symbol, symbol, paramsType, symbol, symbol, symbol, symbol, webhook.typeName)
+		output.WriteString("        if (requiresInboundAuthentication(context.security)) {\n          if (options.authenticate === undefined) return new Response(\"Unauthorized\", { status: 401 })\n          try { const denied: void | Response = await options.authenticate(context); if (denied instanceof Response) return denied }\n          catch { return new Response(\"Internal Server Error\", { status: 500 }) }\n        }\n")
 		if webhook.hasBody {
 			output.WriteString("        try {\n")
-			fmt.Fprintf(&output, "          const body = await decodeInboundBody(request, { required: %s.requestBodyRequired, plans: %s.requestBodyPlans, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxBodyBytes: options.maxBodyBytes, maxStreamFrameBytes: options.maxStreamFrameBytes }) as %s\n", symbol, symbol, webhook.bodyType)
+			fmt.Fprintf(&output, "          const body: "+webhook.typeName+"Context[\"body\"] = await decodeInboundBody(request, { required: %s.requestBodyRequired, plans: %s.requestBodyPlans, schemas: inputSchemas, wireSchemas: inputWireSchemas, codecs: inboundCodecs, streamCodecs: inboundStreamCodecs, maxBodyBytes: options.maxBodyBytes, maxStreamFrameBytes: options.maxStreamFrameBytes }) as %s\n", symbol, symbol, webhook.typeName+"Context[\"body\"]")
 			fmt.Fprintf(&output, "          return await responseFromHandler(await handler({ ...context, body }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", symbol)
-			output.WriteString("        } catch (error) {\n          if (error instanceof InboundRequestError) return error.response\n          return new Response(\"Internal Server Error\", { status: 500 })\n        }\n")
+			output.WriteString("        } catch (error: unknown) {\n          if (error instanceof InboundRequestError) return error.response\n          return new Response(\"Internal Server Error\", { status: 500 })\n        }\n")
 		} else {
 			output.WriteString("        try {\n")
 			fmt.Fprintf(&output, "          return await responseFromHandler(await handler({ ...context, body: undefined }), { schemas: outputSchemas, responses: %s.responses, codecs: inboundCodecs })\n", symbol)
@@ -1072,15 +1077,15 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 			source = strings.Replace(source, name+", ", "", 1)
 		}
 		source = strings.Replace(source, "(handlers: WebhookHandlers", "(_handlers: WebhookHandlers", 1)
-		source = strings.Replace(source, "  const routes = options.routes\n", "", 1)
-		source = strings.Replace(source, "const inboundCodecs = ", "", 1)
-		source = strings.Replace(source, "  const registrations = new Set<string>()\n", "", 1)
+		source = strings.Replace(source, "  const routes: WebhookRoutes = options.routes\n", "", 1)
+		source = strings.Replace(source, "const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = ", "", 1)
+		source = strings.Replace(source, "  const registrations: Set<string> = new Set<string>()\n", "", 1)
 		source = strings.Replace(source, "async fetch(request: Request)", "async fetch(_request: Request)", 1)
-		source = strings.Replace(source, "      const pathname = new URL(request.url).pathname\n", "", 1)
+		source = strings.Replace(source, "      const pathname: string = new URL(request.url).pathname\n", "", 1)
 	}
 	if !webhooksHaveBodies(webhooks) {
 		source = strings.Replace(source, "decodeInboundBody, ", "", 1)
-		source = strings.Replace(source, "const inboundStreamCodecs = ", "", 1)
+		source = strings.Replace(source, "const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = ", "", 1)
 	}
 	return []byte(generatedTypeImports(source)), nil
 }

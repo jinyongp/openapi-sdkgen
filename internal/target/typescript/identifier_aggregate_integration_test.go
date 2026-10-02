@@ -16,7 +16,7 @@ import (
 
 func generatedEnumBindings(t testing.TB, source string) (record, values string) {
 	t.Helper()
-	matches := regexp.MustCompile(`(?m)^const ([A-Za-z_$][A-Za-z0-9_$]*) = /\* @__PURE__ \*/ __sdkgen_createEnumValues\(([A-Za-z_$][A-Za-z0-9_$]*)\)$`).FindAllStringSubmatch(source, -1)
+	matches := regexp.MustCompile(`(?m)^const ([A-Za-z_$][A-Za-z0-9_$]*): object = /\* @__PURE__ \*/ __sdkgen_createEnumValues\(([A-Za-z_$][A-Za-z0-9_$]*)\)$`).FindAllStringSubmatch(source, -1)
 	if len(matches) != 1 {
 		t.Fatalf("expected one enum record constructor, got %d", len(matches))
 	}

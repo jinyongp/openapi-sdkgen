@@ -138,7 +138,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if !strings.Contains(publicEnums, `export * from "./internal/enums.js"`) {
 		t.Fatalf("enum entrypoint missing relative re-export:\n%s", publicEnums)
 	}
-	for _, expected := range []string{"export const openapi = { version:", `versionLine: "3.2"`} {
+	for _, expected := range []string{"export const openapi: OpenAPIMetadata = { version:", `versionLine: "3.2"`} {
 		if !strings.Contains(metadataSource, expected) {
 			t.Fatalf("metadata missing %q:\n%s", expected, metadataSource)
 		}
@@ -446,7 +446,7 @@ func TestPublicRootShimsAndMetadataOwnershipRemainStable(t *testing.T) {
 		t.Fatalf("public enums shim changed:\n%s", got)
 	}
 	metadata := artifactByPath(t, artifacts, "metadata.ts")
-	if !bytes.Contains(metadata, []byte("export const openapi =")) {
+	if !bytes.Contains(metadata, []byte("export const openapi: OpenAPIMetadata =")) {
 		t.Fatalf("root metadata owner lost its public value:\n%s", metadata)
 	}
 	for _, artifact := range artifacts {
@@ -529,7 +529,7 @@ func TestGeneratorWithServerEmitsFetchNativeWebhookRouter(t *testing.T) {
 		"export function createWebhookRouter",
 		`request.method === "POST" && __sdkgen_`,
 		"operationID: __sdkgen_",
-		"const denied = await options.authenticate(context)",
+		"const denied: void | Response = await options.authenticate(context)",
 	} {
 		if !strings.Contains(webhooks, expected) {
 			t.Fatalf("webhook source missing %q:\n%s", expected, webhooks)

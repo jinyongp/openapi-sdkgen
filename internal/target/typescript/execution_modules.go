@@ -159,7 +159,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		fmt.Fprintf(&output, "  operationID: %s,\n", quoteTS(item.compiled.OperationID))
 	}
 	fmt.Fprintf(&output, "  profile: %s,\n", quoteTS(string(execution.profile)))
-	fmt.Fprintf(&output, "  bind(context: RequestContext): %s {\n", callType)
+	output.WriteString("  bind(context: RequestContext): ReturnType<ExecutionProvider[\"bind\"]> {\n")
 	fmt.Fprintf(&output, "    const request: %s = createRequestCore(context, services)\n", requestType)
 	fmt.Fprintf(&output, "    const base: BaseCall = bindBase(request, %s, %s)\n", inputArg, outputArg)
 	var capabilities []string

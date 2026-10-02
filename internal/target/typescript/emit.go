@@ -651,7 +651,12 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		if err != nil {
 			return fmt.Errorf("encode generation selection metadata: %w", err)
 		}
-		metadataSource = append(metadataSource, []byte("\n/** Public API selection and response-Link execution dependencies. */\nexport const generationSelection = "+string(selectionJSON)+" as const\n")...)
+		selectionSource, err := emitLiteralMetadata("generationSelection", "GenerationSelectionMetadata", selectionJSON)
+		if err != nil {
+			return err
+		}
+		metadataSource = append(metadataSource, []byte("\n/** Public API selection and response-Link execution dependencies. */\n")...)
+		metadataSource = append(metadataSource, selectionSource...)
 	}
 	if len(shared.clients) != 0 {
 		clients := make(map[string]map[string][]string)
@@ -662,7 +667,12 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		if err != nil {
 			return err
 		}
-		metadataSource = append(metadataSource, []byte("\n/** Named client API assignments. */\nexport const generationClients = "+string(data)+" as const\n")...)
+		clientsSource, err := emitLiteralMetadata("generationClients", "GenerationClientsMetadata", data)
+		if err != nil {
+			return err
+		}
+		metadataSource = append(metadataSource, []byte("\n/** Named client API assignments. */\n")...)
+		metadataSource = append(metadataSource, clientsSource...)
 	}
 	if err := emitResourceArtifactsTo(document, plan.modules, plan.resourceTree, write); err != nil {
 		return err

@@ -166,7 +166,7 @@ func TestLinkGroupsUseTheFrozenOwnerWithoutRenamingLeaves(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(output.String(), "const "+leaf+" =") || !strings.Contains(output.String(), "const __sdkgen_l_d1:") {
+	if !strings.Contains(output.String(), "const "+leaf+":") || !strings.Contains(output.String(), "const __sdkgen_l_d1:") {
 		t.Fatalf("group/leaf ownership changed: %s", output.String())
 	}
 	unplanned := newLocalIdentifierPlan(module.path)

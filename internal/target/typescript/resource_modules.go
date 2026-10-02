@@ -187,7 +187,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	output.WriteString("/** Builds this resource node from the completed exact-call registry. */\n")
 	output.WriteString("export function build(registry: CallableRegistry, bound: readonly unknown[] = []): Surface {\n")
-	output.WriteString("  const members = {\n")
+	output.WriteString("  const members: Pick<Surface, keyof Surface> = {\n")
 	for _, name := range sortedResourceMemberNames(module.node) {
 		fmt.Fprintf(&output, "    %s: ", name)
 		if err := emitResourceModuleMemberValue(&output, document, plan, module, paths, childIdentities, names, name); err != nil {
@@ -210,7 +210,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  return assignCallableProperties((%s: %s) => %s(registry, [...bound, %s]), members) as Surface\n", parameter.Binding, parameterType, alias, parameter.Binding)
+		fmt.Fprintf(&output, "  return assignCallableProperties((%s: %s): ReturnType<typeof %s> => %s(registry, [...bound, %s]), members) as Surface\n", parameter.Binding, parameterType, alias, alias, parameter.Binding)
 	} else {
 		output.WriteString("  return members as Surface\n")
 	}

@@ -129,7 +129,7 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	}
 	output.WriteString("\n/**\n * Creates a generated API client.\n *\n * The base URL must include the selected API version prefix, such as `/v1`.\n *\n * @param options Deployment URL, fetch implementation, and transport defaults.\n * @returns A typed {@link Client}.\n */\n")
 	output.WriteString("export function createClient(options: ClientOptions): Client {\n")
-	output.WriteString("  const request = createRequest(options)\n")
+	emitTypedConstant(&output, "  ", "request", "ReturnType<typeof createRequest>", "createRequest(options)")
 	arguments := []string{"request"}
 	if inputSchemas {
 		arguments = append(arguments, "inputSchemas")
@@ -139,8 +139,8 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	if outputSchemas {
 		arguments = append(arguments, "outputSchemas")
 	}
-	fmt.Fprintf(&output, "  const registry = createCallableRegistry(%s)\n", strings.Join(arguments, ", "))
-	output.WriteString("  const resources = buildResources(registry)\n")
+	emitTypedConstant(&output, "  ", "registry", "ReturnType<typeof createCallableRegistry>", "createCallableRegistry("+strings.Join(arguments, ", ")+")")
+	emitTypedConstant(&output, "  ", "resources", "ReturnType<typeof buildResources>", "buildResources(registry)")
 	output.WriteString("  return {\n")
 	output.WriteString("    $routes: registry.routes,\n")
 	output.WriteString("    $operations: registry.operations,\n")

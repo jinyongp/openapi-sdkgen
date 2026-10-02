@@ -45,7 +45,7 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 	}
 	for _, expected := range []string{
 		`import { defineOwnDataProperty } from "../runtime/objects.js"`,
-		`const completed = {} as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
+		`const completed: { -readonly [Route in keyof Routes]: Routes[Route]["call"] } = {} as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
 		`const operations: Record<string, unknown> = {}`,
 		`defineOwnDataProperty(completed as Record<string, unknown>, "GET /events",`,
 		`["links", __sdkgen_`,
@@ -68,7 +68,7 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 	if strings.Contains(client, "bindOperation<") || strings.Contains(client, "createPaginator<") || strings.Contains(client, `route: "GET /events"`) {
 		t.Fatalf("client composition retained an inline operation binding or definition:\n%s", client)
 	}
-	if !strings.Contains(client, "const registry = createCallableRegistry(") || !strings.Contains(client, `$routes: registry.routes`) || !strings.Contains(client, `$operations: registry.operations`) {
+	if !strings.Contains(client, "const registry: ReturnType<typeof createCallableRegistry> = createCallableRegistry(") || !strings.Contains(client, `$routes: registry.routes`) || !strings.Contains(client, `$operations: registry.operations`) {
 		t.Fatalf("client does not consume the completed callable registry:\n%s", client)
 	}
 }

@@ -97,9 +97,9 @@ func TestClientFactoryCreatesOneRegistryThenDelegatesResourceComposition(t *test
 	}
 	factory := string(artifactByPath(t, artifacts, "internal/client/factory.ts"))
 	for _, expected := range []string{
-		"const request = createRequest(options)",
-		"const registry = createCallableRegistry(request)",
-		"const resources = buildResources(registry)",
+		"const request: ReturnType<typeof createRequest> = createRequest(options)",
+		"const registry: ReturnType<typeof createCallableRegistry> = createCallableRegistry(request)",
+		"const resources: ReturnType<typeof buildResources> = buildResources(registry)",
 		"$routes: registry.routes",
 		"$operations: registry.operations",
 		"...resources",

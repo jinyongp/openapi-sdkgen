@@ -135,6 +135,9 @@ ts-declarations *args:
 ts-declarations-test:
     bash ./scripts/agent/ts-declarations-test
 
+ts-declarations-options:
+    bash ./scripts/agent/ts-declarations-options
+
 ts-typecheck:
     ./scripts/agent/ts-typecheck
 

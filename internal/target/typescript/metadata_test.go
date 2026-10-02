@@ -81,7 +81,9 @@ func TestEmitMetadataPreservesEntryValuesAndRuntimeContracts(t *testing.T) {
 			}
 			executable := strings.TrimSuffix(string(source), " as const\n")
 			if typescript {
-				executable = strings.Replace(executable, " as { [key: string]: any }", "", 1)
+				_, executable, _ = strings.Cut(executable, "export const openapi: OpenAPIMetadata")
+				executable = "export const openapi" + executable
+				executable = strings.Replace(executable, " as OpenAPIDocument", "", 1)
 				executable += "\n"
 			}
 			directory := t.TempDir()

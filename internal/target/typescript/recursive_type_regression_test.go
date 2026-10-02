@@ -182,7 +182,7 @@ func TestOperationModuleTypechecksRecursiveInputWithStreamCapability(t *testing.
 		t.Fatal(err)
 	}
 	operationSource := operationArtifactSource(t, artifacts, "POST /events")
-	if !strings.Contains(operationSource, "bindStreamOperation<Input, string, Options>") {
+	if !strings.Contains(operationSource, "type StreamItem = string") || !strings.Contains(operationSource, "bindStreamOperation<Input, StreamItem, Options>") {
 		t.Fatalf("recursive stream operation did not exercise generic stream binder:\n%s", operationSource)
 	}
 	compileTypeScriptArtifacts(t, document)

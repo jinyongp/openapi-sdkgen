@@ -17,15 +17,15 @@ type enumMemberDocumentation struct {
 }
 
 type enumValuesPlan struct {
-	name           string
-	valuesBinding  string
-	enumBinding    string
-	renderedValues string
-	valueType      string
-	members        []string
-	memberDocs     map[string]enumMemberDocumentation
-	deprecated     bool
-	hasJSONRecord  bool
+	name          string
+	valuesBinding string
+	enumBinding   string
+	values        []any
+	valueType     string
+	members       []string
+	memberDocs    map[string]enumMemberDocumentation
+	deprecated    bool
+	hasJSONRecord bool
 }
 
 func emitEnums(document *ir.Document) ([]byte, error) {
@@ -51,51 +51,51 @@ func emitEnums(document *ir.Document) ([]byte, error) {
 	}
 	if len(plans) > 0 {
 		output.WriteString(`function __sdkgen_createEnumValues(values: readonly unknown[]): object {
-  const enumValues = Object.create(null) as Record<PropertyKey, unknown>
+  const enumValues: Record<PropertyKey, unknown> = Object.create(null) as Record<PropertyKey, unknown>
   for (const value of values) {
     if (typeof value !== "string" || Object.hasOwn(enumValues, value)) continue
     Object.defineProperty(enumValues, value, { enumerable: true, value })
   }
-  Object.defineProperty(enumValues, Symbol.iterator, { value: () => values[Symbol.iterator]() })
+  Object.defineProperty(enumValues, Symbol.iterator, { value: (): IterableIterator<unknown> => values[Symbol.iterator]() })
   return Object.freeze(enumValues)
 }
 
-function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean {
+function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen: WeakMap<object, WeakSet<object>> = new WeakMap<object, WeakSet<object>>()): boolean {
   if (typeof left === "number" && typeof right === "number") return left === right
   if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return Object.is(left, right)
-  const leftArray = Array.isArray(left)
-  const rightArray = Array.isArray(right)
+  const leftArray: boolean = Array.isArray(left)
+  const rightArray: boolean = Array.isArray(right)
   if (leftArray !== rightArray) return false
   if (!leftArray) {
-    const leftPrototype = Object.getPrototypeOf(left)
-    const rightPrototype = Object.getPrototypeOf(right)
+    const leftPrototype: unknown = Object.getPrototypeOf(left)
+    const rightPrototype: unknown = Object.getPrototypeOf(right)
     if ((leftPrototype !== Object.prototype && leftPrototype !== null) || (rightPrototype !== Object.prototype && rightPrototype !== null)) return false
   }
-  let compared = seen.get(left)
+  let compared: WeakSet<object> | undefined = seen.get(left)
   if (compared?.has(right)) return false
   if (compared === undefined) {
     compared = new WeakSet<object>()
     seen.set(left, compared)
   }
   compared.add(right)
-  if (leftArray && rightArray) {
+  if (Array.isArray(left) && Array.isArray(right)) {
     if (left.length !== right.length || Object.keys(left).length !== left.length || Object.keys(right).length !== right.length) return false
-    for (let index = 0; index < left.length; index++) {
-      const leftItem = Object.getOwnPropertyDescriptor(left, index)
-      const rightItem = Object.getOwnPropertyDescriptor(right, index)
+    for (let index: number = 0; index < left.length; index++) {
+      const leftItem: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(left, index)
+      const rightItem: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(right, index)
       if (leftItem === undefined || rightItem === undefined || !("value" in leftItem) || !("value" in rightItem) || !__sdkgen_enumValueEquals(leftItem.value, rightItem.value, seen)) return false
     }
     return true
   }
-  const leftKeys = Object.keys(left).sort()
-  const rightKeys = Object.keys(right).sort()
+  const leftKeys: string[] = Object.keys(left).sort()
+  const rightKeys: string[] = Object.keys(right).sort()
   if (leftKeys.length !== rightKeys.length) return false
-  for (let index = 0; index < leftKeys.length; index++) {
-    const key = leftKeys[index]!
-    const rightKey = rightKeys[index]!
+  for (let index: number = 0; index < leftKeys.length; index++) {
+    const key: string = leftKeys[index]!
+    const rightKey: string = rightKeys[index]!
     if (key !== rightKey) return false
-    const leftItem = Object.getOwnPropertyDescriptor(left, key)
-    const rightItem = Object.getOwnPropertyDescriptor(right, rightKey)
+    const leftItem: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(left, key)
+    const rightItem: PropertyDescriptor | undefined = Object.getOwnPropertyDescriptor(right, rightKey)
     if (leftItem === undefined || rightItem === undefined || !("value" in leftItem) || !("value" in rightItem) || !__sdkgen_enumValueEquals(leftItem.value, rightItem.value, seen)) return false
   }
   return true
@@ -105,12 +105,21 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
 	}
 	bindings := make([]runtimeProperty, 0, len(plans))
 	for _, plan := range plans {
-		fmt.Fprintf(&output, "const %s = %s as const\n", plan.valuesBinding, plan.renderedValues)
-		fmt.Fprintf(&output, "const %s = /* @__PURE__ */ __sdkgen_createEnumValues(%s)\n", plan.enumBinding, plan.valuesBinding)
+		valuesType, err := readonlyJSONType(plan.values)
+		if err != nil {
+			return nil, err
+		}
+		typeName := plan.valuesBinding + "Values"
+		fmt.Fprintf(&output, "type %s = %s\n", typeName, valuesType)
+		rendered, _, err := enumRuntimeJSONExpression(plan.values, typeName)
+		if err != nil {
+			return nil, err
+		}
+		emitTypedConstant(&output, "", plan.valuesBinding, typeName, rendered+" as const")
+		emitTypedConstant(&output, "", plan.enumBinding, "object", "/* @__PURE__ */ __sdkgen_createEnumValues("+plan.valuesBinding+")")
 		bindings = append(bindings, runtimeProperty{key: plan.name, value: plan.enumBinding})
 	}
-	output.WriteString("/** Runtime enum values keyed by exact OpenAPI component schema names. */\n")
-	fmt.Fprintf(&output, "export const Enums = %s as {\n", runtimeObjectExpression(bindings))
+	output.WriteString("type EnumDefinitions = {\n")
 	for _, plan := range plans {
 		emitEnumComponentJSDoc(&output, plan)
 		fmt.Fprintf(&output, "  readonly %s: {\n", quoteTS(plan.name))
@@ -122,6 +131,8 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen = new Weak
 		output.WriteString("  }\n")
 	}
 	output.WriteString("}\n")
+	output.WriteString("/** Runtime enum values keyed by exact OpenAPI component schema names. */\n")
+	emitTypedConstant(&output, "export ", "Enums", "EnumDefinitions", runtimeObjectExpression(bindings)+" as EnumDefinitions")
 	if len(plans) > 0 {
 		output.WriteString("/** Literal value union for an exact generated enum component name. */\n")
 		output.WriteString("export type EnumValue<Name extends keyof typeof Enums> = (typeof Enums)[Name] extends Iterable<infer Value> ? Value : never\n")
@@ -202,7 +213,7 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 		if !exists {
 			continue
 		}
-		rendered, hasJSONRecord, err := enumRuntimeJSONExpression(values)
+		_, hasJSONRecord, err := enumRuntimeJSONExpression(values)
 		if err != nil {
 			return nil, fmt.Errorf("component %s enum: %w", schemaName, err)
 		}
@@ -211,13 +222,13 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 			return nil, fmt.Errorf("component %s enum value type: %w", schemaName, err)
 		}
 		plans = append(plans, enumValuesPlan{
-			name:           schemaName,
-			renderedValues: rendered,
-			valueType:      valueType,
-			members:        enumStringMembers(values),
-			memberDocs:     memberDocs,
-			deprecated:     schemaIsAlwaysDeprecated(document, schema),
-			hasJSONRecord:  hasJSONRecord,
+			name:          schemaName,
+			values:        values,
+			valueType:     valueType,
+			members:       enumStringMembers(values),
+			memberDocs:    memberDocs,
+			deprecated:    schemaIsAlwaysDeprecated(document, schema),
+			hasJSONRecord: hasJSONRecord,
 		})
 	}
 	return plans, nil
@@ -292,7 +303,13 @@ func annotatedEnumValues(document *ir.Document, schema map[string]any) ([]any, m
 // `as const`. Records still use a typed Object.fromEntries helper so exact
 // keys, including "__proto__", remain own data properties without widening
 // their generated readonly JSON types.
-func enumRuntimeJSONExpression(value any) (string, bool, error) {
+func enumRuntimeJSONExpression(value any, expectedType ...string) (string, bool, error) {
+	childType := func(key string) []string {
+		if len(expectedType) == 0 {
+			return nil
+		}
+		return []string{expectedType[0] + "[" + key + "]"}
+	}
 	switch typed := value.(type) {
 	case map[string]any:
 		names := make([]string, 0, len(typed))
@@ -302,7 +319,7 @@ func enumRuntimeJSONExpression(value any) (string, bool, error) {
 		sort.Strings(names)
 		entries := make([]string, 0, len(names))
 		for _, name := range names {
-			rendered, _, err := enumRuntimeJSONExpression(typed[name])
+			rendered, _, err := enumRuntimeJSONExpression(typed[name], childType(quoteTS(name))...)
 			if err != nil {
 				return "", false, fmt.Errorf("JSON property %q: %w", name, err)
 			}
@@ -312,18 +329,21 @@ func enumRuntimeJSONExpression(value any) (string, bool, error) {
 		if err != nil {
 			return "", false, err
 		}
+		if len(expectedType) != 0 {
+			valueType = expectedType[0]
+		}
 		return "/* @__PURE__ */ __sdkgen_createJSONRecord<" + valueType + ">([" + strings.Join(entries, ", ") + "])", true, nil
 	case map[string]map[string]any:
 		values := make(map[string]any, len(typed))
 		for key, item := range typed {
 			values[key] = item
 		}
-		return enumRuntimeJSONExpression(values)
+		return enumRuntimeJSONExpression(values, expectedType...)
 	case []any:
 		items := make([]string, 0, len(typed))
 		hasJSONRecord := false
 		for index, item := range typed {
-			rendered, itemHasJSONRecord, err := enumRuntimeJSONExpression(item)
+			rendered, itemHasJSONRecord, err := enumRuntimeJSONExpression(item, childType(fmt.Sprint(index))...)
 			if err != nil {
 				return "", false, fmt.Errorf("JSON item %d: %w", index, err)
 			}
