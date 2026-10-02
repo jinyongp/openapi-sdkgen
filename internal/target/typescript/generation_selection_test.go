@@ -227,4 +227,15 @@ func TestGenerationSelectionServerIncludesDirectCallbacksAndWebhooks(t *testing.
 		}
 	}
 	compileSelectedTypeScriptArtifacts(t, document, options, "")
+	options.Clients = map[string]generator.Client{"second": {Selection: &generator.Selection{Operations: []string{"b"}}}}
+	plan, diagnostics, err = (Generator{}).Prepare(document, options)
+	if err != nil || diagnostic.HasErrors(diagnostics) {
+		t.Fatalf("named inbound preparation: %v, %#v", err, diagnostics)
+	}
+	value, _ = plan.Value("typescript")
+	prepared = value.(*sourcePlan)
+	if len(prepared.callbacks) != 3 || len(prepared.webhooks) != 1 {
+		t.Fatalf("named direct callback union = %#v", prepared.callbacks)
+	}
+	compileSelectedTypeScriptArtifacts(t, document, options, "")
 }

@@ -640,6 +640,17 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		}
 		metadataSource = append(metadataSource, []byte("\n/** Public API selection and response-Link execution dependencies. */\nexport const generationSelection = "+string(selectionJSON)+" as const\n")...)
 	}
+	if len(shared.clients) != 0 {
+		clients := make(map[string]map[string][]string)
+		for _, client := range shared.clients {
+			clients[client.name] = map[string][]string{"routes": sortedStringKeys(client.view.selection.direct), "dependencyRoutes": sortedStringKeys(client.view.selection.dependencies)}
+		}
+		data, err := json.Marshal(clients)
+		if err != nil {
+			return err
+		}
+		metadataSource = append(metadataSource, []byte("\n/** Named client API assignments. */\nexport const generationClients = "+string(data)+" as const\n")...)
+	}
 	if err := emitResourceArtifactsTo(document, plan.modules, plan.resourceTree, write); err != nil {
 		return err
 	}

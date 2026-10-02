@@ -15,8 +15,10 @@ import (
 	"strings"
 
 	compiler "openapi-sdkgen/internal/compiler"
+	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
+	sdkoutput "openapi-sdkgen/internal/output"
 	"openapi-sdkgen/internal/target/typescript"
 )
 
@@ -654,7 +656,7 @@ func reusableGeneratorIdentity() string {
 func reusableGenerationRequest(input, target string, options generator.Options, compileOptions compiler.CompileOptions) *artifactGeneration {
 	// Resolve selector identities against the compiler document before treating
 	// a selected output as reusable (IDs and routes may name the same API).
-	if options.Selection != nil {
+	if options.Selection != nil || options.Clients != nil {
 		return nil
 	}
 	identity := reusableGeneratorIdentity()
@@ -677,27 +679,41 @@ func reusableGenerationResult(result compiler.Result, target string, options gen
 	}
 	generation := newArtifactGeneration(identity, target, options, result.ReusableInput.SHA256)
 	if options.Selection != nil && result.Document != nil {
-		ids := make(map[string]bool)
-		routes := make(map[string]bool)
-		for _, id := range options.Selection.Operations {
-			ids[id] = true
+		generation.SelectionRoutes = resolvedGenerationRoutes(result.Document, options.Selection)
+	}
+	if options.Clients != nil && result.Document != nil {
+		names := make([]string, 0, len(options.Clients))
+		for name := range options.Clients {
+			names = append(names, name)
 		}
-		for _, route := range options.Selection.Routes {
-			routes[route] = true
+		sort.Strings(names)
+		for _, name := range names {
+			generation.Clients = append(generation.Clients, sdkoutput.ClientGeneration{Name: name, Routes: resolvedGenerationRoutes(result.Document, options.Clients[name].Selection)})
 		}
-		generation.SelectionRoutes = make([]string, 0)
-		for _, operation := range result.Document.Operations {
-			route := operation.RouteKey
-			if route == "" {
-				route = operation.Method + " " + operation.Path
-			}
-			if routes[route] || (operation.OperationID != "" && ids[operation.OperationID]) {
-				generation.SelectionRoutes = append(generation.SelectionRoutes, route)
-			}
-		}
-		sort.Strings(generation.SelectionRoutes)
 	}
 	return generation
+}
+
+func resolvedGenerationRoutes(document *ir.Document, selection *generator.Selection) []string {
+	ids, routes := make(map[string]bool), make(map[string]bool)
+	for _, id := range selection.Operations {
+		ids[id] = true
+	}
+	for _, route := range selection.Routes {
+		routes[route] = true
+	}
+	result := make([]string, 0)
+	for _, operation := range document.Operations {
+		route := operation.RouteKey
+		if route == "" {
+			route = operation.Method + " " + operation.Path
+		}
+		if routes[route] || (operation.OperationID != "" && ids[operation.OperationID]) {
+			result = append(result, route)
+		}
+	}
+	sort.Strings(result)
+	return result
 }
 
 func reusableCompileOptions(options compiler.CompileOptions) bool {

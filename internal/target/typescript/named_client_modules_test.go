@@ -12,13 +12,13 @@ import (
 )
 
 func TestNamedClientsExposeIndependentTypesAndBindPrivateLinksLazily(t *testing.T) {
-	options := generator.Options{
-		Selection: &generator.Selection{Routes: []string{"GET /idless/{task-id}"}},
-		Clients: map[string]generator.Client{
-			"a": {Selection: &generator.Selection{Operations: []string{"a"}}},
-			"b": {Selection: &generator.Selection{Operations: []string{"b"}}},
-			"c": {Selection: &generator.Selection{Operations: []string{"c"}}},
-		},
+	registry, _ := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
+	options, _ := registry.Resolve([]string{"server", "metadata"})
+	options.Selection = &generator.Selection{Routes: []string{"GET /idless/{task-id}"}}
+	options.Clients = map[string]generator.Client{
+		"a": {Selection: &generator.Selection{Operations: []string{"a"}}},
+		"b": {Selection: &generator.Selection{Operations: []string{"b"}}},
+		"c": {Selection: &generator.Selection{Operations: []string{"c"}}},
 	}
 	probe := `import {createClient as root} from './index.js';
 import {createClient as a} from './clients/a/index.js';

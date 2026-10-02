@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -59,11 +60,18 @@ func (value *StageError) Unwrap() error { return value.Err }
 
 // Generation fingerprints the generator inputs that produced a managed output.
 type Generation struct {
-	Generator       string   `json:"generator"`
-	Target          string   `json:"target"`
-	Addons          []string `json:"addons,omitempty"`
-	InputSHA256     string   `json:"inputSha256"`
-	SelectionRoutes []string `json:"selectionRoutes,omitempty"`
+	Generator       string             `json:"generator"`
+	Target          string             `json:"target"`
+	Addons          []string           `json:"addons,omitempty"`
+	InputSHA256     string             `json:"inputSha256"`
+	SelectionRoutes []string           `json:"selectionRoutes,omitempty"`
+	Clients         []ClientGeneration `json:"clients,omitempty"`
+}
+
+// ClientGeneration preserves API assignment, independently of the shared union.
+type ClientGeneration struct {
+	Name   string   `json:"name"`
+	Routes []string `json:"routes"`
 }
 
 // Manifest records generator-owned output files and their content hashes.
@@ -321,7 +329,7 @@ func GenerationEqual(left, right *Generation) bool {
 	if left == nil || right == nil {
 		return left == right
 	}
-	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) || len(left.SelectionRoutes) != len(right.SelectionRoutes) {
+	if left.Generator != right.Generator || left.Target != right.Target || left.InputSHA256 != right.InputSHA256 || len(left.Addons) != len(right.Addons) || len(left.SelectionRoutes) != len(right.SelectionRoutes) || len(left.Clients) != len(right.Clients) {
 		return false
 	}
 	for index := range left.Addons {
@@ -331,6 +339,11 @@ func GenerationEqual(left, right *Generation) bool {
 	}
 	for index := range left.SelectionRoutes {
 		if left.SelectionRoutes[index] != right.SelectionRoutes[index] {
+			return false
+		}
+	}
+	for index, client := range left.Clients {
+		if client.Name != right.Clients[index].Name || !slices.Equal(client.Routes, right.Clients[index].Routes) {
 			return false
 		}
 	}
@@ -352,6 +365,15 @@ func validateGeneration(generation Generation) error {
 	for index, route := range generation.SelectionRoutes {
 		if route == "" || (index > 0 && generation.SelectionRoutes[index-1] >= route) {
 			return errors.New("selection routes are not unique stable names")
+		}
+	}
+	for index, client := range generation.Clients {
+		if index > 0 && generation.Clients[index-1].Name >= client.Name {
+			return errors.New("clients are not unique stable names")
+		}
+		canonical, err := generator.CanonicalClients(map[string]generator.Client{client.Name: {Selection: &generator.Selection{Routes: client.Routes}}})
+		if err != nil || !slices.Equal(canonical[client.Name].Selection.Routes, client.Routes) {
+			return errors.New("client name or selected routes are not canonical")
 		}
 	}
 	return nil
