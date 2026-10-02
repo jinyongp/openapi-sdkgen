@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
+	"openapi-sdkgen/internal/generator"
 )
 
 func TestGeneratedRuntimeDecodesReferencedTextCountResponse(t *testing.T) {
@@ -13,7 +14,12 @@ func TestGeneratedRuntimeDecodesReferencedTextCountResponse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	output := compileTypeScriptArtifacts(t, document)
+	output := compileSelectedTypeScriptArtifacts(t, document, generator.Options{}, `import {createClient} from './index.js';
+const api=createClient({baseURL:'https://example.test'});
+const count:Promise<number>=api.$operations.getCount();
+const label:Promise<string>=api.$operations.getLabel();
+async function rawCount(){const response=await api.$operations.getCount.raw();const value:number=response.data;return value;}
+`)
 	script := `import assert from "node:assert/strict";
 import {pathToFileURL} from "node:url";
 const {createClient} = await import(pathToFileURL(process.argv[1]));

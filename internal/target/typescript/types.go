@@ -776,10 +776,6 @@ func operationOutputTypeForScope(document *ir.Document, operation ir.Operation, 
 				result = append(result, "ReadableStream<Uint8Array>")
 				continue
 			}
-			if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
-				result = append(result, "string")
-				continue
-			}
 			if operation.Envelope == "data" {
 				if dataSchema := envelopeDataSchema(document, schema, make(map[string]bool)); len(dataSchema) > 0 {
 					schema = dataSchema
@@ -846,8 +842,6 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 					valueType = "never"
 				} else if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
-					valueType = "string"
 				} else {
 					valueType, err = schemaTypeForScope(document, media.Schema, projectionOutput, scope)
 					if err != nil {
@@ -955,8 +949,6 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 					valueType = "never"
 				} else if !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 					valueType = "ReadableStream<Uint8Array>"
-				} else if !media.Stream.IsStreaming() && isTextMedia(media.ContentType) {
-					valueType = "string"
 				} else {
 					if operation.Envelope == "data" {
 						if dataSchema := envelopeDataSchema(document, schemaObject, make(map[string]bool)); len(dataSchema) > 0 {
