@@ -28,6 +28,18 @@ func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, writ
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	for _, schema := range plan.schemas {
+		if plan.splitSchemaProjections {
+			for _, direction := range []projection{projectionInput, projectionOutput} {
+				path := plan.schemaProjectionPath(schema.name, direction)
+				source, err := emitSchemaProjectionLeaf(document, plan, schema, direction)
+				if err != nil {
+					return nil, err
+				}
+				if err := write(Artifact{Path: path, Data: generatedSource(source)}); err != nil {
+					return nil, err
+				}
+			}
+		}
 		source, err := emitSchemaLeaf(document, plan, schema)
 		if err != nil {
 			return nil, err
@@ -54,6 +66,9 @@ func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, writ
 }
 
 func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan) ([]byte, error) {
+	if plan.splitSchemaProjections {
+		return emitSchemaProjectionFacade(plan, schema)
+	}
 	value := componentSchemaValue(document, schema.name)
 	var projections renderedSchemaProjections
 	var err error

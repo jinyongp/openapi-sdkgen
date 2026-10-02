@@ -293,6 +293,7 @@ func localizeResourceParameterSchemaReferences(source string, plan *semanticModu
 		if !exists {
 			return "", lookups, fmt.Errorf("component reference %q has no schema owner", name)
 		}
+		path = plan.schemaProjectionPath(name, projectionInput)
 		specifier, err := plan.relativeModuleSpecifier(artifact, path)
 		if err != nil {
 			return "", lookups, err

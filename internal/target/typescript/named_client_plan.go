@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -70,6 +71,9 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 	if err != nil || diagnostic.HasErrors(diagnostics) {
 		return plan, diagnostics, coverage, err
 	}
+	if err := plan.modules.planSchemaProjections(); err != nil {
+		return nil, diagnostics, coverage, err
+	}
 	plan.root = scopedSourcePlan(plan, root)
 	for _, name := range names {
 		plan.clients = append(plan.clients, namedClientPlan{name: name, view: scopedSourcePlan(plan, selections[name])})
@@ -80,6 +84,7 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 func scopedSourcePlan(shared *sourcePlan, selection *generationSelection) *sourcePlan {
 	view := *shared
 	view.root, view.clients, view.selection = nil, nil, selection
+	view.ownership = nil
 	if selection == nil {
 		return &view
 	}
@@ -141,6 +146,7 @@ func scopedSourcePlan(shared *sourcePlan, selection *generationSelection) *sourc
 
 func cloneSelectedResourceTree(node *resourceNode, direct map[string]bool) *resourceNode {
 	clone := *node
+	clone.childSources = maps.Clone(node.childSources)
 	clone.operations = make(map[string]ManifestOperation)
 	for name, item := range node.operations {
 		if direct[manifestRouteKey(item)] {

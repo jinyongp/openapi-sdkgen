@@ -86,6 +86,7 @@ func emitExecutionSchemaModule(plan *semanticModulePlan, module executionSchemaM
 		if !exists {
 			return nil, fmt.Errorf("execution schema module %q references unplanned schema %q", module.path, name)
 		}
+		path = plan.schemaProjectionPath(name, projection(module.projection))
 		specifier, err := plan.relativeModuleSpecifier(module.path, path)
 		if err != nil {
 			return nil, err

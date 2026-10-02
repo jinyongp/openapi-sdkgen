@@ -100,6 +100,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 			if !exists {
 				return nil, fmt.Errorf("execution provider %q references unplanned schema %q", module.routeKey, name)
 			}
+			schemaPath = plan.schemaProjectionPath(name, projection(strings.TrimSuffix(group.projection, "WireSchema")))
 			alias := fmt.Sprintf("schema%d", index)
 			index++
 			if err := importFrom("{ "+group.projection+" as "+alias+" }", schemaPath); err != nil {

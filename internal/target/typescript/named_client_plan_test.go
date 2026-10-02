@@ -30,6 +30,11 @@ func TestNamedClientPlanKeepsIndependentRootsAndPrivateLinkClosure(t *testing.T)
 	if len(shared.executions) != 4 || len(shared.modules.operations) != 4 || len(shared.clients) != 2 {
 		t.Fatalf("shared plan = %#v", shared)
 	}
+	for name := range shared.resourceTree.children {
+		if shared.resourceTree.childSources[name] == "" {
+			t.Fatalf("client pruning changed shared resource identity %q", name)
+		}
+	}
 	if shared.selection.dependencies["GET /b"] || !shared.selection.dependencies["GET /c"] {
 		t.Fatalf("union dependencies = %v", shared.selection.dependencies)
 	}

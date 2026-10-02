@@ -552,6 +552,7 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 		if !exists || path == "" {
 			return "", fmt.Errorf("operation %q has no planned %s projection for component %q", module.routeKey, key.export, key.name)
 		}
+		path = plan.schemaProjectionPath(key.name, projection(strings.ToLower(key.export)))
 		if counts[key] > 1 {
 			if err := names.request(typeImportIdentifierKey(path, key.export)); err != nil {
 				return "", err
@@ -564,7 +565,7 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 	imports := make([]string, 0)
 	replacements := make(map[operationSchemaReferenceKey]string, len(counts))
 	for _, key := range keys {
-		path := plan.schemaByName[key.name]
+		path := plan.schemaProjectionPath(key.name, projection(strings.ToLower(key.export)))
 		specifier, err := plan.relativeModuleSpecifier(module.path, path)
 		if err != nil {
 			return "", err

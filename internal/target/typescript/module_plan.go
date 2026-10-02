@@ -24,6 +24,7 @@ type semanticModulePlan struct {
 	relativeSpecifierComputes int
 	resourceParameterTypes    map[string]string
 	selection                 *generationSelection
+	splitSchemaProjections    bool
 }
 
 type schemaModulePlan struct {
