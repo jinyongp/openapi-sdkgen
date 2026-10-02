@@ -151,7 +151,11 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 			if err != nil {
 				return err
 			}
-			body := fmt.Sprintf("import { provider } from %s\nexport const entry = { abi: %d, generation: %s, kind: %s, key: %s, provider } as const\n", quoteTS(specifier), selectiveExecutionABI, quoteTS(generation), quoteTS(identity.kind), quoteTS(identity.key))
+			loaderSpecifier, err := modules.relativeModuleSpecifier(artifact, "internal/runtime/operation-loader.ts")
+			if err != nil {
+				return err
+			}
+			body := fmt.Sprintf("import { provider } from %s\nimport type { OperationLookupEntry } from %s\nexport const entry: OperationLookupEntry = { abi: %d, generation: %s, kind: %s, key: %s, provider } as const\n", quoteTS(specifier), quoteTS(loaderSpecifier), selectiveExecutionABI, quoteTS(generation), quoteTS(identity.kind), quoteTS(identity.key))
 			if err := write(Artifact{Path: artifact, Data: generatedSource([]byte(body))}); err != nil {
 				return err
 			}
@@ -165,7 +169,7 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		if err != nil {
 			return err
 		}
-		body := fmt.Sprintf("import { provider } from %s\nimport { staticOperationReference } from %s\n/** Direct static reference for bundler-owned code splitting. */\nexport const operation = /* @__PURE__ */ staticOperationReference(provider)\n", quoteTS(providerSpecifier), quoteTS(loaderSpecifier))
+		body := fmt.Sprintf("import { provider } from %s\nimport { staticOperationReference } from %s\nimport type { OperationReference } from %s\n/** Direct static reference for bundler-owned code splitting. */\nexport const operation: OperationReference<%s> = /* @__PURE__ */ staticOperationReference(provider)\n", quoteTS(providerSpecifier), quoteTS(loaderSpecifier), quoteTS(strings.Replace(loaderSpecifier, "operation-loader.js", "selection-types.js", 1)), quoteTS(module.routeKey))
 		if err := write(Artifact{Path: artifact, Data: generatedSource([]byte(body))}); err != nil {
 			return err
 		}
@@ -175,26 +179,25 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		return err
 	}
 	entry := fmt.Sprintf(`import { createOperationLoader } from "../internal/runtime/operation-loader.js"
-import type { ClientOptions } from "../internal/runtime/configuration.js"
 import type { SelectionInput } from "../internal/runtime/selection-types.js"
-import type { PreparedOperations } from "../internal/runtime/operation-loader.js"
+import type { PreparedOperations, OperationLoader, SelectedClientOptions } from "../internal/runtime/operation-loader.js"
 import type { Operations, RouteReferences, Client } from "./types.js"
 
-const loader = /* @__PURE__ */ createOperationLoader({
+const loader: OperationLoader = /* @__PURE__ */ createOperationLoader({
   generation: %s,
-  baseURL: new URL(import.meta.url),
-  loadClient: () => import("../internal/runtime/selected-client.js"),
+  importModule: (filename: string): Promise<unknown> => import(/* @vite-ignore */ filename),
+  loadClient: (): Promise<typeof import("../internal/runtime/selected-client.js")> => import("../internal/runtime/selected-client.js"),
 })
 /** References keyed by exact operationId; accessing a key does not load its implementation. */
-export const operations = loader.operations as Operations
+export const operations: Operations = loader.operations as Operations
 /** References keyed by the exact METHOD and OpenAPI path template, including ID-less operations. */
-export const routes = loader.routes as RouteReferences
+export const routes: RouteReferences = loader.routes as RouteReferences
 /** Prepares only the selected operation code, without binding credentials or sending API requests. */
 export function loadOperations<const Selection>(selection: Selection & SelectionInput<Selection>): Promise<PreparedOperations<Selection>> {
   return loader.loadOperations<Selection>(selection)
 }
 /** Synchronously binds prepared operations to an independent client configuration. */
-export function createClient<Selection>(options: ClientOptions & { readonly operations: PreparedOperations<Selection> }): Client<Selection> {
+export function createClient<Selection>(options: SelectedClientOptions<Selection>): Client<Selection> {
   return loader.createClient(options) as Client<Selection>
 }
 export type * from "./types.js"
@@ -337,9 +340,11 @@ func emitSelectiveNames(plan *sourcePlan) ([]byte, error) {
 	}
 	body := `import { operations as operationReferences, routes as routeReferences } from "./index.js"
 import type { Operations, RouteReferences } from "./types.js"
+type OperationEntry = readonly [keyof Operations, Operations[keyof Operations]]
+type RouteEntry = readonly [keyof RouteReferences, RouteReferences[keyof RouteReferences]]
 /** Names-only opt-in runtime enumeration; no operation execution modules are imported. */
 `
-	body += "export const operations = /* @__PURE__ */ Object.freeze(Object.fromEntries((" + encode(ids) + " as const).map(key => [key, operationReferences[key]]))) as Operations\n"
-	body += "export const routes = /* @__PURE__ */ Object.freeze(Object.fromEntries((" + encode(routes) + " as const).map(key => [key, routeReferences[key]]))) as RouteReferences\n"
+	body += "export const operations: Operations = /* @__PURE__ */ Object.freeze(Object.fromEntries((" + encode(ids) + " as const).map((key: keyof Operations): OperationEntry => [key, operationReferences[key]]))) as Operations\n"
+	body += "/** Route references for explicit runtime enumeration. */\nexport const routes: RouteReferences = /* @__PURE__ */ Object.freeze(Object.fromEntries((" + encode(routes) + " as const).map((key: keyof RouteReferences): RouteEntry => [key, routeReferences[key]]))) as RouteReferences\n"
 	return []byte(body), nil
 }

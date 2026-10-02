@@ -437,8 +437,8 @@ function decodeJSONResponseItems(
 }
 
 function createJSONResponseStreamServices(): StreamingRequestExecutionServices {
-  const base = createHTTPServices(jsonWireCodec, {
-    encodeRequestBody(_contentType, value) {
+  const base: RequestExecutionServices = createHTTPServices(jsonWireCodec, {
+    encodeRequestBody(_contentType: string, value: unknown): BodyInit {
       return JSON.stringify(value);
     },
     decodeResponseStreamItems: decodeJSONResponseItems,
@@ -446,7 +446,7 @@ function createJSONResponseStreamServices(): StreamingRequestExecutionServices {
   return {
     ...base,
     createOperationStream: createOperationStreamService(
-      () => base,
+      (): RequestExecutionServices => base,
       decodeJSONResponseItems,
       jsonWireCodec,
     ),
@@ -454,4 +454,5 @@ function createJSONResponseStreamServices(): StreamingRequestExecutionServices {
 }
 
 /** JSON-bodied, non-XML plans exposing non-multipart response streams and buffered sequential responses. */
-export const jsonResponseStreamServices = /* @__PURE__ */ createJSONResponseStreamServices();
+export const jsonResponseStreamServices: StreamingRequestExecutionServices =
+  /* @__PURE__ */ createJSONResponseStreamServices();

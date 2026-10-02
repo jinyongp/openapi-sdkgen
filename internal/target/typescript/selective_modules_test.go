@@ -87,7 +87,7 @@ func TestSelectiveBoundaryArtifactsAndTheirImportsAreEmitted(t *testing.T) {
 	}
 	for _, module := range plan.modules.operations {
 		static := selectiveStaticArtifact(module)
-		if !strings.Contains(byPath[static], "export const operation =") {
+		if !strings.Contains(byPath[static], "export const operation: OperationReference<") {
 			t.Fatalf("static reference missing at planned path: %s", static)
 		}
 		if strings.HasPrefix(module.routeKey, "GET /"+fallbackDirectory) && static != "selective/operations/"+strings.TrimPrefix(module.path, "internal/operations/") {
@@ -179,7 +179,7 @@ func TestSelectiveArtifactsUseFixedExportsAndPlanOwnedPaths(t *testing.T) {
 			if !exists {
 				t.Fatalf("lookup absent: %s", path)
 			}
-			if !strings.Contains(source, "export const entry =") || strings.Contains(source, "export const then") {
+			if !strings.Contains(source, "export const entry: OperationLookupEntry =") || strings.Contains(source, "export const then") {
 				t.Fatalf("lookup has unsafe export ABI: %s", source)
 			}
 			if !strings.Contains(source, "key: "+quoteTS(identity.key)) {

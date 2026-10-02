@@ -24,7 +24,18 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		fmt.Fprintf(&output, "import %s from %s\n", clause, quoteTS(specifier))
 		return nil
 	}
-	if err := importFrom("type { RequestContext }", "internal/runtime/http-types.ts"); err != nil {
+	httpTypes := "type { RequestContext }"
+	if execution.profile == executionJSON || execution.profile == executionBufferedXML {
+		httpTypes = "type { RequestContext, RequestExecutionServices }"
+	}
+	if err := importFrom(httpTypes, "internal/runtime/http-types.ts"); err != nil {
+		return nil, err
+	}
+	requestType := "BufferedRequestFunction"
+	if execution.hasStream {
+		requestType = "RequestFunction"
+	}
+	if err := importFrom("type { "+requestType+" }", "internal/runtime/callables.ts"); err != nil {
 		return nil, err
 	}
 	if execution.inputBundle == "" && len(execution.inputSchemas) > 0 || execution.outputBundle == "" && len(execution.outputSchemas) > 0 {
@@ -33,11 +44,11 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		}
 	}
 	binders := []string{"bindBase", "type BaseCall"}
+	if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/operation-loader.ts"); err != nil {
+		return nil, err
+	}
 	if len(linkedTargets) > 0 {
 		binders = append(binders, "bindLinks")
-		if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/operation-loader.ts"); err != nil {
-			return nil, err
-		}
 	}
 	callType := "BaseCall"
 	if execution.hasStream {
@@ -113,9 +124,9 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	output.WriteByte('\n')
 	if execution.profile == executionJSON {
-		output.WriteString("const services = /* @__PURE__ */ createHTTPServices(jsonWireCodec, { encodeRequestBody(_contentType, value) { return JSON.stringify(value) } })\n")
+		output.WriteString("const services: RequestExecutionServices = /* @__PURE__ */ createHTTPServices(jsonWireCodec, { encodeRequestBody(_contentType: string, value: unknown): BodyInit { return JSON.stringify(value) } })\n")
 	} else if execution.profile == executionBufferedXML {
-		output.WriteString("const services = /* @__PURE__ */ createHTTPServices(xmlWireCodec, bufferedXMLCodecExtensions)\n")
+		output.WriteString("const services: RequestExecutionServices = /* @__PURE__ */ createHTTPServices(xmlWireCodec, bufferedXMLCodecExtensions)\n")
 	}
 	inputArg, outputArg := "undefined", "undefined"
 	if execution.inputBundle != "" {
@@ -133,7 +144,8 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		outputArg = "outputSchemas"
 	}
 	output.WriteString("\n/** Compiler-owned base execution provider; no client configuration is cached here. */\n")
-	output.WriteString("export const provider = /* @__PURE__ */ Object.freeze({\n")
+	fmt.Fprintf(&output, "interface ExecutionProvider extends OperationExecutionProvider { readonly route: %s; readonly profile: %s; bind(context: RequestContext): %s }\n", quoteTS(module.routeKey), quoteTS(string(execution.profile)), callType)
+	output.WriteString("/** Compiler-owned execution provider with an exact route identity. */\nexport const provider: ExecutionProvider = /* @__PURE__ */ Object.freeze({\n")
 	fmt.Fprintf(&output, "  abi: %d, generation: %s,\n", selectiveExecutionABI, quoteTS(generation))
 	if len(placements) > 0 {
 		data, err := json.Marshal(placements)
@@ -148,8 +160,8 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	fmt.Fprintf(&output, "  profile: %s,\n", quoteTS(string(execution.profile)))
 	fmt.Fprintf(&output, "  bind(context: RequestContext): %s {\n", callType)
-	output.WriteString("    const request = createRequestCore(context, services)\n")
-	fmt.Fprintf(&output, "    const base = bindBase(request, %s, %s)\n", inputArg, outputArg)
+	fmt.Fprintf(&output, "    const request: %s = createRequestCore(context, services)\n", requestType)
+	fmt.Fprintf(&output, "    const base: BaseCall = bindBase(request, %s, %s)\n", inputArg, outputArg)
 	var capabilities []string
 	if execution.hasStream {
 		capabilities = append(capabilities, fmt.Sprintf("stream: bindStream(request, %s, %s)", inputArg, outputArg))
@@ -176,7 +188,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 			}
 			// Literal dynamic imports let native ESM and bundlers defer the same
 			// target. An explicit return type bounds cyclic Link provider types.
-			fmt.Fprintf(&output, "    %s: (): Promise<OperationExecutionProvider> => import(%s).then(module => module.provider),\n", quoteTS(route), quoteTS(specifier))
+			fmt.Fprintf(&output, "    %s: (): Promise<OperationExecutionProvider> => import(%s).then((module: typeof import(%s)): OperationExecutionProvider => module.provider),\n", quoteTS(route), quoteTS(specifier), quoteTS(specifier))
 		}
 		output.WriteString("  },\n")
 	}

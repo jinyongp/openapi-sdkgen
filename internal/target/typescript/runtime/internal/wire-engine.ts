@@ -342,7 +342,7 @@ export function decodeSchemaContent(
 }
 
 /** Creates a wire API sharing one validation/transform implementation with call-local state. */
-export function createWireCodec(decodeContent: SchemaContentDecoder) {
+export function createWireCodec(decodeContent: SchemaContentDecoder): WireCodec {
   /** Recursively maps a value between generated property names and wire names. */
   function transformWireValue(
     value: unknown,
@@ -396,7 +396,26 @@ export function createWireCodec(decodeContent: SchemaContentDecoder) {
 }
 
 /** The typed wire operations required by HTTP serialization and decoding. */
-export type WireCodec = ReturnType<typeof createWireCodec>;
+export interface WireCodec {
+  transformWireValue(
+    value: unknown,
+    schema: WireSchema,
+    components: WireSchemas,
+    direction: "encode" | "decode",
+    options?: WireTransformOptions,
+    dynamicScope?: DynamicScope,
+  ): unknown;
+  decodeWireValue(value: unknown, schema: WireSchema, components: WireSchemas): unknown;
+  encodeWireValue(value: unknown, schema: WireSchema, components: WireSchemas): unknown;
+  validateWireValue(
+    value: unknown,
+    schema: WireSchema,
+    components: WireSchemas,
+    direction: "encode" | "decode",
+    options?: WireTransformOptions,
+    dynamicScope?: DynamicScope,
+  ): void;
+}
 
 const strictWireTransformOptions: WireTransformOptions = { unknownProperties: "reject" };
 
@@ -1539,4 +1558,4 @@ function schemaMatches(
 }
 
 /** Wire validation and mapping for plans that do not require extended schema content media. */
-export const jsonWireCodec = /* @__PURE__ */ createWireCodec(decodeSchemaContent);
+export const jsonWireCodec: WireCodec = /* @__PURE__ */ createWireCodec(decodeSchemaContent);

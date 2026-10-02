@@ -70,6 +70,13 @@ just agent release-script-test
 just agent npm-source-check
 ```
 
+## TypeScript declarations
+
+TypeScript source and generated TypeScript use named interfaces or type aliases
+for object shapes, explicit function return types (including callbacks), and
+explicit variable types. Keep inference at language boundaries where annotations
+are unavailable, such as `for...of` bindings; preserve exact public literal types.
+
 ## Documentation commands
 
 Korean documentation uses natural Korean for general concepts in prose, headings,

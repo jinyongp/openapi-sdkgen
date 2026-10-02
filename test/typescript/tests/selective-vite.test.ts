@@ -10,10 +10,8 @@ const fixtureRoot = fileURLToPath(new URL("../fixtures/generated/client/", impor
 
 it("builds and runs one static selective operation under Vite production", async () => {
   const selectiveSource = readFileSync(join(fixtureRoot, "selective/index.ts"), "utf8");
-  expect(selectiveSource).toContain("baseURL: new URL(import.meta.url)");
-  expect(selectiveSource).not.toMatch(
-    /baseURL:\s*new URL\(\s*(?:"[^"]*"|'[^']*'|`[^`]*`)\s*,\s*import\.meta\.url\s*\)/,
-  );
+  expect(selectiveSource).toContain("import(/* @vite-ignore */ filename)");
+  expect(selectiveSource).not.toContain("import.meta");
 
   const entryDirectory = mkdtempSync(join(fixtureRoot, ".vite-production-"));
   const outputDirectory = mkdtempSync(join(tmpdir(), "openapi-sdkgen-vite-"));

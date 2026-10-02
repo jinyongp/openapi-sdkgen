@@ -1,4 +1,4 @@
-import type { MediaCodec } from "./wire-engine.js";
+import type { MediaCodec, WireCodec } from "./wire-engine.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
 import { extendDynamicScope, resolveDynamicReference, type WireXML } from "./wire-engine.js";
 import { createWireCodec } from "./wire-engine.js";
@@ -22,8 +22,13 @@ function decodeExtendedSchemaContent(
 }
 
 /** Wire codec with XML content support, shared by generated execution plans. */
-export const xmlWireCodec = /* @__PURE__ */ createWireCodec((value, schema, components, ignore) =>
-  decodeSchemaContent(value, schema, components, ignore, decodeExtendedSchemaContent),
+export const xmlWireCodec: WireCodec = /* @__PURE__ */ createWireCodec(
+  (
+    value: string,
+    schema: WireSchema,
+    components: WireSchemas,
+    ignore: boolean | undefined,
+  ): unknown => decodeSchemaContent(value, schema, components, ignore, decodeExtendedSchemaContent),
 );
 
 /** Recursively maps a value between generated property names and wire names. */
@@ -670,7 +675,20 @@ function isXMLCharacterCodePoint(value: number): boolean {
 }
 
 /** Buffered media handlers shared by XML plans without importing request orchestration. */
-export const bufferedXMLCodecExtensions = {
+interface BufferedXMLCodecExtensions {
+  encodeRequestBody(
+    contentType: string,
+    value: unknown,
+    codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+    schema: WireSchema | undefined,
+    schemas: WireSchemas,
+  ): BodyInit | Promise<BodyInit>;
+  encodeXML: typeof encodeXML;
+  decodeXML: typeof decodeXML;
+}
+
+/** Buffered media handlers shared by XML plans without importing request orchestration. */
+export const bufferedXMLCodecExtensions: BufferedXMLCodecExtensions = {
   encodeRequestBody(
     contentType: string,
     value: unknown,

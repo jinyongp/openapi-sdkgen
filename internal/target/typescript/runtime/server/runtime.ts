@@ -2929,12 +2929,7 @@ function assertInboundJSONSerializable(
     if (!Number.isFinite(value)) throw new TypeError("JSON response numbers must be finite");
     return;
   }
-  if (
-    value === undefined ||
-    typeof value === "function" ||
-    typeof value === "symbol" ||
-    typeof value === "bigint"
-  )
+  if (typeof value !== "object")
     throw new TypeError("JSON response contains a non-serializable value");
   if (active.has(value)) throw new TypeError("JSON response contains a cycle");
   active.add(value);
