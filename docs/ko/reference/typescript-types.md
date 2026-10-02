@@ -15,6 +15,36 @@
 
 지원 확인 버전: **5.7.3, 5.9.3, 6.0.3, 7.0.2**.
 
+## 생성 소스 타입 검사 {#source-checking}
+
+다음 릴리스부터 `--ts-nocheck=false`를 지정하면 애플리케이션의 컴파일러로
+생성된 SDK의 구현 코드까지 타입 검사할 수 있습니다.
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --output ./src/generated/api --ts-nocheck=false
+```
+
+반복해서 생성한다면 TOML 설정 파일에 같은 값을 지정하세요.
+
+```toml
+[typescript]
+nocheck = false
+```
+
+기본값인 `true`는 각 생성 파일에 `@ts-nocheck`를 넣습니다. 어느 값을 선택해도
+API 타입과 런타임 동작은 같습니다. 루트 SDK, 클라이언트별 코드, 서버 코드,
+메타데이터에 함께 적용되며, 기존 출력의 설정은 `--incremental`로 바꿀 수 있습니다.
+
+현재 개발 버전은 NodeNext와 Bundler 모듈 해석 방식에서 생성 소스와 선언 파일의
+타입 검사를 통과합니다. `strict`, `exactOptionalPropertyTypes`,
+`noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`,
+`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`,
+`noImplicitOverride`, `noFallthroughCasesInSwitch`를 함께 지원합니다.
+`verbatimModuleSyntax`와 `isolatedModules`도 지원하며, 라이브러리 타입 검사와
+도달할 수 없는 코드·미사용 레이블 검사도 적용할 수 있습니다.
+측정한 SDK별 결과는 [호환성 검증 결과](./compatibility.md)에서 확인할 수 있습니다.
+
 ## 타입 기준 선택
 
 아래 표는 루트 SDK에서 타입을 추출하는 기준을 설명합니다. 설정한 클라이언트 진입점에서는

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Choose whether generated TypeScript includes `@ts-nocheck` with
+  `--ts-nocheck=true|false` or `[typescript] nocheck = false`. The default remains
+  `true`; generated implementations are verified without the directive using
+  strict consumer options, including unused declarations and exact optional properties.
+- Correct XML namespace/token parsing, composed XML and OpenAPI 3.2 text/CDATA
+  mapping, required nullable parameters, binary response decoding, overlapping
+  object property rules, evaluated schema annotations, and decimal `multipleOf`.
+  Fragmented SSE lines are processed incrementally.
+- Remove unused generated imports and private declarations, preserve recursive
+  schema aliases and public type help, and support explicit `undefined` for
+  response-media selection under exact optional property checking.
 - Generate independently selected TypeScript clients with
   `[clients.<name>.selection]`. Each `clients/<name>/index.ts` entry provides a
   synchronous client and scoped types while sharing operation implementations,

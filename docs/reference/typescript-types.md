@@ -13,6 +13,37 @@ existing TypeScript compiler and bundler.
 
 Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
+## Typecheck generated source {#source-checking}
+
+Starting in the next release, use `--ts-nocheck=false` to check the generated
+SDK's implementation with your application's compiler:
+
+```sh
+openapi-sdkgen generate --input ./openapi.yaml --target typescript \
+  --output ./src/generated/api --ts-nocheck=false
+```
+
+For repeated generation, put the same choice in your TOML configuration:
+
+```toml
+[typescript]
+nocheck = false
+```
+
+The default `true` includes `@ts-nocheck` in each generated file. Both choices
+retain the same API types and runtime behavior. The setting applies to the
+root SDK, named clients, server code, and metadata together. Use `--incremental`
+to change it in an existing managed output directory.
+
+The development version passes source and declaration checks with NodeNext and
+Bundler resolution, `strict`, `exactOptionalPropertyTypes`,
+`noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`,
+`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`,
+`noImplicitOverride`, and `noFallthroughCasesInSwitch`.
+It also supports `verbatimModuleSyntax` and `isolatedModules`, with library
+checking enabled and unreachable code and unused labels disallowed.
+See [compatibility results](./compatibility.md) for measured SDKs.
+
 ## Choose a type source
 
 The tables below describe the root SDK's type helpers. For a configured client

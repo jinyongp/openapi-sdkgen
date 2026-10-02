@@ -98,6 +98,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
+| `--ts-nocheck=true\|false` | Include `@ts-nocheck` in generated TypeScript files; default `true`. Available in the next release |
 | `--with <addon>` | Enable `metadata` or `server` artifacts; repeatable |
 | `--operation <operationId>` | Generate an exact operation ID; repeatable |
 | `--route <METHOD /path>` | Generate an exact method/path template; repeatable |
@@ -154,6 +155,7 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `clients.<name>.selection.operations` | Config-only named client operation IDs (next release) |
 | `clients.<name>.selection.routes` | Config-only named client routes (next release) |
 | `incremental` | `--incremental` |
+| `typescript.nocheck` | `--ts-nocheck`; applies to all generated TypeScript files |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
 | `fail_on_resource_omission` | `--fail-on-resource-omission` |
