@@ -598,6 +598,9 @@ func (wire *wireRenderContext) operationRequestWireBodies(document *ir.Document,
 			}
 		}
 		entry := "{ contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+		if !schemaIsFalse && !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
+			entry += ", binary: true"
+		}
 		if _, exists := media.Raw["schema"]; exists {
 			entry += ", schemaDeclared: true"
 		}
@@ -807,6 +810,9 @@ func (wire *wireRenderContext) operationResponseWireBodies(document *ir.Document
 				}
 			}
 			entry := "{ status: " + quoteTS(response.Status) + ", contentType: " + quoteTS(media.ContentType) + ", schema: " + descriptor
+			if !schemaIsFalse && !media.Stream.IsStreaming() && isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
+				entry += ", binary: true"
+			}
 			if _, exists := media.Raw["schema"]; exists {
 				entry += ", schemaDeclared: true"
 			}

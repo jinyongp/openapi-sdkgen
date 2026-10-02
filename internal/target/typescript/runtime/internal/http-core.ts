@@ -2363,6 +2363,12 @@ export function createHTTPServices(
           options.codecs,
         );
       }
+      if (definition?.binary === true) {
+        const codec = options.codecs.get(contentType);
+        return codec?.decode === undefined
+          ? response.body
+          : await codec.decode(response, { contentType });
+      }
       if (isJSONMediaType(contentType)) {
         return await response.json();
       }

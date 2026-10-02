@@ -194,6 +194,8 @@ export interface WireBodyDefinition {
   readonly schema: WireSchema;
   /** Whether the Media Type Object explicitly declares a complete-content schema. */
   readonly schemaDeclared?: true;
+  /** Compiler-selected raw binary representation, independent of MIME heuristics. */
+  readonly binary?: true;
   /** Compiler-selected sequential framing; omitted for ordinary media. */
   readonly streamFraming?: StreamFraming;
   /** OpenAPI 3.2 schema for one streamed response item. */
