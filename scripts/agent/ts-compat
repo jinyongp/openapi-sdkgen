@@ -86,6 +86,28 @@ for version in "${versions[@]}"; do
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler \
     agent_run "TypeScript $version Bundler named clients and metadata" \
     check_sdk test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
+  for module_profile in nodenext bundler commonjs; do
+    for checking_profile in strict relaxed isolated relaxed-isolated; do
+      # The original matrix already covers strict ESM. Add every other valid
+      # combination across root, server, metadata, selected and named outputs.
+      if [[ "$checking_profile" == strict && "$module_profile" != commonjs ]]; then continue; fi
+      export SDKGEN_GENERATE_CHECK_MODULE_PROFILE="$module_profile"
+      export SDKGEN_GENERATE_CHECK_CHECKING_PROFILE="$checking_profile"
+      export SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler"
+      agent_run "TypeScript $version $module_profile $checking_profile server and metadata" \
+        check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --with server --with metadata
+      agent_run "TypeScript $version $module_profile $checking_profile named Link dependencies" \
+        check_sdk test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
+      agent_run "TypeScript $version $module_profile $checking_profile named error types" \
+        check_sdk test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
+      runtime_probe=""
+      if [[ "$checking_profile" != *isolated ]]; then runtime_probe=selection; fi
+      SDKGEN_GENERATE_CHECK_RUNTIME_PROBE="$runtime_probe" \
+        agent_run "TypeScript $version $module_profile $checking_profile selected SDK" \
+        check_sdk test/fixtures/generation-selection.json typescript -- --operation getTask
+      unset SDKGEN_GENERATE_CHECK_MODULE_PROFILE SDKGEN_GENERATE_CHECK_CHECKING_PROFILE
+    done
+  done
   done
 done
 agent_note "ok TypeScript consumer compatibility (both header policies)"

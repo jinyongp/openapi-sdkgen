@@ -157,12 +157,30 @@ EOF
 typecheck_status=0
 ts_node node --input-type=module - "$ROOT/internal/tscheck/strict-options.json" "$checked/tsconfig.json" <<'EOF'
 import fs from "node:fs";
+import path from "node:path";
 const [profile, configPath] = process.argv.slice(2);
 const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 Object.assign(config.compilerOptions, JSON.parse(fs.readFileSync(profile, "utf8")).compilerOptions);
 const moduleProfile = process.env.SDKGEN_GENERATE_CHECK_MODULE_PROFILE ?? "nodenext";
 if (moduleProfile === "bundler") Object.assign(config.compilerOptions, { module: "ESNext", moduleResolution: "Bundler" });
+else if (moduleProfile === "commonjs") {
+  config.compilerOptions.verbatimModuleSyntax = false;
+  fs.writeFileSync(path.join(path.dirname(configPath), "package.json"), JSON.stringify({ type: "commonjs", private: true }));
+}
 else if (moduleProfile !== "nodenext") throw new Error(`unknown verification module profile ${moduleProfile}`);
+const checkingProfile = process.env.SDKGEN_GENERATE_CHECK_CHECKING_PROFILE ?? "strict";
+if (!["strict", "relaxed", "isolated", "relaxed-isolated"].includes(checkingProfile))
+  throw new Error(`unknown verification checking profile ${checkingProfile}`);
+if (checkingProfile.startsWith("relaxed")) Object.assign(config.compilerOptions, { strict: false, exactOptionalPropertyTypes: false });
+if (checkingProfile.endsWith("isolated")) {
+  Object.assign(config.compilerOptions, { isolatedDeclarations: true, declaration: true, emitDeclarationOnly: true, noEmit: false, outDir: "./declarations" });
+  config.exclude = ["declarations"];
+}
+if (process.env.SDKGEN_GENERATE_CHECK_RUNTIME_PROBE === "selection") {
+  if (checkingProfile.endsWith("isolated")) throw new Error("runtime probing requires JavaScript output");
+  Object.assign(config.compilerOptions, { noEmit: false, noEmitOnError: true, outDir: "./javascript" });
+  config.exclude = ["javascript"];
+}
 fs.writeFileSync(configPath, JSON.stringify(config));
 EOF
 set +e
@@ -173,5 +191,29 @@ else
 fi
 typecheck_status=$?
 set -e
+if ((typecheck_status == 0)) && [[ "${SDKGEN_GENERATE_CHECK_CHECKING_PROFILE:-}" == *isolated ]]; then
+  ts_node node --input-type=module - "$checked/tsconfig.json" <<'EOF'
+import fs from "node:fs";
+import path from "node:path";
+const configPath = process.argv[2];
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+Object.assign(config.compilerOptions, { isolatedDeclarations: false, emitDeclarationOnly: false, noEmit: true });
+delete config.compilerOptions.outDir;
+config.include = ["**/*.d.ts"];
+delete config.exclude;
+fs.writeFileSync(path.join(path.dirname(configPath), "declarations", "tsconfig.json"), JSON.stringify(config));
+EOF
+  set +e
+  if [[ -n "${SDKGEN_GENERATE_CHECK_TSC_BIN:-}" ]]; then
+    agent_run "typecheck generated declarations" "$SDKGEN_GENERATE_CHECK_TSC_BIN" --project "$checked/declarations/tsconfig.json"
+  else
+    agent_run "typecheck generated declarations" ts_node node "$TYPESCRIPT_ROOT/node_modules/typescript/lib/tsc.js" --project "$checked/declarations/tsconfig.json"
+  fi
+  typecheck_status=$?
+  set -e
+fi
 agent_note "typecheck exit: $typecheck_status"
+if ((typecheck_status == 0)) && [[ "${SDKGEN_GENERATE_CHECK_RUNTIME_PROBE:-}" == "selection" ]]; then
+  agent_run "generated selection runtime" ts_node node "$ROOT/scripts/generate-check/selection-runtime.mjs" "$checked/javascript"
+fi
 exit "$typecheck_status"

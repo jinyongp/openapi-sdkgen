@@ -201,6 +201,27 @@ assert_contains "$real_server_output" "generation exit: 0"
 assert_contains "$real_server_output" "typecheck exit: 0"
 assert_clean_temporary_root
 
+for profile in relaxed isolated relaxed-isolated; do
+  TMPDIR="$test_tmp" SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 \
+    SDKGEN_GENERATE_CHECK_ACQUIRE_BIN="$test_root/snapshot" \
+    SDKGEN_GENERATE_CHECK_GENERATOR_BIN="$test_root/openapi-sdkgen" \
+    SDKGEN_GENERATE_CHECK_MODULE_PROFILE=commonjs SDKGEN_GENERATE_CHECK_CHECKING_PROFILE="$profile" \
+    "$ROOT/scripts/agent/generate-check" "$input" typescript -- --with server --typecheck >"$test_root/$profile.log"
+  assert_contains "$(cat "$test_root/$profile.log")" "typecheck exit: 0"
+  assert_clean_temporary_root
+done
+for variable in SDKGEN_GENERATE_CHECK_MODULE_PROFILE SDKGEN_GENERATE_CHECK_CHECKING_PROFILE; do
+  set +e
+  invalid_output="$(env "$variable=unknown" TMPDIR="$test_tmp" SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 \
+    SDKGEN_GENERATE_CHECK_ACQUIRE_BIN="$test_root/snapshot" SDKGEN_GENERATE_CHECK_GENERATOR_BIN="$test_root/openapi-sdkgen" \
+    "$ROOT/scripts/agent/generate-check" "$input" 2>&1)"
+  invalid_status=$?
+  set -e
+  ((invalid_status != 0)) || fail "unknown verification profile accepted"
+  assert_contains "$invalid_output" "unknown verification"
+  assert_clean_temporary_root
+done
+
 original="$test_root/original.json"
 mutable="$test_root/mutable.json"
 cp "$input" "$original"
