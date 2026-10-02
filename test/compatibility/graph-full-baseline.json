@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "sourceReportSha256": "de2bf20a765c89389116d351e0e5bf59d1e2f3321be35b7ae9dd927eb6ed8438",
+  "manifestSha256": "d7992310296940b3a552706745480eee3ad5b4baa88517e1953d3a940d1d9f1e",
+  "measurement": {
+    "measuredAt": "2026-10-01T10:20:14Z",
+    "generationScope": "compile-prepare-write",
+    "samples": 1,
+    "os": "linux",
+    "architecture": "amd64",
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "goVersion": "go1.27.1"
+  },
+  "document": {
+    "id": "microsoft-graph-beta",
+    "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+    "generation": {
+      "status": "pass",
+      "artifactCount": 175166,
+      "artifactBytes": 2370073335,
+      "durationMillis": 276562.598521
+    },
+    "operationEmission": {
+      "available": true,
+      "count": 29581,
+      "operationOmissions": 0,
+      "helperOmissions": 1208
+    }
+  }
+}

@@ -3,7 +3,7 @@
 These results show SDK generation and TypeScript typechecking for each OpenAPI
 document.
 
-Last measured: **October 2, 2026** · Generator: **development version `caccb91`**
+Last measured: **October 2, 2026** · Generator: **development version `14f2718+`**
 
 ## SDK generation results
 
@@ -57,7 +57,7 @@ beta, DigitalOcean, and Twilio cover large APIs and multi-file schemas. The firs
 document table shows each provider's generation results and timing.
 SDK generation succeeded for all seven documents, and six passed typechecking.
 Microsoft Graph beta generated 29,581 API calls; its full typecheck reached the
-measurement environment's memory limit.
+measurement's time limit.
 
 ### Independent holdout
 

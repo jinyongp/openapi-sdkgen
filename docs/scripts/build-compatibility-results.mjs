@@ -151,7 +151,17 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
   const report = JSON.parse(readFileSync(resolve(directory, reportName)));
   const manifestBytes = readFileSync(resolve(directory, "regression.json"));
   const manifest = JSON.parse(manifestBytes);
-  const full = JSON.parse(readFileSync(resolve(directory, "regression-results.json"))).documents.find((item) => item.id === "microsoft-graph-beta");
+  const baseline = JSON.parse(readFileSync(resolve(directory, "graph-full-baseline.json")));
+  const full = baseline.document;
+  if (baseline.schemaVersion !== 1 || baseline.manifestSha256 !== sha256(manifestBytes) ||
+      !/^[a-f0-9]{64}$/.test(baseline.sourceReportSha256) ||
+      !Number.isFinite(Date.parse(baseline.measurement?.measuredAt)) ||
+      full?.id !== "microsoft-graph-beta" || full.generation?.status !== "pass" ||
+      ["artifactCount", "artifactBytes"].some(key => !Number.isSafeInteger(full.generation[key]) || full.generation[key] <= 0) ||
+      !Number.isFinite(full.generation.durationMillis) || full.generation.durationMillis <= 0 ||
+      full.operationEmission?.available !== true || !Number.isSafeInteger(full.operationEmission.count) || full.operationEmission.count <= 0) {
+    throw new Error("Graph selection full-generation baseline mismatch");
+  }
   const selected = report.documents?.[0];
   const entry = manifest.corpora.find((item) => item.id === "microsoft-graph-beta");
   const selection = selected?.generationSelection;
@@ -363,7 +373,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   copyFileSync(resolve(sourceDirectory, "inspect-results.json"), resolve(publicDirectory, "inspect-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
-  for (const name of ["graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json"]) {
+  for (const name of ["graph-full-baseline.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json"]) {
     copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
   }
   for (const id of corpusNames) {

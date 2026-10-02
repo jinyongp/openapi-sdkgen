@@ -49,6 +49,7 @@
   ],
   "documents": [
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "cloudflare",
       "cohort": "regression",
@@ -77711,13 +77712,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 6794,
         "status": "pass",
-        "artifactCount": 26174,
-        "artifactBytes": 115115877,
-        "durationMillis": 12287.211049
+        "artifactCount": 26175,
+        "artifactBytes": 93823477,
+        "durationMillis": 13031.792076
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 46011.656702
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -77733,6 +77737,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -77901,6 +77920,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "digitalocean",
       "cohort": "regression",
@@ -85953,13 +85973,16 @@
         "security.http"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 2,
         "status": "pass",
-        "artifactCount": 1368,
-        "artifactBytes": 3545575,
-        "durationMillis": 5735.333599
+        "artifactCount": 1369,
+        "artifactBytes": 3330931,
+        "durationMillis": 4376.142786
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 726.585241
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -85975,6 +85998,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -86143,6 +86181,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "github",
       "cohort": "regression",
@@ -86621,13 +86660,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 641,
         "status": "pass",
-        "artifactCount": 7935,
-        "artifactBytes": 41070900,
-        "durationMillis": 4568.984859
+        "artifactCount": 7936,
+        "artifactBytes": 29747559,
+        "durationMillis": 4348.683676
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 8653.838094
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -86643,6 +86685,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -86811,6 +86868,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "gitlab",
       "cohort": "regression",
@@ -121045,13 +121103,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 906,
         "status": "pass",
-        "artifactCount": 10846,
-        "artifactBytes": 45727146,
-        "durationMillis": 6014.476499
+        "artifactCount": 10847,
+        "artifactBytes": 40173250,
+        "durationMillis": 6676.472848
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 17264.744985
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -121067,6 +121128,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -121235,6 +121311,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "microsoft-graph-beta",
       "cohort": "regression",
@@ -143027,14 +143104,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 8800,
         "status": "pass",
-        "artifactCount": 175166,
-        "artifactBytes": 2370073335,
-        "durationMillis": 276562.598521
+        "artifactCount": 175167,
+        "artifactBytes": 2260643075,
+        "durationMillis": 461085.966115
       },
       "typecheck": {
-        "status": "fail",
-        "detail": "signal: killed"
+        "status": "timeout",
+        "durationMillis": 190871.516899
       },
       "documentSuccess": false,
       "capabilityAdjustedSuccess": false,
@@ -143050,6 +143129,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -143218,6 +143312,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "stripe",
       "cohort": "regression",
@@ -143329,13 +143424,16 @@
         "schema.additional-properties.schema"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 1534,
         "status": "pass",
-        "artifactCount": 4886,
-        "artifactBytes": 43446138,
-        "durationMillis": 3295.8683
+        "artifactCount": 4887,
+        "artifactBytes": 35087558,
+        "durationMillis": 3323.583465
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 4884.114949
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -143351,6 +143449,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -143519,6 +143632,7 @@
       "skippedPhases": []
     },
     {
+      "generationAddons": [],
       "evidenceKind": "real-document",
       "id": "twilio",
       "cohort": "regression",
@@ -145344,13 +145458,16 @@
         "security.http"
       ],
       "generation": {
+        "metadataBytes": 484,
+        "schemaArtifactCount": 140,
         "status": "pass",
-        "artifactCount": 1308,
-        "artifactBytes": 7372388,
-        "durationMillis": 737.831012
+        "artifactCount": 1309,
+        "artifactBytes": 5668206,
+        "durationMillis": 679.408725
       },
       "typecheck": {
-        "status": "pass"
+        "status": "pass",
+        "durationMillis": 817.070884
       },
       "documentSuccess": true,
       "capabilityAdjustedSuccess": true,
@@ -145366,6 +145483,21 @@
           "prerequisites": [
             {
               "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
               "available": true
             }
           ]
@@ -145676,7 +145808,10 @@
     }
   },
   "measurement": {
-    "measuredAt": "2026-10-01T10:20:14Z",
+    "typescriptVersion": "7.0.2",
+    "sourceCommit": "14f2718b333dd1269d2d1234e9e596082766dba1",
+    "sourceDirty": true,
+    "measuredAt": "2026-10-02T11:45:09Z",
     "generationScope": "compile-prepare-write",
     "samples": 1,
     "os": "linux",

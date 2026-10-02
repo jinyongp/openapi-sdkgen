@@ -41,7 +41,7 @@ function fixture(t) {
   mkdirSync(resolve(directory, "selections"));
   copyFileSync(new URL("inspect-results.json", sourceDirectory), resolve(directory, "inspect-results.json"));
   copyFileSync(new URL("runtime-quality-results.json", sourceDirectory), resolve(directory, "runtime-quality-results.json"));
-  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs", "selections/microsoft-graph-count.toml", "selections/microsoft-graph-count.mjs"]) {
+  for (const name of ["graph-full-baseline.json", "graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs", "selections/microsoft-graph-count.toml", "selections/microsoft-graph-count.mjs"]) {
     copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
   }
   return directory;
@@ -52,6 +52,11 @@ test("Graph selection publishes separate measured evidence and rejects stale or 
   const data = readGraphSelection(directory);
   assert.equal(data.full.operationEmission.count, 29581);
   assert.equal(data.full.generation.durationMillis, 276562.598521);
+  change(directory, "regression-results.json", report => report.documents.find(item => item.id === "microsoft-graph-beta").generation.durationMillis = 999999);
+  assert.equal(readGraphSelection(directory).full.generation.durationMillis, 276562.598521);
+  const invalidBaseline = fixture(t);
+  change(invalidBaseline, "graph-full-baseline.json", report => report.document.inputSha256 = "0".repeat(64));
+  assert.throws(() => readGraphSelection(invalidBaseline), /Graph selection/);
   assert.equal(data.selected.operationEmission.count, 9);
   assert.equal(data.selected.generationSelection.runtime.status, "pass");
   const ci = readGraphSelection(directory, "graph-selected-ci-results.json");

@@ -39,6 +39,8 @@ const copy = {
 };
 const labels = copy[props.locale];
 const number = (value) => new Intl.NumberFormat(props.locale).format(value);
+const measuredDate = (measurement) => new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(measurement.measuredAt));
+const measuredVersion = (measurement) => `${measurement.sourceCommit.slice(0, 7)}${measurement.sourceDirty ? "+" : ""}`;
 const documentCount = (count) => number(count) + (props.locale === "ko" ? "" : " ") + labels.docs;
 const successCount = (count, total) => props.locale === "ko"
   ? `${number(total)}개 중 ${number(count)}개 성공`
@@ -102,6 +104,10 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
     <template v-if="evidence">
       <details v-for="corpus in results" :key="corpus.id" :open="corpus.id === 'regression'" class="results-evidence">
         <summary>{{ labels[corpus.id][0] }} — {{ labels.details }}</summary>
+        <p v-if="corpus.measurement?.sourceCommit" class="results-environment">
+          {{ locale === "ko" ? "마지막 측정" : "Last measured" }}: {{ measuredDate(corpus.measurement) }} ·
+          {{ locale === "ko" ? "버전" : "Version" }}: <code>{{ measuredVersion(corpus.measurement) }}</code>
+        </p>
         <p class="results-downloads">
           <a :href="withBase(`/compatibility-results/${corpus.id}-results.json`)" download>{{ labels.report }}</a>
           <a :href="withBase(`/compatibility-results/${corpus.id}.json`)" download>{{ labels.manifest }}</a>
