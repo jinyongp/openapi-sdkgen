@@ -238,11 +238,17 @@ export function readMetadataComparison(directory) {
 export function readRuntimeQuality(directory) {
   const data = JSON.parse(readFileSync(resolve(directory, "runtime-quality-results.json")));
   const fail = () => { throw new Error("Runtime quality measurement provenance or validation mismatch"); };
+  const positive = value => Number.isFinite(value) && value > 0;
+  const medianMatches = (samples, median) => samples?.length === 3 &&
+    samples.every(positive) && [...samples].sort((left, right) => left - right)[1] === median;
   const options = JSON.parse(readFileSync(new URL("../../internal/tscheck/strict-options.json", import.meta.url))).compilerOptions;
   if (data.schemaVersion !== 1 || data.status !== "pass" || data.sourceDirty !== false ||
       !/^[a-f0-9]{40}$/.test(data.sourceCommit) || !/^[a-f0-9]{40}$/.test(data.baselineCommit) ||
       !Number.isFinite(Date.parse(data.measuredAt)) || data.matrix?.total !== 104 || data.matrix.diagnostics !== 0 ||
       JSON.stringify(data.matrix.versions) !== JSON.stringify(["5.7.3", "5.9.3", "6.0.3", "7.0.2"]) ||
+      JSON.stringify(data.matrix.headerPolicies) !== '["included","omitted"]' ||
+      JSON.stringify(data.matrix.profiles) !== '["NodeNext","Bundler"]' ||
+      data.matrix.casesPerVersionAndPolicy?.NodeNext !== 11 || data.matrix.casesPerVersionAndPolicy?.Bundler !== 2 ||
       Object.entries(options).some(([key, value]) => data.strictCompilerOptions?.[key] !== value) ||
       JSON.stringify(data.delivery?.map(row => row.count)) !== "[100,1000,10000]") fail();
   for (const row of data.delivery) {
@@ -255,9 +261,21 @@ export function readRuntimeQuality(directory) {
   if (JSON.stringify(data.compilerComparisons?.map(row => `${row.kind}:${row.count}:${row.typescript}`).sort()) !== JSON.stringify(expectedCompilerCases)) fail();
   for (const row of data.compilerComparisons) {
     const input = data.delivery.find(sample => sample.count === row.count);
-    if (row.inputSHA256 !== input.inputSHA256 || row.samples?.length !== 3 ||
-        !Number.isFinite(row.medianMS) || !Number.isFinite(row.medianRSSKiB) ||
-        (row.kind === "candidate" && row.samples.some(sample => sample.status !== 0 || sample.errorCount !== 0))) fail();
+    if (row.inputSHA256 !== input.inputSHA256 ||
+        !medianMatches(row.samples?.map(sample => sample.durationMS), row.medianMS) ||
+        !medianMatches(row.samples?.map(sample => sample.peakRSSKiB), row.medianRSSKiB) ||
+        row.samples.some(sample => sample.signal !== null ||
+          (row.kind === "candidate" ? sample.status !== 0 || sample.errorCount !== 0 : sample.status === 0 || sample.errorCount <= 0))) fail();
+  }
+  const expectedGenerations = [100, 1000, 10000].flatMap(count => ["baseline", "candidate"].map(kind => `${kind}:${count}`)).sort();
+  if (JSON.stringify(data.generationComparisons?.map(row => `${row.kind}:${row.count}`).sort()) !== JSON.stringify(expectedGenerations)) fail();
+  for (const row of data.generationComparisons) {
+    const input = data.delivery.find(sample => sample.count === row.count);
+    if (row.inputSHA256 !== input.inputSHA256 ||
+        !medianMatches(row.samples?.map(sample => sample.durationMS), row.medianMS) ||
+        !medianMatches(row.samples?.map(sample => sample.peakRSSKiB), row.medianRSSKiB) ||
+        row.samples.some(sample => sample.status !== 0 || sample.signal !== null) ||
+        (row.kind === "candidate" && (row.files !== input.source.files || row.sourceBytes !== input.source.bytes))) fail();
   }
   if (data.graph?.inputSHA256 !== "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec" ||
       ["selection", "clients"].some(name => data.graph.cases?.[name]?.strictTypecheck?.status !== "pass")) fail();
@@ -265,8 +283,13 @@ export function readRuntimeQuality(directory) {
     const rows = data.sse?.filter(row => row.kind === kind);
     const expected = [32768, 65536, 131072, 262144].flatMap(bytes => [64, 1024, bytes + 64].map(chunk => `${bytes}:${chunk}`)).sort();
     if (JSON.stringify(rows?.map(row => `${row.dataBytes}:${row.chunkBytes}`).sort()) !== JSON.stringify(expected) ||
-        rows.some(row => row.samplesMS?.length !== 3 || !Number.isFinite(row.medianMS))) fail();
+        rows.some(row => !medianMatches(row.samplesMS, row.medianMS) || !/^[a-f0-9]{64}$/.test(row.inputSHA256))) fail();
   }
+  for (const row of data.sse.filter(row => row.kind === "candidate")) {
+    const baseline = data.sse.find(sample => sample.kind === "baseline" && sample.dataBytes === row.dataBytes && sample.chunkBytes === row.chunkBytes);
+    if (row.inputSHA256 !== baseline.inputSHA256) fail();
+  }
+  if (data.native?.pass !== true || data.native.checks?.length !== 35) fail();
   return data;
 }
 

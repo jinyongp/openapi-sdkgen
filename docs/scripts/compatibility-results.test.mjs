@@ -18,6 +18,11 @@ test("runtime quality results require complete strict checks and measured output
     data => { data.delivery[2].checkedFiles--; },
     data => { data.graph.cases.clients.strictTypecheck.status = "fail"; },
     data => { data.compilerComparisons.find(row => row.kind === "candidate").samples[0].errorCount = 1; },
+    data => { data.sse[0].medianMS = 0.1; },
+    data => { data.sse.find(row => row.kind === "candidate").inputSHA256 = "a".repeat(64); },
+    data => { data.generationComparisons[0].samples[0].status = 1; },
+    data => { data.generationComparisons.pop(); },
+    data => { data.native.pass = false; },
   ]) {
     const invalid = fixture(t);
     change(invalid, "runtime-quality-results.json", corrupt);
