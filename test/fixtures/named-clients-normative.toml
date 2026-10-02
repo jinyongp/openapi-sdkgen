@@ -1,0 +1,5 @@
+[clients.streaming.selection]
+operations = ["jsonl", "jsonseq"]
+
+[clients.commands.selection]
+operations = ["search", "uploadBundle", "choice", "xml"]

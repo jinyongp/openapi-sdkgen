@@ -58,6 +58,7 @@ just agent runtime-delivery-browser-report [OBSERVED_SUMMARY_JSON]
 just agent runtime-delivery-session [RUNTIME_REPORT]
 just agent runtime-delivery-session-report [OBSERVED_SUMMARY_JSON] [SESSION_MANIFEST]
 just agent sdk-delivery-check [--sizes 100,1000,10000]
+just agent named-clients-check [--graph-source PINNED_OPENAPI_FILE]
 just agent sdk-delivery-browser V1_REPORT V2_REPORT
 just agent sdk-delivery-browser-report RUN_DIRECTORY OBSERVED_SUMMARY_JSON
 just agent typescript-split-diff BASELINE

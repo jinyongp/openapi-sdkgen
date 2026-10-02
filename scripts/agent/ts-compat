@@ -46,5 +46,11 @@ for version in "${versions[@]}"; do
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version selected SDK with original metadata" \
     "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --operation getTask --with metadata
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+    agent_run "TypeScript $version named clients with normative streams and XML" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --config "$ROOT/test/fixtures/named-clients-normative.toml" --with server
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+    agent_run "TypeScript $version named clients with private Link dependencies and metadata" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
 done
 agent_note "ok TypeScript consumer compatibility"

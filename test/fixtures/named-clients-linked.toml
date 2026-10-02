@@ -1,0 +1,5 @@
+[clients.tasks.selection]
+operations = ["getTask"]
+
+[clients.owners.selection]
+operations = ["getOwner"]

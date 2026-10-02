@@ -24,3 +24,4 @@ agent_run "SDK delivery compiler self-tests" ts_node node --test "$TYPESCRIPT_RO
 mkdir -p "$ROOT/.tmp/bin"
 agent_run "build SDK delivery generator" go build -o "$ROOT/.tmp/bin/sdk-delivery-generator" ./cmd/openapi-sdkgen
 agent_run "generated SDK delivery verification" ts_node node "$TYPESCRIPT_ROOT/verification/sdk-delivery.mjs" --generator "$ROOT/.tmp/bin/sdk-delivery-generator" "$@"
+agent_run "named clients delivery verification" ts_node node "$TYPESCRIPT_ROOT/verification/named-clients.mjs" --generator "$ROOT/.tmp/bin/sdk-delivery-generator"

@@ -162,6 +162,10 @@ sdk-delivery-check *args:
     bash ./scripts/agent/sdk-delivery-check "$@"
 
 [positional-arguments]
+named-clients-check *args:
+    bash ./scripts/agent/named-clients-check "$@"
+
+[positional-arguments]
 sdk-delivery-browser *args:
     bash ./scripts/agent/sdk-delivery-browser "$@"
 
