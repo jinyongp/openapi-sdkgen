@@ -413,6 +413,9 @@ interface Evaluation {
   readonly indexes: Set<number>;
 }
 
+// Primitive instances cannot contribute property or item annotations.
+const emptyEvaluation: Evaluation = { properties: new Set(), indexes: new Set() };
+
 function mergeEvaluation(target: Evaluation, source: Evaluation): void {
   for (const name of source.properties) target.properties.add(name);
   for (const index of source.indexes) target.indexes.add(index);
@@ -713,7 +716,10 @@ function validateWireValueWithContext(
     ignoreContentMediaType,
   );
   if (cached !== undefined) return cached;
-  const evaluation: Evaluation = { properties: new Set(), indexes: new Set() };
+  const evaluation: Evaluation =
+    typeof value !== "object" || value === null
+      ? emptyEvaluation
+      : { properties: new Set(), indexes: new Set() };
   assertFiniteJSONNumbers(value, context.finiteSeen);
   const scope = extendDynamicScope(dynamicScope, schema);
   if (schema.boolean === false) throw new TypeError("schema is false");
