@@ -155,6 +155,15 @@ cat >"$checked/tsconfig.json" <<'EOF'
 EOF
 
 typecheck_status=0
+if [[ "${SDKGEN_GENERATE_CHECK_STRICT_PROFILE:-0}" == "1" ]]; then
+  ts_node node --input-type=module - "$ROOT/internal/tscheck/strict-options.json" "$checked/tsconfig.json" <<'EOF'
+import fs from "node:fs";
+const [profile, configPath] = process.argv.slice(2);
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+Object.assign(config.compilerOptions, JSON.parse(fs.readFileSync(profile, "utf8")).compilerOptions);
+fs.writeFileSync(configPath, JSON.stringify(config));
+EOF
+fi
 set +e
 if [[ -n "${SDKGEN_GENERATE_CHECK_TSC_BIN:-}" ]]; then
   agent_run "typecheck generated SDK" "$SDKGEN_GENERATE_CHECK_TSC_BIN" --project "$checked/tsconfig.json"

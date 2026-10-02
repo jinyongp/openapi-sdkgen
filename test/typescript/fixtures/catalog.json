@@ -2,6 +2,33 @@
   "version": 1,
   "local": [
     {
+      "id": "runtime-quality-3-0-3",
+      "input": "runtime-quality-3-0-3.openapi.json",
+      "output": "runtime-quality-3-0-3",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["runtime-quality", "oas30", "nullable", "binary"],
+      "scenario": "surface"
+    },
+    {
+      "id": "runtime-quality-3-1-1",
+      "input": "runtime-quality-3-1-1.openapi.json",
+      "output": "runtime-quality-3-1-1",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["runtime-quality", "oas31", "xml", "schema-evaluation"],
+      "scenario": "surface"
+    },
+    {
+      "id": "runtime-quality-3-2-0",
+      "input": "runtime-quality-3-2-0.openapi.json",
+      "output": "runtime-quality-3-2-0",
+      "addons": [],
+      "profiles": ["conformance"],
+      "characteristics": ["runtime-quality", "oas32", "xml-nodes", "sse"],
+      "scenario": "surface"
+    },
+    {
       "id": "discriminator-dependencies",
       "input": "discriminator-dependencies.openapi.json",
       "output": "discriminator-dependencies",

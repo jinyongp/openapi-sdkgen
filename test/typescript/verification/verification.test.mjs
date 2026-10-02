@@ -11,6 +11,11 @@ import {
 } from "node:fs";
 import { resolve } from "node:path";
 import {
+  strictCompilerOptions,
+  assertStrictCompilerOptions,
+  assertCheckedSources,
+} from "./strict-options.mjs";
+import {
   loadCatalog,
   validateCatalog,
   fixtureRoot,
@@ -38,6 +43,29 @@ function surface() {
     $links: { next: { byStatus: { status200: leaf } } },
   };
 }
+
+test("verification refuses weakened compiler flags and unchecked source", () => {
+  assertStrictCompilerOptions({ ...strictCompilerOptions, noEmit: true });
+  for (const flag of [
+    "strict",
+    "noUnusedLocals",
+    "noUnusedParameters",
+    "exactOptionalPropertyTypes",
+  ])
+    assert.throws(() => assertStrictCompilerOptions({ ...strictCompilerOptions, [flag]: false }));
+  for (const flag of ["noCheck", "skipLibCheck", "skipDefaultLibCheck"])
+    assert.throws(() => assertStrictCompilerOptions({ ...strictCompilerOptions, [flag]: true }));
+  const directory = mkdtempSync(resolve(repositoryRoot, ".tmp/strict-control-"));
+  try {
+    const source = resolve(directory, "control.ts");
+    writeFileSync(source, "export const value: number = 1;\n");
+    assertCheckedSources([source]);
+    writeFileSync(source, "// @ts-nocheck\nexport const value: number = 'wrong';\n");
+    assert.throws(() => assertCheckedSources([source]));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("one catalog covers every committed top-level OpenAPI fixture", () => {
   const catalog = loadCatalog();
