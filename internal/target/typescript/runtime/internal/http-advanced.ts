@@ -1,4 +1,7 @@
 import { createOperationStreamService } from "./http-stream.js";
+import type { ClientOptions } from "./configuration.js";
+import type { OperationDefinition } from "./operation.js";
+import type { RequestOptions, OperationStream } from "./request.js";
 import { decodeXML, encodeXML } from "./wire-xml.js";
 import { isJSONMediaType, isXMLMediaType } from "./runtime-support.js";
 import type {
@@ -9,6 +12,7 @@ import type {
   WireBodyDefinition,
   WireEncodingDefinition,
   WireMultipartHeaderDefinition,
+  WireProperty,
   WireSchema,
   WireSchemas,
 } from "./wire-engine.js";
@@ -34,8 +38,17 @@ export function createAdvancedHTTPServices(
   getBase: () => RequestExecutionServices,
   wire: WireCodec,
 ): AdvancedHTTPServices {
-  const { transformWireValue, validateWireValue } = wire;
-  const createOperationStream = createOperationStreamService(
+  const { transformWireValue, validateWireValue }: WireCodec = wire;
+  const createOperationStream: <Item>(
+    baseURL: string | undefined,
+    options: ClientOptions,
+    codecs: ReadonlyMap<string, MediaCodec<unknown>>,
+    streamCodecs: ReadonlyMap<string, StreamCodec>,
+    fetchImplementation: typeof globalThis.fetch,
+    operation: OperationDefinition,
+    input: unknown,
+    requestOptions: RequestOptions,
+  ) => OperationStream<Item> = createOperationStreamService(
     getBase,
     decodeResponseStreamItems,
     wire,
@@ -52,7 +65,10 @@ export function createAdvancedHTTPServices(
       streamCodec: options.streamCodec,
       signal: options.signal,
       ...(options.streamFraming === "multipart"
-        ? { multipartFrames: () => decodeMultipartStreamItems(body, options) }
+        ? {
+            multipartFrames: (): AsyncIterable<unknown> =>
+              decodeMultipartStreamItems(body, options),
+          }
         : {}),
     });
   }
@@ -71,11 +87,12 @@ export function createAdvancedHTTPServices(
       itemEncoding,
       maxFrameBytes,
       signal,
-    } = options;
-    let index = 0;
+    }: HTTPStreamDecodeOptions = options;
+    let index: number = 0;
     for await (const part of decodeMultipartStreamParts(body, contentType, maxFrameBytes, signal)) {
-      const frameSchema = prefixSchemas?.[index] ?? itemSchema;
-      const frameEncoding = prefixEncoding?.[index] ?? itemEncoding;
+      const frameSchema: WireSchema = prefixSchemas?.[index] ?? itemSchema;
+      const frameEncoding: WireEncodingDefinition | undefined =
+        prefixEncoding?.[index] ?? itemEncoding;
       index++;
       yield await awaitAbortable(
         decodeMultipartStreamPart(part, frameSchema, schemas, codecs, frameEncoding),
@@ -84,7 +101,7 @@ export function createAdvancedHTTPServices(
     }
   }
 
-  const maxMultipartStreamHeaderBytes = 8192;
+  const maxMultipartStreamHeaderBytes: 8192 = 8192;
 
   async function* decodeMultipartStreamParts(
     body: ReadableStream<Uint8Array>,
@@ -92,27 +109,28 @@ export function createAdvancedHTTPServices(
     maxFrameBytes?: number,
     signal?: AbortSignal,
   ): AsyncIterable<MultipartStreamPart> {
-    const boundary =
+    const boundary: string | undefined =
       /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType)?.[1] ??
       /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(contentType)?.[2];
     if (boundary === undefined || boundary === "")
       throw new TypeError("multipart response has no boundary parameter");
-    const encoder = new TextEncoder();
-    const opening = encoder.encode(`--${boundary}`);
-    const separator = encoder.encode(`\r\n--${boundary}`);
-    const reader = body.getReader();
+    const encoder: TextEncoder = new TextEncoder();
+    const opening: Uint8Array<ArrayBuffer> = encoder.encode(`--${boundary}`);
+    const separator: Uint8Array<ArrayBuffer> = encoder.encode(`\r\n--${boundary}`);
+    const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
     let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
-    let started = false;
-    let closed = false;
+    let started: boolean = false;
+    let closed: boolean = false;
     try {
       while (!closed) {
-        const { done, value } = await awaitAbortable(reader.read(), signal);
+        const { done, value }: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+          await awaitAbortable(reader.read(), signal);
         if (value !== undefined) pending = appendStreamBytes(pending, value);
         while (!closed) {
           if (!started) {
-            const index = findStreamBytes(pending, opening);
+            const index: number = findStreamBytes(pending, opening);
             if (index < 0) break;
-            const after = index + opening.length;
+            const after: number = index + opening.length;
             if (pending.length < after + 2) break;
             if (pending[after] === 45 && pending[after + 1] === 45) {
               closed = true;
@@ -125,20 +143,20 @@ export function createAdvancedHTTPServices(
             started = true;
             continue;
           }
-          const index = findStreamBytes(pending, separator);
+          const index: number = findStreamBytes(pending, separator);
           if (index < 0) break;
-          const after = index + separator.length;
+          const after: number = index + separator.length;
           if (pending.length < after + 2) break;
-          const closing = pending[after] === 45 && pending[after + 1] === 45;
+          const closing: boolean = pending[after] === 45 && pending[after + 1] === 45;
           if (!closing && (pending[after] !== 13 || pending[after + 1] !== 10))
             throw new TypeError("multipart boundary is malformed");
-          const part = pending.slice(0, index);
+          const part: Uint8Array<ArrayBuffer> = pending.slice(0, index);
           pending = pending.slice(after + 2);
           yield parseMultipartStreamPart(part, maxFrameBytes);
           if (closing) closed = true;
         }
         if (maxFrameBytes !== undefined && !closed) {
-          const maximumBuffered = started
+          const maximumBuffered: number = started
             ? maxFrameBytes + maxMultipartStreamHeaderBytes + separator.length + 4
             : maxMultipartStreamHeaderBytes + opening.length + 2;
           if (pending.byteLength > maximumBuffered)
@@ -163,15 +181,15 @@ export function createAdvancedHTTPServices(
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
     itemEncoding: WireEncodingDefinition | undefined,
   ): Promise<unknown> {
-    const { headers, bytes } = part;
+    const { headers, bytes }: MultipartStreamPart = part;
     for (const header of itemEncoding?.headers ?? []) {
-      const value = headers.get(header.name);
+      const value: string | null = headers.get(header.name);
       if (value === null) {
         if (header.required)
           throw new TypeError(`multipart part is missing required header ${header.name}`);
         continue;
       }
-      const decoded = await decodeResponseHeaderValue(
+      const decoded: unknown = await decodeResponseHeaderValue(
         header.name,
         value,
         header.schema,
@@ -182,9 +200,9 @@ export function createAdvancedHTTPServices(
       );
       validateWireValue(decoded, header.schema, schemas, "decode");
     }
-    const declared = itemEncoding?.contentType?.split(",", 1)[0]?.trim();
-    const rawPartContentType = headers.get("content-type") ?? declared ?? "text/plain";
-    const partContentType = normalizeMediaType(rawPartContentType);
+    const declared: string | undefined = itemEncoding?.contentType?.split(",", 1)[0]?.trim();
+    const rawPartContentType: string = headers.get("content-type") ?? declared ?? "text/plain";
+    const partContentType: string = normalizeMediaType(rawPartContentType);
     if (partContentType.startsWith("multipart/")) {
       return decodeMultipartResponse(
         new Blob([ownedArrayBuffer(bytes)]).stream(),
@@ -210,7 +228,7 @@ export function createAdvancedHTTPServices(
     if (partContentType.startsWith("text/")) return new TextDecoder().decode(bytes);
     if (isBinaryMediaType(partContentType) || itemSchema.contentEncoding === "binary")
       return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-    const codec = codecs.get(normalizeMediaType(partContentType));
+    const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(partContentType));
     if (codec?.decode === undefined)
       throw new TypeError(`missing decode codec for multipart item ${partContentType}`);
     return codec.decode(
@@ -220,25 +238,27 @@ export function createAdvancedHTTPServices(
   }
 
   function ownedArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-    const copy = new Uint8Array(bytes.byteLength);
+    const copy: Uint8Array<ArrayBuffer> = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
     return copy.buffer;
   }
 
   function parseMultipartStreamPart(part: Uint8Array, maxFrameBytes?: number): MultipartStreamPart {
-    const split = findStreamBytes(part, new Uint8Array([13, 10, 13, 10]));
+    const split: number = findStreamBytes(part, new Uint8Array([13, 10, 13, 10]));
     if (split < 0) throw new TypeError("multipart part has no header terminator");
     if (maxFrameBytes !== undefined && split > maxMultipartStreamHeaderBytes)
       throw new TypeError("multipart stream headers exceed 8192 bytes");
-    const bytes = part.slice(split + 4);
+    const bytes: Uint8Array<ArrayBuffer> = part.slice(split + 4);
     if (maxFrameBytes !== undefined && bytes.byteLength > maxFrameBytes)
       throw new TypeError(`multipart stream frame exceeds ${maxFrameBytes} bytes`);
-    const headers = parseMultipartStreamHeaders(new TextDecoder().decode(part.slice(0, split)));
+    const headers: Headers = parseMultipartStreamHeaders(
+      new TextDecoder().decode(part.slice(0, split)),
+    );
     return { headers, bytes };
   }
 
   function appendStreamBytes(left: Uint8Array, right: Uint8Array): Uint8Array {
-    const result = new Uint8Array(left.length + right.length);
+    const result: Uint8Array<ArrayBuffer> = new Uint8Array(left.length + right.length);
     result.set(left);
     result.set(right, left.length);
     return result;
@@ -246,8 +266,8 @@ export function createAdvancedHTTPServices(
 
   function findStreamBytes(source: Uint8Array, wanted: Uint8Array): number {
     if (wanted.length === 0) return 0;
-    outer: for (let start = 0; start <= source.length - wanted.length; start++) {
-      for (let index = 0; index < wanted.length; index++)
+    outer: for (let start: number = 0; start <= source.length - wanted.length; start++) {
+      for (let index: number = 0; index < wanted.length; index++)
         if (source[start + index] !== wanted[index]) continue outer;
       return start;
     }
@@ -255,9 +275,9 @@ export function createAdvancedHTTPServices(
   }
 
   function parseMultipartStreamHeaders(source: string): Headers {
-    const headers = new Headers();
+    const headers: Headers = new Headers();
     for (const line of source.split("\r\n")) {
-      const separator = line.indexOf(":");
+      const separator: number = line.indexOf(":");
       if (separator <= 0) throw new TypeError("multipart part has a malformed header");
       headers.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
     }
@@ -274,7 +294,7 @@ export function createAdvancedHTTPServices(
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<unknown> {
     if (contentType !== undefined) {
-      const decoded = decodeHeaderContent(name, value, contentType);
+      const decoded: unknown = decodeHeaderContent(name, value, contentType);
       if (
         isJSONMediaType(contentType) ||
         contentType.toLowerCase() === "application/x-www-form-urlencoded"
@@ -282,27 +302,29 @@ export function createAdvancedHTTPServices(
         return decoded;
       if (isXMLMediaType(contentType)) return decodeXML(value, schema, schemas);
       if (!contentType.toLowerCase().startsWith("text/")) {
-        const codec = codecs.get(normalizeMediaType(contentType));
+        const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(contentType));
         if (codec?.decodeParameter === undefined)
           throw new TypeError(`missing decodeParameter codec for response header ${name}`);
         return codec.decodeParameter(value, { contentType });
       }
       value = decoded as string;
     }
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("array"))
       return value
         .split(",")
-        .map((entry) => decodeResponseHeaderScalar(name, entry, resolved.items ?? {}, schemas));
+        .map((entry: string): unknown =>
+          decodeResponseHeaderScalar(name, entry, resolved.items ?? {}, schemas),
+        );
     if (resolved.types?.includes("object") || resolved.properties !== undefined) {
-      const result = Object.create(null) as Record<string, unknown>;
-      const tokens = value.split(",");
+      const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+      const tokens: string[] = value.split(",");
       if (explode)
         for (const token of tokens) {
-          const separator = token.indexOf("=");
+          const separator: number = token.indexOf("=");
           if (separator < 0) continue;
-          const propertyName = token.slice(0, separator);
-          const property = resolved.properties?.[propertyName];
+          const propertyName: string = token.slice(0, separator);
+          const property: WireProperty | undefined = resolved.properties?.[propertyName];
           defineOwnDataProperty(
             result,
             propertyName,
@@ -315,8 +337,8 @@ export function createAdvancedHTTPServices(
           );
         }
       else
-        for (let index = 0; index + 1 < tokens.length; index += 2) {
-          const property = resolved.properties?.[tokens[index]!];
+        for (let index: number = 0; index + 1 < tokens.length; index += 2) {
+          const property: WireProperty | undefined = resolved.properties?.[tokens[index]!];
           defineOwnDataProperty(
             result,
             tokens[index]!,
@@ -334,15 +356,15 @@ export function createAdvancedHTTPServices(
     schema: WireSchema,
     schemas: WireSchemas,
   ): unknown {
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("integer")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isInteger(parsed))
         throw new TypeError(`response header ${name} is not an integer`);
       return parsed;
     }
     if (resolved.types?.includes("number")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isFinite(parsed)) throw new TypeError(`response header ${name} is not a number`);
       return parsed;
     }
@@ -355,7 +377,8 @@ export function createAdvancedHTTPServices(
   }
 
   function resolveHeaderSchema(schema: WireSchema, schemas: WireSchemas): WireSchema {
-    const referenced = schema.reference === undefined ? undefined : schemas[schema.reference];
+    const referenced: WireSchema | undefined =
+      schema.reference === undefined ? undefined : schemas[schema.reference];
     return referenced === undefined ? schema : resolveHeaderSchema(referenced, schemas);
   }
 
@@ -363,14 +386,17 @@ export function createAdvancedHTTPServices(
     if (isJSONMediaType(contentType)) {
       try {
         return JSON.parse(value);
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw new TypeError(`response header ${name} is not valid ${contentType}`, { cause });
       }
     }
     if (contentType.toLowerCase() === "application/x-www-form-urlencoded") {
-      const result = Object.create(null) as Record<string, string | string[]>;
+      const result: Record<string, string | string[]> = Object.create(null) as Record<
+        string,
+        string | string[]
+      >;
       for (const [key, item] of new URLSearchParams(value)) {
-        const previous = result[key];
+        const previous: string | string[] | undefined = result[key];
         defineOwnDataProperty(
           result,
           key,
@@ -396,11 +422,11 @@ export function createAdvancedHTTPServices(
     multipartHeaders: Readonly<Record<string, HeadersInit>> | undefined,
     multipartContentTypes: Readonly<Record<string, string>> | undefined,
   ): BodyInit | Promise<BodyInit> {
-    const normalizedContentType = contentType.toLowerCase();
+    const normalizedContentType: string = contentType.toLowerCase();
     if (isJSONMediaType(normalizedContentType)) return JSON.stringify(value);
     if (normalizedContentType === "application/x-www-form-urlencoded") {
       if (!isRecord(value)) throw new TypeError("form body must be an object");
-      const form = new URLSearchParams();
+      const form: URLSearchParams = new URLSearchParams();
       for (const [name, item] of formEntries(value, definition?.encoding)) form.append(name, item);
       return form;
     }
@@ -426,7 +452,9 @@ export function createAdvancedHTTPServices(
         );
       if (!isRecord(value)) throw new TypeError("multipart body must be an object");
       if (
-        definition?.encoding?.some((entry) => (entry.headers?.length ?? 0) > 0) ||
+        definition?.encoding?.some(
+          (entry: WireEncodingDefinition): boolean => (entry.headers?.length ?? 0) > 0,
+        ) ||
         multipartHeaders !== undefined
       ) {
         return encodeMultipartBody(
@@ -438,8 +466,12 @@ export function createAdvancedHTTPServices(
           codecs,
         );
       }
-      const form = new FormData();
-      const append = (
+      const form: FormData = new FormData();
+      const append: (
+        name: string,
+        item: unknown,
+        definition: WireEncodingDefinition | undefined,
+      ) => void = (
         name: string,
         item: unknown,
         definition: WireEncodingDefinition | undefined,
@@ -447,7 +479,7 @@ export function createAdvancedHTTPServices(
         if (item instanceof Blob) form.append(name, item);
         else if (item instanceof ArrayBuffer) form.append(name, new Blob([item]));
         else if (ArrayBuffer.isView(item)) {
-          const bytes = new Uint8Array(item.byteLength);
+          const bytes: Uint8Array<ArrayBuffer> = new Uint8Array(item.byteLength);
           bytes.set(new Uint8Array(item.buffer, item.byteOffset, item.byteLength));
           form.append(name, new Blob([bytes.buffer]));
         } else if (isRecord(item) || Array.isArray(item)) {
@@ -463,7 +495,9 @@ export function createAdvancedHTTPServices(
       };
       for (const [name, item] of Object.entries(value)) {
         if (item === undefined) continue;
-        const encoding = definition?.encoding?.find((entry) => entry.name === name);
+        const encoding: WireEncodingDefinition | undefined = definition?.encoding?.find(
+          (entry: WireEncodingDefinition): boolean => entry.name === name,
+        );
         if (Array.isArray(item) && encoding?.explode !== false)
           for (const entry of item) append(name, entry, encoding);
         else append(name, item, encoding);
@@ -475,7 +509,7 @@ export function createAdvancedHTTPServices(
     if (value instanceof Blob || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
       return value as BodyInit;
     }
-    const codec = codecs.get(normalizeMediaType(contentType));
+    const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(contentType));
     if (codec?.encode === undefined) throw new TypeError(`missing encode codec for ${contentType}`);
     return codec.encode(value, { contentType });
   }
@@ -491,18 +525,19 @@ export function createAdvancedHTTPServices(
     schemas: WireSchemas,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<Blob> {
-    const boundary = `----openapi-sdkgen-${multipartBoundaryToken()}`;
+    const boundary: string = `----openapi-sdkgen-${multipartBoundaryToken()}`;
     const chunks: BlobPart[] = [];
     for (const [index, value] of values.entries()) {
-      const definition = prefixEncoding?.[index] ?? itemEncoding;
-      const itemSchema = schema?.prefixItems?.[index] ?? schema?.items ?? {};
-      const selectedContentType = resolveMultipartContentType(
+      const definition: WireEncodingDefinition | undefined =
+        prefixEncoding?.[index] ?? itemEncoding;
+      const itemSchema: WireSchema = schema?.prefixItems?.[index] ?? schema?.items ?? {};
+      const selectedContentType: string = resolveMultipartContentType(
         definition?.contentType,
         suppliedContentTypes?.[String(index)],
         defaultMultipartContentType(itemSchema),
         value,
       );
-      const { body, contentType: partContentType } = await multipartPartValue(
+      const { body, contentType: partContentType }: MultipartPartValue = await multipartPartValue(
         value,
         selectedContentType,
         itemSchema,
@@ -510,7 +545,7 @@ export function createAdvancedHTTPServices(
         schemas,
         codecs,
       );
-      const headers = await multipartPartHeaders(
+      const headers: string = await multipartPartHeaders(
         undefined,
         definition,
         suppliedHeaders?.[String(index)],
@@ -531,23 +566,28 @@ export function createAdvancedHTTPServices(
     values: AsyncIterable<unknown>,
     maxFrameBytes: number,
   ): ReadableStream<Uint8Array> {
-    const encodeItem = sequentialRequestItemEncoder(streamFraming, contentType);
-    const iterator = values[Symbol.asyncIterator]();
-    const encoder = new TextEncoder();
+    const encodeItem: (value: unknown) => string = sequentialRequestItemEncoder(
+      streamFraming,
+      contentType,
+    );
+    const iterator: AsyncIterator<unknown, unknown, unknown> = values[Symbol.asyncIterator]();
+    const encoder: TextEncoder = new TextEncoder();
     return new ReadableStream<Uint8Array>(
       {
-        async pull(controller): Promise<void> {
+        async pull(
+          controller: ReadableStreamDefaultController<Uint8Array<ArrayBufferLike>>,
+        ): Promise<void> {
           try {
-            const next = await iterator.next();
+            const next: IteratorResult<unknown, unknown> = await iterator.next();
             if (next.done) {
               controller.close();
               return;
             }
-            const frame = encoder.encode(encodeItem(next.value));
+            const frame: Uint8Array<ArrayBuffer> = encoder.encode(encodeItem(next.value));
             if (frame.byteLength > maxFrameBytes)
               throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
             controller.enqueue(frame);
-          } catch (cause) {
+          } catch (cause: unknown) {
             controller.error(cause);
             try {
               await iterator.return?.();
@@ -556,7 +596,7 @@ export function createAdvancedHTTPServices(
             }
           }
         },
-        async cancel(reason): Promise<void> {
+        async cancel(reason: unknown): Promise<void> {
           await iterator.return?.(reason);
         },
       },
@@ -570,14 +610,14 @@ export function createAdvancedHTTPServices(
   ): (value: unknown) => string {
     if (streamFraming === "sse") return encodeSSERequestItem;
     if (streamFraming === "json-sequence")
-      return (value) => `\u001e${encodeJSONStreamItem(value)}\n`;
+      return (value: unknown): string => `\u001e${encodeJSONStreamItem(value)}\n`;
     if (streamFraming === "line-delimited-json")
-      return (value) => `${encodeJSONStreamItem(value)}\n`;
+      return (value: unknown): string => `${encodeJSONStreamItem(value)}\n`;
     throw new TypeError(`unsupported streaming request media type ${contentType}`);
   }
 
   function encodeJSONStreamItem(value: unknown): string {
-    const encoded = JSON.stringify(value);
+    const encoded: string = JSON.stringify(value);
     if (encoded === undefined) throw new TypeError("stream item is not JSON-serializable");
     return encoded;
   }
@@ -591,8 +631,8 @@ export function createAdvancedHTTPServices(
     if (!Object.hasOwn(value, "data") || typeof value["data"] !== "string")
       throw new TypeError("SSE stream item data must be a string");
 
-    const event = sseRequestStringField(value, "event");
-    const id = sseRequestStringField(value, "id");
+    const event: string | undefined = sseRequestStringField(value, "event");
+    const id: string | undefined = sseRequestStringField(value, "id");
     if (event !== undefined && /[\r\n]/.test(event))
       throw new TypeError("SSE stream item event must not contain a line break");
     if (id !== undefined && /[\u0000\r\n]/.test(id))
@@ -636,8 +676,16 @@ export function createAdvancedHTTPServices(
       maxFrameBytes: options.maxFrameBytes,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     };
-    const items = transformStreamingRequestItems(values, options.itemSchema, options.schemas);
-    const frames = encodeStreamApplicationFrames(items, options.streamCodec, context);
+    const items: AsyncIterable<unknown> = transformStreamingRequestItems(
+      values,
+      options.itemSchema,
+      options.schemas,
+    );
+    const frames: AsyncIterable<unknown> = encodeStreamApplicationFrames(
+      items,
+      options.streamCodec,
+      context,
+    );
     return encodeStreamProtocolFrames(frames, {
       contentType: options.contentType,
       streamFraming: options.streamFraming,
@@ -658,7 +706,12 @@ export function createAdvancedHTTPServices(
     value: unknown,
     options: CompleteSequentialRequestOptions,
   ): EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> {
-    const transformed = transformWireValue(value, options.schema, options.schemas, "encode");
+    const transformed: unknown = transformWireValue(
+      value,
+      options.schema,
+      options.schemas,
+      "encode",
+    );
     if (!Array.isArray(transformed))
       throw new TypeError("complete sequential request body must be an array value");
     const context: StreamContext = {
@@ -666,8 +719,12 @@ export function createAdvancedHTTPServices(
       maxFrameBytes: options.maxFrameBytes,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
     };
-    const items = streamArrayValues(transformed);
-    const frames = encodeStreamApplicationFrames(items, options.streamCodec, context);
+    const items: AsyncIterable<unknown> = streamArrayValues(transformed);
+    const frames: AsyncIterable<unknown> = encodeStreamApplicationFrames(
+      items,
+      options.streamCodec,
+      context,
+    );
     return encodeStreamProtocolFrames(frames, {
       contentType: options.contentType,
       streamFraming: options.streamFraming,
@@ -698,8 +755,13 @@ export function createAdvancedHTTPServices(
     options: StreamProtocolEncodeOptions,
   ): EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> {
     if (options.streamCodec?.protocol !== undefined) {
-      const encoded = options.streamCodec.protocol.encode(frames, options.context);
-      const finish = (body: ReadableStream<Uint8Array>): EncodedStreamRequestBody => ({
+      const encoded:
+        | ReadableStream<Uint8Array<ArrayBufferLike>>
+        | Promise<ReadableStream<Uint8Array<ArrayBufferLike>>> =
+        options.streamCodec.protocol.encode(frames, options.context);
+      const finish: (body: ReadableStream<Uint8Array>) => EncodedStreamRequestBody = (
+        body: ReadableStream<Uint8Array>,
+      ): EncodedStreamRequestBody => ({
         body,
         contentType: options.contentType,
       });
@@ -732,7 +794,7 @@ export function createAdvancedHTTPServices(
     itemSchema: WireSchema,
     schemas: WireSchemas,
   ): AsyncIterable<unknown> {
-    return mapAsyncIterable(values, (value) =>
+    return mapAsyncIterable(values, (value: unknown): unknown =>
       transformWireValue(value, itemSchema, schemas, "encode"),
     );
   }
@@ -743,12 +805,12 @@ export function createAdvancedHTTPServices(
   ): AsyncIterable<Output> {
     return {
       [Symbol.asyncIterator](): AsyncIterator<Output> {
-        const iterator = values[Symbol.asyncIterator]();
-        let done = false;
+        const iterator: AsyncIterator<Input, unknown, unknown> = values[Symbol.asyncIterator]();
+        let done: boolean = false;
         return {
           async next(): Promise<IteratorResult<Output>> {
             if (done) return { done: true, value: undefined as never };
-            const next = await iterator.next();
+            const next: IteratorResult<Input, unknown> = await iterator.next();
             if (done || next.done) {
               done = true;
               return { done: true, value: undefined as never };
@@ -769,30 +831,33 @@ export function createAdvancedHTTPServices(
   function encodeStreamingMultipartBody(
     values: AsyncIterable<unknown>,
     options: StreamProtocolEncodeOptions,
-  ): { readonly body: ReadableStream<Uint8Array>; readonly contentType: string } {
-    const boundary = `----openapi-sdkgen-${multipartBoundaryToken()}`;
-    const iterator = values[Symbol.asyncIterator]();
-    const encoder = new TextEncoder();
-    let index = 0;
-    const body = new ReadableStream<Uint8Array>({
-      async pull(controller): Promise<void> {
+  ): EncodedStreamRequestBody {
+    const boundary: string = `----openapi-sdkgen-${multipartBoundaryToken()}`;
+    const iterator: AsyncIterator<unknown, unknown, unknown> = values[Symbol.asyncIterator]();
+    const encoder: TextEncoder = new TextEncoder();
+    let index: number = 0;
+    const body: ReadableStream<Uint8Array<ArrayBufferLike>> = new ReadableStream<Uint8Array>({
+      async pull(
+        controller: ReadableStreamDefaultController<Uint8Array<ArrayBufferLike>>,
+      ): Promise<void> {
         try {
-          const next = await iterator.next();
+          const next: IteratorResult<unknown, unknown> = await iterator.next();
           if (next.done) {
             controller.enqueue(encoder.encode(`--${boundary}--\r\n`));
             controller.close();
             return;
           }
-          const value = next.value;
-          const frameSchema = options.prefixSchemas?.[index] ?? options.frameSchema;
-          const frameEncoding = options.prefixEncoding?.[index] ?? options.itemEncoding;
-          const selectedContentType = resolveMultipartContentType(
+          const value: unknown = next.value;
+          const frameSchema: WireSchema = options.prefixSchemas?.[index] ?? options.frameSchema;
+          const frameEncoding: WireEncodingDefinition | undefined =
+            options.prefixEncoding?.[index] ?? options.itemEncoding;
+          const selectedContentType: string = resolveMultipartContentType(
             frameEncoding?.contentType,
             options.suppliedContentTypes?.[String(index)],
             defaultMultipartContentType(frameSchema),
             value,
           );
-          const part = await multipartPartValue(
+          const part: MultipartPartValue = await multipartPartValue(
             value,
             selectedContentType,
             frameSchema,
@@ -800,12 +865,12 @@ export function createAdvancedHTTPServices(
             options.schemas,
             options.codecs,
           );
-          const frameBytes = new Blob([part.body]).size;
+          const frameBytes: number = new Blob([part.body]).size;
           if (frameBytes > options.context.maxFrameBytes)
             throw new TypeError(
               `multipart stream frame exceeds ${options.context.maxFrameBytes} bytes`,
             );
-          const headers = await multipartPartHeaders(
+          const headers: string = await multipartPartHeaders(
             undefined,
             frameEncoding,
             options.suppliedHeaders?.[String(index)],
@@ -815,13 +880,13 @@ export function createAdvancedHTTPServices(
             options.codecs,
           );
           index++;
-          const bytes = await new Blob([
+          const bytes: ArrayBuffer = await new Blob([
             `--${boundary}\r\n${headers}\r\n\r\n`,
             part.body,
             "\r\n",
           ]).arrayBuffer();
           controller.enqueue(new Uint8Array(bytes));
-        } catch (cause) {
+        } catch (cause: unknown) {
           controller.error(cause);
           try {
             await iterator.return?.();
@@ -830,7 +895,7 @@ export function createAdvancedHTTPServices(
           }
         }
       },
-      async cancel(reason): Promise<void> {
+      async cancel(reason: unknown): Promise<void> {
         await iterator.return?.(reason);
       },
     });
@@ -838,7 +903,7 @@ export function createAdvancedHTTPServices(
   }
 
   function defaultMultipartContentType(schema: WireSchema): string {
-    const types = schema.types ?? [];
+    const types: readonly string[] = schema.types ?? [];
     if (types.includes("object") || types.includes("array")) return "application/json";
     if (types.includes("string"))
       return schema.contentEncoding === undefined ? "text/plain" : "application/octet-stream";
@@ -853,16 +918,17 @@ export function createAdvancedHTTPServices(
     fallback: string,
     value: unknown,
   ): string {
-    const candidate = normalizeMediaType(
+    const candidate: string = normalizeMediaType(
       selected ?? (value instanceof Blob && value.type !== "" ? value.type : fallback),
     );
     if (declared === undefined || declared.trim() === "") return candidate;
-    const allowed = declared
+    const allowed: string[] = declared
       .split(",")
       .map(normalizeMediaType)
-      .filter((item) => item !== "");
-    if (allowed.some((item) => mediaRangeMatches(item, candidate))) return candidate;
-    const exact = allowed.filter((item) => !item.includes("*"));
+      .filter((item: string): boolean => item !== "");
+    if (allowed.some((item: string): boolean => mediaRangeMatches(item, candidate)))
+      return candidate;
+    const exact: string[] = allowed.filter((item: string): boolean => !item.includes("*"));
     if (selected === undefined && exact.length === 1) return exact[0]!;
     throw new TypeError(
       `multipart part content type ${candidate} is not permitted by ${declared}; select one with RequestOptions.multipartContentTypes`,
@@ -870,8 +936,8 @@ export function createAdvancedHTTPServices(
   }
 
   function mediaRangeMatches(range: string, value: string): boolean {
-    const [rangeType, rangeSubtype] = range.split("/", 2);
-    const [valueType, valueSubtype] = value.split("/", 2);
+    const [rangeType, rangeSubtype]: string[] = range.split("/", 2);
+    const [valueType, valueSubtype]: string[] = value.split("/", 2);
     return (
       (rangeType === "*" || rangeType === valueType) &&
       (rangeSubtype === "*" || rangeSubtype === valueSubtype)
@@ -886,19 +952,24 @@ export function createAdvancedHTTPServices(
     schemas: WireSchemas,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<Blob> {
-    const boundary = `----openapi-sdkgen-${multipartBoundaryToken()}`;
+    const boundary: string = `----openapi-sdkgen-${multipartBoundaryToken()}`;
     const chunks: BlobPart[] = [];
-    const definitions = new Map(
-      (encoding ?? []).map((definition) => [definition.name, definition]),
+    const definitions: Map<string | undefined, WireEncodingDefinition> = new Map(
+      (encoding ?? []).map(
+        (definition: WireEncodingDefinition): [string | undefined, WireEncodingDefinition] => [
+          definition.name,
+          definition,
+        ],
+      ),
     );
     for (const [name, fieldValue] of Object.entries(fields)) {
       if (fieldValue === undefined) continue;
-      const definition = definitions.get(name);
-      const values =
+      const definition: WireEncodingDefinition | undefined = definitions.get(name);
+      const values: unknown[] =
         Array.isArray(fieldValue) && definition?.explode !== false ? fieldValue : [fieldValue];
       for (const item of values) {
-        const propertySchema = schema?.properties?.[name]?.schema ?? {};
-        const { body, contentType, filename } = await multipartPartValue(
+        const propertySchema: WireSchema = schema?.properties?.[name]?.schema ?? {};
+        const { body, contentType, filename }: MultipartPartValue = await multipartPartValue(
           item,
           definition?.contentType,
           propertySchema,
@@ -906,7 +977,7 @@ export function createAdvancedHTTPServices(
           schemas,
           codecs,
         );
-        const headers = await multipartPartHeaders(
+        const headers: string = await multipartPartHeaders(
           name,
           definition,
           suppliedHeaders?.[name],
@@ -929,13 +1000,13 @@ export function createAdvancedHTTPServices(
     definition: WireEncodingDefinition | undefined = undefined,
     schemas: WireSchemas = {},
     codecs: ReadonlyMap<string, MediaCodec<unknown>> = new Map(),
-  ): Promise<{ body: BlobPart; contentType?: string; filename?: string }> {
+  ): Promise<MultipartPartValue> {
     if (
       declaredContentType !== undefined &&
       normalizeMediaType(declaredContentType).startsWith("multipart/")
     ) {
       if (!Array.isArray(value)) throw new TypeError("nested multipart part must be an array");
-      const nested = await encodePositionalMultipartBody(
+      const nested: Blob = await encodePositionalMultipartBody(
         declaredContentType,
         value,
         definition?.prefixEncoding,
@@ -949,8 +1020,9 @@ export function createAdvancedHTTPServices(
       return { body: nested, contentType: nested.type };
     }
     if (value instanceof Blob) {
-      const file = typeof File !== "undefined" && value instanceof File ? value : undefined;
-      const contentType = (declaredContentType ?? value.type) || undefined;
+      const file: File | undefined =
+        typeof File !== "undefined" && value instanceof File ? value : undefined;
+      const contentType: string | undefined = (declaredContentType ?? value.type) || undefined;
       return {
         body: value,
         ...(contentType === undefined ? {} : { contentType }),
@@ -960,12 +1032,14 @@ export function createAdvancedHTTPServices(
     if (value instanceof ArrayBuffer)
       return { body: value, contentType: declaredContentType ?? "application/octet-stream" };
     if (ArrayBuffer.isView(value)) {
-      const bytes = new Uint8Array(value.byteLength);
+      const bytes: Uint8Array<ArrayBuffer> = new Uint8Array(value.byteLength);
       bytes.set(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
       return { body: bytes.buffer, contentType: declaredContentType ?? "application/octet-stream" };
     }
     if (declaredContentType !== undefined && requiresMultipartPartCodec(declaredContentType)) {
-      const codec = codecs.get(normalizeMediaType(declaredContentType));
+      const codec: MediaCodec<unknown> | undefined = codecs.get(
+        normalizeMediaType(declaredContentType),
+      );
       if (codec?.encode === undefined)
         throw new TypeError(`missing encode codec for multipart part ${declaredContentType}`);
       return {
@@ -989,7 +1063,7 @@ export function createAdvancedHTTPServices(
   }
 
   function requiresMultipartPartCodec(contentType: string): boolean {
-    const normalized = normalizeMediaType(contentType);
+    const normalized: string = normalizeMediaType(contentType);
     return (
       !isJSONMediaType(normalized) &&
       !isXMLMediaType(normalized) &&
@@ -1018,18 +1092,23 @@ export function createAdvancedHTTPServices(
     schemas: WireSchemas,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<string> {
-    const headers = new Headers(supplied);
-    const declared = new Map(
-      (definition?.headers ?? []).map((header) => [header.name.toLowerCase(), header]),
+    const headers: Headers = new Headers(supplied);
+    const declared: Map<string, WireMultipartHeaderDefinition> = new Map(
+      (definition?.headers ?? []).map(
+        (header: WireMultipartHeaderDefinition): [string, WireMultipartHeaderDefinition] => [
+          header.name.toLowerCase(),
+          header,
+        ],
+      ),
     );
     for (const header of definition?.headers ?? []) {
-      const value = headers.get(header.name);
+      const value: string | null = headers.get(header.name);
       if (value === null && header.required)
         throw new TypeError(`missing required multipart header ${name}.${header.name}`);
       if (value !== null) await validateMultipartHeaderValue(name, header, value, schemas, codecs);
     }
     for (const [headerName] of headers) {
-      const normalized = headerName.toLowerCase();
+      const normalized: string = headerName.toLowerCase();
       if (
         normalized === "content-type" ||
         (name !== undefined && normalized === "content-disposition") ||
@@ -1040,7 +1119,7 @@ export function createAdvancedHTTPServices(
         );
       }
     }
-    const lines =
+    const lines: string[] =
       name === undefined
         ? []
         : [
@@ -1058,7 +1137,7 @@ export function createAdvancedHTTPServices(
     schemas: WireSchemas,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<void> {
-    const decoded = await decodeMultipartHeaderValue(
+    const decoded: unknown = await decodeMultipartHeaderValue(
       `${part ?? "position"}.${header.name}`,
       value,
       header.schema,
@@ -1080,7 +1159,7 @@ export function createAdvancedHTTPServices(
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<unknown> {
     if (contentType !== undefined) {
-      const decoded = decodeHeaderContent(name, value, contentType);
+      const decoded: unknown = decodeHeaderContent(name, value, contentType);
       if (
         isJSONMediaType(contentType) ||
         contentType.toLowerCase() === "application/x-www-form-urlencoded"
@@ -1088,26 +1167,28 @@ export function createAdvancedHTTPServices(
         return decoded;
       if (isXMLMediaType(contentType)) return decodeXML(value, schema, schemas);
       if (!contentType.toLowerCase().startsWith("text/")) {
-        const codec = codecs.get(normalizeMediaType(contentType));
+        const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(contentType));
         if (codec?.decodeParameter === undefined)
           throw new TypeError(`missing decodeParameter codec for multipart header ${name}`);
         return codec.decodeParameter(value, { contentType });
       }
       value = decoded as string;
     }
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("array"))
       return value
         .split(",")
-        .map((item) => decodeMultipartHeaderScalar(name, item, resolved.items ?? {}, schemas));
+        .map((item: string): unknown =>
+          decodeMultipartHeaderScalar(name, item, resolved.items ?? {}, schemas),
+        );
     if (resolved.types?.includes("object") || resolved.properties !== undefined) {
-      const result = Object.create(null) as Record<string, unknown>;
-      const tokens = value.split(",");
+      const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+      const tokens: string[] = value.split(",");
       if (explode)
         for (const token of tokens) {
-          const separator = token.indexOf("=");
+          const separator: number = token.indexOf("=");
           if (separator < 0) continue;
-          const property = token.slice(0, separator);
+          const property: string = token.slice(0, separator);
           defineOwnDataProperty(
             result,
             property,
@@ -1120,7 +1201,7 @@ export function createAdvancedHTTPServices(
           );
         }
       else
-        for (let index = 0; index + 1 < tokens.length; index += 2)
+        for (let index: number = 0; index + 1 < tokens.length; index += 2)
           defineOwnDataProperty(
             result,
             tokens[index]!,
@@ -1142,15 +1223,15 @@ export function createAdvancedHTTPServices(
     schema: WireSchema,
     schemas: WireSchemas,
   ): unknown {
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("integer")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isInteger(parsed))
         throw new TypeError(`multipart header ${name} is not an integer`);
       return parsed;
     }
     if (resolved.types?.includes("number")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isFinite(parsed)) throw new TypeError(`multipart header ${name} is not a number`);
       return parsed;
     }
@@ -1169,7 +1250,8 @@ export function createAdvancedHTTPServices(
   }
 
   function multipartBoundaryToken(): string {
-    const random = globalThis.crypto?.randomUUID?.();
+    const random: `${string}-${string}-${string}-${string}-${string}` =
+      globalThis.crypto?.randomUUID?.();
     return random === undefined ? `${Date.now()}-${Math.random().toString(16).slice(2)}` : random;
   }
 
@@ -1180,23 +1262,31 @@ export function createAdvancedHTTPServices(
     const result: [string, string][] = [];
     for (const [name, item] of Object.entries(value)) {
       if (item === undefined) continue;
-      const definition = encoding?.find((entry) => entry.name === name);
+      const definition: WireEncodingDefinition | undefined = encoding?.find(
+        (entry: WireEncodingDefinition): boolean => entry.name === name,
+      );
       if (definition?.contentType !== undefined && isJSONMediaType(definition.contentType)) {
         result.push([name, JSON.stringify(item)]);
         continue;
       }
-      const explode = definition?.explode ?? true;
+      const explode: boolean = definition?.explode ?? true;
       if (Array.isArray(item)) {
         if (explode) for (const entry of item) result.push([name, String(entry)]);
         else result.push([name, item.map(String).join(",")]);
         continue;
       }
       if (isRecord(item)) {
-        const entries = Object.entries(item).filter(
-          (entry): entry is [string, unknown] => entry[1] !== undefined,
+        const entries: [string, unknown][] = Object.entries(item).filter(
+          (entry: [string, unknown]): entry is [string, unknown] => entry[1] !== undefined,
         );
         if (explode) for (const [key, entry] of entries) result.push([key, String(entry)]);
-        else result.push([name, entries.flatMap(([key, entry]) => [key, String(entry)]).join(",")]);
+        else
+          result.push([
+            name,
+            entries
+              .flatMap(([key, entry]: [string, unknown]): string[] => [key, String(entry)])
+              .join(","),
+          ]);
         continue;
       }
       result.push([name, String(item)]);
@@ -1213,9 +1303,11 @@ export function createAdvancedHTTPServices(
   ): Promise<unknown[]> {
     const result: unknown[] = [];
     for await (const part of decodeMultipartStreamParts(body, contentType)) {
-      const index = result.length;
-      const schema = definition.schema.prefixItems?.[index] ?? definition.schema.items ?? {};
-      const encoding = definition.prefixEncoding?.[index] ?? definition.itemEncoding;
+      const index: number = result.length;
+      const schema: WireSchema =
+        definition.schema.prefixItems?.[index] ?? definition.schema.items ?? {};
+      const encoding: WireEncodingDefinition | undefined =
+        definition.prefixEncoding?.[index] ?? definition.itemEncoding;
       result.push(await decodeMultipartStreamPart(part, schema, schemas, codecs, encoding));
     }
     return result;
@@ -1240,3 +1332,9 @@ export function createAdvancedHTTPServices(
     decodeXML,
   };
 }
+
+type MultipartPartValue = {
+  body: BlobPart;
+  contentType?: string;
+  filename?: string;
+};

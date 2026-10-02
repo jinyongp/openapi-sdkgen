@@ -2,12 +2,17 @@ import { createHTTPServices } from "./http-core.js";
 import { decodeResponseStreamItems } from "./streaming.js";
 import { jsonWireCodec } from "./wire-engine.js";
 import type { HTTPStreamDecodeOptions } from "./http-types.js";
-import type { MediaCodec, StreamCodec } from "./wire-engine.js";
+import type { MediaCodec, StreamCodec, WireResponseDefinition } from "./wire-engine.js";
 import type { ClientOptions } from "./configuration.js";
 import { TransportErrorCode, isAPIError } from "./runtime-support.js";
 import { operationDiagnosticName } from "./runtime-support.js";
 import type { OperationDefinition } from "./operation.js";
-import type { OperationStream, RequestOptions, StreamResponseMetadata } from "./request.js";
+import type {
+  OperationStream,
+  RequestOptions,
+  StreamResponseMetadata,
+  RequestMetadata,
+} from "./request.js";
 import {
   applyOperationSecurity,
   assertReadableResponseHeaders,
@@ -23,7 +28,7 @@ import {
   serverError,
   transportError,
 } from "./http-core.js";
-import type { EncodedRequest } from "./http-types.js";
+import type { EncodedRequest, AbortContext } from "./http-types.js";
 import type { WireCodec } from "./wire-engine.js";
 import type { RequestExecutionServices } from "./http-types.js";
 import type { HTTPCodecExtensions, StreamingRequestExecutionServices } from "./http-types.js";
@@ -34,8 +39,10 @@ export function createOperationStreamService(
   decodeResponseStreamItems: NonNullable<HTTPCodecExtensions["decodeResponseStreamItems"]>,
   wire: WireCodec,
 ): StreamingRequestExecutionServices["createOperationStream"] {
-  const { transformWireValue } = wire;
-  const tolerantResponseTransformOptions = { unknownProperties: "preserve" } as const;
+  const { transformWireValue }: WireCodec = wire;
+  const tolerantResponseTransformOptions: TolerantResponseTransformOptions = {
+    unknownProperties: "preserve",
+  } as const;
   function createOperationStream<Item>(
     baseURL: string | undefined,
     options: ClientOptions,
@@ -46,13 +53,13 @@ export function createOperationStreamService(
     input: unknown,
     requestOptions: RequestOptions,
   ): OperationStream<Item> {
-    const controller = new AbortController();
-    const externalSignal = requestOptions.signal;
-    let externalAbortCleanup = (): void => undefined;
+    const controller: AbortController = new AbortController();
+    const externalSignal: AbortSignal | undefined = requestOptions.signal;
+    let externalAbortCleanup: () => void = (): void => undefined;
     let source: AsyncIterator<Item> | undefined;
     let firstNext: Promise<IteratorResult<Item>> | undefined;
-    let consumerClaimed = false;
-    let terminal = false;
+    let consumerClaimed: boolean = false;
+    let terminal: boolean = false;
     let closePromise: Promise<void> | undefined;
     let responseMetadata: StreamResponseMetadata | undefined;
     let responseFailure: unknown;
@@ -60,31 +67,35 @@ export function createOperationStreamService(
     let resolveResponse: ((metadata: StreamResponseMetadata) => void) | undefined;
     let rejectResponse: ((cause: unknown) => void) | undefined;
 
-    const cleanupExternalAbort = (): void => {
+    const cleanupExternalAbort: () => void = (): void => {
       externalAbortCleanup();
       externalAbortCleanup = (): void => undefined;
     };
 
-    const settleResponse = (metadata: StreamResponseMetadata): void => {
+    const settleResponse: (metadata: StreamResponseMetadata) => void = (
+      metadata: StreamResponseMetadata,
+    ): void => {
       if (responseMetadata !== undefined) return;
       responseMetadata = metadata;
       resolveResponse?.(metadata);
     };
 
-    const failResponse = (cause: unknown): void => {
+    const failResponse: (cause: unknown) => void = (cause: unknown): void => {
       if (responseMetadata !== undefined || responseFailure !== undefined) return;
       responseFailure = cause;
       rejectResponse?.(cause);
     };
 
-    const observe = (result: Promise<IteratorResult<Item>>): Promise<IteratorResult<Item>> => {
+    const observe: (result: Promise<IteratorResult<Item>>) => Promise<IteratorResult<Item>> = (
+      result: Promise<IteratorResult<Item>>,
+    ): Promise<IteratorResult<Item>> => {
       void result.then(
-        (next) => {
+        (next: IteratorResult<Item, unknown>): void => {
           if (!next.done) return;
           terminal = true;
           cleanupExternalAbort();
         },
-        (cause) => {
+        (cause: unknown): void => {
           terminal = true;
           failResponse(cause);
           cleanupExternalAbort();
@@ -93,15 +104,17 @@ export function createOperationStreamService(
       return result;
     };
 
-    const nextFrom = (iterator: AsyncIterator<Item>): Promise<IteratorResult<Item>> => {
+    const nextFrom: (iterator: AsyncIterator<Item>) => Promise<IteratorResult<Item>> = (
+      iterator: AsyncIterator<Item>,
+    ): Promise<IteratorResult<Item>> => {
       try {
         return observe(Promise.resolve(iterator.next()));
-      } catch (cause) {
+      } catch (cause: unknown) {
         return observe(Promise.reject(cause));
       }
     };
 
-    const stopStarted = (reason?: unknown): Promise<void> => {
+    const stopStarted: (reason?: unknown) => Promise<void> = (reason?: unknown): Promise<void> => {
       if (!controller.signal.aborted) {
         controller.abort(
           reason ?? new Error("OperationStream consumption ended before completion"),
@@ -111,7 +124,7 @@ export function createOperationStreamService(
         cleanupExternalAbort();
         return Promise.resolve();
       }
-      closePromise ??= (async () => {
+      closePromise ??= (async (): Promise<undefined> => {
         firstNext = undefined;
         try {
           await source?.return?.();
@@ -125,17 +138,18 @@ export function createOperationStreamService(
       return closePromise;
     };
 
-    const ensureStarted = (): AsyncIterator<Item> => {
+    const ensureStarted: () => AsyncIterator<Item> = (): AsyncIterator<Item> => {
       if (source !== undefined) return source;
       if (!controller.signal.aborted && externalSignal !== undefined) {
         if (externalSignal.aborted) {
           controller.abort(externalSignal.reason);
         } else {
-          const forwardAbort = (): void => {
+          const forwardAbort: () => void = (): void => {
             void stopStarted(externalSignal.reason);
           };
           externalSignal.addEventListener("abort", forwardAbort, { once: true });
-          externalAbortCleanup = () => externalSignal.removeEventListener("abort", forwardAbort);
+          externalAbortCleanup = (): void =>
+            externalSignal.removeEventListener("abort", forwardAbort);
         }
       }
       const effectiveRequestOptions: RequestOptions = {
@@ -157,15 +171,17 @@ export function createOperationStreamService(
       return source;
     };
 
-    const advance = async (): Promise<IteratorResult<Item>> => {
+    const advance: () => Promise<IteratorResult<Item>> = async (): Promise<
+      IteratorResult<Item>
+    > => {
       if (terminal) return { done: true, value: undefined as never };
-      const iterator = ensureStarted();
-      const pending = firstNext ?? nextFrom(iterator);
+      const iterator: AsyncIterator<Item, unknown, unknown> = ensureStarted();
+      const pending: Promise<IteratorResult<Item, unknown>> = firstNext ?? nextFrom(iterator);
       firstNext = undefined;
       return pending;
     };
 
-    const close = async (reason?: unknown): Promise<void> => {
+    const close: (reason?: unknown) => Promise<void> = async (reason?: unknown): Promise<void> => {
       if (terminal) {
         cleanupExternalAbort();
         return;
@@ -173,35 +189,42 @@ export function createOperationStreamService(
       await stopStarted(reason);
     };
 
-    const consume = async function* (): AsyncIterableIterator<Item> {
-      try {
-        while (true) {
-          const next = await advance();
-          if (next.done) return;
-          yield next.value;
+    const consume: () => AsyncIterableIterator<Item> =
+      async function* (): AsyncIterableIterator<Item> {
+        try {
+          while (true) {
+            const next: IteratorResult<Item, unknown> = await advance();
+            if (next.done) return;
+            yield next.value;
+          }
+        } finally {
+          if (!terminal) await close();
         }
-      } finally {
-        if (!terminal) await close();
-      }
-    };
+      };
 
-    const claimConsumer = (): void => {
+    const claimConsumer: () => void = (): void => {
       if (consumerClaimed) throw new TypeError("OperationStream already has a consumer");
       consumerClaimed = true;
     };
 
-    const getResponse = (): Promise<StreamResponseMetadata> => {
-      ensureStarted();
-      if (responseMetadata !== undefined) return Promise.resolve(responseMetadata);
-      if (responseFailure !== undefined) return Promise.reject(responseFailure);
-      responsePromise ??= new Promise<StreamResponseMetadata>((resolve, reject) => {
-        resolveResponse = resolve;
-        rejectResponse = reject;
-        if (responseMetadata !== undefined) resolve(responseMetadata);
-        else if (responseFailure !== undefined) reject(responseFailure);
-      });
-      return responsePromise;
-    };
+    const getResponse: () => Promise<StreamResponseMetadata> =
+      (): Promise<StreamResponseMetadata> => {
+        ensureStarted();
+        if (responseMetadata !== undefined) return Promise.resolve(responseMetadata);
+        if (responseFailure !== undefined) return Promise.reject(responseFailure);
+        responsePromise ??= new Promise<StreamResponseMetadata>(
+          (
+            resolve: (value: StreamResponseMetadata | PromiseLike<StreamResponseMetadata>) => void,
+            reject: (reason?: unknown) => void,
+          ): void => {
+            resolveResponse = resolve;
+            rejectResponse = reject;
+            if (responseMetadata !== undefined) resolve(responseMetadata);
+            else if (responseFailure !== undefined) reject(responseFailure);
+          },
+        );
+        return responsePromise;
+      };
 
     const stream: OperationStream<Item> = {
       get response(): Promise<StreamResponseMetadata> {
@@ -212,19 +235,19 @@ export function createOperationStreamService(
       },
       toReadableStream(): ReadableStream<Item> {
         claimConsumer();
-        const iterator = consume();
+        const iterator: AsyncIterableIterator<Item> = consume();
         return new ReadableStream<Item>(
           {
-            async pull(readableController) {
+            async pull(readableController: ReadableStreamDefaultController<Item>): Promise<void> {
               try {
-                const next = await iterator.next();
+                const next: IteratorResult<Item, unknown> = await iterator.next();
                 if (next.done) readableController.close();
                 else readableController.enqueue(next.value);
-              } catch (cause) {
+              } catch (cause: unknown) {
                 readableController.error(cause);
               }
             },
-            async cancel(reason) {
+            async cancel(reason: unknown): Promise<void> {
               stream.abort(reason);
               await iterator.return?.();
             },
@@ -251,21 +274,22 @@ export function createOperationStreamService(
     requestOptions: RequestOptions,
     onResponse: (metadata: StreamResponseMetadata) => void,
   ): AsyncIterable<Item> {
-    const credentials = requestOptions.credentials ?? options.credentials;
-    const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
-    const abort = createAbortContext(requestOptions.signal, timeoutMS, true);
+    const credentials: RequestCredentials | undefined =
+      requestOptions.credentials ?? options.credentials;
+    const timeoutMS: number | undefined = requestOptions.timeoutMS ?? options.timeoutMS;
+    const abort: AbortContext = createAbortContext(requestOptions.signal, timeoutMS, true);
     let response: Response | undefined;
     let streamContentType: string | undefined;
     let requestBodyFailure: (() => unknown) | undefined;
     let requestBodyCancel: ((reason?: unknown) => Promise<void>) | undefined;
-    let completed = false;
+    let completed: boolean = false;
     try {
       let encoded: EncodedRequest;
       try {
         if (abort.signal?.aborted) throw abort.signal.reason;
-        const effectiveRequestOptions =
+        const effectiveRequestOptions: RequestOptions =
           abort.signal === undefined ? requestOptions : { ...requestOptions, signal: abort.signal };
-        const pending = getBase().encodeRequest(
+        const pending: EncodedRequest | Promise<EncodedRequest> = getBase().encodeRequest(
           baseURL,
           options,
           codecs,
@@ -278,7 +302,7 @@ export function createOperationStreamService(
         requestBodyFailure = encoded.bodyFailure;
         requestBodyCancel = encoded.bodyCancel;
         if (abort.signal?.aborted) throw abort.signal.reason;
-        const secured = applyOperationSecurity(
+        const secured: EncodedRequest | Promise<EncodedRequest> = applyOperationSecurity(
           options,
           operation,
           encoded,
@@ -288,7 +312,7 @@ export function createOperationStreamService(
         encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
         requestBodyFailure = encoded.bodyFailure;
         requestBodyCancel = encoded.bodyCancel;
-      } catch (cause) {
+      } catch (cause: unknown) {
         if (abort.timedOut() || abort.aborted()) throw cause;
         if (isAPIError(cause)) throw cause;
         throw transportError(
@@ -306,15 +330,15 @@ export function createOperationStreamService(
       if (encoded.body !== undefined) {
         init.body = encoded.body as BodyInit;
         if (isReadableStream(encoded.body))
-          (init as RequestInit & { duplex?: "half" }).duplex = "half";
+          (init as RequestInit & RequestDuplexExtension).duplex = "half";
       }
       if (credentials !== undefined) init.credentials = credentials;
       if (abort.signal?.aborted) throw abort.signal.reason;
       assertReadableResponseHeaders(options.transport, operation);
       response = await awaitAbortable(fetchImplementation(encoded.url, init), abort.signal);
-      const request = requestMetadata(response);
+      const request: RequestMetadata = requestMetadata(response);
       if (!response.ok) {
-        const decodedBody = await awaitAbortable(
+        const decodedBody: unknown = await awaitAbortable(
           getBase().decodeResponse(operation, response, request, {
             codecs,
             streamCodecs,
@@ -326,16 +350,20 @@ export function createOperationStreamService(
           }),
           abort.signal,
         );
-        const body = getBase().decodeResponseWireValue(operation, response, decodedBody);
+        const body: unknown = getBase().decodeResponseWireValue(operation, response, decodedBody);
         throw serverError(response, request, body);
       }
-      const definition = selectResponseDefinition(operation, response, true);
+      const definition: WireResponseDefinition | undefined = selectResponseDefinition(
+        operation,
+        response,
+        true,
+      );
       if (definition?.itemSchema === undefined || response.body === null) {
         throw new TypeError(
           `response for ${operationDiagnosticName(operation)} is not a declared stream`,
         );
       }
-      const contentType = response.headers.get("content-type") ?? definition.contentType;
+      const contentType: string = response.headers.get("content-type") ?? definition.contentType;
       streamContentType = normalizeMediaType(contentType);
       onResponse({
         status: response.status,
@@ -343,10 +371,14 @@ export function createOperationStreamService(
         headers: response.headers,
         request,
       });
-      const maxFrameBytes = resolveMaxStreamFrameBytes(
+      const maxFrameBytes: number = resolveMaxStreamFrameBytes(
         requestOptions.maxStreamFrameBytes ?? options.maxStreamFrameBytes,
       );
-      const streamCodec = resolveStreamCodec(contentType, requestOptions.streamCodec, streamCodecs);
+      const streamCodec: StreamCodec<unknown, unknown> | undefined = resolveStreamCodec(
+        contentType,
+        requestOptions.streamCodec,
+        streamCodecs,
+      );
       for await (const value of decodeResponseStreamItems(response.body, {
         contentType,
         streamFraming: definition.streamFraming,
@@ -369,7 +401,7 @@ export function createOperationStreamService(
         ) as Item;
       }
       completed = true;
-    } catch (cause) {
+    } catch (cause: unknown) {
       await cancelTrackedRequestBody(requestBodyCancel, cause);
       if (abort.timedOut()) {
         await cancelResponseBody(response, cause);
@@ -384,7 +416,7 @@ export function createOperationStreamService(
         throw transportError(TransportErrorCode.REQUEST_ABORTED, "Request was aborted", cause);
       }
       if (isAPIError(cause)) throw cause;
-      const bodyFailure = requestBodyFailure?.();
+      const bodyFailure: unknown = requestBodyFailure?.();
       if (bodyFailure !== undefined) {
         throw transportError(
           TransportErrorCode.REQUEST_ENCODE_FAILED,
@@ -407,7 +439,7 @@ export function createOperationStreamService(
   }
 
   function resolveMaxStreamFrameBytes(value: number | undefined): number {
-    const resolved = value ?? 1024 * 1024;
+    const resolved: number = value ?? 1024 * 1024;
     if (!Number.isSafeInteger(resolved) || resolved <= 0)
       throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
     return resolved;
@@ -456,3 +488,9 @@ function createJSONResponseStreamServices(): StreamingRequestExecutionServices {
 /** JSON-bodied, non-XML plans exposing non-multipart response streams and buffered sequential responses. */
 export const jsonResponseStreamServices: StreamingRequestExecutionServices =
   /* @__PURE__ */ createJSONResponseStreamServices();
+
+type TolerantResponseTransformOptions = { readonly unknownProperties: "preserve" };
+
+type RequestDuplexExtension = {
+  duplex?: "half";
+};

@@ -13,6 +13,7 @@ import {
   type WireEncodingDefinition,
   type WireHeaderDefinition,
   type WireProperty,
+  type WireXML,
   type WireSchema,
   type WireSchemas,
 } from "../internal/codecs.js";
@@ -77,15 +78,15 @@ export async function decodeInboundParameters(
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined = undefined,
   pathParameters: Readonly<Record<string, string>> = {},
 ): Promise<InboundParameterValues> {
-  const result = {
+  const result: MutableInboundParameterValues = {
     path: Object.create(null) as Record<string, unknown>,
     query: Object.create(null) as Record<string, unknown>,
     querystring: Object.create(null) as Record<string, unknown>,
     headerParams: Object.create(null) as Record<string, unknown>,
     cookieParams: Object.create(null) as Record<string, unknown>,
   };
-  const url = new URL(request.url);
-  const cookies = parseInboundCookies(request.headers.get("cookie"));
+  const url: URL = new URL(request.url);
+  const cookies: InboundCookies = parseInboundCookies(request.headers.get("cookie"));
   for (const definition of definitions) {
     let raw: unknown =
       definition.location === "path"
@@ -128,7 +129,7 @@ export async function decodeInboundParameters(
       inboundSchemaDescribesObject(resolveInboundSchema(definition.schema, schemas))
     )
       raw = decodeInboundCookieObject(cookies.raw, definition, schemas, wireSchemas);
-    const absent = Array.isArray(raw)
+    const absent: boolean = Array.isArray(raw)
       ? raw.length === 0
       : isRecord(raw)
         ? Object.keys(raw).length === 0
@@ -140,7 +141,7 @@ export async function decodeInboundParameters(
         );
       continue;
     }
-    const value = await decodeInboundParameterContent(
+    const value: unknown = await decodeInboundParameterContent(
       raw,
       definition,
       schemas,
@@ -149,7 +150,7 @@ export async function decodeInboundParameters(
     );
     try {
       validateWireValue(value, definition.wireSchema, wireSchemas, "decode");
-      const section =
+      const section: Record<string, unknown> =
         definition.location === "header"
           ? result.headerParams
           : definition.location === "cookie"
@@ -163,7 +164,7 @@ export async function decodeInboundParameters(
           definition,
         ),
       );
-    } catch (error) {
+    } catch (error: unknown) {
       throw new InboundRequestError(
         new Response(
           "Invalid parameter " +
@@ -180,10 +181,12 @@ export async function decodeInboundParameters(
 
 function decodeInboundSortValue(value: unknown, definition: InboundParameterDefinition): unknown {
   if (definition.sort === undefined || !Array.isArray(value)) return value;
-  return value.map((wire) => {
-    const match = Object.entries(definition.sort ?? {}).find((entry) => entry[1] === wire);
+  return value.map((wire: unknown): InboundSortValue => {
+    const match: [string, string] | undefined = Object.entries(definition.sort ?? {}).find(
+      (entry: [string, string]): boolean => entry[1] === wire,
+    );
     if (match === undefined) throw new TypeError("invalid declared sort wire value");
-    const separator = match[0].indexOf("\u0000");
+    const separator: number = match[0].indexOf("\u0000");
     return { field: match[0].slice(0, separator), direction: match[0].slice(separator + 1) };
   });
 }
@@ -197,17 +200,17 @@ async function decodeInboundParameterContent(
 ): Promise<unknown> {
   if (isRecord(raw)) return raw;
   if (typeof raw !== "string" && !Array.isArray(raw)) return raw;
-  let normalized = raw as string | readonly string[];
+  let normalized: string | readonly string[] = raw as string | readonly string[];
   if (typeof normalized === "string" && definition.location === "path") {
     if (definition.style === "label" && normalized.startsWith("."))
       normalized = normalized.slice(1);
     if (definition.style === "matrix" && normalized.startsWith(";")) {
-      const prefix = ";" + definition.name + "=";
+      const prefix: string = ";" + definition.name + "=";
       if (normalized.startsWith(prefix)) normalized = normalized.slice(prefix.length);
     }
   }
-  const contentType = normalizeInboundMediaType(definition.contentType ?? "");
-  const source = typeof normalized === "string" ? normalized : normalized[0];
+  const contentType: string = normalizeInboundMediaType(definition.contentType ?? "");
+  const source: string | undefined = typeof normalized === "string" ? normalized : normalized[0];
   if (
     (contentType === "application/json" || contentType.endsWith("+json")) &&
     source !== undefined
@@ -248,12 +251,14 @@ async function decodeInboundParameterContent(
     !contentType.startsWith("text/") &&
     !isInboundBinaryMedia(contentType, definition.schema)
   ) {
-    const codec = inboundMediaCodec(codecs, contentType);
+    const codec: MediaCodec<unknown> | undefined = inboundMediaCodec(codecs, contentType);
     if (codec?.decodeParameter === undefined)
       throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
     return codec.decodeParameter(source ?? "", { contentType });
   }
-  const schema = inboundSchemaRecord(resolveInboundSchema(definition.schema, schemas));
+  const schema: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(definition.schema, schemas),
+  );
   if (inboundSchemaDescribesObject(schema))
     return decodeInboundSerializedObject(source, definition, schema, schemas, wireSchemas);
   return decodeInboundParameterValue(
@@ -272,10 +277,10 @@ async function decodeInboundParameterForm(
   wireSchema: WireSchema,
   wireSchemas: WireSchemas,
 ): Promise<unknown> {
-  const parsed = new URLSearchParams(source);
-  const value = Object.create(null) as Record<string, unknown>;
+  const parsed: URLSearchParams = new URLSearchParams(source);
+  const value: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [name, entry] of parsed) {
-    const previous = value[name];
+    const previous: unknown = value[name];
     defineOwnDataProperty(
       value,
       name,
@@ -304,7 +309,9 @@ function decodeInboundSerializedObject(
       pairs = source
         .split(";")
         .filter(Boolean)
-        .flatMap((entry) => splitInboundParameterPair(entry));
+        .flatMap((entry: string): readonly (readonly [string, string])[] =>
+          splitInboundParameterPair(entry),
+        );
     else
       pairs = splitInboundParameterTokens(
         source.startsWith(";" + definition.name + "=")
@@ -312,16 +319,24 @@ function decodeInboundSerializedObject(
           : source,
       );
   } else if (definition.style === "label") {
-    const value = source.startsWith(".") ? source.slice(1) : source;
+    const value: string = source.startsWith(".") ? source.slice(1) : source;
     pairs = definition.explode
-      ? value.split(".").flatMap((entry) => splitInboundParameterPair(entry))
+      ? value
+          .split(".")
+          .flatMap((entry: string): readonly (readonly [string, string])[] =>
+            splitInboundParameterPair(entry),
+          )
       : splitInboundParameterTokens(value);
   } else {
     pairs = definition.explode
-      ? source.split(",").flatMap((entry) => splitInboundParameterPair(entry))
+      ? source
+          .split(",")
+          .flatMap((entry: string): readonly (readonly [string, string])[] =>
+            splitInboundParameterPair(entry),
+          )
       : splitInboundParameterTokens(source);
   }
-  const raw = Object.create(null) as Record<string, string>;
+  const raw: Record<string, string> = Object.create(null) as Record<string, string>;
   for (const [name, value] of pairs) {
     defineOwnDataProperty(raw, name, value);
   }
@@ -336,14 +351,14 @@ function decodeInboundSerializedObject(
 }
 
 function splitInboundParameterPair(value: string): readonly (readonly [string, string])[] {
-  const separator = value.indexOf("=");
+  const separator: number = value.indexOf("=");
   return separator < 0 ? [] : [[value.slice(0, separator), value.slice(separator + 1)]];
 }
 
 function splitInboundParameterTokens(value: string): readonly (readonly [string, string])[] {
-  const tokens = value.split(",");
+  const tokens: string[] = value.split(",");
   const pairs: [string, string][] = [];
-  for (let index = 0; index + 1 < tokens.length; index += 2)
+  for (let index: number = 0; index + 1 < tokens.length; index += 2)
     pairs.push([tokens[index]!, tokens[index + 1]!]);
   return pairs;
 }
@@ -354,14 +369,21 @@ function decodeInboundQueryObject(
   schemas: InboundSchemas,
   wireSchemas: WireSchemas,
 ): Readonly<Record<string, unknown>> {
-  const schema = inboundSchemaRecord(resolveInboundSchema(definition.schema, schemas));
-  const properties = isRecord(schema["properties"]) ? schema["properties"] : {};
-  const raw = Object.create(null) as Record<string, string | readonly string[]>;
+  const schema: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(definition.schema, schemas),
+  );
+  const properties: Record<string, unknown> = isRecord(schema["properties"])
+    ? schema["properties"]
+    : {};
+  const raw: Record<string, string | readonly string[]> = Object.create(null) as Record<
+    string,
+    string | readonly string[]
+  >;
   if (definition.style === "deepObject") {
-    const prefix = definition.name + "[";
+    const prefix: string = definition.name + "[";
     for (const [name, value] of url.searchParams) {
       if (!name.startsWith(prefix) || !name.endsWith("]")) continue;
-      const property = name.slice(prefix.length, -1);
+      const property: string = name.slice(prefix.length, -1);
       defineOwnDataProperty(raw, property, value);
     }
     return decodeInboundParameterObjectValue(
@@ -373,9 +395,9 @@ function decodeInboundQueryObject(
       true,
     );
   }
-  const names = new Set([...Object.keys(properties), ...url.searchParams.keys()]);
+  const names: Set<string> = new Set([...Object.keys(properties), ...url.searchParams.keys()]);
   for (const property of names) {
-    const values = url.searchParams.getAll(property);
+    const values: string[] = url.searchParams.getAll(property);
     if (values.length === 0) continue;
     defineOwnDataProperty(raw, property, values);
   }
@@ -396,12 +418,19 @@ function decodeInboundCookieObject(
   schemas: InboundSchemas,
   wireSchemas: WireSchemas,
 ): Readonly<Record<string, unknown>> {
-  const schema = inboundSchemaRecord(resolveInboundSchema(definition.schema, schemas));
-  const properties = isRecord(schema["properties"]) ? schema["properties"] : {};
-  const raw = Object.create(null) as Record<string, string | readonly string[]>;
-  const names = new Set([...Object.keys(properties), ...Object.keys(cookies)]);
+  const schema: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(definition.schema, schemas),
+  );
+  const properties: Record<string, unknown> = isRecord(schema["properties"])
+    ? schema["properties"]
+    : {};
+  const raw: Record<string, string | readonly string[]> = Object.create(null) as Record<
+    string,
+    string | readonly string[]
+  >;
+  const names: Set<string> = new Set([...Object.keys(properties), ...Object.keys(cookies)]);
   for (const property of names) {
-    const value = cookies[property];
+    const value: string | readonly string[] | undefined = cookies[property];
     if (value === undefined) continue;
     defineOwnDataProperty(raw, property, value);
   }
@@ -421,14 +450,14 @@ export function matchInboundRoute(
   pathname: string,
 ): Readonly<Record<string, string>> | undefined {
   if (template === undefined || !template.startsWith("/")) return undefined;
-  const expected = template.split("/").slice(1);
-  const actual = pathname.split("/").slice(1);
+  const expected: string[] = template.split("/").slice(1);
+  const actual: string[] = pathname.split("/").slice(1);
   if (expected.length !== actual.length) return undefined;
-  const result = Object.create(null) as Record<string, string>;
-  for (let index = 0; index < expected.length; index++) {
-    const segment = expected[index]!;
-    const value = actual[index]!;
-    const match = /^\{([^{}\/]+)\}$/.exec(segment);
+  const result: Record<string, string> = Object.create(null) as Record<string, string>;
+  for (let index: number = 0; index < expected.length; index++) {
+    const segment: string = expected[index]!;
+    const value: string = actual[index]!;
+    const match: RegExpExecArray | null = /^\{([^{}\/]+)\}$/.exec(segment);
     if (match === null) {
       if (segment !== value) return undefined;
       continue;
@@ -453,7 +482,11 @@ function decodeInboundParameterValue(
     wireSchema = materializeInboundWireSchema(wireSchema, wireSchemas);
     let fallback: unknown = Array.isArray(raw) ? raw[0] : raw;
     for (const alternative of inboundWireSchemaAlternatives(wireSchema, wireSchemas)) {
-      const candidate = decodeInboundParameterValueForWireSchema(raw, alternative, wireSchemas);
+      const candidate: unknown = decodeInboundParameterValueForWireSchema(
+        raw,
+        alternative,
+        wireSchemas,
+      );
       fallback = candidate;
       try {
         validateWireValue(candidate, wireSchema, wireSchemas, "decode");
@@ -464,25 +497,27 @@ function decodeInboundParameterValue(
     }
     return fallback;
   }
-  const descriptor = inboundSchemaRecord(resolveInboundSchema(schema, schemas));
-  const values = Array.isArray(raw) ? raw : [raw];
-  const types = inboundSchemaTypes(descriptor, schemas);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(schema, schemas),
+  );
+  const values: readonly string[] = typeof raw === "string" ? [raw] : raw;
+  const types: readonly string[] = inboundSchemaTypes(descriptor, schemas);
   const candidates: unknown[] = [];
-  const value = values[0]!;
+  const value: string = values[0]!;
   if (types.includes("string")) candidates.push(value);
   if (types.includes("boolean") && (value === "true" || value === "false"))
     candidates.push(value === "true");
   if (types.includes("integer")) {
-    const number = Number(value);
+    const number: number = Number(value);
     if (Number.isInteger(number)) candidates.push(number);
   }
   if (types.includes("number")) {
-    const number = Number(value);
+    const number: number = Number(value);
     if (Number.isFinite(number)) candidates.push(number);
   }
   if (types.includes("array")) {
-    const entries = values.flatMap((value) => value.split(","));
-    const array = entries.map((entry, index) =>
+    const entries: string[] = values.flatMap((value: string): string[] => value.split(","));
+    const array: unknown[] = entries.map((entry: string, index: number): unknown =>
       decodeInboundParameterValue(
         entry,
         inboundArrayItemSchema(descriptor, index),
@@ -505,24 +540,24 @@ function decodeInboundParameterValueForWireSchema(
   schema: WireSchema,
   wireSchemas: WireSchemas,
 ): unknown {
-  const values = Array.isArray(raw) ? raw : [raw];
-  const value = values[0]!;
-  const types = inboundWireSchemaTypes(schema, wireSchemas);
+  const values: readonly string[] = typeof raw === "string" ? [raw] : raw;
+  const value: string = values[0]!;
+  const types: readonly string[] = inboundWireSchemaTypes(schema, wireSchemas);
   const candidates: unknown[] = [value];
   if (types.includes("boolean") && (value === "true" || value === "false"))
     candidates.push(value === "true");
   if (types.includes("integer")) {
-    const number = Number(value);
+    const number: number = Number(value);
     if (Number.isInteger(number)) candidates.push(number);
   }
   if (types.includes("number")) {
-    const number = Number(value);
+    const number: number = Number(value);
     if (Number.isFinite(number)) candidates.push(number);
   }
   if (types.includes("array")) {
-    const entries = values.flatMap((entry) => entry.split(","));
-    const array = entries.map((entry, index) => {
-      const item = inboundWireArrayItemSchema(schema, index, wireSchemas);
+    const entries: string[] = values.flatMap((entry: string): string[] => entry.split(","));
+    const array: unknown[] = entries.map((entry: string, index: number): unknown => {
+      const item: WireSchema | undefined = inboundWireArrayItemSchema(schema, index, wireSchemas);
       return item === undefined
         ? entry
         : decodeInboundParameterValue(entry, {}, {}, item, wireSchemas);
@@ -551,11 +586,11 @@ function decodeInboundParameterObjectValue(
   preserveUnknown: boolean,
 ): Readonly<Record<string, unknown>> {
   wireSchema = materializeInboundWireSchema(wireSchema, wireSchemas);
-  let fallback = Object.create(null) as Record<string, unknown>;
+  let fallback: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const alternative of inboundWireSchemaAlternatives(wireSchema, wireSchemas)) {
-    const result = Object.create(null) as Record<string, unknown>;
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [name, value] of Object.entries(raw)) {
-      const property =
+      const property: WireSchema | undefined =
         inboundWirePropertySchema(alternative, name, wireSchemas) ??
         inboundWirePropertySchema(wireSchema, name, wireSchemas);
       if (property === undefined && !preserveUnknown) continue;
@@ -579,7 +614,7 @@ function decodeInboundParameterObjectValue(
 }
 
 function inboundSchemaDescribesObject(schema: InboundSchema): boolean {
-  const descriptor = inboundSchemaRecord(schema);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(schema);
   return (
     schemaAcceptsType(descriptor["type"], "object") ||
     isRecord(descriptor["properties"]) ||
@@ -592,10 +627,16 @@ function inboundPropertySchema(
   schema: Readonly<Record<string, unknown>>,
   name: string,
 ): InboundSchema | undefined {
-  const properties = isRecord(schema["properties"]) ? schema["properties"] : {};
-  let result = isInboundSchema(properties[name]) ? properties[name] : undefined;
-  let matched = result !== undefined;
-  const patterns = isRecord(schema["patternProperties"]) ? schema["patternProperties"] : {};
+  const properties: Record<string, unknown> = isRecord(schema["properties"])
+    ? schema["properties"]
+    : {};
+  let result: InboundSchema | undefined = isInboundSchema(properties[name])
+    ? properties[name]
+    : undefined;
+  let matched: boolean = result !== undefined;
+  const patterns: Record<string, unknown> = isRecord(schema["patternProperties"])
+    ? schema["patternProperties"]
+    : {};
   for (const [pattern, candidate] of Object.entries(patterns)) {
     if (!isInboundSchema(candidate) || !new RegExp(pattern, "u").test(name)) continue;
     result = result === undefined ? candidate : mergeInboundSchemaValues(result, candidate);
@@ -612,14 +653,18 @@ function inboundSchemaTypes(
   seen: ReadonlySet<object> = new Set(),
 ): readonly string[] {
   if (!isRecord(schema) || seen.has(schema)) return [];
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<object> = new Set(seen);
   nestedSeen.add(schema);
-  const descriptor = inboundSchemaRecord(resolveInboundSchema(schema, schemas));
-  const result = new Set<string>();
-  const declared = Array.isArray(descriptor["type"]) ? descriptor["type"] : [descriptor["type"]];
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(schema, schemas),
+  );
+  const result: Set<string> = new Set<string>();
+  const declared: unknown[] = Array.isArray(descriptor["type"])
+    ? descriptor["type"]
+    : [descriptor["type"]];
   for (const value of declared) if (typeof value === "string") result.add(value);
   for (const keyword of ["allOf", "oneOf", "anyOf"]) {
-    const variants = Array.isArray(descriptor[keyword]) ? descriptor[keyword] : [];
+    const variants: unknown[] = Array.isArray(descriptor[keyword]) ? descriptor[keyword] : [];
     for (const variant of variants)
       if (isInboundSchema(variant))
         for (const value of inboundSchemaTypes(variant, schemas, nestedSeen)) result.add(value);
@@ -631,7 +676,7 @@ function inboundArrayItemSchema(
   schema: Readonly<Record<string, unknown>>,
   index: number,
 ): InboundSchema {
-  const prefixItems = Array.isArray(schema["prefixItems"]) ? schema["prefixItems"] : [];
+  const prefixItems: unknown[] = Array.isArray(schema["prefixItems"]) ? schema["prefixItems"] : [];
   if (isInboundSchema(prefixItems[index])) return prefixItems[index];
   return isInboundSchema(schema["items"]) ? schema["items"] : {};
 }
@@ -648,32 +693,13 @@ function materializeInboundWireSchema(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): WireSchema {
   if (seen.has(schema)) return schema;
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const scope = schema.dynamicAnchor === undefined ? dynamicScope : [...dynamicScope, schema];
-  const result = { ...schema } as {
-    reference?: string;
-    dynamicReference?: Exclude<WireSchema["dynamicReference"], undefined>;
-    properties?: Readonly<Record<string, WireProperty>>;
-    patternProperties?: Readonly<Record<string, WireSchema>>;
-    dependentSchemas?: Readonly<Record<string, WireSchema>>;
-    items?: WireSchema;
-    prefixItems?: readonly WireSchema[];
-    additionalProperties?: WireSchema | false;
-    unevaluatedProperties?: WireSchema | false;
-    unevaluatedItems?: WireSchema | false;
-    allOf?: readonly WireSchema[];
-    oneOf?: readonly WireSchema[];
-    anyOf?: readonly WireSchema[];
-    contains?: WireSchema;
-    not?: WireSchema;
-    if?: WireSchema;
-    then?: WireSchema;
-    else?: WireSchema;
-    contentSchema?: WireSchema;
-  };
-  const conjunctions = [
-    ...(schema.allOf ?? []).map((branch) =>
+  const scope: readonly WireSchema[] =
+    schema.dynamicAnchor === undefined ? dynamicScope : [...dynamicScope, schema];
+  const result: MutableInboundWireSchema = { ...schema } as MutableInboundWireSchema;
+  const conjunctions: WireSchema[] = [
+    ...(schema.allOf ?? []).map((branch: WireSchema): WireSchema =>
       materializeInboundWireSchema(branch, schemas, scope, nestedSeen),
     ),
   ];
@@ -684,41 +710,49 @@ function materializeInboundWireSchema(
     delete result.reference;
   }
   if (schema.dynamicReference !== undefined) {
-    const target =
-      scope.find((candidate) => candidate.dynamicAnchor === schema.dynamicReference!.anchor) ??
-      schema.dynamicReference.fallback;
+    const target: WireSchema =
+      scope.find(
+        (candidate: WireSchema): boolean =>
+          candidate.dynamicAnchor === schema.dynamicReference!.anchor,
+      ) ?? schema.dynamicReference.fallback;
     conjunctions.push(materializeInboundWireSchema(target, schemas, scope, nestedSeen));
     delete result.dynamicReference;
   }
   if (schema.properties !== undefined) {
     result.properties = Object.fromEntries(
-      Object.entries(schema.properties).map(([name, definition]) => [
-        name,
-        {
-          ...definition,
-          schema: materializeInboundWireSchema(definition.schema, schemas, scope, nestedSeen),
-        },
-      ]),
+      Object.entries(schema.properties).map(
+        ([name, definition]: [string, WireProperty]): [string, MaterializedInboundWireSchema] => [
+          name,
+          {
+            ...definition,
+            schema: materializeInboundWireSchema(definition.schema, schemas, scope, nestedSeen),
+          },
+        ],
+      ),
     );
   }
   if (schema.patternProperties !== undefined)
     result.patternProperties = Object.fromEntries(
-      Object.entries(schema.patternProperties).map(([pattern, value]) => [
-        pattern,
-        materializeInboundWireSchema(value, schemas, scope, nestedSeen),
-      ]),
+      Object.entries(schema.patternProperties).map(
+        ([pattern, value]: [string, WireSchema]): [string, WireSchema] => [
+          pattern,
+          materializeInboundWireSchema(value, schemas, scope, nestedSeen),
+        ],
+      ),
     );
   if (schema.dependentSchemas !== undefined)
     result.dependentSchemas = Object.fromEntries(
-      Object.entries(schema.dependentSchemas).map(([name, value]) => [
-        name,
-        materializeInboundWireSchema(value, schemas, scope, nestedSeen),
-      ]),
+      Object.entries(schema.dependentSchemas).map(
+        ([name, value]: [string, WireSchema]): [string, WireSchema] => [
+          name,
+          materializeInboundWireSchema(value, schemas, scope, nestedSeen),
+        ],
+      ),
     );
   if (schema.items !== undefined)
     result.items = materializeInboundWireSchema(schema.items, schemas, scope, nestedSeen);
   if (schema.prefixItems !== undefined)
-    result.prefixItems = schema.prefixItems.map((item) =>
+    result.prefixItems = schema.prefixItems.map((item: WireSchema): WireSchema =>
       materializeInboundWireSchema(item, schemas, scope, nestedSeen),
     );
   if (schema.additionalProperties !== undefined && schema.additionalProperties !== false)
@@ -743,11 +777,11 @@ function materializeInboundWireSchema(
       nestedSeen,
     );
   if (schema.oneOf !== undefined)
-    result.oneOf = schema.oneOf.map((branch) =>
+    result.oneOf = schema.oneOf.map((branch: WireSchema): WireSchema =>
       materializeInboundWireSchema(branch, schemas, scope, nestedSeen),
     );
   if (schema.anyOf !== undefined)
-    result.anyOf = schema.anyOf.map((branch) =>
+    result.anyOf = schema.anyOf.map((branch: WireSchema): WireSchema =>
       materializeInboundWireSchema(branch, schemas, scope, nestedSeen),
     );
   if (schema.contains !== undefined)
@@ -778,14 +812,9 @@ function inboundWireSchemaAlternatives(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): readonly WireSchema[] {
   if (seen.has(schema)) return [{}];
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const own = { ...schema } as {
-    reference?: string;
-    allOf?: readonly WireSchema[];
-    oneOf?: readonly WireSchema[];
-    anyOf?: readonly WireSchema[];
-  };
+  const own: InboundWireSchemaSiblings = { ...schema } as InboundWireSchemaSiblings;
   delete own.reference;
   delete own.allOf;
   delete own.oneOf;
@@ -805,12 +834,16 @@ function inboundWireSchemaAlternatives(
   for (const choices of [schema.oneOf, schema.anyOf]) {
     if (choices === undefined) continue;
     conjunctions.push(
-      choices.flatMap((branch) => inboundWireSchemaAlternatives(branch, schemas, nestedSeen)),
+      choices.flatMap((branch: WireSchema): readonly WireSchema[] =>
+        inboundWireSchemaAlternatives(branch, schemas, nestedSeen),
+      ),
     );
   }
   for (const choices of conjunctions) {
-    alternatives = alternatives.flatMap((base) =>
-      choices.map((choice) => ({ allOf: [base, choice] })),
+    alternatives = alternatives.flatMap((base: WireSchema): InboundWireSchemaConjunction[] =>
+      choices.map((choice: WireSchema): InboundWireSchemaConjunction => ({
+        allOf: [base, choice],
+      })),
     );
   }
   return alternatives;
@@ -822,9 +855,9 @@ function inboundWireSchemaTypes(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): readonly string[] {
   if (seen.has(schema)) return [];
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const result = new Set(schema.types ?? []);
+  const result: Set<string> = new Set(schema.types ?? []);
   if (schema.constValue !== undefined) result.add(inboundWireValueType(schema.constValue));
   for (const value of schema.enumValues ?? []) result.add(inboundWireValueType(value));
   if (
@@ -878,13 +911,13 @@ function inboundWireArrayItemSchema(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): WireSchema | undefined {
   if (seen.has(schema)) return undefined;
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
   const result: WireSchema[] = [];
-  const direct = schema.prefixItems?.[index] ?? schema.items;
+  const direct: WireSchema | undefined = schema.prefixItems?.[index] ?? schema.items;
   if (direct !== undefined) result.push(direct);
   if (schema.dynamicReference !== undefined) {
-    const dynamic = inboundWireArrayItemSchema(
+    const dynamic: WireSchema | undefined = inboundWireArrayItemSchema(
       schema.dynamicReference.fallback,
       index,
       schemas,
@@ -893,7 +926,7 @@ function inboundWireArrayItemSchema(
     if (dynamic !== undefined) result.push(dynamic);
   }
   if (schema.reference !== undefined && schemas[schema.reference] !== undefined) {
-    const referenced = inboundWireArrayItemSchema(
+    const referenced: WireSchema | undefined = inboundWireArrayItemSchema(
       schemas[schema.reference]!,
       index,
       schemas,
@@ -902,14 +935,20 @@ function inboundWireArrayItemSchema(
     if (referenced !== undefined) result.push(referenced);
   }
   for (const branch of schema.allOf ?? []) {
-    const nested = inboundWireArrayItemSchema(branch, index, schemas, nestedSeen);
+    const nested: WireSchema | undefined = inboundWireArrayItemSchema(
+      branch,
+      index,
+      schemas,
+      nestedSeen,
+    );
     if (nested !== undefined) result.push(nested);
   }
   for (const keyword of ["oneOf", "anyOf"] as const) {
-    const branches = schema[keyword];
+    const branches: readonly WireSchema[] | undefined = schema[keyword];
     if (branches === undefined) continue;
-    const nested = branches.map(
-      (branch) => inboundWireArrayItemSchema(branch, index, schemas, nestedSeen) ?? {},
+    const nested: WireSchema[] = branches.map(
+      (branch: WireSchema): WireSchema =>
+        inboundWireArrayItemSchema(branch, index, schemas, nestedSeen) ?? {},
     );
     result.push(keyword === "oneOf" ? { oneOf: nested } : { anyOf: nested });
   }
@@ -923,11 +962,11 @@ function inboundWirePropertySchema(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): WireSchema | undefined {
   if (seen.has(schema)) return undefined;
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
   const result: WireSchema[] = [];
-  let matched = false;
-  const direct = schema.properties?.[name]?.schema;
+  let matched: boolean = false;
+  const direct: WireSchema | undefined = schema.properties?.[name]?.schema;
   if (direct !== undefined) {
     result.push(direct);
     matched = true;
@@ -944,7 +983,7 @@ function inboundWirePropertySchema(
   )
     result.push(schema.additionalProperties);
   if (schema.dynamicReference !== undefined) {
-    const dynamic = inboundWirePropertySchema(
+    const dynamic: WireSchema | undefined = inboundWirePropertySchema(
       schema.dynamicReference.fallback,
       name,
       schemas,
@@ -953,7 +992,7 @@ function inboundWirePropertySchema(
     if (dynamic !== undefined) result.push(dynamic);
   }
   if (schema.reference !== undefined && schemas[schema.reference] !== undefined) {
-    const referenced = inboundWirePropertySchema(
+    const referenced: WireSchema | undefined = inboundWirePropertySchema(
       schemas[schema.reference]!,
       name,
       schemas,
@@ -962,14 +1001,20 @@ function inboundWirePropertySchema(
     if (referenced !== undefined) result.push(referenced);
   }
   for (const branch of schema.allOf ?? []) {
-    const nested = inboundWirePropertySchema(branch, name, schemas, nestedSeen);
+    const nested: WireSchema | undefined = inboundWirePropertySchema(
+      branch,
+      name,
+      schemas,
+      nestedSeen,
+    );
     if (nested !== undefined) result.push(nested);
   }
   for (const keyword of ["oneOf", "anyOf"] as const) {
-    const branches = schema[keyword];
+    const branches: readonly WireSchema[] | undefined = schema[keyword];
     if (branches === undefined) continue;
-    const nested = branches.map(
-      (branch) => inboundWirePropertySchema(branch, name, schemas, nestedSeen) ?? {},
+    const nested: WireSchema[] = branches.map(
+      (branch: WireSchema): WireSchema =>
+        inboundWirePropertySchema(branch, name, schemas, nestedSeen) ?? {},
     );
     result.push(keyword === "oneOf" ? { oneOf: nested } : { anyOf: nested });
   }
@@ -982,9 +1027,9 @@ function inboundWirePropertyNames(
   seen: ReadonlySet<WireSchema> = new Set(),
 ): readonly string[] {
   if (seen.has(schema)) return [];
-  const nestedSeen = new Set(seen);
+  const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const result = new Set(Object.keys(schema.properties ?? {}));
+  const result: Set<string> = new Set(Object.keys(schema.properties ?? {}));
   if (schema.dynamicReference !== undefined) {
     for (const name of inboundWirePropertyNames(
       schema.dynamicReference.fallback,
@@ -1018,10 +1063,10 @@ async function decodeInboundFormValue(
 ): Promise<unknown> {
   if (schema === undefined) return value;
   if (wireSchema !== undefined) wireSchema = materializeInboundWireSchema(wireSchema, wireSchemas);
-  const resolved = resolveInboundSchema(schema, schemas);
-  const descriptor = inboundSchemaRecord(resolved);
+  const resolved: InboundSchema = resolveInboundSchema(schema, schemas);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(resolved);
   if (value instanceof Blob) {
-    const normalized = normalizeInboundMediaType(contentType ?? value.type);
+    const normalized: string = normalizeInboundMediaType(contentType ?? value.type);
     if (
       normalized === "application/json" ||
       normalized.endsWith("+json") ||
@@ -1041,7 +1086,7 @@ async function decodeInboundFormValue(
   }
   if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return value;
   if (typeof value === "string" && contentType !== undefined) {
-    const decoded = await decodeInboundFormContent(
+    const decoded: unknown = await decodeInboundFormContent(
       value,
       resolved,
       schemas,
@@ -1067,10 +1112,16 @@ async function decodeInboundFormValue(
       let fallback: unknown = value;
       for (const alternative of inboundWireSchemaAlternatives(wireSchema, wireSchemas)) {
         if (!inboundWireSchemaTypes(alternative, wireSchemas).includes("array")) continue;
-        const entries = value.flatMap((entry) => (Array.isArray(entry) ? entry : [entry]));
-        const decoded = await Promise.all(
-          entries.map((entry, index) => {
-            const item = inboundWireArrayItemSchema(alternative, index, wireSchemas);
+        const entries: unknown[] = value.flatMap((entry: unknown): unknown[] =>
+          Array.isArray(entry) ? entry : [entry],
+        );
+        const decoded: unknown[] = await Promise.all(
+          entries.map((entry: unknown, index: number): unknown => {
+            const item: WireSchema | undefined = inboundWireArrayItemSchema(
+              alternative,
+              index,
+              wireSchemas,
+            );
             return item === undefined
               ? entry
               : decodeInboundFormValue(
@@ -1097,9 +1148,11 @@ async function decodeInboundFormValue(
     }
     if (!Array.isArray(descriptor["prefixItems"]) && !isInboundSchema(descriptor["items"]))
       return value;
-    const entries = value.flatMap((entry) => (Array.isArray(entry) ? entry : [entry]));
+    const entries: unknown[] = value.flatMap((entry: unknown): unknown[] =>
+      Array.isArray(entry) ? entry : [entry],
+    );
     return Promise.all(
-      entries.map((entry, index) =>
+      entries.map((entry: unknown, index: number): Promise<unknown> =>
         decodeInboundFormValue(
           entry,
           inboundArrayItemSchema(descriptor, index),
@@ -1116,17 +1169,19 @@ async function decodeInboundFormValue(
     );
   }
   if (isRecord(value)) {
-    let fallback = Object.create(null) as Record<string, unknown>;
+    let fallback: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     const alternatives: readonly (WireSchema | undefined)[] =
       wireSchema === undefined
         ? [undefined]
         : inboundWireSchemaAlternatives(wireSchema, wireSchemas);
     for (const alternative of alternatives) {
-      const result = Object.create(null) as Record<string, unknown>;
+      const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
       for (const [name, entry] of Object.entries(value)) {
-        const property = inboundPropertySchema(descriptor, name);
-        const definition = encoding?.find((candidate) => candidate.name === name);
-        const wireProperty =
+        const property: InboundSchema | undefined = inboundPropertySchema(descriptor, name);
+        const definition: WireEncodingDefinition | undefined = encoding?.find(
+          (candidate: WireEncodingDefinition): boolean => candidate.name === name,
+        );
+        const wireProperty: WireSchema | undefined =
           alternative === undefined
             ? undefined
             : (inboundWirePropertySchema(alternative, name, wireSchemas) ??
@@ -1176,7 +1231,7 @@ async function decodeInboundFormContent(
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
 ): Promise<unknown> {
   if (typeof value !== "string" || contentType === undefined) return value;
-  const normalized = normalizeInboundMediaType(contentType);
+  const normalized: string = normalizeInboundMediaType(contentType);
   if (normalized === "application/json" || normalized.endsWith("+json")) {
     try {
       return JSON.parse(value);
@@ -1191,7 +1246,7 @@ async function decodeInboundFormContent(
       throw new InboundRequestError(new Response("Invalid form XML field", { status: 400 }));
     }
   }
-  const codec = codecs?.get(normalized);
+  const codec: MediaCodec<unknown> | undefined = codecs?.get(normalized);
   if (codec?.decodeParameter === undefined) return value;
   try {
     return await codec.decodeParameter(value, { contentType });
@@ -1210,7 +1265,10 @@ export function requiresInboundAuthentication(security: unknown): boolean {
   return (
     Array.isArray(security) &&
     security.length > 0 &&
-    !security.some((alternative) => isRecord(alternative) && Object.keys(alternative).length === 0)
+    !security.some(
+      (alternative: unknown): boolean =>
+        isRecord(alternative) && Object.keys(alternative).length === 0,
+    )
   );
 }
 
@@ -1220,24 +1278,28 @@ export function collectInboundSecurityCandidates(
   security: unknown,
   schemes: InboundSecuritySchemes,
 ): Readonly<Record<string, InboundSecurityCandidate>> {
-  const result = Object.create(null) as Record<string, InboundSecurityCandidate>;
+  const result: Record<string, InboundSecurityCandidate> = Object.create(null) as Record<
+    string,
+    InboundSecurityCandidate
+  >;
   if (!Array.isArray(security)) return result;
-  const url = new URL(request.url);
-  const cookies = parseInboundCookies(request.headers.get("cookie"));
+  const url: URL = new URL(request.url);
+  const cookies: InboundCookies = parseInboundCookies(request.headers.get("cookie"));
   for (const alternative of security) {
     if (!isRecord(alternative)) continue;
     for (const name of Object.keys(alternative)) {
       if (result[name] !== undefined) continue;
-      const scheme = schemes[name];
+      const scheme: Readonly<Record<string, unknown>> | undefined = schemes[name];
       if (scheme === undefined || typeof scheme["type"] !== "string") continue;
       if (scheme["type"] === "apiKey") {
-        const location =
+        const location: "query" | "header" | "cookie" | undefined =
           scheme["in"] === "header" || scheme["in"] === "query" || scheme["in"] === "cookie"
             ? scheme["in"]
             : undefined;
-        const parameterName = typeof scheme["name"] === "string" ? scheme["name"] : undefined;
+        const parameterName: string | undefined =
+          typeof scheme["name"] === "string" ? scheme["name"] : undefined;
         if (location === undefined || parameterName === undefined) continue;
-        const value =
+        const value: string | undefined =
           location === "header"
             ? (request.headers.get(parameterName) ?? undefined)
             : location === "query"
@@ -1252,7 +1314,7 @@ export function collectInboundSecurityCandidates(
         });
         continue;
       }
-      const authorization = request.headers.get("authorization") ?? undefined;
+      const authorization: string | undefined = request.headers.get("authorization") ?? undefined;
       defineOwnDataProperty(result, name, {
         scheme: name,
         type: scheme["type"],
@@ -1269,15 +1331,21 @@ interface InboundCookies {
 }
 
 function parseInboundCookies(header: string | null): InboundCookies {
-  const raw = Object.create(null) as Record<string, string | string[]>;
-  const decoded = Object.create(null) as Record<string, string | string[]>;
+  const raw: Record<string, string | string[]> = Object.create(null) as Record<
+    string,
+    string | string[]
+  >;
+  const decoded: Record<string, string | string[]> = Object.create(null) as Record<
+    string,
+    string | string[]
+  >;
   if (header === null) return { raw, decoded };
   for (const item of header.split(";")) {
-    const index = item.indexOf("=");
+    const index: number = item.indexOf("=");
     if (index < 0) continue;
-    const name = item.slice(0, index).trim();
+    const name: string = item.slice(0, index).trim();
     if (name === "") continue;
-    const value = item.slice(index + 1).trim();
+    const value: string = item.slice(index + 1).trim();
     appendInboundCookie(raw, name, value);
     try {
       appendInboundCookie(decoded, decodeURIComponent(name), decodeURIComponent(value));
@@ -1293,7 +1361,7 @@ function appendInboundCookie(
   name: string,
   value: string,
 ): void {
-  const previous = target[name];
+  const previous: string | string[] | undefined = target[name];
   defineOwnDataProperty(
     target,
     name,
@@ -1387,15 +1455,15 @@ export async function decodeInboundBody(
   request: Request,
   options: InboundBodyOptions,
 ): Promise<unknown> {
-  const rawContentType = request.headers.get("content-type");
-  const contentType = rawContentType?.split(";", 1)[0]?.trim().toLowerCase();
+  const rawContentType: string | null = request.headers.get("content-type");
+  const contentType: string | undefined = rawContentType?.split(";", 1)[0]?.trim().toLowerCase();
   if (contentType === undefined && request.body === null && !options.required) return undefined;
-  const plan =
+  const plan: InboundBodyPlan | undefined =
     contentType === undefined ? undefined : selectInboundBodyPlan(options.plans, contentType);
   if (plan === undefined || contentType === undefined) {
     throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
   }
-  const value = await decodeSelectedInboundBody(
+  const value: unknown = await decodeSelectedInboundBody(
     request,
     rawContentType ?? contentType,
     contentType,
@@ -1411,16 +1479,18 @@ function selectInboundBodyPlan(
   contentType: string,
 ): InboundBodyPlan | undefined {
   return plans
-    .filter((plan) => inboundMediaTypeMatches(plan.contentType, contentType))
+    .filter((plan: InboundBodyPlan): boolean =>
+      inboundMediaTypeMatches(plan.contentType, contentType),
+    )
     .sort(
-      (left, right) =>
+      (left: InboundBodyPlan, right: InboundBodyPlan): number =>
         inboundMediaTypeMatchScore(right.contentType, contentType) -
         inboundMediaTypeMatchScore(left.contentType, contentType),
     )[0];
 }
 
 function inboundMediaTypeMatchScore(pattern: string, actual: string): number {
-  const normalized = normalizeInboundMediaType(pattern);
+  const normalized: string = normalizeInboundMediaType(pattern);
   if (normalized === normalizeInboundMediaType(actual)) return 3;
   if (normalized.includes("*+")) return 2;
   if (normalized.includes("*")) return 1;
@@ -1449,9 +1519,12 @@ async function decodeSelectedInboundBody(
     );
   }
 
-  const completeRequest = await boundedCompleteInboundRequest(request, options.maxBodyBytes);
+  const completeRequest: Request = await boundedCompleteInboundRequest(
+    request,
+    options.maxBodyBytes,
+  );
   if (options.binary === true) {
-    const bytes = await completeRequest.arrayBuffer();
+    const bytes: ArrayBuffer = await completeRequest.arrayBuffer();
     if (bytes.byteLength === 0 && options.required)
       throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
     return bytes;
@@ -1471,7 +1544,7 @@ async function decodeSelectedInboundBody(
     );
   }
   if (!isGeneratedInboundMediaType(contentType, options.schema)) {
-    const codec = inboundMediaCodec(options.codecs, contentType);
+    const codec: MediaCodec<unknown> | undefined = inboundMediaCodec(options.codecs, contentType);
     if (codec?.decodeInbound === undefined)
       throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
     try {
@@ -1491,9 +1564,9 @@ async function decodeSelectedInboundBody(
         throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
       return undefined;
     }
-    const result = Object.create(null) as Record<string, unknown>;
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const [name, item] of form) {
-      const previous = result[name];
+      const previous: unknown = result[name];
       defineOwnDataProperty(
         result,
         name,
@@ -1515,8 +1588,8 @@ async function decodeSelectedInboundBody(
       options.codecs,
     );
   } else {
-    const text = await completeRequest.text();
-    const missing = contentType === "text/plain" ? text === "" : text.trim() === "";
+    const text: string = await completeRequest.text();
+    const missing: boolean = contentType === "text/plain" ? text === "" : text.trim() === "";
     if (missing) {
       if (options.required)
         throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
@@ -1529,10 +1602,10 @@ async function decodeSelectedInboundBody(
         throw new InboundRequestError(new Response("Invalid JSON", { status: 400 }));
       }
     } else if (contentType === "application/x-www-form-urlencoded") {
-      const form = new URLSearchParams(text);
-      const result = Object.create(null) as Record<string, unknown>;
+      const form: URLSearchParams = new URLSearchParams(text);
+      const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
       for (const [name, item] of form) {
-        const previous = result[name];
+        const previous: unknown = result[name];
         defineOwnDataProperty(
           result,
           name,
@@ -1562,7 +1635,7 @@ async function decodeSelectedInboundBody(
           options.wireSchema,
           options.wireSchemas,
         );
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw new InboundRequestError(new Response("Invalid XML", { status: 400 }));
       }
     } else value = text;
@@ -1593,7 +1666,7 @@ function validateInboundWireValue(
   if (schema === undefined || value === undefined) return;
   try {
     validateWireValue(value, schema, schemas ?? {}, "decode");
-  } catch (error) {
+  } catch (error: unknown) {
     throw new InboundRequestError(
       new Response(
         "Invalid " + label + ": " + (error instanceof Error ? error.message : "invalid value"),
@@ -1621,9 +1694,9 @@ function isGeneratedInboundMediaType(
 export function normalizeInboundMediaCodecs(
   codecs: Readonly<Record<string, MediaCodec<unknown>>> | undefined,
 ): ReadonlyMap<string, MediaCodec<unknown>> {
-  const result = new Map<string, MediaCodec<unknown>>();
+  const result: Map<string, MediaCodec<unknown>> = new Map<string, MediaCodec<unknown>>();
   for (const [mediaType, codec] of Object.entries(codecs ?? {})) {
-    const normalized = normalizeInboundMediaType(mediaType);
+    const normalized: string = normalizeInboundMediaType(mediaType);
     if (normalized === "" || normalized.includes("/ ") || !normalized.includes("/"))
       throw new TypeError("invalid inbound codec media type " + mediaType);
     if (result.has(normalized))
@@ -1642,7 +1715,7 @@ function inboundMediaCodec(
 }
 
 function resolveInboundBodyBytes(value: number | undefined): number {
-  const resolved = value ?? 8 * 1024 * 1024;
+  const resolved: number = value ?? 8 * 1024 * 1024;
   if (!Number.isSafeInteger(resolved) || resolved <= 0)
     throw new TypeError("maxBodyBytes must be a positive safe integer");
   return resolved;
@@ -1656,8 +1729,8 @@ function inboundBodyTooLargeError(): InboundRequestError {
 
 function inboundContentLengthExceedsLimit(value: string | null, maxBytes: number): boolean {
   if (value === null || !/^\d+$/.test(value)) return false;
-  const normalized = value.replace(/^0+/, "") || "0";
-  const limit = String(maxBytes);
+  const normalized: string = value.replace(/^0+/, "") || "0";
+  const limit: string = String(maxBytes);
   return (
     normalized.length > limit.length || (normalized.length === limit.length && normalized > limit)
   );
@@ -1667,17 +1740,17 @@ async function boundedCompleteInboundRequest(
   request: Request,
   configuredMaxBytes: number | undefined,
 ): Promise<Request> {
-  const maxBytes = resolveInboundBodyBytes(configuredMaxBytes);
+  const maxBytes: number = resolveInboundBodyBytes(configuredMaxBytes);
   if (inboundContentLengthExceedsLimit(request.headers.get("content-length"), maxBytes))
     throw inboundBodyTooLargeError();
   if (request.body === null) return request;
 
-  const reader = request.body.getReader();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBuffer>> = request.body.getReader();
   const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
+  let totalBytes: number = 0;
   try {
     while (true) {
-      const next = await reader.read();
+      const next: ReadableStreamReadResult<Uint8Array<ArrayBuffer>> = await reader.read();
       if (next.done) break;
       if (next.value.byteLength > maxBytes - totalBytes) {
         throw inboundBodyTooLargeError();
@@ -1689,8 +1762,8 @@ async function boundedCompleteInboundRequest(
     reader.releaseLock();
   }
 
-  const bytes = new Uint8Array(totalBytes);
-  let offset = 0;
+  const bytes: Uint8Array<ArrayBuffer> = new Uint8Array(totalBytes);
+  let offset: number = 0;
   for (const chunk of chunks) {
     bytes.set(chunk, offset);
     offset += chunk.byteLength;
@@ -1712,7 +1785,7 @@ async function boundedCompleteInboundRequest(
 }
 
 function resolveInboundStreamFrameBytes(value: number | undefined): number {
-  const resolved = value ?? 1024 * 1024;
+  const resolved: number = value ?? 1024 * 1024;
   if (!Number.isSafeInteger(resolved) || resolved <= 0)
     throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
   return resolved;
@@ -1721,9 +1794,9 @@ function resolveInboundStreamFrameBytes(value: number | undefined): number {
 export function normalizeInboundStreamCodecs(
   codecs: Readonly<Record<string, StreamCodec>> | undefined,
 ): ReadonlyMap<string, StreamCodec> {
-  const result = new Map<string, StreamCodec>();
+  const result: Map<string, StreamCodec<unknown, unknown>> = new Map<string, StreamCodec>();
   for (const [mediaType, codec] of Object.entries(codecs ?? {})) {
-    const normalized = normalizeInboundMediaType(mediaType);
+    const normalized: string = normalizeInboundMediaType(mediaType);
     if (normalized === "" || normalized.includes("/ ") || !normalized.includes("/"))
       throw new TypeError("invalid inbound stream codec media type " + mediaType);
     if (result.has(normalized))
@@ -1747,8 +1820,14 @@ async function* decodeInboundStreamBody(
   signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
 ): AsyncIterable<unknown> {
-  const { items } = decodeInboundProtocolItems(body, rawContentType, contentType, signal, options);
-  let count = 0;
+  const { items }: InboundProtocolItems = decodeInboundProtocolItems(
+    body,
+    rawContentType,
+    contentType,
+    signal,
+    options,
+  );
+  let count: number = 0;
   try {
     for await (const value of items) {
       validateInboundWireValue(value, options.wireSchema, options.wireSchemas, "stream item");
@@ -1757,7 +1836,7 @@ async function* decodeInboundStreamBody(
     }
     if (options.required && count === 0)
       throw new InboundRequestError(new Response("Request body is required", { status: 400 }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof InboundRequestError) throw error;
     throw new InboundRequestError(new Response("Invalid stream item", { status: 400 }));
   }
@@ -1770,13 +1849,19 @@ async function decodeInboundCompleteSequentialBody(
   signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
 ): Promise<unknown> {
-  const { items } = decodeInboundProtocolItems(body, rawContentType, contentType, signal, options);
+  const { items }: InboundProtocolItems = decodeInboundProtocolItems(
+    body,
+    rawContentType,
+    contentType,
+    signal,
+    options,
+  );
   const values: unknown[] = [];
   try {
     for await (const value of items) values.push(value);
     validateInboundWireValue(values, options.wireSchema, options.wireSchemas, "request body");
     return decodeInboundWireValue(values, options.wireSchema, options.wireSchemas);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof InboundRequestError) throw error;
     throw new InboundRequestError(new Response("Invalid request body", { status: 400 }));
   }
@@ -1803,15 +1888,18 @@ function decodeInboundProtocolItems(
   contentType: string,
   signal: AbortSignal,
   options: InboundBodyOptions & InboundBodyPlan,
-): { readonly items: AsyncIterable<unknown> } {
-  const maxFrameBytes = resolveInboundStreamFrameBytes(options.maxStreamFrameBytes);
-  const context: StreamContext & { readonly signal: AbortSignal } = {
+): InboundProtocolItems {
+  const maxFrameBytes: number = resolveInboundStreamFrameBytes(options.maxStreamFrameBytes);
+  const context: StreamContext & RequiredStreamSignal = {
     contentType: rawContentType,
     maxFrameBytes,
     signal,
   };
-  const codec = inboundStreamCodec(options.streamCodecs, contentType);
-  const frames =
+  const codec: StreamCodec<unknown, unknown> | undefined = inboundStreamCodec(
+    options.streamCodecs,
+    contentType,
+  );
+  const frames: AsyncIterable<unknown> =
     codec?.protocol === undefined
       ? decodeInboundBuiltInStreamFrames(body, {
           rawContentType,
@@ -1845,23 +1933,30 @@ function decodeInboundStreamApplicationItems(
 async function* decodeInboundCustomProtocol(
   body: ReadableStream<Uint8Array>,
   protocol: StreamProtocol<unknown>,
-  context: StreamContext & { readonly signal: AbortSignal },
+  context: StreamContext & RequiredStreamSignal,
 ): AsyncIterable<unknown> {
-  const reader = createInboundMediaStreamReader(body, context.maxFrameBytes, context.signal);
-  const frames = protocol.decode(reader, context);
-  const iterator = frames[Symbol.asyncIterator]();
+  const reader: StreamReader = createInboundMediaStreamReader(
+    body,
+    context.maxFrameBytes,
+    context.signal,
+  );
+  const frames: AsyncIterable<unknown> = protocol.decode(reader, context);
+  const iterator: AsyncIterator<unknown, unknown, unknown> = frames[Symbol.asyncIterator]();
   try {
     while (true) {
-      const next = await awaitInboundAbortable(Promise.resolve(iterator.next()), context.signal);
+      const next: IteratorResult<unknown, unknown> = await awaitInboundAbortable(
+        Promise.resolve(iterator.next()),
+        context.signal,
+      );
       if (next.done) return;
       yield next.value;
     }
   } finally {
     await reader.cancel(context.signal.reason);
     if (iterator.return !== undefined) {
-      const close = Promise.resolve(iterator.return());
-      if (context.signal.aborted) void close.catch(() => undefined);
-      else await close.catch(() => undefined);
+      const close: Promise<IteratorResult<unknown, unknown>> = Promise.resolve(iterator.return());
+      if (context.signal.aborted) void close.catch((): undefined => undefined);
+      else await close.catch((): undefined => undefined);
     }
   }
 }
@@ -1871,11 +1966,11 @@ function createInboundMediaStreamReader(
   maximum: number,
   signal: AbortSignal,
 ): StreamReader {
-  const reader = body.getReader();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
-  let done = false;
-  let cancelled = false;
-  const cancel = async (reason?: unknown): Promise<void> => {
+  let done: boolean = false;
+  let cancelled: boolean = false;
+  const cancel: (reason?: unknown) => Promise<void> = async (reason?: unknown): Promise<void> => {
     if (cancelled) return;
     cancelled = true;
     try {
@@ -1889,7 +1984,8 @@ function createInboundMediaStreamReader(
       if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > maximum)
         throw new TypeError("stream protocol read exceeds maxStreamFrameBytes");
       while (pending.byteLength === 0 && !done) {
-        const next = await awaitInboundAbortable(reader.read(), signal);
+        const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+          await awaitInboundAbortable(reader.read(), signal);
         done = next.done;
         if (next.value !== undefined) pending = next.value;
       }
@@ -1897,7 +1993,7 @@ function createInboundMediaStreamReader(
         await cancel();
         return null;
       }
-      const value = pending.slice(0, maxBytes);
+      const value: Uint8Array<ArrayBuffer> = pending.slice(0, maxBytes);
       pending = pending.slice(value.byteLength);
       return value;
     },
@@ -1907,23 +2003,28 @@ function createInboundMediaStreamReader(
 
 function awaitInboundAbortable<Value>(value: Promise<Value>, signal: AbortSignal): Promise<Value> {
   if (signal.aborted) {
-    void value.catch(() => undefined);
+    void value.catch((): undefined => undefined);
     return Promise.reject(signal.reason);
   }
-  return new Promise((resolve, reject) => {
-    const onAbort = (): void => reject(signal.reason);
-    signal.addEventListener("abort", onAbort, { once: true });
-    value.then(
-      (result) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(result);
-      },
-      (cause) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(cause);
-      },
-    );
-  });
+  return new Promise(
+    (
+      resolve: (value: Value | PromiseLike<Value>) => void,
+      reject: (reason?: unknown) => void,
+    ): void => {
+      const onAbort: () => void = (): void => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      value.then(
+        (result: Value): void => {
+          signal.removeEventListener("abort", onAbort);
+          resolve(result);
+        },
+        (cause: unknown): void => {
+          signal.removeEventListener("abort", onAbort);
+          reject(cause);
+        },
+      );
+    },
+  );
 }
 
 async function* emptyInboundStream(): AsyncIterable<unknown> {
@@ -1934,7 +2035,7 @@ async function* decodeInboundBuiltInStreamFrames(
   body: ReadableStream<Uint8Array>,
   options: InboundProtocolDecodeOptions,
 ): AsyncIterable<unknown> {
-  const { streamFraming, maxFrameBytes, signal } = options;
+  const { streamFraming, maxFrameBytes, signal }: InboundProtocolDecodeOptions = options;
   if (streamFraming === undefined || streamFraming === "custom")
     throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
   if (streamFraming === "multipart") {
@@ -1948,17 +2049,20 @@ async function* decodeInboundBuiltInStreamFrames(
   if (streamFraming !== "line-delimited-json" && streamFraming !== "json-sequence")
     throw new InboundRequestError(new Response("Unsupported Media Type", { status: 415 }));
 
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  let pending = "";
-  const assertFrameBytes = (source: string): void => {
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
+  const decoder: TextDecoder = new TextDecoder();
+  const encoder: TextEncoder = new TextEncoder();
+  let pending: string = "";
+  const assertFrameBytes: (source: string) => void = (source: string): void => {
     if (encoder.encode(source).byteLength > maxFrameBytes)
       throw new InboundRequestError(
         new Response("Stream frame exceeds maxStreamFrameBytes", { status: 400 }),
       );
   };
-  const parse = (source: string, frameSource = source): unknown => {
+  const parse: (source: string, frameSource?: string) => unknown = (
+    source: string,
+    frameSource: string = source,
+  ): unknown => {
     assertFrameBytes(frameSource);
     try {
       return JSON.parse(source);
@@ -1968,10 +2072,11 @@ async function* decodeInboundBuiltInStreamFrames(
   };
   try {
     while (true) {
-      const next = await awaitInboundAbortable(reader.read(), signal);
+      const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+        await awaitInboundAbortable(reader.read(), signal);
       pending += decoder.decode(next.value, { stream: !next.done });
       if (streamFraming === "json-sequence") {
-        const records = pending.split("\u001e");
+        const records: string[] = pending.split("\u001e");
         pending = records.pop() ?? "";
         for (const record of records) {
           assertFrameBytes(record);
@@ -1980,10 +2085,10 @@ async function* decodeInboundBuiltInStreamFrames(
       } else {
         let newline: number;
         while ((newline = pending.indexOf("\n")) >= 0) {
-          const rawLine = pending.slice(0, newline);
+          const rawLine: string = pending.slice(0, newline);
           pending = pending.slice(newline + 1);
           assertFrameBytes(rawLine);
-          const line = rawLine.replace(/\r$/, "");
+          const line: string = rawLine.replace(/\r$/, "");
           if (line.trim() !== "") yield parse(line, rawLine);
         }
       }
@@ -2011,37 +2116,37 @@ async function* decodeInboundSSEStreamFrames(
   maxFrameBytes: number,
   signal: AbortSignal,
 ): AsyncIterable<unknown> {
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  const reader = body.getReader();
-  let pending = "";
-  let pendingBytes = 0;
-  let frameBytes = 0;
-  let firstText = true;
-  let data = "";
-  let hasData = false;
+  const decoder: TextDecoder = new TextDecoder();
+  const encoder: TextEncoder = new TextEncoder();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
+  let pending: string = "";
+  let pendingBytes: number = 0;
+  let frameBytes: number = 0;
+  let firstText: boolean = true;
+  let data: string = "";
+  let hasData: boolean = false;
   let event: string | undefined;
   let lastEventID: string | undefined;
   let retry: number | undefined;
 
-  const assertFrameBytes = (byteLength: number): void => {
+  const assertFrameBytes: (byteLength: number) => void = (byteLength: number): void => {
     if (byteLength > maxFrameBytes)
       throw new InboundRequestError(
         new Response("Stream frame exceeds maxStreamFrameBytes", { status: 400 }),
       );
   };
-  const reset = (): void => {
+  const reset: () => void = (): void => {
     data = "";
     hasData = false;
     event = undefined;
     retry = undefined;
   };
-  const dispatch = (): unknown | undefined => {
+  const dispatch: () => unknown | undefined = (): unknown | undefined => {
     if (!hasData) {
       reset();
       return undefined;
     }
-    const result: { data: string; event?: string; id?: string; retry?: number } = {
+    const result: InboundServerSentEvent = {
       data: data.slice(0, -1),
     };
     if (event !== undefined) result.event = event;
@@ -2050,11 +2155,11 @@ async function* decodeInboundSSEStreamFrames(
     reset();
     return result;
   };
-  const processLine = (line: string): void => {
+  const processLine: (line: string) => void = (line: string): void => {
     if (line.startsWith(":")) return;
-    const separator = line.indexOf(":");
-    const field = separator < 0 ? line : line.slice(0, separator);
-    let value = separator < 0 ? "" : line.slice(separator + 1);
+    const separator: number = line.indexOf(":");
+    const field: string = separator < 0 ? line : line.slice(0, separator);
+    let value: string = separator < 0 ? "" : line.slice(separator + 1);
     if (value.startsWith(" ")) value = value.slice(1);
     if (field === "data") {
       data += value + "\n";
@@ -2064,15 +2169,16 @@ async function* decodeInboundSSEStreamFrames(
     } else if (field === "id") {
       if (!value.includes("\u0000")) lastEventID = value;
     } else if (field === "retry" && /^[0-9]+$/.test(value)) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (Number.isFinite(parsed)) retry = parsed;
     }
   };
 
   try {
     while (true) {
-      const next = await awaitInboundAbortable(reader.read(), signal);
-      let decoded = decoder.decode(next.value, { stream: !next.done });
+      const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+        await awaitInboundAbortable(reader.read(), signal);
+      let decoded: string = decoder.decode(next.value, { stream: !next.done });
       if (firstText && decoded !== "") {
         if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
         firstText = false;
@@ -2080,13 +2186,13 @@ async function* decodeInboundSSEStreamFrames(
       pending += decoded;
       pendingBytes += encoder.encode(decoded).byteLength;
       while (true) {
-        const parsed = takeInboundSSELine(pending, next.done);
+        const parsed: InboundSSELine | undefined = takeInboundSSELine(pending, next.done);
         if (parsed === undefined) break;
-        const lineBytes = encoder.encode(parsed.line + parsed.terminator).byteLength;
+        const lineBytes: number = encoder.encode(parsed.line + parsed.terminator).byteLength;
         pending = parsed.rest;
         pendingBytes -= lineBytes;
         if (parsed.line === "") {
-          const frame = dispatch();
+          const frame: unknown = dispatch();
           frameBytes = 0;
           if (frame !== undefined) yield frame;
           continue;
@@ -2108,8 +2214,8 @@ async function* decodeInboundSSEStreamFrames(
 }
 
 function takeInboundSSELine(source: string, eof: boolean): InboundSSELine | undefined {
-  for (let index = 0; index < source.length; index++) {
-    const code = source.charCodeAt(index);
+  for (let index: number = 0; index < source.length; index++) {
+    const code: number = source.charCodeAt(index);
     if (code === 10)
       return { line: source.slice(0, index), terminator: "\n", rest: source.slice(index + 1) };
     if (code !== 13) continue;
@@ -2131,11 +2237,13 @@ function inboundSequenceItemSchema(
   index: number,
 ): InboundSchema | undefined {
   if (schema === undefined) return undefined;
-  const resolved = resolveInboundSchema(schema, schemas);
+  const resolved: InboundSchema = resolveInboundSchema(schema, schemas);
   if (typeof resolved === "boolean") return undefined;
-  const descriptor = inboundSchemaRecord(resolved);
-  const prefixItems = Array.isArray(descriptor["prefixItems"]) ? descriptor["prefixItems"] : [];
-  const candidate = prefixItems[index] ?? descriptor["items"];
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(resolved);
+  const prefixItems: unknown[] = Array.isArray(descriptor["prefixItems"])
+    ? descriptor["prefixItems"]
+    : [];
+  const candidate: unknown = prefixItems[index] ?? descriptor["items"];
   return isInboundSchema(candidate) ? resolveInboundSchema(candidate, schemas) : undefined;
 }
 
@@ -2143,28 +2251,31 @@ async function* decodeInboundMultipartStream(
   body: ReadableStream<Uint8Array>,
   options: InboundProtocolDecodeOptions,
 ): AsyncIterable<unknown> {
-  const { rawContentType, maxFrameBytes, signal } = options;
-  const match = /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(rawContentType);
-  const boundary = match?.[1] ?? match?.[2];
+  const { rawContentType, maxFrameBytes, signal }: InboundProtocolDecodeOptions = options;
+  const match: RegExpExecArray | null = /(?:^|;)\s*boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(
+    rawContentType,
+  );
+  const boundary: string | undefined = match?.[1] ?? match?.[2];
   if (boundary === undefined || boundary === "")
     throw new InboundRequestError(new Response("Invalid multipart boundary", { status: 400 }));
-  const encoder = new TextEncoder();
-  const opening = encoder.encode("--" + boundary);
-  const separator = encoder.encode("\r\n--" + boundary);
-  const reader = body.getReader();
+  const encoder: TextEncoder = new TextEncoder();
+  const opening: Uint8Array<ArrayBuffer> = encoder.encode("--" + boundary);
+  const separator: Uint8Array<ArrayBuffer> = encoder.encode("\r\n--" + boundary);
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
-  let started = false;
-  let closed = false;
-  let count = 0;
+  let started: boolean = false;
+  let closed: boolean = false;
+  let count: number = 0;
   try {
     while (!closed) {
-      const next = await awaitInboundAbortable(reader.read(), signal);
+      const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+        await awaitInboundAbortable(reader.read(), signal);
       if (next.value !== undefined) pending = appendInboundBytes(pending, next.value);
       while (!closed) {
         if (!started) {
-          const index = findInboundBytes(pending, opening);
+          const index: number = findInboundBytes(pending, opening);
           if (index < 0) break;
-          const after = index + opening.length;
+          const after: number = index + opening.length;
           if (pending.length < after + 2) break;
           if (pending[after] === 45 && pending[after + 1] === 45) {
             closed = true;
@@ -2179,21 +2290,21 @@ async function* decodeInboundMultipartStream(
           started = true;
           continue;
         }
-        const index = findInboundBytes(pending, separator);
+        const index: number = findInboundBytes(pending, separator);
         if (index < 0) break;
-        const after = index + separator.length;
+        const after: number = index + separator.length;
         if (pending.length < after + 2) break;
-        const closing = pending[after] === 45 && pending[after + 1] === 45;
+        const closing: boolean = pending[after] === 45 && pending[after + 1] === 45;
         if (!closing && (pending[after] !== 13 || pending[after + 1] !== 10))
           throw new InboundRequestError(
             new Response("Invalid multipart boundary", { status: 400 }),
           );
-        const part = pending.slice(0, index);
+        const part: Uint8Array<ArrayBuffer> = pending.slice(0, index);
         pending = pending.slice(after + 2);
-        const frameSchema = options.complete
+        const frameSchema: InboundSchema | undefined = options.complete
           ? inboundSequenceItemSchema(options.schema, options.schemas, count)
           : options.schema;
-        const frameEncoding = options.complete
+        const frameEncoding: WireEncodingDefinition | undefined = options.complete
           ? (options.prefixEncoding?.[count] ?? options.itemEncoding)
           : options.itemEncoding;
         yield await decodeInboundMultipartPart(part, {
@@ -2208,7 +2319,7 @@ async function* decodeInboundMultipartStream(
         if (closing) closed = true;
       }
       if (!closed) {
-        const maximumBuffered = started
+        const maximumBuffered: number = started
           ? maxFrameBytes + 8192 + separator.length + 4
           : 8192 + opening.length + 2;
         if (pending.byteLength > maximumBuffered)
@@ -2242,26 +2353,35 @@ async function decodeInboundMultipartPart(
   part: Uint8Array,
   options: InboundMultipartPartDecodeOptions,
 ): Promise<unknown> {
-  const { schema, schemas, itemEncoding, wireSchemas, codecs, maxFrameBytes } = options;
-  const split = findInboundBytes(part, new Uint8Array([13, 10, 13, 10]));
+  const {
+    schema,
+    schemas,
+    itemEncoding,
+    wireSchemas,
+    codecs,
+    maxFrameBytes,
+  }: InboundMultipartPartDecodeOptions = options;
+  const split: number = findInboundBytes(part, new Uint8Array([13, 10, 13, 10]));
   if (split < 0)
     throw new InboundRequestError(new Response("Invalid multipart part", { status: 400 }));
   if (split > 8192)
     throw new InboundRequestError(
       new Response("Multipart headers exceed stream limit", { status: 400 }),
     );
-  const headers = parseInboundMultipartHeaders(new TextDecoder().decode(part.slice(0, split)));
+  const headers: Headers = parseInboundMultipartHeaders(
+    new TextDecoder().decode(part.slice(0, split)),
+  );
   await validateInboundMultipartEncodingHeaders(headers, itemEncoding, wireSchemas, codecs);
-  const bytes = part.slice(split + 4);
+  const bytes: Uint8Array<ArrayBuffer> = part.slice(split + 4);
   if (bytes.byteLength > maxFrameBytes)
     throw new InboundRequestError(
       new Response("Multipart frame exceeds maxStreamFrameBytes", { status: 400 }),
     );
-  const rawContentType =
+  const rawContentType: string =
     headers.get("content-type") ??
     itemEncoding?.contentType?.split(",", 1)[0]?.trim() ??
     "text/plain";
-  const normalized = rawContentType.split(";", 1)[0]!.trim().toLowerCase();
+  const normalized: string = rawContentType.split(";", 1)[0]!.trim().toLowerCase();
   let value: unknown;
   if (normalized === "application/json" || normalized.endsWith("+json")) {
     try {
@@ -2293,9 +2413,9 @@ async function validateInboundMultipartEncodingHeaders(
   wireSchemas: WireSchemas | undefined,
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
 ): Promise<void> {
-  const schemas = wireSchemas ?? {};
+  const schemas: Readonly<Record<string, WireSchema>> = wireSchemas ?? {};
   for (const header of encoding?.headers ?? []) {
-    const raw = headers.get(header.name);
+    const raw: string | null = headers.get(header.name);
     if (raw === null) {
       if (header.required)
         throw new InboundRequestError(
@@ -2303,7 +2423,7 @@ async function validateInboundMultipartEncodingHeaders(
         );
       continue;
     }
-    const decoded =
+    const decoded: unknown =
       header.contentType === undefined
         ? decodeInboundParameterValue(raw, {}, {}, header.schema, schemas)
         : await decodeInboundFormContent(
@@ -2320,7 +2440,7 @@ async function validateInboundMultipartEncodingHeaders(
 }
 
 function isInboundBinaryMedia(contentType: string, schema: InboundSchema | undefined): boolean {
-  const descriptor = inboundSchemaRecord(schema);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(schema);
   return (
     contentType === "application/octet-stream" ||
     contentType.startsWith("image/") ||
@@ -2332,9 +2452,9 @@ function isInboundBinaryMedia(contentType: string, schema: InboundSchema | undef
 }
 
 function parseInboundMultipartHeaders(source: string): Headers {
-  const headers = new Headers();
+  const headers: Headers = new Headers();
   for (const line of source.split("\r\n")) {
-    const separator = line.indexOf(":");
+    const separator: number = line.indexOf(":");
     if (separator <= 0)
       throw new InboundRequestError(new Response("Invalid multipart header", { status: 400 }));
     headers.append(line.slice(0, separator).trim(), line.slice(separator + 1).trim());
@@ -2343,15 +2463,15 @@ function parseInboundMultipartHeaders(source: string): Headers {
 }
 
 function appendInboundBytes(left: Uint8Array, right: Uint8Array): Uint8Array {
-  const result = new Uint8Array(left.length + right.length);
+  const result: Uint8Array<ArrayBuffer> = new Uint8Array(left.length + right.length);
   result.set(left);
   result.set(right, left.length);
   return result;
 }
 
 function findInboundBytes(source: Uint8Array, wanted: Uint8Array): number {
-  outer: for (let start = 0; start <= source.length - wanted.length; start++) {
-    for (let index = 0; index < wanted.length; index++)
+  outer: for (let start: number = 0; start <= source.length - wanted.length; start++) {
+    for (let index: number = 0; index < wanted.length; index++)
       if (source[start + index] !== wanted[index]) continue outer;
     return start;
   }
@@ -2359,11 +2479,11 @@ function findInboundBytes(source: Uint8Array, wanted: Uint8Array): number {
 }
 
 function inboundMediaTypeMatches(expected: string, actual: string): boolean {
-  const normalized = expected.toLowerCase();
+  const normalized: string = expected.toLowerCase();
   if (normalized === actual || (normalized.endsWith("+json") && actual.endsWith("+json")))
     return true;
-  const [expectedType, expectedSubtype] = normalized.split("/", 2);
-  const [actualType, actualSubtype] = actual.split("/", 2);
+  const [expectedType, expectedSubtype]: string[] = normalized.split("/", 2);
+  const [actualType, actualSubtype]: string[] = actual.split("/", 2);
   if (
     expectedType === undefined ||
     expectedSubtype === undefined ||
@@ -2393,11 +2513,13 @@ function decodeInboundXML(
   wireSchema: WireSchema | undefined = undefined,
   wireSchemas: WireSchemas | undefined = undefined,
 ): unknown {
-  const root = parseInboundXML(source);
-  const schemaXML = isRecord(inboundSchemaRecord(schema)["xml"])
+  const root: InboundXMLNode = parseInboundXML(source);
+  const schemaXML: Readonly<Record<string, unknown>> | undefined = isRecord(
+    inboundSchemaRecord(schema)["xml"],
+  )
     ? (inboundSchemaRecord(schema)["xml"] as Readonly<Record<string, unknown>>)
     : undefined;
-  const rootName =
+  const rootName: string =
     wireSchema?.reference ??
     wireSchema?.xml?.name ??
     (typeof schemaXML?.["name"] === "string" ? schemaXML["name"] : "root");
@@ -2415,7 +2537,7 @@ function decodeInboundXML(
 }
 
 function parseInboundXML(source: string): InboundXMLNode {
-  const tokens =
+  const tokens: string[] =
     source.match(/<!\[CDATA\[[\s\S]*?\]\]>|<!--[\s\S]*?-->|<\?[^]*?\?>|<[^>]+>|[^<]+/g) ?? [];
   const roots: InboundXMLNode[] = [];
   const stack: InboundXMLNode[] = [];
@@ -2430,15 +2552,15 @@ function parseInboundXML(source: string): InboundXMLNode {
     }
     if (token.startsWith("<!")) throw new TypeError("XML declarations are not supported");
     if (token.startsWith("</")) {
-      const name = token.slice(2, -1).trim();
-      const node = stack.pop();
+      const name: string = token.slice(2, -1).trim();
+      const node: InboundXMLNode | undefined = stack.pop();
       if (node === undefined || node.name !== name) throw new TypeError("XML closing tag mismatch");
       continue;
     }
     if (token.startsWith("<")) {
-      const closing = /\/>$/.test(token);
-      const body = token.slice(1, closing ? -2 : -1).trim();
-      const match = /^([^\s/>]+)([\s\S]*)$/.exec(body);
+      const closing: boolean = /\/>$/.test(token);
+      const body: string = token.slice(1, closing ? -2 : -1).trim();
+      const match: RegExpExecArray | null = /^([^\s/>]+)([\s\S]*)$/.exec(body);
       if (match === null) throw new TypeError("XML element has no name");
       const node: InboundXMLNode = {
         name: match[1]!,
@@ -2464,11 +2586,11 @@ function parseInboundXML(source: string): InboundXMLNode {
 }
 
 function parseInboundXMLAttributes(source: string): Readonly<Record<string, string>> {
-  const result = Object.create(null) as Record<string, string>;
-  const expression = /([^\s=]+)\s*=\s*("[^"]*"|'[^']*')/g;
+  const result: Record<string, string> = Object.create(null) as Record<string, string>;
+  const expression: RegExp = /([^\s=]+)\s*=\s*("[^"]*"|'[^']*')/g;
   let match: RegExpExecArray | null;
   while ((match = expression.exec(source)) !== null) {
-    const name = match[1]!;
+    const name: string = match[1]!;
     if (Object.hasOwn(result, name)) throw new TypeError("duplicate XML attribute " + name);
     defineOwnDataProperty(result, name, unescapeInboundXML(match[2]!.slice(1, -1)));
   }
@@ -2492,7 +2614,7 @@ function decodeInboundXMLNode(
     let failure: unknown;
     for (const alternative of inboundWireSchemaAlternatives(wireSchema, wireSchemas)) {
       try {
-        const value = decodeInboundXMLNode(
+        const value: unknown = decodeInboundXMLNode(
           node,
           schema,
           schemas,
@@ -2504,19 +2626,23 @@ function decodeInboundXMLNode(
         fallback = value;
         validateWireValue(value, wireSchema, wireSchemas, "decode");
         return value;
-      } catch (error) {
+      } catch (error: unknown) {
         failure = error;
       }
     }
     if (failure !== undefined) throw failure;
     return fallback;
   }
-  const resolved = inboundSchemaRecord(resolveInboundSchema(schema, schemas));
+  const resolved: Readonly<Record<string, unknown>> = inboundSchemaRecord(
+    resolveInboundSchema(schema, schemas),
+  );
   if (
     schemaAcceptsType(resolved["type"], "array") ||
     (wireSchema !== undefined && inboundWireSchemaTypes(wireSchema, wireSchemas).includes("array"))
   ) {
-    const xml = isRecord(resolved["xml"]) ? resolved["xml"] : (wireSchema?.xml ?? {});
+    const xml: Record<string, unknown> | WireXML = isRecord(resolved["xml"])
+      ? resolved["xml"]
+      : (wireSchema?.xml ?? {});
     if (inboundXMLArrayWrapped(xml)) {
       if (node.name !== inboundXMLQualifiedName(xml, rootName))
         throw new TypeError("unexpected XML array wrapper " + node.name);
@@ -2526,21 +2652,21 @@ function decodeInboundXMLNode(
       }
       if (node.text.trim() !== "") throw new TypeError("unexpected XML array wrapper text");
     }
-    return node.children.map((child, index) => {
-      const item = inboundArrayItemSchema(resolved, index);
-      const resolvedItem = resolveInboundSchema(item, schemas);
-      const wireItem =
+    return node.children.map((child: InboundXMLNode, index: number): unknown => {
+      const item: InboundSchema = inboundArrayItemSchema(resolved, index);
+      const resolvedItem: InboundSchema = resolveInboundSchema(item, schemas);
+      const wireItem: WireSchema | undefined =
         wireSchema === undefined
           ? undefined
           : inboundWireArrayItemSchema(wireSchema, index, wireSchemas);
-      const itemDescriptor = inboundSchemaRecord(resolvedItem);
-      const itemXML = isRecord(itemDescriptor["xml"])
+      const itemDescriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(resolvedItem);
+      const itemXML: Record<string, unknown> | WireXML = isRecord(itemDescriptor["xml"])
         ? itemDescriptor["xml"]
         : (wireItem?.xml ?? {});
-      const parentItemFallbackName = inboundXMLArrayWrapped(xml)
+      const parentItemFallbackName: string = inboundXMLArrayWrapped(xml)
         ? rootName
         : inboundXMLQualifiedName(xml, rootName);
-      const itemFallbackName =
+      const itemFallbackName: string =
         typeof itemXML?.name === "string" ? itemXML.name : parentItemFallbackName;
       if (inboundXMLArrayWrapped(xml) && child.name !== inboundXMLQualifiedName(itemXML, rootName))
         throw new TypeError("unexpected XML array item " + child.name);
@@ -2555,8 +2681,10 @@ function decodeInboundXMLNode(
       );
     });
   }
-  const properties = isRecord(resolved["properties"]) ? resolved["properties"] : {};
-  const wirePropertyNames =
+  const properties: Record<string, unknown> = isRecord(resolved["properties"])
+    ? resolved["properties"]
+    : {};
+  const wirePropertyNames: readonly string[] =
     wireSchema === undefined ? [] : inboundWirePropertyNames(wireSchema, wireSchemas);
   if (
     schemaAcceptsType(resolved["type"], "object") ||
@@ -2565,21 +2693,21 @@ function decodeInboundXMLNode(
       (inboundWireSchemaTypes(wireSchema, wireSchemas).includes("object") ||
         wirePropertyNames.length !== 0))
   ) {
-    const result = Object.create(null) as Record<string, unknown>;
-    const consumedAttributes = new Set<string>();
-    const consumedChildren = new Set<InboundXMLNode>();
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    const consumedAttributes: Set<string> = new Set<string>();
+    const consumedChildren: Set<InboundXMLNode> = new Set<InboundXMLNode>();
     for (const name of new Set([...Object.keys(properties), ...wirePropertyNames])) {
-      const childSchema = isInboundSchema(properties[name]) ? properties[name] : {};
-      const resolvedChild = resolveInboundSchema(childSchema, schemas);
-      const childDescriptor = inboundSchemaRecord(resolvedChild);
-      const wireProperty =
+      const childSchema: InboundSchema = isInboundSchema(properties[name]) ? properties[name] : {};
+      const resolvedChild: InboundSchema = resolveInboundSchema(childSchema, schemas);
+      const childDescriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(resolvedChild);
+      const wireProperty: WireSchema | undefined =
         wireSchema === undefined
           ? undefined
           : inboundWirePropertySchema(wireSchema, name, wireSchemas);
-      const xml = isRecord(childDescriptor["xml"])
+      const xml: Record<string, unknown> | WireXML = isRecord(childDescriptor["xml"])
         ? childDescriptor["xml"]
         : (wireProperty?.xml ?? {});
-      const xmlName = inboundXMLQualifiedName(xml, name);
+      const xmlName: string = inboundXMLQualifiedName(xml, name);
       if (xml["attribute"] === true || xml["nodeType"] === "attribute") {
         if (node.attributes[xmlName] !== undefined) {
           consumedAttributes.add(xmlName);
@@ -2610,8 +2738,8 @@ function decodeInboundXMLNode(
         (wireProperty !== undefined &&
           inboundWireSchemaTypes(wireProperty, wireSchemas).includes("array"))
       ) {
-        const container = inboundXMLArrayWrapped(xml)
-          ? node.children.find((child) => child.name === xmlName)
+        const container: InboundXMLNode | undefined = inboundXMLArrayWrapped(xml)
+          ? node.children.find((child: InboundXMLNode): boolean => child.name === xmlName)
           : node;
         if (container !== undefined) {
           if (container !== node) {
@@ -2625,23 +2753,24 @@ function decodeInboundXMLNode(
           }
           const values: unknown[] = [];
           for (const child of container.children) {
-            const item = inboundArrayItemSchema(childDescriptor, values.length);
-            const resolvedItem = resolveInboundSchema(item, schemas);
-            const itemDescriptor = inboundSchemaRecord(resolvedItem);
-            const wireItem =
+            const item: InboundSchema = inboundArrayItemSchema(childDescriptor, values.length);
+            const resolvedItem: InboundSchema = resolveInboundSchema(item, schemas);
+            const itemDescriptor: Readonly<Record<string, unknown>> =
+              inboundSchemaRecord(resolvedItem);
+            const wireItem: WireSchema | undefined =
               wireProperty === undefined
                 ? undefined
                 : inboundWireArrayItemSchema(wireProperty, values.length, wireSchemas);
-            const itemXML = isRecord(itemDescriptor["xml"])
+            const itemXML: Record<string, unknown> | WireXML = isRecord(itemDescriptor["xml"])
               ? itemDescriptor["xml"]
               : (wireItem?.xml ?? {});
-            const wrapperFallbackName = typeof xml?.name === "string" ? xml.name : name;
-            const parentItemFallbackName = inboundXMLArrayWrapped(xml)
+            const wrapperFallbackName: string = typeof xml?.name === "string" ? xml.name : name;
+            const parentItemFallbackName: string = inboundXMLArrayWrapped(xml)
               ? wrapperFallbackName
               : xmlName;
-            const itemFallbackName =
+            const itemFallbackName: string =
               typeof itemXML?.name === "string" ? itemXML.name : parentItemFallbackName;
-            const itemName = inboundXMLQualifiedName(itemXML, parentItemFallbackName);
+            const itemName: string = inboundXMLQualifiedName(itemXML, parentItemFallbackName);
             if (inboundXMLArrayWrapped(xml) && child.name !== itemName)
               throw new TypeError("unexpected XML array item " + child.name);
             if (!inboundXMLArrayWrapped(xml) && child.name !== xmlName && child.name !== itemName)
@@ -2663,10 +2792,12 @@ function decodeInboundXMLNode(
         }
         continue;
       }
-      const child = node.children.find((entry) => entry.name === xmlName);
+      const child: InboundXMLNode | undefined = node.children.find(
+        (entry: InboundXMLNode): boolean => entry.name === xmlName,
+      );
       if (child !== undefined) {
         consumedChildren.add(child);
-        const childFallbackName = typeof xml?.name === "string" ? xml.name : name;
+        const childFallbackName: string = typeof xml?.name === "string" ? xml.name : name;
         defineOwnDataProperty(
           result,
           name,
@@ -2685,7 +2816,7 @@ function decodeInboundXMLNode(
     for (const [name, value] of Object.entries(node.attributes)) {
       if (consumedAttributes.has(name)) continue;
       if (name === "xmlns" || name.startsWith("xmlns:")) continue;
-      const wireProperty =
+      const wireProperty: WireSchema | undefined =
         wireSchema === undefined
           ? undefined
           : inboundWirePropertySchema(wireSchema, name, wireSchemas);
@@ -2699,15 +2830,15 @@ function decodeInboundXMLNode(
     }
     for (const child of node.children) {
       if (consumedChildren.has(child)) continue;
-      const wireProperty =
+      const wireProperty: WireSchema | undefined =
         wireSchema === undefined
           ? undefined
           : inboundWirePropertySchema(wireSchema, child.name, wireSchemas);
-      const value =
+      const value: unknown =
         wireProperty === undefined
           ? decodeInboundUnknownXMLNode(child)
           : decodeInboundXMLNode(child, {}, schemas, wireProperty, wireSchemas, false, child.name);
-      const previous = result[child.name];
+      const previous: unknown = result[child.name];
       defineOwnDataProperty(
         result,
         child.name,
@@ -2725,12 +2856,12 @@ function decodeInboundXMLNode(
 
 function decodeInboundUnknownXMLNode(node: InboundXMLNode): unknown {
   if (node.children.length === 0 && Object.keys(node.attributes).length === 0) return node.text;
-  const result = Object.create(null) as Record<string, unknown>;
+  const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
   for (const [name, value] of Object.entries(node.attributes))
     defineOwnDataProperty(result, name, value);
   for (const child of node.children) {
-    const value = decodeInboundUnknownXMLNode(child);
-    const previous = result[child.name];
+    const value: unknown = decodeInboundUnknownXMLNode(child);
+    const previous: unknown = result[child.name];
     defineOwnDataProperty(
       result,
       child.name,
@@ -2749,7 +2880,7 @@ function inboundXMLQualifiedName(
   xml: Readonly<Record<string, unknown>> | WireSchema["xml"],
   fallback: string,
 ): string {
-  const name = typeof xml?.name === "string" ? xml.name : fallback;
+  const name: string = typeof xml?.name === "string" ? xml.name : fallback;
   return typeof xml?.prefix === "string" && xml.prefix !== "" ? xml.prefix + ":" + name : name;
 }
 
@@ -2765,29 +2896,31 @@ function resolveInboundSchema(
   resolving: ReadonlySet<string> = new Set(),
 ): InboundSchema {
   if (typeof schema === "boolean") return schema;
-  const descriptor = inboundSchemaRecord(schema);
-  const reference = typeof descriptor["$ref"] === "string" ? descriptor["$ref"] : undefined;
-  const name = reference === undefined ? undefined : inboundComponentReferenceName(reference);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(schema);
+  const reference: string | undefined =
+    typeof descriptor["$ref"] === "string" ? descriptor["$ref"] : undefined;
+  const name: string | undefined =
+    reference === undefined ? undefined : inboundComponentReferenceName(reference);
   let resolved: InboundSchema = schema;
   if (name !== undefined && !resolving.has(name)) {
-    const target = schemas[name];
+    const target: InboundSchema | undefined = schemas[name];
     if (target !== undefined) {
-      const nestedResolving = new Set(resolving);
+      const nestedResolving: Set<string> = new Set(resolving);
       nestedResolving.add(name);
-      const base = resolveInboundSchema(target, schemas, nestedResolving);
+      const base: InboundSchema = resolveInboundSchema(target, schemas, nestedResolving);
       if (base === false) return false;
-      const siblings = Object.fromEntries(
-        Object.entries(descriptor).filter(([key]) => key !== "$ref"),
+      const siblings: Record<string, unknown> = Object.fromEntries(
+        Object.entries(descriptor).filter(([key]: [string, unknown]): boolean => key !== "$ref"),
       );
       resolved =
         base === true ? siblings : mergeInboundSchemaRecords(inboundSchemaRecord(base), siblings);
     }
   }
   if (typeof resolved === "boolean") return resolved;
-  let effective = inboundSchemaRecord(resolved);
+  let effective: Readonly<Record<string, unknown>> = inboundSchemaRecord(resolved);
   for (const part of Array.isArray(effective["allOf"]) ? effective["allOf"] : []) {
     if (!isInboundSchema(part)) continue;
-    const nested = resolveInboundSchema(part, schemas, resolving);
+    const nested: InboundSchema = resolveInboundSchema(part, schemas, resolving);
     if (nested === false) return false;
     if (nested !== true)
       effective = mergeInboundSchemaRecords(effective, inboundSchemaRecord(nested));
@@ -2799,14 +2932,18 @@ function mergeInboundSchemaRecords(
   left: Readonly<Record<string, unknown>>,
   right: Readonly<Record<string, unknown>>,
 ): Readonly<Record<string, unknown>> {
-  const merged = { ...left, ...right };
+  const merged: Record<string, unknown> = { ...left, ...right };
   if (isRecord(left["properties"]) || isRecord(right["properties"])) {
-    const leftProperties = isRecord(left["properties"]) ? left["properties"] : {};
-    const rightProperties = isRecord(right["properties"]) ? right["properties"] : {};
-    const properties = { ...leftProperties, ...rightProperties };
+    const leftProperties: Record<string, unknown> = isRecord(left["properties"])
+      ? left["properties"]
+      : {};
+    const rightProperties: Record<string, unknown> = isRecord(right["properties"])
+      ? right["properties"]
+      : {};
+    const properties: Record<string, unknown> = { ...leftProperties, ...rightProperties };
     for (const name of Object.keys(properties)) {
-      const leftProperty = leftProperties[name];
-      const rightProperty = rightProperties[name];
+      const leftProperty: unknown = leftProperties[name];
+      const rightProperty: unknown = rightProperties[name];
       if (isInboundSchema(leftProperty) && isInboundSchema(rightProperty))
         properties[name] = mergeInboundSchemaValues(leftProperty, rightProperty);
     }
@@ -2814,27 +2951,30 @@ function mergeInboundSchemaRecords(
   }
   if (isInboundSchema(left["items"]) && isInboundSchema(right["items"]))
     merged["items"] = mergeInboundSchemaValues(left["items"], right["items"]);
-  const leftAllOf = Array.isArray(left["allOf"]) ? left["allOf"] : [];
-  const rightAllOf = Array.isArray(right["allOf"]) ? right["allOf"] : [];
-  const conjunctions = [...leftAllOf, ...rightAllOf];
+  const leftAllOf: unknown[] = Array.isArray(left["allOf"]) ? left["allOf"] : [];
+  const rightAllOf: unknown[] = Array.isArray(right["allOf"]) ? right["allOf"] : [];
+  const conjunctions: unknown[] = [...leftAllOf, ...rightAllOf];
   for (const keyword of ["oneOf", "anyOf"]) {
-    const leftVariants = Array.isArray(left[keyword]) ? left[keyword] : [];
-    const rightVariants = Array.isArray(right[keyword]) ? right[keyword] : [];
+    const leftVariants: unknown[] = Array.isArray(left[keyword]) ? left[keyword] : [];
+    const rightVariants: unknown[] = Array.isArray(right[keyword]) ? right[keyword] : [];
     if (leftVariants.length !== 0 && rightVariants.length !== 0)
       conjunctions.push({ [keyword]: leftVariants });
   }
   if (conjunctions.length !== 0) merged["allOf"] = conjunctions;
-  const leftPrefixItems = left["prefixItems"];
-  const rightPrefixItems = right["prefixItems"];
+  const leftPrefixItems: unknown = left["prefixItems"];
+  const rightPrefixItems: unknown = right["prefixItems"];
   if (Array.isArray(leftPrefixItems) && Array.isArray(rightPrefixItems)) {
-    const maximum = Math.max(leftPrefixItems.length, rightPrefixItems.length);
-    merged["prefixItems"] = Array.from({ length: maximum }, (_, index) => {
-      const leftItem = leftPrefixItems[index];
-      const rightItem = rightPrefixItems[index];
-      return isInboundSchema(leftItem) && isInboundSchema(rightItem)
-        ? mergeInboundSchemaValues(leftItem, rightItem)
-        : (rightItem ?? leftItem);
-    });
+    const maximum: number = Math.max(leftPrefixItems.length, rightPrefixItems.length);
+    merged["prefixItems"] = Array.from(
+      { length: maximum },
+      (_: unknown, index: number): unknown => {
+        const leftItem: unknown = leftPrefixItems[index];
+        const rightItem: unknown = rightPrefixItems[index];
+        return isInboundSchema(leftItem) && isInboundSchema(rightItem)
+          ? mergeInboundSchemaValues(leftItem, rightItem)
+          : (rightItem ?? leftItem);
+      },
+    );
   }
   return merged;
 }
@@ -2854,9 +2994,9 @@ function inboundComponentReferenceName(reference: string): string | undefined {
   } catch {
     return undefined;
   }
-  const prefix = "/components/schemas/";
+  const prefix: "/components/schemas/" = "/components/schemas/";
   if (!pointer.startsWith(prefix)) return undefined;
-  const token = pointer.slice(prefix.length);
+  const token: string = pointer.slice(prefix.length);
   if (token === "" || token.includes("/")) return undefined;
   return token.replaceAll("~1", "/").replaceAll("~0", "~");
 }
@@ -2869,14 +3009,14 @@ function decodeInboundXMLScalar(
 ): unknown {
   if (wireSchema !== undefined)
     return decodeInboundParameterValue(value, schema, {}, wireSchema, wireSchemas);
-  const descriptor = inboundSchemaRecord(schema);
+  const descriptor: Readonly<Record<string, unknown>> = inboundSchemaRecord(schema);
   if (schemaAcceptsType(descriptor["type"], "integer")) {
-    const parsed = Number(value);
+    const parsed: number = Number(value);
     if (!Number.isInteger(parsed)) throw new TypeError("XML value is not an integer");
     return parsed;
   }
   if (schemaAcceptsType(descriptor["type"], "number")) {
-    const parsed = Number(value);
+    const parsed: number = Number(value);
     if (!Number.isFinite(parsed)) throw new TypeError("XML value is not a number");
     return parsed;
   }
@@ -2892,8 +3032,8 @@ function unescapeInboundXML(value: string): string {
   return value
     .replace(
       /&#(?:x([0-9a-fA-F]+)|([0-9]+));/gu,
-      (_, hexadecimal: string | undefined, decimal: string | undefined) => {
-        const codePoint = Number.parseInt(
+      (_: string, hexadecimal: string | undefined, decimal: string | undefined): string => {
+        const codePoint: number = Number.parseInt(
           hexadecimal ?? decimal ?? "",
           hexadecimal === undefined ? 10 : 16,
         );
@@ -2936,39 +3076,48 @@ function assertInboundJSONSerializable(
   if (Array.isArray(value)) {
     if (Object.getPrototypeOf(value) !== Array.prototype)
       throw new TypeError("JSON response arrays must use the standard array prototype");
-    const keys = Object.keys(value);
-    if (keys.length !== value.length || keys.some((key, index) => key !== String(index)))
+    const keys: string[] = Object.keys(value);
+    if (
+      keys.length !== value.length ||
+      keys.some((key: string, index: number): boolean => key !== String(index))
+    )
       throw new TypeError("JSON response array has non-index properties");
-    const names = Object.getOwnPropertyNames(value);
-    const descriptors = Object.getOwnPropertyDescriptors(value) as Readonly<
-      Record<string, PropertyDescriptor>
-    >;
-    const descriptorValues = Object.values(descriptors) as readonly PropertyDescriptor[];
+    const names: string[] = Object.getOwnPropertyNames(value);
+    const descriptors: Readonly<Record<string, PropertyDescriptor>> =
+      Object.getOwnPropertyDescriptors(value) as Readonly<Record<string, PropertyDescriptor>>;
+    const descriptorValues: readonly PropertyDescriptor[] = Object.values(
+      descriptors,
+    ) as readonly PropertyDescriptor[];
     if (
       names.length !== value.length + 1 ||
-      names.some((name) => name !== "length" && !/^(0|[1-9][0-9]*)$/.test(name)) ||
-      descriptorValues.some((descriptor) => !Object.hasOwn(descriptor, "value")) ||
+      names.some((name: string): boolean => name !== "length" && !/^(0|[1-9][0-9]*)$/.test(name)) ||
+      descriptorValues.some(
+        (descriptor: PropertyDescriptor): boolean => !Object.hasOwn(descriptor, "value"),
+      ) ||
       Object.getOwnPropertySymbols(value).length !== 0
     )
       throw new TypeError("JSON response contains non-JSON array properties");
-    for (let index = 0; index < value.length; index++) {
+    for (let index: number = 0; index < value.length; index++) {
       if (!Object.hasOwn(value, index))
         throw new TypeError("JSON response contains a sparse array");
       assertInboundJSONSerializable(descriptors[String(index)]!.value, active);
     }
   } else {
-    const prototype = Object.getPrototypeOf(value);
+    const prototype: unknown = Object.getPrototypeOf(value);
     if (prototype !== Object.prototype && prototype !== null)
       throw new TypeError("JSON response objects must be plain records");
-    const names = Object.getOwnPropertyNames(value);
-    const descriptors = Object.getOwnPropertyDescriptors(value) as Readonly<
-      Record<string, PropertyDescriptor>
-    >;
-    const descriptorValues = Object.values(descriptors) as readonly PropertyDescriptor[];
+    const names: string[] = Object.getOwnPropertyNames(value);
+    const descriptors: Readonly<Record<string, PropertyDescriptor>> =
+      Object.getOwnPropertyDescriptors(value) as Readonly<Record<string, PropertyDescriptor>>;
+    const descriptorValues: readonly PropertyDescriptor[] = Object.values(
+      descriptors,
+    ) as readonly PropertyDescriptor[];
     if (
       Object.getOwnPropertySymbols(value).length !== 0 ||
       names.length !== Object.keys(value).length ||
-      descriptorValues.some((descriptor) => !Object.hasOwn(descriptor, "value"))
+      descriptorValues.some(
+        (descriptor: PropertyDescriptor): boolean => !Object.hasOwn(descriptor, "value"),
+      )
     )
       throw new TypeError("JSON response contains non-JSON properties");
     for (const descriptor of descriptorValues)
@@ -2995,48 +3144,56 @@ export async function responseFromHandler(
   value: InboundResponse,
   options?: InboundResponseOptions,
 ): Promise<Response> {
-  const headers = new Headers(value.headers);
+  const headers: Headers = new Headers(value.headers);
   if ((value.status === 204 || value.status === 205) && value.body !== undefined)
     throw new TypeError("Responses with status 204 or 205 must not include a body");
-  const statusDefinitions =
-    options?.responses.filter((definition) =>
+  const statusDefinitions: InboundResponseDefinition[] =
+    options?.responses.filter((definition: InboundResponseDefinition): boolean =>
       inboundResponseStatusMatches(definition.status, value.status),
     ) ?? [];
   if (options !== undefined && statusDefinitions.length === 0)
     throw new TypeError("response status " + value.status + " is not declared by this endpoint");
-  const generatedHeaderNames = await appendInboundResponseHeaderValues(
+  const generatedHeaderNames: ReadonlySet<string> = await appendInboundResponseHeaderValues(
     headers,
     value.headerValues,
-    statusDefinitions.flatMap((definition) => definition.headers ?? []),
+    statusDefinitions.flatMap(
+      (definition: InboundResponseDefinition): readonly WireHeaderDefinition[] =>
+        definition.headers ?? [],
+    ),
     options?.schemas ?? {},
     options?.codecs,
   );
   if (value.body === undefined) {
     if (
       options !== undefined &&
-      !statusDefinitions.some((definition) => definition.contentType === undefined)
+      !statusDefinitions.some(
+        (definition: InboundResponseDefinition): boolean => definition.contentType === undefined,
+      )
     )
       throw new TypeError("response status " + value.status + " requires a body");
     await validateInboundResponseHeaders(
       headers,
-      statusDefinitions.find((definition) => definition.contentType === undefined)?.headers,
+      statusDefinitions.find(
+        (definition: InboundResponseDefinition): boolean => definition.contentType === undefined,
+      )?.headers,
       options?.schemas ?? {},
       options?.codecs,
       generatedHeaderNames,
     );
     return new Response(null, { status: value.status, headers });
   }
-  const contentType = value.contentType ?? headers.get("content-type") ?? "application/json";
-  const normalizedContentType = normalizeInboundMediaType(contentType);
+  const contentType: string =
+    value.contentType ?? headers.get("content-type") ?? "application/json";
+  const normalizedContentType: string = normalizeInboundMediaType(contentType);
   if (!headers.has("content-type")) headers.set("content-type", contentType);
-  const definition = statusDefinitions
+  const definition: InboundResponseDefinition | undefined = statusDefinitions
     .filter(
-      (entry) =>
+      (entry: InboundResponseDefinition): boolean =>
         entry.contentType !== undefined &&
         inboundMediaTypeMatches(entry.contentType, normalizeInboundMediaType(contentType)),
     )
     .sort(
-      (left, right) =>
+      (left: InboundResponseDefinition, right: InboundResponseDefinition): number =>
         inboundMediaTypeMatchScore(right.contentType ?? "", contentType) -
         inboundMediaTypeMatchScore(left.contentType ?? "", contentType),
     )[0];
@@ -3070,7 +3227,9 @@ export async function responseFromHandler(
     ArrayBuffer.isView(value.body)
   )
     return new Response(value.body as BodyInit, { status: value.status, headers });
-  const codec = options?.codecs?.get(normalizeInboundMediaType(contentType));
+  const codec: MediaCodec<unknown> | undefined = options?.codecs?.get(
+    normalizeInboundMediaType(contentType),
+  );
   if (codec?.encode === undefined) throw new TypeError("missing encode codec for " + contentType);
   return new Response(await codec.encode(value.body, { contentType }), {
     status: value.status,
@@ -3087,13 +3246,18 @@ async function validateInboundResponseHeaders(
 ): Promise<void> {
   for (const definition of definitions ?? []) {
     if (generatedHeaderNames.has(definition.name.toLowerCase())) continue;
-    const value = headers.get(definition.name);
+    const value: string | null = headers.get(definition.name);
     if (value === null) {
       if (definition.required)
         throw new TypeError("missing required response header " + definition.name);
       continue;
     }
-    const decoded = await decodeInboundResponseHeaderValue(value, definition, schemas, codecs);
+    const decoded: unknown = await decodeInboundResponseHeaderValue(
+      value,
+      definition,
+      schemas,
+      codecs,
+    );
     validateWireValue(decoded, definition.schema, schemas, "decode");
   }
 }
@@ -3104,7 +3268,7 @@ async function decodeInboundResponseHeaderValue(
   schemas: WireSchemas,
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
 ): Promise<unknown> {
-  const contentType = normalizeInboundMediaType(definition.contentType ?? "");
+  const contentType: string = normalizeInboundMediaType(definition.contentType ?? "");
   if (contentType === "application/json" || contentType.endsWith("+json")) {
     try {
       return JSON.parse(value);
@@ -3113,9 +3277,12 @@ async function decodeInboundResponseHeaderValue(
     }
   }
   if (contentType === "application/x-www-form-urlencoded") {
-    const form = Object.create(null) as Record<string, string | string[]>;
+    const form: Record<string, string | string[]> = Object.create(null) as Record<
+      string,
+      string | string[]
+    >;
     for (const [name, item] of new URLSearchParams(value)) {
-      const previous = form[name];
+      const previous: string | string[] | undefined = form[name];
       defineOwnDataProperty(
         form,
         name,
@@ -3131,7 +3298,7 @@ async function decodeInboundResponseHeaderValue(
   if (contentType.includes("xml")) return decodeXML(value, definition.schema, schemas);
   if (contentType !== "") {
     if (contentType.startsWith("text/")) return value;
-    const codec = inboundMediaCodec(codecs, contentType);
+    const codec: MediaCodec<unknown> | undefined = inboundMediaCodec(codecs, contentType);
     if (codec?.decodeParameter === undefined)
       throw new TypeError("missing decodeParameter codec for response header " + definition.name);
     return codec.decodeParameter(value, { contentType });
@@ -3145,20 +3312,22 @@ function decodeInboundSimpleHeader(
   schemas: WireSchemas,
   explode: boolean,
 ): unknown {
-  const resolved = resolveInboundHeaderSchema(schema, schemas);
+  const resolved: WireSchema = resolveInboundHeaderSchema(schema, schemas);
   if (resolved.types?.includes("array")) {
-    const item = resolved.items ?? {};
-    return value.split(",").map((entry) => decodeInboundSimpleHeaderScalar(entry, item, schemas));
+    const item: WireSchema = resolved.items ?? {};
+    return value
+      .split(",")
+      .map((entry: string): unknown => decodeInboundSimpleHeaderScalar(entry, item, schemas));
   }
   if (resolved.types?.includes("object") || resolved.properties !== undefined) {
-    const result = Object.create(null) as Record<string, unknown>;
-    const tokens = value.split(",");
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    const tokens: string[] = value.split(",");
     if (explode) {
       for (const token of tokens) {
-        const separator = token.indexOf("=");
+        const separator: number = token.indexOf("=");
         if (separator < 0) continue;
-        const name = token.slice(0, separator);
-        const property = resolved.properties?.[name];
+        const name: string = token.slice(0, separator);
+        const property: WireProperty | undefined = resolved.properties?.[name];
         defineOwnDataProperty(
           result,
           name,
@@ -3170,9 +3339,9 @@ function decodeInboundSimpleHeader(
         );
       }
     } else
-      for (let index = 0; index + 1 < tokens.length; index += 2) {
-        const name = tokens[index]!;
-        const property = resolved.properties?.[name];
+      for (let index: number = 0; index + 1 < tokens.length; index += 2) {
+        const name: string = tokens[index]!;
+        const property: WireProperty | undefined = resolved.properties?.[name];
         defineOwnDataProperty(
           result,
           name,
@@ -3189,13 +3358,13 @@ function decodeInboundSimpleHeaderScalar(
   schema: WireSchema,
   schemas: WireSchemas,
 ): unknown {
-  const resolved = resolveInboundHeaderSchema(schema, schemas);
+  const resolved: WireSchema = resolveInboundHeaderSchema(schema, schemas);
   if (resolved.types?.includes("integer")) {
-    const number = Number(value);
+    const number: number = Number(value);
     return Number.isInteger(number) ? number : value;
   }
   if (resolved.types?.includes("number")) {
-    const number = Number(value);
+    const number: number = Number(value);
     return Number.isFinite(number) ? number : value;
   }
   if (resolved.types?.includes("boolean"))
@@ -3204,7 +3373,8 @@ function decodeInboundSimpleHeaderScalar(
 }
 
 function resolveInboundHeaderSchema(schema: WireSchema, schemas: WireSchemas): WireSchema {
-  const referenced = schema.reference === undefined ? undefined : schemas[schema.reference];
+  const referenced: WireSchema | undefined =
+    schema.reference === undefined ? undefined : schemas[schema.reference];
   return referenced === undefined ? schema : resolveInboundHeaderSchema(referenced, schemas);
 }
 
@@ -3215,11 +3385,16 @@ async function appendInboundResponseHeaderValues(
   schemas: WireSchemas,
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
 ): Promise<ReadonlySet<string>> {
-  const result = new Set<string>();
+  const result: Set<string> = new Set<string>();
   if (values === undefined) return result;
-  const byProperty = new Map(definitions.map((definition) => [definition.property, definition]));
+  const byProperty: Map<string, WireHeaderDefinition> = new Map(
+    definitions.map((definition: WireHeaderDefinition): [string, WireHeaderDefinition] => [
+      definition.property,
+      definition,
+    ]),
+  );
   for (const [property, value] of Object.entries(values)) {
-    const definition = byProperty.get(property);
+    const definition: WireHeaderDefinition | undefined = byProperty.get(property);
     if (definition === undefined)
       throw new TypeError("undeclared response header property " + property);
     if (headers.has(definition.name))
@@ -3242,14 +3417,14 @@ async function encodeInboundResponseHeaderValue(
   schemas: WireSchemas,
   codecs: ReadonlyMap<string, MediaCodec<unknown>> | undefined,
 ): Promise<string> {
-  const encoded = encodeWireValue(value, definition.schema, schemas);
-  const contentType = normalizeInboundMediaType(definition.contentType ?? "");
+  const encoded: unknown = encodeWireValue(value, definition.schema, schemas);
+  const contentType: string = normalizeInboundMediaType(definition.contentType ?? "");
   if (contentType === "application/json" || contentType.endsWith("+json"))
     return JSON.stringify(encoded);
   if (contentType.includes("xml")) return encodeXML(encoded, definition.schema, schemas);
   if (contentType === "application/x-www-form-urlencoded") return encodeInboundHeaderForm(encoded);
   if (contentType !== "" && !contentType.startsWith("text/")) {
-    const codec = inboundMediaCodec(codecs, contentType);
+    const codec: MediaCodec<unknown> | undefined = inboundMediaCodec(codecs, contentType);
     if (codec?.encodeParameter === undefined)
       throw new TypeError("missing encodeParameter codec for response header " + definition.name);
     return codec.encodeParameter(encoded, { contentType });
@@ -3259,7 +3434,7 @@ async function encodeInboundResponseHeaderValue(
 
 function encodeInboundHeaderForm(value: unknown): string {
   if (!isRecord(value)) return String(value ?? "");
-  const form = new URLSearchParams();
+  const form: URLSearchParams = new URLSearchParams();
   for (const [name, item] of Object.entries(value)) {
     for (const entry of Array.isArray(item) ? item : [item])
       form.append(
@@ -3270,15 +3445,16 @@ function encodeInboundHeaderForm(value: unknown): string {
   return form.toString();
 }
 
-function encodeInboundSimpleHeader(value: unknown, explode = false): string {
-  if (Array.isArray(value)) return value.map((item) => String(item ?? "")).join(",");
+function encodeInboundSimpleHeader(value: unknown, explode: boolean = false): string {
+  if (Array.isArray(value))
+    return value.map((item: unknown): string => String(item ?? "")).join(",");
   if (isRecord(value))
     return explode
       ? Object.entries(value)
-          .map(([name, item]) => name + "=" + String(item ?? ""))
+          .map(([name, item]: [string, unknown]): string => name + "=" + String(item ?? ""))
           .join(",")
       : Object.entries(value)
-          .flatMap(([name, item]) => [name, String(item ?? "")])
+          .flatMap(([name, item]: [string, unknown]): string[] => [name, String(item ?? "")])
           .join(",");
   return String(value ?? "");
 }
@@ -3293,3 +3469,61 @@ function inboundResponseStatusMatches(declared: string, actual: number): boolean
   if (/^[1-5][Xx][Xx]$/.test(declared)) return Number(declared[0]) === Math.floor(actual / 100);
   return false;
 }
+
+type MutableInboundParameterValues = {
+  path: Record<string, unknown>;
+  query: Record<string, unknown>;
+  querystring: Record<string, unknown>;
+  headerParams: Record<string, unknown>;
+  cookieParams: Record<string, unknown>;
+};
+
+type InboundSortValue = { field: string; direction: string };
+
+type MutableInboundWireSchema = {
+  reference?: string;
+  dynamicReference?: Exclude<WireSchema["dynamicReference"], undefined>;
+  properties?: Readonly<Record<string, WireProperty>>;
+  patternProperties?: Readonly<Record<string, WireSchema>>;
+  dependentSchemas?: Readonly<Record<string, WireSchema>>;
+  items?: WireSchema;
+  prefixItems?: readonly WireSchema[];
+  additionalProperties?: WireSchema | false;
+  unevaluatedProperties?: WireSchema | false;
+  unevaluatedItems?: WireSchema | false;
+  allOf?: readonly WireSchema[];
+  oneOf?: readonly WireSchema[];
+  anyOf?: readonly WireSchema[];
+  contains?: WireSchema;
+  not?: WireSchema;
+  if?: WireSchema;
+  then?: WireSchema;
+  else?: WireSchema;
+  contentSchema?: WireSchema;
+};
+
+type MaterializedInboundWireSchema = { schema: WireSchema; property: string };
+
+type InboundWireSchemaSiblings = {
+  reference?: string;
+  allOf?: readonly WireSchema[];
+  oneOf?: readonly WireSchema[];
+  anyOf?: readonly WireSchema[];
+};
+
+type InboundWireSchemaConjunction = { allOf: WireSchema[] };
+
+type InboundProtocolItems = {
+  readonly items: AsyncIterable<unknown>;
+};
+
+type RequiredStreamSignal = {
+  readonly signal: AbortSignal;
+};
+
+type InboundServerSentEvent = {
+  data: string;
+  event?: string;
+  id?: string;
+  retry?: number;
+};

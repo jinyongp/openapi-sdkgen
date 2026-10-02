@@ -283,12 +283,13 @@ export function resolveDynamicReference(
   schema: WireSchema,
   scope: DynamicScope,
 ): WireSchema | undefined {
-  const reference = schema.dynamicReference;
+  const reference: WireDynamicReference | undefined = schema.dynamicReference;
   if (reference === undefined) return undefined;
   // The outer resource is searched first. This lets a resource that overrides
   // an anchor constrain a base schema reached through a normal `$ref`.
   return (
-    scope.find((candidate) => candidate.dynamicAnchor === reference.anchor) ?? reference.fallback
+    scope.find((candidate: WireSchema): boolean => candidate.dynamicAnchor === reference.anchor) ??
+    reference.fallback
   );
 }
 
@@ -297,7 +298,7 @@ export function decodeSchemaContent(
   value: string,
   schema: WireSchema,
   components: WireSchemas,
-  ignoreContentMediaType = false,
+  ignoreContentMediaType: boolean = false,
   decodeExtended?: (
     value: string,
     mediaType: string,
@@ -305,16 +306,16 @@ export function decodeSchemaContent(
     components: WireSchemas,
   ) => unknown,
 ): unknown {
-  let decoded = value;
-  const encoding = schema.contentEncoding?.toLowerCase();
+  let decoded: string = value;
+  const encoding: string | undefined = schema.contentEncoding?.toLowerCase();
   if (encoding === "base64" || encoding === "base64url") {
     try {
-      const normalized =
+      const normalized: string =
         encoding === "base64url" ? value.replaceAll("-", "+").replaceAll("_", "/") : value;
       decoded = new TextDecoder().decode(
-        Uint8Array.from(atob(normalized), (character) => character.charCodeAt(0)),
+        Uint8Array.from(atob(normalized), (character: string): number => character.charCodeAt(0)),
       );
-    } catch (cause) {
+    } catch (cause: unknown) {
       throw new TypeError(`contentEncoding ${schema.contentEncoding} cannot decode the value`, {
         cause,
       });
@@ -327,13 +328,15 @@ export function decodeSchemaContent(
   ) {
     throw new TypeError(`unsupported contentEncoding ${schema.contentEncoding}`);
   }
-  const mediaType = ignoreContentMediaType ? undefined : schema.contentMediaType;
+  const mediaType: string | undefined = ignoreContentMediaType
+    ? undefined
+    : schema.contentMediaType;
   if (mediaType === undefined || mediaType === "" || mediaType.toLowerCase().startsWith("text/"))
     return decoded;
   if (isJSONMediaType(mediaType)) {
     try {
       return JSON.parse(decoded);
-    } catch (cause) {
+    } catch (cause: unknown) {
       throw new TypeError(`contentMediaType ${mediaType} cannot decode JSON`, { cause });
     }
   }
@@ -452,9 +455,9 @@ function createValidationContext(decodeContent: SchemaContentDecoder): Validatio
 }
 
 function schemaIdentity(context: ValidationContext, schema: WireSchema): number {
-  const existing = context.schemaIDs.get(schema);
+  const existing: number | undefined = context.schemaIDs.get(schema);
   if (existing !== undefined) return existing;
-  const identity = context.nextSchemaID++;
+  const identity: number = context.nextSchemaID++;
   context.schemaIDs.set(schema, identity);
   return identity;
 }
@@ -466,7 +469,9 @@ function validationCacheKey(
   dynamicScope: DynamicScope,
   ignoreContentMediaType: boolean,
 ): string {
-  const scope = dynamicScope.map((schema) => schemaIdentity(context, schema)).join(",");
+  const scope: string = dynamicScope
+    .map((schema: WireSchema): number => schemaIdentity(context, schema))
+    .join(",");
   return `${direction}:${options.unknownProperties}:${ignoreContentMediaType ? "ignore-content-media" : "content-media"}:${scope}`;
 }
 
@@ -497,12 +502,13 @@ function cacheValidation(
   evaluation: Evaluation,
 ): void {
   if (typeof value !== "object" || value === null) return;
-  let schemas = context.validatedObjects.get(value);
+  let schemas: WeakMap<WireSchema, Map<string, Evaluation>> | undefined =
+    context.validatedObjects.get(value);
   if (schemas === undefined) {
     schemas = new WeakMap<WireSchema, Map<string, Evaluation>>();
     context.validatedObjects.set(value, schemas);
   }
-  let keys = schemas.get(schema);
+  let keys: Map<string, Evaluation> | undefined = schemas.get(schema);
   if (keys === undefined) {
     keys = new Map<string, Evaluation>();
     schemas.set(schema, keys);
@@ -523,7 +529,7 @@ function transformWireValueWithContext(
   context: ValidationContext,
   ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
 ): unknown {
-  const scope = extendDynamicScope(dynamicScope, schema);
+  const scope: DynamicScope = extendDynamicScope(dynamicScope, schema);
   validateWireValueWithContext(
     value,
     schema,
@@ -535,7 +541,7 @@ function transformWireValueWithContext(
     ignoreContentMediaType,
   );
   if (value === null || value === undefined) return value;
-  const dynamicTarget = resolveDynamicReference(schema, scope);
+  const dynamicTarget: WireSchema | undefined = resolveDynamicReference(schema, scope);
   const representations: unknown[] | undefined =
     dynamicTarget !== undefined ||
     schema.reference !== undefined ||
@@ -560,7 +566,7 @@ function transformWireValueWithContext(
       ),
     );
   if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
+    const referenced: WireSchema | undefined = components[schema.reference];
     if (referenced !== undefined)
       representations?.push(
         transformWireValueWithContext(
@@ -576,8 +582,8 @@ function transformWireValueWithContext(
       );
   }
   if (Array.isArray(transformed)) {
-    transformed = transformed.map((item, index) => {
-      const itemSchema = schema.prefixItems?.[index] ?? schema.items;
+    transformed = transformed.map((item: unknown, index: number): unknown => {
+      const itemSchema: WireSchema | undefined = schema.prefixItems?.[index] ?? schema.items;
       return itemSchema === undefined
         ? item
         : transformWireValueWithContext(
@@ -597,11 +603,11 @@ function transformWireValueWithContext(
       schema.patternProperties !== undefined ||
       schema.additionalProperties !== undefined)
   ) {
-    const source = transformed;
-    const result = Object.create(null) as Record<string, unknown>;
+    const source: Record<string, unknown> = transformed;
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     let targets: Set<string> | undefined;
     for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item);
-    const properties = classifyWireProperties(source, schema, direction);
+    const properties: ClassifiedWireProperty[] = classifyWireProperties(source, schema, direction);
     for (const { sourceName, targetName } of properties) {
       if (sourceName === targetName) continue;
       delete result[sourceName];
@@ -609,10 +615,10 @@ function transformWireValueWithContext(
       targets.add(targetName);
     }
     for (const classified of properties) {
-      const { sourceName, targetName } = classified;
-      const item = mergeWireRepresentations(
+      const { sourceName, targetName }: ClassifiedWireProperty = classified;
+      const item: unknown = mergeWireRepresentations(
         source[sourceName],
-        classified.schemas.map((child) =>
+        classified.schemas.map((child: WireSchema): unknown =>
           transformWireValueWithContext(
             source[sourceName],
             child,
@@ -641,7 +647,7 @@ function transformWireValueWithContext(
     );
   }
   if (schema.if !== undefined) {
-    const branch = schemaMatchesForControlFlow(
+    const branch: WireSchema | undefined = schemaMatchesForControlFlow(
       value,
       schema.if,
       components,
@@ -667,7 +673,7 @@ function transformWireValueWithContext(
   }
   for (const variants of [schema.oneOf, schema.anyOf]) {
     if (variants === undefined) continue;
-    const matches = matchingSchemasForControlFlow(
+    const matches: readonly WireSchema[] = matchingSchemasForControlFlow(
       value,
       variants,
       components,
@@ -676,7 +682,7 @@ function transformWireValueWithContext(
       scope,
       context,
     );
-    const selected =
+    const selected: WireSchema | undefined =
       schema.discriminator !== undefined
         ? (discriminatorVariant(value, schema) ?? matches[0])
         : matches[0];
@@ -706,29 +712,36 @@ function mergeWireRepresentations(
 ): unknown {
   if (values.length === 0) return original;
   if (values.length === 1) return values[0];
-  if (values.every((value) => value === original)) return original;
+  if (values.every((value: unknown): boolean => value === original)) return original;
   if (values.every(Array.isArray)) {
-    const source = Array.isArray(original) ? original : [];
-    return values[0]!.map((_: unknown, index: number) =>
+    const source: unknown[] = Array.isArray(original) ? original : [];
+    return values[0]!.map((_: unknown, index: number): unknown =>
       mergeWireRepresentations(
         source[index],
-        values.map((value) => value[index]),
+        values.map((value: unknown[]): unknown => value[index]),
         context,
       ),
     );
   }
   if (values.every(isRecord)) {
-    const source = isRecord(original) ? original : (Object.create(null) as Record<string, unknown>);
-    const result = Object.create(null) as Record<string, unknown>;
-    const keys = new Set(values.flatMap((value) => Object.keys(value)));
-    const targets = new Set<string>();
+    const source: Record<string, unknown> = isRecord(original)
+      ? original
+      : (Object.create(null) as Record<string, unknown>);
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+    const keys: Set<string> = new Set(
+      values.flatMap((value: Record<string, unknown>): string[] => Object.keys(value)),
+    );
+    const targets: Set<string> = new Set<string>();
     for (const key of keys) {
-      const mapped = values.filter((value) => context.mappedProperties?.get(value)?.has(key));
+      const mapped: Record<string, unknown>[] = values.filter(
+        (value: Record<string, unknown>): boolean | undefined =>
+          context.mappedProperties?.get(value)?.has(key),
+      );
       // Explicit destinations survive removal of the same name as a source elsewhere.
       if (
         mapped.length === 0 &&
         Object.hasOwn(source, key) &&
-        values.some((value) => !Object.hasOwn(value, key))
+        values.some((value: Record<string, unknown>): boolean => !Object.hasOwn(value, key))
       )
         continue;
       if (mapped.length > 0) targets.add(key);
@@ -737,9 +750,10 @@ function mergeWireRepresentations(
         key,
         mergeWireRepresentations(
           source[key],
-          (mapped.length > 0 ? mapped : values.filter((value) => Object.hasOwn(value, key))).map(
-            (value) => value[key],
-          ),
+          (mapped.length > 0
+            ? mapped
+            : values.filter((value: Record<string, unknown>): boolean => Object.hasOwn(value, key))
+          ).map((value: Record<string, unknown>): unknown => value[key]),
           context,
         ),
       );
@@ -767,24 +781,27 @@ function classifyWireProperties(
   schema: WireSchema,
   direction: "encode" | "decode",
 ): ClassifiedWireProperty[] {
-  const declared = new Map(
+  const declared: Map<string, DeclaredWireProperty> = new Map(
     Object.entries(schema.properties ?? {}).map(
-      ([wireName, definition]) =>
+      ([wireName, definition]: [string, WireProperty]): readonly [string, DeclaredWireProperty] =>
         [
           direction === "encode" ? definition.property : wireName,
           { wireName, definition },
         ] as const,
     ),
   );
-  const patterns = Object.entries(schema.patternProperties ?? {}).map(
-    ([pattern, child]) => [new RegExp(pattern, "u"), child] as const,
+  const patterns: (readonly [RegExp, WireSchema])[] = Object.entries(
+    schema.patternProperties ?? {},
+  ).map(
+    ([pattern, child]: [string, WireSchema]): readonly [RegExp, WireSchema] =>
+      [new RegExp(pattern, "u"), child] as const,
   );
-  return Object.keys(value).map((sourceName) => {
-    const property = declared.get(sourceName);
-    const wireName = property?.wireName ?? sourceName;
+  return Object.keys(value).map((sourceName: string): ClassifiedWireProperties => {
+    const property: DeclaredWireProperty | undefined = declared.get(sourceName);
+    const wireName: string = property?.wireName ?? sourceName;
     const schemas: WireSchema[] = property === undefined ? [] : [property.definition.schema];
     for (const [pattern, child] of patterns) if (pattern.test(wireName)) schemas.push(child);
-    const additional = schemas.length === 0;
+    const additional: boolean = schemas.length === 0;
     if (
       additional &&
       schema.additionalProperties !== undefined &&
@@ -811,7 +828,7 @@ function validateWireValueWithContext(
   context: ValidationContext,
   ignoreContentMediaType: boolean = schema.ignoreContentMediaType === true,
 ): Evaluation {
-  const cached = cachedValidation(
+  const cached: Evaluation | undefined = cachedValidation(
     context,
     value,
     schema,
@@ -826,10 +843,10 @@ function validateWireValueWithContext(
       ? emptyEvaluation
       : { properties: new Set(), indexes: new Set() };
   assertFiniteJSONNumbers(value, context.finiteSeen);
-  const scope = extendDynamicScope(dynamicScope, schema);
+  const scope: DynamicScope = extendDynamicScope(dynamicScope, schema);
   if (schema.boolean === false) throw new TypeError("schema is false");
   if (value === undefined) return evaluation;
-  const dynamicTarget = resolveDynamicReference(schema, scope);
+  const dynamicTarget: WireSchema | undefined = resolveDynamicReference(schema, scope);
   if (dynamicTarget !== undefined) {
     mergeEvaluation(
       evaluation,
@@ -846,7 +863,7 @@ function validateWireValueWithContext(
     );
   }
   if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
+    const referenced: WireSchema | undefined = components[schema.reference];
     if (referenced !== undefined)
       mergeEvaluation(
         evaluation,
@@ -862,7 +879,10 @@ function validateWireValueWithContext(
         ),
       );
   }
-  if (schema.types !== undefined && !schema.types.some((type) => valueMatchesType(value, type))) {
+  if (
+    schema.types !== undefined &&
+    !schema.types.some((type: string): boolean => valueMatchesType(value, type))
+  ) {
     throw new TypeError(`expected ${schema.types.join(" | ")}`);
   }
   if (schema.constValue !== undefined && !wireValueEquals(value, schema.constValue)) {
@@ -870,7 +890,7 @@ function validateWireValueWithContext(
   }
   if (
     schema.enumValues !== undefined &&
-    !schema.enumValues.some((item) => wireValueEquals(value, item))
+    !schema.enumValues.some((item: unknown): boolean => wireValueEquals(value, item))
   ) {
     throw new TypeError("value is not in enum");
   }
@@ -901,7 +921,7 @@ function validateWireValueWithContext(
       throw new TypeError(`must match format ${schema.format}`);
   }
   if (schema.oneOf !== undefined) {
-    const matches = matchingSchemasForControlFlow(
+    const matches: readonly WireSchema[] = matchingSchemasForControlFlow(
       value,
       schema.oneOf,
       components,
@@ -919,7 +939,7 @@ function validateWireValueWithContext(
       );
   }
   if (schema.anyOf !== undefined) {
-    const matches = matchingSchemasForControlFlow(
+    const matches: readonly WireSchema[] = matchingSchemasForControlFlow(
       value,
       schema.anyOf,
       components,
@@ -942,7 +962,7 @@ function validateWireValueWithContext(
     throw new TypeError("must not match negated schema");
   }
   if (schema.if !== undefined) {
-    const matches = schemaMatchesForControlFlow(
+    const matches: boolean = schemaMatchesForControlFlow(
       value,
       schema.if,
       components,
@@ -964,7 +984,7 @@ function validateWireValueWithContext(
           context,
         ),
       );
-    const branch = matches ? schema.then : schema.else;
+    const branch: WireSchema | undefined = matches ? schema.then : schema.else;
     if (branch !== undefined)
       mergeEvaluation(
         evaluation,
@@ -988,7 +1008,7 @@ function validateWireValueWithContext(
     );
   }
   if (Array.isArray(value)) {
-    for (let index = 0; index < value.length; index++) {
+    for (let index: number = 0; index < value.length; index++) {
       if (!Object.hasOwn(value, index)) throw new TypeError("must not contain sparse items");
     }
     if (schema.minItems !== undefined && value.length < schema.minItems)
@@ -998,8 +1018,8 @@ function validateWireValueWithContext(
     if (schema.uniqueItems && !hasUniqueWireValues(value))
       throw new TypeError("must contain unique items");
     if (schema.contains !== undefined) {
-      const matches = value.filter((item, index) => {
-        const matches = schemaMatchesForControlFlow(
+      const matches: number = value.filter((item: unknown, index: number): boolean => {
+        const matches: boolean = schemaMatchesForControlFlow(
           item,
           schema.contains!,
           components,
@@ -1011,13 +1031,13 @@ function validateWireValueWithContext(
         if (matches) evaluation.indexes.add(index);
         return matches;
       }).length;
-      const minimum = schema.minContains ?? 1;
+      const minimum: number = schema.minContains ?? 1;
       if (matches < minimum) throw new TypeError(`must contain at least ${minimum} matching items`);
       if (schema.maxContains !== undefined && matches > schema.maxContains)
         throw new TypeError(`must contain at most ${schema.maxContains} matching items`);
     }
     for (const [index, item] of value.entries()) {
-      const itemSchema = schema.prefixItems?.[index] ?? schema.items;
+      const itemSchema: WireSchema | undefined = schema.prefixItems?.[index] ?? schema.items;
       if (itemSchema !== undefined) {
         validateWireValueWithContext(
           item,
@@ -1077,10 +1097,10 @@ function validateWireValueWithContext(
     throw new TypeError(`must contain at least ${schema.minProperties} properties`);
   if (schema.maxProperties !== undefined && Object.keys(value).length > schema.maxProperties)
     throw new TypeError(`must contain at most ${schema.maxProperties} properties`);
-  const properties = schema.properties ?? {};
-  const allowed = new Set<string>();
+  const properties: Readonly<Record<string, WireProperty>> = schema.properties ?? {};
+  const allowed: Set<string> = new Set<string>();
   for (const [wireName, definition] of Object.entries(properties)) {
-    const sourceName = direction === "encode" ? definition.property : wireName;
+    const sourceName: string = direction === "encode" ? definition.property : wireName;
     allowed.add(sourceName);
     if (Object.hasOwn(value, sourceName)) {
       try {
@@ -1094,7 +1114,7 @@ function validateWireValueWithContext(
           context,
         );
         evaluation.properties.add(sourceName);
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw new TypeError(
           `property ${wireName}: ${cause instanceof Error ? cause.message : "invalid value"}`,
           { cause },
@@ -1103,21 +1123,21 @@ function validateWireValueWithContext(
     }
   }
   for (const required of schema.required ?? []) {
-    const definition = properties[required];
-    const sourceName =
+    const definition: WireProperty | undefined = properties[required];
+    const sourceName: string =
       direction === "encode" && definition !== undefined ? definition.property : required;
     if (!Object.hasOwn(value, sourceName) || value[sourceName] === undefined) {
       throw new TypeError(`missing required property ${required}`);
     }
   }
   for (const [property, required] of Object.entries(schema.dependentRequired ?? {})) {
-    const sourceProperty =
+    const sourceProperty: string =
       direction === "encode" && properties[property] !== undefined
         ? properties[property].property
         : property;
     if (!Object.hasOwn(value, sourceProperty) || value[sourceProperty] === undefined) continue;
     for (const dependency of required) {
-      const sourceDependency =
+      const sourceDependency: string =
         direction === "encode" && properties[dependency] !== undefined
           ? properties[dependency].property
           : dependency;
@@ -1127,7 +1147,7 @@ function validateWireValueWithContext(
     }
   }
   for (const [property, dependency] of Object.entries(schema.dependentSchemas ?? {})) {
-    const sourceProperty =
+    const sourceProperty: string =
       direction === "encode" && properties[property] !== undefined
         ? properties[property].property
         : property;
@@ -1145,7 +1165,7 @@ function validateWireValueWithContext(
         ),
       );
   }
-  const classified = classifyWireProperties(value, schema, direction);
+  const classified: ClassifiedWireProperty[] = classifyWireProperties(value, schema, direction);
   for (const property of classified) {
     if (!property.additional) allowed.add(property.sourceName);
     for (const child of property.schemas)
@@ -1264,37 +1284,40 @@ function matchesWireFormat(value: string, format: string): boolean {
 }
 
 function matchesWireDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(value);
+  const match: RegExpExecArray | null = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(value);
   if (match === null) return false;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day));
+  const year: number = Number(match[1]);
+  const month: number = Number(match[2]);
+  const day: number = Number(match[3]);
+  const date: Date = new Date(Date.UTC(year, month - 1, day));
   return (
     date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
   );
 }
 
 function matchesWireTime(value: string): boolean {
-  const match = /^(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/iu.exec(value);
+  const match: RegExpExecArray | null =
+    /^(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/iu.exec(value);
   if (match === null) return false;
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  const second = Number(match[3]);
+  const hour: number = Number(match[1]);
+  const minute: number = Number(match[2]);
+  const second: number = Number(match[3]);
   return hour <= 23 && minute <= 59 && second <= 60;
 }
 
 function matchesWireDateTime(value: string): boolean {
-  const split = value.indexOf("T") >= 0 ? value.split("T", 2) : value.split("t", 2);
+  const split: string[] = value.indexOf("T") >= 0 ? value.split("T", 2) : value.split("t", 2);
   return split.length === 2 && matchesWireDate(split[0]!) && matchesWireTime(split[1]!);
 }
 
 function matchesWireHostname(value: string): boolean {
   if (value.length === 0 || value.length > 253 || /[^\x00-\x7f]/u.test(value)) return false;
-  const normalized = value.endsWith(".") ? value.slice(0, -1) : value;
+  const normalized: string = value.endsWith(".") ? value.slice(0, -1) : value;
   return (
     normalized.length > 0 &&
-    normalized.split(".").every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/iu.test(label))
+    normalized
+      .split(".")
+      .every((label: string): boolean => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/iu.test(label))
   );
 }
 
@@ -1308,10 +1331,13 @@ function matchesWireIDNHostname(value: string): boolean {
 }
 
 function matchesWireIPv4(value: string): boolean {
-  const segments = value.split(".");
+  const segments: string[] = value.split(".");
   return (
     segments.length === 4 &&
-    segments.every((segment) => /^(?:0|[1-9][0-9]{0,2})$/u.test(segment) && Number(segment) <= 255)
+    segments.every(
+      (segment: string): boolean =>
+        /^(?:0|[1-9][0-9]{0,2})$/u.test(segment) && Number(segment) <= 255,
+    )
   );
 }
 
@@ -1328,7 +1354,7 @@ function matchesWireURI(value: string, absolute: boolean, allowUnicode: boolean)
   if (/[\u0000-\u001f\u007f\s]/u.test(value) || (!allowUnicode && /[^\x00-\x7f]/u.test(value)))
     return false;
   try {
-    const parsed = new URL(value, "https://format.invalid/");
+    const parsed: URL = new URL(value, "https://format.invalid/");
     return !absolute || (/^[a-z][a-z0-9+.-]*:/iu.test(value) && parsed.protocol !== "");
   } catch {
     return false;
@@ -1337,7 +1363,7 @@ function matchesWireURI(value: string, absolute: boolean, allowUnicode: boolean)
 
 function matchesWireURITemplate(value: string): boolean {
   if (/[\u0000-\u001f\u007f\s]/u.test(value)) return false;
-  let depth = 0;
+  let depth: number = 0;
   for (const character of value) {
     if (character === "{") depth++;
     else if (character === "}") {
@@ -1350,8 +1376,8 @@ function matchesWireURITemplate(value: string): boolean {
 
 function discriminatorVariant(value: unknown, schema: WireSchema): WireSchema | undefined {
   if (!isRecord(value) || schema.discriminator === undefined) return undefined;
-  const property = schema.discriminator.property;
-  const candidate = value[property];
+  const property: string = schema.discriminator.property;
+  const candidate: unknown = value[property];
   if (typeof candidate !== "string") return schema.discriminator.defaultMapping;
   return schema.discriminator.mapping?.[candidate] ?? schema.discriminator.defaultMapping;
 }
@@ -1377,7 +1403,10 @@ function valueMatchesType(value: unknown, type: string): boolean {
   }
 }
 
-function assertFiniteJSONNumbers(value: unknown, seen = new WeakSet<object>()): void {
+function assertFiniteJSONNumbers(
+  value: unknown,
+  seen: WeakSet<object> = new WeakSet<object>(),
+): void {
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new TypeError("must be a finite JSON number");
     return;
@@ -1396,19 +1425,20 @@ function wireValueEquals(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) return true;
   if (Array.isArray(left) && Array.isArray(right)) {
     if (left.length !== right.length) return false;
-    for (let index = 0; index < left.length; index++) {
+    for (let index: number = 0; index < left.length; index++) {
       if (Object.hasOwn(left, index) !== Object.hasOwn(right, index)) return false;
       if (Object.hasOwn(left, index) && !wireValueEquals(left[index], right[index])) return false;
     }
     return true;
   }
   if (isRecord(left) && isRecord(right)) {
-    const leftKeys = Object.keys(left).sort();
-    const rightKeys = Object.keys(right).sort();
+    const leftKeys: string[] = Object.keys(left).sort();
+    const rightKeys: string[] = Object.keys(right).sort();
     return (
       leftKeys.length === rightKeys.length &&
       leftKeys.every(
-        (key, index) => key === rightKeys[index] && wireValueEquals(left[key], right[key]),
+        (key: string, index: number): boolean =>
+          key === rightKeys[index] && wireValueEquals(left[key], right[key]),
       )
     );
   }
@@ -1435,25 +1465,28 @@ function wireValueFingerprint(value: unknown): string {
   }
   if (Array.isArray(value)) {
     return `array:[${value
-      .map((item, index) => (Object.hasOwn(value, index) ? wireValueFingerprint(item) : "<sparse>"))
+      .map((item: unknown, index: number): string =>
+        Object.hasOwn(value, index) ? wireValueFingerprint(item) : "<sparse>",
+      )
       .join(",")}]`;
   }
   if (isRecord(value)) {
-    const keys = Object.keys(value).sort();
+    const keys: string[] = Object.keys(value).sort();
     return `object:{${keys
-      .map((key) => `${JSON.stringify(key)}:${wireValueFingerprint(value[key])}`)
+      .map((key: string): string => `${JSON.stringify(key)}:${wireValueFingerprint(value[key])}`)
       .join(",")}}`;
   }
   return `object:${Object.prototype.toString.call(value)}`;
 }
 
 function hasUniqueWireValues(values: readonly unknown[]): boolean {
-  const buckets = new Map<string, unknown[]>();
+  const buckets: Map<string, unknown[]> = new Map<string, unknown[]>();
   for (const value of values) {
-    const fingerprint = wireValueFingerprint(value);
-    const bucket = buckets.get(fingerprint);
+    const fingerprint: string = wireValueFingerprint(value);
+    const bucket: unknown[] | undefined = buckets.get(fingerprint);
     if (bucket !== undefined) {
-      if (bucket.some((previous) => wireValueEquals(previous, value))) return false;
+      if (bucket.some((previous: unknown): boolean => wireValueEquals(previous, value)))
+        return false;
       bucket.push(value);
     } else {
       buckets.set(fingerprint, [value]);
@@ -1464,9 +1497,9 @@ function hasUniqueWireValues(values: readonly unknown[]): boolean {
 
 function isMultipleOf(value: number, divisor: number): boolean {
   if (!Number.isFinite(value) || !Number.isFinite(divisor) || divisor <= 0) return false;
-  const [numerator, numeratorScale] = decimalInteger(value);
-  const [denominator, denominatorScale] = decimalInteger(divisor);
-  const scale = numeratorScale - denominatorScale;
+  const [numerator, numeratorScale]: readonly [bigint, number] = decimalInteger(value);
+  const [denominator, denominatorScale]: readonly [bigint, number] = decimalInteger(divisor);
+  const scale: number = numeratorScale - denominatorScale;
   // Number's finite decimal representation bounds this exponent to 632.
   return scale >= 0
     ? (numerator * 10n ** BigInt(scale)) % denominator === 0n
@@ -1474,9 +1507,9 @@ function isMultipleOf(value: number, divisor: number): boolean {
 }
 
 function decimalInteger(value: number): readonly [bigint, number] {
-  const [mantissa = "0", exponent = "0"] = String(value).split("e");
-  const point = mantissa.indexOf(".");
-  const fractional = point < 0 ? 0 : mantissa.length - point - 1;
+  const [mantissa = "0", exponent = "0"]: string[] = String(value).split("e");
+  const point: number = mantissa.indexOf(".");
+  const fractional: number = point < 0 ? 0 : mantissa.length - point - 1;
   return [BigInt(mantissa.replace(".", "")), Number(exponent) - fractional];
 }
 
@@ -1515,7 +1548,7 @@ function matchingSchemasForControlFlow(
   dynamicScope: DynamicScope,
   context: ValidationContext,
 ): readonly WireSchema[] {
-  const strictMatches = schemas.filter((schema) =>
+  const strictMatches: WireSchema[] = schemas.filter((schema: WireSchema): boolean =>
     schemaMatches(
       value,
       schema,
@@ -1527,7 +1560,7 @@ function matchingSchemasForControlFlow(
     ),
   );
   if (strictMatches.length > 0 || options.unknownProperties === "reject") return strictMatches;
-  return schemas.filter((schema) =>
+  return schemas.filter((schema: WireSchema): boolean =>
     schemaMatches(value, schema, components, direction, options, dynamicScope, context),
   );
 }
@@ -1559,3 +1592,13 @@ function schemaMatches(
 
 /** Wire validation and mapping for plans that do not require extended schema content media. */
 export const jsonWireCodec: WireCodec = /* @__PURE__ */ createWireCodec(decodeSchemaContent);
+
+type DeclaredWireProperty = { readonly wireName: string; readonly definition: WireProperty };
+
+type ClassifiedWireProperties = {
+  sourceName: string;
+  wireName: string;
+  targetName: string;
+  schemas: WireSchema[];
+  additional: boolean;
+};

@@ -27,23 +27,26 @@ export async function* decodeResponseStreamItems(
     maxFrameBytes: options.maxFrameBytes,
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   };
-  const frames =
+  const frames: AsyncIterable<unknown> =
     options.streamCodec?.protocol === undefined
       ? decodeBuiltInStreamFrames(body, options)
       : decodeCustomStreamProtocol(body, options.streamCodec.protocol, context);
-  const items = decodeStreamApplicationItems(frames, options, context);
-  const iterator = items[Symbol.asyncIterator]();
+  const items: AsyncIterable<unknown> = decodeStreamApplicationItems(frames, options, context);
+  const iterator: AsyncIterator<unknown, unknown, unknown> = items[Symbol.asyncIterator]();
   try {
     while (true) {
-      const next = await awaitAbortable(Promise.resolve(iterator.next()), options.signal);
+      const next: IteratorResult<unknown, unknown> = await awaitAbortable(
+        Promise.resolve(iterator.next()),
+        options.signal,
+      );
       if (next.done) return;
       yield next.value;
     }
   } finally {
     if (iterator.return !== undefined) {
-      const close = Promise.resolve(iterator.return());
-      if (options.signal?.aborted) void close.catch(() => undefined);
-      else await close.catch(() => undefined);
+      const close: Promise<IteratorResult<unknown, unknown>> = Promise.resolve(iterator.return());
+      if (options.signal?.aborted) void close.catch((): undefined => undefined);
+      else await close.catch((): undefined => undefined);
     }
   }
 }
@@ -78,21 +81,24 @@ async function* decodeCustomStreamProtocol(
   protocol: StreamProtocol<unknown>,
   context: StreamContext,
 ): AsyncIterable<unknown> {
-  const reader = createMediaStreamReader(body, context.maxFrameBytes, context.signal);
-  const frames = protocol.decode(reader, context);
-  const iterator = frames[Symbol.asyncIterator]();
+  const reader: StreamReader = createMediaStreamReader(body, context.maxFrameBytes, context.signal);
+  const frames: AsyncIterable<unknown> = protocol.decode(reader, context);
+  const iterator: AsyncIterator<unknown, unknown, unknown> = frames[Symbol.asyncIterator]();
   try {
     while (true) {
-      const next = await awaitAbortable(Promise.resolve(iterator.next()), context.signal);
+      const next: IteratorResult<unknown, unknown> = await awaitAbortable(
+        Promise.resolve(iterator.next()),
+        context.signal,
+      );
       if (next.done) return;
       yield next.value;
     }
   } finally {
     await reader.cancel(context.signal?.reason);
     if (iterator.return !== undefined) {
-      const close = Promise.resolve(iterator.return());
-      if (context.signal?.aborted) void close.catch(() => undefined);
-      else await close.catch(() => undefined);
+      const close: Promise<IteratorResult<unknown, unknown>> = Promise.resolve(iterator.return());
+      if (context.signal?.aborted) void close.catch((): undefined => undefined);
+      else await close.catch((): undefined => undefined);
     }
   }
 }
@@ -104,11 +110,11 @@ function createMediaStreamReader(
 ): StreamReader {
   if (!Number.isSafeInteger(maxFrameBytes) || maxFrameBytes <= 0)
     throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
-  const reader = body.getReader();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
   let pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
-  let done = false;
-  let released = false;
-  const cancel = async (reason?: unknown): Promise<void> => {
+  let done: boolean = false;
+  let released: boolean = false;
+  const cancel: (reason?: unknown) => Promise<void> = async (reason?: unknown): Promise<void> => {
     if (released) return;
     released = true;
     try {
@@ -125,7 +131,10 @@ function createMediaStreamReader(
         );
       if (released) return null;
       while (pending.length === 0 && !done) {
-        const next = await awaitAbortable(reader.read(), signal);
+        const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> = await awaitAbortable(
+          reader.read(),
+          signal,
+        );
         done = next.done;
         if (next.value !== undefined) pending = next.value;
       }
@@ -136,7 +145,7 @@ function createMediaStreamReader(
         }
         return null;
       }
-      const result = pending.slice(0, maxBytes);
+      const result: Uint8Array<ArrayBuffer> = pending.slice(0, maxBytes);
       pending = pending.slice(result.length);
       return result;
     },
@@ -148,27 +157,28 @@ async function* decodeStreamItems(
   body: ReadableStream<Uint8Array>,
   options: StreamDecodeOptions,
 ): AsyncIterable<unknown> {
-  const { contentType, streamFraming, maxFrameBytes, signal } = options;
+  const { contentType, streamFraming, maxFrameBytes, signal }: StreamDecodeOptions = options;
   if (streamFraming === "sse") {
     yield* decodeSSEStreamItems(body, maxFrameBytes, signal);
     return;
   }
   if (streamFraming !== "line-delimited-json" && streamFraming !== "json-sequence")
     throw new TypeError(`missing stream protocol for ${contentType}`);
-  const decoder = new TextDecoder();
-  const encoder = new TextEncoder();
-  const assertFrameBytes = (source: string): void => {
+  const decoder: TextDecoder = new TextDecoder();
+  const encoder: TextEncoder = new TextEncoder();
+  const assertFrameBytes: (source: string) => void = (source: string): void => {
     if (encoder.encode(source).byteLength > maxFrameBytes)
       throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
   };
-  let pending = "";
-  const reader = body.getReader();
+  let pending: string = "";
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
   try {
     while (true) {
-      const { done, value } = await awaitAbortable(reader.read(), signal);
+      const { done, value }: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+        await awaitAbortable(reader.read(), signal);
       pending += decoder.decode(value, { stream: !done });
       if (streamFraming === "json-sequence") {
-        const records = pending.split("\u001e");
+        const records: string[] = pending.split("\u001e");
         pending = records.pop() ?? "";
         for (const record of records) {
           assertFrameBytes(record);
@@ -177,10 +187,10 @@ async function* decodeStreamItems(
       } else {
         let newline: number;
         while ((newline = pending.indexOf("\n")) >= 0) {
-          const rawLine = pending.slice(0, newline);
+          const rawLine: string = pending.slice(0, newline);
           pending = pending.slice(newline + 1);
           assertFrameBytes(rawLine);
-          const line = rawLine.replace(/\r$/, "");
+          const line: string = rawLine.replace(/\r$/, "");
           if (line.trim() !== "") yield parseStreamJSON(line);
         }
       }
@@ -205,37 +215,37 @@ async function* decodeSSEStreamItems(
   maxFrameBytes: number,
   signal?: AbortSignal,
 ): AsyncIterable<ServerSentEvent> {
-  const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
-  const encoder = new TextEncoder();
-  const reader = body.getReader();
+  const decoder: TextDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
+  const encoder: TextEncoder = new TextEncoder();
+  const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
   let pending: string[] = [];
-  let pendingBytes = 0;
-  let afterCR = false;
-  let countLF = false;
-  let frameBytes = 0;
-  let firstText = true;
-  let data = "";
-  let hasData = false;
+  let pendingBytes: number = 0;
+  let afterCR: boolean = false;
+  let countLF: boolean = false;
+  let frameBytes: number = 0;
+  let firstText: boolean = true;
+  let data: string = "";
+  let hasData: boolean = false;
   let event: string | undefined;
   let lastEventID: string | undefined;
   let retry: number | undefined;
 
-  const assertFrameBytes = (byteLength: number): void => {
+  const assertFrameBytes: (byteLength: number) => void = (byteLength: number): void => {
     if (byteLength > maxFrameBytes)
       throw new TypeError(`stream frame exceeds ${maxFrameBytes} bytes`);
   };
-  const resetEvent = (): void => {
+  const resetEvent: () => void = (): void => {
     data = "";
     hasData = false;
     event = undefined;
     retry = undefined;
   };
-  const dispatchEvent = (): ServerSentEvent | undefined => {
+  const dispatchEvent: () => ServerSentEvent | undefined = (): ServerSentEvent | undefined => {
     if (!hasData) {
       resetEvent();
       return undefined;
     }
-    const item: { data: string; event?: string; id?: string; retry?: number } = {
+    const item: MutableServerSentEvent = {
       data: data.slice(0, -1),
     };
     if (event !== undefined) item.event = event;
@@ -244,11 +254,11 @@ async function* decodeSSEStreamItems(
     resetEvent();
     return item;
   };
-  const processLine = (line: string): void => {
+  const processLine: (line: string) => void = (line: string): void => {
     if (line.startsWith(":")) return;
-    const separator = line.indexOf(":");
-    const field = separator < 0 ? line : line.slice(0, separator);
-    let value = separator < 0 ? "" : line.slice(separator + 1);
+    const separator: number = line.indexOf(":");
+    const field: string = separator < 0 ? line : line.slice(0, separator);
+    let value: string = separator < 0 ? "" : line.slice(separator + 1);
     if (value.startsWith(" ")) value = value.slice(1);
     switch (field) {
       case "data":
@@ -263,7 +273,7 @@ async function* decodeSSEStreamItems(
         break;
       case "retry":
         if (/^[0-9]+$/.test(value)) {
-          const parsed = Number(value);
+          const parsed: number = Number(value);
           if (Number.isFinite(parsed)) retry = parsed;
         }
         break;
@@ -272,15 +282,16 @@ async function* decodeSSEStreamItems(
 
   try {
     while (true) {
-      const { done, value } = await awaitAbortable(reader.read(), signal);
-      let decoded = decoder.decode(value, { stream: !done });
+      const { done, value }: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
+        await awaitAbortable(reader.read(), signal);
+      let decoded: string = decoder.decode(value, { stream: !done });
       if (firstText && decoded !== "") {
         if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
         firstText = false;
       }
-      let start = 0;
-      for (let index = 0; index < decoded.length; index++) {
-        const code = decoded.charCodeAt(index);
+      let start: number = 0;
+      for (let index: number = 0; index < decoded.length; index++) {
+        const code: number = decoded.charCodeAt(index);
         if (afterCR) {
           afterCR = false;
           if (code === 10) {
@@ -293,18 +304,18 @@ async function* decodeSSEStreamItems(
           }
         }
         if (code !== 10 && code !== 13) continue;
-        const part = decoded.slice(start, index);
+        const part: string = decoded.slice(start, index);
         pending.push(part);
         pendingBytes += encoder.encode(part).byteLength;
-        const line = pending.join("");
-        const lineBytes = pendingBytes + 1;
+        const line: string = pending.join("");
+        const lineBytes: number = pendingBytes + 1;
         pending = [];
         pendingBytes = 0;
         start = index + 1;
         afterCR = code === 13;
         countLF = line !== "";
         if (line === "") {
-          const item = dispatchEvent();
+          const item: ServerSentEvent | undefined = dispatchEvent();
           frameBytes = 0;
           if (item !== undefined) yield item;
           continue;
@@ -314,7 +325,7 @@ async function* decodeSSEStreamItems(
         processLine(line);
       }
       if (start < decoded.length) {
-        const part = decoded.slice(start);
+        const part: string = decoded.slice(start);
         pending.push(part);
         pendingBytes += encoder.encode(part).byteLength;
       }
@@ -345,21 +356,33 @@ function awaitAbortable<Value>(
 ): Promise<Value> {
   if (signal === undefined) return value;
   if (signal.aborted) {
-    void value.catch(() => undefined);
+    void value.catch((): undefined => undefined);
     return Promise.reject(signal.reason);
   }
-  return new Promise((resolve, reject) => {
-    const onAbort = (): void => reject(signal.reason);
-    signal.addEventListener("abort", onAbort, { once: true });
-    value.then(
-      (result) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(result);
-      },
-      (cause) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(cause);
-      },
-    );
-  });
+  return new Promise(
+    (
+      resolve: (value: Value | PromiseLike<Value>) => void,
+      reject: (reason?: unknown) => void,
+    ): void => {
+      const onAbort: () => void = (): void => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      value.then(
+        (result: Value): void => {
+          signal.removeEventListener("abort", onAbort);
+          resolve(result);
+        },
+        (cause: unknown): void => {
+          signal.removeEventListener("abort", onAbort);
+          reject(cause);
+        },
+      );
+    },
+  );
 }
+
+type MutableServerSentEvent = {
+  data: string;
+  event?: string;
+  id?: string;
+  retry?: number;
+};

@@ -115,16 +115,19 @@ export function createPaginator<
   input: PaginateInput<Input, Profile, CursorName, OffsetName>,
   ...options: PaginationOptions<Options, OptionsRequired>
 ) => AsyncIterable<Item> {
-  return (input, ...options) => ({
-    async *[Symbol.asyncIterator]() {
+  return (
+    input: PaginateInput<Input, Profile, CursorName, OffsetName>,
+    ...options: PaginationOptions<Options, OptionsRequired>
+  ): PaginatorIterator<Item> => ({
+    async *[Symbol.asyncIterator](): AsyncGenerator<Awaited<Item>, void, unknown> {
       const root: Record<string, unknown> = isRecord(input) ? { ...input } : {};
-      const requestedMode = root["mode"];
+      const requestedMode: unknown = root["mode"];
       delete root["mode"];
-      const mode = resolvePaginationMode(plan.mode, requestedMode);
-      const query = isRecord(root["query"]) ? { ...root["query"] } : {};
-      const cursorName = plan.request.cursor;
-      const offsetName = plan.request.offset;
-      const limitName = plan.request.limit;
+      const mode: "cursor" | "offset" = resolvePaginationMode(plan.mode, requestedMode);
+      const query: Record<string, unknown> = isRecord(root["query"]) ? { ...root["query"] } : {};
+      const cursorName: CursorName | undefined = plan.request.cursor;
+      const offsetName: OffsetName | undefined = plan.request.offset;
+      const limitName: string | undefined = plan.request.limit;
       if (mode === "cursor" && offsetName !== undefined && query[offsetName] !== undefined) {
         throw new TypeError(`cursor pagination does not accept ${offsetName}`);
       }
@@ -132,20 +135,23 @@ export function createPaginator<
         throw new TypeError(`offset pagination does not accept ${cursorName}`);
       }
       root["query"] = query;
-      const seenCursors = new Set<string>();
+      const seenCursors: Set<string> = new Set<string>();
       if (cursorName !== undefined && typeof query[cursorName] === "string") {
         seenCursors.add(query[cursorName]);
       }
-      const seenOffsets = new Set<number>();
+      const seenOffsets: Set<number> = new Set<number>();
       if (offsetName !== undefined && typeof query[offsetName] === "number") {
         seenOffsets.add(query[offsetName]);
       }
       for (;;) {
-        const page = await requestPage({ ...root, query: { ...query } } as Input, ...options);
-        const items = pageItems(page, plan.response.items);
+        const page: Awaited<Page> = await requestPage(
+          { ...root, query: { ...query } } as Input,
+          ...options,
+        );
+        const items: readonly unknown[] = pageItems(page, plan.response.items);
         for (const item of items) yield item as Item;
         if (mode === "cursor") {
-          const nextCursor = paginationValue(page, plan.response.nextCursor);
+          const nextCursor: unknown = paginationValue(page, plan.response.nextCursor);
           if (typeof nextCursor !== "string" || nextCursor === "" || seenCursors.has(nextCursor)) {
             return;
           }
@@ -155,20 +161,20 @@ export function createPaginator<
           continue;
         }
         if (offsetName === undefined) return;
-        const requestedOffset = numberValue(query[offsetName], undefined, 0);
-        const currentOffset = numberValue(
+        const requestedOffset: number = numberValue(query[offsetName], undefined, 0);
+        const currentOffset: number = numberValue(
           paginationValue(page, plan.response.offset),
           query[offsetName],
           0,
         );
-        const limit = numberValue(
+        const limit: number = numberValue(
           paginationValue(page, plan.response.limit),
           limitName === undefined ? undefined : query[limitName],
           items.length,
         );
-        const totalValue = paginationValue(page, plan.response.total);
-        const total = typeof totalValue === "number" ? totalValue : undefined;
-        const nextOffset = currentOffset + limit;
+        const totalValue: unknown = paginationValue(page, plan.response.total);
+        const total: number | undefined = typeof totalValue === "number" ? totalValue : undefined;
+        const nextOffset: number = currentOffset + limit;
         if (
           limit <= 0 ||
           items.length === 0 ||
@@ -202,13 +208,13 @@ function resolvePaginationMode(
 }
 
 function pageItems(page: unknown, pointer: readonly string[]): readonly unknown[] {
-  const value = paginationValue(page, pointer);
+  const value: unknown = paginationValue(page, pointer);
   return Array.isArray(value) ? value : [];
 }
 
 function paginationValue(page: unknown, pointer: readonly string[] | undefined): unknown {
   if (pointer === undefined) return undefined;
-  let current = page;
+  let current: unknown = page;
   for (const token of pointer) {
     if ((typeof current !== "object" && typeof current !== "function") || current === null) {
       return undefined;
@@ -226,3 +232,7 @@ function numberValue(primary: unknown, secondary: unknown, fallback: number): nu
   if (typeof secondary === "number" && Number.isFinite(secondary)) return secondary;
   return fallback;
 }
+
+type PaginatorIterator<Item> = {
+  [Symbol.asyncIterator](): AsyncGenerator<Awaited<Item>, void, unknown>;
+};

@@ -5,7 +5,7 @@ export interface RequestMetadata {
 }
 
 /** Stable error codes for failures produced by the SDK transport layer. */
-export const TransportErrorCode = {
+export const TransportErrorCode: TransportErrorCodeValues = {
   /** The request input could not be serialized before calling `fetch`. */
   REQUEST_ENCODE_FAILED: "REQUEST_ENCODE_FAILED",
   /** `fetch` failed before an HTTP response was received. */
@@ -60,7 +60,7 @@ export interface APIErrorOptions<Code extends string, Details = unknown> {
  */
 export class APIError<Code extends string = string, Details = unknown> extends Error {
   /** Standard JavaScript error name. */
-  override readonly name = "APIError";
+  override readonly name: "APIError" = "APIError";
   /** Stable server or transport error code. */
   readonly code: Code;
   /** Metadata for the request that produced the error. */
@@ -160,20 +160,45 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Reports whether a media type uses JSON syntax. */
 export function isJSONMediaType(contentType: string): boolean {
-  const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  const mediaType: string = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
   return mediaType === "application/json" || mediaType.endsWith("+json");
 }
 
 /** Reports whether a media type uses XML syntax. */
 export function isXMLMediaType(contentType: string): boolean {
-  const mediaType = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  const mediaType: string = contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
   return mediaType === "application/xml" || mediaType === "text/xml" || mediaType.endsWith("+xml");
 }
 
 /** Returns the stable operation name used in runtime diagnostics. */
-export function operationDiagnosticName(operation: {
-  readonly operationID?: string;
-  readonly route: string;
-}): string {
+export function operationDiagnosticName(operation: OperationDiagnosticIdentity): string {
   return operation.operationID ?? operation.route;
 }
+
+type TransportErrorCodeValues = {
+  /** The request input could not be serialized before calling `fetch`. */
+  readonly REQUEST_ENCODE_FAILED: "REQUEST_ENCODE_FAILED";
+  /** `fetch` failed before an HTTP response was received. */
+  readonly NETWORK_ERROR: "NETWORK_ERROR";
+  /** The caller's {@link RequestOptions.signal} aborted the request. */
+  readonly REQUEST_ABORTED: "REQUEST_ABORTED";
+  /** The configured request timeout elapsed before the response completed. */
+  readonly REQUEST_TIMEOUT: "REQUEST_TIMEOUT";
+  /** The HTTP response body could not be decoded as its declared media type. */
+  readonly RESPONSE_DECODE_FAILED: "RESPONSE_DECODE_FAILED";
+  /** The operation has multiple effective security requirements and needs an explicit selection. */
+  readonly SECURITY_REQUIREMENT_REQUIRED: "SECURITY_REQUIREMENT_REQUIRED";
+  /** The requested or provider-selected security requirement is not valid for the operation. */
+  readonly SECURITY_REQUIREMENT_INVALID: "SECURITY_REQUIREMENT_INVALID";
+  /** The operation requires credentials but the client did not provide a usable selection. */
+  readonly SECURITY_CREDENTIALS_REQUIRED: "SECURITY_CREDENTIALS_REQUIRED";
+  /** Credentials conflict with caller-controlled request data or cannot be applied safely. */
+  readonly SECURITY_CREDENTIALS_INVALID: "SECURITY_CREDENTIALS_INVALID";
+  /** The host transport lacks a declared capability required by this operation. */
+  readonly TRANSPORT_CAPABILITY_REQUIRED: "TRANSPORT_CAPABILITY_REQUIRED";
+};
+
+type OperationDiagnosticIdentity = {
+  readonly operationID?: string;
+  readonly route: string;
+};

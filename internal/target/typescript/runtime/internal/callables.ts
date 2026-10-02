@@ -53,23 +53,29 @@ type OperationOptionsArguments<Options extends RequestOptions> = [RequiredKeys<O
   ? [options?: Options]
   : [options: Options];
 
-const generatedOperationInputKeys = [
+const generatedOperationInputKeys: readonly [
   "body",
   "path",
   "query",
   "querystring",
   "headerParams",
   "cookieParams",
-] as const;
+] = ["body", "path", "query", "querystring", "headerParams", "cookieParams"] as const;
 
 function isGeneratedOperationInput(value: unknown): boolean {
-  return isRecord(value) && generatedOperationInputKeys.some((key) => Object.hasOwn(value, key));
+  return (
+    isRecord(value) &&
+    generatedOperationInputKeys.some(
+      (key: "body" | "path" | "query" | "querystring" | "headerParams" | "cookieParams"): boolean =>
+        Object.hasOwn(value, key),
+    )
+  );
 }
 
 function splitOptionalOperationArguments<Input, Options extends RequestOptions>(
   args: readonly unknown[],
 ): readonly [Input | undefined, Options | undefined] {
-  const [first, second] = args;
+  const [first, second]: readonly unknown[] = args;
   if (args.length > 1 || isGeneratedOperationInput(first)) {
     return [first as Input | undefined, second as Options | undefined];
   }
@@ -127,27 +133,45 @@ export function bindOperation<
   request: BufferedRequestFunction,
   operation: OperationDefinition,
   hasInput: boolean,
-  inputOptional = false,
+  inputOptional: boolean = false,
 ): OperationCall<Input, Output, Options, Raw> {
-  const call = hasInput
+  const call:
+    | ((input: Input, ...options: OperationOptionsArguments<Options>) => Promise<Output>)
+    | ((...options: OperationOptionsArguments<Options>) => Promise<Output>) = hasInput
     ? inputOptional
-      ? (...args: readonly unknown[]) => {
-          const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+      ? (...args: readonly unknown[]): Promise<Output> => {
+          const [input, options]: readonly [Input | undefined, Options | undefined] =
+            splitOptionalOperationArguments<Input, Options>(args);
           return request<Output>(operation, input, options);
         }
-      : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+      : (input: Input, ...options: OperationOptionsArguments<Options>): Promise<Output> =>
           request<Output>(operation, input, options[0])
-    : (...options: OperationOptionsArguments<Options>) =>
+    : (...options: OperationOptionsArguments<Options>): Promise<Output> =>
         request<Output>(operation, undefined, options[0]);
-  const raw = hasInput
+  const raw:
+    | ((
+        input: Input,
+        ...options: OperationOptionsArguments<Options>
+      ) => Promise<RawResponse<Output, Readonly<Record<string, unknown>>>>)
+    | ((
+        ...options: OperationOptionsArguments<Options>
+      ) => Promise<RawResponse<Output, Readonly<Record<string, unknown>>>>) = hasInput
     ? inputOptional
-      ? (...args: readonly unknown[]) => {
-          const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+      ? (
+          ...args: readonly unknown[]
+        ): Promise<RawResponse<Output, Readonly<Record<string, unknown>>>> => {
+          const [input, options]: readonly [Input | undefined, Options | undefined] =
+            splitOptionalOperationArguments<Input, Options>(args);
           return request.raw<Output>(operation, input, options);
         }
-      : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+      : (
+          input: Input,
+          ...options: OperationOptionsArguments<Options>
+        ): Promise<RawResponse<Output, Readonly<Record<string, unknown>>>> =>
           request.raw<Output>(operation, input, options[0])
-    : (...options: OperationOptionsArguments<Options>) =>
+    : (
+        ...options: OperationOptionsArguments<Options>
+      ): Promise<RawResponse<Output, Readonly<Record<string, unknown>>>> =>
         request.raw<Output>(operation, undefined, options[0]);
   return Object.assign(call, { raw }) as OperationCall<Input, Output, Options, Raw>;
 }
@@ -163,7 +187,7 @@ export function bindGeneratedOperation(
   request: BufferedRequestFunction,
   operation: OperationDefinition,
   hasInput: boolean,
-  inputOptional = false,
+  inputOptional: boolean = false,
 ): unknown {
   return bindOperation<unknown, unknown, RequestOptions, RawResponse<unknown>>(
     request,
@@ -178,14 +202,16 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
   request: RequestFunction,
   operation: OperationDefinition,
   hasInput: boolean,
-  inputOptional = false,
+  inputOptional: boolean = false,
   defaultAccept?: string,
 ): (...args: readonly unknown[]) => OperationStream<Item> {
-  const streamOptions = (options: Options | undefined): Options | undefined => {
+  const streamOptions: (options: Options | undefined) => Options | undefined = (
+    options: Options | undefined,
+  ): Options | undefined => {
     if (defaultAccept === undefined || options?.accept !== undefined) return options;
     return { ...options, accept: defaultAccept } as Options;
   };
-  return (...args: readonly unknown[]) => {
+  return (...args: readonly unknown[]): OperationStream<Item> => {
     if (!hasInput)
       return request.stream<Item>(
         operation,
@@ -198,7 +224,8 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
         args[0] as Input,
         streamOptions(args[1] as Options | undefined),
       );
-    const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+    const [input, options]: readonly [Input | undefined, Options | undefined] =
+      splitOptionalOperationArguments<Input, Options>(args);
     return request.stream<Item>(operation, input, streamOptions(options));
   };
 }
@@ -218,55 +245,66 @@ export function bindPathOperation<
   operation: Pick<InputOperationCall<FullInput, Output, Options, Raw>, "raw">,
   path: Readonly<Record<string, unknown>>,
   hasInput: boolean,
-  inputOptional = false,
+  inputOptional: boolean = false,
 ): OperationCall<Input, Output, Options, Raw> {
   // Generated exact calls remain callable at runtime even when their public
   // decoded-call signature is intentionally hidden (for example, an operation
   // with no successful buffered response). Resource binding only requires the
   // public raw capability at its boundary, then restores that generated runtime invariant.
-  const callable = operation as InputOperationCall<FullInput, Output, Options, Raw>;
-  const mergeInput = (input: Input | undefined): FullInput =>
+  const callable: InputOperationCall<FullInput, Output, Options, Raw> =
+    operation as InputOperationCall<FullInput, Output, Options, Raw>;
+  const mergeInput: (input: Input | undefined) => FullInput = (
+    input: Input | undefined,
+  ): FullInput =>
     ({
       ...(isRecord(input) ? input : {}),
       path,
     }) as FullInput;
-  const call = hasInput
+  const call:
+    | ((input: Input, ...options: OperationOptionsArguments<Options>) => Promise<Output>)
+    | ((...options: OperationOptionsArguments<Options>) => Promise<Output>) = hasInput
     ? inputOptional
-      ? (...args: readonly unknown[]) => {
-          const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+      ? (...args: readonly unknown[]): Promise<Output> => {
+          const [input, options]: readonly [Input | undefined, Options | undefined] =
+            splitOptionalOperationArguments<Input, Options>(args);
           return callable(mergeInput(input), ...operationOptionsArguments(options));
         }
-      : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+      : (input: Input, ...options: OperationOptionsArguments<Options>): Promise<Output> =>
           callable(mergeInput(input), ...options)
-    : (...options: OperationOptionsArguments<Options>) =>
+    : (...options: OperationOptionsArguments<Options>): Promise<Output> =>
         callable(mergeInput(undefined), ...options);
-  const raw = hasInput
+  const raw:
+    | ((input: Input, ...options: OperationOptionsArguments<Options>) => Promise<Raw>)
+    | ((...options: OperationOptionsArguments<Options>) => Promise<Raw>) = hasInput
     ? inputOptional
-      ? (...args: readonly unknown[]) => {
-          const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+      ? (...args: readonly unknown[]): Promise<Raw> => {
+          const [input, options]: readonly [Input | undefined, Options | undefined] =
+            splitOptionalOperationArguments<Input, Options>(args);
           return callable.raw(mergeInput(input), ...operationOptionsArguments(options));
         }
-      : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+      : (input: Input, ...options: OperationOptionsArguments<Options>): Promise<Raw> =>
           callable.raw(mergeInput(input), ...options)
-    : (...options: OperationOptionsArguments<Options>) =>
+    : (...options: OperationOptionsArguments<Options>): Promise<Raw> =>
         callable.raw(mergeInput(undefined), ...options);
-  const sourceStream = (
-    callable as InputOperationCall<FullInput, Output, Options, Raw> & {
-      readonly stream?: (...args: readonly unknown[]) => unknown;
-    }
+  const sourceStream: ((...args: readonly unknown[]) => unknown) | undefined = (
+    callable as InputOperationCall<FullInput, Output, Options, Raw> & OptionalStreamCall
   ).stream;
-  const stream =
+  const stream:
+    | ((input: Input, ...options: OperationOptionsArguments<Options>) => unknown)
+    | ((...options: OperationOptionsArguments<Options>) => unknown)
+    | undefined =
     sourceStream === undefined
       ? undefined
       : hasInput
         ? inputOptional
-          ? (...args: readonly unknown[]) => {
-              const [input, options] = splitOptionalOperationArguments<Input, Options>(args);
+          ? (...args: readonly unknown[]): unknown => {
+              const [input, options]: readonly [Input | undefined, Options | undefined] =
+                splitOptionalOperationArguments<Input, Options>(args);
               return sourceStream(mergeInput(input), options);
             }
-          : (input: Input, ...options: OperationOptionsArguments<Options>) =>
+          : (input: Input, ...options: OperationOptionsArguments<Options>): unknown =>
               sourceStream(mergeInput(input), options[0])
-        : (...options: OperationOptionsArguments<Options>) =>
+        : (...options: OperationOptionsArguments<Options>): unknown =>
             sourceStream(mergeInput(undefined), options[0]);
   // Helpers have their own invocation input contract. Preserve their identity;
   // only call/raw/stream merge the resource path into an operation input.
@@ -286,7 +324,7 @@ export function bindGeneratedPathOperation(
   operation: object,
   path: Readonly<Record<string, unknown>>,
   hasInput: boolean,
-  inputOptional = false,
+  inputOptional: boolean = false,
 ): unknown {
   // Generated resource modules declare their exact callable surface. Only
   // this runtime boundary merges path values; those public types stay intact.
@@ -318,3 +356,7 @@ export function assignCallableProperties<Call extends object, Members extends ob
   }
   return call as Call & Members;
 }
+
+type OptionalStreamCall = {
+  readonly stream?: (...args: readonly unknown[]) => unknown;
+};

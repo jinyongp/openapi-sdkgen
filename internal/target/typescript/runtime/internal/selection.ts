@@ -11,15 +11,15 @@ export function collectSelectionReferences<Reference extends object>(
   selection: unknown,
   readReference: (value: object) => Reference | undefined,
 ): readonly Reference[] {
-  const completed = new WeakSet<object>();
-  const active = new WeakSet<object>();
-  const references = new Set<Reference>();
+  const completed: WeakSet<object> = new WeakSet<object>();
+  const active: WeakSet<object> = new WeakSet<object>();
+  const references: Set<Reference> = new Set<Reference>();
   const stack: SelectionFrame[] = [{ value: selection, leaving: false }];
 
   while (stack.length !== 0) {
-    const frame = stack.pop();
+    const frame: SelectionFrame | undefined = stack.pop();
     if (frame === undefined) break;
-    const value = frame.value;
+    const value: unknown = frame.value;
     if (value === null || typeof value !== "object") {
       throw new TypeError("Operation selection must contain references, arrays, or groups");
     }
@@ -31,7 +31,7 @@ export function collectSelectionReferences<Reference extends object>(
     if (completed.has(value)) continue;
     if (active.has(value)) throw new TypeError("Cyclic operation selection");
 
-    const reference = readReference(value);
+    const reference: Reference | undefined = readReference(value);
     if (reference !== undefined) {
       references.add(reference);
       completed.add(value);
@@ -50,12 +50,13 @@ export function collectSelectionReferences<Reference extends object>(
       ) {
         throw new TypeError("Operation selection array has an invalid length");
       }
-      for (let index = 0; index < length; index++) entries.push(Reflect.get(value, String(index)));
+      for (let index: number = 0; index < length; index++)
+        entries.push(Reflect.get(value, String(index)));
       thenValue = Reflect.get(value, "then");
     } else {
-      const keys = Object.getOwnPropertyNames(value);
+      const keys: string[] = Object.getOwnPropertyNames(value);
       for (const key of keys) entries.push(Reflect.get(value, key));
-      const thenIndex = keys.indexOf("then");
+      const thenIndex: number = keys.indexOf("then");
       // Reuse an own getter's snapshot. Reading an inherited then only detects
       // an unresolved PromiseLike; neither this function nor the decoder awaits it.
       thenValue = thenIndex < 0 ? Reflect.get(value, "then") : entries[thenIndex];
@@ -66,7 +67,7 @@ export function collectSelectionReferences<Reference extends object>(
 
     active.add(value);
     stack.push({ value, leaving: true });
-    for (let index = entries.length - 1; index >= 0; index--) {
+    for (let index: number = entries.length - 1; index >= 0; index--) {
       stack.push({ value: entries[index], leaving: false });
     }
   }

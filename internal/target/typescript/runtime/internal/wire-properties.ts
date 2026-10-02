@@ -13,8 +13,8 @@ export function wireProperties(
     throw new TypeError("wire property/schema count mismatch");
   }
   const entries: [string, WireProperty][] = new Array(keys.length);
-  for (let index = 0; index < keys.length; index++) {
-    const property = keys[index]!;
+  for (let index: number = 0; index < keys.length; index++) {
+    const property: string = keys[index]!;
     entries[index] = [property, { property, schema: schemas[index]! }];
   }
   return Object.fromEntries(entries);

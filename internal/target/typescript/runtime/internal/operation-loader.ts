@@ -127,7 +127,7 @@ type PreparedData = {
 
 /** A failure at the SDK code-loading boundary; the platform's original error is retained. */
 export class OperationPreparationError extends Error {
-  override readonly name = "OperationPreparationError";
+  override readonly name: "OperationPreparationError" = "OperationPreparationError";
   constructor(
     readonly stage: "INPUT" | "MODULE_LOAD" | "IDENTITY" | "BINDING",
     message: string,

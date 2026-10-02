@@ -3,6 +3,7 @@ import type {
   StreamCodec,
   WireBodyDefinition,
   WireResponseDefinition,
+  WireProperty,
   WireSchema,
   WireSchemas,
 } from "./wire-engine.js";
@@ -11,7 +12,13 @@ import { APIError, TransportErrorCode, isAPIError } from "./runtime-support.js";
 import type { TransportError } from "./runtime-support.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
 import { operationDiagnosticName } from "./runtime-support.js";
-import type { OperationDefinition, ParameterDefinition, ServerSelection } from "./operation.js";
+import type {
+  OperationDefinition,
+  ParameterDefinition,
+  ServerSelection,
+  ServerDefinition,
+  ServerVariableDefinition,
+} from "./operation.js";
 import type { OperationStream, RawResponse, RequestMetadata, RequestOptions } from "./request.js";
 import type {
   APIKeyCredential,
@@ -50,8 +57,8 @@ export function applyOperationSecurity(
   requestOptions: OperationRequestOptions,
   credentials: RequestCredentials | undefined,
 ): EncodedRequest | Promise<EncodedRequest> {
-  const declared = operation.security;
-  const requestedID = requestOptions.securityRequirement;
+  const declared: readonly SecurityRequirementDefinition[] | undefined = operation.security;
+  const requestedID: string | undefined = requestOptions.securityRequirement;
   if (declared === undefined || declared.length === 0) {
     if (requestedID !== undefined)
       throw securityRequirementInvalid(
@@ -59,7 +66,10 @@ export function applyOperationSecurity(
       );
     return encoded;
   }
-  const requirements = Object.create(null) as Record<string, SecurityRequirementDefinition>;
+  const requirements: Record<string, SecurityRequirementDefinition> = Object.create(null) as Record<
+    string,
+    SecurityRequirementDefinition
+  >;
   for (const requirement of declared)
     defineOwnDataProperty(requirements, requirement.id, requirement);
   let selected: SecurityRequirementDefinition;
@@ -78,7 +88,7 @@ export function applyOperationSecurity(
         undefined,
       );
     }
-    const requested = requirements[requestedID];
+    const requested: SecurityRequirementDefinition | undefined = requirements[requestedID];
     if (requested === undefined) {
       throw securityRequirementInvalid(
         `Operation ${operationDiagnosticName(operation)} does not declare security requirement ${requestedID}`,
@@ -121,8 +131,12 @@ export function applyOperationSecurity(
     origin: new URL(encoded.url).origin,
     ...(requestOptions.signal === undefined ? {} : { signal: requestOptions.signal }),
   };
-  const suppliedCredentials = options.securityProvider(context);
-  const apply = (resolved: SecurityCredentials): EncodedRequest =>
+  const suppliedCredentials:
+    | Readonly<Record<string, SecurityCredential>>
+    | Promise<Readonly<Record<string, SecurityCredential>>> = options.securityProvider(context);
+  const apply: (resolved: SecurityCredentials) => EncodedRequest = (
+    resolved: SecurityCredentials,
+  ): EncodedRequest =>
     applySelectedSecurityRequirement(
       options,
       requestOptions,
@@ -146,7 +160,7 @@ function securityRequirementIsSatisfied(
   allowMutualTLS: boolean,
 ): boolean {
   return requirement.schemes.every(
-    (scheme) =>
+    (scheme: SecuritySchemeDefinition): boolean =>
       securitySourceForScheme(options, requestOptions, encoded, credentials, scheme, allowMutualTLS)
         .state === "satisfied",
   );
@@ -163,14 +177,14 @@ function securitySourceForScheme(
   if (usesAuthorizationHeader(scheme)) {
     if (requestOptions.authorization === undefined && options.authorization === undefined)
       return { state: "none" };
-    const value = encoded.headers.get("Authorization") ?? "";
+    const value: string = encoded.headers.get("Authorization") ?? "";
     return matchesAuthorizationScheme(scheme, value)
       ? { state: "satisfied", kind: "header", name: "Authorization", value }
       : { state: "conflict", location: "Authorization header" };
   }
   if (isCSRFHeaderScheme(scheme)) {
     if (requestOptions.csrfToken === undefined) return { state: "none" };
-    const value = encoded.headers.get("X-CSRF-Token") ?? "";
+    const value: string = encoded.headers.get("X-CSRF-Token") ?? "";
     return value === ""
       ? { state: "conflict", location: "X-CSRF-Token header" }
       : { state: "satisfied", kind: "header", name: "X-CSRF-Token", value };
@@ -206,9 +220,9 @@ function isCSRFHeaderScheme(scheme: SecuritySchemeDefinition): boolean {
 function matchesAuthorizationScheme(scheme: SecuritySchemeDefinition, value: string): boolean {
   if (value === "") return false;
   if (scheme.type === "apiKey") return true;
-  const separator = value.indexOf(" ");
+  const separator: number = value.indexOf(" ");
   if (separator <= 0 || value.slice(separator + 1).trim() === "") return false;
-  const protocol = value.slice(0, separator).toLowerCase();
+  const protocol: string = value.slice(0, separator).toLowerCase();
   if (scheme.type === "oauth2" || scheme.type === "openIdConnect") return protocol === "bearer";
   return protocol === scheme.scheme?.toLowerCase();
 }
@@ -229,17 +243,19 @@ function applySelectedSecurityRequirement(
       undefined,
     );
   }
-  const declaredNames = new Set(requirement.schemes.map((scheme) => scheme.name));
-  if (Object.keys(suppliedCredentials).some((name) => !declaredNames.has(name))) {
+  const declaredNames: Set<string> = new Set(
+    requirement.schemes.map((scheme: SecuritySchemeDefinition): string => scheme.name),
+  );
+  if (Object.keys(suppliedCredentials).some((name: string): boolean => !declaredNames.has(name))) {
     throw transportError(
       TransportErrorCode.SECURITY_CREDENTIALS_INVALID,
       "Security credential provider returned credentials outside the selected requirement",
       undefined,
     );
   }
-  const url = new URL(encoded.url);
+  const url: URL = new URL(encoded.url);
   for (const scheme of requirement.schemes) {
-    const source = securitySourceForScheme(
+    const source: SDKSecuritySource = securitySourceForScheme(
       options,
       requestOptions,
       encoded,
@@ -247,12 +263,17 @@ function applySelectedSecurityRequirement(
       scheme,
       true,
     );
-    const credential = suppliedCredentials[scheme.name] as SecurityCredential | undefined;
+    const credential: SecurityCredential | undefined = suppliedCredentials[scheme.name] as
+      | SecurityCredential
+      | undefined;
     if (source.state === "conflict") throw securityCollision(scheme.name, source.location);
     if (source.state === "satisfied") {
       if (credential === undefined) continue;
       if (source.kind === "header") {
-        const header = securityCredentialHeader(scheme, credential);
+        const header: SecurityCredentialHeader | undefined = securityCredentialHeader(
+          scheme,
+          credential,
+        );
         if (
           header !== undefined &&
           header.name.toLowerCase() === source.name.toLowerCase() &&
@@ -298,7 +319,7 @@ function applySecurityCredential(
   headers: Headers,
   url: URL,
 ): void {
-  const header = securityCredentialHeader(scheme, credential);
+  const header: SecurityCredentialHeader | undefined = securityCredentialHeader(scheme, credential);
   if (header !== undefined) {
     if (headers.has(header.name)) throw securityCollision(scheme.name, `header ${header.name}`);
     headers.set(header.name, header.value);
@@ -306,7 +327,7 @@ function applySecurityCredential(
   }
   switch (scheme.type) {
     case "apiKey": {
-      const apiKey = credential as APIKeyCredential;
+      const apiKey: APIKeyCredential = credential as APIKeyCredential;
       if (scheme.location === "query") {
         if (url.searchParams.has(scheme.parameterName!))
           throw securityCollision(scheme.name, `query parameter ${scheme.parameterName}`);
@@ -346,17 +367,17 @@ function applySecurityCredential(
 function securityCredentialHeader(
   scheme: SecuritySchemeDefinition,
   credential: SecurityCredential,
-): { readonly name: string; readonly value: string } | undefined {
+): SecurityCredentialHeader | undefined {
   assertSecurityCredentialShape(scheme, credential);
   if (scheme.type === "apiKey") {
-    const apiKey = credential as APIKeyCredential;
+    const apiKey: APIKeyCredential = credential as APIKeyCredential;
     return scheme.location === "header"
       ? { name: scheme.parameterName!, value: apiKey.value }
       : undefined;
   }
   if (scheme.type === "http") {
     if (scheme.scheme === "basic") {
-      const basic = credential as HTTPBasicCredential;
+      const basic: HTTPBasicCredential = credential as HTTPBasicCredential;
       return {
         name: "Authorization",
         value: `Basic ${base64(`${basic.username}:${basic.password}`)}`,
@@ -432,7 +453,7 @@ function assertSecurityCredentialShape(
 }
 
 function normalizeHeaderValue(name: string, value: string): string {
-  const headers = new Headers();
+  const headers: Headers = new Headers();
   headers.set(name, value);
   return headers.get(name)!;
 }
@@ -458,8 +479,8 @@ function securityCollision(scheme: string, location: string): TransportError {
 }
 
 function base64(value: string): string {
-  const bytes = new TextEncoder().encode(value);
-  let binary = "";
+  const bytes: Uint8Array<ArrayBuffer> = new TextEncoder().encode(value);
+  let binary: string = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
@@ -469,13 +490,15 @@ export function assertReadableResponseHeaders(
   transport: Transport | undefined,
   operation: OperationDefinition,
 ): void {
-  const readable = transport?.capabilities?.readableResponseHeaders;
+  const readable: true | readonly string[] | undefined =
+    transport?.capabilities?.readableResponseHeaders;
   for (const response of operation.responses ?? []) {
     for (const header of response.headers ?? []) {
       if (!header.required || header.name.toLowerCase() !== "set-cookie") continue;
       if (
         readable === true ||
-        (Array.isArray(readable) && readable.some((name) => name.toLowerCase() === "set-cookie"))
+        (Array.isArray(readable) &&
+          readable.some((name: string): boolean => name.toLowerCase() === "set-cookie"))
       )
         continue;
       throw transportError(
@@ -493,7 +516,7 @@ export async function cancelTrackedRequestBody(
   reason?: unknown,
 ): Promise<void> {
   if (cancel === undefined) return;
-  await cancel(reason).catch(() => undefined);
+  await cancel(reason).catch((): undefined => undefined);
 }
 
 /** Selects the most specific declared response for the actual status and media type. */
@@ -502,17 +525,17 @@ export function selectResponseDefinition(
   response: Response,
   requireMediaMatch: boolean,
 ): WireResponseDefinition | undefined {
-  const contentType = responseContentType(response);
+  const contentType: string | undefined = responseContentType(response);
   return operation.responses
-    ?.filter((item) => {
+    ?.filter((item: WireResponseDefinition): boolean => {
       if (!statusMatches(item.status, response.status)) return false;
       if (!requireMediaMatch) return true;
       return contentType === undefined
         ? item.contentType === ""
         : mediaTypeMatches(item.contentType, contentType);
     })
-    .sort((left, right) => {
-      const statusDifference =
+    .sort((left: WireResponseDefinition, right: WireResponseDefinition): number => {
+      const statusDifference: number =
         statusMatchScore(right.status, response.status) -
         statusMatchScore(left.status, response.status);
       if (statusDifference !== 0) return statusDifference;
@@ -536,11 +559,11 @@ function statusMatchScore(pattern: string, status: number): number {
 
 /** Matches a concrete media type against an OpenAPI media range. */
 export function mediaTypeMatches(pattern: string, actual: string): boolean {
-  const expected = pattern.split(";", 1)[0]?.trim().toLowerCase() ?? "";
-  const received = actual.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  const expected: string = pattern.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  const received: string = actual.split(";", 1)[0]?.trim().toLowerCase() ?? "";
   if (expected === received || expected === "*/*") return true;
-  const [expectedType, expectedSubtype] = expected.split("/", 2);
-  const [receivedType, receivedSubtype] = received.split("/", 2);
+  const [expectedType, expectedSubtype]: string[] = expected.split("/", 2);
+  const [receivedType, receivedSubtype]: string[] = received.split("/", 2);
   if (
     expectedType === undefined ||
     expectedSubtype === undefined ||
@@ -557,7 +580,7 @@ export function mediaTypeMatches(pattern: string, actual: string): boolean {
 /** Ranks exact, suffix-wildcard and general media matches. */
 export function mediaTypeMatchScore(pattern: string, actual: string | undefined): number {
   if (actual === undefined) return 0;
-  const normalized = normalizeMediaType(pattern);
+  const normalized: string = normalizeMediaType(pattern);
   if (normalized === normalizeMediaType(actual)) return 3;
   if (normalized.includes("*+")) return 2;
   if (normalized.includes("*")) return 1;
@@ -583,7 +606,7 @@ export function normalizeBaseURL(value: string): string {
 export function createAbortContext(
   signal: AbortSignal | undefined,
   timeoutMS: number | undefined,
-  alwaysCreateSignal = false,
+  alwaysCreateSignal: boolean = false,
 ): AbortContext {
   if (timeoutMS !== undefined && (!Number.isFinite(timeoutMS) || timeoutMS <= 0)) {
     throw new TypeError("timeoutMS must be a positive finite number");
@@ -591,30 +614,30 @@ export function createAbortContext(
   if (signal === undefined && timeoutMS === undefined && !alwaysCreateSignal) {
     return {
       signal: undefined,
-      timedOut: () => false,
-      aborted: () => false,
-      cancel: () => undefined,
-      cleanup: () => undefined,
+      timedOut: (): false => false,
+      aborted: (): false => false,
+      cancel: (): undefined => undefined,
+      cleanup: (): undefined => undefined,
     };
   }
-  const controller = new AbortController();
-  let timeoutReached = false;
-  const forwardAbort = (): void => controller.abort(signal?.reason);
+  const controller: AbortController = new AbortController();
+  let timeoutReached: boolean = false;
+  const forwardAbort: () => void = (): void => controller.abort(signal?.reason);
   if (signal?.aborted) forwardAbort();
   else signal?.addEventListener("abort", forwardAbort, { once: true });
-  const timer =
+  const timer: ReturnType<typeof setTimeout> | undefined =
     timeoutMS === undefined
       ? undefined
-      : setTimeout(() => {
+      : setTimeout((): void => {
           timeoutReached = true;
           controller.abort();
         }, timeoutMS);
   return {
     signal: controller.signal,
-    timedOut: () => timeoutReached,
-    aborted: () => signal?.aborted === true,
-    cancel: (reason?: unknown) => controller.abort(reason),
-    cleanup: () => {
+    timedOut: (): boolean => timeoutReached,
+    aborted: (): boolean => signal?.aborted === true,
+    cancel: (reason?: unknown): void => controller.abort(reason),
+    cleanup: (): void => {
       if (timer !== undefined) clearTimeout(timer);
       signal?.removeEventListener("abort", forwardAbort);
     },
@@ -629,9 +652,9 @@ export function responseContentType(response: Response): string | undefined {
 function normalizeCodecs(
   codecs: Readonly<Record<string, MediaCodec<unknown>>> | undefined,
 ): ReadonlyMap<string, MediaCodec<unknown>> {
-  const result = new Map<string, MediaCodec<unknown>>();
+  const result: Map<string, MediaCodec<unknown>> = new Map<string, MediaCodec<unknown>>();
   for (const [contentType, codec] of Object.entries(codecs ?? {})) {
-    const normalized = normalizeMediaType(contentType);
+    const normalized: string = normalizeMediaType(contentType);
     if (normalized === "" || result.has(normalized))
       throw new TypeError(`duplicate or invalid media codec ${contentType}`);
     result.set(normalized, codec);
@@ -642,9 +665,9 @@ function normalizeCodecs(
 function normalizeStreamCodecs(
   codecs: Readonly<Record<string, StreamCodec>> | undefined,
 ): ReadonlyMap<string, StreamCodec> {
-  const result = new Map<string, StreamCodec>();
+  const result: Map<string, StreamCodec<unknown, unknown>> = new Map<string, StreamCodec>();
   for (const [contentType, codec] of Object.entries(codecs ?? {})) {
-    const normalized = normalizeMediaType(contentType);
+    const normalized: string = normalizeMediaType(contentType);
     if (normalized === "" || result.has(normalized))
       throw new TypeError(`duplicate or invalid stream codec ${contentType}`);
     result.set(normalized, codec);
@@ -673,10 +696,11 @@ export function isReadableStream(value: unknown): value is ReadableStream<Uint8A
 
 /** Preserves response body and metadata in an API failure. */
 export function serverError(response: Response, request: RequestMetadata, body: unknown): APIError {
-  const envelope = isRecord(body) && isRecord(body["error"]) ? body["error"] : body;
-  const error = isRecord(envelope) ? envelope : {};
-  const code = typeof error["code"] === "string" ? error["code"] : `HTTP_${response.status}`;
-  const message =
+  const envelope: unknown = isRecord(body) && isRecord(body["error"]) ? body["error"] : body;
+  const error: Record<string, unknown> = isRecord(envelope) ? envelope : {};
+  const code: string =
+    typeof error["code"] === "string" ? error["code"] : `HTTP_${response.status}`;
+  const message: string =
     typeof error["message"] === "string"
       ? error["message"]
       : typeof body === "string" && body.trim() !== ""
@@ -696,7 +720,7 @@ export function serverError(response: Response, request: RequestMetadata, body: 
 
 /** Captures request identifiers exposed by the response headers. */
 export function requestMetadata(response: Response): RequestMetadata {
-  const id = response.headers.get("x-request-id");
+  const id: string | null = response.headers.get("x-request-id");
   return id === null ? {} : { id };
 }
 
@@ -714,7 +738,7 @@ export function transportErrorFromCause(
   code: TransportErrorCode,
   message: string,
   cause: unknown,
-  responseMetadata?: { request: RequestMetadata; status: number; response: Response },
+  responseMetadata?: ResponseFailureMetadata,
 ): TransportError {
   if (isAPIError(cause)) {
     return new APIError({
@@ -737,10 +761,10 @@ export async function cancelResponseBody(
   response: Response | undefined,
   reason?: unknown,
 ): Promise<void> {
-  const body = response?.body;
+  const body: ReadableStream<Uint8Array<ArrayBuffer>> | null | undefined = response?.body;
   if (body === null || body === undefined || typeof body.cancel !== "function" || body.locked)
     return;
-  await body.cancel(reason).catch(() => undefined);
+  await body.cancel(reason).catch((): undefined => undefined);
 }
 
 /** Stops waiting when the request aborts and removes cancellation listeners after settlement. */
@@ -750,34 +774,43 @@ export function awaitAbortable<Value>(
 ): Promise<Value> {
   if (signal === undefined) return value;
   if (signal.aborted) {
-    void value.catch(() => undefined);
+    void value.catch((): undefined => undefined);
     return Promise.reject(signal.reason);
   }
-  return new Promise((resolve, reject) => {
-    const onAbort = (): void => reject(signal.reason);
-    signal.addEventListener("abort", onAbort, { once: true });
-    value.then(
-      (result) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(result);
-      },
-      (cause) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(cause);
-      },
-    );
-  });
+  return new Promise(
+    (
+      resolve: (value: Value | PromiseLike<Value>) => void,
+      reject: (reason?: unknown) => void,
+    ): void => {
+      const onAbort: () => void = (): void => reject(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      value.then(
+        (result: Value): void => {
+          signal.removeEventListener("abort", onAbort);
+          resolve(result);
+        },
+        (cause: unknown): void => {
+          signal.removeEventListener("abort", onAbort);
+          reject(cause);
+        },
+      );
+    },
+  );
 }
 
 /** Normalizes client defaults once; keeps request callbacks and mutable client state instance-local. */
 export function createRequestContext(options: ClientOptions): RequestContext {
-  const baseURL = options.baseURL === undefined ? undefined : normalizeBaseURL(options.baseURL);
-  const fetchImplementation = options.transport?.fetch ?? options.fetch ?? globalThis.fetch;
+  const baseURL: string | undefined =
+    options.baseURL === undefined ? undefined : normalizeBaseURL(options.baseURL);
+  const fetchImplementation: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> =
+    options.transport?.fetch ?? options.fetch ?? globalThis.fetch;
   if (typeof fetchImplementation !== "function") {
     throw new TypeError("fetch is unavailable; pass ClientOptions.fetch");
   }
-  const codecs = normalizeCodecs(options.codecs);
-  const streamCodecs = normalizeStreamCodecs(options.streamCodecs);
+  const codecs: ReadonlyMap<string, MediaCodec<unknown>> = normalizeCodecs(options.codecs);
+  const streamCodecs: ReadonlyMap<string, StreamCodec<unknown, unknown>> = normalizeStreamCodecs(
+    options.streamCodecs,
+  );
 
   return { options, baseURL, fetchImplementation, codecs, streamCodecs };
 }
@@ -787,8 +820,8 @@ export function createHTTPServices(
   wire: WireCodec,
   extensions: HTTPCodecExtensions,
 ): RequestExecutionServices {
-  const { decodeWireValue, transformWireValue, validateWireValue } = wire;
-  const reservedHeaders = /* @__PURE__ */ new Set([
+  const { decodeWireValue, transformWireValue, validateWireValue }: WireCodec = wire;
+  const reservedHeaders: Set<string> = /* @__PURE__ */ new Set([
     "accept",
     "authorization",
     "content-type",
@@ -796,10 +829,12 @@ export function createHTTPServices(
     "x-request-id",
   ]);
 
-  const tolerantResponseTransformOptions = { unknownProperties: "preserve" } as const;
+  const tolerantResponseTransformOptions: TolerantResponseTransformOptions = {
+    unknownProperties: "preserve",
+  } as const;
 
   function resolveMaxStreamFrameBytes(value: number | undefined): number {
-    const resolved = value ?? 1024 * 1024;
+    const resolved: number = value ?? 1024 * 1024;
     if (!Number.isSafeInteger(resolved) || resolved <= 0)
       throw new TypeError("maxStreamFrameBytes must be a positive safe integer");
     return resolved;
@@ -810,15 +845,19 @@ export function createHTTPServices(
     response: Response,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<Readonly<Record<string, unknown>>> {
-    const definition = selectResponseDefinition(operation, response, false);
-    const values = Object.create(null) as Record<string, unknown>;
+    const definition: WireResponseDefinition | undefined = selectResponseDefinition(
+      operation,
+      response,
+      false,
+    );
+    const values: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
     for (const header of definition?.headers ?? []) {
-      const value = response.headers.get(header.name);
+      const value: string | null = response.headers.get(header.name);
       if (value === null) {
         if (header.required) throw new TypeError(`missing required response header ${header.name}`);
         continue;
       }
-      const decoded = await decodeResponseHeaderValue(
+      const decoded: unknown = await decodeResponseHeaderValue(
         header.name,
         value,
         header.schema,
@@ -847,7 +886,7 @@ export function createHTTPServices(
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<unknown> {
     if (contentType !== undefined) {
-      const decoded = decodeHeaderContent(name, value, contentType);
+      const decoded: unknown = decodeHeaderContent(name, value, contentType);
       if (
         isJSONMediaType(contentType) ||
         contentType.toLowerCase() === "application/x-www-form-urlencoded"
@@ -856,27 +895,29 @@ export function createHTTPServices(
       if (isXMLMediaType(contentType))
         return requireHTTPHook(extensions.decodeXML)(value, schema, schemas);
       if (!contentType.toLowerCase().startsWith("text/")) {
-        const codec = codecs.get(normalizeMediaType(contentType));
+        const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(contentType));
         if (codec?.decodeParameter === undefined)
           throw new TypeError(`missing decodeParameter codec for response header ${name}`);
         return codec.decodeParameter(value, { contentType });
       }
       value = decoded as string;
     }
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("array"))
       return value
         .split(",")
-        .map((entry) => decodeResponseHeaderScalar(name, entry, resolved.items ?? {}, schemas));
+        .map((entry: string): unknown =>
+          decodeResponseHeaderScalar(name, entry, resolved.items ?? {}, schemas),
+        );
     if (resolved.types?.includes("object") || resolved.properties !== undefined) {
-      const result = Object.create(null) as Record<string, unknown>;
-      const tokens = value.split(",");
+      const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+      const tokens: string[] = value.split(",");
       if (explode)
         for (const token of tokens) {
-          const separator = token.indexOf("=");
+          const separator: number = token.indexOf("=");
           if (separator < 0) continue;
-          const propertyName = token.slice(0, separator);
-          const property = resolved.properties?.[propertyName];
+          const propertyName: string = token.slice(0, separator);
+          const property: WireProperty | undefined = resolved.properties?.[propertyName];
           defineOwnDataProperty(
             result,
             propertyName,
@@ -889,8 +930,8 @@ export function createHTTPServices(
           );
         }
       else
-        for (let index = 0; index + 1 < tokens.length; index += 2) {
-          const property = resolved.properties?.[tokens[index]!];
+        for (let index: number = 0; index + 1 < tokens.length; index += 2) {
+          const property: WireProperty | undefined = resolved.properties?.[tokens[index]!];
           defineOwnDataProperty(
             result,
             tokens[index]!,
@@ -908,15 +949,15 @@ export function createHTTPServices(
     schema: WireSchema,
     schemas: WireSchemas,
   ): unknown {
-    const resolved = resolveHeaderSchema(schema, schemas);
+    const resolved: WireSchema = resolveHeaderSchema(schema, schemas);
     if (resolved.types?.includes("integer")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isInteger(parsed))
         throw new TypeError(`response header ${name} is not an integer`);
       return parsed;
     }
     if (resolved.types?.includes("number")) {
-      const parsed = Number(value);
+      const parsed: number = Number(value);
       if (!Number.isFinite(parsed)) throw new TypeError(`response header ${name} is not a number`);
       return parsed;
     }
@@ -929,7 +970,8 @@ export function createHTTPServices(
   }
 
   function resolveHeaderSchema(schema: WireSchema, schemas: WireSchemas): WireSchema {
-    const referenced = schema.reference === undefined ? undefined : schemas[schema.reference];
+    const referenced: WireSchema | undefined =
+      schema.reference === undefined ? undefined : schemas[schema.reference];
     return referenced === undefined ? schema : resolveHeaderSchema(referenced, schemas);
   }
 
@@ -937,14 +979,17 @@ export function createHTTPServices(
     if (isJSONMediaType(contentType)) {
       try {
         return JSON.parse(value);
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw new TypeError(`response header ${name} is not valid ${contentType}`, { cause });
       }
     }
     if (contentType.toLowerCase() === "application/x-www-form-urlencoded") {
-      const result = Object.create(null) as Record<string, string | string[]>;
+      const result: Record<string, string | string[]> = Object.create(null) as Record<
+        string,
+        string | string[]
+      >;
       for (const [key, item] of new URLSearchParams(value)) {
-        const previous = result[key];
+        const previous: string | string[] | undefined = result[key];
         defineOwnDataProperty(
           result,
           key,
@@ -969,18 +1014,23 @@ export function createHTTPServices(
     input: unknown,
     options: RequestOptions,
   ): EncodedRequest | Promise<EncodedRequest> {
-    const pending = hasCustomParameterInput(operation, input)
+    const pending: EncodedRequest | Promise<EncodedRequest> = hasCustomParameterInput(
+      operation,
+      input,
+    )
       ? encodeRequestAsync(baseURL, client, codecs, streamCodecs, operation, input, options)
       : encodeRequestSynchronous(baseURL, client, codecs, streamCodecs, operation, input, options);
-    const finish = (encoded: EncodedRequest): EncodedRequest => {
-      let result =
+    const finish: (encoded: EncodedRequest) => EncodedRequest = (
+      encoded: EncodedRequest,
+    ): EncodedRequest => {
+      let result: EncodedRequest =
         options.authorization !== undefined ||
         client.authorization !== undefined ||
         options.csrfToken !== undefined
           ? { ...encoded, redirect: "error" as const }
           : encoded;
       if (isReadableStream(result.body)) {
-        const tracked = trackRequestBodyStream(result.body);
+        const tracked: TrackedRequestBody = trackRequestBodyStream(result.body);
         result = {
           ...result,
           body: tracked.body,
@@ -993,23 +1043,19 @@ export function createHTTPServices(
     return isPromise(pending) ? pending.then(finish) : finish(pending);
   }
 
-  function trackRequestBodyStream(source: ReadableStream<Uint8Array>): {
-    readonly body: ReadableStream<Uint8Array>;
-    readonly failure: () => unknown;
-    readonly cancel: (reason?: unknown) => Promise<void>;
-  } {
-    const reader = source.getReader();
+  function trackRequestBodyStream(source: ReadableStream<Uint8Array>): TrackedRequestBody {
+    const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = source.getReader();
     let failure: unknown;
-    let released = false;
+    let released: boolean = false;
     let cancelPromise: Promise<void> | undefined;
-    const release = (): void => {
+    const release: () => void = (): void => {
       if (released) return;
       released = true;
       reader.releaseLock();
     };
-    const cancel = (reason?: unknown): Promise<void> => {
+    const cancel: (reason?: unknown) => Promise<void> = (reason?: unknown): Promise<void> => {
       if (released) return Promise.resolve();
-      cancelPromise ??= (async () => {
+      cancelPromise ??= (async (): Promise<undefined> => {
         try {
           await reader.cancel(reason);
         } finally {
@@ -1020,36 +1066,38 @@ export function createHTTPServices(
     };
     return {
       body: new ReadableStream<Uint8Array>({
-        async pull(controller) {
+        async pull(
+          controller: ReadableStreamDefaultController<Uint8Array<ArrayBufferLike>>,
+        ): Promise<void> {
           try {
-            const next = await reader.read();
+            const next: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> = await reader.read();
             if (next.done) {
               release();
               controller.close();
               return;
             }
             controller.enqueue(next.value);
-          } catch (cause) {
+          } catch (cause: unknown) {
             failure = cause;
             release();
             controller.error(cause);
           }
         },
-        async cancel(reason) {
+        async cancel(reason: unknown): Promise<void> {
           await cancel(reason);
         },
       }),
-      failure: () => failure,
+      failure: (): unknown => failure,
       cancel,
     };
   }
 
   function hasCustomParameterInput(operation: OperationDefinition, input: unknown): boolean {
-    const values = isRecord(input) ? input : {};
+    const values: Record<string, unknown> = isRecord(input) ? input : {};
     for (const parameter of operation.parameters ?? []) {
       if (parameter.contentType === undefined || !requiresParameterCodec(parameter.contentType))
         continue;
-      const source =
+      const source: unknown =
         parameter.location === "path"
           ? values["path"]
           : parameter.location === "header"
@@ -1075,7 +1123,7 @@ export function createHTTPServices(
 
   function assertSafeOperationPath(path: string): void {
     for (const segment of path.split("/")) {
-      const dots = segment.toLowerCase().replaceAll("%2e", ".");
+      const dots: string = segment.toLowerCase().replaceAll("%2e", ".");
       if (dots === "." || dots === "..")
         throw new TypeError(
           "Operation path contains a URL dot-segment after parameter serialization",
@@ -1092,55 +1140,66 @@ export function createHTTPServices(
     input: unknown,
     options: RequestOptions,
   ): EncodedRequest | Promise<EncodedRequest> {
-    const values = isRecord(input) ? input : {};
-    const pathValues = isRecord(values["path"]) ? values["path"] : {};
+    const values: Record<string, unknown> = isRecord(input) ? input : {};
+    const pathValues: Record<string, unknown> = isRecord(values["path"]) ? values["path"] : {};
     rejectUndefinedArrayValues(pathValues);
-    const path = operation.path.replaceAll(/\{([^}]+)\}/g, (_, name: string) => {
-      const parameter = findParameter(operation, "path", name);
-      const property = parameter?.property ?? name;
-      const rawValue = pathValues[property];
-      if (!Object.hasOwn(pathValues, property) || rawValue === undefined)
-        throw new TypeError(`Missing path parameter ${name}`);
-      return serializePathParameterSync(
-        parameter,
-        name,
-        encodeParameterWireValue(operation, parameter, rawValue),
-        operation.inputSchemas ?? {},
-      );
-    });
+    const path: string = operation.path.replaceAll(
+      /\{([^}]+)\}/g,
+      (_: string, name: string): string => {
+        const parameter: ParameterDefinition | undefined = findParameter(operation, "path", name);
+        const property: string = parameter?.property ?? name;
+        const rawValue: unknown = pathValues[property];
+        if (!Object.hasOwn(pathValues, property) || rawValue === undefined)
+          throw new TypeError(`Missing path parameter ${name}`);
+        return serializePathParameterSync(
+          parameter,
+          name,
+          encodeParameterWireValue(operation, parameter, rawValue),
+          operation.inputSchemas ?? {},
+        );
+      },
+    );
     assertSafeOperationPath(path);
-    const url = new URL(
+    const url: URL = new URL(
       resolveOperationBaseURL(options.baseURL ?? baseURL, client.origin, client.server, operation) +
         (path.startsWith("/") ? path : `/${path}`),
     );
-    const queryValues = isRecord(values["query"]) ? values["query"] : {};
-    const querystringValues = isRecord(values["querystring"]) ? values["querystring"] : {};
+    const queryValues: Record<string, unknown> = isRecord(values["query"]) ? values["query"] : {};
+    const querystringValues: Record<string, unknown> = isRecord(values["querystring"])
+      ? values["querystring"]
+      : {};
     rejectUndefinedArrayValues(queryValues);
     rejectUndefinedArrayValues(querystringValues);
-    const query = [
+    const query: QueryPart[] = [
       ...appendQuerySync(queryValues, operation, "query"),
       ...appendQuerySync(querystringValues, operation, "querystring"),
     ];
     if (query.length > 0)
       url.search = `${url.search}${url.search === "" ? "?" : "&"}${serializeQuery(query)}`;
-    const contractHeaderNames = new Set(
+    const contractHeaderNames: Set<string> = new Set(
       [
         ...(operation.headerNames ?? []),
         ...(operation.parameters ?? [])
-          .filter((parameter) => parameter.location === "header")
-          .map((parameter) => parameter.name),
-      ].map((name) => name.toLowerCase()),
+          .filter((parameter: ParameterDefinition): boolean => parameter.location === "header")
+          .map((parameter: ParameterDefinition): string => parameter.name),
+      ].map((name: string): string => name.toLowerCase()),
     );
-    const headers = new Headers();
+    const headers: Headers = new Headers();
     appendRawHeaders(headers, client.headers, contractHeaderNames);
     appendRawHeaders(headers, options.headers, contractHeaderNames);
-    const headerParams = { ...(isRecord(values["headerParams"]) ? values["headerParams"] : {}) };
+    const headerParams: Record<string, unknown> = {
+      ...(isRecord(values["headerParams"]) ? values["headerParams"] : {}),
+    };
     rejectUndefinedArrayValues(headerParams);
     for (const [property, value] of Object.entries(headerParams)) {
       if (value === undefined) continue;
-      const parameter = findParameterByProperty(operation, "header", property);
-      const name = parameter?.name ?? property;
-      const serialized =
+      const parameter: ParameterDefinition | undefined = findParameterByProperty(
+        operation,
+        "header",
+        property,
+      );
+      const name: string = parameter?.name ?? property;
+      const serialized: string =
         parameter?.contentType === undefined
           ? serializeSimpleValue(
               encodeParameterWireValue(operation, parameter, value),
@@ -1158,7 +1217,9 @@ export function createHTTPServices(
     setHeader(headers, "Accept", options.accept);
     setHeader(headers, "X-CSRF-Token", options.csrfToken);
     setHeader(headers, "X-Request-Id", options.requestID);
-    const cookieValues = isRecord(values["cookieParams"]) ? values["cookieParams"] : {};
+    const cookieValues: Record<string, unknown> = isRecord(values["cookieParams"])
+      ? values["cookieParams"]
+      : {};
     rejectUndefinedArrayValues(cookieValues);
     assertRequiredParameters(
       operation,
@@ -1168,9 +1229,11 @@ export function createHTTPServices(
       headerParams,
       cookieValues,
     );
-    const cookies = Object.entries(cookieValues)
-      .filter((entry): entry is [string, unknown] => entry[1] !== undefined)
-      .flatMap(([property, value]) => serializeCookieSync(operation, property, value));
+    const cookies: string[] = Object.entries(cookieValues)
+      .filter((entry: [string, unknown]): entry is [string, unknown] => entry[1] !== undefined)
+      .flatMap(([property, value]: [string, unknown]): string[] =>
+        serializeCookieSync(operation, property, value),
+      );
     if (cookies.length > 0) {
       if (!client.transport?.capabilities?.cookieJar)
         throw transportError(
@@ -1185,12 +1248,13 @@ export function createHTTPServices(
       return { url: url.href, headers };
     }
     rejectUndefinedArrayValues(values["body"]);
-    let contentType = operation.contentType ?? "application/json";
+    let contentType: string = operation.contentType ?? "application/json";
     let bodyValue: unknown = values["body"];
-    const requestBodies = operation.requestBodies;
-    const needsSelection =
+    const requestBodies: readonly WireBodyDefinition[] | undefined = operation.requestBodies;
+    const needsSelection: boolean =
       requestBodies !== undefined &&
-      (requestBodies.length > 1 || requestBodies.some((body) => body.contentType.includes("*")));
+      (requestBodies.length > 1 ||
+        requestBodies.some((body: WireBodyDefinition): boolean => body.contentType.includes("*")));
     if (needsSelection) {
       if (
         !isRecord(values["body"]) ||
@@ -1198,7 +1262,10 @@ export function createHTTPServices(
         !Object.hasOwn(values["body"], "value")
       )
         throw new TypeError("request body media range requires { contentType, value }");
-      const selected = selectRequestBodyDefinition(requestBodies!, values["body"]["contentType"]);
+      const selected: WireBodyDefinition | undefined = selectRequestBodyDefinition(
+        requestBodies!,
+        values["body"]["contentType"],
+      );
       if (selected === undefined)
         throw new TypeError(
           `request body content type ${values["body"]["contentType"]} is not declared by this operation`,
@@ -1206,11 +1273,11 @@ export function createHTTPServices(
       contentType = values["body"]["contentType"];
       bodyValue = values["body"]["value"];
     }
-    const definition =
+    const definition: WireBodyDefinition | undefined =
       requestBodies === undefined
         ? undefined
         : selectRequestBodyDefinition(requestBodies, contentType);
-    const streamSource =
+    const streamSource: AsyncIterable<unknown> | undefined =
       definition?.itemSchema !== undefined && isStreamSource(bodyValue)
         ? normalizeStreamSource(bodyValue, options.signal)
         : undefined;
@@ -1220,13 +1287,21 @@ export function createHTTPServices(
       definition.schemaDeclared !== true
     )
       throw new TypeError("streaming request body must be a StreamSource");
-    const selectedStreamCodec = resolveStreamCodec(contentType, options.streamCodec, streamCodecs);
-    const finishStream = (encoded: EncodedStreamRequestBody): EncodedRequest => {
+    const selectedStreamCodec: StreamCodec<unknown, unknown> | undefined = resolveStreamCodec(
+      contentType,
+      options.streamCodec,
+      streamCodecs,
+    );
+    const finishStream: (encoded: EncodedStreamRequestBody) => EncodedRequest = (
+      encoded: EncodedStreamRequestBody,
+    ): EncodedRequest => {
       headers.set("Content-Type", encoded.contentType);
       return { url: url.href, headers, body: encoded.body };
     };
     if (definition?.itemSchema !== undefined && streamSource !== undefined) {
-      const stream = requireHTTPHook(extensions.encodeIncrementalStreamRequestBody)(streamSource, {
+      const stream: EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> = requireHTTPHook(
+        extensions.encodeIncrementalStreamRequestBody,
+      )(streamSource, {
         contentType,
         streamFraming: definition.streamFraming,
         itemSchema: definition.itemSchema,
@@ -1248,7 +1323,9 @@ export function createHTTPServices(
       definition?.schemaDeclared === true &&
       definition.streamFraming !== undefined
     ) {
-      const stream = requireHTTPHook(extensions.encodeCompleteSequentialRequestBody)(bodyValue, {
+      const stream: EncodedStreamRequestBody | Promise<EncodedStreamRequestBody> = requireHTTPHook(
+        extensions.encodeCompleteSequentialRequestBody,
+      )(bodyValue, {
         contentType,
         streamFraming: definition.streamFraming,
         schema: definition.schema,
@@ -1266,7 +1343,7 @@ export function createHTTPServices(
       });
       return isPromise(stream) ? stream.then(finishStream) : finishStream(stream);
     }
-    const body = extensions.encodeRequestBody(
+    const body: BodyInit | Promise<BodyInit> = extensions.encodeRequestBody(
       contentType,
       encodeRequestWireValue(operation, contentType, bodyValue),
       codecs,
@@ -1276,7 +1353,9 @@ export function createHTTPServices(
       options.multipartHeaders,
       options.multipartContentTypes,
     );
-    const finish = (resolved: BodyInit | ReadableStream<Uint8Array>): EncodedRequest => {
+    const finish: (resolved: BodyInit | ReadableStream<Uint8Array>) => EncodedRequest = (
+      resolved: BodyInit | ReadableStream<Uint8Array>,
+    ): EncodedRequest => {
       if (!(resolved instanceof FormData))
         headers.set(
           "Content-Type",
@@ -1298,65 +1377,71 @@ export function createHTTPServices(
     input: unknown,
     options: RequestOptions,
   ): Promise<EncodedRequest> {
-    const values = isRecord(input) ? input : {};
-    const pathValues = isRecord(values["path"]) ? values["path"] : {};
+    const values: Record<string, unknown> = isRecord(input) ? input : {};
+    const pathValues: Record<string, unknown> = isRecord(values["path"]) ? values["path"] : {};
     rejectUndefinedArrayValues(pathValues);
-    let path = operation.path;
+    let path: string = operation.path;
     for (const match of operation.path.matchAll(/\{([^}]+)\}/g)) {
-      const name = match[1]!;
-      const parameter = findParameter(operation, "path", name);
-      const property = parameter?.property ?? name;
-      const rawValue = pathValues[property];
+      const name: string = match[1]!;
+      const parameter: ParameterDefinition | undefined = findParameter(operation, "path", name);
+      const property: string = parameter?.property ?? name;
+      const rawValue: unknown = pathValues[property];
       if (!Object.hasOwn(pathValues, property) || rawValue === undefined) {
         throw new TypeError(`Missing path parameter ${name}`);
       }
-      const value = encodeParameterWireValue(operation, parameter, rawValue);
+      const value: unknown = encodeParameterWireValue(operation, parameter, rawValue);
       path = path.replace(
         match[0],
         await serializePathParameter(parameter, name, value, operation.inputSchemas ?? {}, codecs),
       );
     }
     assertSafeOperationPath(path);
-    const operationBaseURL = resolveOperationBaseURL(
+    const operationBaseURL: string = resolveOperationBaseURL(
       options.baseURL ?? baseURL,
       client.origin,
       client.server,
       operation,
     );
-    const url = new URL(operationBaseURL + (path.startsWith("/") ? path : `/${path}`));
-    const queryValues = isRecord(values["query"]) ? values["query"] : {};
-    const querystringValues = isRecord(values["querystring"]) ? values["querystring"] : {};
+    const url: URL = new URL(operationBaseURL + (path.startsWith("/") ? path : `/${path}`));
+    const queryValues: Record<string, unknown> = isRecord(values["query"]) ? values["query"] : {};
+    const querystringValues: Record<string, unknown> = isRecord(values["querystring"])
+      ? values["querystring"]
+      : {};
     rejectUndefinedArrayValues(queryValues);
     rejectUndefinedArrayValues(querystringValues);
-    const query = [
+    const query: QueryPart[] = [
       ...(await appendQuery(queryValues, operation, codecs, "query")),
       ...(await appendQuery(querystringValues, operation, codecs, "querystring")),
     ];
     if (query.length > 0)
       url.search = `${url.search}${url.search === "" ? "?" : "&"}${serializeQuery(query)}`;
 
-    const contractHeaderNames = new Set(
+    const contractHeaderNames: Set<string> = new Set(
       [
         ...(operation.headerNames ?? []),
         ...(operation.parameters ?? [])
-          .filter((parameter) => parameter.location === "header")
-          .map((parameter) => parameter.name),
-      ].map((name) => name.toLowerCase()),
+          .filter((parameter: ParameterDefinition): boolean => parameter.location === "header")
+          .map((parameter: ParameterDefinition): string => parameter.name),
+      ].map((name: string): string => name.toLowerCase()),
     );
-    const headers = new Headers();
+    const headers: Headers = new Headers();
     appendRawHeaders(headers, client.headers, contractHeaderNames);
     appendRawHeaders(headers, options.headers, contractHeaderNames);
 
-    const headerParams = {
+    const headerParams: Record<string, unknown> = {
       ...(isRecord(values["headerParams"]) ? values["headerParams"] : {}),
     };
     rejectUndefinedArrayValues(headerParams);
     for (const [property, value] of Object.entries(headerParams)) {
       if (value === undefined) continue;
-      const parameter = findParameterByProperty(operation, "header", property);
-      const name = parameter?.name ?? property;
-      const encodedValue = encodeParameterWireValue(operation, parameter, value);
-      const serialized =
+      const parameter: ParameterDefinition | undefined = findParameterByProperty(
+        operation,
+        "header",
+        property,
+      );
+      const name: string = parameter?.name ?? property;
+      const encodedValue: unknown = encodeParameterWireValue(operation, parameter, value);
+      const serialized: string =
         parameter?.contentType === undefined
           ? serializeSimpleValue(encodedValue, parameter?.explode ?? false)
           : await serializeContentParameter(
@@ -1373,7 +1458,9 @@ export function createHTTPServices(
     setHeader(headers, "X-CSRF-Token", options.csrfToken);
     setHeader(headers, "X-Request-Id", options.requestID);
 
-    const cookieValues = isRecord(values["cookieParams"]) ? values["cookieParams"] : {};
+    const cookieValues: Record<string, unknown> = isRecord(values["cookieParams"])
+      ? values["cookieParams"]
+      : {};
     rejectUndefinedArrayValues(cookieValues);
     assertRequiredParameters(
       operation,
@@ -1383,10 +1470,12 @@ export function createHTTPServices(
       headerParams,
       cookieValues,
     );
-    const cookiePromises = Object.entries(cookieValues)
-      .filter((entry): entry is [string, unknown] => entry[1] !== undefined)
-      .map(async ([property, value]) => serializeCookie(operation, property, value, codecs));
-    const cookies = (await Promise.all(cookiePromises)).flat();
+    const cookiePromises: Promise<string[]>[] = Object.entries(cookieValues)
+      .filter((entry: [string, unknown]): entry is [string, unknown] => entry[1] !== undefined)
+      .map(async ([property, value]: [string, unknown]): Promise<string[]> =>
+        serializeCookie(operation, property, value, codecs),
+      );
+    const cookies: string[] = (await Promise.all(cookiePromises)).flat();
     if (cookies.length > 0) {
       if (!client.transport?.capabilities?.cookieJar) {
         throw transportError(
@@ -1403,12 +1492,13 @@ export function createHTTPServices(
       return { url: url.href, headers };
     }
     rejectUndefinedArrayValues(values["body"]);
-    let contentType = operation.contentType ?? "application/json";
+    let contentType: string = operation.contentType ?? "application/json";
     let bodyValue: unknown = values["body"];
-    const requestBodies = operation.requestBodies;
-    const needsSelection =
+    const requestBodies: readonly WireBodyDefinition[] | undefined = operation.requestBodies;
+    const needsSelection: boolean =
       requestBodies !== undefined &&
-      (requestBodies.length > 1 || requestBodies.some((body) => body.contentType.includes("*")));
+      (requestBodies.length > 1 ||
+        requestBodies.some((body: WireBodyDefinition): boolean => body.contentType.includes("*")));
     if (needsSelection) {
       if (
         !isRecord(values["body"]) ||
@@ -1416,7 +1506,10 @@ export function createHTTPServices(
         !Object.hasOwn(values["body"], "value")
       )
         throw new TypeError("request body media range requires { contentType, value }");
-      const selected = selectRequestBodyDefinition(requestBodies!, values["body"]["contentType"]);
+      const selected: WireBodyDefinition | undefined = selectRequestBodyDefinition(
+        requestBodies!,
+        values["body"]["contentType"],
+      );
       if (selected === undefined)
         throw new TypeError(
           `request body content type ${values["body"]["contentType"]} is not declared by this operation`,
@@ -1424,11 +1517,11 @@ export function createHTTPServices(
       contentType = values["body"]["contentType"];
       bodyValue = values["body"]["value"];
     }
-    const definition =
+    const definition: WireBodyDefinition | undefined =
       requestBodies === undefined
         ? undefined
         : selectRequestBodyDefinition(requestBodies, contentType);
-    const streamSource =
+    const streamSource: AsyncIterable<unknown> | undefined =
       definition?.itemSchema !== undefined && isStreamSource(bodyValue)
         ? normalizeStreamSource(bodyValue, options.signal)
         : undefined;
@@ -1438,30 +1531,35 @@ export function createHTTPServices(
       definition.schemaDeclared !== true
     )
       throw new TypeError("streaming request body must be a StreamSource");
-    const selectedStreamCodec = resolveStreamCodec(contentType, options.streamCodec, streamCodecs);
-    const finishStream = (encoded: EncodedStreamRequestBody): EncodedRequest => {
+    const selectedStreamCodec: StreamCodec<unknown, unknown> | undefined = resolveStreamCodec(
+      contentType,
+      options.streamCodec,
+      streamCodecs,
+    );
+    const finishStream: (encoded: EncodedStreamRequestBody) => EncodedRequest = (
+      encoded: EncodedStreamRequestBody,
+    ): EncodedRequest => {
       headers.set("Content-Type", encoded.contentType);
       return { url: url.href, headers, body: encoded.body };
     };
     if (definition?.itemSchema !== undefined && streamSource !== undefined) {
-      const stream = await requireHTTPHook(extensions.encodeIncrementalStreamRequestBody)(
-        streamSource,
-        {
-          contentType,
-          streamFraming: definition.streamFraming,
-          itemSchema: definition.itemSchema,
-          schemas: operation.inputSchemas ?? {},
-          streamCodec: selectedStreamCodec,
-          maxFrameBytes: resolveMaxStreamFrameBytes(
-            options.maxStreamFrameBytes ?? client.maxStreamFrameBytes,
-          ),
-          signal: options.signal,
-          itemEncoding: definition.itemEncoding,
-          suppliedHeaders: options.multipartHeaders,
-          suppliedContentTypes: options.multipartContentTypes,
-          codecs,
-        },
-      );
+      const stream: EncodedStreamRequestBody = await requireHTTPHook(
+        extensions.encodeIncrementalStreamRequestBody,
+      )(streamSource, {
+        contentType,
+        streamFraming: definition.streamFraming,
+        itemSchema: definition.itemSchema,
+        schemas: operation.inputSchemas ?? {},
+        streamCodec: selectedStreamCodec,
+        maxFrameBytes: resolveMaxStreamFrameBytes(
+          options.maxStreamFrameBytes ?? client.maxStreamFrameBytes,
+        ),
+        signal: options.signal,
+        itemEncoding: definition.itemEncoding,
+        suppliedHeaders: options.multipartHeaders,
+        suppliedContentTypes: options.multipartContentTypes,
+        codecs,
+      });
       return finishStream(stream);
     }
     if (
@@ -1469,28 +1567,27 @@ export function createHTTPServices(
       definition?.schemaDeclared === true &&
       definition.streamFraming !== undefined
     ) {
-      const stream = await requireHTTPHook(extensions.encodeCompleteSequentialRequestBody)(
-        bodyValue,
-        {
-          contentType,
-          streamFraming: definition.streamFraming,
-          schema: definition.schema,
-          schemas: operation.inputSchemas ?? {},
-          streamCodec: selectedStreamCodec,
-          maxFrameBytes: resolveMaxStreamFrameBytes(
-            options.maxStreamFrameBytes ?? client.maxStreamFrameBytes,
-          ),
-          signal: options.signal,
-          prefixEncoding: definition.prefixEncoding,
-          itemEncoding: definition.itemEncoding,
-          suppliedHeaders: options.multipartHeaders,
-          suppliedContentTypes: options.multipartContentTypes,
-          codecs,
-        },
-      );
+      const stream: EncodedStreamRequestBody = await requireHTTPHook(
+        extensions.encodeCompleteSequentialRequestBody,
+      )(bodyValue, {
+        contentType,
+        streamFraming: definition.streamFraming,
+        schema: definition.schema,
+        schemas: operation.inputSchemas ?? {},
+        streamCodec: selectedStreamCodec,
+        maxFrameBytes: resolveMaxStreamFrameBytes(
+          options.maxStreamFrameBytes ?? client.maxStreamFrameBytes,
+        ),
+        signal: options.signal,
+        prefixEncoding: definition.prefixEncoding,
+        itemEncoding: definition.itemEncoding,
+        suppliedHeaders: options.multipartHeaders,
+        suppliedContentTypes: options.multipartContentTypes,
+        codecs,
+      });
       return finishStream(stream);
     }
-    const body = extensions.encodeRequestBody(
+    const body: BodyInit | Promise<BodyInit> = extensions.encodeRequestBody(
       contentType,
       encodeRequestWireValue(operation, contentType, bodyValue),
       codecs,
@@ -1500,9 +1597,11 @@ export function createHTTPServices(
       options.multipartHeaders,
       options.multipartContentTypes,
     );
-    const finish = (resolved: BodyInit | ReadableStream<Uint8Array>): EncodedRequest => {
+    const finish: (resolved: BodyInit | ReadableStream<Uint8Array>) => EncodedRequest = (
+      resolved: BodyInit | ReadableStream<Uint8Array>,
+    ): EncodedRequest => {
       if (!(resolved instanceof FormData)) {
-        const resolvedContentType =
+        const resolvedContentType: string =
           normalizeMediaType(contentType).startsWith("multipart/") && resolved instanceof Blob
             ? resolved.type
             : contentType;
@@ -1523,7 +1622,7 @@ export function createHTTPServices(
   ): void {
     for (const parameter of operation.parameters ?? []) {
       if (!parameter.required) continue;
-      const values =
+      const values: Record<string, unknown> =
         parameter.location === "path"
           ? pathValues
           : parameter.location === "query"
@@ -1545,7 +1644,7 @@ export function createHTTPServices(
     contentType: string,
     value: unknown,
   ): unknown {
-    const definition =
+    const definition: WireBodyDefinition | undefined =
       operation.requestBodies === undefined
         ? undefined
         : selectRequestBodyDefinition(operation.requestBodies, contentType);
@@ -1560,7 +1659,7 @@ export function createHTTPServices(
     value: unknown,
   ): unknown {
     if (parameter?.sort !== undefined && Array.isArray(value)) {
-      value = value.map((entry) => {
+      value = value.map((entry: unknown): string => {
         if (
           !isRecord(entry) ||
           typeof entry["field"] !== "string" ||
@@ -1568,7 +1667,8 @@ export function createHTTPServices(
         ) {
           throw new TypeError(`Invalid structured sort value for ${parameter.name}`);
         }
-        const wire = parameter.sort?.[`${entry["field"]}\u0000${entry["direction"]}`];
+        const wire: string | undefined =
+          parameter.sort?.[`${entry["field"]}\u0000${entry["direction"]}`];
         if (wire === undefined)
           throw new TypeError(`Invalid structured sort value for ${parameter.name}`);
         return wire;
@@ -1584,7 +1684,11 @@ export function createHTTPServices(
     response: Response,
     value: unknown,
   ): unknown {
-    const definition = selectResponseDefinition(operation, response, true);
+    const definition: WireResponseDefinition | undefined = selectResponseDefinition(
+      operation,
+      response,
+      true,
+    );
     if (
       definition !== undefined &&
       isXMLMediaType(definition.contentType) &&
@@ -1596,7 +1700,7 @@ export function createHTTPServices(
         operation.outputSchemas ?? {},
       );
     }
-    const contentType = responseContentType(response);
+    const contentType: string | undefined = responseContentType(response);
     if (
       definition !== undefined &&
       definition.streamFraming === undefined &&
@@ -1613,7 +1717,7 @@ export function createHTTPServices(
           "decode",
           tolerantResponseTransformOptions,
         );
-      } catch (cause) {
+      } catch (cause: unknown) {
         let scalar: unknown;
         try {
           scalar = JSON.parse(value);
@@ -1643,9 +1747,11 @@ export function createHTTPServices(
     contentType: string,
   ): WireBodyDefinition | undefined {
     return bodies
-      .filter((body) => mediaTypeMatches(body.contentType, contentType))
+      .filter((body: WireBodyDefinition): boolean =>
+        mediaTypeMatches(body.contentType, contentType),
+      )
       .sort(
-        (left, right) =>
+        (left: WireBodyDefinition, right: WireBodyDefinition): number =>
           mediaTypeMatchScore(right.contentType, contentType) -
           mediaTypeMatchScore(left.contentType, contentType),
       )[0];
@@ -1660,7 +1766,11 @@ export function createHTTPServices(
     const result: QueryPart[] = [];
     for (const [property, value] of Object.entries(query)) {
       if (value === undefined) continue;
-      const parameter = findParameterByProperty(operation, location, property);
+      const parameter: ParameterDefinition | undefined = findParameterByProperty(
+        operation,
+        location,
+        property,
+      );
       if (parameter?.location === "querystring") {
         await appendQuerystring(
           result,
@@ -1707,8 +1817,8 @@ export function createHTTPServices(
       );
       return;
     }
-    const style = parameter?.style ?? "form";
-    const explode = parameter?.explode ?? true;
+    const style: string = parameter?.style ?? "form";
+    const explode: boolean = parameter?.explode ?? true;
     if (style === "deepObject" && isRecord(value)) {
       for (const [key, item] of Object.entries(value)) {
         if (item !== undefined)
@@ -1744,7 +1854,9 @@ export function createHTTPServices(
       return;
     }
     if (isRecord(value) && style === "form") {
-      const entries = Object.entries(value).filter((entry) => entry[1] !== undefined);
+      const entries: [string, unknown][] = Object.entries(value).filter(
+        (entry: [string, unknown]): boolean => entry[1] !== undefined,
+      );
       if (explode)
         for (const [key, item] of entries)
           appendQueryValue(query, key, item, parameter?.allowReserved ?? false);
@@ -1752,17 +1864,25 @@ export function createHTTPServices(
         appendQueryValue(
           query,
           name,
-          entries.flatMap(([key, item]) => [key, String(item)]).join(","),
+          entries
+            .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
+            .join(","),
           parameter?.allowReserved ?? false,
         );
       return;
     }
     if (isRecord(value) && (style === "spaceDelimited" || style === "pipeDelimited")) {
-      const separator = style === "spaceDelimited" ? " " : "|";
-      const entries = Object.entries(value).filter((entry) => entry[1] !== undefined);
-      const serialized = explode
-        ? entries.map(([key, item]) => `${key}=${String(item)}`).join(separator)
-        : entries.flatMap(([key, item]) => [key, String(item)]).join(separator);
+      const separator: " " | "|" = style === "spaceDelimited" ? " " : "|";
+      const entries: [string, unknown][] = Object.entries(value).filter(
+        (entry: [string, unknown]): boolean => entry[1] !== undefined,
+      );
+      const serialized: string = explode
+        ? entries
+            .map(([key, item]: [string, unknown]): string => `${key}=${String(item)}`)
+            .join(separator)
+        : entries
+            .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
+            .join(separator);
       appendQueryValue(query, name, serialized, parameter?.allowReserved ?? false);
       return;
     }
@@ -1777,13 +1897,17 @@ export function createHTTPServices(
     const result: QueryPart[] = [];
     for (const [property, rawValue] of Object.entries(query)) {
       if (rawValue === undefined) continue;
-      const parameter = findParameterByProperty(operation, location, property);
-      const value = encodeParameterWireValue(operation, parameter, rawValue);
+      const parameter: ParameterDefinition | undefined = findParameterByProperty(
+        operation,
+        location,
+        property,
+      );
+      const value: unknown = encodeParameterWireValue(operation, parameter, rawValue);
       if (parameter?.location === "querystring") {
         appendQuerystringSync(result, value, parameter, operation.inputSchemas ?? {});
         continue;
       }
-      const name = parameter?.name ?? property;
+      const name: string = parameter?.name ?? property;
       assertQueryEmptyValueAllowed(value, parameter);
       if (parameter?.contentType !== undefined) {
         appendQueryValue(
@@ -1799,8 +1923,8 @@ export function createHTTPServices(
         );
         continue;
       }
-      const style = parameter?.style ?? "form";
-      const explode = parameter?.explode ?? true;
+      const style: string = parameter?.style ?? "form";
+      const explode: boolean = parameter?.explode ?? true;
       if (style === "deepObject" && isRecord(value)) {
         for (const [key, item] of Object.entries(value))
           if (item !== undefined)
@@ -1835,7 +1959,9 @@ export function createHTTPServices(
         continue;
       }
       if (isRecord(value) && style === "form") {
-        const entries = Object.entries(value).filter((entry) => entry[1] !== undefined);
+        const entries: [string, unknown][] = Object.entries(value).filter(
+          (entry: [string, unknown]): boolean => entry[1] !== undefined,
+        );
         if (explode)
           for (const [key, item] of entries)
             appendQueryValue(result, key, item, parameter?.allowReserved ?? false);
@@ -1843,20 +1969,28 @@ export function createHTTPServices(
           appendQueryValue(
             result,
             name,
-            entries.flatMap(([key, item]) => [key, String(item)]).join(","),
+            entries
+              .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
+              .join(","),
             parameter?.allowReserved ?? false,
           );
         continue;
       }
       if (isRecord(value) && (style === "spaceDelimited" || style === "pipeDelimited")) {
-        const separator = style === "spaceDelimited" ? " " : "|";
-        const entries = Object.entries(value).filter((entry) => entry[1] !== undefined);
+        const separator: " " | "|" = style === "spaceDelimited" ? " " : "|";
+        const entries: [string, unknown][] = Object.entries(value).filter(
+          (entry: [string, unknown]): boolean => entry[1] !== undefined,
+        );
         appendQueryValue(
           result,
           name,
           explode
-            ? entries.map(([key, item]) => `${key}=${String(item)}`).join(separator)
-            : entries.flatMap(([key, item]) => [key, String(item)]).join(separator),
+            ? entries
+                .map(([key, item]: [string, unknown]): string => `${key}=${String(item)}`)
+                .join(separator)
+            : entries
+                .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
+                .join(separator),
           parameter?.allowReserved ?? false,
         );
         continue;
@@ -1872,7 +2006,7 @@ export function createHTTPServices(
     parameter: ParameterDefinition,
     components: WireSchemas,
   ): void {
-    const contentType = parameter.contentType?.toLowerCase();
+    const contentType: string | undefined = parameter.contentType?.toLowerCase();
     if (contentType === "application/x-www-form-urlencoded") {
       if (!isRecord(value)) throw new TypeError("querystring form content must be an object");
       for (const [name, item] of Object.entries(value)) {
@@ -1938,7 +2072,7 @@ export function createHTTPServices(
   function serializeQuery(query: readonly QueryPart[]): string {
     return query
       .map(
-        (part) =>
+        (part: QueryPart): string =>
           part.raw ??
           `${encodeURIComponent(part.name ?? "")}=${part.allowReserved ? encodeReservedQueryValue(part.value ?? "") : encodeURIComponent(part.value ?? "")}`,
       )
@@ -1952,7 +2086,7 @@ export function createHTTPServices(
     components: WireSchemas,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<void> {
-    const contentType = parameter.contentType?.toLowerCase();
+    const contentType: string | undefined = parameter.contentType?.toLowerCase();
     if (contentType === "application/x-www-form-urlencoded") {
       if (!isRecord(value)) throw new TypeError("querystring form content must be an object");
       for (const [name, item] of Object.entries(value)) {
@@ -1983,7 +2117,7 @@ export function createHTTPServices(
   function encodeReservedQueryValue(value: string): string {
     return encodeURIComponent(value)
       .replace(/%25([0-9a-f]{2})/gi, "%$1")
-      .replace(/%3A|%2F|%3F|%40|%21|%24|%27|%28|%29|%2A|%2C|%3B|%3D/gi, (encoded) =>
+      .replace(/%3A|%2F|%3F|%40|%21|%24|%27|%28|%29|%2A|%2C|%3B|%3D/gi, (encoded: string): string =>
         decodeURIComponent(encoded),
       );
   }
@@ -1994,7 +2128,8 @@ export function createHTTPServices(
     name: string,
   ): ParameterDefinition | undefined {
     return operation.parameters?.find(
-      (parameter) => parameter.location === location && parameter.name === name,
+      (parameter: ParameterDefinition): boolean =>
+        parameter.location === location && parameter.name === name,
     );
   }
 
@@ -2004,7 +2139,8 @@ export function createHTTPServices(
     property: string,
   ): ParameterDefinition | undefined {
     return operation.parameters?.find(
-      (parameter) => parameter.location === location && parameter.property === property,
+      (parameter: ParameterDefinition): boolean =>
+        parameter.location === location && parameter.property === property,
     );
   }
 
@@ -2026,20 +2162,26 @@ export function createHTTPServices(
         ),
       );
     }
-    const style = parameter?.style ?? "simple";
-    const explode = parameter?.explode ?? false;
-    const encoded = serializePathValue(value, explode, style === "label" ? "." : ",");
+    const style: string = parameter?.style ?? "simple";
+    const explode: boolean = parameter?.explode ?? false;
+    const encoded: string = serializePathValue(value, explode, style === "label" ? "." : ",");
     if (style === "label") return `.${encoded}`;
     if (style !== "matrix") return encoded;
     if (Array.isArray(value) && explode) {
       return value
-        .map((item) => `;${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`)
+        .map(
+          (item: unknown): string =>
+            `;${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`,
+        )
         .join("");
     }
     if (isRecord(value) && explode) {
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .map(([key, item]) => `;${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`)
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .map(
+          ([key, item]: [string, unknown]): string =>
+            `;${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`,
+        )
         .join("");
     }
     return `;${encodeURIComponent(name)}=${encoded}`;
@@ -2055,19 +2197,25 @@ export function createHTTPServices(
       return encodeURIComponent(
         serializeContentParameterSync(value, parameter.contentType, parameter.schema, components),
       );
-    const style = parameter?.style ?? "simple";
-    const explode = parameter?.explode ?? false;
-    const encoded = serializePathValue(value, explode, style === "label" ? "." : ",");
+    const style: string = parameter?.style ?? "simple";
+    const explode: boolean = parameter?.explode ?? false;
+    const encoded: string = serializePathValue(value, explode, style === "label" ? "." : ",");
     if (style === "label") return `.${encoded}`;
     if (style !== "matrix") return encoded;
     if (Array.isArray(value) && explode)
       return value
-        .map((item) => `;${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`)
+        .map(
+          (item: unknown): string =>
+            `;${encodeURIComponent(name)}=${encodeURIComponent(String(item))}`,
+        )
         .join("");
     if (isRecord(value) && explode)
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .map(([key, item]) => `;${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`)
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .map(
+          ([key, item]: [string, unknown]): string =>
+            `;${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`,
+        )
         .join("");
     return `;${encodeURIComponent(name)}=${encoded}`;
   }
@@ -2075,12 +2223,12 @@ export function createHTTPServices(
   function serializePathValue(value: unknown, explode: boolean, arraySeparator: string): string {
     if (Array.isArray(value))
       return value
-        .map((item) => encodeURIComponent(String(item)))
+        .map((item: unknown): string => encodeURIComponent(String(item)))
         .join(explode ? arraySeparator : ",");
     if (isRecord(value)) {
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .flatMap(([key, item]) =>
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .flatMap(([key, item]: [string, unknown]): string | string[] =>
           explode
             ? `${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`
             : [encodeURIComponent(key), encodeURIComponent(String(item))],
@@ -2094,8 +2242,10 @@ export function createHTTPServices(
     if (Array.isArray(value)) return value.map(String).join(",");
     if (isRecord(value)) {
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .flatMap(([key, item]) => (explode ? `${key}=${String(item)}` : [key, String(item)]))
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .flatMap(([key, item]: [string, unknown]): string | string[] =>
+          explode ? `${key}=${String(item)}` : [key, String(item)],
+        )
         .join(",");
     }
     return String(value);
@@ -2113,7 +2263,7 @@ export function createHTTPServices(
       return requireHTTPHook(extensions.encodeXML)(value, schema ?? {}, components);
     if (contentType.toLowerCase() === "application/x-www-form-urlencoded") {
       if (!isRecord(value)) return String(value);
-      const form = new URLSearchParams();
+      const form: URLSearchParams = new URLSearchParams();
       for (const [name, item] of Object.entries(value)) {
         if (item === undefined) continue;
         if (Array.isArray(item)) for (const entry of item) form.append(name, String(entry));
@@ -2122,7 +2272,7 @@ export function createHTTPServices(
       return form.toString();
     }
     if (contentType.toLowerCase().startsWith("text/")) return String(value);
-    const codec = codecs.get(normalizeMediaType(contentType));
+    const codec: MediaCodec<unknown> | undefined = codecs.get(normalizeMediaType(contentType));
     if (codec?.encodeParameter === undefined)
       throw new TypeError(`missing parameter encode codec for ${contentType}`);
     return await codec.encodeParameter(value, { contentType });
@@ -2139,7 +2289,7 @@ export function createHTTPServices(
       return requireHTTPHook(extensions.encodeXML)(value, schema ?? {}, components);
     if (contentType.toLowerCase() === "application/x-www-form-urlencoded") {
       if (!isRecord(value)) return String(value);
-      const form = new URLSearchParams();
+      const form: URLSearchParams = new URLSearchParams();
       for (const [name, item] of Object.entries(value)) {
         if (item === undefined) continue;
         if (Array.isArray(item)) for (const entry of item) form.append(name, String(entry));
@@ -2157,10 +2307,14 @@ export function createHTTPServices(
     value: unknown,
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
   ): Promise<string[]> {
-    const parameter = findParameterByProperty(operation, "cookie", property);
-    const name = parameter?.name ?? property;
-    const preserve = parameter?.style === "cookie";
-    const pair = (key: string, item: unknown): string =>
+    const parameter: ParameterDefinition | undefined = findParameterByProperty(
+      operation,
+      "cookie",
+      property,
+    );
+    const name: string = parameter?.name ?? property;
+    const preserve: boolean = parameter?.style === "cookie";
+    const pair: (key: string, item: unknown) => string = (key: string, item: unknown): string =>
       `${preserve ? key : encodeURIComponent(key)}=${preserve ? String(item ?? "") : encodeURIComponent(String(item ?? ""))}`;
     value = encodeParameterWireValue(operation, parameter, value);
     if (parameter?.contentType !== undefined) {
@@ -2179,14 +2333,14 @@ export function createHTTPServices(
     }
     if (Array.isArray(value)) {
       if (parameter?.explode ?? true) {
-        return value.map((item) => pair(name, item));
+        return value.map((item: unknown): string => pair(name, item));
       }
       return [pair(name, value.map(String).join(","))];
     }
     if (isRecord(value) && (parameter?.explode ?? true)) {
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .map(([key, item]) => pair(key, item));
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .map(([key, item]: [string, unknown]): string => pair(key, item));
     }
     return [pair(name, serializeSimpleValue(value, false))];
   }
@@ -2196,10 +2350,14 @@ export function createHTTPServices(
     property: string,
     value: unknown,
   ): string[] {
-    const parameter = findParameterByProperty(operation, "cookie", property);
-    const name = parameter?.name ?? property;
-    const preserve = parameter?.style === "cookie";
-    const pair = (key: string, item: unknown): string =>
+    const parameter: ParameterDefinition | undefined = findParameterByProperty(
+      operation,
+      "cookie",
+      property,
+    );
+    const name: string = parameter?.name ?? property;
+    const preserve: boolean = parameter?.style === "cookie";
+    const pair: (key: string, item: unknown) => string = (key: string, item: unknown): string =>
       `${preserve ? key : encodeURIComponent(key)}=${preserve ? String(item ?? "") : encodeURIComponent(String(item ?? ""))}`;
     value = encodeParameterWireValue(operation, parameter, value);
     if (parameter?.contentType !== undefined)
@@ -2216,12 +2374,12 @@ export function createHTTPServices(
       ];
     if (Array.isArray(value))
       return (parameter?.explode ?? true)
-        ? value.map((item) => pair(name, item))
+        ? value.map((item: unknown): string => pair(name, item))
         : [pair(name, value.map(String).join(","))];
     if (isRecord(value) && (parameter?.explode ?? true))
       return Object.entries(value)
-        .filter((entry) => entry[1] !== undefined)
-        .map(([key, item]) => pair(key, item));
+        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
+        .map(([key, item]: [string, unknown]): string => pair(key, item));
     return [pair(name, serializeSimpleValue(value, false))];
   }
 
@@ -2232,29 +2390,36 @@ export function createHTTPServices(
     operation: OperationDefinition,
   ): string {
     if (baseURL !== undefined) return baseURL;
-    const servers = operation.servers ?? [{ id: "#", url: "/" }];
-    const server =
-      selection?.id === undefined ? servers[0] : servers.find((item) => item.id === selection.id);
+    const servers: readonly ServerDefinition[] = operation.servers ?? [{ id: "#", url: "/" }];
+    const server: ServerDefinition | undefined =
+      selection?.id === undefined
+        ? servers[0]
+        : servers.find((item: ServerDefinition): boolean => item.id === selection.id);
     if (server === undefined)
       throw new TypeError(
         `Unknown server ${selection?.id} for operation ${operationDiagnosticName(operation)}`,
       );
-    const variables = selection?.variables ?? {};
-    const expanded = server.url.replace(/\{([^}]+)\}/g, (_, name: string) => {
-      const definition = server.variables?.find((item) => item.name === name);
-      if (definition === undefined)
-        throw new TypeError(`Server ${server.id} has no variable ${name}`);
-      const value = variables[name] ?? definition.defaultValue;
-      if (definition.enumValues !== undefined && !definition.enumValues.includes(value)) {
-        throw new TypeError(
-          `Server variable ${name} must be one of ${definition.enumValues.join(", ")}`,
+    const variables: Readonly<Record<string, string>> = selection?.variables ?? {};
+    const expanded: string = server.url.replace(
+      /\{([^}]+)\}/g,
+      (_: string, name: string): string => {
+        const definition: ServerVariableDefinition | undefined = server.variables?.find(
+          (item: ServerVariableDefinition): boolean => item.name === name,
         );
-      }
-      return value;
-    });
+        if (definition === undefined)
+          throw new TypeError(`Server ${server.id} has no variable ${name}`);
+        const value: string = variables[name] ?? definition.defaultValue;
+        if (definition.enumValues !== undefined && !definition.enumValues.includes(value)) {
+          throw new TypeError(
+            `Server variable ${name} must be one of ${definition.enumValues.join(", ")}`,
+          );
+        }
+        return value;
+      },
+    );
     try {
       return normalizeBaseURL(new URL(expanded).href);
-    } catch (cause) {
+    } catch (cause: unknown) {
       try {
         new URL(expanded);
       } catch {
@@ -2262,7 +2427,7 @@ export function createHTTPServices(
           throw new TypeError(
             `Server ${server.id} is relative; pass ClientOptions.origin or baseURL`,
           );
-        const absoluteOrigin = normalizeOrigin(origin);
+        const absoluteOrigin: string = normalizeOrigin(origin);
         return normalizeBaseURL(new URL(expanded, absoluteOrigin).href);
       }
       throw cause;
@@ -2270,7 +2435,7 @@ export function createHTTPServices(
   }
 
   function normalizeOrigin(value: string): string {
-    const url = new URL(value);
+    const url: URL = new URL(value);
     if (
       (url.protocol !== "http:" && url.protocol !== "https:") ||
       url.pathname !== "/" ||
@@ -2290,9 +2455,9 @@ export function createHTTPServices(
     contractNames: ReadonlySet<string>,
   ): void {
     if (source === undefined) return;
-    const incoming = new Headers(source);
-    incoming.forEach((value, name) => {
-      const lower = name.toLowerCase();
+    const incoming: Headers = new Headers(source);
+    incoming.forEach((value: string, name: string): void => {
+      const lower: string = name.toLowerCase();
       if (reservedHeaders.has(lower) || contractNames.has(lower)) {
         throw new TypeError(`Raw header ${name} must use its typed option`);
       }
@@ -2326,14 +2491,18 @@ export function createHTTPServices(
     options: ResponseDecodeOptions,
   ): Promise<unknown> {
     if (response.status === 204 || response.status === 205) return undefined;
-    const contentType = responseContentType(response);
+    const contentType: string | undefined = responseContentType(response);
     if (contentType === undefined || response.body === null) return undefined;
     try {
-      const definition = selectResponseDefinition(operation, response, true);
-      const completeSequential = definition?.streamFraming !== undefined;
+      const definition: WireResponseDefinition | undefined = selectResponseDefinition(
+        operation,
+        response,
+        true,
+      );
+      const completeSequential: boolean = definition?.streamFraming !== undefined;
       if (completeSequential && definition !== undefined) {
         const values: unknown[] = [];
-        const streamCodec = resolveStreamCodec(
+        const streamCodec: StreamCodec<unknown, unknown> | undefined = resolveStreamCodec(
           contentType,
           options.streamCodec,
           options.streamCodecs,
@@ -2368,7 +2537,7 @@ export function createHTTPServices(
         );
       }
       if (definition?.binary === true) {
-        const codec = options.codecs.get(contentType);
+        const codec: MediaCodec<unknown> | undefined = options.codecs.get(contentType);
         return codec?.decode === undefined
           ? response.body
           : await codec.decode(response, { contentType });
@@ -2380,11 +2549,11 @@ export function createHTTPServices(
         return await response.text();
       }
       if (isBinaryMediaType(contentType)) return response.body;
-      const codec = options.codecs.get(contentType);
+      const codec: MediaCodec<unknown> | undefined = options.codecs.get(contentType);
       if (codec?.decode === undefined)
         throw new TypeError(`missing decode codec for ${contentType}`);
       return await codec.decode(response, { contentType });
-    } catch (cause) {
+    } catch (cause: unknown) {
       throw new APIError({
         code: TransportErrorCode.RESPONSE_DECODE_FAILED,
         message: "Failed to decode response body",
@@ -2425,24 +2594,29 @@ export function createHTTPServices(
   ): AsyncIterable<unknown> {
     return {
       [Symbol.asyncIterator](): AsyncIterator<unknown> {
-        const iterator = isAsyncIterable(source)
+        const iterator: AsyncIterator<unknown, unknown, unknown> = isAsyncIterable(source)
           ? source[Symbol.asyncIterator]()
           : readableStreamIterator(source);
-        let done = false;
+        let done: boolean = false;
         return {
           async next(): Promise<IteratorResult<unknown>> {
             if (done) return { done: true, value: undefined };
             try {
-              const next = await awaitAbortable(Promise.resolve(iterator.next()), signal);
+              const next: IteratorResult<unknown, unknown> = await awaitAbortable(
+                Promise.resolve(iterator.next()),
+                signal,
+              );
               if (done || next.done) {
                 done = true;
                 return { done: true, value: undefined };
               }
               return next;
-            } catch (cause) {
+            } catch (cause: unknown) {
               if (signal?.aborted && !done) {
                 done = true;
-                void Promise.resolve(iterator.return?.(signal.reason)).catch(() => undefined);
+                void Promise.resolve(iterator.return?.(signal.reason)).catch(
+                  (): undefined => undefined,
+                );
               }
               throw cause;
             }
@@ -2450,9 +2624,11 @@ export function createHTTPServices(
           async return(reason?: unknown): Promise<IteratorResult<unknown>> {
             if (done) return { done: true, value: undefined };
             done = true;
-            const close = Promise.resolve(iterator.return?.(reason));
-            if (signal?.aborted) void close.catch(() => undefined);
-            else await close.catch(() => undefined);
+            const close: Promise<IteratorResult<unknown, unknown> | undefined> = Promise.resolve(
+              iterator.return?.(reason),
+            );
+            if (signal?.aborted) void close.catch((): undefined => undefined);
+            else await close.catch((): undefined => undefined);
             return { done: true, value: undefined };
           },
         };
@@ -2532,35 +2708,39 @@ export function createRequestCore(
   context: RequestContext,
   services: RequestExecutionServices & Partial<StreamingRequestExecutionServices>,
 ): BufferedRequestFunction | RequestFunction {
-  const { options, baseURL, fetchImplementation, codecs, streamCodecs } = context;
+  const { options, baseURL, fetchImplementation, codecs, streamCodecs }: RequestContext = context;
   const {
     encodeRequest,
     decodeResponse,
     decodeResponseHeaders,
     decodeResponseWireValue,
     createOperationStream,
-  } = services;
-  const execute = async <Output>(
+  }: RequestExecutionServices & Partial<StreamingRequestExecutionServices> = services;
+  const execute: <Output>(
+    operation: OperationDefinition,
+    input?: unknown,
+    requestOptions?: RequestOptions,
+    raw?: boolean,
+  ) => Promise<Output | RawResponse<Output>> = async <Output>(
     operation: OperationDefinition,
     input?: unknown,
     requestOptions: RequestOptions = {},
-    raw = false,
+    raw: boolean = false,
   ): Promise<Output | RawResponse<Output>> => {
-    const credentials = requestOptions.credentials ?? options.credentials;
-    const timeoutMS = requestOptions.timeoutMS ?? options.timeoutMS;
-    const abort = createAbortContext(requestOptions.signal, timeoutMS);
-    let responseMetadata:
-      | { request: RequestMetadata; status: number; response: Response }
-      | undefined;
+    const credentials: RequestCredentials | undefined =
+      requestOptions.credentials ?? options.credentials;
+    const timeoutMS: number | undefined = requestOptions.timeoutMS ?? options.timeoutMS;
+    const abort: AbortContext = createAbortContext(requestOptions.signal, timeoutMS);
+    let responseMetadata: ResponseFailureMetadata | undefined;
     let requestBodyFailure: (() => unknown) | undefined;
     let requestBodyCancel: ((reason?: unknown) => Promise<void>) | undefined;
     try {
       let encoded: EncodedRequest;
       try {
         if (abort.signal?.aborted) throw abort.signal.reason;
-        const effectiveRequestOptions =
+        const effectiveRequestOptions: RequestOptions =
           abort.signal === undefined ? requestOptions : { ...requestOptions, signal: abort.signal };
-        const pending = encodeRequest(
+        const pending: EncodedRequest | Promise<EncodedRequest> = encodeRequest(
           baseURL,
           options,
           codecs,
@@ -2573,7 +2753,7 @@ export function createRequestCore(
         requestBodyFailure = encoded.bodyFailure;
         requestBodyCancel = encoded.bodyCancel;
         if (abort.signal?.aborted) throw abort.signal.reason;
-        const secured = applyOperationSecurity(
+        const secured: EncodedRequest | Promise<EncodedRequest> = applyOperationSecurity(
           options,
           operation,
           encoded,
@@ -2583,7 +2763,7 @@ export function createRequestCore(
         encoded = isPromise(secured) ? await awaitAbortable(secured, abort.signal) : secured;
         requestBodyFailure = encoded.bodyFailure;
         requestBodyCancel = encoded.bodyCancel;
-      } catch (cause) {
+      } catch (cause: unknown) {
         if (abort.timedOut() || abort.aborted()) throw cause;
         if (isAPIError(cause)) throw cause;
         throw transportError(
@@ -2600,31 +2780,38 @@ export function createRequestCore(
       if (encoded.body !== undefined) {
         init.body = encoded.body as BodyInit;
         if (isReadableStream(encoded.body))
-          (init as RequestInit & { duplex?: "half" }).duplex = "half";
+          (init as RequestInit & RequestDuplexExtension).duplex = "half";
       }
       if (abort.signal !== undefined) init.signal = abort.signal;
       if (credentials !== undefined) init.credentials = credentials;
       if (abort.signal?.aborted) throw abort.signal.reason;
       assertReadableResponseHeaders(options.transport, operation);
-      const response = await awaitAbortable(fetchImplementation(encoded.url, init), abort.signal);
-      const request = requestMetadata(response);
+      const response: Response = await awaitAbortable(
+        fetchImplementation(encoded.url, init),
+        abort.signal,
+      );
+      const request: RequestMetadata = requestMetadata(response);
       responseMetadata = { request, status: response.status, response };
-      const responseDefinition = selectResponseDefinition(operation, response, true);
+      const responseDefinition: WireResponseDefinition | undefined = selectResponseDefinition(
+        operation,
+        response,
+        true,
+      );
       if (
         raw &&
         response.ok &&
         (responseDefinition?.itemSchema !== undefined ||
           responseDefinition?.streamFraming !== undefined)
       ) {
-        const contentType = responseContentType(response);
+        const contentType: string | undefined = responseContentType(response);
         let headerValues: Readonly<Record<string, unknown>>;
         try {
           headerValues = await awaitAbortable(
             decodeResponseHeaders(operation, response, codecs),
             abort.signal,
           );
-        } catch (cause) {
-          await response.body?.cancel().catch(() => undefined);
+        } catch (cause: unknown) {
+          await response.body?.cancel().catch((): undefined => undefined);
           throw transportErrorFromCause(
             TransportErrorCode.RESPONSE_DECODE_FAILED,
             "Failed to decode response headers",
@@ -2643,7 +2830,7 @@ export function createRequestCore(
       }
       let body: unknown;
       try {
-        const decodedBody = await awaitAbortable(
+        const decodedBody: unknown = await awaitAbortable(
           decodeResponse(operation, response, request, {
             codecs,
             streamCodecs,
@@ -2656,7 +2843,7 @@ export function createRequestCore(
           abort.signal,
         );
         body = decodeResponseWireValue(operation, response, decodedBody);
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw transportErrorFromCause(
           TransportErrorCode.RESPONSE_DECODE_FAILED,
           "Failed to decode response body",
@@ -2667,19 +2854,19 @@ export function createRequestCore(
       if (!response.ok) {
         throw serverError(response, request, body);
       }
-      const data =
+      const data: Output =
         operation.envelope === "data" && isRecord(body) && Object.hasOwn(body, "data")
           ? (body["data"] as Output)
           : (body as Output);
       if (!raw) return data;
-      const contentType = responseContentType(response);
+      const contentType: string | undefined = responseContentType(response);
       let headerValues: Readonly<Record<string, unknown>>;
       try {
         headerValues = await awaitAbortable(
           decodeResponseHeaders(operation, response, codecs),
           abort.signal,
         );
-      } catch (cause) {
+      } catch (cause: unknown) {
         throw transportErrorFromCause(
           TransportErrorCode.RESPONSE_DECODE_FAILED,
           "Failed to decode response headers",
@@ -2695,7 +2882,7 @@ export function createRequestCore(
         request,
         response,
       };
-    } catch (cause) {
+    } catch (cause: unknown) {
       await cancelTrackedRequestBody(requestBodyCancel, cause);
       if (abort.timedOut()) {
         await cancelResponseBody(responseMetadata?.response, cause);
@@ -2716,7 +2903,7 @@ export function createRequestCore(
         );
       }
       if (isAPIError(cause)) throw cause;
-      const bodyFailure = requestBodyFailure?.();
+      const bodyFailure: unknown = requestBodyFailure?.();
       if (bodyFailure !== undefined) {
         throw transportErrorFromCause(
           TransportErrorCode.REQUEST_ENCODE_FAILED,
@@ -2732,19 +2919,31 @@ export function createRequestCore(
     }
   };
 
-  const request = <Output>(
+  const request: <Output>(
+    operation: OperationDefinition,
+    input?: unknown,
+    requestOptions?: RequestOptions,
+  ) => Promise<Output> = <Output>(
     operation: OperationDefinition,
     input?: unknown,
     requestOptions?: RequestOptions,
   ): Promise<Output> => execute<Output>(operation, input, requestOptions, false) as Promise<Output>;
-  const raw = <Output>(
+  const raw: <Output>(
+    operation: OperationDefinition,
+    input?: unknown,
+    requestOptions?: RequestOptions,
+  ) => Promise<RawResponse<Output>> = <Output>(
     operation: OperationDefinition,
     input?: unknown,
     requestOptions?: RequestOptions,
   ): Promise<RawResponse<Output>> =>
     execute<Output>(operation, input, requestOptions, true) as Promise<RawResponse<Output>>;
   if (createOperationStream === undefined) return Object.assign(request, { raw });
-  const stream = <Item>(
+  const stream: <Item>(
+    operation: OperationDefinition,
+    input?: unknown,
+    requestOptions?: RequestOptions,
+  ) => OperationStream<Item> = <Item>(
     operation: OperationDefinition,
     input?: unknown,
     requestOptions: RequestOptions = {},
@@ -2761,3 +2960,24 @@ export function createRequestCore(
     );
   return Object.assign(request, { raw, stream });
 }
+
+type SecurityCredentialHeader = {
+  readonly name: string;
+  readonly value: string;
+};
+
+type ResponseFailureMetadata = {
+  request: RequestMetadata;
+  status: number;
+  response: Response;
+};
+
+type TolerantResponseTransformOptions = { readonly unknownProperties: "preserve" };
+
+type TrackedRequestBody = {
+  readonly body: ReadableStream<Uint8Array>;
+  readonly failure: () => unknown;
+  readonly cancel: (reason?: unknown) => Promise<void>;
+};
+
+type RequestDuplexExtension = { duplex?: "half" };
