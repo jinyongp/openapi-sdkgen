@@ -1,0 +1,204 @@
+{
+  "version": 1,
+  "sourceCommit": "b7dbdf7ca2b7f9bf79c0821b52c710f2a8a2d846",
+  "measuredAt": "2026-10-02T06:03:06.055Z",
+  "node": "v24.21.0",
+  "typescript": "7.0.2",
+  "scope": "Actual TOML-configured named entries emitted by the built generator, strict source/consumer checks and native/default Vite production delivery.",
+  "generation": {
+    "plain": {
+      "wallMS": 31.478606999999997,
+      "inputSHA256": "1b712bf3f38f49c6c2f5c0263ec5740e3bd1c45a3b0ebb7d799e35cb500a6950"
+    },
+    "-linked": {
+      "wallMS": 33.92130499999999,
+      "inputSHA256": "eb412e8006d40bf2f16a7b7b1c2dc15c9a43ac3de7682db17a30f77d1894a665"
+    }
+  },
+  "strictTypecheck": "pass",
+  "resourceRouteOperationVisibility": "pass",
+  "transitiveResponseDecoding": "pass",
+  "invalidTransitiveResponseRejected": "pass",
+  "clientCredentialIsolation": "pass",
+  "nativeCImports": [
+    "clients/c/index.js",
+    "internal/executions/c/get.js",
+    "internal/executions/common/get.js",
+    "internal/operations/c/get.js",
+    "internal/operations/common/get.js",
+    "internal/runtime/callables.js",
+    "internal/runtime/http-core.js",
+    "internal/runtime/named-client.js",
+    "internal/runtime/operation-loader.js",
+    "internal/runtime/runtime-support.js",
+    "internal/runtime/selected-client.js",
+    "internal/runtime/selection.js",
+    "internal/runtime/wire-engine.js",
+    "internal/runtime/wire-properties.js",
+    "internal/schema-projections/output/cchild.js",
+    "internal/schema-projections/output/conly.js",
+    "internal/schema-projections/output/directed.js",
+    "internal/schema-projections/output/output-only.js",
+    "internal/schema-projections/output/shared.js"
+  ],
+  "cOnlyBundle": {
+    "privateSchemaExclusion": "pass",
+    "requiredSchemaInclusion": "pass",
+    "fullClientNegativeControl": "pass",
+    "chunks": [
+      {
+        "path": "c.mjs",
+        "bytes": 127767
+      }
+    ]
+  },
+  "multiEntryBundle": {
+    "staticCChunks": [
+      "c.mjs",
+      "chunks/get-DVhpnGdB.mjs",
+      "chunks/named-client-D2aKq5WY.mjs"
+    ],
+    "otherClientSchemaMarkers": [],
+    "commonSchemaChunk": "chunks/named-client-D2aKq5WY.mjs",
+    "commonOperationChunk": "chunks/get-DVhpnGdB.mjs",
+    "commonModuleDeduplication": "pass",
+    "runtimeModuleDeduplication": "pass",
+    "runtimeModules": 7
+  },
+  "lazyPages": {
+    "cChunks": [
+      "chunks/c-EZG7I3z5.mjs",
+      "chunks/get-DVhpnGdB.mjs",
+      "chunks/named-client-D2aKq5WY.mjs"
+    ],
+    "otherClientSchemaExclusion": "pass"
+  },
+  "links": {
+    "targetLoadedOnHelperInvocation": "pass",
+    "targetPublicExposureExcluded": "pass",
+    "targetUsesSourceClientConfiguration": "pass",
+    "bundledTargetInitiallyDeferred": "pass",
+    "initialCChunks": [
+      "c.mjs",
+      "chunks/shared-CQ8CFA4S.mjs"
+    ]
+  },
+  "graph": {
+    "inputSHA256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+    "inputBytes": 69965060,
+    "routes": [
+      "GET /users",
+      "POST /users",
+      "GET /users/{user-id}",
+      "PATCH /users/{user-id}",
+      "DELETE /users/{user-id}",
+      "GET /groups",
+      "GET /groups/{group-id}",
+      "GET /drives",
+      "GET /drives/{drive-id}"
+    ],
+    "scope": "Same pinned input and 9-route root selection; shared compiler/target publication API driver, with and without three named clients. Phase/resource timings cover generation; Vite dependency inventories are recorded separately.",
+    "cases": {
+      "selection": {
+        "compileCalls": 1,
+        "prepareCalls": 1,
+        "emitCalls": 1,
+        "moduleAnalysisPasses": 1,
+        "compileMS": 8030.111,
+        "prepareMS": 618.438,
+        "emitPublishMS": 862.601,
+        "generatedFiles": 6994,
+        "generatedBytes": 40539799,
+        "operationModules": 9,
+        "userSeconds": 11.46,
+        "systemSeconds": 2.01,
+        "peakRSSKiB": 1975720,
+        "wallMS": 9622.276539999999,
+        "entries": {
+          "root": {
+            "bundleWallMS": 798.3493150000013,
+            "initialBytes": 15059073,
+            "initialChunks": [
+              "entry.mjs"
+            ],
+            "totalChunks": 1,
+            "moduleCount": 6920,
+            "moduleInventorySHA256": "0c5a1ea903ff72866ac514489f2d62d3c2b79b8f98070d92fe97d9b1b955d9c2"
+          }
+        }
+      },
+      "clients": {
+        "compileCalls": 1,
+        "prepareCalls": 1,
+        "emitCalls": 1,
+        "moduleAnalysisPasses": 1,
+        "compileMS": 7751.785,
+        "prepareMS": 978.665,
+        "emitPublishMS": 1183.008,
+        "generatedFiles": 13887,
+        "generatedBytes": 49847128,
+        "operationModules": 9,
+        "userSeconds": 12.33,
+        "systemSeconds": 2.35,
+        "peakRSSKiB": 1951828,
+        "wallMS": 10004.460161999998,
+        "entries": {
+          "users": {
+            "bundleWallMS": 1078.4839649999994,
+            "initialBytes": 14230949,
+            "initialChunks": [
+              "entry.mjs"
+            ],
+            "totalChunks": 1,
+            "moduleCount": 13725,
+            "moduleInventorySHA256": "ffa7a10645c1aa338d7700d0181e3164cc53682cfcbbec6730746b6712324628"
+          },
+          "groups": {
+            "bundleWallMS": 373.0147739999993,
+            "initialBytes": 8233016,
+            "initialChunks": [
+              "entry.mjs"
+            ],
+            "totalChunks": 1,
+            "moduleCount": 6898,
+            "moduleInventorySHA256": "7ee438437b925beacd4d1f16bfc0fbe359e05b3d759e9018c53a1a0b0cc50ccd"
+          },
+          "drives": {
+            "bundleWallMS": 344.7410720000007,
+            "initialBytes": 8232596,
+            "initialChunks": [
+              "entry.mjs"
+            ],
+            "totalChunks": 1,
+            "moduleCount": 6898,
+            "moduleInventorySHA256": "20e6e29f7e8e77884f1ad65490af11f9484e0f69cc284596606d686ee9d0bf8e"
+          }
+        }
+      }
+    },
+    "clientSelections": {
+      "users": [
+        "GET /users",
+        "POST /users",
+        "GET /users/{user-id}",
+        "PATCH /users/{user-id}",
+        "DELETE /users/{user-id}"
+      ],
+      "groups": [
+        "GET /groups",
+        "GET /groups/{group-id}"
+      ],
+      "drives": [
+        "GET /drives",
+        "GET /drives/{drive-id}"
+      ]
+    }
+  },
+  "recordFormat": "named-client-delivery-summary/v1",
+  "rawReportSHA256": "5fd1153072eabcdab05d36390ad62c20fa4f27b0ed10391c73989c4b45f8da22",
+  "vite": "8.3.0",
+  "bundleOptions": {
+    "mode": "production",
+    "minify": false
+  }
+}
