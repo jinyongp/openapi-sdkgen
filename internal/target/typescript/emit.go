@@ -119,6 +119,8 @@ type sourcePlan struct {
 	resourceReachable           map[string]bool
 	resourceOmissions           map[string]string
 	selection                   *generationSelection
+	root                        *sourcePlan
+	clients                     []namedClientPlan
 }
 
 // Prepare validates author input for the TypeScript target using the
@@ -140,7 +142,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	if err != nil {
 		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: diagnostic mode: %w", err)
 	}
-	plan, diagnostics, coverage, err := prepareSelectedSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission, options.Selection, options.HasAddon(generator.AddonMetadata))
+	plan, diagnostics, coverage, err := prepareClientSourcePlanWithCoverage(document, options, mode)
 	if err != nil {
 		return generator.Plan{}, diagnostics, coverage, err
 	}
