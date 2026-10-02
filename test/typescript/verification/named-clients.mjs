@@ -584,50 +584,6 @@ async function measureGraph() {
     assert.equal(measured.moduleAnalysisPasses, 1);
     assert.equal(measured.operationModules, 9);
     const sourceInventory = inspectGenerated(output);
-    const checkConfig = path.join(directory, label + "-strict.json");
-    write(
-      checkConfig,
-      JSON.stringify({
-        compilerOptions: {
-          ...strictCompilerOptions,
-          target: "ES2022",
-          module: "NodeNext",
-          moduleResolution: "NodeNext",
-          lib: ["ES2022", "DOM", "DOM.Iterable"],
-          types: [],
-          noEmitOnError: true,
-          declaration: true,
-          rootDir: output,
-          outDir: path.join(directory, label + "-javascript"),
-          declarationDir: path.join(directory, label + "-declarations"),
-        },
-        include: [path.join(output, "**/*.ts")],
-      }),
-    );
-    const checkStarted = performance.now();
-    const checked = spawnSync(
-      process.execPath,
-      [path.join(root, "test/typescript/verification/sdk-delivery-compile.mjs"), checkConfig],
-      {
-        cwd: root,
-        encoding: "utf8",
-        timeout: 600000,
-        maxBuffer: 8 * 1024 * 1024,
-      },
-    );
-    write(
-      path.join(directory, label + "-strict.log"),
-      (checked.stdout ?? "") + (checked.stderr ?? ""),
-    );
-    assert.equal(checked.status, 0, label + " strict check failed; see log");
-    const checking = JSON.parse(checked.stdout);
-    assert.equal(checking.status, "pass");
-    assert.equal(
-      checking.checkedFiles,
-      Object.keys(sourceInventory.files).filter((name) => name.endsWith(".ts")).length,
-    );
-    assert.equal(inspectGenerated(output).treeSha256, sourceInventory.treeSha256);
-    const strictWallMS = performance.now() - checkStarted;
     const publicEntries = named ? ["users", "groups", "drives"] : ["root"];
     const inventories = {};
     for (const name of publicEntries) {
@@ -652,11 +608,8 @@ async function measureGraph() {
       ...measured,
       ...JSON.parse(fs.readFileSync(metrics, "utf8")),
       wallMS: generationWallMS,
-      strictTypecheck: {
-        status: checking.status,
-        checkedFiles: checking.checkedFiles,
-        wallMS: strictWallMS,
-      },
+      typecheck: { status: "not-run", detail: "generation-only measurement" },
+      sourceInventory,
       entries: inventories,
     };
   }

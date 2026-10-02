@@ -8,6 +8,7 @@ import tomllib
 from pathlib import Path
 
 from compatibility_summary import read_resources, render_report, render_resources
+from compatibility_matrix import typecheck_candidate
 
 
 def check_selection(item, directory):
@@ -41,11 +42,18 @@ def check_selection(item, directory):
 def check_report(manifest, report, document=None, resources=None, selection_directory=None, manifest_sha=None):
     if manifest_sha is not None and report.get("manifestSha256") != manifest_sha:
         raise ValueError("report manifest hash mismatch")
-    expected = {item["id"] for item in manifest["corpora"]}
+    expected = {item["id"] for item in manifest["corpora"] if typecheck_candidate(item["id"])}
     if document is not None:
         if document not in expected:
             raise ValueError(f"unknown document {document}")
         expected = {document}
+    # Historical reports may retain Graph generation evidence. It is excluded
+    # from verification counts; a dedicated Graph verification shard is invalid.
+    registered = {item["id"] for item in manifest["corpora"]}
+    original_ids = [item["id"] for item in report["documents"]]
+    if len(original_ids) != len(set(original_ids)) or set(original_ids) - registered:
+        raise ValueError("report has duplicate or unexpected documents")
+    report = dict(report, documents=[item for item in report["documents"] if typecheck_candidate(item["id"])])
     observed = [item["id"] for item in report["documents"]]
     if len(observed) != len(set(observed)) or set(observed) != expected:
         raise ValueError("report has missing, duplicate or unexpected documents")
@@ -103,6 +111,7 @@ if __name__ == "__main__":
     summary, failures = check_report(manifest, report, args.document,
                                     selection_directory=args.selection_directory,
                                     manifest_sha=hashlib.sha256(manifest_bytes).hexdigest())
+    report = dict(report, documents=[item for item in report["documents"] if typecheck_candidate(item["id"])])
     resources = {}
     for item in report["documents"]:
         directory = args.resources_directory

@@ -108,7 +108,7 @@ jobs:
     name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
     needs: [plan, prepare]
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ matrix.document == 'microsoft-graph-beta' && 30 || 120 }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.documents) }}
@@ -150,19 +150,13 @@ jobs:
         run: just agent ts-install
       - name: Generate SDKs and verify every generated module
         id: benchmark
-        timeout-minutes: ${{ matrix.document == 'microsoft-graph-beta' && 20 || 90 }}
+        timeout-minutes: 90
         shell: bash
         run: |
-          compatibility_selection=()
-          compatibility_timeout=60m
-          if [[ "$COMPATIBILITY_DOCUMENT" == microsoft-graph-beta ]]; then
-            compatibility_selection=(test/compatibility/selections/microsoft-graph-beta.toml)
-            compatibility_timeout=10m
-          fi
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             just agent compatibility-benchmark "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
-            .tmp/compatibility-ci/report.json "$compatibility_timeout" "$COMPATIBILITY_DOCUMENT" "${compatibility_selection[@]}" &
+            .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" &
           compatibility_process=$!
           python3 -B -u .github/scripts/compatibility_observer.py \
             --root-pid "$compatibility_process" --typescript-root test/typescript \

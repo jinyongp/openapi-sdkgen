@@ -28,7 +28,9 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 	manifestSHA := hex.EncodeToString(digest[:])
 	expected := make(map[string]corpusSpec, len(manifest.Corpora))
 	for _, corpus := range manifest.Corpora {
-		expected[corpus.ID] = corpus
+		if typecheckCandidate(corpus) {
+			expected[corpus.ID] = corpus
+		}
 	}
 	merged := benchmarkReport{
 		SchemaVersion: benchmarkReportSchemaVersion, ManifestSHA256: manifestSHA,

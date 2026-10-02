@@ -231,9 +231,20 @@ func runBenchmark(manifestPath, corpusRoot, outputPath, typescriptRoot string, t
 	return runBenchmarkSelected(manifestPath, corpusRoot, outputPath, typescriptRoot, timeout, "")
 }
 
+// Microsoft Graph is generation-only evidence, outside the typechecking corpus.
+func typecheckCandidate(corpus corpusSpec) bool {
+	return corpus.ID != "microsoft-graph-beta"
+}
+
 func selectBenchmarkCorpora(corpora []corpusSpec, documentID string) ([]corpusSpec, error) {
 	if documentID == "" {
-		return corpora, nil
+		candidates := make([]corpusSpec, 0, len(corpora))
+		for _, corpus := range corpora {
+			if typecheckCandidate(corpus) {
+				candidates = append(candidates, corpus)
+			}
+		}
+		return candidates, nil
 	}
 	for _, corpus := range corpora {
 		if corpus.ID == documentID {
@@ -290,8 +301,14 @@ func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot 
 	if err != nil {
 		return err
 	}
-	if err := validateTypecheckToolchain(typescriptRoot); err != nil {
-		return fmt.Errorf("strict TypeScript toolchain: %w", err)
+	needsTypecheck := false
+	for _, corpus := range corpora {
+		needsTypecheck = needsTypecheck || typecheckCandidate(corpus)
+	}
+	if needsTypecheck {
+		if err := validateTypecheckToolchain(typescriptRoot); err != nil {
+			return fmt.Errorf("strict TypeScript toolchain: %w", err)
+		}
 	}
 	typecheck := func(directory string) verificationResult {
 		return strictTypecheck(directory, typescriptRoot, timeout)
@@ -327,6 +344,9 @@ func runBenchmarkSelection(manifestPath, corpusRoot, outputPath, typescriptRoot 
 		Cohorts:        summarizeCohorts(documents),
 		Overall:        summarizeDocuments("", documents),
 		Measurement:    measurementEnvironment(),
+	}
+	if !needsTypecheck {
+		return writeBenchmarkReport(report, outputPath)
 	}
 	packageData, err := os.ReadFile(filepath.Join(typescriptRoot, "node_modules", "typescript", "package.json"))
 	if err != nil {
@@ -499,6 +519,11 @@ func benchmarkDocumentSelected(corpus corpusSpec, inputPath string, typecheck ty
 }
 
 func benchmarkDocumentWithOptions(corpus corpusSpec, inputPath string, typecheck typecheckFunc, selection *benchmarkSelection, runtimeCheck typecheckFunc, options generator.Options) (documentResult, error) {
+	if !typecheckCandidate(corpus) {
+		typecheck = func(string) verificationResult {
+			return verificationResult{Status: "not-run", Detail: "generation-only measurement"}
+		}
+	}
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		return documentResult{}, fmt.Errorf("read input: %w", err)

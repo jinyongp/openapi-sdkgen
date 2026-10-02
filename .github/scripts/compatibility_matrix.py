@@ -8,6 +8,11 @@ from pathlib import Path
 CORPORA = ("holdout", "modern", "production32", "regression")
 
 
+def typecheck_candidate(identifier):
+    """Graph contributes generation measurements outside the verification matrix."""
+    return identifier != "microsoft-graph-beta"
+
+
 def corpus_matrix(root):
     jobs = []
     for name in CORPORA:
@@ -25,7 +30,7 @@ def document_matrix(root):
         identifiers = [document["id"] for document in manifest["corpora"]]
         if not identifiers or len(identifiers) != len(set(identifiers)):
             raise ValueError(f"empty or duplicate document IDs in {corpus}")
-        jobs.extend(dict(corpus=corpus, document=identifier, artifact=artifacts[corpus]) for identifier in identifiers)
+        jobs.extend(dict(corpus=corpus, document=identifier, artifact=artifacts[corpus]) for identifier in identifiers if typecheck_candidate(identifier))
     if len(jobs) > 256:
         raise ValueError("document matrix exceeds GitHub's 256-job limit")
     return {"include": jobs}

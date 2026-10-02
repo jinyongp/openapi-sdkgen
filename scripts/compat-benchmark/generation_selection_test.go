@@ -1,27 +1,50 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestSelectedShardsRemainSeparateAndValidateProvenance(t *testing.T) {
-	manifest, _, shards := mergeFixture(t)
-	policy, err := loadBenchmarkSelection(filepath.Join(filepath.Dir(manifest), "selections", "microsoft-graph-beta.toml"))
+	_, _, shards := mergeFixture(t)
+	// Selection validation uses a regular typecheck candidate. Graph remains
+	// generation-only even when a selection policy exists for it.
+	document := &shards[0].Documents[0]
+	directory := t.TempDir()
+	manifest := filepath.Join(directory, "manifest.json")
+	fixture := benchmarkManifest{SchemaVersion: benchmarkSchemaVersion}
+	for _, shard := range shards {
+		d := shard.Documents[0]
+		fixture.Corpora = append(fixture.Corpora, corpusSpec{ID: d.ID, Cohort: d.Cohort, Input: d.Input, SHA256: d.InputSHA256, GitBlob: d.GitBlob, OpenAPIVersion: d.OpenAPIVersion, SizeClass: d.SizeClass})
+	}
+	data, _ := json.Marshal(fixture)
+	if err := os.WriteFile(manifest, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	manifestDigest := fmt.Sprintf("%x", sha256.Sum256(data))
+	for i := range shards {
+		shards[i].ManifestSHA256 = manifestDigest
+	}
+	selectionDir := filepath.Join(directory, "selections")
+	if err := os.Mkdir(selectionDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(selectionDir, "probe.mjs"), []byte(""), 0600); err != nil {
+		t.Fatal(err)
+	}
+	policyPath := filepath.Join(selectionDir, document.ID+".toml")
+	policyData := fmt.Sprintf("document=%q\ninput_sha256=%q\nruntime_probe='probe.mjs'\n[selection]\nroutes=['GET /selected']\n", document.ID, document.InputSHA256)
+	if err := os.WriteFile(policyPath, []byte(policyData), 0600); err != nil {
+		t.Fatal(err)
+	}
+	policy, err := loadBenchmarkSelection(policyPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	graph := -1
-	for i := range shards {
-		if shards[i].Documents[0].ID == policy.Document {
-			graph = i
-		}
-	}
-	if graph < 0 {
-		t.Fatal("missing Graph document")
-	}
-	document := &shards[graph].Documents[0]
 	document.GenerationScope = "selected"
 	document.Selection = &generationSelectionEvidence{FixtureSHA256: policy.fixtureSHA256, RuntimeProbeSHA256: policy.probeSHA256, Requested: policy.options,
 		Routes: append([]string(nil), policy.options.Routes...), DependencyRoutes: []string{}, ExcludedOperations: document.OperationRetention.Total - len(policy.options.Routes), Runtime: verificationResult{Status: "pass"}}
@@ -50,7 +73,7 @@ func TestSelectedShardsRemainSeparateAndValidateProvenance(t *testing.T) {
 		clone.Selection = &evidence
 		mutate(&clone)
 		changed := append([]benchmarkReport(nil), shards...)
-		changed[graph].Documents = []documentResult{clone}
+		changed[0].Documents = []documentResult{clone}
 		if err := mergeBenchmarkReports(manifest, writeMergeShards(t, changed), output); err == nil {
 			t.Fatal("invalid selected evidence accepted")
 		}

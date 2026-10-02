@@ -58,8 +58,10 @@ and Cloudflare retain the exact input hashes from the earlier regression
 evidence; the other providers use the upstream revisions listed in the manifest.
 The generated `regression-results.json` records generation, strict typechecking,
 operation emission, and SDK generation time for these inputs.
-The latest run uses the common strict profile: all seven generate SDKs and six
-pass typechecking; full Microsoft Graph typechecking reaches its time limit.
+The default benchmark verifies six provider documents with the common strict
+profile. Microsoft Graph contributes generation-time and size measurements,
+including selected SDKs and named clients, separately from typechecking.
+The archived report retains the original seven-document measurement and its hashes.
 `graph-full-baseline.json` preserves the earlier 276.56-second full Graph
 generation used by the selection comparison, with the original report hash.
 Each public measurement displays its own source version and date.

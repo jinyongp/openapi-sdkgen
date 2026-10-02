@@ -50,8 +50,8 @@ Exit status: 7
         graph["typecheck"]["detail"] = "</pre><script>bad</script>"
         summary = render_report(manifest, report, {graph["id"]: dict(peakRssBytes=1024 ** 3, wallSeconds=60, cpuPercent=120)})
         self.assertIn("6/7 client SDKs verified", summary)
-        self.assertIn("175,166", summary)
-        self.assertIn("2.21 GiB", summary)
+        self.assertIn(f"{graph['generation']['artifactCount']:,}", summary)
+        self.assertIn(f"{graph['generation']['artifactBytes'] / 1024 ** 3:.2f} GiB", summary)
         self.assertIn("2.50 s", summary)
         self.assertIn("1.00 GiB", summary)
         self.assertIn("runner snapshots", summary)

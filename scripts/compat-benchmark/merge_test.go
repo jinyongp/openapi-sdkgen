@@ -35,6 +35,15 @@ func mergeFixture(t *testing.T) (string, benchmarkReport, []benchmarkReport) {
 	if err := json.Unmarshal(data, &original); err != nil {
 		t.Fatal(err)
 	}
+	candidates := make([]documentResult, 0, len(original.Documents))
+	for _, document := range original.Documents {
+		if typecheckCandidate(corpusSpec{ID: document.ID}) {
+			candidates = append(candidates, document)
+		}
+	}
+	original.Documents = candidates
+	original.Overall = summarizeDocuments("", candidates)
+	original.Cohorts = summarizeCohorts(candidates)
 	shards := make([]benchmarkReport, len(original.Documents))
 	for i, document := range original.Documents {
 		shards[i] = benchmarkReport{

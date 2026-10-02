@@ -2,11 +2,12 @@ import copy
 import hashlib
 import json
 import tomllib
+import tempfile
 from pathlib import Path
 import unittest
 
 from compatibility_gate import check_report
-from compatibility_matrix import CORPORA, document_matrix
+from compatibility_matrix import CORPORA, document_matrix, typecheck_candidate
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -35,19 +36,24 @@ class CompatibilityMatrixTests(unittest.TestCase):
 
     def test_every_registered_document_is_selected_once(self):
         jobs = document_matrix(ROOT)["include"]
-        expected = {(name, item["id"]) for name in CORPORA for item in self.load(name)["corpora"]}
+        expected = {(name, item["id"]) for name in CORPORA for item in self.load(name)["corpora"] if typecheck_candidate(item["id"])}
         self.assertEqual({(job["corpus"], job["document"]) for job in jobs}, expected)
         self.assertEqual(len(jobs), len(expected))
+        self.assertNotIn("microsoft-graph-beta", {job["document"] for job in jobs})
 
     def test_existing_client_and_server_evidence_keeps_its_outcome(self):
         for name in CORPORA:
             manifest = self.load(name)
             report = self.load(name, "-results")
             summary, failures = check_report(manifest, report)
-            self.assertEqual(set(failures), {item["id"] for item in report["documents"] if not item["capabilityAdjustedSuccess"]})
+            self.assertEqual(set(failures), {item["id"] for item in report["documents"] if typecheck_candidate(item["id"]) and not item["capabilityAdjustedSuccess"]})
             self.assertIn("Strict typecheck", summary)
             for item in report["documents"]:
                 shard = dict(report, documents=[item])
+                if not typecheck_candidate(item["id"]):
+                    with self.assertRaises(ValueError):
+                        check_report(manifest, shard, item["id"])
+                    continue
                 _, failed = check_report(manifest, shard, item["id"])
                 self.assertEqual(bool(failed), not item["capabilityAdjustedSuccess"])
 
@@ -56,7 +62,7 @@ class CompatibilityMatrixTests(unittest.TestCase):
         original = self.load("regression", "-results")
         invalid = []
         missing = copy.deepcopy(original)
-        missing["documents"].pop()
+        missing["documents"].pop(0)
         invalid.append(missing)
         duplicate = copy.deepcopy(original)
         duplicate["documents"].append(duplicate["documents"][0])
@@ -72,11 +78,16 @@ class CompatibilityMatrixTests(unittest.TestCase):
                 check_report(manifest, report)
 
     def test_selected_scope_requires_policy_runtime_and_distinct_summary(self):
-        directory = ROOT / "test/compatibility/selections"
-        path = directory / "microsoft-graph-beta.toml"
-        policy = tomllib.loads(path.read_text())
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
         report = self.load("regression", "-results")
-        item = next(item for item in report["documents"] if item["id"] == policy["document"])
+        report["documents"] = [item for item in report["documents"] if typecheck_candidate(item["id"])]
+        item = report["documents"][0]
+        path = directory / f"{item['id']}.toml"
+        (directory / "probe.mjs").write_text("")
+        path.write_text(f"document='{item['id']}'\ninput_sha256='{item['inputSha256']}'\nruntime_probe='probe.mjs'\n[selection]\nroutes=['GET /selected']\n")
+        policy = tomllib.loads(path.read_text())
         routes = sorted(policy["selection"]["routes"])
         item.update(generationScope="selected", documentSuccess=True, capabilityAdjustedSuccess=True,
                     generationSelection=dict(fixtureSha256=hashlib.sha256(path.read_bytes()).hexdigest(),
@@ -88,7 +99,7 @@ class CompatibilityMatrixTests(unittest.TestCase):
         manifest = self.load("regression")
         summary, failures = check_report(manifest, report, selection_directory=directory)
         self.assertEqual(failures, [])
-        self.assertIn("Full documents: 6/6", summary)
+        self.assertIn("Full documents: 5/5", summary)
         self.assertIn("Selected SDKs: 1/1", summary)
         for field, value in [("fixtureSha256", "bad"), ("runtimeProbeSha256", "bad"), ("excludedOperations", 0), ("routes", routes[1:])]:
             invalid = copy.deepcopy(report)
@@ -99,7 +110,7 @@ class CompatibilityMatrixTests(unittest.TestCase):
         item["generationSelection"]["runtime"]["status"] = "fail"
         item["documentSuccess"] = item["capabilityAdjustedSuccess"] = False
         _, failures = check_report(manifest, report, selection_directory=directory)
-        self.assertEqual(failures, ["microsoft-graph-beta"])
+        self.assertEqual(failures, [item["id"]])
         item.pop("generationScope")
         with self.assertRaises(ValueError):
             check_report(manifest, report, selection_directory=directory)
