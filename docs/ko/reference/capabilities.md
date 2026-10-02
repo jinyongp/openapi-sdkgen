@@ -22,7 +22,7 @@ OpenAPI 3.0과 3.1에서도 지원되는 연속 데이터 형식을 사용할 �
 일반 `schema`를 선언하면 전체 데이터를 모아 하나의 값으로 처리합니다.
 3.2의 `itemSchema`는 각 항목에 타입을 지정하고, 도착한 항목부터 처리할 수
 있도록 확장합니다. `prefixEncoding`과 `itemEncoding`으로 순서가 있는
-multipart 데이터와 스트리밍 multipart 데이터도 표현할 수 있습니다. 자세한 동작은
+멀티파트 데이터와 스트리밍 멀티파트 데이터도 표현할 수 있습니다. 자세한 동작은
 [스트리밍 API](./streaming.md#openapi-version-support)를 참고하세요.
 
 3.2 전용 필드의 정의는
@@ -33,7 +33,7 @@ multipart 데이터와 스트리밍 multipart 데이터도 표현할 수 있습�
 
 TypeScript를 생성 대상으로 선택하면 요청과 응답에 필요한 타입 및 실행 코드를
 생성합니다. 경로와 HTTP 메서드, 경로·쿼리·헤더·쿠키 매개변수, 요청 본문을
-지원합니다. JSON, 텍스트, 바이너리, 폼, multipart 데이터와 지원되는 스트리밍
+지원합니다. JSON, 텍스트, 바이너리, 폼, 멀티파트 데이터와 지원되는 스트리밍
 형식도 처리합니다.
 
 응답은 상태 코드별로 구분하며, 응답 헤더와 원본 응답에 접근할 수 있습니다.
@@ -63,11 +63,13 @@ API 키, HTTP Basic·Bearer, OAuth2, OpenID Connect, 상호 TLS 인증을 지원
 OpenAPI의 Link 객체는 [`$links`](./client-api.md#link) 아래에 타입을 검사할 수
 있는 후속 호출 함수로 생성됩니다. `x-pagination`을 선언하면 여러 페이지에
 걸친 데이터를 조회하는 보조 기능이 생성됩니다.
-[OpenAPI x-* 확장](./extensions.md#x-pagination)을 참고하세요.
+[OpenAPI `x-*` 확장](./extensions.md#x-pagination)을 참고하세요.
 
 연속 데이터는 해당 API 작업의 스트리밍 기능으로 처리합니다. `.stream()` 호출,
 요청 데이터 공급, 기본 프로토콜, 어댑터, 프레임 크기 제한, 시작과 종료 동작은
 [스트리밍 API](./streaming.md)에 정리되어 있습니다.
+
+<span id="webhook과-callback"></span>
 
 ## 웹훅과 콜백 수신
 
@@ -100,7 +102,7 @@ HTTP 서버 실행, 프레임워크 연결, 공개 경로 설정, 인증 정책�
 기능을 추가할 수 있습니다. 사용자 정의 JSON Schema 어휘 확장은 스키마의
 의미를 해석하는 용도로 사용합니다.
 
-각 필드의 사용법은 [OpenAPI x-* 확장](./extensions.md)에 있습니다.
+각 필드의 사용법은 [OpenAPI `x-*` 확장](./extensions.md)에 있습니다.
 
 ## 생성이 중단되거나 일부 기능이 생략되는 경우
 

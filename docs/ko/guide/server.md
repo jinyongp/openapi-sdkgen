@@ -1,11 +1,12 @@
-# Webhook과 Callback 수신
+<span id="webhook과-callback-수신"></span>
 
-기본 TypeScript target은 outbound client를 생성합니다. 애플리케이션이 API로
-보낼 요청을 이 client로 호출합니다. OpenAPI Webhook과 Callback은 다른 시스템이
+# 웹훅과 콜백 수신
+
+기본 TypeScript 생성 대상은 외부 호출 클라이언트를 생성합니다. 애플리케이션이 API로
+보낼 요청을 이 클라이언트로 호출합니다. OpenAPI 웹훅과 콜백은 다른 시스템이
 우리 애플리케이션으로 보내는 HTTP 요청을 설명합니다.
 
-문서에 inbound 계약이 있고 애플리케이션이 이를 받는다면 선택적인 server
-artifact set을 생성합니다.
+문서에 수신 계약이 있고 애플리케이션이 이를 받는다면 선택적인 서버 코드를 생성합니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -15,16 +16,18 @@ openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-[`--with server`](../reference/cli.md#with-server)는 Fetch 기반 handler와 router 진입점을 추가합니다. HTTP listener,
-framework 연결, 공개 URL, 배포 방식, 인증 정책은 애플리케이션에서 구성합니다.
+[`--with server`](../reference/cli.md#with-server)는 Fetch 기반 처리 함수와 라우터 진입점을 추가합니다. HTTP 서버 리스너,
+프레임워크 연결, 공개 URL, 배포 방식, 인증 정책은 애플리케이션에서 구성합니다.
 
-Client와 같은 OpenAPI schema를 사용해 inbound request를 파싱하고 검증한 뒤
-타입이 지정된 값을 handler에 전달합니다.
+클라이언트와 같은 OpenAPI 스키마를 사용해 수신 요청을 파싱하고 검증한 뒤
+타입이 지정된 값을 처리 함수에 전달합니다.
 
-## Todo Webhook 수신
+<span id="todo-webhook-수신"></span>
 
-OpenAPI 문서에 `todoCompleted`라는 Webhook이 있다고 가정합니다. 생성된 handler
-[generated Webhook handler contract](../reference/server-api.md#createwebhookrouter)을 구현합니다.
+## Todo 웹훅 수신
+
+OpenAPI 문서에 `todoCompleted`라는 웹훅이 있다고 가정합니다.
+[생성된 웹훅 처리 함수 타입](../reference/server-api.md#createwebhookrouter)에 맞춰 구현합니다.
 
 ```ts
 import {
@@ -42,7 +45,7 @@ const handlers: WebhookHandlers = {
 };
 ```
 
-이 Webhook 이름을 애플리케이션의 수신 경로와 연결합니다.
+이 웹훅 이름을 애플리케이션의 수신 경로와 연결합니다.
 
 ```ts
 const router = createWebhookRouter(handlers, {
@@ -54,16 +57,18 @@ const router = createWebhookRouter(handlers, {
 const response = await router.fetch(request);
 ```
 
-Framework adapter는 들어온 요청을 Fetch `Request`로 바꾸고
+프레임워크 어댑터는 들어온 요청을 Fetch `Request`로 바꾸고
 `router.fetch(request)`를 호출한 뒤 결과 Fetch `Response`를 반환하면 됩니다.
 
-## Inbound 요청 인증
+<span id="inbound-요청-인증"></span>
 
-들어오는 Webhook 인증은 호스트 애플리케이션의 책임입니다. OpenAPI inbound
-operation에 security가 선언돼 있다면 body를 handler에 넘기기 전에 요청을
-검증하는 authenticator를 제공합니다.
+## 수신 요청 인증
 
-Todo Webhook에 signature를 확인한다고 가정하면:
+들어오는 웹훅 인증은 호스트 애플리케이션의 책임입니다. OpenAPI 수신
+API에 인증이 선언돼 있다면 본문을 처리 함수에 넘기기 전에 요청을
+검증하는 인증 함수를 제공합니다.
+
+Todo 웹훅에 서명을 확인한다고 가정하면:
 
 ```ts
 const router = createWebhookRouter(handlers, {
@@ -77,19 +82,21 @@ const router = createWebhookRouter(handlers, {
 });
 ```
 
-생성 코드는 선언된 OpenAPI Security Requirement와 credential 위치를 해석합니다.
-애플리케이션은 identity, authorization 정책, secret 조회, signature 검증을
+생성 코드는 선언된 OpenAPI 인증 요구 사항과 인증 정보 위치를 해석합니다.
+애플리케이션은 사용자 식별, 접근 권한 정책, 비밀 값 조회, 서명 검증을
 담당합니다.
 
-잘못된 inbound 입력은 타입이 지정된 값으로 handler에 전달되기 전에 거부됩니다.
+잘못된 수신 입력은 타입이 지정된 값으로 처리 함수에 전달되기 전에 거부됩니다.
 
-## Callback 수신
+<span id="callback-수신"></span>
 
-Callback은 outbound operation에 선언되고, URL은 그 요청 데이터에서 정해질 수
+## 콜백 수신
+
+콜백은 외부 호출 API에 선언되고, URL은 그 요청 데이터에서 정해질 수
 있습니다. 예를 들어 `createTodo` 요청이 `callbackUrl`을 보내고
-`statusUpdates` Callback이 이후 그 URL로 들어올 POST 요청을 설명할 수 있습니다.
+`statusUpdates` 콜백이 이후 그 URL로 들어올 `POST` 요청을 설명할 수 있습니다.
 
-[생성된 Callback handler](../reference/server-api.md#createcallbackhandlers)를 구현합니다.
+[생성된 콜백 처리 함수](../reference/server-api.md#createcallbackhandlers)를 구현합니다.
 
 ```ts
 import {
@@ -115,9 +122,9 @@ const handlers: CallbackHandlers = {
 const callbacks = createCallbackHandlers(handlers);
 ```
 
-생성된 key에는 OpenAPI의 source `operationId`, Callback 이름, runtime expression,
-HTTP method가 그대로 반영됩니다. 애플리케이션의 callback 수신 route에 이
-endpoint를 연결합니다.
+생성된 키에는 OpenAPI의 원본 `operationId`, 콜백 이름, 런타임 표현식,
+HTTP 메서드가 그대로 반영됩니다. 애플리케이션의 콜백 수신 경로에 이
+엔드포인트를 연결합니다.
 
 ```ts
 const response =
@@ -126,13 +133,15 @@ const response =
   ].POST.fetch(request);
 ```
 
-Runtime expression은 OpenAPI 계약에 그대로 유지되고, callback 수신 URL은
+런타임 표현식은 OpenAPI 계약에 그대로 유지되고, 콜백 수신 URL은
 애플리케이션에서 정합니다.
 
-## Complete inbound body 크기 제한
+<span id="complete-inbound-body-크기-제한"></span>
 
-Generated Webhook과 Callback handler는 complete inbound request body 하나를
-기본 8 MiB로 제한합니다. 애플리케이션의 payload 계약이 다르면
+## 전체 수신 본문 크기 제한
+
+생성된 웹훅과 콜백 처리 함수는 전체 수신 요청 본문 하나를
+기본 8 MiB로 제한합니다. 애플리케이션의 데이터 계약이 다르면
 `maxBodyBytes`를 지정합니다.
 
 ```ts
@@ -144,23 +153,25 @@ const router = createWebhookRouter(handlers, {
 });
 ```
 
-실제 body stream을 소비하면서 byte 수를 검사하므로 `Content-Length`가 없거나
-잘못돼 있어도 제한을 우회할 수 없습니다. JSON, text, binary, URL-encoded,
-multipart, custom complete media, complete sequential body가 제한을 넘으면
-`413 Payload Too Large`를 반환합니다. `itemSchema`가 있는 streaming body에는
-전체 body 제한을 적용하지 않고 `maxStreamFrameBytes`의 frame 단위 제한을
+실제 본문 스트림을 읽으면서 바이트 수를 검사하므로 `Content-Length`가 없거나
+잘못돼 있어도 제한을 우회할 수 없습니다. JSON, 텍스트, 바이너리, URL 인코딩 폼,
+멀티파트, 사용자 정의 미디어, 전체 데이터를 모은 순차형 본문이 제한을 넘으면
+`413 Payload Too Large`를 반환합니다. `itemSchema`가 있는 스트리밍 본문에는
+전체 본문 제한을 적용하지 않고 `maxStreamFrameBytes`의 프레임 단위 제한을
 사용합니다.
 
-## Inbound stream 사용자 정의
+<span id="inbound-stream-사용자-정의"></span>
 
-OpenAPI 3.2 inbound body에 `itemSchema`가 있으면 생성된 handler는 request
-stream을 소비하면서 검증된 item을 받습니다. Webhook과 Callback 옵션도 outbound
-client와 같은 [`StreamCodec`](../reference/streaming.md#streamcodec) 모델을 사용합니다.
+## 수신 스트림 사용자 정의
 
-Built-in SSE는 선언된 `itemSchema`로 Event 객체를 검증하며 `data`를 문자열로
-보존합니다. JSON application payload는 해당 필드를 파싱하고 문자열로 변환하는
+OpenAPI 3.2 수신 본문에 `itemSchema`가 있으면 생성된 처리 함수는 요청
+스트림을 소비하면서 검증된 항목을 받습니다. 웹훅과 콜백 옵션도 외부 호출
+클라이언트와 같은 [`StreamCodec`](../reference/streaming.md#streamcodec) 모델을 사용합니다.
+
+기본 SSE는 선언된 `itemSchema`로 이벤트 객체를 검증하며 `data`를 문자열로
+보존합니다. JSON 애플리케이션 데이터는 해당 필드를 파싱하고 문자열로 변환하는
 명시적 [`StreamAdapter`](../reference/streaming.md#streamadapter)를 사용합니다.
-아래 adapter는 built-in SSE protocol을 재사용하면서 이름이 `todo`인 event도
+아래 어댑터는 기본 SSE 프로토콜을 재사용하면서 이름이 `todo`인 이벤트도
 선택합니다.
 
 ```ts
@@ -194,31 +205,33 @@ const router = createWebhookRouter(handlers, {
 });
 ```
 
-Adapter가 만든 값은 handler에 전달되기 전에 선언된 `itemSchema` 검증과
-property projection을 거칩니다. 사용자 정의 sequential media의 byte framing이
-필요하면 [`StreamProtocol`](../reference/streaming.md#streamprotocol)을 사용합니다. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는 adapter
-적용 전의 wire frame 하나를 제한합니다. [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers)도 같은
-[`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs)와 frame limit 옵션을 제공합니다.
+어댑터가 만든 값은 처리 함수에 전달되기 전에 선언된 `itemSchema` 검증과
+생성된 타입에 맞는 변환을 거칩니다. 사용자 정의 순차형 미디어의 프레임 분리가
+필요하면 [`StreamProtocol`](../reference/streaming.md#streamprotocol)을 사용합니다. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는 어댑터
+적용 전의 전송 프레임 하나를 제한합니다. [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers)도 같은
+[`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs)와 프레임 크기 제한 옵션을 제공합니다.
 
-## Generated server artifact
+<span id="generated-server-artifact"></span>
 
-Server artifact set은 OpenAPI에 따른 decoding, validation, 타입이 지정된 handler
-계약, Fetch 기반 request/response 처리를 담당합니다.
+## 생성된 서버 코드의 역할
+
+서버 코드는 OpenAPI에 따른 디코딩, 검증, 타입이 지정된 처리 함수
+계약, Fetch 기반 요청·응답 처리를 담당합니다.
 
 ## 애플리케이션 책임
 
 애플리케이션은 다음 항목을 담당합니다.
 
-- HTTP listener와 framework 연결
-- 공개 route 설정
-- 인증, identity, authorization
-- secret과 credential 저장
-- OpenAPI 요청 계약 밖의 retry 및 delivery 정책
+- HTTP 서버 리스너와 프레임워크 연결
+- 공개 경로 설정
+- 인증, 사용자 식별, 접근 권한 관리
+- 비밀 값과 인증 정보 저장
+- OpenAPI 요청 명세에 포함되지 않은 재시도·전달 정책
 
-OpenAPI 문서가 outbound operation만 설명한다면 기본 client artifact set을
+OpenAPI 문서가 외부 호출 API만 설명한다면 기본 클라이언트 코드를
 사용합니다.
 
-버전별 Webhook/Callback 지원 범위는 [OpenAPI 지원 범위](../reference/capabilities.md),
-generated inbound API는 [생성된 서버 API](../reference/server-api.md), inbound
-stream protocol/adapter 설정은 [스트리밍 API](../reference/streaming.md)에서
+버전별 웹훅/콜백 지원 범위는 [OpenAPI 지원 범위](../reference/capabilities.md),
+생성된 수신 API는 [생성된 서버 API](../reference/server-api.md), 수신
+스트림 프로토콜/어댑터 설정은 [스트리밍 API](../reference/streaming.md)에서
 확인할 수 있습니다.

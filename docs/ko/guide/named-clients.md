@@ -5,15 +5,15 @@
 :::
 
 페이지마다 서로 다른 API를 쓴다면 생성 설정에서 기능별 클라이언트를 지정할 수
-있습니다. 각 클라이언트는 별도 import 경로를 가지며, 배정된 API의 메서드와 타입을
-제공합니다. 실행 코드와 operation 구현, 필요한 모델은 클라이언트 사이에서 공유하고,
+있습니다. 각 클라이언트는 별도 모듈 경로를 가지며, 배정된 API의 메서드와 타입을
+제공합니다. 실행 코드와 API 구현, 필요한 모델은 클라이언트 사이에서 공유하고,
 같은 API를 여러 클라이언트에 넣어도 구현을 재사용합니다.
 
 ## 클라이언트에 API 배정하기
 
 아래 예제는 `listOrders`, `createOrder`, `GET /products/{id}`가 있는 OpenAPI
 문서를 사용합니다. 모든 클라이언트는 입력 문서 하나와 생성 설정을 공유합니다.
-현재 클라이언트별 설정은 `selection`이며, operation ID와 경로를 함께 지정할 수
+현재 클라이언트별 설정은 `selection`이며, API 식별자(`operationId`)와 경로를 함께 지정할 수
 있습니다.
 
 ```toml
@@ -46,7 +46,7 @@ ID와 경로는 [생성할 API 찾기](./inspect.md)에서 조회할 수 있습�
 
 ## 사용하는 페이지에서 가져오기
 
-`GET /products/{id}`의 resource 메서드가 `get`으로 생성되는 문서라면 상품 페이지에서
+`GET /products/{id}`의 리소스 메서드가 `get`으로 생성되는 문서라면 상품 페이지에서
 다음과 같이 호출할 수 있습니다.
 
 ```ts
@@ -56,13 +56,13 @@ const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.products("product-1").get();
 ```
 
-`createClient`는 동기 함수입니다. resource tree와 `$routes`, `$operations`에는
-선택한 API가 들어갑니다. resource 메서드 이름은 문서의 이름 규칙을 따르므로
+`createClient`는 동기 함수입니다. 리소스 트리와 `$routes`, `$operations`에는
+선택한 API가 들어갑니다. 리소스 메서드 이름은 문서의 이름 규칙을 따르므로
 [호출 경로 조회](./inspect.md#typescript)로 확인할 수 있습니다. 각 인스턴스는 기존
 [클라이언트 옵션](../reference/client-api.md#clientoptions)을 받으며, URL·인증·Fetch
 구현·요청 상태를 독립적으로 가집니다.
 
-페이지를 열 때 클라이언트 코드를 불러오려면 동적 import를 사용하세요.
+페이지를 열 때 클라이언트 코드를 불러오려면 동적 `import()`를 사용하세요.
 
 ```ts
 const { createClient } = await import("./generated/api/clients/catalog/index.js");
@@ -77,7 +77,7 @@ const product = await api.$routes["GET /products/{id}"]({
 불러올 수 있습니다. 공통 의존 코드는 공유됩니다. 각 클라이언트는 자신에게 필요한
 모델과 요청·응답 표현을 가져오므로 다른 클라이언트에서만 쓰는 모델은 초기 의존성에
 포함되지 않습니다. 다만 사용하는 모델 자체의 의존성이 크면 필요한 코드도 커질 수
-있습니다. 번들러에서 여러 페이지를 하나의 chunk로 합치면 의존 코드도 함께 들어갑니다.
+있습니다. 번들러에서 여러 페이지를 하나의 청크로 합치면 의존 코드도 함께 들어갑니다.
 
 ## 루트 SDK의 선택은 별도로 정하기
 
@@ -90,7 +90,7 @@ const product = await api.$routes["GET /products/{id}"]({
 | `[selection]` 생략 | 루트 SDK에서 문서 전체 API 제공 |
 
 루트 SDK에는 주문 목록만 필요하다면 `[selection]`에 `operations = ["listOrders"]`를
-추가하세요. catalog 클라이언트에는 여전히 선택한 상품 API가 들어갑니다. CLI의
+추가하세요. `catalog` 클라이언트에는 여전히 선택한 상품 API가 들어갑니다. CLI의
 `--operation`, `--route` 덮어쓰기는 루트 선택에 적용됩니다.
 
 생성 설정에 API 배정을 관리하려면 이름 있는 클라이언트를 사용하세요. 애플리케이션
@@ -99,8 +99,8 @@ const product = await api.$routes["GET /products/{id}"]({
 
 ## Link, 타입, 설정 갱신
 
-OpenAPI Link helper를 통한 대상 API 호출도 유지됩니다. Link 의존성으로만 들어간
-대상은 helper를 호출할 때 불러오며, 출발 클라이언트의 설정으로 요청합니다. 그
+OpenAPI Link를 통한 후속 호출도 사용할 수 있습니다. Link 의존성으로만 들어간
+대상은 후속 호출 시 불러오며, 출발 클라이언트의 설정으로 요청합니다. 그
 클라이언트의 일반 메서드로도 쓰려면 대상을 선택 목록에 직접 넣으세요. 참조 조건은
 [Link 지원 범위](../reference/capabilities.md)를 참고하세요.
 

@@ -9,7 +9,7 @@ TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 
 | `./generated/api/clients/<name>/index.js` | 설정한 클라이언트의 API와 타입. 다음 릴리스 |
 | `./generated/api/metadata` | OpenAPI 버전과 선택적으로 포함한 원문 확인 |
 
-Inbound Webhook/Callback import는
+웹훅·콜백을 수신하는 모듈의 경로는
 [생성된 서버 API](./server-api.md)를 참고하세요.
 
 ::: details Node ESM으로 실행할 때
@@ -25,7 +25,7 @@ import { createClient } from "./generated/api/index.js";
 
 ## 클라이언트
 
-### createClient
+### `createClient`
 
 ```ts
 import { createClient } from "./generated/api";
@@ -41,52 +41,52 @@ const api = createClient({
 동기 `createClient(options)`를 제공합니다. 반환 타입과 메서드는 해당 클라이언트의
 선택 목록을 반영합니다. URL·인증·요청 설정을 따로 쓰려면 별도 인스턴스를 만드세요.
 
-### ClientOptions
+### `ClientOptions`
 
 | 옵션 | 용도 |
 | --- | --- |
-| `baseURL` | 명시적인 absolute API base URL |
-| `origin` | relative OpenAPI Server URL을 해석할 origin |
-| `server` | generated OpenAPI Server 선택 |
-| `transport` | 명시적인 capability를 가진 host transport |
-| `fetch` | Fetch 구현 또는 wrapper |
-| `headers` | 기본 request header |
-| `authorization` | 기본 complete Authorization header 값 |
-| `credentials` | 기본 Fetch credentials mode |
-| `securityProvider` | 선택된 OpenAPI security requirement의 dynamic credential 획득 |
-| `timeoutMS` | 기본 request timeout |
-| `codecs` | 선언된 custom media type의 complete-value codec |
-| `streamCodecs` | sequential protocol/adapter의 media-type 기본값. [스트리밍 API](./streaming.md#clientoptions-streamcodecs) 참고 |
-| `maxStreamFrameBytes` | 기본 sequential frame limit. [스트리밍 API](./streaming.md#maxstreamframebytes) 참고 |
+| `baseURL` | API의 절대 기본 URL |
+| `origin` | OpenAPI의 상대 서버 URL을 해석할 기준 출처 |
+| `server` | 생성된 OpenAPI 서버 선택 |
+| `transport` | 지원 기능을 명시한 사용자 정의 전송 구현 |
+| `fetch` | Fetch 구현 또는 이를 감싸는 함수 |
+| `headers` | 기본 요청 헤더 |
+| `authorization` | 기본 `Authorization` 헤더의 완성된 값 |
+| `credentials` | 기본 Fetch 인증 정보 전송 모드 |
+| `securityProvider` | 선택된 인증 요구 사항에 맞춰 인증 정보를 가져오는 함수 |
+| `timeoutMS` | 기본 요청 시간 제한 |
+| `codecs` | 선언된 사용자 정의 미디어 타입의 전체 값을 처리하는 코덱 |
+| `streamCodecs` | 순차형 프로토콜/어댑터의 미디어 타입 기본값. [스트리밍 API](./streaming.md#clientoptions-streamcodecs) 참고 |
+| `maxStreamFrameBytes` | 기본 순차형 미디어의 프레임 크기 제한. [스트리밍 API](./streaming.md#maxstreamframebytes) 참고 |
 
 <span id="request-options"></span>
 
 ## 요청 옵션
 
-Generated call은 적용 가능한 경우 다음 per-request option을 받습니다.
+생성된 호출은 적용 가능한 경우 다음 요청별 옵션을 받습니다.
 
 | 옵션 | 용도 |
 | --- | --- |
-| `baseURL` | 한 호출의 API base URL override |
-| `accept` | 선언된 response media type 선택 |
-| `headers` | 호출자가 추가하는 non-contract header |
-| `authorization` | client 기본값을 override하는 Authorization header |
-| `credentials` | 한 호출의 Fetch credentials mode |
-| `csrfToken` | generated `X-CSRF-Token` header 값 |
-| `requestID` | generated `X-Request-Id` header 값 |
-| `signal` | caller-owned cancellation signal |
-| `timeoutMS` | client 기본값을 override하는 request timeout |
-| `multipartHeaders` | 선언된 multipart part 추가 header |
-| `multipartContentTypes` | multipart part media type 선택 |
-| `streamCodec` | 한 호출의 sequential protocol/adapter override. [스트리밍 API](./streaming.md#requestoptions-streamcodec) 참고 |
-| `maxStreamFrameBytes` | 한 호출의 sequential frame limit |
+| `baseURL` | 한 호출의 API 기본 URL 덮어쓰기 |
+| `accept` | 선언된 응답 미디어 타입 선택 |
+| `headers` | 호출자가 추가하는 명세에 선언되지 않은 헤더 |
+| `authorization` | 클라이언트 기본값을 대신할 `Authorization` 헤더 |
+| `credentials` | 한 호출의 Fetch 인증 정보 전송 모드 |
+| `csrfToken` | 생성된 `X-CSRF-Token` 헤더 값 |
+| `requestID` | 생성된 `X-Request-Id` 헤더 값 |
+| `signal` | 호출자가 관리하는 취소 신호 |
+| `timeoutMS` | 클라이언트 기본값을 대신할 요청 시간 제한 |
+| `multipartHeaders` | 선언된 멀티파트의 각 부분 추가 헤더 |
+| `multipartContentTypes` | 멀티파트의 각 부분 미디어 타입 선택 |
+| `streamCodec` | 한 호출의 순차형 프로토콜/어댑터 덮어쓰기. [스트리밍 API](./streaming.md#requestoptions-streamcodec) 참고 |
+| `maxStreamFrameBytes` | 한 호출의 순차형 미디어의 프레임 크기 제한 |
 
-`path`, `query`, `headerParams`, `body` 같은 operation-specific input section은
-OpenAPI operation에서 생성됩니다. `RequestOptions`는 호출 단위 동작을 설정합니다.
+`path`, `query`, `headerParams`, `body` 같은 API별 입력 영역은
+OpenAPI 문서의 API에서 생성됩니다. `RequestOptions`는 호출 단위 동작을 설정합니다.
 
 ## TypeScript 타입
 
-생성된 SDK는 component, route, operation, 요청 영역, 파라미터를 기준으로 타입을
+생성된 SDK는 구성 요소, 경로, API, 요청 영역, 파라미터를 기준으로 타입을
 제공합니다. 전체 타입 API와 예제는
 [생성된 TypeScript 타입](./typescript-types.md)에서 확인하세요.
 
@@ -105,10 +105,10 @@ const todo = await api.todos.create({
 });
 ```
 
-여러 operation이 하나의 path selector를 공유하더라도 공개 selector input type이
-같으면 resource 메서드를 유지합니다. Schema 제약과 path serialization은 각 terminal
-operation에 그대로 남으므로 resource 값을 바인딩한다고 계약을 합치거나 느슨하게
-만들지 않습니다. Selector type 자체가 호환되지 않으면 resource shortcut만 생략하고
+여러 API가 하나의 경로 선택자를 공유하더라도 공개 선택자 입력 타입이
+같으면 리소스 메서드를 유지합니다. 스키마 제약과 경로 직렬화는 각
+API에 그대로 남으므로 리소스 값을 바인딩한다고 계약을 합치거나 느슨하게
+만들지 않습니다. 선택자 타입 자체가 호환되지 않으면 리소스 호출 방식만 생략하고
 정확한 `$operations` / `$routes` 호출은 유지하며 `SDKGEN-W513`을 보고합니다.
 
 ### `$routes`
@@ -133,8 +133,8 @@ const todos = await api.$operations["listTodos"]({
 
 ### `.raw()`
 
-모든 generated operation call에는 `.raw()`가 있습니다. Decoded body와 함께
-status, response header, request metadata, 선택된 content type, 원본 Fetch
+모든 생성된 API 호출에는 `.raw()`가 있습니다. 해석된 본문과 함께
+상태 코드, 응답 헤더, 요청 메타데이터, 선택된 콘텐츠 타입, 원본 Fetch
 `Response`를 반환합니다.
 
 ```ts
@@ -147,16 +147,18 @@ result.headers;
 result.response;
 ```
 
-일반 decoded call에서는 Fetch body가 이미 소비됩니다. 선언된 streaming
-response에서 소비되지 않은 body가 필요하면 별도의 `.raw()` 요청을 사용합니다.
+일반 호출에서는 응답 본문이 이미 소비됩니다. 선언된 스트리밍
+응답에서 소비되지 않은 본문이 필요하면 별도의 `.raw()` 요청을 사용합니다.
 
-## Security Requirement
+<span id="security-requirement"></span>
 
-Operation에 OpenAPI security 대안이 여러 개라면 생성된 요청 옵션이
-`securityRequirement`를 요구합니다. Requirement가 하나이면 자동 선택되며, 빈
-requirement가 다른 대안과 함께 있으면 `"anonymous"`로 표현됩니다.
+## 인증 요구 사항
 
-Todo operation이 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
+API에 OpenAPI 인증 대안이 여러 개라면 생성된 요청 옵션이
+`securityRequirement`를 요구합니다. 인증 요구 사항이 하나이면 자동 선택되며, 빈
+인증 요구 사항이 다른 대안과 함께 있으면 `"anonymous"`로 표현됩니다.
+
+Todo API가 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
 
 ```ts
 await api.$operations.updateTodo(
@@ -171,8 +173,8 @@ await api.$operations.updateTodo(
 );
 ```
 
-유효한 requirement ID는 생성된 TypeScript 타입에 포함됩니다. Credential을
-동적으로 가져와야 한다면 `securityProvider`를 사용합니다. 전체 security
+유효한 인증 요구 사항 ID는 생성된 TypeScript 타입에 포함됩니다. 인증 정보를
+동적으로 가져와야 한다면 `securityProvider`를 사용합니다. 전체 인증
 모델과 예시는 [인증, 전송, 스트림](../guide/transport.md)을 참고하세요.
 
 <span id="request-headers"></span>
@@ -185,32 +187,31 @@ await api.$operations.updateTodo(
 
 ## Link
 
-외부 `operationRef`도 `$ref`로 대상 operation을 원래 path template을 유지하여
-compiled document closure에 mount한 경우 helper를 생성합니다. Link의 원본 문서와 대상의 정확한 source pointer로
-해석하며, 대상 operation/path/document 서버 또는 명시적인 Link 서버를 base URL로
+`$links`는 OpenAPI Link 객체에 따라 다음 API를 호출하는 함수를 제공합니다.
+원본 응답 정보를 사용해 런타임 표현식을 해석하고, 후속 호출의 입력 타입도 검사합니다.
+
+다른 문서를 가리키는 `operationRef`는 대상 API를 `$ref`로 이미 불러온 경우에
+지원합니다. 원래 경로를 유지해야 하며, 대상의 원문 위치가 하나로 정해져야 합니다.
+예를 들어 `operationRef: ./target.json#/paths/~1items/get`을 사용하려면
+`$ref: ./target.json#/paths/~1items`로 `GET /items`를 `/items`에 포함하세요.
+대상이 없거나 경로가 달라졌거나 같은 원문이 여러 경로에 연결되어 모호하면
+`SDKGEN-W509`를 보고하고 해당 후속 호출 함수를 생략합니다.
+
+Link 해석에는 입력 문서의 참조 허용 목록·잠금 파일·오프라인 캐시 정책이
+적용됩니다. Link만 `target.json`을 가리키는 경우에는 추가 문서 요청 없이
+`SDKGEN-W509`를 보고합니다. 이 조건은 허용된 참조를 통해 읽은 문서 범위에서
+후속 호출을 생성하기 위한 경계입니다.
+
+후속 호출은 대상 API·경로·문서의 서버 설정 또는 Link에 명시된 서버를 기본 URL로
 사용합니다. 상속한 상대 서버 URL은 대상 문서의 HTTP URL을 기준으로 해석합니다.
-대상이 없거나 path가 달라졌거나 같은 source를 여러 번 mount하여 모호한 경우 `SDKGEN-W509`로 해당
-helper만 제외하고 원본 response와 다른 helper는 유지합니다. Link 해석은 추가 fetch를
-수행하지 않으며 compiler의 allowlist·lock·offline cache 정책을 따릅니다.
-
-이 조건은 문서 로딩의 신뢰 경계입니다. Link 선언만으로 다른 문서를 읽을
-권한이 생기지는 않습니다. 예를 들어 `operationRef: ./target.json#/paths/~1items/get`은
-Path Item의 `$ref: ./target.json#/paths/~1items`로 `GET /items`를 `/items`에 이미
-로드한 경우 해석할 수 있습니다. Link만 `target.json`을 가리키면 해당 origin이
-allowlist에 있어도 추가 fetch하지 않고 `SDKGEN-W509`로 helper를 생략합니다.
-대상을 선언된 `$ref` closure에 포함해야 helper를 생성할 수 있습니다.
-
-`$links`에는 OpenAPI Link Object에서 생성된 타입 안전 후속 호출이 있습니다.
-각 helper는 Link runtime expression을 해석하는 데 필요한 원본 response context를
-전달합니다.
 
 전체 예시는 [OpenAPI Link 따라가기](../guide/client.md#openapi-links)를
 참고하세요.
 
 ## 스트리밍
 
-Generated sequential-media API, lifecycle, protocol/adapter extension point,
-request source, frame limit는 전용 [스트리밍 API](./streaming.md) 레퍼런스에
+생성된 순차형 미디어 API, 시작·종료 동작, 사용자 정의 프로토콜·어댑터,
+요청 데이터 공급, 프레임 크기 제한은 전용 [스트리밍 API](./streaming.md) 레퍼런스에
 정리되어 있습니다.
 
 ## 오류 처리
@@ -229,9 +230,11 @@ import {
 - `isErrorCategory(error, category)`: 오류 범주 확인
 - `TransportErrorCode`: 전송 과정에서 발생할 수 있는 오류 코드
 
-Security Requirement 선택 오류는 `SECURITY_REQUIREMENT_REQUIRED`와
+인증 요구 사항 선택 오류는 `SECURITY_REQUIREMENT_REQUIRED`와
 `SECURITY_REQUIREMENT_INVALID`를 사용합니다. 인증 정보 획득 및 적용 오류는
 `SECURITY_CREDENTIALS_REQUIRED`와 `SECURITY_CREDENTIALS_INVALID`를 사용합니다.
+
+<span id="openapi-메타데이터"></span>
 
 ## OpenAPI 메타데이터
 
@@ -262,4 +265,4 @@ API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다.
 
 다음 메이저 버전부터는 `--with metadata`를 지정하면 SDK에 원문이 포함됩니다.
 `openapi.document`를 사용하는 코드는 재생성 전에 이 옵션을 추가하거나 설정
-파일에 `addons = ["metadata"]`를 넣으세요. 이미 생성한 SDK의 export는 유지됩니다.
+파일에 `addons = ["metadata"]`를 넣으세요. 이미 생성한 SDK가 제공하는 API는 유지됩니다.

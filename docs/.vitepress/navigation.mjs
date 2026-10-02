@@ -35,7 +35,7 @@ const sidebarGroups = [
       },
       {
         route: "/guide/selective-client",
-        labels: { en: "Load selected operations", ko: "필요한 operation만 불러오기" },
+        labels: { en: "Load selected operations", ko: "필요한 API만 불러오기" },
       },
       {
         route: "/guide/transport",
@@ -61,7 +61,7 @@ const sidebarGroups = [
       { route: "/examples/", labels: { en: "Overview", ko: "개요" } },
       {
         route: "/examples/ai-streaming",
-        labels: { en: "AI streaming API", ko: "AI streaming API" },
+        labels: { en: "AI streaming API", ko: "AI 스트리밍 API" },
       },
       {
         route: "/examples/webhook-server",
@@ -101,7 +101,7 @@ const sidebarGroups = [
       },
       {
         route: "/reference/extensions",
-        labels: { en: "OpenAPI x-* extensions", ko: "OpenAPI x-* 확장" },
+        labels: { en: "OpenAPI x-* extensions", ko: "OpenAPI 확장" },
       },
     ],
   },

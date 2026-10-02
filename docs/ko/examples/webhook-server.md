@@ -1,8 +1,10 @@
-# OpenAPI Webhook 수신
+<span id="openapi-webhook-수신"></span>
 
-Generated server add-on을 애플리케이션 경계에서 사용하는 예제입니다. OpenAPI
-contract가 inbound Webhook을 설명하고, openapi-sdkgen이 typed router를
-생성하며, host application이 실제 공개 route와 runtime을 선택합니다.
+# OpenAPI 웹훅 수신
+
+생성된 서버 코드를 애플리케이션에 연결하는 예제입니다. OpenAPI
+명세가 수신 웹훅을 설명하고, openapi-sdkgen이 타입이 지정된 라우터를
+생성하며, 호스트 애플리케이션이 실제 공개 경로와 실행 환경을 선택합니다.
 
 ```text
 webhook-app/
@@ -11,9 +13,11 @@ webhook-app/
   src/worker.ts
 ```
 
-## 1. Webhook 선언
+<span id="_1-webhook-선언"></span>
 
-OpenAPI 3.1과 3.2는 root Webhook Object를 지원합니다. Public contract는
+## 1. 웹훅 선언
+
+OpenAPI 3.1과 3.2는 문서 최상위에 선언한 웹훅을 지원합니다. 공개 명세는
 애플리케이션이 소유합니다.
 
 ```yaml
@@ -44,7 +48,9 @@ webhooks:
           description: Accepted
 ```
 
-## 2. Server add-on 생성
+<span id="_2-server-add-on-생성"></span>
+
+## 2. 서버 확장 생성
 
 ```sh
 pnpm exec openapi-sdkgen generate \
@@ -54,10 +60,12 @@ pnpm exec openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-Base target에는 outbound client가 그대로 생성되고, `--with server`가
-`./generated/api/server/` 아래에 Webhook/Callback artifact를 추가합니다.
+기본 생성 대상에는 외부 호출 클라이언트가 그대로 생성되고, `--with server`가
+`./generated/api/server/` 아래에 웹훅/콜백 생성 파일을 추가합니다.
 
-## 3. Generated handler 구현
+<span id="_3-generated-handler-구현"></span>
+
+## 3. 생성된 처리 함수 구현
 
 ```ts
 // webhook-app/src/worker.ts
@@ -94,10 +102,10 @@ export default {
 };
 ```
 
-Host가 listener/runtime과 실제 공개 route를 소유합니다. Generated router는
-OpenAPI request decoding, validation, typed handler input, response encoding을
+호스트 애플리케이션은 HTTP 서버와 실행 환경, 실제 공개 경로를 구성합니다.
+생성된 라우터는 OpenAPI 요청 디코딩, 검증, 타입이 지정된 처리 함수 입력, 응답 인코딩을
 담당합니다.
 
-Router/options lookup은 [생성된 서버 API](../reference/server-api.md), 버전별
+라우터와 옵션은 [생성된 서버 API](../reference/server-api.md), 버전별
 지원 범위는 [OpenAPI 지원 범위](../reference/capabilities.md#webhook과-callback)를
 참고하세요.

@@ -1,12 +1,14 @@
 # 인증, 전송, 스트림
 
-생성된 클라이언트는 Fetch를 전송 경계로 사용합니다. 대부분의 애플리케이션은 base
-URL과 인증 정보를 설정합니다. Cookie jar, 제한된 응답 header 접근, mutual TLS
-같은 runtime-specific 기능에는 custom transport를 사용합니다.
+생성된 클라이언트는 Fetch로 요청을 보냅니다. 대부분의 애플리케이션은 기본 URL과
+인증 정보를 설정하면 됩니다. 쿠키 저장소, 제한된 응답 헤더 접근, 상호 TLS 인증처럼
+실행 환경에 따른 기능이 필요하면 사용자 정의 전송 구현을 사용합니다.
 
-## 일반 Bearer credential 전달
+<span id="일반-bearer-credential-전달"></span>
 
-operation에 하나의 Bearer credential만 필요하다면 완성된 Authorization header
+## 일반 Bearer 인증 정보 전달
+
+API에 하나의 Bearer 인증 정보만 필요하다면 완성된 `Authorization` 헤더
 값을 전달합니다.
 
 ```ts
@@ -16,16 +18,18 @@ const api = createClient({
 });
 ```
 
-로그인, token refresh, credential 저장은 애플리케이션에서 관리합니다.
+로그인, 토큰 갱신, 인증 정보 저장은 애플리케이션에서 관리합니다.
 
-## 여러 OpenAPI security 대안 중 선택
+<span id="여러-openapi-security-대안-중-선택"></span>
 
-OpenAPI는 하나의 operation에 여러 Security Requirement Object를 선언할 수
-있습니다. 적용 가능한 requirement가 여러 개라면 생성된 요청 옵션은
+## 여러 OpenAPI 인증 대안 중 선택
+
+OpenAPI는 하나의 API에 여러 인증 요구 사항 객체를 선언할 수
+있습니다. 적용 가능한 인증 요구 사항이 여러 개라면 생성된 요청 옵션은
 [`securityRequirement`](../reference/client-api.md#security-requirement)를 요구하며, 애플리케이션이 어느 대안을 충족할지
 선택합니다.
 
-Todo 수정 operation이 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
+Todo 수정 API가 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
 
 ```ts
 await api.$operations.updateTodo(
@@ -40,14 +44,16 @@ await api.$operations.updateTodo(
 );
 ```
 
-허용되는 requirement ID는 생성된 TypeScript union에 포함되며 autocomplete와
-static checking으로 확인할 수 있습니다. 유효한 requirement가 하나면
-SDK가 자동 선택합니다. 빈 requirement가 다른 대안과 함께 있으면 익명 접근을
+허용되는 인증 요구 사항의 식별자는 생성된 TypeScript 유니온 타입에 포함되며 자동 완성과
+정적 타입 검사로 확인할 수 있습니다. 유효한 인증 요구 사항이 하나면
+SDK가 자동 선택합니다. 빈 인증 요구 사항이 다른 대안과 함께 있으면 익명 접근을
 뜻하며 ID는 `"anonymous"`입니다.
 
-## `securityProvider`로 credential 로드
+<span id="securityprovider로-credential-로드"></span>
 
-선택된 requirement에 맞춰 credential을 동적으로 가져와야 한다면
+## `securityProvider`로 인증 정보 로드
+
+선택된 인증 요구 사항에 맞춰 인증 정보를 동적으로 가져와야 한다면
 [`securityProvider`](../reference/client-api.md#clientoptions)를 사용합니다.
 
 ```ts
@@ -73,17 +79,19 @@ const api = createClient({
 });
 ```
 
-Provider는 resolved operation, 선택된 requirement, origin을 받습니다. 클라이언트는
-반환된 credential 형태를 검사하고 OpenAPI에 선언된 security scheme 위치에
-적용합니다.
+`securityProvider`는 호출할 API 정보인 `operation`, 선택된 인증 요구 사항인
+`requirement`, 요청할 출처인 `origin`을 받습니다. 클라이언트는 반환된 인증 정보의
+형태를 검사하고 OpenAPI에 선언된 위치에 적용합니다.
 
-API key, HTTP Basic/Bearer, OAuth2, OpenID Connect, mTLS를 지원합니다. OAuth
-로그인 UX, token refresh, 영구 credential 저장은 호스트 애플리케이션의
+API 키, HTTP Basic/Bearer, OAuth2, OpenID Connect, mTLS를 지원합니다. OAuth
+로그인 화면, 토큰 갱신, 영구 인증 정보 저장은 호스트 애플리케이션의
 책임입니다.
 
-## Cookie 인증
+<span id="cookie-인증"></span>
 
-브라우저가 관리하는 cookie 인증을 사용한다면
+## 쿠키 인증
+
+브라우저가 관리하는 쿠키 인증을 사용한다면
 [`ClientOptions.credentials`](../reference/client-api.md#clientoptions)를 설정합니다.
 
 ```ts
@@ -93,16 +101,18 @@ const api = createClient({
 });
 ```
 
-전송되는 ambient cookie는 브라우저와 Fetch 정책이 결정합니다.
+자동으로 전송되는 쿠키는 브라우저와 Fetch 정책이 결정합니다.
 
-브라우저 밖에서 cookie jar가 필요하면 해당 기능을 제공하는 transport를
+브라우저 밖에서 쿠키 저장소가 필요하면 해당 기능을 제공하는 전송 구현을
 사용합니다.
 
 <span id="request-headers"></span>
 
-## 선언된 요청 header 전달
+<span id="선언된-요청-header-전달"></span>
 
-OpenAPI parameter로 선언된 header는 [`headerParams`](../reference/client-api.md#request-headers)에 생성됩니다.
+## 선언된 요청 헤더 전달
+
+OpenAPI 매개변수로 선언된 헤더는 [`headerParams`](../reference/client-api.md#request-headers)에 생성됩니다.
 
 ```ts
 await api.$operations.createTodo({
@@ -114,12 +124,14 @@ await api.$operations.createTodo({
 });
 ```
 
-`Origin`, `Host`, `Cookie`, `Sec-*` 같은 header는 active Fetch 환경이 제어하며,
-caller-provided 값을 적용할 수 있는지도 transport가 결정합니다.
+`Origin`, `Host`, `Cookie`, `Sec-*` 같은 헤더는 실행 중인 Fetch 환경이 제어하며,
+호출자가 지정한 값을 적용할 수 있는지도 전송 구현이 결정합니다.
 
-## Custom transport 설정
+<span id="custom-transport-설정"></span>
 
-[`ClientOptions.transport`](../reference/client-api.md#clientoptions)는 Fetch-compatible 함수와 지원하는 추가 capability를 제공합니다.
+## 사용자 정의 전송 구현 설정
+
+[`ClientOptions.transport`](../reference/client-api.md#clientoptions)는 Fetch와 호환되는 함수와 지원하는 추가 기능을 제공합니다.
 
 ```ts
 const api = createClient({
@@ -135,7 +147,7 @@ const api = createClient({
 });
 ```
 
-실행 환경에 특화된 요청 동작도 transport에 둘 수 있습니다.
+실행 환경에 특화된 요청 동작도 전송 구현에 둘 수 있습니다.
 
 ```ts
 const api = createClient({
@@ -150,9 +162,11 @@ const api = createClient({
 });
 ```
 
-## 요청 취소와 timeout
+<span id="요청-취소와-timeout"></span>
 
-[요청 옵션](../reference/client-api.md#request-options)에는 `AbortSignal`과 timeout을 전달할 수 있습니다.
+## 요청 취소와 시간 제한
+
+[요청 옵션](../reference/client-api.md#request-options)에는 `AbortSignal`과 시간 제한을 전달할 수 있습니다.
 
 ```ts
 const controller = new AbortController();
@@ -163,37 +177,39 @@ const todos = await api.todos.list(
 );
 ```
 
-같은 요청 옵션은 생성된 operation, route, resource, Link, stream 호출에서
+같은 요청 옵션은 생성된 API, 경로, 리소스, Link, 스트림 호출에서
 사용할 수 있습니다.
 
 ## 스트리밍 동작
 
-openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x를 모두 지원합니다. 알려진
-sequential content type은 모든 지원 버전에서 일반 `schema`로 complete
-buffered value를 표현할 수 있습니다. OpenAPI 3.2의 `itemSchema`가 typed
-incremental input/output을 추가합니다.
+openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x를 모두 지원합니다. 지원하는 순차형
+콘텐츠 타입은 모든 버전에서 `schema`로 전체 데이터를 모은 값을 표현할 수 있습니다.
+OpenAPI 3.2에서는 `itemSchema`로 각 항목의 타입을 지정해 순차적으로 보내거나
+받을 수 있습니다.
 
-정확한 버전 및 media-type 계약은
+정확한 버전 및 미디어 타입 계약은
 [스트리밍 API](../reference/streaming.md#openapi-version-support)를 참고하세요.
 
-`itemSchema`가 있는 operation에는 `.stream()`이 추가되고
+`itemSchema`가 있는 API에는 `.stream()`이 추가되고
 [`OperationStream<T>`](../reference/streaming.md#operationstream)을 반환합니다.
-Incremental request body는
+항목별로 보내는 요청 본문은
 [`StreamSource<T>`](../reference/streaming.md#streaming-request-body)를
-사용하므로 `AsyncIterable<T>`와 Web `ReadableStream<T>`을 모두 전달할 수
-있습니다. Sequential Media Type Object에 `schema`와 `itemSchema`가 함께
-있으면 generated request type이 complete와 incremental 입력을 모두 받습니다.
+사용하므로 `AsyncIterable<T>`와 웹의 `ReadableStream<T>`을 모두 전달할 수
+있습니다. 순차형 미디어 타입 객체에 `schema`와 `itemSchema`가 함께
+있으면 생성된 요청 타입이 전체 값과 항목별 스트림을 모두 받습니다.
 
 [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는
-application adaptation 전의 wire frame, record, multipart part 하나의 크기를
+애플리케이션 값으로 변환하기 전의 전송 프레임, 레코드, 멀티파트의 각 부분 하나의 크기를
 제한합니다.
 
-### 기본 protocol에 adapter 적용
+<span id="기본-protocol에-adapter-적용"></span>
 
-Built-in SSE는 Event 객체를 반환하고 `data`를 문자열로 보존합니다.
-JSON application payload를 파싱하고 인코딩할 때 문자열로 변환하려면
+### 기본 프로토콜에 어댑터 적용
+
+기본 SSE는 이벤트 객체를 반환하고 `data`를 문자열로 보존합니다.
+JSON 애플리케이션 데이터를 파싱하고 인코딩할 때 문자열로 변환하려면
 [`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter)를
-지정합니다. 아래 adapter는 SSE parser를 재사용하면서 이름이 `todo`인 event도
+지정합니다. 아래 어댑터는 기본 SSE 파서를 재사용하면서 이름이 `todo`인 이벤트도
 선택합니다.
 
 ```ts
@@ -221,31 +237,34 @@ const api = createClient({
 });
 ```
 
-한 번의 요청에서 client media-type 기본값을 바꾸려면
+한 번의 요청에서 클라이언트 미디어 타입 기본값을 바꾸려면
 [`streamCodec`](../reference/streaming.md#requestoptions-streamcodec)을
-사용합니다. Adapter 결과는 operation의 `itemSchema` validation과 projection을
-거칩니다.
+사용합니다. 어댑터 결과는 API의 `itemSchema`로 검증한 뒤 생성된 타입에 맞게
+변환합니다.
 
-### 사용자 정의 framing
+<span id="사용자-정의-framing"></span>
 
-사용자 정의 sequential media가 자체 byte framing을 필요로 하면
+### 사용자 정의 프레임 처리
+
+사용자 정의 순차형 미디어의 프레임 구분 규칙을 구현하려면
 [`StreamProtocol<Frame>`](../reference/streaming.md#streamprotocol)을
-사용합니다. [`StreamCodec`](../reference/streaming.md#streamcodec)은 custom
-protocol과 선택적인 adapter를 함께 구성할 수 있습니다.
+사용합니다. [`StreamCodec`](../reference/streaming.md#streamcodec)은 사용자 정의
+프로토콜과 선택적인 어댑터를 함께 구성할 수 있습니다.
 
-Protocol에는 bounded `StreamReader`와 `StreamContext.maxFrameBytes`가
-전달되므로 built-in protocol과 같은 cancellation/frame-size 계약을 따릅니다.
+프로토콜에는 크기가 제한된 `StreamReader`와 `StreamContext.maxFrameBytes`가
+전달되므로 기본 프로토콜과 같은 취소/프레임 크기 계약을 따릅니다.
 
-순회를 끝내거나 `abort()`를 호출하거나 `toReadableStream()`을 cancel하면
-underlying body를 해제합니다. 외부 `AbortSignal`과 timeout도 같은 lifecycle을
-사용합니다. Generated client는 Server-Sent Events reconnect/replay를 자동
-수행하지 않습니다. 전체 lifecycle과 설정은
+순회를 끝내거나 `abort()`를 호출하거나 `toReadableStream()`을 취소하면
+본문을 해제합니다. 외부 `AbortSignal`과 시간 제한도 같은 시작·종료 동작을
+사용합니다. 생성된 클라이언트는 Server-Sent Events 재접속·재전송을 자동
+수행하지 않습니다. 스트림의 시작·종료 동작과 설정은
 [스트리밍 API](../reference/streaming.md)를 참고하세요.
 
-### Integration 예제
+<span id="integration-예제"></span>
 
-Provider나 framework integration은 transport 계약과 분리해 Examples 섹션에서
-다룹니다. AI SDK를 사용하는 server application과 generated client를 사용하는
-별도 consumer application은
-[Generated client로 AI streaming API 사용](../examples/ai-streaming.md)을
+### 연동 예제
+
+외부 서비스나 프레임워크와 연결하는 방법은 예제에서 다룹니다.
+AI SDK를 사용하는 서버와 생성된 클라이언트를 사용하는 애플리케이션을 나누는 방법은
+[생성된 클라이언트로 AI 스트리밍 API 사용](../examples/ai-streaming.md)을
 참고하세요.

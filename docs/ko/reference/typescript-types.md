@@ -1,9 +1,11 @@
 # 생성된 TypeScript 타입
 
-생성된 SDK의 기본 진입점은 요청, 응답, component, enum 타입을 제공합니다.
+생성된 SDK의 기본 진입점은 요청, 응답, 구성 요소, 열거형 타입을 제공합니다.
 
 생성된 클라이언트의 호출 방법은
 [생성된 클라이언트 API](./client-api.md)에서 확인할 수 있습니다.
+
+<span id="컴파일러-지원"></span>
 
 ## 컴파일러 지원
 
@@ -15,21 +17,21 @@
 
 ## 타입 기준 선택
 
-아래 표는 루트 SDK의 타입 helper를 설명합니다. 설정한 클라이언트 진입점에서는
+아래 표는 루트 SDK에서 타입을 추출하는 기준을 설명합니다. 설정한 클라이언트 진입점에서는
 [클라이언트별 타입](#named-clients)을 사용하세요.
 
-| 기준 | Helper |
+| 기준 | 타입 추출 도구 |
 | --- | --- |
 | 생성된 클라이언트 메서드 | `Operation*<typeof method>` |
 | OpenAPI `operationId` | `Operation*<"operationId">` |
-| `"METHOD /path"` route | `Route*<"METHOD /path">` |
+| `"METHOD /path"` 경로 | `Route*<"METHOD /path">` |
 | `components.schemas` 이름 | `ComponentInput<Name>` / `ComponentOutput<Name>` |
 
 ## 클라이언트별 타입 {#named-clients}
 
-다음 릴리스에서는 각 클라이언트 진입점이 구체적인 `Client` 타입과 선택한 API·Link
-helper에 필요한 component 타입을 제공합니다. `createClient`와 같은 진입점에서
-타입을 가져오세요. 상품 API가 `Product` component를 사용하는 경우:
+다음 릴리스에서는 각 클라이언트 진입점이 구체적인 `Client` 타입과 선택한 API·후속
+호출에 필요한 구성 요소 타입을 제공합니다. `createClient`와 같은 진입점에서
+타입을 가져오세요. 상품 API가 `Product` 구성 요소를 사용하는 경우:
 
 ```ts
 import {
@@ -44,13 +46,13 @@ type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}
 ```
 
 `ComponentInput`은 모델의 요청 표현, `ComponentOutput`은 응답 표현입니다. 다른
-클라이언트에서만 쓰는 component 이름은 포함되지 않으며, 이 클라이언트의 API에서
+클라이언트에서만 쓰는 구성 요소 이름은 포함되지 않으며, 이 클라이언트의 API에서
 쓰지 않는 방향의 표현은 `never`입니다. 해당 메서드의 정확한 호출 타입은
 `Parameters`와 `ReturnType`으로 추출할 수 있습니다.
 
 ## 생성된 메서드에서 추출
 
-생성된 메서드의 타입을 `Operation*` helper에 전달합니다.
+생성된 메서드의 타입을 `Operation*` 타입 추출 도구에 전달합니다.
 
 ```ts
 import {
@@ -72,8 +74,8 @@ type UpdateInput = OperationInput<typeof updateTodo>;
 type UpdateBody = OperationBody<typeof updateTodo>;
 ```
 
-`OperationInput`은 메서드에 전달하는 전체 인자입니다. `OperationBody`는 request
-body입니다. Resource tree 메서드의 입력에는 selector로 이미 바인딩된 값을 뺀
+`OperationInput`은 메서드에 전달하는 전체 인자입니다. `OperationBody`는 요청
+본문입니다. 리소스 트리 메서드의 입력에는 선택자로 이미 바인딩된 값을 뺀
 나머지 항목이 들어갑니다.
 
 ```ts
@@ -84,10 +86,12 @@ async function update(body: UpdateBody) {
 }
 ```
 
-## Operation ID 또는 route로 추출
+<span id="operation-id-또는-route로-추출"></span>
 
-OpenAPI `operationId`에는 `Operation*` helper를 사용하고 `"METHOD /path"`
-문자열에는 `Route*` helper를 사용합니다.
+## API 식별자 또는 경로로 추출
+
+OpenAPI `operationId`에는 `Operation*` 타입 추출 도구를 사용하고 `"METHOD /path"`
+문자열에는 `Route*` 타입 추출 도구를 사용합니다.
 
 ```ts
 import type {
@@ -116,23 +120,25 @@ type TodoID = RouteParameter<
 >;
 ```
 
-## 요청 및 응답 helper
+<span id="요청-및-응답-helper"></span>
 
-| 값 | Operation helper | Route helper |
+## 요청 및 응답 타입 추출
+
+| 값 | API 식별자·메서드 기준 | 경로 기준 |
 | --- | --- | --- |
 | 전체 호출 입력 | `OperationInput` | `RouteInput` |
 | 성공 응답 | `OperationOutput` | `RouteOutput` |
-| stream item | `OperationStreamItem` | `RouteStreamItem` |
-| request body | `OperationBody` | `RouteBody` |
-| path 파라미터 | `OperationPath` | `RoutePath` |
-| query 파라미터 | `OperationQuery` | `RouteQuery` |
-| query-string 파라미터 | `OperationQuerystring` | `RouteQuerystring` |
-| header | `OperationHeaders` | `RouteHeaders` |
-| cookie | `OperationCookies` | `RouteCookies` |
+| 스트림 항목 | `OperationStreamItem` | `RouteStreamItem` |
+| 요청 본문 | `OperationBody` | `RouteBody` |
+| 경로 파라미터 | `OperationPath` | `RoutePath` |
+| 쿼리 파라미터 | `OperationQuery` | `RouteQuery` |
+| 쿼리 문자열 파라미터 | `OperationQuerystring` | `RouteQuerystring` |
+| 헤더 | `OperationHeaders` | `RouteHeaders` |
+| 쿠키 | `OperationCookies` | `RouteCookies` |
 | 파라미터 하나 | `OperationParameter` | `RouteParameter` |
 | 전체 계약 | `OperationContract` | `RouteContract` |
 
-파라미터 helper에는 location과 파라미터 이름을 전달합니다.
+파라미터 타입을 추출할 때는 위치와 파라미터 이름을 전달합니다.
 
 ```ts
 type Limit = OperationParameter<"listTodos", "query", "limit">;
@@ -141,9 +147,11 @@ type Limit = OperationParameter<"listTodos", "query", "limit">;
 선택 속성과 스키마에 선언된 `null`은 보존됩니다. 전체 호출에서 요청 영역을
 생략할 수 있는지는 `OperationInput` 또는 `RouteInput`으로 확인합니다.
 
-## Component 타입
+<span id="component-타입"></span>
 
-`components.schemas`에 선언된 스키마에는 component helper를 사용합니다.
+## 구성 요소 타입
+
+`components.schemas`에 선언된 스키마에는 `ComponentInput`과 `ComponentOutput`을 사용합니다.
 
 ```ts
 import type { ComponentInput, ComponentOutput } from "./generated/api";
@@ -154,9 +162,11 @@ type TodoOutput = ComponentOutput<"Todo">;
 
 `readOnly` 필드는 출력 타입에, `writeOnly` 필드는 입력 타입에 포함됩니다.
 
-## Enum 값과 타입
+<span id="enum-값과-타입"></span>
 
-Component enum은 TypeScript 타입과 런타임 값을 제공합니다.
+## 열거형 값과 타입
+
+구성 요소의 열거형은 TypeScript 타입과 런타임 값을 제공합니다.
 
 ```yaml
 components:
@@ -188,42 +198,42 @@ if (isEnumValue(Enums.TodoStatus, input)) {
 }
 ```
 
-기본 `./generated/api` 진입점의 기존 `Enums`, `EnumValue`, `isEnumValue` import도
-그대로 유효합니다. Enum 런타임 값과 타입을 사용하는 모듈에서는 전용
+기본 `./generated/api` 진입점의 기존 `Enums`, `EnumValue`, `isEnumValue` 가져오기도
+그대로 유효합니다. 열거형 런타임 값과 타입을 사용하는 모듈에서는 전용
 `./generated/api/enums` 진입점도 사용할 수 있습니다.
 
-`Enums`에는 component 스키마로 선언된 enum이 포함됩니다. Inline enum과 중첩
-enum은 생성된 요청, 응답, component 타입에서 사용할 수 있습니다.
+`Enums`에는 구성 요소 스키마로 선언된 열거형이 포함됩니다. 인라인 열거형과 중첩
+열거형은 생성된 요청, 응답, 구성 요소 타입에서 사용할 수 있습니다.
 
 ## 추가 제공 타입
 
-생성된 진입점은 raw 호출, resource tree 호출, pagination, Link, stream 타입도
+생성된 진입점은 원본 응답 호출, 리소스 트리 호출, 페이지 조회, Link, 스트림 타입도
 제공합니다.
 
 | 타입 | 용도 |
 | --- | --- |
-| `OperationMethod<Route>` | 생성된 operation 호출 |
-| `OperationRawCall<Route>` | raw operation 호출 |
-| `ResourceCall<Route>` | resource tree 호출 |
-| `RawCall<Route>` | raw resource tree 호출 |
-| `PaginateCall<Route>` | pagination 호출 |
+| `OperationMethod<Route>` | 생성된 API 호출 |
+| `OperationRawCall<Route>` | 원본 응답을 반환하는 API 호출 |
+| `ResourceCall<Route>` | 리소스 트리 호출 |
+| `RawCall<Route>` | 원본 응답을 반환하는 리소스 호출 |
+| `PaginateCall<Route>` | 페이지 조회 호출 |
 | `LinkCalls<Route>` | OpenAPI Link 호출 |
-| `StreamCall<Route>` | stream 호출 |
-| `RouteStreamItem<Route>` | exact route stream의 item 타입 |
-| `OperationStreamItem<Source>` | operation ID나 생성된 메서드에서 추출한 stream item 타입 |
-| `OperationStream<T>` | lazy 단일 소비자 streaming response handle |
-| `StreamSource<T>` | 요청에 사용하는 `AsyncIterable<T>` 또는 `ReadableStream<T>` source |
-| `ServerSentEvent` | 표준 SSE frame 값 |
-| `StreamProtocol<Frame>` | 사용자 정의 sequential media byte framing |
-| `StreamAdapter` | stream protocol 위에 적용하는 application 변환 |
-| `StreamCodec` | 선택적인 protocol/adapter 조합 |
-| `StreamResponseMetadata` | 열린 stream의 status, header, content type, request metadata |
-| `CursorPaginationInput` | cursor pagination 입력 |
-| `OffsetPaginationInput` | offset pagination 입력 |
-| `BothPaginationInput` | cursor 또는 offset pagination 입력 |
+| `StreamCall<Route>` | 스트림 호출 |
+| `RouteStreamItem<Route>` | 정확한 경로 스트림의 항목 타입 |
+| `OperationStreamItem<Source>` | API 식별자나 생성된 메서드에서 추출한 스트림 항목 타입 |
+| `OperationStream<T>` | 필요할 때 시작되는 단일 소비자 스트리밍 응답 객체 |
+| `StreamSource<T>` | 요청 데이터를 제공하는 `AsyncIterable<T>` 또는 `ReadableStream<T>` |
+| `ServerSentEvent` | 표준 SSE 프레임 값 |
+| `StreamProtocol<Frame>` | 사용자 정의 순차형 미디어 프레임 분리 |
+| `StreamAdapter` | 스트림 프로토콜 위에 적용하는 애플리케이션 변환 |
+| `StreamCodec` | 선택적인 프로토콜/어댑터 조합 |
+| `StreamResponseMetadata` | 열린 스트림의 상태 코드, 헤더, 콘텐츠 타입, 요청 메타데이터 |
+| `CursorPaginationInput` | 커서 기반 페이지 조회 입력 |
+| `OffsetPaginationInput` | 오프셋 기반 페이지 조회 입력 |
+| `BothPaginationInput` | 커서 또는 오프셋 기반 페이지 조회 입력 |
 | `SortDirection` | `"asc" | "desc"` 타입과 런타임 상수 |
 
-Stream lifecycle, request source, SSE frame, protocol/adapter 계약과 codec
+스트림의 시작·종료 동작, 요청 데이터 공급, SSE 프레임, 프로토콜/어댑터 계약과 코덱
 설정은 [스트리밍 API](./streaming.md)에 정리되어 있습니다.
 
-`Components`, `Operations`, `Routes`는 생성된 전체 타입 map을 제공합니다.
+`Components`, `Operations`, `Routes`는 생성된 타입을 이름별로 모은 매핑을 제공합니다.

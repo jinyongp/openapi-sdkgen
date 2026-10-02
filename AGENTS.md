@@ -72,6 +72,12 @@ just agent npm-source-check
 
 ## Documentation commands
 
+Korean documentation uses natural Korean for general concepts in prose, headings,
+navigation, tables, example comments, and page UI. Exact code identifiers, commands,
+and literal values use inline code; product and standard names keep their official
+spelling. Review each Korean page as native writing, including particles and sentence
+structure, rather than translating isolated words.
+
 VitePress uses normal user-facing commands, not `scripts/agent` wrappers:
 
 ```txt

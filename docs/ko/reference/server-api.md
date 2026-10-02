@@ -1,21 +1,25 @@
 # 생성된 서버 API
 
-TypeScript server add-on은 `--with server`로 생성합니다. OpenAPI Webhook과
-Callback을 수신하기 위한 Fetch 기반 진입점을 제공합니다. HTTP listener,
-framework 연결, route mount, 인증 정책은 애플리케이션이 담당합니다.
+TypeScript 서버 확장은 `--with server`로 생성합니다. OpenAPI 웹훅과
+콜백을 수신하기 위한 Fetch 기반 진입점을 제공합니다. HTTP 서버 리스너,
+프레임워크 연결, 경로 연결, 인증 정책은 애플리케이션이 담당합니다.
 
-설정 흐름은 [Webhook과 Callback 수신](../guide/server.md)을 참고하세요.
+설정 흐름은 [웹훅과 콜백 수신](../guide/server.md)을 참고하세요.
 
-## Import 경로
+<span id="import-경로"></span>
 
-| Import 경로 | 용도 |
+## 모듈 경로
+
+| 모듈 경로 | 용도 |
 | --- | --- |
-| `./generated/api/server/webhooks` | Webhook router와 generated Webhook handler 타입 |
-| `./generated/api/server/callbacks` | Callback endpoint와 generated Callback handler 타입 |
+| `./generated/api/server/webhooks` | 웹훅 라우터와 생성된 웹훅 처리 함수 타입 |
+| `./generated/api/server/callbacks` | 콜백 엔드포인트와 생성된 콜백 처리 함수 타입 |
 
-## Webhook
+<span id="webhook"></span>
 
-### createWebhookRouter
+## 웹훅
+
+### `createWebhookRouter`
 
 ```ts
 import { createWebhookRouter } from "./generated/api/server/webhooks";
@@ -37,10 +41,10 @@ const router = createWebhookRouter(
 ```
 
 `createWebhookRouter(handlers, options)`는 `fetch(request)` 메서드를 가진
-Fetch 기반 router를 반환합니다. Generated `WebhookHandlers` 타입이 handler
-tree와 각 handler의 request/response contract를 결정합니다.
+Fetch 기반 라우터를 반환합니다. 생성된 `WebhookHandlers` 타입에 처리 함수의
+중첩 구조와 각 함수의 요청·응답 타입이 정의되어 있습니다.
 
-### WebhookRouterOptions
+### `WebhookRouterOptions`
 
 ```ts
 interface WebhookRouterOptions {
@@ -53,22 +57,24 @@ interface WebhookRouterOptions {
 }
 ```
 
-- `routes`: generated Webhook identity를 host-owned path에 연결합니다.
-- `authenticate`: inbound request를 host가 허용하거나 거부합니다.
-- `codecs`: 선언된 custom complete media value를 처리합니다.
-- `streamCodecs`: media type별 inbound sequential protocol/adapter를 설정합니다.
-- `maxBodyBytes`: complete inbound request body 하나의 전체 크기를 제한합니다.
-  기본값은 8 MiB입니다. JSON, text, binary, URL-encoded, multipart, custom complete
-  media, complete sequential body가 실제 byte limit을 넘으면 `413 Payload Too Large`를
+- `routes`: 생성된 웹훅 식별자를 애플리케이션이 정한 경로에 연결합니다.
+- `authenticate`: 수신 요청을 호스트가 허용하거나 거부합니다.
+- `codecs`: 선언된 사용자 정의 미디어 전체 값을 처리합니다.
+- `streamCodecs`: 미디어 타입별 수신 순차형 프로토콜/어댑터를 설정합니다.
+- `maxBodyBytes`: 전체 수신 요청 본문 하나의 전체 크기를 제한합니다.
+  기본값은 8 MiB입니다. JSON, 텍스트, 바이너리, URL 인코딩 폼, 멀티파트, 사용자 정의
+  미디어, 전체 데이터를 모은 순차형 본문이 크기 제한을 넘으면 `413 Payload Too Large`를
   반환합니다. `Content-Length`는 조기 거부에만 사용합니다.
-- `maxStreamFrameBytes`: adaptation 전 inbound wire frame 하나의 크기를 제한합니다.
-  Streaming request body에는 `maxBodyBytes` 전체 제한을 적용하지 않습니다.
+- `maxStreamFrameBytes`: 애플리케이션 값으로 변환하기 전 수신 프레임 하나의 크기를 제한합니다.
+  스트리밍 요청 본문에는 `maxBodyBytes` 전체 제한을 적용하지 않습니다.
 
-Stream codec 타입과 처리 순서는 [스트리밍 API](./streaming.md)를 참고하세요.
+스트림 코덱 타입과 처리 순서는 [스트리밍 API](./streaming.md)를 참고하세요.
 
-## Callback
+<span id="callback"></span>
 
-### createCallbackHandlers
+## 콜백
+
+### `createCallbackHandlers`
 
 ```ts
 import { createCallbackHandlers } from "./generated/api/server/callbacks";
@@ -88,19 +94,19 @@ const callbacks = createCallbackHandlers({
 });
 ```
 
-`createCallbackHandlers(handlers, options?)`는 generated Fetch endpoint를
-반환합니다. Callback URL expression은 애플리케이션이 소유합니다. Host가
-OpenAPI Callback에 대응하는 실제 URL/path에 endpoint를 mount합니다.
+`createCallbackHandlers(handlers, options?)`는 생성된 Fetch 엔드포인트를
+반환합니다. 콜백 URL을 결정하는 표현식은 OpenAPI 문서에 선언합니다.
+애플리케이션에서 실제 수신 URL과 경로를 정하고 해당 엔드포인트를 연결합니다.
 
-Generated Callback identity는 상황에 따라 operation ID, exact route,
-component Callback identity 기준으로 제공됩니다.
+생성된 콜백 식별자는 상황에 따라 API 식별자, 정확한 경로,
+구성 요소의 콜백 식별자 기준으로 제공됩니다.
 
-### CallbackHandlerOptions
+### `CallbackHandlerOptions`
 
 ```ts
 interface CallbackHandlerOptions {
   readonly pathParams?: {
-    // generated callback별 path parameter 값
+    // 생성된 콜백별 경로 매개변수 값
   };
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
@@ -110,25 +116,26 @@ interface CallbackHandlerOptions {
 }
 ```
 
-`maxBodyBytes`, `streamCodecs`, `maxStreamFrameBytes`는 Webhook과 같은
-inbound body/stream 모델을 사용합니다. [스트리밍 API](./streaming.md)를 참고하세요.
+`maxBodyBytes`, `streamCodecs`, `maxStreamFrameBytes`는 웹훅과 같은
+수신 본문·스트림 모델을 사용합니다. [스트리밍 API](./streaming.md)를 참고하세요.
 
 ## 인증
 
-Generated server 진입점은 OpenAPI security candidate를 host-owned
-`authenticate` 함수에 제공합니다. Credential 검증 방식은 host가 결정하며,
+생성된 서버 진입점은 OpenAPI 인증 후보를 애플리케이션이 관리하는
+`authenticate` 함수에 제공합니다. 인증 정보 검증 방식은 호스트가 결정하며,
 요청을 거부할 때 `Response`를 반환할 수 있습니다.
 
-Generated code는 network listener를 만들거나 framework의 authentication/session
-시스템을 선택하지 않습니다.
+HTTP 서버와 프레임워크의 인증·세션 시스템은 애플리케이션에서 구성합니다.
 
-## Framework 연결
+<span id="framework-연결"></span>
 
-Framework adapter는 Fetch request/response semantics를 보존하면 됩니다.
+## 프레임워크 연결
+
+프레임워크 어댑터는 Fetch 요청·응답 동작을 보존하면 됩니다.
 
 ```ts
 const response = await router.fetch(request);
 ```
 
-Router mount, framework request를 Fetch `Request`로 변환하는 작업, 결과
+라우터 연결, 프레임워크 요청을 Fetch `Request`로 변환하는 작업, 결과
 Fetch `Response` 반환은 애플리케이션이 담당합니다.

@@ -13,7 +13,7 @@ export const playgroundExamples: readonly PlaygroundExample[] = [
     title: { en: "Todo API", ko: "Todo API" },
     description: {
       en: "Basic operations, parameters, JSON bodies, and typed responses.",
-      ko: "기본 operation, parameter, JSON body, typed response를 확인합니다.",
+      ko: "기본 API 호출, 매개변수, JSON 본문과 응답 타입을 확인합니다.",
     },
     document: `{
   "openapi": "3.0.4",
@@ -87,7 +87,7 @@ export const playgroundExamples: readonly PlaygroundExample[] = [
     title: { en: "JSON Schema 2020-12", ko: "JSON Schema 2020-12" },
     description: {
       en: "OpenAPI 3.1 unions, nullable values, const, and reusable schemas.",
-      ko: "OpenAPI 3.1의 union, nullable value, const, reusable schema를 확인합니다.",
+      ko: "OpenAPI 3.1에서 여러 스키마의 조합, 널 값 허용, 고정값과 스키마 재사용을 확인합니다.",
     },
     document: `{
   "openapi": "3.1.1",
@@ -147,10 +147,10 @@ export const playgroundExamples: readonly PlaygroundExample[] = [
   {
     id: "typed-sse",
     version: "3.2.0",
-    title: { en: "Typed SSE stream", ko: "Typed SSE stream" },
+    title: { en: "Typed SSE stream", ko: "타입을 검사하는 SSE 스트림" },
     description: {
       en: "Generate an OperationStream from itemSchema over standard SSE framing.",
-      ko: "표준 SSE framing 위의 itemSchema에서 OperationStream을 생성합니다.",
+      ko: "각 SSE 이벤트의 스키마에 따라 응답 타입을 지정하고 스트림을 생성합니다.",
     },
     document: `{
   "openapi": "3.2.0",

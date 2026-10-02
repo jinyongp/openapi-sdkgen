@@ -85,7 +85,7 @@ components:
           type: boolean
 ```
 
-두 operation에 안정적인 `operationId`를 주고, 요청과 응답 스키마를 선언했습니다.
+두 API에 안정적인 `operationId`를 주고, 요청과 응답 스키마를 선언했습니다.
 이 정보가 생성된 TypeScript 타입과 클라이언트 API의 기준이 됩니다.
 
 ## 3. 애플리케이션 소스 안에 생성
@@ -99,9 +99,9 @@ pnpm exec openapi-sdkgen generate \
   --output ./src/generated/api
 ```
 
-생성된 디렉터리는 client, type, source runtime을 포함한 일반 애플리케이션
+생성된 디렉터리는 클라이언트, 타입, 실행 코드를 포함한 일반 애플리케이션
 소스입니다. 기존 TypeScript 컴파일러나 번들러가 나머지 코드와 함께 빌드합니다.
-TypeScript 5.7.3 이상과 ES2022·DOM 라이브러리를 사용합니다. 자세한 요구 사항과
+TypeScript 5.7.3 이상과 `ES2022`·`DOM` 라이브러리를 사용합니다. 자세한 요구 사항과
 지원 버전은 [컴파일러 지원](../reference/typescript-types.md#컴파일러-지원)에서 확인할 수 있습니다.
 
 생성기가 소유한 파일은 CLI로 다시 생성합니다. OpenAPI 문서가 바뀌어 같은
@@ -110,7 +110,7 @@ TypeScript 5.7.3 이상과 ES2022·DOM 라이브러리를 사용합니다. 자�
 
 ## 4. 클라이언트 만들기
 
-[`createClient`](../reference/client-api.md#createclient)로 generated client를
+[`createClient`](../reference/client-api.md#createclient)로 생성된 클라이언트를
 만듭니다.
 
 ```ts
@@ -121,7 +121,7 @@ const api = createClient({
 });
 ```
 
-OpenAPI 문서에 사용할 수 있는 Server Object가 선언되어 있다면 [`baseURL`](../reference/client-api.md#clientoptions)을
+OpenAPI 문서에 사용할 수 있는 서버 객체가 선언되어 있다면 [`baseURL`](../reference/client-api.md#clientoptions)을
 생략할 때 그 서버 정의를 사용합니다.
 
 ::: details 컴파일된 코드를 Node ESM으로 실행할 때
@@ -146,7 +146,7 @@ const created = await api.todos.create({
 const todos = await api.todos.list();
 ```
 
-모든 operation은 HTTP method/path로도 호출할 수 있고, `operationId`가 있으면
+모든 API는 HTTP 메서드·경로로도 호출할 수 있고, `operationId`가 있으면
 [`$operations`](../reference/client-api.md#operations)에서도 사용할 수 있습니다.
 
 ```ts
@@ -155,5 +155,5 @@ await api.$operations.listTodos();
 ```
 
 다음으로 [SDK 생성과 검증](./generate.md)에서 증분 생성, [`--check`](../reference/cli.md#fresh-incremental-and-check-modes), 인증이
-필요한 입력, 원격 참조를 확인하세요. 응답, Link, stream 등 생성된 호출 API는
+필요한 입력, 원격 참조를 확인하세요. 응답, Link, 스트림 등 생성된 호출 API는
 [생성된 클라이언트 사용](./client.md)에서 이어서 설명합니다.
