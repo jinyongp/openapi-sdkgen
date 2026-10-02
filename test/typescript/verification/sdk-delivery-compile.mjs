@@ -1,6 +1,7 @@
 // The pinned native compiler has no JS compiler-host API. Keep one generated
 // tree, temporarily remove only @ts-nocheck, then restore every source by hash.
 import assert from "node:assert/strict";
+import { assertStrictCompilerOptions, assertCheckedSources } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -118,6 +119,7 @@ export function compileGenerated(configFile, maxRoots = 1000) {
     true,
     "Unchecked compilation cannot produce verification evidence",
   );
+  assertStrictCompilerOptions(options);
   const sourceRoot = fs.realpathSync(path.resolve(path.dirname(absolute), options.rootDir));
   assert(
     sourceRoot.startsWith(path.join(root, ".tmp") + path.sep),
@@ -162,6 +164,7 @@ export function compileGenerated(configFile, maxRoots = 1000) {
       assert.equal(hash(original), entry.original, "Generated source changed before compilation");
       replaceAtomic(filename, original.replaceAll(directive, ""), journal.id);
     }
+    assertCheckedSources(files);
     // A successful strict program checks its resolved imports as well as roots.
     // Record the compiler's actual file list and schedule only uncovered sources.
     // This avoids repeatedly checking the whole SDK through resource imports.

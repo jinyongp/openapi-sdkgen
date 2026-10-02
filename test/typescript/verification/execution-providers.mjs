@@ -7,7 +7,8 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { inspectGenerated, sha256 } from "./catalog.mjs";
+import { inspectGenerated, sha256, loadCatalog } from "./catalog.mjs";
+import { strictCompilerOptions, assertCheckedSources } from "./strict-options.mjs";
 import { verifyResourceMembership } from "./resource-membership.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -34,7 +35,8 @@ const run = (label, arguments_) => {
   return result.stdout ?? "";
 };
 const inventories = {};
-for (const fixture of [
+const checkedFiles = [];
+for (const fixture of new Set([
   "lifecycle",
   "bundle-isolation",
   "baseline-oas31",
@@ -43,7 +45,10 @@ for (const fixture of [
   "selection-public",
   "selection-links",
   "discriminator-dependencies",
-]) {
+  ...loadCatalog()
+    .local.filter((entry) => entry.profiles.includes("conformance") && !entry.expectedFailure)
+    .map((entry) => entry.output),
+])) {
   const generated = path.join(root, "test/typescript/fixtures/generated", fixture);
   const inventory = inspectGenerated(generated);
   inventories[fixture] = inventory.treeSha256;
@@ -52,6 +57,7 @@ for (const fixture of [
       path.join(output, "source", fixture, filename),
       fs.readFileSync(path.join(generated, filename), "utf8").replaceAll("// @ts-nocheck\n", ""),
     );
+    checkedFiles.push(path.join(output, "source", fixture, filename));
   }
 }
 const witness = `
@@ -132,6 +138,7 @@ write(
 );
 write(path.join(output, "package.json"), '{"type":"module"}\n');
 const options = {
+  ...strictCompilerOptions,
   target: "ES2022",
   module: "NodeNext",
   moduleResolution: "NodeNext",
@@ -157,6 +164,7 @@ write(
     include: ["source/**/*.ts"],
   }),
 );
+assertCheckedSources(checkedFiles);
 run("source-and-declaration-emit", [compiler, "--project", path.join(output, "emit.json")]);
 write(path.join(output, "consumer.ts"), witness.replaceAll('from "./', 'from "./declarations/'));
 write(

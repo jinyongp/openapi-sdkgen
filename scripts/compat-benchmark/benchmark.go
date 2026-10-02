@@ -24,6 +24,7 @@ import (
 	"openapi-sdkgen/internal/failure"
 	"openapi-sdkgen/internal/generator"
 	"openapi-sdkgen/internal/target/typescript"
+	"openapi-sdkgen/internal/tscheck"
 )
 
 const benchmarkSchemaVersion = 1
@@ -980,22 +981,6 @@ func strictTypecheck(directory, typescriptRoot string, timeout time.Duration) (r
 func writeTypecheckFiles(directory string) error {
 	files := map[string]string{
 		"package.json": "{\"type\":\"module\",\"private\":true}\n",
-		"tsconfig.json": `{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "skipLibCheck": false,
-    "noEmit": true
-  },
-  "include": ["**/*.ts"]
-}
-`,
 		"compat-benchmark.consumer.ts": `import { createClient, type Components, type Operations } from "./index.js"
 
 type Equal<Left, Right> =
@@ -1029,6 +1014,15 @@ export type CompatibilityBenchmarkConsumerProbe = {
 }
 `,
 	}
+	options := tscheck.CompilerOptions()
+	for key, value := range map[string]any{"target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "lib": []string{"ES2022", "DOM", "DOM.Iterable"}, "noEmit": true} {
+		options[key] = value
+	}
+	config, err := json.Marshal(map[string]any{"compilerOptions": options, "include": []string{"**/*.ts"}})
+	if err != nil {
+		return err
+	}
+	files["tsconfig.json"] = string(config)
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(directory, name), []byte(content), 0o644); err != nil {
 			return err

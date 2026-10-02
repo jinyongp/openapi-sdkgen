@@ -1,5 +1,6 @@
 // Compile the actual guide snippets against a freshly generated public SDK.
 import assert from "node:assert/strict";
+import { strictCompilerOptions } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -27,7 +28,7 @@ write("main.ts", actual(examples[0]));
 write("tasks.operations.ts", actual(examples[1]));
 write("features.ts", actual(examples[2]));
 write("dynamic.ts", common + actual(examples[3]));
-write("enumeration.ts", common + actual(examples[4]));
+write("enumeration.ts", actual(examples[4]));
 write("static.operations.ts", actual(examples[5]));
 write(
   "static-client.ts",
@@ -37,6 +38,7 @@ write(
   "tsconfig.json",
   JSON.stringify({
     compilerOptions: {
+      ...strictCompilerOptions,
       target: "ES2022",
       module: "NodeNext",
       moduleResolution: "NodeNext",

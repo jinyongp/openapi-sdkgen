@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { strictCompilerOptions } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -16,6 +17,7 @@ const compiler = path.resolve(
   JSON.parse(fs.readFileSync(packageFile, "utf8")).bin.tsc,
 );
 const options = {
+  ...strictCompilerOptions,
   target: "ES2022",
   module: "NodeNext",
   moduleResolution: "NodeNext",

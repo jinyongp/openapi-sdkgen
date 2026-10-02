@@ -1,5 +1,6 @@
 // Generate and verify the real public SDK before measuring its execution dependencies.
 import assert from "node:assert/strict";
+import { strictCompilerOptions } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
@@ -211,6 +212,7 @@ try {
       "The actual generator does not yet emit the public selective entry",
     );
     const options = {
+      ...strictCompilerOptions,
       target: "ES2022",
       module: "NodeNext",
       moduleResolution: "NodeNext",

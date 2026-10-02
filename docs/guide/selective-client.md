@@ -84,6 +84,7 @@ const api = createClient({
 });
 
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
+console.log(tasks);
 await api.$routes["GET /health"]();
 ```
 
@@ -124,6 +125,7 @@ import tasks from "./tasks.operations.js";
 const api = createClient({
   operations: await loadOperations([tasks, routes["GET /health"]]),
 });
+await api.$operations.listTasks({ query: { limit: 20 } });
 ```
 
 Nested arrays and objects are composed by value, so spreading a feature array is
@@ -173,12 +175,15 @@ Import the opt-in names-only entry for enumeration and filtering:
 
 ```ts
 import { routes as allRoutes } from "./generated/api/selective/all.js";
+import { createClient, loadOperations } from "./generated/api/selective/index.js";
 
 const taskRoutes = Object.entries(allRoutes)
   .filter(([route]) => route.startsWith("GET /tasks"))
   .map(([, operation]) => operation);
 
 const preparedTasks = await loadOperations(taskRoutes);
+const api = createClient({ operations: preparedTasks });
+await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
 `all.js` adds the names to the downloaded code, but does not import every

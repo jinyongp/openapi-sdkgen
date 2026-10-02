@@ -20,6 +20,13 @@ source "$SDKGEN_COMPAT_ROOT/scripts/agent/lib.sh"
 ts_node node "$SDKGEN_COMPAT_TSC_PATH" "$@"
 EOF
 chmod 700 "$compiler"
+scale_inputs="$(mktemp -d "$ROOT/.tmp/typescript-compat-scale.XXXXXX")"
+trap 'rm -f "$compiler"; rm -r "$scale_inputs"' EXIT
+ts_node node --input-type=module - "$scale_inputs" <<'EOF'
+import fs from "node:fs";
+import { sdkDeliveryDocument } from "./verification/sdk-delivery-fixture.mjs";
+for (const count of [100, 1000]) fs.writeFileSync(`${process.argv[2]}/${count}.json`, JSON.stringify(sdkDeliveryDocument(count)));
+EOF
 skip_build=0
 for version in "${versions[@]}"; do
   case "$version" in
@@ -55,5 +62,16 @@ for version in "${versions[@]}"; do
   SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
     agent_run "TypeScript $version named-only error codes and detail models" \
     "$ROOT/scripts/agent/generate-check" test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
+  for count in 100 1000; do
+    SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" \
+      agent_run "TypeScript $version strict $count API SDK" \
+      "$ROOT/scripts/agent/generate-check" "$scale_inputs/$count.json"
+  done
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler \
+    agent_run "TypeScript $version Bundler client and server" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/support-gaps/oas32-normative.json typescript -- --with server
+  SDKGEN_GENERATE_CHECK_SKIP_BUILD=1 SDKGEN_GENERATE_CHECK_TSC_BIN="$compiler" SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler \
+    agent_run "TypeScript $version Bundler named clients and metadata" \
+    "$ROOT/scripts/agent/generate-check" test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
 done
 agent_note "ok TypeScript consumer compatibility"

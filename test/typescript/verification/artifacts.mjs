@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { strictCompilerOptions } from "./strict-options.mjs";
 import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
@@ -78,6 +79,7 @@ report.harnessSha256 = Object.fromEntries(
 const save = () => writeFileSync(resultPath, JSON.stringify(report, null, 2) + "\n");
 const tsc = resolve(repositoryRoot, "test/typescript/node_modules/typescript/lib/tsc.js");
 const baseOptions = {
+  ...strictCompilerOptions,
   target: "ES2022",
   module: "NodeNext",
   moduleResolution: "NodeNext",

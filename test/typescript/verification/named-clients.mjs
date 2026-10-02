@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { strictCompilerOptions, assertCheckedSources } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -169,12 +170,14 @@ function walk(dir) {
 walk(sdk);
 for (const file of sourceFiles)
   write(file, fs.readFileSync(file, "utf8").replace(/^\/\/ @ts-nocheck\r?\n/gm, ""));
+assertCheckedSources(sourceFiles);
 const javascript = path.join(directory, "javascript");
 write(
   path.join(directory, "tsconfig.json"),
   JSON.stringify(
     {
       compilerOptions: {
+        ...strictCompilerOptions,
         target: "ES2022",
         module: "NodeNext",
         moduleResolution: "NodeNext",

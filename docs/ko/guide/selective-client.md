@@ -82,6 +82,7 @@ const api = createClient({
 });
 
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
+console.log(tasks);
 await api.$routes["GET /health"]();
 ```
 
@@ -122,6 +123,7 @@ import tasks from "./tasks.operations.js";
 const api = createClient({
   operations: await loadOperations([tasks, routes["GET /health"]]),
 });
+await api.$operations.listTasks({ query: { limit: 20 } });
 ```
 
 중첩된 배열과 객체도 그대로 전달할 수 있으므로, 기능별 배열을 전개 문법(`...`)으로
@@ -171,12 +173,15 @@ await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
 
 ```ts
 import { routes as allRoutes } from "./generated/api/selective/all.js";
+import { createClient, loadOperations } from "./generated/api/selective/index.js";
 
 const taskRoutes = Object.entries(allRoutes)
   .filter(([route]) => route.startsWith("GET /tasks"))
   .map(([, operation]) => operation);
 
 const preparedTasks = await loadOperations(taskRoutes);
+const api = createClient({ operations: preparedTasks });
+await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
 `all.js`를 사용하면 이름 목록의 전송 비용이 추가되지만 모든 API 구현을 가져오지는

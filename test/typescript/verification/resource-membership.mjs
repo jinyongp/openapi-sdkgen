@@ -1,5 +1,6 @@
 // Exercise the actual generated member-selection type without loading unrelated SDK leaves.
 import assert from "node:assert/strict";
+import { strictCompilerOptions } from "./strict-options.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -115,6 +116,7 @@ export function verifyResourceMembership(generatedTypes, outputDirectory) {
       config,
       JSON.stringify({
         compilerOptions: {
+          ...strictCompilerOptions,
           strict: true,
           noEmit: true,
           skipLibCheck: false,
@@ -193,10 +195,10 @@ type Routes = ${routes};
 interface Group { ${fields} }
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type Assert<T extends true> = T;
-type Required = Assert<Equal<GuaranteedSelection<Group, Routes>, Routes>>;
-type Optional = Assert<Equal<GuaranteedSelection<Partial<Group>, Routes>, never>>;
-type Array = Assert<Equal<GuaranteedSelection<Group[keyof Group][], Routes>, never>>;
-type Candidates = Assert<Equal<PossibleSelection<Partial<Group>, Routes>, Routes>>;
+export type Required = Assert<Equal<GuaranteedSelection<Group, Routes>, Routes>>;
+export type Optional = Assert<Equal<GuaranteedSelection<Partial<Group>, Routes>, never>>;
+export type Array = Assert<Equal<GuaranteedSelection<Group[keyof Group][], Routes>, never>>;
+export type Candidates = Assert<Equal<PossibleSelection<Partial<Group>, Routes>, Routes>>;
 `,
     );
     assert.equal(dense.status, 0, dense.diagnostics);
