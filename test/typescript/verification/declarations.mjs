@@ -200,7 +200,10 @@ export function checkFiles(inputs, diagnosticLimit = 200) {
   result.scanMillis = performance.now() - started;
   result.inputSha256 = hash.digest("hex");
   result.diagnostics.sort(
-    (a, b) => a.file.localeCompare(b.file) || a.offset - b.offset || a.rule.localeCompare(b.rule),
+    (a, b) =>
+      (a.file > b.file) - (a.file < b.file) ||
+      a.offset - b.offset ||
+      (a.rule > b.rule) - (a.rule < b.rule),
   );
   result.ok = result.errors === 0 && Object.keys(result.violations).length === 0;
   return result;
@@ -208,22 +211,19 @@ export function checkFiles(inputs, diagnosticLimit = 200) {
 
 export function main(args) {
   const files = [];
+  const sources = [];
   let json;
+  let input = "<input>";
+  const started = performance.now();
   try {
     for (let index = 0; index < args.length; index += 2) {
       const [option, value] = args.slice(index, index + 2);
       assert.ok(value, `missing value: ${option}`);
       switch (option) {
         case "--runtime":
-          files.push(...sourceFiles(value));
-          break;
         case "--generated":
-          files.push(...generatedFiles(value));
-          break;
         case "--files": {
-          const list = JSON.parse(readFileSync(value, "utf8"));
-          assert.ok(Array.isArray(list), "invalid TypeScript input list");
-          files.push(...list);
+          sources.push([option, value]);
           break;
         }
         case "--json":
@@ -234,7 +234,20 @@ export function main(args) {
           throw new Error(`unknown declaration option: ${option}`);
       }
     }
+    for (const [option, value] of sources) {
+      input = value;
+      if (option === "--runtime") files.push(...sourceFiles(value));
+      else if (option === "--generated") files.push(...generatedFiles(value));
+      else {
+        const list = JSON.parse(readFileSync(value, "utf8"));
+        assert.ok(Array.isArray(list), "invalid TypeScript input list");
+        files.push(...list);
+      }
+    }
+    const inventoryMillis = performance.now() - started;
     const result = checkFiles(files);
+    result.inventoryMillis = inventoryMillis;
+    result.toolMillis = performance.now() - started;
     if (json) writeFileSync(json, JSON.stringify(result, null, 2) + "\n");
     for (const item of result.diagnostics)
       console.error(
@@ -246,6 +259,37 @@ export function main(args) {
     );
     return result.ok ? 0 : 1;
   } catch (error) {
+    if (json) {
+      const report = {
+        version: 1,
+        parser: `typescript-${ts.version}`,
+        rulesVersion: 1,
+        node: process.version,
+        files: 0,
+        bytes: 0,
+        violations: {},
+        errors: 1,
+        exceptions: 0,
+        truncated: 0,
+        ok: false,
+        diagnostics: [
+          {
+            file: input,
+            rule: "input-error",
+            name: "<input>",
+            line: 0,
+            column: 0,
+            offset: 0,
+            message: error.message,
+          },
+        ],
+      };
+      try {
+        writeFileSync(json, JSON.stringify(report, null, 2) + "\n");
+      } catch (outputError) {
+        console.error(`declaration report error: ${outputError.message}`);
+      }
+    }
     console.error(`declaration input error: ${error.message}`);
     return 2;
   }

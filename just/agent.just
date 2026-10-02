@@ -138,6 +138,9 @@ ts-declarations-test:
 ts-declarations-options:
     bash ./scripts/agent/ts-declarations-options
 
+ts-declarations-benchmark report='.tmp/declaration-benchmark/report.json':
+    bash ./scripts/agent/ts-declarations-benchmark {{quote(report)}}
+
 ts-typecheck:
     ./scripts/agent/ts-typecheck
 

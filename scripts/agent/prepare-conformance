@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+bash "$ROOT/scripts/agent/ts-declarations"
 "$ROOT/scripts/agent/build"
 agent_run "generate catalog conformance fixtures" ts_node node \
   "$TYPESCRIPT_ROOT/verification/prepare-fixtures.mjs" "$ROOT/.tmp/bin/openapi-sdkgen"
+agent_run "TypeScript declaration option fixtures" ts_node node \
+  "$TYPESCRIPT_ROOT/verification/prepare-declarations.mjs" "$ROOT/.tmp/bin/openapi-sdkgen"

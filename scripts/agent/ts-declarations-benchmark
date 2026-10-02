@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
+report="${1:-$ROOT/.tmp/declaration-benchmark/report.json}"
+[[ "$report" == /* ]] || report="$ROOT/$report"
+mkdir -p "$(dirname "$report")"
+bash "$ROOT/scripts/agent/prepare-conformance"
+build_started="$(date +%s%N)"
+"$ROOT/scripts/agent/build"
+export SDKGEN_DECLARATION_BUILD_MILLIS="$(( ($(date +%s%N) - build_started) / 1000000 ))"
+agent_run "TypeScript declaration benchmark" ts_node node \
+  "$TYPESCRIPT_ROOT/verification/declarations-benchmark.mjs" "$ROOT/.tmp/bin/openapi-sdkgen" "$report"

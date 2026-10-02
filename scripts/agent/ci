@@ -7,6 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh
 "$ROOT/scripts/agent/mod-verify"
 "$ROOT/scripts/agent/ts-fmt-check"
 "$ROOT/scripts/agent/ts-lint"
+bash "$ROOT/scripts/agent/ts-declarations-test"
 "$ROOT/scripts/agent/generate-check-test"
 "$ROOT/scripts/agent/ts-compat"
 "$ROOT/scripts/agent/coverage"

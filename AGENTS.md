@@ -50,6 +50,10 @@ just agent ts-fmt
 just agent ts-fmt-check
 just agent ts-lint
 just agent ts-typecheck
+just agent ts-declarations [--runtime DIRECTORY|--generated DIRECTORY|--files LIST_JSON] [--json REPORT_JSON]
+just agent ts-declarations-test
+just agent ts-declarations-options
+just agent ts-declarations-benchmark [REPORT_JSON]
 just agent ts-compat [all|5.7.3|5.9.3|6.0.3|7.0.2]
 just agent ts-test
 just agent runtime-delivery-check [BASELINE_COMMIT]

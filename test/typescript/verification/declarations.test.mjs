@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { inspectSource, checkFiles, generatedFiles } from "./declarations.mjs";
 import { repositoryRoot, sha256 } from "./catalog.mjs";
+import { prepareFixtures } from "./prepare-fixtures.mjs";
 
 const cases = JSON.parse(
   readFileSync(new URL("./declaration-cases.json", import.meta.url), "utf8"),
@@ -97,6 +98,18 @@ test("actual wrapper refuses incomplete, malformed and inaccessible inputs", () 
   });
 });
 
+test("actual wrapper writes operational errors to JSON after input options", () => {
+  workspace((root) => {
+    const report = resolve(root, "report.json");
+    assert.equal(wrapper(["--generated", root, "--json", report]).status, 2);
+    const data = JSON.parse(readFileSync(report, "utf8"));
+    assert.equal(data.ok, false);
+    assert.equal(data.errors, 1);
+    assert.equal(data.diagnostics[0].rule, "input-error");
+    assert.equal(data.diagnostics[0].file, root);
+  });
+});
+
 test("manifest validates ownership, byte hashes, canonical paths and symlinks", () => {
   workspace((root) => {
     manifest(root);
@@ -138,5 +151,23 @@ test("diagnostic bounds do not weaken failure and reports sort deterministically
     );
     assert.deepEqual(checkFiles([file]).diagnostics, checkFiles([file]).diagnostics);
     assert.throws(() => checkFiles([file, file]), /duplicate/);
+  });
+});
+
+test("fixture preparation propagates missing declarations and syntax/input failures", () => {
+  workspace((root) => {
+    const binary = resolve(root, "generator.mjs");
+    for (const [source, invalidManifest, expected] of [
+      ["export const value = 1;", false, /variable-type/],
+      ["export const value: = 1;", false, /parse-error/],
+      ["export const value: number = 1;", true, /hash mismatch/],
+    ]) {
+      writeFileSync(
+        binary,
+        `#!/usr/bin/env node\nimport fs from 'node:fs';\nimport crypto from 'node:crypto';\nconst output=process.argv[process.argv.indexOf('--output')+1];\nfs.mkdirSync(output,{recursive:true});\nconst source=${JSON.stringify(source)};\nfs.writeFileSync(output+'/value.ts',source);\nconst digest=${invalidManifest ? "'0'.repeat(64)" : "crypto.createHash('sha256').update(source).digest('hex')"};\nfs.writeFileSync(output+'/.openapi-sdkgen-manifest.json',JSON.stringify({version:1,files:{'value.ts':digest}}));\n`,
+        { mode: 0o700 },
+      );
+      assert.throws(() => prepareFixtures(binary, resolve(root, "generated")), expected);
+    }
   });
 });
