@@ -1,0 +1,512 @@
+{
+  "schemaVersion": 2,
+  "manifestSha256": "d7992310296940b3a552706745480eee3ad5b4baa88517e1953d3a940d1d9f1e",
+  "featureCatalog": [
+    "operation.query",
+    "parameter.querystring",
+    "document.media-types",
+    "media.item-schema",
+    "media.jsonl",
+    "media.json-seq",
+    "media.multipart-positional-encoding",
+    "schema.discriminator-default-mapping",
+    "security.oauth2-metadata",
+    "security.device-authorization",
+    "security.deprecated",
+    "security.requirement-uri",
+    "schema.xml-node-type",
+    "oas.version.3.0",
+    "oas.version.3.1",
+    "oas.version.3.2",
+    "reference.local",
+    "reference.external",
+    "operation.request-body",
+    "operation.required-request-body",
+    "operation.callbacks",
+    "operation.servers",
+    "document.webhooks",
+    "response.links",
+    "media.multipart",
+    "media.url-encoded",
+    "media.binary",
+    "media.encoding",
+    "security.api-key",
+    "security.http",
+    "security.oauth2",
+    "security.openid-connect",
+    "schema.allOf",
+    "schema.oneOf",
+    "schema.anyOf",
+    "schema.not",
+    "schema.discriminator",
+    "schema.additional-properties.boolean",
+    "schema.additional-properties.schema",
+    "schema.type-array",
+    "schema.const",
+    "schema.null-type",
+    "schema.prefix-items",
+    "schema.unevaluated-properties"
+  ],
+  "documents": [
+    {
+      "generationAddons": [
+        "metadata"
+      ],
+      "generationScope": "selected",
+      "generationSelection": {
+        "fixtureSha256": "3fa81fc093806e2e80ccf171e21e51263d2398d136c6051b6bc82796433d08ed",
+        "runtimeProbeSha256": "04b265484019750a5b12c5723b33ff3bdcb4e13306d363a6db47c73f4cdeb587",
+        "requested": {
+          "routes": [
+            "GET /users/$count"
+          ]
+        },
+        "routes": [
+          "GET /users/$count"
+        ],
+        "dependencyRoutes": [],
+        "excludedOperations": 29580,
+        "runtime": {
+          "status": "pass",
+          "detail": "pass: Graph count selected loadOperations, typed scalar/raw responses and malformed-body rejection with mock Fetch",
+          "durationMillis": 381.193498
+        }
+      },
+      "evidenceKind": "real-document",
+      "id": "microsoft-graph-beta",
+      "cohort": "regression",
+      "input": "microsoft-graph-beta/openapi.yaml",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "openapiVersion": "3.0.4",
+      "discoveryComplete": true,
+      "diagnostics": {
+        "errors": 0,
+        "warnings": 0
+      },
+      "findings": [],
+      "operationRetention": {
+        "available": true,
+        "total": 29581,
+        "retained": 29581,
+        "omitted": 0,
+        "unresolvedOmissions": 0,
+        "rate": 1
+      },
+      "operationEmission": {
+        "available": true,
+        "count": 1,
+        "operationOmissions": 0,
+        "helperOmissions": 0
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "features": [
+        "oas.version.3.0",
+        "reference.local",
+        "operation.request-body",
+        "operation.required-request-body",
+        "media.binary",
+        "schema.allOf",
+        "schema.oneOf",
+        "schema.anyOf",
+        "schema.discriminator",
+        "schema.additional-properties.schema"
+      ],
+      "generation": {
+        "metadataBytes": 64016169,
+        "schemaArtifactCount": 7,
+        "status": "pass",
+        "artifactCount": 65,
+        "artifactBytes": 64428040,
+        "durationMillis": 9826.756622
+      },
+      "typecheck": {
+        "status": "pass",
+        "durationMillis": 653.099251
+      },
+      "documentSuccess": true,
+      "capabilityAdjustedSuccess": true,
+      "coverage": [
+        {
+          "phase": "references",
+          "analyzer": "source.local-references",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.operation-identity-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.path-parameter-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "openapi.security-requirement-conformance",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.compatibility",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "decoded-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.reserved-extensions",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-features",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            },
+            {
+              "name": "version-identity",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "openapi",
+          "analyzer": "source.version-identity",
+          "status": "complete",
+          "location": {
+            "source": "$root",
+            "pointer": "#"
+          },
+          "prerequisites": [
+            {
+              "name": "effective-source",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.entry-surface",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.extensions",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.links",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.lowering",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.modules",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.prepare",
+          "status": "complete",
+          "target": "typescript",
+          "prerequisites": [
+            {
+              "name": "compiler-document",
+              "available": true
+            }
+          ]
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.resources",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.selection",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.streams",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.support",
+          "status": "complete",
+          "target": "typescript"
+        },
+        {
+          "phase": "target",
+          "analyzer": "target.visibility",
+          "status": "complete",
+          "target": "typescript"
+        }
+      ],
+      "skippedPhases": []
+    }
+  ],
+  "cohorts": [
+    {
+      "selectedDocuments": 1,
+      "selectedSuccessfulDocuments": 1,
+      "cohort": "regression",
+      "documents": 0,
+      "successfulDocuments": 0,
+      "documentSuccessRate": null,
+      "capabilityAdjustedDocuments": 0,
+      "capabilityAdjustedSuccessRate": null,
+      "discoveryComplete": 0,
+      "generatedDocuments": 0,
+      "typecheckedDocuments": 0,
+      "generatedVerificationRate": null,
+      "operations": {
+        "availableDocuments": 0,
+        "total": 0,
+        "retained": 0,
+        "omitted": 0,
+        "rate": null
+      },
+      "compatibility": {
+        "preserved": 0,
+        "rejected": 0,
+        "total": 0,
+        "rate": null,
+        "actions": {},
+        "rules": {}
+      },
+      "featureCoverage": {
+        "observed": 0,
+        "total": 44,
+        "rate": 0,
+        "missing": [
+          "operation.query",
+          "parameter.querystring",
+          "document.media-types",
+          "media.item-schema",
+          "media.jsonl",
+          "media.json-seq",
+          "media.multipart-positional-encoding",
+          "schema.discriminator-default-mapping",
+          "security.oauth2-metadata",
+          "security.device-authorization",
+          "security.deprecated",
+          "security.requirement-uri",
+          "schema.xml-node-type",
+          "oas.version.3.0",
+          "oas.version.3.1",
+          "oas.version.3.2",
+          "reference.local",
+          "reference.external",
+          "operation.request-body",
+          "operation.required-request-body",
+          "operation.callbacks",
+          "operation.servers",
+          "document.webhooks",
+          "response.links",
+          "media.multipart",
+          "media.url-encoded",
+          "media.binary",
+          "media.encoding",
+          "security.api-key",
+          "security.http",
+          "security.oauth2",
+          "security.openid-connect",
+          "schema.allOf",
+          "schema.oneOf",
+          "schema.anyOf",
+          "schema.not",
+          "schema.discriminator",
+          "schema.additional-properties.boolean",
+          "schema.additional-properties.schema",
+          "schema.type-array",
+          "schema.const",
+          "schema.null-type",
+          "schema.prefix-items",
+          "schema.unevaluated-properties"
+        ]
+      }
+    }
+  ],
+  "overall": {
+    "selectedDocuments": 1,
+    "selectedSuccessfulDocuments": 1,
+    "documents": 0,
+    "successfulDocuments": 0,
+    "documentSuccessRate": null,
+    "capabilityAdjustedDocuments": 0,
+    "capabilityAdjustedSuccessRate": null,
+    "discoveryComplete": 0,
+    "generatedDocuments": 0,
+    "typecheckedDocuments": 0,
+    "generatedVerificationRate": null,
+    "operations": {
+      "availableDocuments": 0,
+      "total": 0,
+      "retained": 0,
+      "omitted": 0,
+      "rate": null
+    },
+    "compatibility": {
+      "preserved": 0,
+      "rejected": 0,
+      "total": 0,
+      "rate": null,
+      "actions": {},
+      "rules": {}
+    },
+    "featureCoverage": {
+      "observed": 0,
+      "total": 44,
+      "rate": 0,
+      "missing": [
+        "operation.query",
+        "parameter.querystring",
+        "document.media-types",
+        "media.item-schema",
+        "media.jsonl",
+        "media.json-seq",
+        "media.multipart-positional-encoding",
+        "schema.discriminator-default-mapping",
+        "security.oauth2-metadata",
+        "security.device-authorization",
+        "security.deprecated",
+        "security.requirement-uri",
+        "schema.xml-node-type",
+        "oas.version.3.0",
+        "oas.version.3.1",
+        "oas.version.3.2",
+        "reference.local",
+        "reference.external",
+        "operation.request-body",
+        "operation.required-request-body",
+        "operation.callbacks",
+        "operation.servers",
+        "document.webhooks",
+        "response.links",
+        "media.multipart",
+        "media.url-encoded",
+        "media.binary",
+        "media.encoding",
+        "security.api-key",
+        "security.http",
+        "security.oauth2",
+        "security.openid-connect",
+        "schema.allOf",
+        "schema.oneOf",
+        "schema.anyOf",
+        "schema.not",
+        "schema.discriminator",
+        "schema.additional-properties.boolean",
+        "schema.additional-properties.schema",
+        "schema.type-array",
+        "schema.const",
+        "schema.null-type",
+        "schema.prefix-items",
+        "schema.unevaluated-properties"
+      ]
+    }
+  },
+  "measurement": {
+    "typescriptVersion": "7.0.2",
+    "sourceCommit": "650bb25f7e5f6eca2d1ee908dcba57a935d0aec8",
+    "sourceDirty": false,
+    "measuredAt": "2026-10-02T01:29:53Z",
+    "generationScope": "compile-prepare-write",
+    "samples": 1,
+    "os": "linux",
+    "architecture": "amd64",
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "goVersion": "go1.27.1"
+  },
+  "resources": {
+    "peakRssBytes": 2035298304
+  }
+}

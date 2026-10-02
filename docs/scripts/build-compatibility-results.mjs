@@ -147,7 +147,7 @@ export function publishCompatibilityDocuments(directory, outputDirectory) {
   }
 }
 
-export function readGraphSelection(directory, reportName = "graph-selected-results.json") {
+export function readGraphSelection(directory, reportName = "graph-selected-results.json", selectionName = "microsoft-graph-beta") {
   const report = JSON.parse(readFileSync(resolve(directory, reportName)));
   const manifestBytes = readFileSync(resolve(directory, "regression.json"));
   const manifest = JSON.parse(manifestBytes);
@@ -155,14 +155,14 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
   const selected = report.documents?.[0];
   const entry = manifest.corpora.find((item) => item.id === "microsoft-graph-beta");
   const selection = selected?.generationSelection;
-  const fixture = readFileSync(resolve(directory, "selections/microsoft-graph-beta.toml"));
-  const probe = readFileSync(resolve(directory, "selections/microsoft-graph-beta.mjs"));
+  const fixture = readFileSync(resolve(directory, `selections/${selectionName}.toml`));
+  const probe = readFileSync(resolve(directory, `selections/${selectionName}.mjs`));
   // This pinned route-only fixture uses a JSON-compatible array of basic strings.
   // Reject other forms instead of accepting an unverified selection policy.
   const policyArray = fixture.toString().match(/^routes\s*=\s*\[([\s\S]*?)^\]/m);
   if (!policyArray) throw new Error("Graph selection route policy is unavailable");
   const policyRoutes = [...new Set(JSON.parse(`[${policyArray[1].replace(/,\s*$/, "")}]`))].sort();
-  const expectedAddons = reportName === "graph-metadata-results.json" ? ["metadata"] : [];
+  const expectedAddons = ["graph-metadata-results.json", "graph-count-metadata-results.json"].includes(reportName) ? ["metadata"] : [];
   if (reportName !== "graph-selected-ci-results.json" &&
       JSON.stringify(selected?.generationAddons) !== JSON.stringify(expectedAddons)) {
     throw new Error("Graph selection metadata setting mismatch");
@@ -243,6 +243,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
   graph.metadata = readGraphSelection(sourceDirectory, "graph-metadata-results.json");
   graph.comparison = readMetadataComparison(sourceDirectory);
+  graph.count = readGraphSelection(sourceDirectory, "graph-count-results.json", "microsoft-graph-count");
+  graph.countMetadata = readGraphSelection(sourceDirectory, "graph-count-metadata-results.json", "microsoft-graph-count");
   const generatedDirectory = resolve(docsDirectory, ".vitepress/generated");
   const publicDirectory = resolve(docsDirectory, "public/compatibility-results");
   mkdirSync(generatedDirectory, { recursive: true });
@@ -251,7 +253,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
   copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
   copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
-  for (const name of ["graph-metadata-results.json", "metadata-comparison-results.json"]) {
+  for (const name of ["graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json"]) {
     copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
   }
   for (const id of corpusNames) {

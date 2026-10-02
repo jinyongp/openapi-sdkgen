@@ -18,7 +18,7 @@ function fixture(t) {
     }
   }
   mkdirSync(resolve(directory, "selections"));
-  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs"]) {
+  for (const name of ["graph-selected-results.json", "graph-selected-ci-results.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json", "selections/microsoft-graph-beta.toml", "selections/microsoft-graph-beta.mjs", "selections/microsoft-graph-count.toml", "selections/microsoft-graph-count.mjs"]) {
     copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
   }
   return directory;
@@ -86,6 +86,18 @@ function change(directory, name, mutate) {
   mutate(data);
   writeFileSync(path, JSON.stringify(data));
 }
+
+test("Graph count call evidence is bound to its own one-route policy and probe", (t) => {
+  const directory = fixture(t);
+  for (const name of ["graph-count-results.json", "graph-count-metadata-results.json"]) {
+    const data = readGraphSelection(directory, name, "microsoft-graph-count");
+    assert.deepEqual(data.selected.generationSelection.routes, ["GET /users/$count"]);
+    assert.equal(data.selected.generationSelection.runtime.status, "pass");
+    assert.throws(() => readGraphSelection(directory, name), /Graph selection/);
+  }
+  change(directory, "graph-count-results.json", report => report.documents[0].generationSelection.runtime.status = "fail");
+  assert.throws(() => readGraphSelection(directory, "graph-count-results.json", "microsoft-graph-count"), /Graph selection/);
+});
 
 test("a changed selection cannot retain a previous measurement", (t) => {
   const directory = fixture(t);

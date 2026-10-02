@@ -12,6 +12,7 @@ const labels = ko
   ? ["생성 범위", "호출 API", "파일", "용량", "생성 시간"]
   : ["Generated APIs", "API calls", "Files", "Size", "Generation time"];
 const date = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(data.measurement.measuredAt));
+const countDate = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(data.count.measurement.measuredAt));
 </script>
 
 <template>
@@ -42,6 +43,9 @@ const date = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZo
       <summary>{{ ko ? "선택한 경로와 측정 자료" : "Selected routes and measurement data" }}</summary>
       <p><a :href="data.sourceUrl">{{ ko ? "OpenAPI 원문" : "OpenAPI document" }}</a> · <a :href="withBase('/compatibility-results/graph-selected-results.json')">{{ ko ? "선택 SDK 결과 JSON" : "Selected SDK results JSON" }}</a></p>
       <p><a :href="withBase('/compatibility-results/graph-metadata-results.json')">{{ ko ? "원문 포함 결과 JSON" : "Source-included results JSON" }}</a> · <a :href="withBase('/compatibility-results/metadata-comparison-results.json')">{{ ko ? "네 표본 비교 JSON" : "Four-sample comparison JSON" }}</a></p>
+      <p v-if="ko"><code>GET /users/$count</code>: {{ countDate }} · 버전 <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>. 기본 SDK와 원문 포함 SDK 모두 타입 검사와 숫자 응답·잘못된 응답 처리의 모의 호출을 통과했습니다.</p>
+      <p v-else><code>GET /users/$count</code>: {{ countDate }} · Version <strong>{{ data.count.measurement.sourceCommit.slice(0, 7) }}</strong>. Both default and source-included SDKs passed typechecking and mock calls for numeric responses and malformed-body handling.</p>
+      <p><a :href="withBase('/compatibility-results/graph-count-results.json')">{{ ko ? "count 호출 결과 JSON" : "Count call results JSON" }}</a> · <a :href="withBase('/compatibility-results/graph-count-metadata-results.json')">{{ ko ? "원문 포함 count 호출 결과 JSON" : "Source-included count call results JSON" }}</a></p>
       <ul><li v-for="route in selected.generationSelection.routes" :key="route"><code>{{ route }}</code></li></ul>
       <p>{{ data.measurement.cpu }} · {{ data.measurement.os }}/{{ data.measurement.architecture }} · {{ ko ? "검증 최대 메모리" : "Verification peak RSS" }} {{ size(data.resources.peakRssBytes) }}</p>
       <p v-if="ko"><a :href="data.ci.ciRunUrl">GitHub Actions 검증</a> · 버전 <strong>{{ data.ci.measurement.sourceCommit.slice(0, 7) }}</strong>: 생성·타입 검사·모의 호출 통과. 생성 {{ time(data.ci.selected.generation.durationMillis) }}, 타입 검사 {{ time(data.ci.selected.typecheck.durationMillis) }} · <a :href="withBase('/compatibility-results/graph-selected-ci-results.json')">Actions 결과 JSON</a></p>
