@@ -1,0 +1,292 @@
+[
+  {
+    "name": "typed-variable",
+    "source": "const value: number = 1;",
+    "rules": []
+  },
+  {
+    "name": "missing-variable",
+    "source": "const value = 1;",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "multiple-variables",
+    "source": "let first: number = 1, second = 2;",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "const-assertion",
+    "source": "const value = 1 as const;",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "satisfies",
+    "source": "const value = 1 satisfies number;",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "typed-arrow",
+    "source": "const fn: (x: number) => number = (x: number): number => x;",
+    "rules": []
+  },
+  {
+    "name": "contextual-arrow",
+    "source": "const fn: (x: number) => number = x => x;",
+    "rules": ["parameter-type", "return-type"]
+  },
+  {
+    "name": "missing-function-parameter",
+    "source": "function fn(value): void {}",
+    "rules": ["parameter-type"]
+  },
+  {
+    "name": "missing-return",
+    "source": "function fn(value: number) { return value; }",
+    "rules": ["return-type"]
+  },
+  {
+    "name": "nested-callback",
+    "source": "function fn(): void { [1].map((value) => value); }",
+    "rules": ["parameter-type", "return-type"]
+  },
+  {
+    "name": "named-object",
+    "source": "interface Value { x: number } const value: Value = { x: 1 };",
+    "rules": []
+  },
+  {
+    "name": "inline-object",
+    "source": "const value: { x: number } = { x: 1 };",
+    "rules": ["named-object-type"]
+  },
+  {
+    "name": "inline-return",
+    "source": "function fn(): { x: number } { return { x: 1 }; }",
+    "rules": ["named-object-type"]
+  },
+  {
+    "name": "alias-object",
+    "source": "type Value = { x: number };",
+    "rules": []
+  },
+  {
+    "name": "destructuring",
+    "source": "interface Value { x: number } const { x }: Value = { x: 1 };",
+    "rules": []
+  },
+  {
+    "name": "missing-destructuring",
+    "source": "const { x } = { x: 1 };",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "nested-destructuring",
+    "source": "function fn({ x: { y } }): void {}",
+    "rules": ["parameter-type"]
+  },
+  {
+    "name": "array-destructuring",
+    "source": "const [first, second]: [number, number] = [1, 2];",
+    "rules": []
+  },
+  {
+    "name": "for-of",
+    "source": "for (const value of [1]) {}",
+    "rules": []
+  },
+  {
+    "name": "for-in",
+    "source": "for (const key in {}) {}",
+    "rules": []
+  },
+  {
+    "name": "for-inner-variable",
+    "source": "for (const value of [1]) { const copy = value; }",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "for-classic",
+    "source": "for (let value = 0; value < 1; value++) {}",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "catch-unknown",
+    "source": "try {} catch (error: unknown) {}",
+    "rules": []
+  },
+  {
+    "name": "catch-untyped",
+    "source": "try {} catch (error) {}",
+    "rules": ["catch-unknown"]
+  },
+  {
+    "name": "catch-any",
+    "source": "try {} catch (error: any) {}",
+    "rules": ["catch-unknown"]
+  },
+  {
+    "name": "catch-absent",
+    "source": "try {} catch {}",
+    "rules": []
+  },
+  {
+    "name": "getter-setter-constructor",
+    "source": "class Value { constructor(value: number) {} get value(): number { return 1; } set value(value: number) {} }",
+    "rules": []
+  },
+  {
+    "name": "missing-class-property",
+    "source": "class Value { value = 1; }",
+    "rules": ["property-type"]
+  },
+  {
+    "name": "missing-getter-return",
+    "source": "class Value { get value() { return 1; } }",
+    "rules": ["return-type"]
+  },
+  {
+    "name": "object-constructor-method",
+    "source": "const value: Object = { constructor() {} };",
+    "rules": ["return-type"]
+  },
+  {
+    "name": "default-rest",
+    "source": "function fn(value: number = 1, ...rest: number[]): void {}",
+    "rules": []
+  },
+  {
+    "name": "optional-parameter",
+    "source": "function fn(value?: number): void {}",
+    "rules": []
+  },
+  {
+    "name": "async",
+    "source": "async function fn(): Promise<number> { return 1; }",
+    "rules": []
+  },
+  {
+    "name": "generator",
+    "source": "function* fn(): Generator<number> { yield 1; }",
+    "rules": []
+  },
+  {
+    "name": "async-generator",
+    "source": "async function* fn(): AsyncGenerator<number> { yield 1; }",
+    "rules": []
+  },
+  {
+    "name": "type-predicate",
+    "source": "function fn(value: unknown): value is string { return typeof value === \"string\"; }",
+    "rules": []
+  },
+  {
+    "name": "assertion",
+    "source": "function fn(value: unknown): asserts value is string {}",
+    "rules": []
+  },
+  {
+    "name": "overload",
+    "source": "function fn(value: number): number; function fn(value: number): number { return value; }",
+    "rules": []
+  },
+  {
+    "name": "ambient",
+    "source": "declare function fn(value: number): number;",
+    "rules": []
+  },
+  {
+    "name": "abstract-accessor",
+    "source": "abstract class Value { abstract get value(): number; abstract set value(value: number); abstract method(x: number): string; }",
+    "rules": []
+  },
+  {
+    "name": "function-type",
+    "source": "type Fn = (value: number) => number;",
+    "rules": []
+  },
+  {
+    "name": "interface-signatures",
+    "source": "interface Value { (value: number): number; new(value: number): Value; method(value: number): number; }",
+    "rules": []
+  },
+  {
+    "name": "mapped-conditional",
+    "source": "type Map<T> = { [K in keyof T]?: T[K] extends string ? T[K] : never };",
+    "rules": []
+  },
+  {
+    "name": "mapped-variable",
+    "source": "declare const value: { -readonly [K in keyof Value]: Value[K] };",
+    "rules": []
+  },
+  {
+    "name": "unique-symbol",
+    "source": "declare const key: unique symbol;",
+    "rules": []
+  },
+  {
+    "name": "const-type-parameter",
+    "source": "function fn<const T>(value: T): T { return value; }",
+    "rules": []
+  },
+  {
+    "name": "template-type",
+    "source": "type Route<T extends string> = `GET ${T}`;",
+    "rules": []
+  },
+  {
+    "name": "comments-strings",
+    "source": "const value: string = \"const x = 1; function fn() {}\"; /* const omitted = 1; */",
+    "rules": []
+  },
+  {
+    "name": "unicode-crlf",
+    "source": "/* 한글 😀 */\r\nconst 값 = 1;\r\n",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "nocheck",
+    "source": "// @ts-nocheck\nconst value = 1;",
+    "rules": ["variable-type"]
+  },
+  {
+    "name": "parse-recovery",
+    "source": "const value: = 1;",
+    "rules": ["parse-error"]
+  },
+  {
+    "name": "missing-node",
+    "source": "function fn(: number): void {}",
+    "rules": ["parse-error"]
+  },
+  {
+    "name": "using",
+    "source": "using resource: Resource = acquire();",
+    "rules": []
+  },
+  {
+    "name": "await-using",
+    "source": "await using resource: Resource = acquire();",
+    "rules": []
+  },
+  {
+    "name": "import-attributes",
+    "source": "import data from \"file\" with { type: \"json\" };",
+    "rules": []
+  },
+  {
+    "name": "export-type",
+    "source": "export type { Value } from \"module\";",
+    "rules": []
+  },
+  {
+    "name": "export-type-star",
+    "source": "export type * from \"module\";",
+    "rules": []
+  },
+  {
+    "name": "auto-accessor",
+    "source": "class Value { accessor value: number = 1; }",
+    "rules": []
+  }
+]

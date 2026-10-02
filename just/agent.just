@@ -128,6 +128,13 @@ ts-fmt-check:
 ts-lint:
     ./scripts/agent/ts-lint
 
+[positional-arguments]
+ts-declarations *args:
+    bash ./scripts/agent/ts-declarations "$@"
+
+ts-declarations-test:
+    bash ./scripts/agent/ts-declarations-test
+
 ts-typecheck:
     ./scripts/agent/ts-typecheck
 
