@@ -171,7 +171,7 @@ func TestInspectConfigUsesInputSettingsAndExportsUsableSelection(t *testing.T) {
 func TestInspectSafeTableAndLosslessMachineOutputs(t *testing.T) {
 	id := "한글\x1b[31m\nname"
 	operation := compiler.InventoryOperation{Method: "GET", Path: "/한글/\"quoted\\path", Route: "GET /한글/\"quoted\\path", OperationID: &id, Summary: "line\n\x1b[31mtext", Tags: []string{"a\tb"}}
-	report := inspectReport{SchemaVersion: 1, Total: 1, Matched: 1, Operations: []inspectOperation{{operation}}}
+	report := inspectReport{SchemaVersion: 1, Total: 1, Matched: 1, Operations: []inspectOperation{{InventoryOperation: operation}}}
 	var table bytes.Buffer
 	if err := writeInspectReport(&table, report, "table"); err != nil {
 		t.Fatal(err)
@@ -253,5 +253,50 @@ func TestInspectHelpAliases(t *testing.T) {
 				t.Fatalf("help=%s", output)
 			}
 		})
+	}
+}
+
+func TestInspectTypeScriptUsesFullScopeBeforeFilteringWithoutEmission(t *testing.T) {
+	output, _ := captureCLIOutput(t)
+	inspectFixtureInput(t)
+	registries, err := newCLIRegistries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime := defaultGenerationRuntime
+	compile, prepare := runtime.compile, runtime.prepare
+	compiles, prepares := 0, 0
+	runtime.compile = func(input string, options compiler.CompileOptions) (compiler.Result, error) {
+		compiles++
+		return compile(input, options)
+	}
+	runtime.prepare = func(target generator.Target, compiled compiler.Result, options generator.Options) (generator.Preparation, error) {
+		prepares++
+		if len(compiled.Document.Operations) != 5 || options.Selection != nil || len(options.Addons()) != 0 {
+			t.Fatal("target scope was narrowed")
+		}
+		return prepare(target, compiled, options)
+	}
+	runtime.emit = func(generator.Target, generator.Plan) ([]generator.Artifact, error) {
+		t.Fatal("inspect emitted SDK")
+		return nil, nil
+	}
+	runtime.publish = func(string, []generator.Artifact, *artifactGeneration) error {
+		t.Fatal("inspect published SDK")
+		return nil
+	}
+	if err := runWithRegistries([]string{"inspect", "--input", "-", "--target", "typescript", "--operation", "listUsers", "--format", "json"}, runtime, registries); err != nil {
+		t.Fatal(err)
+	}
+	var report inspectReport
+	if err := json.Unmarshal(output.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if compiles != 1 || prepares != 1 || report.Total != 5 || report.Matched != 1 || report.Target != "typescript" || report.AnalysisScope != "full-document-client" {
+		t.Fatalf("report=%#v compiles=%d prepares=%d", report, compiles, prepares)
+	}
+	inspection := report.Operations[0].TypeScript
+	if inspection == nil || inspection.ResourceCall == nil || !strings.Contains(*inspection.ResourceCall, "api.users.list(") || !inspection.Routes || !inspection.Operations {
+		t.Fatalf("inspection=%#v", inspection)
 	}
 }

@@ -13,6 +13,7 @@ import (
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
+	"openapi-sdkgen/internal/target/typescript"
 )
 
 type inspectFilter struct {
@@ -21,7 +22,10 @@ type inspectFilter struct {
 	format                *string
 }
 
-type inspectOperation struct{ compiler.InventoryOperation }
+type inspectOperation struct {
+	compiler.InventoryOperation
+	TypeScript *typescript.OperationInspection `json:"typescript,omitempty"`
+}
 type inspectDocument struct {
 	Title          string `json:"title"`
 	Version        string `json:"version"`
@@ -32,8 +36,10 @@ type inspectReport struct {
 	Document      inspectDocument    `json:"document"`
 	Total         int                `json:"total"`
 	Matched       int                `json:"matched"`
-	DocumentsRead int                `json:"documentsRead"`
+	DocumentsRead int                `json:"documentsRead,omitempty"`
 	Operations    []inspectOperation `json:"operations"`
+	Target        string             `json:"target,omitempty"`
+	AnalysisScope string             `json:"analysisScope,omitempty"`
 }
 
 // Reuse the generate flag values and metadata for input settings while exposing
@@ -41,8 +47,9 @@ type inspectReport struct {
 // path/override rules; generation settings do not implicitly narrow a catalog.
 func newInspectFlagSet(registries cliRegistries) (*commandFlagSet, *generateFlagValues, *inspectFilter) {
 	original, values := newGenerateFlagSet(registries)
-	flags := newCommandFlagSet("inspect", "Input", "Filters", "Output", "Options")
+	flags := newCommandFlagSet("inspect", "Input", "Filters", "Output", "Options", "Analysis")
 	groups := map[string]int{"config": 0, "input": 0, "input-base": 0, "http-header-env": 0, "tls-client-cert": 0, "tls-client-key": 0, "tls-ca-file": 0, "allow-remote-ref": 0, "ref-lock": 0, "offline": 0, "operation": 1, "route": 1, "diagnostics-format": 3, "diagnostic-mode": 3, "help": 3}
+	groups["target"], groups["schema-extension"] = 4, 4
 	for _, group := range original.Groups {
 		for _, option := range group.Options {
 			index, ok := groups[option.Name]
@@ -56,6 +63,9 @@ func newInspectFlagSet(registries cliRegistries) (*commandFlagSet, *generateFlag
 				option.Summary = "Match an exact operationId; combine with --route"
 			case "route":
 				option.Summary = "Match an exact METHOD and OpenAPI path template"
+			case "target":
+				option.Summary = "Analyze actual client call paths before filtering"
+				option.Available = func() []string { return []string{"typescript"} }
 			}
 			flags.addOption(index, option)
 			flag := original.Flags.Lookup(option.Name)
@@ -78,7 +88,7 @@ func writeInspectHelp(flags *commandFlagSet) error {
 	return renderHelp(standardOutput, helpDocument{
 		Description: "List API declarations and export routes for selected SDK generation.", Usage: "openapi-sdkgen inspect [options]", Groups: flags.Groups,
 		Examples: []string{`openapi-sdkgen inspect --input ./openapi.yaml --search users --method GET`, `openapi-sdkgen inspect --input ./openapi.yaml --tag Users --format selection`},
-		Footer:   "Repeated values in each filter match any value; different filters must all match.\nOperation IDs and routes form one combined selection filter. Configuration supplies\ninput settings; its generation selection, target, output, and add-ons do not narrow\nthe catalog. Selection output is a TOML fragment for your existing config.",
+		Footer:   "Repeated values in each filter match any value; different filters must all match.\nOperation IDs and routes form one combined selection filter. Configuration supplies\ninput settings; its generation selection, target, output, and add-ons do not narrow\nthe catalog. Selection output is a TOML fragment for your existing config.\nExplicit --target analyzes the full-document client before applying display filters.",
 	})
 }
 
@@ -125,23 +135,72 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 	if err := filter.validate(values.operations, values.routes); err != nil {
 		return inspectUsageError(err.Error())
 	}
+	if *values.targetName != "" && *values.targetName != "typescript" {
+		return inspectUsageError("--target supports typescript")
+	}
+	if visited["schema-extension"] && *values.targetName == "" {
+		return inspectUsageError("--schema-extension requires --target typescript")
+	}
 	options := compiler.CompileOptions{DiagnosticMode: mode, InputBase: *values.inputBase, InputReader: standardInput, RemoteRefAllowlist: values.remoteRefs, RefLockPath: *values.refLock, Offline: *values.offline, HTTPHeaderEnv: values.httpHeaderEnv, TLSClientCert: *values.tlsClientCert, TLSClientKey: *values.tlsClientKey, TLSCAFile: *values.tlsCAFile}
-	compiled, err := compiler.InspectInputResult(*values.input, options)
-	if err != nil {
-		return internalFailure("internal inventory failure", err)
+	var inventory *compiler.Inventory
+	var inspected map[string]typescript.OperationInspection
+	if *values.targetName == "" {
+		compiled, err := compiler.InspectInputResult(*values.input, options)
+		if err != nil {
+			return internalFailure("internal inventory failure", err)
+		}
+		if err := writeDiagnostics(compiled.Diagnostics, nil, nil, mode, format); err != nil {
+			return err
+		}
+		if diagnostic.HasErrors(compiled.Diagnostics) {
+			return errReportedDiagnostics
+		}
+		inventory = compiled.Inventory
+	} else {
+		options.SchemaExtensionManifests = values.schemaExtensions
+		compiled, err := runtime.compile(*values.input, options)
+		if err != nil {
+			return internalFailure("internal compiler failure", err)
+		}
+		target, err := registries.targets.Lookup("typescript")
+		if err != nil {
+			return err
+		}
+		prepared, err := runtime.prepare(target, compiled, generator.Options{DiagnosticMode: mode})
+		if renderErr := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage, mode, format); renderErr != nil {
+			return renderErr
+		}
+		if err != nil {
+			return internalFailure("internal TypeScript analysis failure", err)
+		}
+		if diagnostic.HasErrors(prepared.Diagnostics) {
+			return errReportedDiagnostics
+		}
+		inventory, err = compiler.InventoryFromDocument(compiled.Document, *values.input)
+		if err != nil {
+			return err
+		}
+		inspected, err = typescript.InspectPlan(prepared.Plan)
+		if err != nil {
+			return err
+		}
 	}
-	if err := writeDiagnostics(compiled.Diagnostics, nil, nil, mode, format); err != nil {
-		return err
-	}
-	if diagnostic.HasErrors(compiled.Diagnostics) {
-		return errReportedDiagnostics
-	}
-	if compiled.Inventory == nil {
+	if inventory == nil {
 		return internalFailure("internal inventory failure", fmt.Errorf("inventory is unavailable"))
 	}
-	report, err := filter.apply(compiled.Inventory, values.operations, values.routes)
+	report, err := filter.apply(inventory, values.operations, values.routes)
 	if err != nil {
 		return inspectUsageError(err.Error())
+	}
+	if inspected != nil {
+		report.Target, report.AnalysisScope = "typescript", "full-document-client"
+		for index := range report.Operations {
+			value, exists := inspected[report.Operations[index].Route]
+			if !exists {
+				value = typescript.OperationInspection{Status: "omitted"}
+			}
+			report.Operations[index].TypeScript = &value
+		}
 	}
 	return writeInspectReport(standardOutput, report, *filter.format)
 }
@@ -256,7 +315,7 @@ func (f *inspectFilter) apply(inventory *compiler.Inventory, operations, routes 
 				continue
 			}
 		}
-		report.Operations = append(report.Operations, inspectOperation{operation})
+		report.Operations = append(report.Operations, inspectOperation{InventoryOperation: operation})
 	}
 	sort.Slice(report.Operations, func(i, j int) bool {
 		a, b := report.Operations[i], report.Operations[j]
@@ -310,6 +369,9 @@ func writeInspectReport(output io.Writer, report inspectReport, format string) e
 		return err
 	case "table":
 		rows := [][]string{{"METHOD", "PATH", "OPERATION ID", "TAGS", "DEPRECATED", "SUMMARY"}}
+		if report.Target != "" {
+			rows[0] = append(rows[0], "RESOURCE CALL", "SURFACES")
+		}
 		for _, operation := range report.Operations {
 			id := "—"
 			if operation.OperationID != nil {
@@ -319,7 +381,34 @@ func writeInspectReport(output io.Writer, report inspectReport, format string) e
 			if len(summary) > 60 {
 				summary = append(summary[:59], '…')
 			}
-			rows = append(rows, []string{operation.Method, operation.Path, id, strings.Join(operation.Tags, ", "), strconv.FormatBool(operation.Deprecated), string(summary)})
+			row := []string{operation.Method, operation.Path, id, strings.Join(operation.Tags, ", "), strconv.FormatBool(operation.Deprecated), string(summary)}
+			if report.Target != "" {
+				call, status := "—", "omitted"
+				if inspection := operation.TypeScript; inspection != nil {
+					if inspection.ResourceCall != nil {
+						call = *inspection.ResourceCall
+					}
+					surfaces := []string{}
+					if inspection.ResourceCall != nil {
+						surfaces = append(surfaces, "resource")
+					}
+					if inspection.Routes {
+						surfaces = append(surfaces, "routes")
+					}
+					if inspection.Operations {
+						surfaces = append(surfaces, "operations")
+					}
+					status = inspection.Status
+					if len(surfaces) > 0 {
+						status = strings.Join(surfaces, ", ")
+					}
+					if inspection.ResourceOmission != "" {
+						status += " (" + inspection.ResourceOmission + ")"
+					}
+				}
+				row = append(row, call, status)
+			}
+			rows = append(rows, row)
 		}
 		widths := make([]int, len(rows[0]))
 		for _, row := range rows {

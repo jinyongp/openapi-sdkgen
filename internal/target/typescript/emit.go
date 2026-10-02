@@ -114,6 +114,7 @@ type sourcePlan struct {
 	callbacks                   []callbackDefinition
 	resourceTree                *resourceNode
 	resourceReachable           map[string]bool
+	resourceOmissions           map[string]string
 	selection                   *generationSelection
 }
 
@@ -370,6 +371,10 @@ func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer 
 			} else {
 				plan.resourceTree = tree
 				plan.resourceReachable = reachable
+				plan.resourceOmissions = make(map[string]string, len(omissions))
+				for _, omission := range omissions {
+					plan.resourceOmissions[manifestRouteKey(omission.operation)] = string(omission.reason)
+				}
 				resourceDiagnostics := resourceOmissionDiagnostics(prepared, plan.ownership, omissions)
 				if strictResourceOmission {
 					resourceDiagnostics = promoteResourceOmissionDiagnostics(resourceDiagnostics)
