@@ -110,6 +110,43 @@ func TestInventoryMountedPathItemClosureAndCache(t *testing.T) {
 	}
 }
 
+func TestInventoryEntrySymlinkUsesCanonicalReferenceDirectory(t *testing.T) {
+	dir := t.TempDir()
+	spec := filepath.Join(dir, "spec")
+	if err := os.Mkdir(spec, 0700); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(spec, "openapi.json")
+	if err := os.WriteFile(entry, []byte(`{"openapi":"3.2.1","info":{"title":"Symlink","version":"1"},"paths":{"/a":{"$ref":"./items.json#/Item"},"/b":{"$ref":"./items.json#/Item"}}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for path, id := range map[string]string{filepath.Join(spec, "items.json"): "actual", filepath.Join(dir, "items.json"): "decoy"} {
+		body := fmt.Sprintf(`{"Item":{"get":{"summary":%q,"responses":{"204":{"description":"OK"}}}}}`, id)
+		if err := os.WriteFile(path, []byte(body), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	alias := filepath.Join(dir, "alias.json")
+	if err := os.Symlink(entry, alias); err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range []string{entry, alias} {
+		metrics := &compilationMetrics{}
+		result, err := InspectInputResult(input, CompileOptions{metrics: metrics})
+		if err != nil || result.Inventory == nil || len(result.Inventory.Operations) != 2 {
+			t.Fatalf("input=%s result=%#v err=%v", input, result, err)
+		}
+		for _, operation := range result.Inventory.Operations {
+			if operation.Summary != "actual" {
+				t.Fatalf("input=%s read alias sibling: %#v", input, operation)
+			}
+		}
+		if result.Inventory.DocumentsRead != 2 || metrics.ReferenceSourceDecodes != 1 {
+			t.Fatalf("input=%s documents=%d metrics=%#v", input, result.Inventory.DocumentsRead, metrics)
+		}
+	}
+}
+
 func TestInventoryRejectsIncompleteAndAmbiguousLists(t *testing.T) {
 	for _, body := range []string{
 		`"/a":{"$ref":"#/paths/~1a"}`,

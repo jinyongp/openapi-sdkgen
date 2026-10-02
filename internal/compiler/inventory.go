@@ -84,7 +84,7 @@ func InspectInputResult(input string, options CompileOptions) (InventoryResult, 
 		return fail(phaseError(diagnostic.PhaseOpenAPI, err), source.display)
 	}
 	resolver := &inventoryResolver{options: options, entry: source, sources: map[string]inventorySource{}, resolved: map[string]map[string]any{}, resolving: map[string]bool{}, documents: 1}
-	resolver.sources[source.effective] = inventorySource{source, raw}
+	pathSource := source
 	if source.fileBase != "" {
 		resolver.root, err = filepath.EvalSymlinks(source.fileBase)
 		if err != nil {
@@ -95,9 +95,12 @@ func InspectInputResult(input string, options CompileOptions) (InventoryResult, 
 			if err != nil {
 				return fail(phaseError(diagnostic.PhaseInput, err), source.display)
 			}
-			resolver.sources[canonical] = inventorySource{source, raw}
+			pathSource.effective, pathSource.filePath = canonical, canonical
+			pathSource.fileBase = filepath.Dir(canonical)
 		}
 	}
+	resolver.sources[source.effective] = inventorySource{pathSource, raw}
+	resolver.sources[pathSource.effective] = inventorySource{pathSource, raw}
 	info, _ := raw["info"].(map[string]any)
 	result := &Inventory{Title: inventoryString(info, "title"), Version: inventoryString(info, "version"), OpenAPIVersion: version, Operations: []InventoryOperation{}}
 	paths, exists := raw["paths"]
@@ -121,7 +124,7 @@ func InspectInputResult(input string, options CompileOptions) (InventoryResult, 
 		if !ok {
 			return fail(phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("path item %q must be an object", path)), source.display)
 		}
-		item, err = resolver.resolve(inventorySource{source, raw}, item, 0)
+		item, err = resolver.resolve(inventorySource{pathSource, raw}, item, 0)
 		if err != nil {
 			return fail(phaseError(diagnostic.PhaseReferences, err), source.display)
 		}
