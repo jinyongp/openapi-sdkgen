@@ -1357,11 +1357,21 @@ function hasUniqueWireValues(values: readonly unknown[]): boolean {
 }
 
 function isMultipleOf(value: number, divisor: number): boolean {
-  if (!Number.isFinite(divisor) || divisor <= 0) return false;
-  const quotient = value / divisor;
-  return (
-    Math.abs(quotient - Math.round(quotient)) <= Number.EPSILON * Math.max(1, Math.abs(quotient))
-  );
+  if (!Number.isFinite(value) || !Number.isFinite(divisor) || divisor <= 0) return false;
+  const [numerator, numeratorScale] = decimalInteger(value);
+  const [denominator, denominatorScale] = decimalInteger(divisor);
+  const scale = numeratorScale - denominatorScale;
+  // Number's finite decimal representation bounds this exponent to 632.
+  return scale >= 0
+    ? (numerator * 10n ** BigInt(scale)) % denominator === 0n
+    : numerator % (denominator * 10n ** BigInt(-scale)) === 0n;
+}
+
+function decimalInteger(value: number): readonly [bigint, number] {
+  const [mantissa = "0", exponent = "0"] = String(value).split("e");
+  const point = mantissa.indexOf(".");
+  const fractional = point < 0 ? 0 : mantissa.length - point - 1;
+  return [BigInt(mantissa.replace(".", "")), Number(exponent) - fractional];
 }
 
 function schemaMatchesForControlFlow(

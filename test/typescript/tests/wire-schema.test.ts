@@ -11,6 +11,31 @@ const validate = (value: unknown, schema: WireSchema) =>
   validateWireValue(value, schema, {}, "decode");
 
 describe("wire schema constraints", () => {
+  it.each<[number, number, boolean]>([
+    [3000000000000000.5, 1, false],
+    [3000000000000000, 1, true],
+    [0.3, 0.1, true],
+    [0.35, 0.1, false],
+    [0.1 + 0.2, 0.1, false],
+    [-0.3, 0.1, true],
+    [0, 0.1, true],
+    [-0, 2, true],
+    [1e30, 1e-300, true],
+    [Number.MAX_VALUE, Number.MIN_VALUE, true],
+    [Number.MAX_VALUE, Number.MIN_VALUE * 3, false],
+    [Number.MIN_VALUE, Number.MIN_VALUE, true],
+    [1e-323, Number.MIN_VALUE, true],
+    [0.00000007, 0.00000001, true],
+    [1, 0, false],
+    [1, -1, false],
+    [1, Infinity, false],
+  ])("checks exact wire decimal multiple %s / %s", (value, divisor, valid) => {
+    for (const apply of [encodeWireValue, decodeWireValue]) {
+      const call = () => apply(value, { types: ["number"], multipleOf: divisor }, {});
+      if (valid) expect(call).not.toThrow();
+      else expect(call).toThrow();
+    }
+  });
   it("uses every matching pattern and excludes those properties from additional schemas", () => {
     const schema: WireSchema = {
       types: ["object"],
