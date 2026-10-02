@@ -42,7 +42,7 @@ export interface RequestOptions {
   /** Explicit absolute base URL. Generated Link helpers use this for a Link Server Object. */
   readonly baseURL?: string;
   /** Requested response media type for operations with multiple representations. */
-  readonly accept?: string;
+  readonly accept?: string | undefined;
   /** Additional request headers. Contract-owned and SDK-managed headers are rejected here. */
   readonly headers?: HeadersInit;
   /** Complete `Authorization` header value, overriding the client default. */
