@@ -21,7 +21,6 @@ type enumValuesPlan struct {
 	valuesBinding string
 	enumBinding   string
 	values        []any
-	valueType     string
 	members       []string
 	memberDocs    map[string]enumMemberDocumentation
 	deprecated    bool
@@ -127,7 +126,7 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen: WeakMap<o
 			emitEnumMemberJSDoc(&output, member, plan.memberDocs[member])
 			fmt.Fprintf(&output, "    readonly %s: %s\n", quoteTS(member), quoteTS(member))
 		}
-		fmt.Fprintf(&output, "    [Symbol.iterator](): IterableIterator<%s>\n", plan.valueType)
+		fmt.Fprintf(&output, "    [Symbol.iterator](): IterableIterator<%sValues[number]>\n", plan.valuesBinding)
 		output.WriteString("  }\n")
 	}
 	output.WriteString("}\n")
@@ -217,14 +216,12 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 		if err != nil {
 			return nil, fmt.Errorf("component %s enum: %w", schemaName, err)
 		}
-		valueType, err := enumValueType(values)
-		if err != nil {
+		if _, err := enumValueType(values); err != nil {
 			return nil, fmt.Errorf("component %s enum value type: %w", schemaName, err)
 		}
 		plans = append(plans, enumValuesPlan{
 			name:          schemaName,
 			values:        values,
-			valueType:     valueType,
 			members:       enumStringMembers(values),
 			memberDocs:    memberDocs,
 			deprecated:    schemaIsAlwaysDeprecated(document, schema),

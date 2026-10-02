@@ -169,6 +169,18 @@ func TestLinkGroupsUseTheFrozenOwnerWithoutRenamingLeaves(t *testing.T) {
 	if !strings.Contains(output.String(), "const "+leaf+":") || !strings.Contains(output.String(), "const __sdkgen_l_d1:") {
 		t.Fatalf("group/leaf ownership changed: %s", output.String())
 	}
+	if !strings.Contains(output.String(), `const __sdkgen_l_d1: Links["follow"]`) || strings.Contains(output.String(), "__sdkgen_l_d1Contract") {
+		t.Fatalf("link binding copied its public contract: %s", output.String())
+	}
+	copyGroup := groups[0]
+	copyGroup.Name = "follow/again"
+	contract, err := routeLinkGroupsType(&ir.Document{}, append(groups, copyGroup))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(contract, `readonly "follow/again": Links["follow"]`) {
+		t.Fatalf("identical link group did not reuse its contract: %s", contract)
+	}
 	unplanned := newLocalIdentifierPlan(module.path)
 	if err := unplanned.freeze(); err != nil {
 		t.Fatal(err)

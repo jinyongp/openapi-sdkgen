@@ -582,10 +582,6 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 	if err != nil {
 		return err
 	}
-	contract, err := linkGroupContract(document, group)
-	if err != nil {
-		return err
-	}
 	sourceInput := linkPreparedInputType(operationRouteKey(group.SourceOperation), len(group.Links) != 0 && group.Links[0].SourceHasInput)
 	targetInputs := map[string]bool{}
 	targetOptions := map[string]bool{}
@@ -608,8 +604,7 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 		invocationType = "RequiredLinkInvocation"
 		invocationDefault = ""
 	}
-	fmt.Fprintf(output, "  type %sContract = %s\n", variable, contract)
-	fmt.Fprintf(output, "  const %s: %sContract = Object.assign(async (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => {\n", variable, variable, operationSlotType(operationRouteKey(group.SourceOperation), "rawResponse"), invocationType, sortedStringSet(targetInputs), sortedStringIntersection(targetOptions), sourceInput, invocationDefault, sortedStringSet(targetOutputs))
+	fmt.Fprintf(output, "  const %s: Links[%s] = Object.assign(async (response: %s | APIError, invocation: %s<%s, %s, %s>%s): Promise<%s> => {\n", variable, quoteTS(group.Name), operationSlotType(operationRouteKey(group.SourceOperation), "rawResponse"), invocationType, sortedStringSet(targetInputs), sortedStringIntersection(targetOptions), sourceInput, invocationDefault, sortedStringSet(targetOutputs))
 	for _, link := range group.Links {
 		if link.Status == "default" {
 			continue
@@ -697,12 +692,18 @@ func routeLinkGroupsType(document *ir.Document, groups []generatedLinkGroup) (st
 		return "never", nil
 	}
 	members := make([]string, 0, len(groups))
+	owners := make(map[string]string)
 	for _, group := range groups {
 		contract, err := linkGroupContract(document, group)
 		if err != nil {
 			return "", err
 		}
-		members = append(members, "readonly "+quoteTS(group.Name)+": "+contract)
+		if owner, exists := owners[contract]; exists {
+			members = append(members, "readonly "+quoteTS(group.Name)+": Links["+quoteTS(owner)+"]")
+		} else {
+			owners[contract] = group.Name
+			members = append(members, "readonly "+quoteTS(group.Name)+": "+contract)
+		}
 	}
 	return "{ " + strings.Join(members, "; ") + " }", nil
 }

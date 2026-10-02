@@ -210,7 +210,7 @@ func newServerIdentifierPlan(owner string) (*aggregateIdentifierPlan, error) {
 		"InboundParameterValues", "InboundRequestContext", "InboundResponse", "InboundParameterDefinition", "InboundSchemas", "InboundSecuritySchemes",
 		"MediaCodec", "StreamCodec", "WireSchemas", "Contract", "__sdkgen_Properties", "inputSchemas", "inputWireSchemas", "outputSchemas", "securitySchemes",
 		"Callbacks", "RouteCallbacks", "ComponentCallbacks", "CallbackHandlers", "RouteCallbackHandlers", "ComponentCallbackHandlers", "CallbackPathParameters", "RouteCallbackPathParameters", "ComponentCallbackPathParameters",
-		"CallbackEndpoints", "RouteCallbackEndpoints", "ComponentCallbackEndpoints", "CallbackEndpoint", "CallbackOptions", "createCallbacks", "WebhookHandlers", "Webhooks", "WebhookRoutes", "WebhookRouter", "WebhookRouterOptions", "createWebhookRouter",
+		"CallbackEndpoints", "RouteCallbackEndpoints", "ComponentCallbackEndpoints", "CallbackEndpoint", "CallbackEndpointValues", "CallbackOptions", "createCallbacks", "WebhookHandlers", "Webhooks", "WebhookRoutes", "WebhookRouter", "WebhookRouterOptions", "createWebhookRouter",
 		"handlers", "options", "routes", "inboundCodecs", "inboundStreamCodecs", "registrations", "request", "path", "pathParams", "pathname", "key", "handler", "params", "context", "body", "denied", "error",
 	); err != nil {
 		return nil, err

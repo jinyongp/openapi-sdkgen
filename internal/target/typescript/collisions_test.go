@@ -320,7 +320,7 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 		t.Fatal(err)
 	}
 	generated := string(source)
-	if !strings.Contains(generated, `"foo-bar" | "foo_bar" | "__proto__" | "constructor" | "map" | "length" | "0" | 2 | true | null | { readonly "__proto__": true } | readonly ["x", "y"]`) {
+	if !strings.Contains(generated, `readonly ["foo-bar", "foo_bar", "__proto__", "constructor", "map", "length", "0", 2, true, null, { readonly "__proto__": true }, readonly ["x", "y"], "foo-bar"]`) {
 		t.Fatalf("enum values missing:\n%s", source)
 	}
 	for _, expected := range []string{
@@ -336,6 +336,7 @@ func TestEmitTypesPreservesCollidingEnumValuesAsLiterals(t *testing.T) {
 		`readonly "map": "map"`,
 		`readonly "0": "0"`,
 		`[Symbol.iterator](): IterableIterator<`,
+		`Values[number]>`,
 		`export type EnumValue<Name extends keyof typeof Enums>`,
 		`export function isEnumValue<EnumValues extends (typeof Enums)[keyof typeof Enums]>`,
 		`enumValues: EnumValues`,

@@ -247,8 +247,6 @@ type callbackTreeMode int
 const (
 	callbackTreeTypes callbackTreeMode = iota
 	callbackTreeHandlers
-	callbackTreeEndpoints
-	callbackTreePathParams
 )
 
 func emitCallbackTree(output *bytes.Buffer, node *callbackTreeNode, path []string, rootType string, mode callbackTreeMode) {
@@ -257,7 +255,7 @@ func emitCallbackTree(output *bytes.Buffer, node *callbackTreeNode, path []strin
 	for _, key := range callbackTreeKeys(node) {
 		child := node.children[key]
 		optional := ""
-		if mode == callbackTreeHandlers || mode == callbackTreePathParams {
+		if mode == callbackTreeHandlers {
 			optional = "?"
 		}
 		fmt.Fprintf(output, "%sreadonly %s%s: ", indent, quoteTS(key), optional)
@@ -271,10 +269,6 @@ func emitCallbackTree(output *bytes.Buffer, node *callbackTreeNode, path []strin
 				fmt.Fprintf(output, "{ readonly context: %sContext; readonly input: %sContext; readonly output: %sResponse; readonly response: %sResponse; readonly handler: (context: %sContext) => %sResponse | Promise<%sResponse>; readonly endpoint: CallbackEndpoint }", child.callback.typeName, child.callback.typeName, child.callback.typeName, child.callback.typeName, child.callback.typeName, child.callback.typeName, child.callback.typeName)
 			case callbackTreeHandlers:
 				fmt.Fprintf(output, "%s[\"handler\"]", slot)
-			case callbackTreeEndpoints:
-				fmt.Fprintf(output, "%s[\"endpoint\"]", slot)
-			case callbackTreePathParams:
-				output.WriteString("Readonly<Record<string, string>>")
 			}
 		} else {
 			emitCallbackTree(output, child, append(path, key), rootType, mode)
@@ -520,19 +514,47 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreeHandlers)
 	output.WriteString("\n  readonly componentCallbacks?: ")
 	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreeHandlers)
-	output.WriteString("\n}\n\n/** Optional host path parameters, authentication, and media codecs for generated Callback endpoints. */\nexport interface CallbackHandlerOptions {\n  readonly pathParams?: {\n    readonly routeCallbacks?: ")
-	emitCallbackTree(&output, routeTree, nil, "RouteCallbacks", callbackTreePathParams)
-	output.WriteString("\n    readonly callbacks?: ")
-	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreePathParams)
-	output.WriteString("\n    readonly componentCallbacks?: ")
-	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreePathParams)
-	output.WriteString("\n  } | undefined\n  readonly authenticate?: Authenticate | undefined\n  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined\n  readonly streamCodecs?: Readonly<Record<string, StreamCodec>> | undefined\n  readonly maxBodyBytes?: number | undefined\n  readonly maxStreamFrameBytes?: number | undefined\n}\n\n/** Fetch-compatible endpoint for one host-mounted Callback route. */\nexport interface CallbackEndpoint {\n  fetch(request: Request): Promise<Response>\n}\n\n/** Callback endpoints preserving every exact source identity dimension. */\nexport interface CallbackEndpoints {\n  readonly routeCallbacks: ")
-	emitCallbackTree(&output, routeTree, nil, "RouteCallbacks", callbackTreeEndpoints)
-	output.WriteString("\n  readonly callbacks: ")
-	emitCallbackTree(&output, operationTree, nil, "Callbacks", callbackTreeEndpoints)
-	output.WriteString("\n  readonly componentCallbacks: ")
-	emitCallbackTree(&output, componentTree, nil, "ComponentCallbacks", callbackTreeEndpoints)
-	output.WriteString("\n}\n\n/**\n * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.\n * The host chooses each concrete route and mounts the matching endpoint.\n */\nexport function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {\n  const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = normalizeInboundMediaCodecs(options.codecs)\n  const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = normalizeInboundStreamCodecs(options.streamCodecs)\n")
+	output.WriteString(`
+}
+
+type CallbackPathParameters<Tree> = {
+  readonly [Key in keyof Tree]?: NonNullable<Tree[Key]> extends (...args: never[]) => unknown
+    ? Readonly<Record<string, string>>
+    : CallbackPathParameters<NonNullable<Tree[Key]>>
+}
+
+type CallbackEndpointValues<Tree> = {
+  readonly [Key in keyof Tree]-?: NonNullable<Tree[Key]> extends (...args: never[]) => unknown
+    ? CallbackEndpoint
+    : CallbackEndpointValues<NonNullable<Tree[Key]>>
+}
+
+/** Optional host path parameters, authentication, and media codecs for generated Callback endpoints. */
+export interface CallbackHandlerOptions {
+  readonly pathParams?: CallbackPathParameters<CallbackHandlers> | undefined
+  readonly authenticate?: Authenticate | undefined
+  readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>> | undefined
+  readonly streamCodecs?: Readonly<Record<string, StreamCodec>> | undefined
+  readonly maxBodyBytes?: number | undefined
+  readonly maxStreamFrameBytes?: number | undefined
+}
+
+/** Fetch-compatible endpoint for one host-mounted Callback route. */
+export interface CallbackEndpoint {
+  fetch(request: Request): Promise<Response>
+}
+
+/** Callback endpoints preserving every exact source identity dimension. */
+export interface CallbackEndpoints extends CallbackEndpointValues<CallbackHandlers> {}
+
+/**
+ * Creates Fetch-native endpoints for dynamic OpenAPI Callback URLs.
+ * The host chooses each concrete route and mounts the matching endpoint.
+ */
+export function createCallbackHandlers(handlers: CallbackHandlers, options: CallbackHandlerOptions = {}): CallbackEndpoints {
+  const inboundCodecs: ReturnType<typeof normalizeInboundMediaCodecs> = normalizeInboundMediaCodecs(options.codecs)
+  const inboundStreamCodecs: ReturnType<typeof normalizeInboundStreamCodecs> = normalizeInboundStreamCodecs(options.streamCodecs)
+`)
 	for _, callback := range callbacks {
 		definition := callbackDefinitionSymbol(callback)
 		handlerType := "((context: " + callback.typeName + "Context) => " + callback.typeName + "Response | Promise<" + callback.typeName + "Response>) | undefined"
