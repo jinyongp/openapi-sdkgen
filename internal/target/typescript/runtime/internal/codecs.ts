@@ -81,6 +81,85 @@ export function encodeXML(value: unknown, schema: WireSchema, schemas: WireSchem
   return encodeXMLElement(value, schema, schemas, rootName, [], { xml: XML_NAMESPACE });
 }
 
+/** Resolves only the current XML node; recursive property schemas remain lazy. */
+function xmlRepresentation(
+  schema: WireSchema,
+  components: WireSchemas,
+  dynamicScope: DynamicScope,
+  seen = new Set<WireSchema>(),
+): WireSchema {
+  if (seen.has(schema)) return {};
+  const path = new Set(seen).add(schema);
+  const scope = extendDynamicScope(dynamicScope, schema);
+  const parents: WireSchema[] = [];
+  const dynamicTarget = resolveDynamicReference(schema, scope);
+  if (dynamicTarget !== undefined) parents.push(dynamicTarget);
+  if (schema.reference !== undefined) {
+    const target = components[schema.reference];
+    if (target === undefined)
+      throw new TypeError(`XML schema references missing component ${schema.reference}`);
+    parents.push(target);
+  }
+  parents.push(...(schema.allOf ?? []));
+  const own = { ...schema };
+  delete own.reference;
+  delete own.dynamicReference;
+  delete own.allOf;
+  const representations = parents.map((parent) =>
+    xmlRepresentation(parent, components, scope, path),
+  );
+  representations.push(own);
+  let result: WireSchema = {};
+  for (const representation of representations) {
+    const properties = Object.assign(Object.create(null), result.properties) as Record<
+      string,
+      NonNullable<WireSchema["properties"]>[string]
+    >;
+    for (const [name, property] of Object.entries(representation.properties ?? {})) {
+      const previous = properties[name];
+      defineOwnDataProperty(
+        properties,
+        name,
+        previous === undefined
+          ? property
+          : {
+              ...property,
+              schema: { allOf: [previous.schema, property.schema] },
+            },
+      );
+    }
+    result = {
+      ...result,
+      ...representation,
+      ...(Object.keys(properties).length === 0 ? {} : { properties }),
+    };
+  }
+  return result;
+}
+
+function xmlProperties(
+  schema: WireSchema,
+  components: WireSchemas,
+  scope: DynamicScope,
+): [string, WireSchema][] {
+  const result: [string, WireSchema][] = [];
+  const names = new Set<string>();
+  for (const [wireName, property] of Object.entries(schema.properties ?? {})) {
+    const child = xmlRepresentation(property.schema, components, scope);
+    const xml = child.xml;
+    if (xml?.nodeType === "none") continue;
+    const name =
+      xml?.nodeType === "text" || xml?.nodeType === "cdata"
+        ? "content"
+        : `${xml?.attribute || xml?.nodeType === "attribute" ? "attribute" : "element"}:${xml?.namespace ?? ""}:${xml?.name ?? wireName}`;
+    if (names.has(name))
+      throw new TypeError(`XML properties have an ambiguous representation: ${wireName}`);
+    names.add(name);
+    result.push([wireName, child]);
+  }
+  return result;
+}
+
 function encodeXMLElement(
   value: unknown,
   schema: WireSchema,
@@ -90,22 +169,7 @@ function encodeXMLElement(
   inheritedNamespaces: Readonly<Record<string, string>>,
 ): string {
   const scope = extendDynamicScope(dynamicScope, schema);
-  const dynamicTarget = resolveDynamicReference(schema, scope);
-  if (dynamicTarget !== undefined)
-    return encodeXMLElement(
-      value,
-      dynamicTarget,
-      schemas,
-      fallbackName,
-      scope,
-      inheritedNamespaces,
-    );
-  if (schema.reference !== undefined) {
-    const referenced = schemas[schema.reference];
-    if (referenced === undefined)
-      throw new TypeError(`XML schema references missing component ${schema.reference}`);
-    return encodeXMLElement(value, referenced, schemas, fallbackName, scope, inheritedNamespaces);
-  }
+  schema = xmlRepresentation(schema, schemas, scope);
   const xml = schema.xml;
   if (xml?.nodeType === "none") return "";
   if (xml?.nodeType === "text") return escapeXMLText(xmlScalar(value));
@@ -119,7 +183,7 @@ function encodeXMLElement(
   const declarations = namespaceAttributes(xml, namespaces);
   expandedXMLName(name, namespaces, false);
   if (Array.isArray(value)) {
-    const itemSchema = schema.items ?? {};
+    const itemSchema = xmlRepresentation(schema.items ?? {}, schemas, scope);
     const wrapped = xmlArrayWrapped(xml);
     const itemName = itemSchema.xml?.name ?? (wrapped ? fallbackName : name);
     const values = value
@@ -131,10 +195,10 @@ function encodeXMLElement(
   const attributes: string[] = [];
   const children: string[] = [];
   let text = "";
-  for (const [wireName, property] of Object.entries(schema.properties ?? {})) {
+  for (const [wireName, childSchema] of xmlProperties(schema, schemas, scope)) {
     const item = value[wireName];
     if (item === undefined || item === null) continue;
-    const childXML = property.schema.xml;
+    const childXML = childSchema.xml;
     const childName = childXML?.name ?? wireName;
     if (childXML?.attribute || childXML?.nodeType === "attribute") {
       declarations.push(...namespaceAttributes(childXML, namespaces));
@@ -150,7 +214,7 @@ function encodeXMLElement(
       text += `<![CDATA[${xmlScalar(item).replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
       continue;
     }
-    children.push(encodeXMLElement(item, property.schema, schemas, childName, scope, namespaces));
+    children.push(encodeXMLElement(item, childSchema, schemas, childName, scope, namespaces));
   }
   return wrapXML(name, [...declarations, ...attributes], text + children.join(""));
 }
@@ -453,22 +517,20 @@ function decodeXMLNode(
   dynamicScope: DynamicScope,
 ): unknown {
   const scope = extendDynamicScope(dynamicScope, schema);
-  const dynamicTarget = resolveDynamicReference(schema, scope);
-  if (dynamicTarget !== undefined) return decodeXMLNode(node, dynamicTarget, components, scope);
-  if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
-    if (referenced === undefined)
-      throw new TypeError(`XML schema references missing component ${schema.reference}`);
-    return decodeXMLNode(node, referenced, components, scope);
-  }
+  schema = xmlRepresentation(schema, components, scope);
   if (schema.types?.includes("array")) {
     const itemSchema = schema.items ?? {};
     return node.children.map((child) => decodeXMLNode(child, itemSchema, components, scope));
   }
   if (schema.types?.includes("object") || schema.properties !== undefined) {
     const result = Object.create(null) as Record<string, unknown>;
-    for (const [wireName, property] of Object.entries(schema.properties ?? {})) {
-      const xml = property.schema.xml;
+    for (const [wireName, childSchema] of xmlProperties(schema, components, scope)) {
+      const xml = childSchema.xml;
+      if (xml?.nodeType === "none") continue;
+      if (xml?.nodeType === "text" || xml?.nodeType === "cdata") {
+        defineOwnDataProperty(result, wireName, decodeXMLScalar(node.text, childSchema));
+        continue;
+      }
       if (xml?.attribute || xml?.nodeType === "attribute") {
         const key = Object.keys(node.attributes).find(
           (key) =>
@@ -478,11 +540,11 @@ function decodeXMLNode(
         );
         const value = key === undefined ? undefined : node.attributes[key];
         if (value !== undefined)
-          defineOwnDataProperty(result, wireName, decodeXMLScalar(value, property.schema));
+          defineOwnDataProperty(result, wireName, decodeXMLScalar(value, childSchema));
         continue;
       }
-      if (property.schema.types?.includes("array")) {
-        const itemSchema = property.schema.items ?? {};
+      if (childSchema.types?.includes("array")) {
+        const itemSchema = xmlRepresentation(childSchema.items ?? {}, components, scope);
         const container = xmlArrayWrapped(xml)
           ? node.children.find((child) => matchesXMLName(child.name, child, xml, wireName))
           : node;
@@ -504,7 +566,7 @@ function decodeXMLNode(
         defineOwnDataProperty(
           result,
           wireName,
-          decodeXMLNode(child, property.schema, components, scope),
+          decodeXMLNode(child, childSchema, components, scope),
         );
     }
     return result;

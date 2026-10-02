@@ -52,6 +52,70 @@ const catalogSchema: WireSchema = {
 };
 
 describe("XML runtime codecs", () => {
+  it("rejects XML properties whose text cannot be assigned unambiguously", () => {
+    const schema: WireSchema = {
+      types: ["object"],
+      properties: {
+        first: { property: "first", schema: { types: ["string"], xml: { nodeType: "text" } } },
+        second: { property: "second", schema: { types: ["string"], xml: { nodeType: "cdata" } } },
+      },
+    };
+    expect(() => encodeXML({ first: "a", second: "b" }, schema, {})).toThrow(
+      "ambiguous representation",
+    );
+    expect(() => decodeXML("<root>ab</root>", schema, {})).toThrow("ambiguous representation");
+  });
+  it("shares composed and referenced XML property representations", () => {
+    const components: Record<string, WireSchema> = {
+      Base: { properties: { id: { property: "id", schema: { types: ["string"] } } } },
+      Number: { types: ["integer"] },
+    };
+    const schema: WireSchema = {
+      types: ["object"],
+      xml: { name: "record" },
+      allOf: [
+        { reference: "Base" },
+        { properties: { count: { property: "count", schema: { reference: "Number" } } } },
+      ],
+    };
+    const value = { id: "a", count: 2 };
+    expect(encodeXML(value, schema, components)).toBe(
+      "<record><id>a</id><count>2</count></record>",
+    );
+    expect(decodeXML("<record><id>a</id><count>2</count></record>", schema, components)).toEqual(
+      value,
+    );
+  });
+
+  it.each(["text", "cdata"] as const)("decodes %s nodes from parent text", (nodeType) => {
+    const schema: WireSchema = {
+      types: ["object"],
+      xml: { name: "record" },
+      properties: {
+        value: { property: "value", schema: { types: ["string"], xml: { nodeType } } },
+      },
+    };
+    const value = { value: "a < b & ]]> c" };
+    expect(decodeXML(encodeXML(value, schema, {}), schema, {})).toEqual(value);
+  });
+
+  it("preserves recursive property references and XML metadata beside a ref", () => {
+    const components: Record<string, WireSchema> = {
+      Node: {
+        types: ["object"],
+        properties: {
+          value: { property: "value", schema: { types: ["string"] } },
+          next: { property: "next", schema: { reference: "Node", xml: { name: "child" } } },
+        },
+      },
+    };
+    const schema: WireSchema = { reference: "Node", xml: { name: "record" } };
+    const value = { value: "a", next: { value: "b" } };
+    const xml = "<record><value>a</value><child><value>b</value></child></record>";
+    expect(encodeXML(value, schema, components)).toBe(xml);
+    expect(decodeXML(xml, schema, components)).toEqual(value);
+  });
+
   it("tokenizes quoted delimiters and decodes character references exactly once", () => {
     const schema: WireSchema = {
       types: ["object"],
