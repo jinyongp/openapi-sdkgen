@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v10.1.0 — 2026-10-02
+
 - Support compiling generated SDKs as CommonJS and emitting isolated declarations,
   with explicit execution-provider and runtime interfaces. Consumer checks cover strict and
   non-strict NodeNext and Bundler configurations across supported TypeScript versions.
