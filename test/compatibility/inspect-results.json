@@ -1,0 +1,435 @@
+{
+  "schemaVersion": 1,
+  "measurement": {
+    "sourceCommit": "22c2d90666c0e54929bae3e3fdfa87207132d5a5",
+    "sourceDirty": false,
+    "measuredAt": "2026-10-02T02:50:45.259Z",
+    "manifestSha256": "d7992310296940b3a552706745480eee3ad5b4baa88517e1953d3a940d1d9f1e",
+    "platform": "linux",
+    "arch": "x64",
+    "environment": "local cached documents; sequential process measurements",
+    "inventoryScope": "entry paths and mounted Path Item references",
+    "targetScope": "full-document-client",
+    "target": "typescript",
+    "processTimeoutMillis": 300000
+  },
+  "cases": [
+    {
+      "id": "selection-fixture",
+      "input": "test/fixtures/generation-selection.json",
+      "inputSha256": "c39f4b6f568c02c4022fe7ea00b25e2cdc27b3f095d583b97f0f86ca802897e2",
+      "sourceUrl": null,
+      "revision": null,
+      "operationCount": 3,
+      "routeIdentitySha256": "35dae7dd03394bb52c8c7cd7a7e207ac8005229de3de41fbd4c4936f844ce288",
+      "identityComparison": "pass",
+      "filteredRouteComparison": "pass",
+      "inventory": {
+        "repetitions": 5,
+        "wallMedianMillis": 7.077038999999985,
+        "wallMinMillis": 6.769360000000006,
+        "wallMaxMillis": 12.337638999999996,
+        "peakRssBytes": 12406784,
+        "samples": [
+          {
+            "wallMillis": 12.337638999999996,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 12406784,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 6.819054000000023,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 12406784,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.197052999999983,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 12402688,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.077038999999985,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 12275712,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 6.769360000000006,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 12271616,
+            "documentsRead": 1,
+            "exitCode": 0
+          }
+        ]
+      },
+      "typescriptAnalysis": {
+        "repetitions": 5,
+        "wallMedianMillis": 7.217492000000021,
+        "wallMinMillis": 7.061047000000002,
+        "wallMaxMillis": 9.205705999999992,
+        "peakRssBytes": 14438400,
+        "samples": [
+          {
+            "wallMillis": 9.205705999999992,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 14241792,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.217492000000021,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 14372864,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.12718000000001,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 14438400,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.374684000000002,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 14241792,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 7.061047000000002,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 14372864,
+            "documentsRead": null,
+            "exitCode": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "github",
+      "input": "github/api.github.com.2022-11-28.json",
+      "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "sourceUrl": "https://raw.githubusercontent.com/github/rest-api-description/4377b4f4845badf28d13464dfb3042c6cf0e3a1f/descriptions/api.github.com/api.github.com.2022-11-28.json",
+      "revision": "4377b4f4845badf28d13464dfb3042c6cf0e3a1f",
+      "operationCount": 1221,
+      "routeIdentitySha256": "90c6d6cca6bfba450587cb3281bb20e15ef07a3de0c68ce84166f7f72cf14c09",
+      "identityComparison": "pass",
+      "filteredRouteComparison": "pass",
+      "inventory": {
+        "repetitions": 3,
+        "wallMedianMillis": 120.79611599999998,
+        "wallMinMillis": 116.52158699999995,
+        "wallMaxMillis": 121.29011899999995,
+        "peakRssBytes": 83181568,
+        "samples": [
+          {
+            "wallMillis": 120.79611599999998,
+            "cpuUserMillis": 80,
+            "cpuSystemMillis": 40,
+            "peakRssBytes": 83181568,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 121.29011899999995,
+            "cpuUserMillis": 90,
+            "cpuSystemMillis": 40,
+            "peakRssBytes": 83120128,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 116.52158699999995,
+            "cpuUserMillis": 90,
+            "cpuSystemMillis": 30,
+            "peakRssBytes": 82923520,
+            "documentsRead": 1,
+            "exitCode": 0
+          }
+        ]
+      },
+      "typescriptAnalysis": {
+        "repetitions": 3,
+        "wallMedianMillis": 730.48624,
+        "wallMinMillis": 704.3869799999998,
+        "wallMaxMillis": 739.1609410000001,
+        "peakRssBytes": 198922240,
+        "samples": [
+          {
+            "wallMillis": 730.48624,
+            "cpuUserMillis": 880,
+            "cpuSystemMillis": 90,
+            "peakRssBytes": 198922240,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 739.1609410000001,
+            "cpuUserMillis": 870,
+            "cpuSystemMillis": 100,
+            "peakRssBytes": 193941504,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 704.3869799999998,
+            "cpuUserMillis": 830,
+            "cpuSystemMillis": 110,
+            "peakRssBytes": 198266880,
+            "documentsRead": null,
+            "exitCode": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "stripe",
+      "input": "stripe/spec3.sdk.json",
+      "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+      "sourceUrl": "https://raw.githubusercontent.com/stripe/openapi/ce576d4f145edeef361a64d9d51b2153e3696b0b/openapi/spec3.sdk.json",
+      "revision": "ce576d4f145edeef361a64d9d51b2153e3696b0b",
+      "operationCount": 559,
+      "routeIdentitySha256": "6f88d26c4cf2d1a1deabdaff783a9b546b521823128a60d038b5d5ad09a04ed4",
+      "identityComparison": "pass",
+      "filteredRouteComparison": "pass",
+      "inventory": {
+        "repetitions": 3,
+        "wallMedianMillis": 77.91841900000009,
+        "wallMinMillis": 77.46879499999977,
+        "wallMaxMillis": 81.67697499999986,
+        "peakRssBytes": 58544128,
+        "samples": [
+          {
+            "wallMillis": 81.67697499999986,
+            "cpuUserMillis": 70,
+            "cpuSystemMillis": 10,
+            "peakRssBytes": 58544128,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 77.46879499999977,
+            "cpuUserMillis": 60,
+            "cpuSystemMillis": 20,
+            "peakRssBytes": 58281984,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 77.91841900000009,
+            "cpuUserMillis": 60,
+            "cpuSystemMillis": 20,
+            "peakRssBytes": 58281984,
+            "documentsRead": 1,
+            "exitCode": 0
+          }
+        ]
+      },
+      "typescriptAnalysis": {
+        "repetitions": 3,
+        "wallMedianMillis": 870.728904,
+        "wallMinMillis": 852.8408890000001,
+        "wallMaxMillis": 903.1634219999996,
+        "peakRssBytes": 146690048,
+        "samples": [
+          {
+            "wallMillis": 870.728904,
+            "cpuUserMillis": 1110,
+            "cpuSystemMillis": 70,
+            "peakRssBytes": 146690048,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 852.8408890000001,
+            "cpuUserMillis": 1020,
+            "cpuSystemMillis": 130,
+            "peakRssBytes": 143609856,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 903.1634219999996,
+            "cpuUserMillis": 1130,
+            "cpuSystemMillis": 100,
+            "peakRssBytes": 146100224,
+            "documentsRead": null,
+            "exitCode": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "digitalocean",
+      "input": "digitalocean/specification/DigitalOcean-public.v2.yaml",
+      "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+      "sourceUrl": "https://raw.githubusercontent.com/digitalocean/openapi/257e7e4ad258fd0ff716a685ffed915922417178/specification/DigitalOcean-public.v2.yaml",
+      "revision": "257e7e4ad258fd0ff716a685ffed915922417178",
+      "operationCount": 739,
+      "routeIdentitySha256": "7c2b62ed40ff3edfba1feca46c97771d91281fbc6ffe2fed0a172b1b2dbaf2b1",
+      "identityComparison": "pass",
+      "filteredRouteComparison": "pass",
+      "inventory": {
+        "repetitions": 3,
+        "wallMedianMillis": 15.838516000000709,
+        "wallMinMillis": 15.596990000000005,
+        "wallMaxMillis": 17.355790000000525,
+        "peakRssBytes": 18956288,
+        "samples": [
+          {
+            "wallMillis": 17.355790000000525,
+            "cpuUserMillis": 10,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 18104320,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 15.596990000000005,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 0,
+            "peakRssBytes": 18575360,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 15.838516000000709,
+            "cpuUserMillis": 0,
+            "cpuSystemMillis": 10,
+            "peakRssBytes": 18956288,
+            "documentsRead": 1,
+            "exitCode": 0
+          }
+        ]
+      },
+      "typescriptAnalysis": {
+        "repetitions": 3,
+        "wallMedianMillis": 3293.4280149999995,
+        "wallMinMillis": 3241.3068380000004,
+        "wallMaxMillis": 3328.4226879999997,
+        "peakRssBytes": 585924608,
+        "samples": [
+          {
+            "wallMillis": 3328.4226879999997,
+            "cpuUserMillis": 4910,
+            "cpuSystemMillis": 1470,
+            "peakRssBytes": 581402624,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 3293.4280149999995,
+            "cpuUserMillis": 4880,
+            "cpuSystemMillis": 1410,
+            "peakRssBytes": 585924608,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 3241.3068380000004,
+            "cpuUserMillis": 4860,
+            "cpuSystemMillis": 1360,
+            "peakRssBytes": 570953728,
+            "documentsRead": null,
+            "exitCode": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "microsoft-graph-beta",
+      "input": "microsoft-graph-beta/openapi.yaml",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/7b2914c8ad1340129f52aa785f13c074cb46fd7c/openapi/beta/openapi.yaml",
+      "revision": "7b2914c8ad1340129f52aa785f13c074cb46fd7c",
+      "operationCount": 29581,
+      "routeIdentitySha256": "7ca2eb4ef7e9171daa947291dd9e01b34f05c85ad768131690b17efd51484751",
+      "identityComparison": "pass",
+      "filteredRouteComparison": "pass",
+      "inventory": {
+        "repetitions": 3,
+        "wallMedianMillis": 3744.247243,
+        "wallMinMillis": 3599.312442999999,
+        "wallMaxMillis": 3775.233680999998,
+        "peakRssBytes": 1588273152,
+        "samples": [
+          {
+            "wallMillis": 3744.247243,
+            "cpuUserMillis": 3560,
+            "cpuSystemMillis": 1050,
+            "peakRssBytes": 1580134400,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 3775.233680999998,
+            "cpuUserMillis": 3750,
+            "cpuSystemMillis": 970,
+            "peakRssBytes": 1587666944,
+            "documentsRead": 1,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 3599.312442999999,
+            "cpuUserMillis": 3500,
+            "cpuSystemMillis": 970,
+            "peakRssBytes": 1588273152,
+            "documentsRead": 1,
+            "exitCode": 0
+          }
+        ]
+      },
+      "typescriptAnalysis": {
+        "repetitions": 3,
+        "wallMedianMillis": 179563.45984200004,
+        "wallMinMillis": 175311.34583600002,
+        "wallMaxMillis": 183189.883676,
+        "peakRssBytes": 7963910144,
+        "samples": [
+          {
+            "wallMillis": 183189.883676,
+            "cpuUserMillis": 242080,
+            "cpuSystemMillis": 18550,
+            "peakRssBytes": 7963910144,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 175311.34583600002,
+            "cpuUserMillis": 248480,
+            "cpuSystemMillis": 7010,
+            "peakRssBytes": 7954010112,
+            "documentsRead": null,
+            "exitCode": 0
+          },
+          {
+            "wallMillis": 179563.45984200004,
+            "cpuUserMillis": 251100,
+            "cpuSystemMillis": 7450,
+            "peakRssBytes": 7922839552,
+            "documentsRead": null,
+            "exitCode": 0
+          }
+        ]
+      }
+    }
+  ]
+}
