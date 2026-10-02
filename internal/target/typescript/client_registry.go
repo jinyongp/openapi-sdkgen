@@ -228,5 +228,19 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	output.WriteString("    links: linkCalls as CallableRegistry[\"links\"],\n")
 	output.WriteString("  }\n")
 	output.WriteString("}\n")
-	return output.Bytes(), nil
+	source := output.String()
+	used := generatedIdentifiers(source)
+	if used["assignCallableProperties"] == 1 {
+		source = strings.Replace(source, "assignCallableProperties, ", "", 1)
+	}
+	if used["defineOwnDataProperty"] == 1 {
+		source = strings.Replace(source, "import { defineOwnDataProperty } from "+quoteTS(objects)+"\n", "", 1)
+	}
+	for _, parameter := range []string{"request", "inputSchemas", "outputSchemas"} {
+		if used[parameter] == 1 {
+			source = strings.Replace(source, parameter+":", "_"+parameter+":", 1)
+			source = strings.Replace(source, parameter+"?:", "_"+parameter+"?:", 1)
+		}
+	}
+	return []byte(generatedTypeImports(source)), nil
 }

@@ -573,7 +573,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 			return "", err
 		}
 		if dynamic != "" {
-			return objectIndexType(schema, scope, dynamic), nil
+			return objectIndexType(document, schema, scope, dynamic), nil
 		}
 		if additional, ok := schema["additionalProperties"].(bool); ok && !additional {
 			return "Readonly<Record<string, never>>", nil
@@ -635,33 +635,41 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		return output.String(), nil
 	}
 	indexType := typeUnion(append([]string{additional}, propertyIndexTypes...))
-	return "(" + output.String() + ") & (" + objectIndexType(schema, scope, indexType) + ")", nil
+	return "(" + output.String() + ") & (" + objectIndexType(document, schema, scope, indexType) + ")", nil
 }
 
-func objectIndexType(schema map[string]any, scope typeRenderScope, value string) string {
-	if objectIndexHasSelfReference(schema, scope) {
+func objectIndexType(document *ir.Document, schema map[string]any, scope typeRenderScope, value string) string {
+	if objectIndexHasSelfReference(document, schema, scope) {
 		return "{ readonly [key: string]: " + value + " }"
 	}
 	return "Readonly<Record<string, " + value + ">>"
 }
 
-func objectIndexHasSelfReference(schema map[string]any, scope typeRenderScope) bool {
+func objectIndexHasSelfReference(document *ir.Document, schema map[string]any, scope typeRenderScope) bool {
 	if scope.ownerComponent == "" {
 		return false
 	}
-	if schemaReferenceTargetsComponent(schema["additionalProperties"], scope.ownerComponent) {
+	if schemaReferenceTargetsComponent(document, schema["additionalProperties"], scope.ownerComponent, make(map[string]bool)) {
 		return true
 	}
 	patterns, _ := schema["patternProperties"].(map[string]any)
 	for _, value := range patterns {
-		if schemaReferenceTargetsComponent(value, scope.ownerComponent) {
+		if schemaReferenceTargetsComponent(document, value, scope.ownerComponent, make(map[string]bool)) {
 			return true
 		}
 	}
 	return false
 }
 
-func schemaReferenceTargetsComponent(value any, owner string) bool {
+func schemaReferenceTargetsComponent(document *ir.Document, value any, owner string, seen map[string]bool) bool {
+	if values, ok := value.([]any); ok {
+		for _, item := range values {
+			if schemaReferenceTargetsComponent(document, item, owner, seen) {
+				return true
+			}
+		}
+		return false
+	}
 	schema, ok := value.(map[string]any)
 	if !ok {
 		return false
@@ -672,11 +680,26 @@ func schemaReferenceTargetsComponent(value any, owner string) bool {
 			reference, _ = dynamic["reference"].(string)
 		}
 	}
-	if reference == "" {
-		return false
+	if reference != "" {
+		name, err := componentSchemaReferenceName(reference)
+		if err == nil {
+			if name == owner {
+				return true
+			}
+			if !seen[name] {
+				seen[name] = true
+				if schemaReferenceTargetsComponent(document, componentSchemaValue(document, name), owner, seen) {
+					return true
+				}
+			}
+		}
 	}
-	name, err := componentSchemaReferenceName(reference)
-	return err == nil && name == owner
+	for _, child := range schema {
+		if schemaReferenceTargetsComponent(document, child, owner, seen) {
+			return true
+		}
+	}
+	return false
 }
 
 // objectAdditionalType is intentionally conservative for patternProperties:

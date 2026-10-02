@@ -83,7 +83,7 @@ func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []genera
 		output.WriteString("  }\n")
 	}
 	output.WriteString("}\n")
-	return output.Bytes(), nil
+	return []byte(generatedTypeImports(output.String())), nil
 }
 
 func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {

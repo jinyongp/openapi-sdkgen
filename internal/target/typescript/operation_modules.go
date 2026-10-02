@@ -271,7 +271,14 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	hasInput := len(item.InputSections) > 0
 	inputOptional := hasInput && !item.prepared.inputRequired
 	output.WriteString("/** Binds this operation's immutable definition to one request executor. */\n")
-	output.WriteString("export function bindBase(request: BufferedRequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): BaseCall {\n")
+	inputSchemas, outputSchemas := "inputSchemas", "outputSchemas"
+	if !strings.Contains(definition, "inputSchemas") {
+		inputSchemas = "_inputSchemas"
+	}
+	if !strings.Contains(definition, "outputSchemas") {
+		outputSchemas = "_outputSchemas"
+	}
+	fmt.Fprintf(&output, "export function bindBase(request: BufferedRequestFunction, %s?: WireSchemas, %s?: WireSchemas): BaseCall {\n", inputSchemas, outputSchemas)
 	fmt.Fprintf(&output, "  return bindGeneratedOperation(request, %s, %t, %t) as BaseCall\n", definition, hasInput, inputOptional)
 	output.WriteString("}\n")
 
@@ -296,7 +303,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 			defaultAccept = quoteTS(stream.Plan.streamMediaTypes[0])
 		}
 		output.WriteString("\n/** Creates this operation's streaming capability. */\n")
-		output.WriteString("export function bindStream(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): Stream {\n")
+		fmt.Fprintf(&output, "export function bindStream(request: RequestFunction, %s?: WireSchemas, %s?: WireSchemas): Stream {\n", inputSchemas, outputSchemas)
 		fmt.Fprintf(&output, "  return bindStreamOperation<Input, %s, Options>(request, %s, %t, %t, %s) as Stream\n", streamItemType, definition, hasInput, inputOptional, defaultAccept)
 		output.WriteString("}\n")
 	}
@@ -320,7 +327,14 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	return []byte(localizedHelpers), nil
+	if generatedIdentifiers(localizedHelpers)["ResourceRawCapability"] == 1 {
+		localizedHelpers = strings.Replace(localizedHelpers, "interface ResourceRawCapability<Route> { readonly raw: ResourceRawMethod<Route> }\n", "", 1)
+		localizedHelpers = strings.Replace(localizedHelpers, "type ResourceRawMethod<Route> = ResourceRawCall & RouteTypeIdentity<Route>\n", "", 1)
+	}
+	if generatedIdentifiers(localizedHelpers)["mergeLinkInput"] == 1 {
+		localizedHelpers = strings.Replace(localizedHelpers, "mergeLinkInput, ", "", 1)
+	}
+	return []byte(generatedTypeImports(localizedHelpers)), nil
 }
 
 func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, links []generatedLink, groups []generatedLinkGroup, names *localIdentifierPlan) ([]byte, error) {

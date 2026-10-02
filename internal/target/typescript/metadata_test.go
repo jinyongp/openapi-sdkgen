@@ -154,15 +154,15 @@ func TestMetadataConsumerKeepsDocumentAndVersionTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 	probe := `import { openapi } from "./metadata.js";
-const version: "3.2.0" = openapi.version;
-const line: "3.2" = openapi.versionLine;
-const title: string = openapi.document.info.title;
+export const version: "3.2.0" = openapi.version;
+export const line: "3.2" = openapi.versionLine;
+export const title: string = openapi.document['info'].title;
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends
   (<Value>() => Value extends Right ? 1 : 2) ? true : false;
-const documentType: Equal<typeof openapi.document, { [key: string]: any }> = true;
+export const documentType: Equal<typeof openapi.document, { [key: string]: any }> = true;
 // @ts-expect-error the document root remains an object
-const scalarDocument: typeof openapi.document = 1;
+export const scalarDocument: typeof openapi.document = 1;
 // @ts-expect-error public metadata wrapper is readonly
 openapi.version = "3.2.0";
 `

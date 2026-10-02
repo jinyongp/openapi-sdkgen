@@ -69,15 +69,15 @@ func TestMetadataAddonFullAndSelectedConsumerContracts(t *testing.T) {
 					}
 					probe := `import {openapi} from "./metadata.js";
 import {createClient} from "./index.js";
-const version: "3.2.1" = openapi.version;
-const line: "3.2" = openapi.versionLine;
+export const version: "3.2.1" = openapi.version;
+export const line: "3.2" = openapi.versionLine;
 declare const api: ReturnType<typeof createClient>;
 api.$operations.a; api.$links.a.next;
 // @ts-expect-error wrapper is readonly
 openapi.version = "3.2.1";
 `
 					if metadata {
-						probe += "const title: string = openapi.document.info.title;\n"
+						probe += "export const title: string = openapi.document['info'].title;\n"
 					} else {
 						probe += "// @ts-expect-error document requires the metadata add-on\nopenapi.document;\n"
 					}

@@ -37,8 +37,8 @@ c(options).b.get();
 // @ts-expect-error Other clients' routes are unavailable.
 c(options).$routes['GET /a']();
 // @ts-expect-error Unrelated schemas stay outside the named component catalog.
-type Unused = Components['Unused'];
-type Same = Client['$routes']['GET /c'];
+export type Unused = Components['Unused'];
+export type Same = Client['$routes']['GET /c'];
 `
 	output := compileSelectedTypeScriptArtifacts(t, selectedFixtureDocument(t), options, probe)
 	if err := filepath.WalkDir(output, func(path string, entry fs.DirEntry, err error) error {
@@ -96,7 +96,7 @@ func TestNamedClientsPreserveExactRoutesAndParameterBuilders(t *testing.T) {
 	probe := `import {createClient} from './clients/page/index.js';
 const api=createClient({baseURL:'https://example.test'});
 api.items(7).get();
-const count:Promise<number>=api.$routes['GET /items/$count']();
+export const count:Promise<number>=api.$routes['GET /items/$count']();
 api.$routes['PurGe /custom']();
 // @ts-expect-error Custom method identities retain their original case.
 api.$routes['PURGE /custom']();
@@ -130,11 +130,11 @@ func TestNamedClientsKeepErrorContractsIndependentOfRootCatalog(t *testing.T) {
 	options := generator.Options{Selection: &generator.Selection{Operations: []string{"root"}}, Clients: map[string]generator.Client{"named": {Selection: &generator.Selection{Operations: []string{"named"}}}}}
 	probe := `import {createClient,type ComponentOutput} from './clients/named/index.js';
 import type {ServerErrorCode} from './index.js';
-const details:ComponentOutput<'NamedDetails'>={id:'detail'};
+export const details:ComponentOutput<'NamedDetails'>={id:'detail'};
 // @ts-expect-error The root catalog preserves its own error-code selection.
-const rootCode:ServerErrorCode='named_only';
+export const rootCode:ServerErrorCode='named_only';
 // @ts-expect-error Named models do not include root-only schemas.
-type RootOnly=ComponentOutput<'RootOnly'>;
+export type RootOnly=ComponentOutput<'RootOnly'>;
 createClient({baseURL:'https://example.test'}).named.get();
 `
 	output := compileSelectedTypeScriptArtifacts(t, document, options, probe)

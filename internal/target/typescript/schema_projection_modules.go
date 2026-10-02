@@ -71,5 +71,5 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 		}
 		fmt.Fprintf(&output, "\nexport const %sWireSchema: WireSchema = %s\n", direction, descriptor)
 	}
-	return output.Bytes(), nil
+	return []byte(generatedTypeImports(output.String())), nil
 }

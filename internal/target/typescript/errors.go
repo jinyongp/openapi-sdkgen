@@ -31,8 +31,8 @@ func emitErrors(document *ir.Document) ([]byte, error) {
 		return nil, err
 	}
 	var output bytes.Buffer
-	output.WriteString("import type { APIError, TransportError, TransportErrorCode } from \"./runtime/errors.js\"\n")
-	if len(contracts) > 0 {
+	output.WriteString("import type { APIError, TransportErrorCode } from \"./runtime/errors.js\"\n")
+	if len(errorCategories(contracts)) > 0 {
 		output.WriteString("import { isErrorCode } from \"./runtime/errors.js\"\n")
 	}
 	if errorContractsUseContractTypes(contracts) {

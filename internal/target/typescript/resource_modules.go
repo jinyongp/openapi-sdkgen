@@ -215,7 +215,15 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		output.WriteString("  return members as Surface\n")
 	}
 	output.WriteString("}\n")
-	return output.Bytes(), nil
+	source := output.String()
+	used := generatedIdentifiers(source)
+	if used["bound"] == 1 {
+		source = strings.Replace(source, "bound: readonly unknown[]", "_bound: readonly unknown[]", 1)
+	}
+	if used["registry"] == 1 {
+		source = strings.Replace(source, "registry: CallableRegistry", "_registry: CallableRegistry", 1)
+	}
+	return []byte(generatedTypeImports(source)), nil
 }
 
 func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, artifact, identity string, child *resourceNode, paths map[string]string) (string, error) {

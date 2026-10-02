@@ -623,6 +623,7 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 		}
 		fmt.Fprintf(output, "    if (%s) return await %s(response, invocation as never)\n", condition, leaf)
 	}
+	hasDefault := false
 	for _, link := range group.Links {
 		if link.Status != "default" {
 			continue
@@ -632,8 +633,12 @@ func emitLinkGroupValue(output *bytes.Buffer, document *ir.Document, group gener
 			return err
 		}
 		fmt.Fprintf(output, "    return await %s(response, invocation as never)\n", leaf)
+		hasDefault = true
 	}
-	fmt.Fprintf(output, "    throw new TypeError(%s)\n  }, { byStatus: {\n", quoteTS("no Link Object named "+group.Name+" matches response status"))
+	if !hasDefault {
+		fmt.Fprintf(output, "    throw new TypeError(%s)\n", quoteTS("no Link Object named "+group.Name+" matches response status"))
+	}
+	output.WriteString("  }, { byStatus: {\n")
 	for _, link := range group.Links {
 		property, err := linkStatusProperty(link.Status)
 		if err != nil {
@@ -654,7 +659,7 @@ func linkStatusCondition(status string) (string, error) {
 		return "response.status === " + status, nil
 	}
 	if rangeResponseStatusPattern.MatchString(status) {
-		return "Math.floor(response.status / 100) === " + string(status[0]), nil
+		return "response.status !== undefined && Math.floor(response.status / 100) === " + string(status[0]), nil
 	}
 	return "", fmt.Errorf("unsupported Link response status %q", status)
 }

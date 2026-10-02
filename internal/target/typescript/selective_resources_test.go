@@ -36,7 +36,7 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(source)
-			if !strings.Contains(text, "SelectedMembers<NodeMembers1<G, P>, NodeMemberRoutes1, G, P>") {
+			if !strings.Contains(text, "SelectedMembers<NodeMembers1<_G, _P>, NodeMemberRoutes1, _G, _P>") {
 				t.Fatal("wide namespace no longer uses deferred member lookup")
 			}
 			if strings.Contains(text, `Member<"item`) {

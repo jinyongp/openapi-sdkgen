@@ -154,7 +154,8 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 		}
 		memberValue := "{}"
 		if len(members) > 0 {
-			fmt.Fprintf(&output, "interface NodeMembers%d<G extends RouteKey, P extends RouteKey> {\n%s\n}\n", ids[node], strings.Join(members, "\n"))
+			memberSource := strings.NewReplacer("<G, P>", "<_G, _P>", ", G, P>", ", _G, _P>").Replace(strings.Join(members, "\n"))
+			fmt.Fprintf(&output, "interface NodeMembers%d<_G extends RouteKey, _P extends RouteKey> {\n%s\n}\n", ids[node], memberSource)
 			fmt.Fprintf(&output, "interface NodeMemberRoutes%d {\n%s\n}\n", ids[node], strings.Join(memberRouteFields, "\n"))
 			memberValue = fmt.Sprintf("SelectedMembers<NodeMembers%d<G, P>, NodeMemberRoutes%d, G, P>", ids[node], ids[node])
 		}
@@ -169,9 +170,23 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 			nodeValue = "WithCall<" + call + ", " + nodeRoutes(child) + ", " + memberValue + ", " + memberRoutes + ", G, P>"
 			allRoutes += " | " + nodeRoutes(child)
 		}
-		fmt.Fprintf(&output, "type NodeRoutes%d = %s\n", ids[node], allRoutes)
-		fmt.Fprintf(&output, "type Node%d<G extends RouteKey, P extends RouteKey> = %s\n\n", ids[node], nodeValue)
+		if node != root {
+			fmt.Fprintf(&output, "type NodeRoutes%d = %s\n", ids[node], allRoutes)
+		}
+		nodeSource := strings.NewReplacer("<G, P>", "<_G, _P>", ", G, P>", ", _G, _P>").Replace(nodeValue)
+		fmt.Fprintf(&output, "type Node%d<_G extends RouteKey, _P extends RouteKey> = %s\n\n", ids[node], nodeSource)
 	}
 	output.WriteString("export type SelectedResources<G extends RouteKey, P extends RouteKey> = Node0<G, P>\n")
-	return output.Bytes(), nil
+	source := output.String()
+	if generatedIdentifiers(source)["WithCall"] == 1 {
+		start := strings.Index(source, "// A parameter builder")
+		end := strings.Index(source, "// Distribute over")
+		source = source[:start] + source[end:]
+	}
+	if generatedIdentifiers(source)["SelectedMembers"] == 1 {
+		start := strings.Index(source, "// Distribute over")
+		end := start + strings.Index(source[start:], "\n\n") + 2
+		source = source[:start] + source[end:]
+	}
+	return []byte(source), nil
 }

@@ -1,8 +1,10 @@
 package typescript
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +15,7 @@ import (
 	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/generator"
+	"openapi-sdkgen/internal/tscheck"
 )
 
 func TestVersionedTypeScriptRuntime(t *testing.T) {
@@ -4190,7 +4193,11 @@ func compileTypeScriptArtifactSet(t *testing.T, artifacts []generator.Artifact, 
 	t.Helper()
 	directory := t.TempDir()
 	source := filepath.Join(directory, "source")
-	writeTargetArtifacts(t, source, artifacts)
+	checked := make([]generator.Artifact, len(artifacts))
+	for index, artifact := range artifacts {
+		checked[index] = generator.Artifact{Path: artifact.Path, Data: bytes.ReplaceAll(artifact.Data, []byte("// @ts-nocheck\n"), nil)}
+	}
+	writeTargetArtifacts(t, source, checked)
 	if probeName != "" {
 		if err := os.WriteFile(filepath.Join(source, probeName), []byte(probe), 0o600); err != nil {
 			t.Fatal(err)
@@ -4199,7 +4206,15 @@ func compileTypeScriptArtifactSet(t *testing.T, artifacts []generator.Artifact, 
 	if err := os.WriteFile(filepath.Join(source, "package.json"), []byte(`{"type":"module"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "tsconfig.json"), []byte(parityTSConfig), 0o600); err != nil {
+	options := tscheck.CompilerOptions()
+	for key, value := range map[string]any{"target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "lib": []string{"ES2022", "DOM", "DOM.Iterable"}, "rootDir": ".", "outDir": "../output"} {
+		options[key] = value
+	}
+	config, err := json.Marshal(map[string]any{"compilerOptions": options, "include": []string{"**/*.ts"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "tsconfig.json"), config, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	tsc := filepath.Join("..", "..", "..", "test", "typescript", "node_modules", "typescript", "lib", "tsc.js")
@@ -4215,11 +4230,6 @@ func compileTypeScriptArtifactSet(t *testing.T, artifacts []generator.Artifact, 
 	}
 	return output
 }
-
-const parityTSConfig = `{
-  "compilerOptions": {"target":"ES2022","module":"NodeNext","moduleResolution":"NodeNext","strict":true,"skipLibCheck":true,"rootDir":".","outDir":"../output"},
-  "include": ["**/*.ts"]
-}`
 
 func writeTargetArtifacts(t *testing.T, directory string, artifacts []generator.Artifact) {
 	t.Helper()

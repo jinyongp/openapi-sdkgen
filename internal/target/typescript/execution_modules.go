@@ -27,8 +27,10 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	if err := importFrom("type { RequestContext }", "internal/runtime/http-types.ts"); err != nil {
 		return nil, err
 	}
-	if err := importFrom("type { WireSchemas }", "internal/runtime/wire-engine.ts"); err != nil {
-		return nil, err
+	if execution.inputBundle == "" && len(execution.inputSchemas) > 0 || execution.outputBundle == "" && len(execution.outputSchemas) > 0 {
+		if err := importFrom("type { WireSchemas }", "internal/runtime/wire-engine.ts"); err != nil {
+			return nil, err
+		}
 	}
 	binders := []string{"bindBase", "type BaseCall"}
 	if len(linkedTargets) > 0 {

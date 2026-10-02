@@ -307,7 +307,12 @@ type SelectedLinkIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
 	} else {
 		output.WriteString("\n/** Only the selected routes and their collision-resolved resource paths. */\nexport type Client<Selection> = {\n  readonly $routes: SelectedOperationCalls<Selection, RouteCalls>\n  readonly $operations: SelectedIDs<G<Selection>, P<Selection>>\n} & SelectedResources<G<Selection>, P<Selection>> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], G<Selection>, P<Selection>, SelectedLinkIDs<G<Selection>, P<Selection>>>\n")
 	}
-	return output.Bytes(), nil
+	source := output.String()
+	if named {
+		source = strings.Replace(source, "type G<S> = GuaranteedSelection<S, RouteKey>\n", "", 1)
+		source = strings.Replace(source, "type P<S> = PossibleSelection<S, RouteKey> & RouteKey\n", "", 1)
+	}
+	return []byte(generatedTypeImports(source)), nil
 }
 
 func emitSelectiveNames(plan *sourcePlan) ([]byte, error) {

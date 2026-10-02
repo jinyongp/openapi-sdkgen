@@ -145,14 +145,15 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	output.WriteString("}\n\n")
 	output.WriteString("/** Raw-call member shared by resource-oriented operation contracts. */\n")
 	output.WriteString("export interface ResourceRawCapability<Route extends keyof Routes> { readonly raw: RawCall<Route> }\n\n")
-	output.WriteString("type PublicType<Value> = Value extends BinaryBody\n")
+	output.WriteString("type PublicType<Value> = PublicValue<Value, never>\n")
+	output.WriteString("type PublicValue<Value, Seen> = Value extends Seen\n")
 	output.WriteString("  ? Value\n")
-	output.WriteString("  : Value extends (...args: any[]) => any\n")
+	output.WriteString("  : Value extends BinaryBody\n")
 	output.WriteString("    ? Value\n")
-	output.WriteString("    : Value extends readonly unknown[]\n")
-	output.WriteString("      ? { [Key in keyof Value]: PublicType<Value[Key]> }\n")
+	output.WriteString("    : Value extends (...args: any[]) => any\n")
+	output.WriteString("      ? Value\n")
 	output.WriteString("      : Value extends object\n")
-	output.WriteString("        ? { [Key in keyof Value]: PublicType<Value[Key]> }\n")
+	output.WriteString("        ? { [Key in keyof Value]: PublicValue<Value[Key], Seen | Value> }\n")
 	output.WriteString("        : Value\n\n")
 	output.WriteString("/** Complete generated input for one exact route. */\n")
 	output.WriteString("export type RouteInput<Route extends keyof Routes> = PublicType<Routes[Route][\"input\"]>\n\n")
@@ -200,7 +201,7 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	if err := emitRouteOperationHelpers(&output, manifest); err != nil {
 		return nil, err
 	}
-	return output.Bytes(), nil
+	return []byte(generatedTypeImports(output.String())), nil
 }
 
 func emitRouteOperationHelpers(output *bytes.Buffer, manifest Manifest) error {

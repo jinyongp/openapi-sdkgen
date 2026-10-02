@@ -472,19 +472,21 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	var output bytes.Buffer
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
 	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
-	if wire.usesProperties {
+	if len(callbacks) > 0 && wire.usesProperties {
 		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
 	}
 	if len(callbacks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
 	output.WriteString("\n")
-	if err := emitInboundSchemas(&output, document); err != nil {
-		return nil, err
-	}
-	output.Write(wireComponents.Bytes())
-	if err := emitInboundSecuritySchemes(&output, document); err != nil {
-		return nil, err
+	if len(callbacks) > 0 {
+		if err := emitInboundSchemas(&output, document); err != nil {
+			return nil, err
+		}
+		output.Write(wireComponents.Bytes())
+		if err := emitInboundSecuritySchemes(&output, document); err != nil {
+			return nil, err
+		}
 	}
 	routeTree := buildCallbackTree(callbacks, false, true)
 	operationTree := buildCallbackTree(callbacks, false, false)
@@ -570,7 +572,19 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 		callbackRuntimeTreeExpression(operationTree),
 		callbackRuntimeTreeExpression(componentTree),
 	)
-	return output.Bytes(), nil
+	source := output.String()
+	if len(callbacks) == 0 {
+		for _, name := range []string{"collectInboundSecurityCandidates", "decodeInboundBody", "decodeInboundParameters", "InboundRequestError", "requiresInboundAuthentication", "responseFromHandler"} {
+			source = strings.Replace(source, name+", ", "", 1)
+		}
+		source = strings.Replace(source, "(handlers: CallbackHandlers", "(_handlers: CallbackHandlers", 1)
+		source = strings.Replace(source, "const inboundCodecs = ", "", 1)
+	}
+	if !callbacksHaveBodies(callbacks) {
+		source = strings.Replace(source, "decodeInboundBody, ", "", 1)
+		source = strings.Replace(source, "const inboundStreamCodecs = ", "", 1)
+	}
+	return []byte(generatedTypeImports(source)), nil
 }
 
 func collectWebhooks(document *ir.Document) ([]webhookDefinition, error) {
@@ -952,19 +966,21 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	var output bytes.Buffer
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, matchInboundRoute, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
 	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/codecs.js\"\n")
-	if wire.usesProperties {
+	if len(webhooks) > 0 && wire.usesProperties {
 		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
 	}
 	if len(webhooks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
 	}
 	output.WriteString("\n")
-	if err := emitInboundSchemas(&output, document); err != nil {
-		return nil, err
-	}
-	output.Write(wireComponents.Bytes())
-	if err := emitInboundSecuritySchemes(&output, document); err != nil {
-		return nil, err
+	if len(webhooks) > 0 {
+		if err := emitInboundSchemas(&output, document); err != nil {
+			return nil, err
+		}
+		output.Write(wireComponents.Bytes())
+		if err := emitInboundSecuritySchemes(&output, document); err != nil {
+			return nil, err
+		}
 	}
 	for _, webhook := range webhooks {
 		fmt.Fprintf(&output, "interface %sContext extends InboundRequestContext {\n  readonly params: %s\n", webhook.typeName, webhook.paramsType)
@@ -1050,7 +1066,23 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 		output.WriteString("      }\n")
 	}
 	output.WriteString("      return new Response(\"Not Found\", { status: 404 })\n    },\n  }\n}\n")
-	return output.Bytes(), nil
+	source := output.String()
+	if len(webhooks) == 0 {
+		for _, name := range []string{"collectInboundSecurityCandidates", "decodeInboundBody", "decodeInboundParameters", "matchInboundRoute", "InboundRequestError", "requiresInboundAuthentication", "responseFromHandler"} {
+			source = strings.Replace(source, name+", ", "", 1)
+		}
+		source = strings.Replace(source, "(handlers: WebhookHandlers", "(_handlers: WebhookHandlers", 1)
+		source = strings.Replace(source, "  const routes = options.routes\n", "", 1)
+		source = strings.Replace(source, "const inboundCodecs = ", "", 1)
+		source = strings.Replace(source, "  const registrations = new Set<string>()\n", "", 1)
+		source = strings.Replace(source, "async fetch(request: Request)", "async fetch(_request: Request)", 1)
+		source = strings.Replace(source, "      const pathname = new URL(request.url).pathname\n", "", 1)
+	}
+	if !webhooksHaveBodies(webhooks) {
+		source = strings.Replace(source, "decodeInboundBody, ", "", 1)
+		source = strings.Replace(source, "const inboundStreamCodecs = ", "", 1)
+	}
+	return []byte(generatedTypeImports(source)), nil
 }
 
 func webhookDefinitionSymbol(webhook webhookDefinition) string {
