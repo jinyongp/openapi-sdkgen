@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Text responses decode declared numeric, boolean, and nullable scalar values
+  before schema validation, including referenced count responses such as
+  Microsoft Graph's `GET /users/$count`. String responses retain their text;
+  malformed scalar bodies and schema constraint violations still fail decoding.
 - **Breaking:** SDK regeneration exports the original OpenAPI document through
   `openapi.document` when `--with metadata` or `addons = ["metadata"]` is enabled.
   Default metadata keeps version and selection information, reducing generated

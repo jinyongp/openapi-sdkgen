@@ -66,6 +66,17 @@ const xmlOperation: OperationDefinition = {
   ],
 };
 
+function textOperation(schema: WireSchema, contentType = "text/plain"): OperationDefinition {
+  return {
+    route: "GET /users/$count",
+    method: "GET",
+    path: "/users/$count",
+    envelope: "",
+    outputSchemas: { Count: { types: ["integer"], minimum: 0 } },
+    responses: [{ status: "2XX", contentType, schemaDeclared: true, schema }],
+  };
+}
+
 for (const [label, http, core, contexts, json, full, wire, codecs, binders] of [
   [
     "template",
@@ -91,6 +102,60 @@ for (const [label, http, core, contexts, json, full, wire, codecs, binders] of [
   ],
 ] as const) {
   describe(`${label} execution services`, () => {
+    it.each([
+      ["reference", { reference: "Count" }, "3", 3],
+      ["integer", { types: ["integer"] }, " 3\r\n", 3],
+      ["number", { types: ["number"] }, "1.25e2", 125],
+      ["boolean", { types: ["boolean"] }, "false", false],
+      ["nullable", { types: ["integer", "null"] }, "null", null],
+      ["allOf", { allOf: [{ reference: "Count" }, { maximum: 10 }] }, "4", 4],
+      ["oneOf", { oneOf: [{ types: ["integer"] }, { types: ["boolean"] }] }, "true", true],
+      ["string", { types: ["string"] }, "003", "003"],
+      ["string union", { types: ["string", "integer"] }, "3", "3"],
+      ["anyOf string", { anyOf: [{ types: ["string"] }, { types: ["number"] }] }, "3", "3"],
+      ["untyped", {}, "3", "3"],
+    ] satisfies readonly (readonly [string, WireSchema, string, unknown])[])(
+      "decodes text %s values according to the declared schema",
+      async (_name, schema, body, expected) => {
+        const request = http.createRequest({
+          baseURL: "https://example.test",
+          fetch: async () =>
+            new Response(body, { headers: { "content-type": "Text/Plain; charset=utf-8" } }),
+        });
+        expect(await request(textOperation(schema))).toEqual(expected);
+        expect((await request.raw(textOperation(schema))).data).toEqual(expected);
+      },
+    );
+
+    it.each(["", " ", "3items", "3.5", "NaN", "Infinity", "1e999", "0x10", "-1", "{}", "[]"])(
+      "rejects invalid text integer response %j",
+      async (body) => {
+        const request = http.createRequest({
+          baseURL: "https://example.test",
+          fetch: async () => new Response(body, { headers: { "content-type": "text/plain" } }),
+        });
+        await expect(request(textOperation({ reference: "Count" }))).rejects.toMatchObject({
+          code: "RESPONSE_DECODE_FAILED",
+          status: 200,
+        });
+      },
+    );
+
+    it("keeps JSON and custom codec string values subject to their own schemas", async () => {
+      for (const contentType of ["application/json", "application/vnd.example.count"]) {
+        const request = http.createRequest({
+          baseURL: "https://example.test",
+          codecs: { "application/vnd.example.count": { decode: async () => "3" } },
+          fetch: async () => new Response('"3"', { headers: { "content-type": contentType } }),
+        });
+        await expect(
+          request(textOperation({ reference: "Count" }, contentType)),
+        ).rejects.toMatchObject({
+          code: "RESPONSE_DECODE_FAILED",
+        });
+      }
+    });
+
     it("shares normalized client settings across buffered and streaming-capable executors", async () => {
       let codecReads = 0;
       const calls: string[] = [];

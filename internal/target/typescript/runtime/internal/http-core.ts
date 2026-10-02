@@ -1596,6 +1596,37 @@ export function createHTTPServices(
         operation.outputSchemas ?? {},
       );
     }
+    const contentType = responseContentType(response);
+    if (
+      definition !== undefined &&
+      definition.streamFraming === undefined &&
+      typeof value === "string" &&
+      contentType?.startsWith("text/") &&
+      !isXMLMediaType(contentType)
+    ) {
+      try {
+        // Keep valid string representations, including string/number unions.
+        return transformWireValue(
+          value,
+          definition.schema,
+          operation.outputSchemas ?? {},
+          "decode",
+          tolerantResponseTransformOptions,
+        );
+      } catch (cause) {
+        let scalar: unknown;
+        try {
+          scalar = JSON.parse(value);
+        } catch {
+          throw cause;
+        }
+        // Text scalar bodies must contain one complete value. Objects and
+        // arrays retain their media-specific decoding and validation paths.
+        if (scalar !== null && typeof scalar !== "number" && typeof scalar !== "boolean")
+          throw cause;
+        value = scalar;
+      }
+    }
     return definition === undefined
       ? value
       : transformWireValue(

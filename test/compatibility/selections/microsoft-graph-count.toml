@@ -1,0 +1,8 @@
+document = "microsoft-graph-beta"
+input_sha256 = "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec"
+runtime_probe = "microsoft-graph-count.mjs"
+
+[selection]
+routes = [
+  "GET /users/$count",
+]
