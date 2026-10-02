@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -51,5 +52,28 @@ func TestGenerateMetadataAddonFromCLIAndConfig(t *testing.T) {
 				t.Fatalf("server presence = %v, want %v", err == nil, test.server)
 			}
 		})
+	}
+}
+
+func TestGenerateMetadataAddonFromStandardInput(t *testing.T) {
+	previous := standardInput
+	t.Cleanup(func() { standardInput = previous })
+	for _, metadata := range []bool{false, true} {
+		standardInput = strings.NewReader(metadataAddonInput)
+		output := filepath.Join(t.TempDir(), "sdk")
+		args := []string{"generate", "--input", "-", "--output", output, "--target", "typescript"}
+		if metadata {
+			args = append(args, "--with", "metadata")
+		}
+		if err := run(args); err != nil {
+			t.Fatal(err)
+		}
+		source, err := os.ReadFile(filepath.Join(output, "metadata.ts"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(source, []byte("Original metadata sentinel")) != metadata {
+			t.Fatal("stdin metadata setting ignored")
+		}
 	}
 }
