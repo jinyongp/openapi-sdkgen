@@ -516,34 +516,47 @@ function transformWireValueWithContext(
   );
   if (value === null || value === undefined) return value;
   const dynamicTarget = resolveDynamicReference(schema, scope);
+  const representations: unknown[] | undefined =
+    dynamicTarget !== undefined ||
+    schema.reference !== undefined ||
+    (schema.allOf?.length ?? 0) > 0 ||
+    schema.if !== undefined ||
+    schema.oneOf !== undefined ||
+    schema.anyOf !== undefined
+      ? []
+      : undefined;
   let transformed: unknown = value;
   if (dynamicTarget !== undefined)
-    transformed = transformWireValueWithContext(
-      transformed,
-      dynamicTarget,
-      components,
-      direction,
-      options,
-      scope,
-      context,
-      ignoreContentMediaType,
-    );
-  if (schema.reference !== undefined) {
-    const referenced = components[schema.reference];
-    if (referenced !== undefined)
-      transformed = transformWireValueWithContext(
-        transformed,
-        referenced,
+    representations?.push(
+      transformWireValueWithContext(
+        value,
+        dynamicTarget,
         components,
         direction,
         options,
         scope,
         context,
         ignoreContentMediaType,
+      ),
+    );
+  if (schema.reference !== undefined) {
+    const referenced = components[schema.reference];
+    if (referenced !== undefined)
+      representations?.push(
+        transformWireValueWithContext(
+          value,
+          referenced,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+          ignoreContentMediaType,
+        ),
       );
   }
   if (Array.isArray(transformed)) {
-    return transformed.map((item, index) => {
+    transformed = transformed.map((item, index) => {
       const itemSchema = schema.prefixItems?.[index] ?? schema.items;
       return itemSchema === undefined
         ? item
@@ -569,36 +582,34 @@ function transformWireValueWithContext(
     for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item);
     for (const classified of classifyWireProperties(source, schema, direction)) {
       const { sourceName, targetName } = classified;
-      let item = source[sourceName];
-      for (const child of classified.schemas)
-        item = transformWireValueWithContext(
-          item,
-          child,
-          components,
-          direction,
-          options,
-          scope,
-          context,
-        );
+      const item = mergeWireRepresentations(
+        source[sourceName],
+        classified.schemas.map((child) =>
+          transformWireValueWithContext(
+            source[sourceName],
+            child,
+            components,
+            direction,
+            options,
+            scope,
+            context,
+          ),
+        ),
+      );
       if (sourceName !== targetName) delete result[sourceName];
       defineOwnDataProperty(result, targetName, item);
     }
     transformed = result;
   }
+  representations?.push(transformed);
   for (const branch of schema.allOf ?? []) {
-    transformed = transformWireValueWithContext(
-      transformed,
-      branch,
-      components,
-      direction,
-      options,
-      scope,
-      context,
+    representations?.push(
+      transformWireValueWithContext(value, branch, components, direction, options, scope, context),
     );
   }
   if (schema.if !== undefined) {
     const branch = schemaMatchesForControlFlow(
-      transformed,
+      value,
       schema.if,
       components,
       direction,
@@ -609,20 +620,22 @@ function transformWireValueWithContext(
       ? schema.then
       : schema.else;
     if (branch !== undefined)
-      transformed = transformWireValueWithContext(
-        transformed,
-        branch,
-        components,
-        direction,
-        options,
-        scope,
-        context,
+      representations?.push(
+        transformWireValueWithContext(
+          value,
+          branch,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+        ),
       );
   }
   for (const variants of [schema.oneOf, schema.anyOf]) {
     if (variants === undefined) continue;
     const matches = matchingSchemasForControlFlow(
-      transformed,
+      value,
       variants,
       components,
       direction,
@@ -632,20 +645,60 @@ function transformWireValueWithContext(
     );
     const selected =
       schema.discriminator !== undefined
-        ? (discriminatorVariant(transformed, schema) ?? matches[0])
+        ? (discriminatorVariant(value, schema) ?? matches[0])
         : matches[0];
     if (selected !== undefined)
-      transformed = transformWireValueWithContext(
-        transformed,
-        selected,
-        components,
-        direction,
-        options,
-        scope,
-        context,
+      representations?.push(
+        transformWireValueWithContext(
+          value,
+          selected,
+          components,
+          direction,
+          options,
+          scope,
+          context,
+        ),
       );
   }
-  return transformed;
+  return representations === undefined
+    ? transformed
+    : mergeWireRepresentations(value, representations);
+}
+
+/** Combines mappings of one original instance without applying a mapping twice. */
+function mergeWireRepresentations(original: unknown, values: readonly unknown[]): unknown {
+  if (values.length === 0) return original;
+  if (values.length === 1) return values[0];
+  if (values.every((value) => value === original)) return original;
+  if (values.every(Array.isArray)) {
+    const source = Array.isArray(original) ? original : [];
+    return values[0]!.map((_: unknown, index: number) =>
+      mergeWireRepresentations(
+        source[index],
+        values.map((value) => value[index]),
+      ),
+    );
+  }
+  if (values.every(isRecord)) {
+    const source = isRecord(original) ? original : (Object.create(null) as Record<string, unknown>);
+    const result = Object.create(null) as Record<string, unknown>;
+    const keys = new Set(values.flatMap((value) => Object.keys(value)));
+    for (const key of keys) {
+      // A mapped source key stays removed even when another schema preserves it.
+      if (Object.hasOwn(source, key) && values.some((value) => !Object.hasOwn(value, key)))
+        continue;
+      defineOwnDataProperty(
+        result,
+        key,
+        mergeWireRepresentations(
+          source[key],
+          values.filter((value) => Object.hasOwn(value, key)).map((value) => value[key]),
+        ),
+      );
+    }
+    return result;
+  }
+  return values[0];
 }
 
 interface ClassifiedWireProperty {

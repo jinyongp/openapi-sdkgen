@@ -11,6 +11,37 @@ const validate = (value: unknown, schema: WireSchema) =>
   validateWireValue(value, schema, {}, "decode");
 
 describe("wire schema constraints", () => {
+  it.each(["declared", "patterns", "allOf"])(
+    "composes %s mappings from the original nested value",
+    (kind) => {
+      const child: WireSchema = {
+        required: ["wire_value"],
+        properties: {
+          wire_value: { property: "wireValue", schema: { types: ["string"], minLength: 2 } },
+        },
+      };
+      const schema: WireSchema =
+        kind === "allOf"
+          ? {
+              allOf: [
+                { properties: { sample: { property: "sample", schema: child } } },
+                { patternProperties: { "^s": child } },
+              ],
+            }
+          : {
+              ...(kind === "declared"
+                ? { properties: { sample: { property: "sample", schema: child } } }
+                : {}),
+              patternProperties: { "^s": child, e$: child },
+            };
+      const client = { sample: { wireValue: "ok" } };
+      const wire = { sample: { wire_value: "ok" } };
+      expect(encodeWireValue(client, schema, {})).toEqual(wire);
+      expect(decodeWireValue(wire, schema, {})).toEqual(client);
+      expect(() => encodeWireValue({ sample: { wireValue: "x" } }, schema, {})).toThrow();
+      expect(() => decodeWireValue({ sample: {} }, schema, {})).toThrow();
+    },
+  );
   it.each<[number, number, boolean]>([
     [3000000000000000.5, 1, false],
     [3000000000000000, 1, true],
