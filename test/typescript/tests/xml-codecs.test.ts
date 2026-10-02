@@ -52,6 +52,74 @@ const catalogSchema: WireSchema = {
 };
 
 describe("XML runtime codecs", () => {
+  it("tokenizes quoted delimiters and decodes character references exactly once", () => {
+    const schema: WireSchema = {
+      types: ["object"],
+      properties: {
+        note: { property: "note", schema: { types: ["string"], xml: { attribute: true } } },
+        value: { property: "value", schema: { types: ["string"] } },
+      },
+    };
+    expect(
+      decodeXML(
+        '<record note="x>y"><value>&#38;lt; &amp;#65; &#x1F600;</value></record>',
+        schema,
+        {},
+      ),
+    ).toEqual({ note: "x>y", value: "&lt; &#65; 😀" });
+  });
+
+  it("declares child namespaces and matches alternate prefixes by URI", () => {
+    const schema: WireSchema = {
+      types: ["object"],
+      xml: { name: "record", prefix: "r", namespace: "urn:root" },
+      properties: {
+        value: {
+          property: "value",
+          schema: {
+            types: ["string"],
+            xml: { name: "value", prefix: "c", namespace: "urn:child" },
+          },
+        },
+      },
+    };
+    expect(encodeXML({ value: "hello" }, schema, {})).toBe(
+      '<r:record xmlns:r="urn:root"><c:value xmlns:c="urn:child">hello</c:value></r:record>',
+    );
+    expect(
+      decodeXML(
+        '<x:record xmlns:x="urn:root" xmlns:y="urn:child"><y:value>hello</y:value></x:record>',
+        schema,
+        {},
+      ),
+    ).toEqual({ value: "hello" });
+    expect(
+      decodeXML('<record><c:value xmlns:c="urn:wrong">hello</c:value></record>', schema, {}),
+    ).toEqual({});
+  });
+
+  it.each([
+    "<root><x:value/></root>",
+    '<root a="1" a="2"/>',
+    '<root xmlns:x="urn:a" xmlns:y="urn:a" x:a="1" y:a="2"/>',
+    '<root a="1"b="2"/>',
+    '<root a="<"/>',
+    "<root>&unknown;</root>",
+    "<root>&amp</root>",
+    "<root><![CDATA[unfinished</root>",
+    '<root a="unfinished>',
+    "<root><!--bad--comment--></root>",
+    "<root><!--bad---></root>",
+    "<root>bad]]>text</root>",
+    '<root xmlns:xml="wrong"/>',
+    '<root xmlns:x=""/>',
+    "<1root/>",
+    "<root>\u0000</root>",
+    '<!DOCTYPE root [<!ENTITY x SYSTEM "file:///etc/passwd">]><root>&x;</root>',
+  ])("rejects malformed or unsupported XML: %s", (source) => {
+    expect(() => decodeXML(source, { types: ["string"] }, {})).toThrow(TypeError);
+  });
+
   it("round-trips namespaces, attributes, wrapped arrays and scalar values", () => {
     const wire = {
       catalog_id: 'catalog&"one',

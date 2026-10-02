@@ -160,9 +160,7 @@
             "const": "then"
           }
         },
-        "required": [
-          "foo"
-        ]
+        "required": ["foo"]
       },
       "then": {
         "properties": {
@@ -170,9 +168,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "bar"
-        ]
+        "required": ["bar"]
       },
       "else": {
         "properties": {
@@ -180,9 +176,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "baz"
-        ]
+        "required": ["baz"]
       },
       "unevaluatedProperties": false
     },
@@ -231,9 +225,7 @@
             "const": "then"
           }
         },
-        "required": [
-          "foo"
-        ]
+        "required": ["foo"]
       },
       "else": {
         "properties": {
@@ -241,9 +233,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "baz"
-        ]
+        "required": ["baz"]
       },
       "unevaluatedProperties": false
     },
@@ -290,9 +280,7 @@
             "const": "then"
           }
         },
-        "required": [
-          "foo"
-        ]
+        "required": ["foo"]
       },
       "then": {
         "properties": {
@@ -300,9 +288,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "bar"
-        ]
+        "required": ["bar"]
       },
       "unevaluatedProperties": false
     },
@@ -488,25 +474,19 @@
               "$ref": "#/$defs/two"
             },
             {
-              "required": [
-                "b"
-              ],
+              "required": ["b"],
               "properties": {
                 "b": true
               }
             },
             {
-              "required": [
-                "xx"
-              ],
+              "required": ["xx"],
               "patternProperties": {
                 "x": true
               }
             },
             {
-              "required": [
-                "all"
-              ],
+              "required": ["all"],
               "unevaluatedProperties": true
             }
           ]
@@ -514,17 +494,13 @@
         "two": {
           "oneOf": [
             {
-              "required": [
-                "c"
-              ],
+              "required": ["c"],
               "properties": {
                 "c": true
               }
             },
             {
-              "required": [
-                "d"
-              ],
+              "required": ["d"],
               "properties": {
                 "d": true
               }
@@ -537,9 +513,7 @@
           "$ref": "#/$defs/one"
         },
         {
-          "required": [
-            "a"
-          ],
+          "required": ["a"],
           "properties": {
             "a": true
           }

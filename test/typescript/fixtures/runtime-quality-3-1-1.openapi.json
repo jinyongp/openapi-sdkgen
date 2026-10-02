@@ -20,9 +20,7 @@
                 "allOf": [
                   {
                     "type": "object",
-                    "required": [
-                      "id"
-                    ],
+                    "required": ["id"],
                     "properties": {
                       "id": {
                         "type": "string"
@@ -31,9 +29,7 @@
                   },
                   {
                     "type": "object",
-                    "required": [
-                      "count"
-                    ],
+                    "required": ["count"],
                     "properties": {
                       "count": {
                         "type": "integer"
@@ -66,9 +62,7 @@
                   "allOf": [
                     {
                       "type": "object",
-                      "required": [
-                        "id"
-                      ],
+                      "required": ["id"],
                       "properties": {
                         "id": {
                           "type": "string"
@@ -77,9 +71,7 @@
                     },
                     {
                       "type": "object",
-                      "required": [
-                        "count"
-                      ],
+                      "required": ["count"],
                       "properties": {
                         "count": {
                           "type": "integer"
@@ -103,9 +95,7 @@
             "application/xml": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "value"
-                ],
+                "required": ["value"],
                 "properties": {
                   "value": {
                     "type": "string",
@@ -139,9 +129,7 @@
               "application/xml": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "value"
-                  ],
+                  "required": ["value"],
                   "properties": {
                     "value": {
                       "type": "string",
@@ -172,9 +160,7 @@
             "application/xml": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "note"
-                ],
+                "required": ["note"],
                 "properties": {
                   "note": {
                     "type": "string",
@@ -205,9 +191,7 @@
               "application/xml": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "note"
-                  ],
+                  "required": ["note"],
                   "properties": {
                     "note": {
                       "type": "string",
@@ -333,9 +317,7 @@
                       "type": "integer"
                     }
                   },
-                  "required": [
-                    "foo"
-                  ]
+                  "required": ["foo"]
                 },
                 "then": {
                   "properties": {
@@ -370,9 +352,7 @@
                         "type": "integer"
                       }
                     },
-                    "required": [
-                      "foo"
-                    ]
+                    "required": ["foo"]
                   },
                   "then": {
                     "properties": {
@@ -621,10 +601,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 }
               }
             }
@@ -648,10 +625,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 }
               }
             }
@@ -675,10 +649,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 }
               }
             }
@@ -702,10 +673,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 }
               }
             }
