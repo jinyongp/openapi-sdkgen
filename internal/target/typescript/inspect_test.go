@@ -57,6 +57,53 @@ func TestInspectPlanMatchesGeneratedCallableSurfaces(t *testing.T) {
 	}
 }
 
+func TestInspectPlanExpressionsMatchSecurityAndStreamingSignatures(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(`{
+"openapi":"3.2.1","info":{"title":"Callable inspection","version":"1"},
+"components":{"securitySchemes":{"Bearer":{"type":"http","scheme":"bearer"}}},
+"security":[{}, {"Bearer":[]}],
+"paths":{
+"/checkout":{"post":{"operationId":"checkout","responses":{"204":{"description":"OK"}}}},
+"/auth":{"post":{"operationId":"authorize","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"string"}}}},"responses":{"204":{"description":"OK"}}}},
+"/search":{"get":{"operationId":"search","parameters":[{"name":"query","in":"query","schema":{"type":"string"}}],"responses":{"204":{"description":"OK"}}}},
+"/tasks/{task-id}":{"get":{"operationId":"getTask","parameters":[{"name":"task-id","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"204":{"description":"OK"}}}},
+"/projects/{projectId}/events":{"get":{"operationId":"watchProjectEvents","parameters":[{"name":"projectId","in":"path","required":true,"schema":{"type":"string"}},{"name":"query","in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":"OK","content":{"application/x-ndjson":{"itemSchema":{"type":"string"}}}}}}},
+"/events":{"get":{"operationId":"watchEvents","security":[],"responses":{"200":{"description":"OK","content":{"application/x-ndjson":{"itemSchema":{"type":"string"}}}}}}}
+}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, diagnostics, err := (Generator{}).Prepare(document, generator.Options{})
+	if err != nil || diagnostic.HasErrors(diagnostics) {
+		t.Fatalf("prepare=%v %#v", err, diagnostics)
+	}
+	inspection, err := InspectPlan(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	probe := `import {createClient} from "./index.js";
+declare const api: ReturnType<typeof createClient>;
+declare const taskID: string;
+declare const projectID: string;
+declare const body: string;
+declare const query: {query?: string};
+declare const options: {readonly securityRequirement: "anonymous"};` + "\n"
+	for route, value := range inspection {
+		if value.ResourceCall == nil {
+			t.Fatalf("missing resource call: %s", route)
+		}
+		probe += *value.ResourceCall + ";\n"
+	}
+	artifacts, err := (Generator{}).Emit(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for index := range artifacts {
+		artifacts[index].Data = bytes.ReplaceAll(artifacts[index].Data, []byte("// @ts-nocheck\n"), nil)
+	}
+	compileTypeScriptArtifactSet(t, artifacts, "inspect-capabilities.ts", probe)
+}
+
 func TestInspectPlanReportsActualResourceOmission(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{"openapi":"3.2.1","info":{"title":"Resource","version":"1"},"paths":{"/files/{name}.json":{"get":{"operationId":"getFile","parameters":[{"name":"name","in":"path","required":true,"schema":{"type":"string"}}],"responses":{"204":{"description":"OK"}}}},"/users":{"get":{"operationId":"listUsers","responses":{"204":{"description":"OK"}}}}}}`))
 	if err != nil {

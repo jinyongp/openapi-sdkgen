@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"fmt"
+	"strings"
 
 	"openapi-sdkgen/internal/generator"
 )
@@ -35,7 +36,10 @@ func InspectPlan(plan generator.Plan) (map[string]OperationInspection, error) {
 			inspection.Status = "exposed"
 		}
 		if public && prepared.resourceReachable[route] {
-			expression := operation.CallExpression
+			expression, err := inspectResourceCall(prepared, operation)
+			if err != nil {
+				return nil, err
+			}
 			inspection.ResourceCall = &expression
 		}
 		if public && inspection.ResourceCall == nil {
@@ -50,4 +54,30 @@ func InspectPlan(plan generator.Plan) (map[string]OperationInspection, error) {
 		result[route] = OperationInspection{Status: "omitted"}
 	}
 	return result, nil
+}
+
+// Keep the prepared, collision-resolved callee, then use the target's input,
+// options and response capability rules to show a supported invocation.
+func inspectResourceCall(plan *sourcePlan, operation ManifestOperation) (string, error) {
+	input := callInput(operation.compiled, operation.InputSections, len(operation.PathParameterOrder) > 0, operation.PathParameterOrder, operation.prepared.pathBindings)
+	callee := strings.TrimSuffix(operation.CallExpression, input)
+	arguments := input[1 : len(input)-1]
+	if operation.optionsRequired {
+		if arguments != "" {
+			arguments += ", "
+		}
+		arguments += "options"
+	}
+	buffered, err := operationHasBufferedSuccess(plan.document, operation.compiled)
+	if err != nil {
+		return "", err
+	}
+	if !buffered {
+		if len(operation.streamMediaTypes) > 0 {
+			callee += ".stream"
+		} else {
+			callee += ".raw"
+		}
+	}
+	return callee + "(" + arguments + ")", nil
 }

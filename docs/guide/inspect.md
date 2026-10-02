@@ -103,6 +103,10 @@ surfaces. `resource` is the nested client API; `routes` identifies a call throug
 `api.$routes["GET /users"]`; `operations` uses its original ID through
 `api.$operations.listUsers`.
 
+Arguments such as `taskID`, `body`, and `options` stand for your values.
+`options` is included when the API requires a choice of security alternative.
+Streaming-only APIs show a `.stream()` call.
+
 Call expressions describe a client containing the document's full API set.
 Filters narrow the displayed rows after that analysis. Generating a subset can
 change names when APIs compete for the same resource member. Hidden APIs and

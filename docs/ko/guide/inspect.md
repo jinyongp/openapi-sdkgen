@@ -99,6 +99,10 @@ openapi-sdkgen inspect --input ./openapi.yaml --target typescript --search tasks
 경로, `routes`는 `api.$routes["GET /users"]`를 통한 호출, `operations`는 원래 ID를
 사용하는 `api.$operations.listUsers`를 뜻합니다.
 
+`taskID`, `body`, `options` 같은 인자는 실제로 전달할 값을 나타냅니다.
+여러 보안 방식 중 하나를 선택해야 하는 API에는 `options`를 표시하고,
+스트리밍 전용 API에는 `.stream()` 호출식을 보여줍니다.
+
 호출식은 문서 전체 API를 포함한 클라이언트를 기준으로 합니다. 필터는 분석 후
 표시할 행을 좁힙니다. 일부 API만 생성하면 같은 resource 이름을 놓고 충돌하는
 API의 구성에 따라 호출 이름이 달라질 수 있습니다. 숨겨진 API와 생성에서 빠진
