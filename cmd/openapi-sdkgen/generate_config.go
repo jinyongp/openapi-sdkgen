@@ -10,22 +10,29 @@ import (
 	"sort"
 	"strings"
 
+	"openapi-sdkgen/internal/generator"
+
 	toml "github.com/pelletier/go-toml/v2"
 )
 
 type generateProjectConfig struct {
-	Source                 *string                         `toml:"source"`
-	Target                 *string                         `toml:"target"`
-	Output                 *string                         `toml:"output"`
-	Addons                 []string                        `toml:"addons"`
-	Incremental            *bool                           `toml:"incremental"`
-	DiagnosticsFormat      *string                         `toml:"diagnostics_format"`
-	DiagnosticMode         *string                         `toml:"diagnostic_mode"`
-	FailOnResourceOmission *bool                           `toml:"fail_on_resource_omission"`
-	Input                  generateProjectInputConfig      `toml:"input"`
-	References             generateProjectRefConfig        `toml:"references"`
-	Schema                 generateProjectSchemaConfig     `toml:"schema"`
-	Selection              *generateProjectSelectionConfig `toml:"selection"`
+	Source                 *string                                `toml:"source"`
+	Target                 *string                                `toml:"target"`
+	Output                 *string                                `toml:"output"`
+	Addons                 []string                               `toml:"addons"`
+	Incremental            *bool                                  `toml:"incremental"`
+	DiagnosticsFormat      *string                                `toml:"diagnostics_format"`
+	DiagnosticMode         *string                                `toml:"diagnostic_mode"`
+	FailOnResourceOmission *bool                                  `toml:"fail_on_resource_omission"`
+	Input                  generateProjectInputConfig             `toml:"input"`
+	References             generateProjectRefConfig               `toml:"references"`
+	Schema                 generateProjectSchemaConfig            `toml:"schema"`
+	Selection              *generateProjectSelectionConfig        `toml:"selection"`
+	Clients                map[string]generateProjectClientConfig `toml:"clients"`
+}
+
+type generateProjectClientConfig struct {
+	Selection *generateProjectSelectionConfig `toml:"selection"`
 }
 
 type generateProjectInputConfig struct {
@@ -79,6 +86,16 @@ func applyGenerateProjectConfig(
 	values *generateFlagValues,
 	visited map[string]bool,
 ) {
+	if config.Clients != nil {
+		values.clients = make(map[string]generator.Client, len(config.Clients))
+		for name, client := range config.Clients {
+			value := generator.Client{}
+			if client.Selection != nil {
+				value.Selection = &generator.Selection{Operations: client.Selection.Operations, Routes: client.Selection.Routes}
+			}
+			values.clients[name] = value
+		}
+	}
 	if config.Selection != nil {
 		values.selectionExplicit = true
 		if !visited["operation"] {

@@ -93,6 +93,7 @@ type generateFlagValues struct {
 	operations             rawStrings
 	routes                 rawStrings
 	selectionExplicit      bool
+	clients                map[string]generator.Client
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -300,6 +301,10 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	}
 	options.DiagnosticMode = diagnosticMode
 	options.FailOnResourceOmission = *values.failOnResourceOmission
+	options.Clients, err = generator.CanonicalClients(values.clients)
+	if err != nil {
+		return generateUsageError(err.Error())
+	}
 	visited := visitedGenerateFlags(flags.Flags)
 	if values.selectionExplicit || visited["operation"] || visited["route"] {
 		options.Selection, err = (&generator.Selection{Operations: values.operations, Routes: values.routes}).Canonical()

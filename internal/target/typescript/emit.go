@@ -91,6 +91,9 @@ type Generator struct{}
 // Name returns the CLI target name.
 func (Generator) Name() string { return "typescript" }
 
+// SupportsClients reports independent named TypeScript client entries.
+func (Generator) SupportsClients() bool { return true }
+
 // SupportsAddon reports artifact sets available for TypeScript source output.
 func (Generator) SupportsAddon(addon generator.Addon) bool {
 	return addon == generator.AddonServer || addon == generator.AddonMetadata

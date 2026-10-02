@@ -238,6 +238,10 @@ func TestGenerateProjectConfigCoversPersistentGenerateFlags(t *testing.T) {
 	}
 	configured := make(map[string]bool, len(configToCLI))
 	for _, key := range generateProjectConfigKeys(reflect.TypeOf(generateProjectConfig{}), "") {
+		// Named client assignments are configured together in the project file.
+		if key == "clients" {
+			continue
+		}
 		cliName, exists := configToCLI[key]
 		if !exists {
 			t.Fatalf("project config key %q has no generate CLI mapping", key)

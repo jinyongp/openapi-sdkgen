@@ -36,7 +36,9 @@ type Options struct {
 	FailOnResourceOmission bool
 	// Selection restricts public API generation. Nil generates the full SDK.
 	Selection *Selection
-	addons    map[Addon]struct{}
+	// Clients assigns APIs to independent named entries in the same source tree.
+	Clients map[string]Client
+	addons  map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.
@@ -107,9 +109,23 @@ type AddonTarget interface {
 	SupportsAddon(Addon) bool
 }
 
+// ClientTarget declares support for named client entries.
+type ClientTarget interface {
+	SupportsClients() bool
+}
+
 // ValidateTargetOptions rejects a selected add-on before document compilation
 // when the chosen target cannot generate it.
 func ValidateTargetOptions(target Target, options Options) error {
+	if options.Clients != nil {
+		if _, err := CanonicalClients(options.Clients); err != nil {
+			return err
+		}
+		supported, ok := target.(ClientTarget)
+		if !ok || !supported.SupportsClients() {
+			return fmt.Errorf("SDK target %q does not support named clients", target.Name())
+		}
+	}
 	supported, hasSupportDeclaration := target.(AddonTarget)
 	for _, addon := range options.Addons() {
 		if !hasSupportDeclaration || !supported.SupportsAddon(addon) {
