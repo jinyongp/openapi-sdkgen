@@ -240,6 +240,12 @@ func resolvePathItem(document, pathItem map[string]any, resolving map[string]boo
 	if err != nil {
 		return nil, err
 	}
+	return MergePathItemReference(pathItem, resolved, reference)
+}
+
+// MergePathItemReference applies the same non-conflicting sibling rule to
+// locally and externally acquired Path Item references.
+func MergePathItemReference(pathItem, resolved map[string]any, reference string) (map[string]any, error) {
 	merged := make(map[string]any, len(resolved)+len(pathItem))
 	for key, value := range resolved {
 		merged[key] = value
@@ -281,6 +287,22 @@ func localPathItemReference(document map[string]any, reference string) (map[stri
 		return nil, fmt.Errorf("unresolved path item reference %q", reference)
 	}
 	return pathItem, nil
+}
+
+// LookupPathItemReference looks up a URI-fragment JSON Pointer without
+// traversing schemas or other references in the referenced object.
+func LookupPathItemReference(document map[string]any, reference string) (map[string]any, error) {
+	if reference == "" || reference == "#" {
+		return document, nil
+	}
+	local, err := IsLocalPathItemReference(reference)
+	if err != nil {
+		return nil, err
+	}
+	if !local {
+		return nil, fmt.Errorf("path item reference %q must use a JSON Pointer", reference)
+	}
+	return localPathItemReference(document, reference)
 }
 
 func jsonPointerToken(token string) (string, error) {
