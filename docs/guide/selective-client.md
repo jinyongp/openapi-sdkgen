@@ -10,6 +10,10 @@ the APIs during generation as described below.
 
 ## Generate only the APIs you need {#generation}
 
+To assign different API sets to separate import paths, use
+[clients for each feature](./named-clients.md). The selection below controls the
+root SDK and its selective entry.
+
 Use [Find APIs](./inspect.md) to browse operation IDs and routes and export a
 selection for this configuration.
 

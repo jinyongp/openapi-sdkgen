@@ -15,12 +15,40 @@ Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
 ## Choose a type source
 
+The tables below describe the root SDK's type helpers. For a configured client
+entry, use the [named client types](#named-clients) described below.
+
 | Source | Helper |
 | --- | --- |
 | generated client method | `Operation*<typeof method>` |
 | OpenAPI `operationId` | `Operation*<"operationId">` |
 | `"METHOD /path"` route | `Route*<"METHOD /path">` |
 | `components.schemas` name | `ComponentInput<Name>` / `ComponentOutput<Name>` |
+
+## Types for a named client {#named-clients}
+
+In the next release, each named entry exports a concrete `Client` and the
+component types required by its selected APIs and Link helpers. Import these
+types from the same entry as `createClient`. For a catalog API using the
+`Product` component:
+
+```ts
+import {
+  createClient,
+  type Client,
+  type ComponentOutput,
+} from "./generated/api/clients/catalog/index.js";
+
+type Product = ComponentOutput<"Product">;
+type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
+type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
+```
+
+`ComponentInput` describes a model's request representation and
+`ComponentOutput` its response representation. A component name used solely by
+another client is absent; a representation unused by this client's APIs is
+`never`. Use `Parameters` and `ReturnType` on this client's methods to extract
+their exact call types.
 
 ## Extract from a generated method
 

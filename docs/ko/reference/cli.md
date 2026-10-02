@@ -43,7 +43,7 @@ v10.0.0부터 제공되는 명령입니다.
 | `--diagnostic-mode fail-fast\|collect` | 진단 수집 방식 |
 
 설정 파일에 `source`가 없다면 `--input`이 필수입니다. 입력·참조의 상대 경로와
-CLI 덮어쓰기 규칙은 생성 명령과 같습니다. 설정 파일의 `selection`, `target`,
+CLI 덮어쓰기 규칙은 생성 명령과 같습니다. 설정 파일의 `selection`, `clients`, `target`,
 `output`, add-on은 생성에 적용됩니다. 분석은 CLI에 target을 지정해서 요청하며,
 이때 설정 파일의 스키마 확장도 재사용합니다.
 
@@ -155,6 +155,8 @@ Config에서 지원하는 key는 전체 CLI surface를 그대로 복제하지 �
 | `addons` | 반복 가능한 `--with` |
 | `selection.operations` | 반복 가능한 `--operation` |
 | `selection.routes` | 반복 가능한 `--route` |
+| `clients.<name>.selection.operations` | 설정 파일 전용 클라이언트 operation ID 목록. 다음 릴리스 |
+| `clients.<name>.selection.routes` | 설정 파일 전용 클라이언트 경로 목록. 다음 릴리스 |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
@@ -221,6 +223,22 @@ Link 의존 코드, 서버 지원, 기존 SDK 갱신 방법은
 [필요한 API만 생성하기](../guide/selective-client.md#generation)에서 설명합니다.
 
 <span id="fresh-incremental-and-check-modes"></span>
+
+### 이름 있는 클라이언트 (다음 릴리스) {#named-clients}
+
+`[clients.<name>.selection]`으로 `clients/<name>/index.ts`에 API를 배정합니다.
+
+```toml
+[clients.orders.selection]
+operations = ["listOrders", "createOrder"]
+```
+
+각 클라이언트에는 비어 있지 않은 선택 목록이 필요하며, 개별 설정은 `selection`만
+지원합니다. 입력 문서·target·output·add-on은 공유합니다. 루트 `[selection]`과
+CLI 선택 덮어쓰기는 별도로 적용하며, 루트 `[selection]`을 생략하면 전체 루트 SDK를
+유지합니다. 이름은 영문 소문자로 시작하고 소문자·숫자·하이픈으로 구성한 64자 이내의
+이름을 사용합니다. Windows 장치 이름은 예약되어 있습니다. import, Link, 갱신 예제는
+[기능별 클라이언트 생성](../guide/named-clients.md)을 참고하세요.
 
 ## Fresh, incremental, check 모드
 

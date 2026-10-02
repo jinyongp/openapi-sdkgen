@@ -6,6 +6,7 @@ TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 
 | 경로 | 용도 |
 | --- | --- |
 | `./generated/api` | API 호출, 생성 타입, 오류, Link, 스트림 |
+| `./generated/api/clients/<name>/index.js` | 설정한 클라이언트의 API와 타입. 다음 릴리스 |
 | `./generated/api/metadata` | OpenAPI 버전과 선택적으로 포함한 원문 확인 |
 
 Inbound Webhook/Callback import는
@@ -35,6 +36,10 @@ const api = createClient({
 ```
 
 실제 설정 흐름은 [인증·전송·스트림](../guide/transport.md)에서 확인하세요.
+
+[이름 있는 클라이언트](../guide/named-clients.md)도 같은 `ClientOptions`를 받는
+동기 `createClient(options)`를 제공합니다. 반환 타입과 메서드는 해당 클라이언트의
+선택 목록을 반영합니다. URL·인증·요청 설정을 따로 쓰려면 별도 인스턴스를 만드세요.
 
 ### ClientOptions
 

@@ -6,6 +6,7 @@ use `./generated/api`.
 | Import path | Use it for |
 | --- | --- |
 | `./generated/api` | API calls, generated types, errors, Links, and streams |
+| `./generated/api/clients/<name>/index.js` | A configured client's selected APIs and types (next release) |
 | `./generated/api/metadata` | OpenAPI version and optional source document |
 
 For inbound Webhook and Callback imports, see
@@ -34,6 +35,11 @@ const api = createClient({
 
 See [transport, authentication, and streams](../guide/transport.md) for guided
 configuration examples.
+
+Each [named client](../guide/named-clients.md) also exports a synchronous
+`createClient(options)` with the same `ClientOptions`. Its return type and
+available methods reflect that client's selection. Create separate instances
+for separate URL, authentication, and request settings.
 
 ### ClientOptions
 

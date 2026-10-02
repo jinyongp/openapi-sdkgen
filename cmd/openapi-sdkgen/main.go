@@ -578,6 +578,7 @@ func writeGenerateHelpWithFlags(registries cliRegistries, flags *commandFlagSet)
 		Description: "Generate application SDK source from an OpenAPI document.",
 		Usage:       "openapi-sdkgen generate [options]",
 		Groups:      flags.Groups,
+		Footer:      "In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named TypeScript client. Root [selection] and CLI selection overrides remain independent.",
 		Examples: []string{`openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \

@@ -30,6 +30,10 @@ const sidebarGroups = [
         labels: { en: "Call your API", ko: "클라이언트로 API 호출" },
       },
       {
+        route: "/guide/named-clients",
+        labels: { en: "Generate clients for each feature", ko: "기능별 클라이언트 생성" },
+      },
+      {
         route: "/guide/selective-client",
         labels: { en: "Load selected operations", ko: "필요한 operation만 불러오기" },
       },

@@ -15,12 +15,38 @@
 
 ## 타입 기준 선택
 
+아래 표는 루트 SDK의 타입 helper를 설명합니다. 설정한 클라이언트 진입점에서는
+[클라이언트별 타입](#named-clients)을 사용하세요.
+
 | 기준 | Helper |
 | --- | --- |
 | 생성된 클라이언트 메서드 | `Operation*<typeof method>` |
 | OpenAPI `operationId` | `Operation*<"operationId">` |
 | `"METHOD /path"` route | `Route*<"METHOD /path">` |
 | `components.schemas` 이름 | `ComponentInput<Name>` / `ComponentOutput<Name>` |
+
+## 클라이언트별 타입 {#named-clients}
+
+다음 릴리스에서는 각 클라이언트 진입점이 구체적인 `Client` 타입과 선택한 API·Link
+helper에 필요한 component 타입을 제공합니다. `createClient`와 같은 진입점에서
+타입을 가져오세요. 상품 API가 `Product` component를 사용하는 경우:
+
+```ts
+import {
+  createClient,
+  type Client,
+  type ComponentOutput,
+} from "./generated/api/clients/catalog/index.js";
+
+type Product = ComponentOutput<"Product">;
+type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
+type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
+```
+
+`ComponentInput`은 모델의 요청 표현, `ComponentOutput`은 응답 표현입니다. 다른
+클라이언트에서만 쓰는 component 이름은 포함되지 않으며, 이 클라이언트의 API에서
+쓰지 않는 방향의 표현은 `never`입니다. 해당 메서드의 정확한 호출 타입은
+`Parameters`와 `ReturnType`으로 추출할 수 있습니다.
 
 ## 생성된 메서드에서 추출
 

@@ -43,7 +43,7 @@ See [Find APIs](../guide/inspect.md) for the workflow. Available starting with v
 
 `--input` is required unless the configuration supplies `source`. The
 configuration's input and reference paths follow the same relative-path and
-CLI override rules as generation. Its `selection`, `target`, `output`, and
+CLI override rules as generation. Its `selection`, `clients`, `target`, `output`, and
 add-ons are generation settings. Enable analysis with an explicit CLI target;
 that analysis also reuses configured schema extensions.
 
@@ -151,6 +151,8 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `addons` | repeatable `--with` |
 | `selection.operations` | repeatable `--operation` |
 | `selection.routes` | repeatable `--route` |
+| `clients.<name>.selection.operations` | Config-only named client operation IDs (next release) |
+| `clients.<name>.selection.routes` | Config-only named client routes (next release) |
 | `incremental` | `--incremental` |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |
@@ -214,6 +216,23 @@ remain in effect. A CLI `--route` list replaces only `selection.routes`.
 
 See [Generate only the APIs you need](../guide/selective-client.md#generation)
 for Link dependencies, server support, and updating a generated SDK.
+
+### Named clients (next release) {#named-clients}
+
+Use `[clients.<name>.selection]` to assign APIs to `clients/<name>/index.ts`:
+
+```toml
+[clients.orders.selection]
+operations = ["listOrders", "createOrder"]
+```
+
+Each client requires a nonempty selection and accepts only `selection` settings.
+The input document, target, output, and add-ons are shared. Root `[selection]`
+and CLI selection overrides apply independently; omitting root `[selection]`
+keeps the full root SDK. Client names are lowercase ASCII letters, digits, and
+hyphens, starting with a letter, with a maximum of 64 characters; Windows device
+names are reserved. See [Generate a client for each feature](../guide/named-clients.md)
+for imports, Links, and updates.
 
 ## Fresh, incremental, and check modes
 

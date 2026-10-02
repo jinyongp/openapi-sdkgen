@@ -56,3 +56,6 @@ Examples:
     --input ./openapi.yaml \
     --target typescript \
     --output ./src/generated/api
+
+In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named
+TypeScript client. Root [selection] and CLI selection overrides remain independent.

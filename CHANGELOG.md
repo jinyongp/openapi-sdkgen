@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Generate independently selected TypeScript clients with
+  `[clients.<name>.selection]`. Each `clients/<name>/index.ts` entry provides a
+  synchronous client and scoped types while sharing operation implementations,
+  required schema representations, and runtime code. Root selection remains
+  independent, and Link dependencies load through the source client's settings.
+- Text response return types now follow the declared schema, matching decoded
+  numeric, boolean, and nullable scalar values for ordinary and raw calls.
+
 ## v10.0.0 — 2026-10-02
 
 - `inspect` lists and filters API declarations, exports routes as a TOML
