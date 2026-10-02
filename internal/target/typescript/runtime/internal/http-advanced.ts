@@ -811,7 +811,7 @@ export function createAdvancedHTTPServices(
           async next(): Promise<IteratorResult<Output>> {
             if (done) return { done: true, value: undefined as never };
             const next: IteratorResult<Input, unknown> = await iterator.next();
-            if (done || next.done) {
+            if (done || next.done === true) {
               done = true;
               return { done: true, value: undefined as never };
             }

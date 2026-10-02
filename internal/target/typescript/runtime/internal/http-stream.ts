@@ -194,7 +194,7 @@ export function createOperationStreamService(
         try {
           while (true) {
             const next: IteratorResult<Item, unknown> = await advance();
-            if (next.done) return;
+            if (next.done === true) return;
             yield next.value;
           }
         } finally {
@@ -241,7 +241,7 @@ export function createOperationStreamService(
             async pull(readableController: ReadableStreamDefaultController<Item>): Promise<void> {
               try {
                 const next: IteratorResult<Item, unknown> = await iterator.next();
-                if (next.done) readableController.close();
+                if (next.done === true) readableController.close();
                 else readableController.enqueue(next.value);
               } catch (cause: unknown) {
                 readableController.error(cause);
