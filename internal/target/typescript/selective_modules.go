@@ -95,6 +95,10 @@ func hashSelectiveArtifact(digest hash.Hash, artifact Artifact) {
 }
 
 func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Artifact) error) error {
+	root := plan
+	if plan.root != nil {
+		root = plan.root
+	}
 	modules := plan.modules
 	for _, bundle := range plan.executionSchemas {
 		source, err := emitExecutionSchemaModule(modules, bundle)
@@ -132,7 +136,7 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		if err := write(Artifact{Path: providerPath, Data: generatedSource(source)}); err != nil {
 			return err
 		}
-		if item.dependencyOnly {
+		if item.dependencyOnly || (root.selection != nil && !root.selection.direct[module.routeKey]) {
 			continue
 		}
 		for _, identity := range []struct{ kind, key string }{{"route", module.routeKey}, {"operation", item.OperationID}} {
@@ -166,7 +170,7 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 			return err
 		}
 	}
-	types, err := emitSelectiveTypes(plan)
+	types, err := emitSelectiveTypes(root)
 	if err != nil {
 		return err
 	}
@@ -199,14 +203,14 @@ export type { OperationReference, OperationSelection } from "../internal/runtime
 export type { ClientOptions } from "../internal/runtime/configuration.js"
 export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
 `, quoteTS(generation))
-	if plan.selection != nil {
-		names, err := json.Marshal(sortedStringKeys(plan.selection.direct))
+	if root.selection != nil {
+		names, err := json.Marshal(sortedStringKeys(root.selection.direct))
 		if err != nil {
 			return err
 		}
 		entry = strings.Replace(entry, "  generation: "+quoteTS(generation)+",", "  generation: "+quoteTS(generation)+",\n  publicRoutes: "+string(names)+",", 1)
 	}
-	all, err := emitSelectiveNames(plan)
+	all, err := emitSelectiveNames(root)
 	if err != nil {
 		return err
 	}
@@ -219,12 +223,20 @@ export { OperationPreparationError } from "../internal/runtime/operation-loader.
 			return err
 		}
 	}
-	return nil
+	return emitNamedClientArtifactsTo(plan, generation, write)
 }
 
 func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
+	return emitSelectiveTypesAt(plan, "selective/types.ts", false)
+}
+
+func emitSelectiveTypesAt(plan *sourcePlan, artifact string, named bool) ([]byte, error) {
 	var output bytes.Buffer
-	output.WriteString("import type { OperationReference, GuaranteedSelection, PossibleSelection, SelectedOperationCalls } from \"../internal/runtime/selection-types.js\"\n\n")
+	selectionTypes, err := plan.modules.relativeModuleSpecifier(artifact, "internal/runtime/selection-types.ts")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(&output, "import type { OperationReference, GuaranteedSelection, PossibleSelection, SelectedOperationCalls } from %s\n\n", quoteTS(selectionTypes))
 	output.WriteString("/** Full development-time contract; never a runtime operation registry. */\nexport interface RouteCalls {\n")
 	items := make(map[string]ManifestOperation)
 	for _, item := range plan.manifest.Operations {
@@ -234,7 +246,7 @@ func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 		if items[module.routeKey].dependencyOnly {
 			continue
 		}
-		specifier, err := plan.modules.relativeModuleSpecifier("selective/types.ts", module.path)
+		specifier, err := plan.modules.relativeModuleSpecifier(artifact, module.path)
 		if err != nil {
 			return nil, err
 		}
@@ -285,12 +297,16 @@ type SelectedLinkIDs<Guaranteed extends RouteKey, Possible extends RouteKey> = {
   readonly [ID in keyof OperationLinkRoutes as OperationLinkRoutes[ID] extends Exclude<Possible, Guaranteed> ? ID : never]?: LinksFor<OperationLinkRoutes[ID]>
 }
 `)
-	resources, err := emitSelectedResourceTypes(plan.document, plan.modules, plan.resourceTree)
+	resources, err := emitSelectedResourceTypesAt(plan.document, plan.modules, plan.resourceTree, artifact)
 	if err != nil {
 		return nil, err
 	}
 	output.Write(resources)
-	output.WriteString("\n/** Only the selected routes and their collision-resolved resource paths. */\nexport type Client<Selection> = {\n  readonly $routes: SelectedOperationCalls<Selection, RouteCalls>\n  readonly $operations: SelectedIDs<G<Selection>, P<Selection>>\n} & SelectedResources<G<Selection>, P<Selection>> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], G<Selection>, P<Selection>, SelectedLinkIDs<G<Selection>, P<Selection>>>\n")
+	if named {
+		output.WriteString("\n/** This client's statically selected APIs and resource paths. */\nexport type Client = {\n  readonly $routes: RouteCalls\n  readonly $operations: SelectedIDs<RouteKey, RouteKey>\n} & SelectedResources<RouteKey, RouteKey> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], RouteKey, RouteKey, SelectedLinkIDs<RouteKey, RouteKey>>\n")
+	} else {
+		output.WriteString("\n/** Only the selected routes and their collision-resolved resource paths. */\nexport type Client<Selection> = {\n  readonly $routes: SelectedOperationCalls<Selection, RouteCalls>\n  readonly $operations: SelectedIDs<G<Selection>, P<Selection>>\n} & SelectedResources<G<Selection>, P<Selection>> & Member<\"$links\", OperationLinkRoutes[keyof OperationLinkRoutes], G<Selection>, P<Selection>, SelectedLinkIDs<G<Selection>, P<Selection>>>\n")
+	}
 	return output.Bytes(), nil
 }
 

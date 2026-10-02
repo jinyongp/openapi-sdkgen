@@ -24,6 +24,10 @@ func emitSchemaProjectionJSDoc(output *bytes.Buffer, summary string, deprecated 
 }
 
 func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, write func(Artifact) error) ([]byte, error) {
+	return emitSchemaArtifactsWithRegistriesTo(document, plan, plan, plan, write)
+}
+
+func emitSchemaArtifactsWithRegistriesTo(document *ir.Document, plan, index, registry *semanticModulePlan, write func(Artifact) error) ([]byte, error) {
 	if plan == nil {
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
@@ -48,11 +52,11 @@ func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, writ
 			return nil, err
 		}
 	}
-	indexSource, err := emitSchemaIndex(document, plan)
+	indexSource, err := emitSchemaIndex(document, index)
 	if err != nil {
 		return nil, err
 	}
-	wireSource, err := emitSchemaWireRegistry(plan)
+	wireSource, err := emitSchemaWireRegistry(registry)
 	if err != nil {
 		return nil, err
 	}

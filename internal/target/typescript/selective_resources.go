@@ -57,6 +57,10 @@ func selectiveResourcePlacements(root *resourceNode) map[string][]selectiveResou
 // Each node's type is parameterized by guaranteed and possible routes. Sharing
 // child aliases avoids expanding every ancestor's complete descendant union.
 func emitSelectedResourceTypes(document *ir.Document, plan *semanticModulePlan, root *resourceNode) ([]byte, error) {
+	return emitSelectedResourceTypesAt(document, plan, root, "selective/types.ts")
+}
+
+func emitSelectedResourceTypesAt(document *ir.Document, plan *semanticModulePlan, root *resourceNode, artifact string) ([]byte, error) {
 	var output bytes.Buffer
 	output.WriteString(`type Member<Key extends string, Routes extends RouteKey, Guaranteed extends RouteKey, Possible extends RouteKey, Value> =
   [Extract<Routes, Possible>] extends [never] ? {} :
@@ -97,7 +101,7 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 		if !exists {
 			return "", fmt.Errorf("selected resource route %q has no operation module", route)
 		}
-		specifier, err := plan.relativeModuleSpecifier("selective/types.ts", module)
+		specifier, err := plan.relativeModuleSpecifier(artifact, module)
 		if err != nil {
 			return "", err
 		}
@@ -157,7 +161,7 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 		nodeValue := memberValue
 		allRoutes := memberRoutes
 		if child := node.parameterChild; child != nil {
-			parameterType, err := resourceParameterType(document, plan, "selective/types.ts", child.parameter)
+			parameterType, err := resourceParameterType(document, plan, artifact, child.parameter)
 			if err != nil {
 				return nil, err
 			}

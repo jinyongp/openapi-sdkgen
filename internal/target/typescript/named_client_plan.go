@@ -74,11 +74,28 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 	if err := plan.modules.planSchemaProjections(); err != nil {
 		return nil, diagnostics, coverage, err
 	}
+	plan.includeMetadata = metadata
 	plan.root = scopedSourcePlan(plan, root)
 	for _, name := range names {
-		plan.clients = append(plan.clients, namedClientPlan{name: name, view: scopedSourcePlan(plan, selections[name])})
+		view := scopedSourcePlan(plan, selections[name])
+		view.includeServer = false
+		if !hasMeaningfulEntrySurface(view) {
+			value := noMeaningfulEntrySurfaceDiagnostic(view.document, plan.ownership)
+			value.Message = fmt.Sprintf("Client %q: %s", name, value.Message)
+			diagnostics = append(diagnostics, value)
+		}
+		plan.clients = append(plan.clients, namedClientPlan{name: name, view: view})
+		for _, file := range []string{"index.ts", "types.ts"} {
+			plan.modules.selective = append(plan.modules.selective, artifactPathCandidate{identity: "client " + name + " " + file, base: "clients/" + name + "/" + file})
+		}
 	}
-	return plan, diagnostics, coverage, nil
+	if !hasMeaningfulEntrySurface(plan.root) {
+		diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.root.document, plan.ownership))
+	}
+	if err := plan.modules.validate(); err != nil {
+		return nil, diagnostics, coverage, err
+	}
+	return plan, diagnostic.Sort(diagnostics), coverage, nil
 }
 
 func scopedSourcePlan(shared *sourcePlan, selection *generationSelection) *sourcePlan {

@@ -29,6 +29,7 @@ type runtimeTemplateArtifact struct {
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
 	{source: "contract-types.ts", path: "internal/runtime/contract-types.ts"},
 	{source: "selected-client.ts", path: "internal/runtime/selected-client.ts"},
+	{source: "named-client.ts", path: "internal/runtime/named-client.ts"},
 	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
 	{source: "selection.ts", path: "internal/runtime/selection.ts"},
 	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
@@ -566,6 +567,10 @@ func emitSourcePlan(plan *sourcePlan) ([]Artifact, error) {
 }
 
 func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
+	shared := plan
+	if shared.root != nil {
+		plan = shared.root
+	}
 	document := plan.document
 	includeServer := plan.includeServer
 	if plan.manifest == nil {
@@ -579,8 +584,8 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	}
 	// Execution dependencies must be complete before the first artifact reaches
 	// the sink. Emission consumes the prepared plan rather than analyzing inputs.
-	for _, module := range plan.modules.operations {
-		if _, exists := plan.executions[module.routeKey]; !exists {
+	for _, module := range shared.modules.operations {
+		if _, exists := shared.executions[module.routeKey]; !exists {
 			return fmt.Errorf("internal TypeScript target: missing prepared execution for %q", module.routeKey)
 		}
 	}
@@ -591,11 +596,15 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		hashSelectiveArtifact(digest, artifact)
 		return publish(artifact)
 	}
-	typesSource, err := emitSchemaArtifactsTo(document, plan.modules, write)
+	schemaIndex := plan.modules
+	if includeServer {
+		schemaIndex = shared.modules
+	}
+	typesSource, err := emitSchemaArtifactsWithRegistriesTo(document, shared.modules, schemaIndex, plan.modules, write)
 	if err != nil {
 		return err
 	}
-	if err := emitOperationArtifactsTo(document, manifest, plan.modules, plan.executions, plan.resourceTree, plan.resourceReachable, plan.links, plan.streams, write); err != nil {
+	if err := emitOperationArtifactsTo(shared.document, *shared.manifest, shared.modules, shared.executions, shared.resourceTree, shared.resourceReachable, shared.links, shared.streams, write); err != nil {
 		return err
 	}
 	if err := emitRouteArtifactsTo(publicManifest, plan.modules, write); err != nil {
@@ -671,7 +680,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		}
 	}
 	if includeServer {
-		serverArtifacts, err := emitPreparedServerArtifacts(document, plan.webhooks, plan.callbacks)
+		serverArtifacts, err := emitPreparedServerArtifacts(shared.document, shared.webhooks, shared.callbacks)
 		if err != nil {
 			return err
 		}
@@ -685,13 +694,13 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	}
 	// Hash the identity-neutral selective artifacts as structured emitter output.
 	// The second render embeds that fingerprint; it never parses or rewrites JS.
-	if err := emitSelectiveArtifactsTo(plan, "", func(artifact Artifact) error {
+	if err := emitSelectiveArtifactsTo(shared, "", func(artifact Artifact) error {
 		hashSelectiveArtifact(digest, artifact)
 		return nil
 	}); err != nil {
 		return err
 	}
-	return emitSelectiveArtifactsTo(plan, fmt.Sprintf("%x", digest.Sum(nil)), publish)
+	return emitSelectiveArtifactsTo(shared, fmt.Sprintf("%x", digest.Sum(nil)), publish)
 }
 
 func validatedArtifactWriter(sink func(Artifact) error) func(Artifact) error {
