@@ -200,22 +200,18 @@ async function* decodeStreamItems(
   }
 }
 
-interface SSELine {
-  readonly line: string;
-  readonly terminator: string;
-  readonly rest: string;
-}
-
 async function* decodeSSEStreamItems(
   body: ReadableStream<Uint8Array>,
   maxFrameBytes: number,
   signal?: AbortSignal,
 ): AsyncIterable<ServerSentEvent> {
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { ignoreBOM: true });
   const encoder = new TextEncoder();
   const reader = body.getReader();
-  let pending = "";
+  let pending: string[] = [];
   let pendingBytes = 0;
+  let afterCR = false;
+  let countLF = false;
   let frameBytes = 0;
   let firstText = true;
   let data = "";
@@ -282,15 +278,32 @@ async function* decodeSSEStreamItems(
         if (decoded.startsWith("\uFEFF")) decoded = decoded.slice(1);
         firstText = false;
       }
-      pending += decoded;
-      pendingBytes += encoder.encode(decoded).byteLength;
-      while (true) {
-        const parsed = takeSSELine(pending, done);
-        if (parsed === undefined) break;
-        const lineBytes = encoder.encode(parsed.line + parsed.terminator).byteLength;
-        pending = parsed.rest;
-        pendingBytes -= lineBytes;
-        if (parsed.line === "") {
+      let start = 0;
+      for (let index = 0; index < decoded.length; index++) {
+        const code = decoded.charCodeAt(index);
+        if (afterCR) {
+          afterCR = false;
+          if (code === 10) {
+            if (countLF) {
+              frameBytes++;
+              assertFrameBytes(frameBytes);
+            }
+            start = index + 1;
+            continue;
+          }
+        }
+        if (code !== 10 && code !== 13) continue;
+        const part = decoded.slice(start, index);
+        pending.push(part);
+        pendingBytes += encoder.encode(part).byteLength;
+        const line = pending.join("");
+        const lineBytes = pendingBytes + 1;
+        pending = [];
+        pendingBytes = 0;
+        start = index + 1;
+        afterCR = code === 13;
+        countLF = line !== "";
+        if (line === "") {
           const item = dispatchEvent();
           frameBytes = 0;
           if (item !== undefined) yield item;
@@ -298,7 +311,12 @@ async function* decodeSSEStreamItems(
         }
         frameBytes += lineBytes;
         assertFrameBytes(frameBytes);
-        processLine(parsed.line);
+        processLine(line);
+      }
+      if (start < decoded.length) {
+        const part = decoded.slice(start);
+        pending.push(part);
+        pendingBytes += encoder.encode(part).byteLength;
       }
       assertFrameBytes(frameBytes + pendingBytes);
       if (done) break;
@@ -310,26 +328,6 @@ async function* decodeSSEStreamItems(
       reader.releaseLock();
     }
   }
-}
-
-function takeSSELine(source: string, eof: boolean): SSELine | undefined {
-  for (let index = 0; index < source.length; index++) {
-    const code = source.charCodeAt(index);
-    if (code === 10) {
-      return { line: source.slice(0, index), terminator: "\n", rest: source.slice(index + 1) };
-    }
-    if (code !== 13) continue;
-    if (index + 1 === source.length && !eof) return undefined;
-    if (source.charCodeAt(index + 1) === 10) {
-      return {
-        line: source.slice(0, index),
-        terminator: "\r\n",
-        rest: source.slice(index + 2),
-      };
-    }
-    return { line: source.slice(0, index), terminator: "\r", rest: source.slice(index + 1) };
-  }
-  return undefined;
 }
 
 /** Parses one JSON stream item and normalizes invalid input as a TypeError. */

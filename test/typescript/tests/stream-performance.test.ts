@@ -100,10 +100,6 @@ const objectItemSchema = {
   additionalProperties: false,
 } as const;
 
-const integerItemSchema = {
-  types: ["integer"],
-} as const;
-
 describe("stream runtime performance acceptance", () => {
   it("defines a complete checked-in performance policy", () => {
     const expectedMetrics: StreamPerformanceMetric[] = [
@@ -138,6 +134,27 @@ describe("stream runtime performance acceptance", () => {
     const sseRequest = createRequest({
       baseURL: "https://api.example.test",
       fetch: async () => new Response(sse, { headers: { "content-type": "text/event-stream" } }),
+      streamCodecs: {
+        "text/event-stream": {
+          adapter: {
+            async *decode(frames: AsyncIterable<unknown>) {
+              for await (const frame of frames) {
+                if (
+                  typeof frame !== "object" ||
+                  frame === null ||
+                  !("data" in frame) ||
+                  typeof frame.data !== "string"
+                )
+                  throw new TypeError("expected SSE data");
+                yield JSON.parse(frame.data);
+              }
+            },
+            async *encode(items: AsyncIterable<unknown>) {
+              for await (const item of items) yield { data: JSON.stringify(item) };
+            },
+          },
+        },
+      },
     });
 
     await expectWithinBaseline("many-small-ndjson", async () => {
@@ -147,7 +164,13 @@ describe("stream runtime performance acceptance", () => {
     });
     await expectWithinBaseline("many-small-sse", async () => {
       expect(
-        await collect(sseRequest.stream(operation("text/event-stream", integerItemSchema))),
+        await collect(
+          sseRequest.stream(
+            operation("text/event-stream", {
+              types: ["integer"],
+            }),
+          ),
+        ),
       ).toBe(count);
     });
   });

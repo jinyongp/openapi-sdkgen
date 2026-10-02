@@ -8,6 +8,10 @@ const runtimeRoot = resolve(
 
 export default defineConfig({
   test: {
+    // Timing acceptance runs share a machine and must avoid competing test files.
+    fileParallelism:
+      process.env.OPENAPI_SDKGEN_STREAM_PERF !== "1" &&
+      process.env.OPENAPI_SDKGEN_QUALITY_PERF !== "1",
     include: ["tests/**/*.test.ts"],
     coverage: {
       // Measure the handwritten client runtime once. Per-operation generated
