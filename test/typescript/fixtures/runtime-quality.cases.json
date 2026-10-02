@@ -1,0 +1,262 @@
+{
+  "xmlAllOf": {
+    "media": "application/xml",
+    "schema": {
+      "type": "object",
+      "xml": {
+        "name": "record"
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "count"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "value": {
+      "id": "a",
+      "count": 2
+    },
+    "response": "<record><id>a</id><count>2</count></record>"
+  },
+  "xmlText": {
+    "media": "application/xml",
+    "schema": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "xml": {
+            "nodeType": "text"
+          }
+        }
+      },
+      "xml": {
+        "name": "record"
+      }
+    },
+    "value": {
+      "text": "hello"
+    },
+    "response": "<record>hello</record>"
+  },
+  "xmlCdata": {
+    "media": "application/xml",
+    "schema": {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "xml": {
+            "nodeType": "cdata"
+          }
+        }
+      },
+      "xml": {
+        "name": "record"
+      }
+    },
+    "value": {
+      "text": "hello"
+    },
+    "response": "<record><![CDATA[hello]]></record>"
+  },
+  "xmlNamespace": {
+    "media": "application/xml",
+    "schema": {
+      "type": "object",
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "xml": {
+            "prefix": "c",
+            "namespace": "urn:child"
+          }
+        }
+      },
+      "xml": {
+        "name": "record",
+        "prefix": "r",
+        "namespace": "urn:root"
+      }
+    },
+    "value": {
+      "value": "hello"
+    },
+    "response": "<r:record xmlns:r=\"urn:root\" xmlns:c=\"urn:child\"><c:value>hello</c:value></r:record>"
+  },
+  "xmlAttribute": {
+    "media": "application/xml",
+    "schema": {
+      "type": "object",
+      "required": [
+        "note"
+      ],
+      "properties": {
+        "note": {
+          "type": "string",
+          "xml": {
+            "attribute": true
+          }
+        }
+      },
+      "xml": {
+        "name": "record"
+      }
+    },
+    "value": {
+      "note": "x>y"
+    },
+    "response": "<record note=\"x>y\"></record>"
+  },
+  "xmlEntity": {
+    "media": "application/xml",
+    "schema": {
+      "type": "string",
+      "xml": {
+        "name": "record"
+      }
+    },
+    "value": "&lt;",
+    "response": "<record>&#38;lt;</record>"
+  },
+  "patternAdditional": {
+    "media": "application/json",
+    "schema": {
+      "type": "object",
+      "patternProperties": {
+        "^s": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "value": {
+      "str": "ok",
+      "num": 1
+    }
+  },
+  "ifEvaluated": {
+    "media": "application/json",
+    "schema": {
+      "type": "object",
+      "if": {
+        "properties": {
+          "foo": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "foo"
+        ]
+      },
+      "then": {
+        "properties": {
+          "bar": {
+            "type": "string"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "value": {
+      "foo": 1,
+      "bar": "ok"
+    }
+  },
+  "nestedProperties": {
+    "media": "application/json",
+    "schema": {
+      "type": "object",
+      "allOf": [
+        {
+          "unevaluatedProperties": true
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "value": {
+      "extra": "ok"
+    }
+  },
+  "nestedItems": {
+    "media": "application/json",
+    "schema": {
+      "type": "array",
+      "allOf": [
+        {
+          "unevaluatedItems": true
+        }
+      ],
+      "unevaluatedItems": false
+    },
+    "value": [
+      1,
+      "ok"
+    ]
+  },
+  "ifItems": {
+    "media": "application/json",
+    "schema": {
+      "type": "array",
+      "if": {
+        "prefixItems": [
+          {
+            "type": "integer"
+          }
+        ]
+      },
+      "then": {},
+      "unevaluatedItems": false
+    },
+    "value": [
+      1
+    ]
+  },
+  "multipleLarge": {
+    "media": "application/json",
+    "schema": {
+      "type": "number",
+      "multipleOf": 1
+    },
+    "value": 3000000000000000.5,
+    "invalid": true
+  },
+  "multipleDecimal": {
+    "media": "application/json",
+    "schema": {
+      "type": "number",
+      "multipleOf": 0.1
+    },
+    "value": 0.3
+  }
+}

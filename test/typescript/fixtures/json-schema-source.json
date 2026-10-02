@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/json-schema-org/JSON-Schema-Test-Suite",
+  "revision": "5b0ee1613e45fcc2bddac00e07c19cd49b00d8a8",
+  "files": {
+    "tests/draft2020-12/unevaluatedProperties.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/5b0ee1613e45fcc2bddac00e07c19cd49b00d8a8/tests/draft2020-12/unevaluatedProperties.json",
+      "sha256": "cdf9b1c6253470b01da5482c6833553f56e1fb652bf466476faa19c8f0cd2c7c"
+    },
+    "tests/draft2020-12/unevaluatedItems.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/5b0ee1613e45fcc2bddac00e07c19cd49b00d8a8/tests/draft2020-12/unevaluatedItems.json",
+      "sha256": "477e7e734ba86a76fc605d34afa6867ab25081b072792c2d853cbe666e42b7da"
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/5b0ee1613e45fcc2bddac00e07c19cd49b00d8a8/LICENSE",
+      "sha256": "837402bd25fad9b704265801ca3f92566a98157c1f9a7acd6f446299ba1c305a"
+    }
+  }
+}
