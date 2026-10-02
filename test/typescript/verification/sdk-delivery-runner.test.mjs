@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
@@ -10,6 +11,37 @@ import { requireVerificationSpace } from "./sdk-delivery-compile.mjs";
 import { runMeasured } from "./measured-process.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
+
+test(
+  "a hangup terminates the detached measured workload",
+  { skip: process.platform === "win32" },
+  async (t) => {
+    const directory = path.join(root, ".tmp/sdk-runner-tests", randomUUID());
+    fs.mkdirSync(directory, { recursive: true });
+    t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+    const marker = path.join(directory, "late-write");
+    const ready = path.join(directory, "ready");
+    const helper = path.join(directory, "helper.mjs");
+    const workload = `require('node:fs').writeFileSync(${JSON.stringify(ready)},'ready');setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'late'),1000)`;
+    fs.writeFileSync(
+      helper,
+      `import {runMeasured} from ${JSON.stringify(new URL("./measured-process.mjs", import.meta.url).href)};await runMeasured(process.execPath,['-e',${JSON.stringify(workload)}],${JSON.stringify({ cwd: directory, resourceFile: path.join(directory, "resources.json"), timeout: 10000 })});`,
+    );
+    const child = spawn(process.execPath, [helper], { stdio: "ignore" });
+    t.after(() => child.kill());
+    const closed = once(child, "exit");
+    const deadline = Date.now() + 5000;
+    while (!fs.existsSync(ready) && Date.now() < deadline)
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    assert(fs.existsSync(ready), "measured workload did not start");
+    child.kill("SIGHUP");
+    const [status, signal] = await closed;
+    assert.equal(status, 129);
+    assert.equal(signal, null);
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assert(!fs.existsSync(marker), "child continued writing after hangup");
+  },
+);
 
 test("a timed measurement terminates its workload before releasing ownership", async (t) => {
   const directory = path.join(root, ".tmp/sdk-runner-tests", randomUUID());

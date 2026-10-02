@@ -33,6 +33,7 @@ export async function runMeasured(
     }
   };
   const interrupts = new Map([
+    ["SIGHUP", 129],
     ["SIGINT", 130],
     ["SIGTERM", 143],
   ]);
