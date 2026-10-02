@@ -52,28 +52,38 @@ const catalogSchema: WireSchema = {
 };
 
 describe("XML runtime codecs", () => {
-  it.each(["p", ""])("declares %s namespaces on each unwrapped array item", (prefix) => {
+  it.each([
+    ["p", true],
+    ["p", false],
+    ["", true],
+    ["", false],
+  ] as const)("declares %s namespaces on unwrapped items (named: %s)", (prefix, named) => {
     const schema: WireSchema = {
       types: ["object"],
       xml: { name: "root" },
       properties: {
-        items: {
-          property: "items",
+        values: {
+          property: "values",
           schema: {
             types: ["array"],
             xml: { name: "items", prefix, namespace: "urn:items", wrapped: false },
-            items: { types: ["string"], xml: { name: "item", prefix, namespace: "urn:items" } },
+            items: {
+              types: ["string"],
+              ...(named ? { xml: { name: "item", prefix, namespace: "urn:items" } } : {}),
+            },
           },
         },
       },
     };
-    const value = { items: ["one", "two"] };
-    const name = prefix ? "p:item" : "item";
+    const value = { values: ["one", "two"] };
+    const localName = named ? "item" : "items";
+    const name = prefix ? `p:${localName}` : localName;
     const declaration = prefix ? 'xmlns:p="urn:items"' : 'xmlns="urn:items"';
     const xml = `<root><${name} ${declaration}>one</${name}><${name} ${declaration}>two</${name}></root>`;
     expect(encodeXML(value, schema, {})).toBe(xml);
     expect(decodeXML(xml, schema, {})).toEqual(value);
     expect(decodeXML(encodeXML(value, schema, {}), schema, {})).toEqual(value);
+    expect(decodeXML(xml.replaceAll("urn:items", "urn:other"), schema, {})).toEqual({ values: [] });
   });
   it("rejects XML properties whose text cannot be assigned unambiguously", () => {
     const schema: WireSchema = {

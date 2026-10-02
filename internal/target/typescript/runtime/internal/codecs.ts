@@ -160,6 +160,31 @@ function xmlProperties(
   return result;
 }
 
+function xmlArrayItem(
+  schema: WireSchema,
+  schemas: WireSchemas,
+  scope: DynamicScope,
+  fallbackName: string,
+): { schema: WireSchema; name: string; wrapped: boolean } {
+  const xml = schema.xml;
+  const item = xmlRepresentation(schema.items ?? {}, schemas, scope);
+  const wrapped = xmlArrayWrapped(xml);
+  return {
+    name: item.xml?.name ?? (wrapped ? fallbackName : (xml?.name ?? fallbackName)),
+    wrapped,
+    schema: wrapped
+      ? item
+      : {
+          ...item,
+          xml: {
+            ...(xml?.prefix === undefined ? {} : { prefix: xml.prefix }),
+            ...(xml?.namespace === undefined ? {} : { namespace: xml.namespace }),
+            ...item.xml,
+          },
+        },
+  };
+}
+
 function encodeXMLElement(
   value: unknown,
   schema: WireSchema,
@@ -182,19 +207,12 @@ function encodeXMLElement(
   >;
   const declarations = namespaceAttributes(xml, namespaces);
   if (Array.isArray(value)) {
-    let itemSchema = xmlRepresentation(schema.items ?? {}, schemas, scope);
-    const wrapped = xmlArrayWrapped(xml);
-    const itemName = itemSchema.xml?.name ?? (wrapped ? fallbackName : name);
+    const {
+      schema: itemSchema,
+      name: itemName,
+      wrapped,
+    } = xmlArrayItem(schema, schemas, scope, fallbackName);
     if (wrapped) expandedXMLName(name, namespaces, false);
-    else
-      itemSchema = {
-        ...itemSchema,
-        xml: {
-          ...(xml?.prefix === undefined ? {} : { prefix: xml.prefix }),
-          ...(xml?.namespace === undefined ? {} : { namespace: xml.namespace }),
-          ...itemSchema.xml,
-        },
-      };
     const values = value
       .map((item) =>
         encodeXMLElement(
@@ -563,8 +581,12 @@ function decodeXMLNode(
         continue;
       }
       if (childSchema.types?.includes("array")) {
-        const itemSchema = xmlRepresentation(childSchema.items ?? {}, components, scope);
-        const container = xmlArrayWrapped(xml)
+        const {
+          schema: itemSchema,
+          name: itemName,
+          wrapped,
+        } = xmlArrayItem(childSchema, components, scope, wireName);
+        const container = wrapped
           ? node.children.find((child) => matchesXMLName(child.name, child, xml, wireName))
           : node;
         if (container !== undefined) {
@@ -572,9 +594,7 @@ function decodeXMLNode(
             result,
             wireName,
             container.children
-              .filter((child) =>
-                matchesXMLName(child.name, child, itemSchema.xml, itemSchema.xml?.name ?? wireName),
-              )
+              .filter((child) => matchesXMLName(child.name, child, itemSchema.xml, itemName))
               .map((child) => decodeXMLNode(child, itemSchema, components, scope)),
           );
         }
