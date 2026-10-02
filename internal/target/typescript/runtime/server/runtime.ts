@@ -18,6 +18,8 @@ import {
   type WireSchemas,
 } from "../internal/codecs.js";
 import { defineOwnDataProperty } from "../internal/objects.js";
+import type { Mutable } from "../internal/objects.js";
+import type { ServerSentEvent } from "../internal/request.js";
 
 /** Metadata provided to host-owned inbound authentication policy. */
 export interface InboundRequestContext {
@@ -697,7 +699,7 @@ function materializeInboundWireSchema(
   nestedSeen.add(schema);
   const scope: readonly WireSchema[] =
     schema.dynamicAnchor === undefined ? dynamicScope : [...dynamicScope, schema];
-  const result: MutableInboundWireSchema = { ...schema } as MutableInboundWireSchema;
+  const result: Mutable<WireSchema> = { ...schema };
   const conjunctions: WireSchema[] = [
     ...(schema.allOf ?? []).map((branch: WireSchema): WireSchema =>
       materializeInboundWireSchema(branch, schemas, scope, nestedSeen),
@@ -721,7 +723,7 @@ function materializeInboundWireSchema(
   if (schema.properties !== undefined) {
     result.properties = Object.fromEntries(
       Object.entries(schema.properties).map(
-        ([name, definition]: [string, WireProperty]): [string, MaterializedInboundWireSchema] => [
+        ([name, definition]: [string, WireProperty]): [string, WireProperty] => [
           name,
           {
             ...definition,
@@ -814,7 +816,7 @@ function inboundWireSchemaAlternatives(
   if (seen.has(schema)) return [{}];
   const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const own: InboundWireSchemaSiblings = { ...schema } as InboundWireSchemaSiblings;
+  const own: Mutable<WireSchema> = { ...schema };
   delete own.reference;
   delete own.allOf;
   delete own.oneOf;
@@ -2146,7 +2148,7 @@ async function* decodeInboundSSEStreamFrames(
       reset();
       return undefined;
     }
-    const result: InboundServerSentEvent = {
+    const result: Mutable<ServerSentEvent> = {
       data: data.slice(0, -1),
     };
     if (event !== undefined) result.event = event;
@@ -3471,59 +3473,17 @@ function inboundResponseStatusMatches(declared: string, actual: number): boolean
 }
 
 type MutableInboundParameterValues = {
-  path: Record<string, unknown>;
-  query: Record<string, unknown>;
-  querystring: Record<string, unknown>;
-  headerParams: Record<string, unknown>;
-  cookieParams: Record<string, unknown>;
+  -readonly [Key in keyof InboundParameterValues]: Mutable<InboundParameterValues[Key]>;
 };
 
 type InboundSortValue = { field: string; direction: string };
 
-type MutableInboundWireSchema = {
-  reference?: string;
-  dynamicReference?: Exclude<WireSchema["dynamicReference"], undefined>;
-  properties?: Readonly<Record<string, WireProperty>>;
-  patternProperties?: Readonly<Record<string, WireSchema>>;
-  dependentSchemas?: Readonly<Record<string, WireSchema>>;
-  items?: WireSchema;
-  prefixItems?: readonly WireSchema[];
-  additionalProperties?: WireSchema | false;
-  unevaluatedProperties?: WireSchema | false;
-  unevaluatedItems?: WireSchema | false;
-  allOf?: readonly WireSchema[];
-  oneOf?: readonly WireSchema[];
-  anyOf?: readonly WireSchema[];
-  contains?: WireSchema;
-  not?: WireSchema;
-  if?: WireSchema;
-  then?: WireSchema;
-  else?: WireSchema;
-  contentSchema?: WireSchema;
-};
-
-type MaterializedInboundWireSchema = { schema: WireSchema; property: string };
-
-type InboundWireSchemaSiblings = {
-  reference?: string;
-  allOf?: readonly WireSchema[];
-  oneOf?: readonly WireSchema[];
-  anyOf?: readonly WireSchema[];
-};
-
-type InboundWireSchemaConjunction = { allOf: WireSchema[] };
+type InboundWireSchemaConjunction = Pick<Required<WireSchema>, "allOf">;
 
 type InboundProtocolItems = {
   readonly items: AsyncIterable<unknown>;
 };
 
 type RequiredStreamSignal = {
-  readonly signal: AbortSignal;
-};
-
-type InboundServerSentEvent = {
-  data: string;
-  event?: string;
-  id?: string;
-  retry?: number;
+  readonly [Key in "signal"]: NonNullable<StreamContext[Key]>;
 };

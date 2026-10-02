@@ -1,5 +1,6 @@
 import type { MediaCodec, WireCodec, WireProperty } from "./wire-engine.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
+import type { Mutable } from "./runtime-support.js";
 import { extendDynamicScope, resolveDynamicReference, type WireXML } from "./wire-engine.js";
 import { createWireCodec } from "./wire-engine.js";
 import { decodeSchemaContent } from "./wire-engine.js";
@@ -106,7 +107,7 @@ function xmlRepresentation(
     parents.push(target);
   }
   parents.push(...(schema.allOf ?? []));
-  const own: MutableWireSchema = { ...schema };
+  const own: Mutable<WireSchema> = { ...schema };
   delete own.reference;
   delete own.dynamicReference;
   delete own.allOf;
@@ -726,8 +727,6 @@ export const bufferedXMLCodecExtensions: BufferedXMLCodecExtensions = {
   encodeXML,
   decodeXML,
 };
-
-type MutableWireSchema = { -readonly [Key in keyof WireSchema]: WireSchema[Key] };
 
 type XMLArrayItem = {
   schema: WireSchema;

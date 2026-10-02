@@ -1,31 +1,18 @@
 import { isJSONMediaType } from "./runtime-support.js";
 import { defineOwnDataProperty, isRecord } from "./runtime-support.js";
 
+type MediaCodecContext = Pick<StreamContext, "contentType">;
+
 /** Host-owned encoder/decoder for one complete declared media value. */
 export interface MediaCodec<Value> {
-  readonly encode?: (
-    value: Value,
-    context: { readonly contentType: string },
-  ) => BodyInit | Promise<BodyInit>;
-  readonly decode?: (
-    response: Response,
-    context: { readonly contentType: string },
-  ) => Value | Promise<Value>;
+  readonly encode?: (value: Value, context: MediaCodecContext) => BodyInit | Promise<BodyInit>;
+  readonly decode?: (response: Response, context: MediaCodecContext) => Value | Promise<Value>;
   /** Serializes one Parameter Object `content` value into its required string representation. */
-  readonly encodeParameter?: (
-    value: Value,
-    context: { readonly contentType: string },
-  ) => string | Promise<string>;
+  readonly encodeParameter?: (value: Value, context: MediaCodecContext) => string | Promise<string>;
   /** Decodes a Parameter Object or response Header Object `content` string. */
-  readonly decodeParameter?: (
-    value: string,
-    context: { readonly contentType: string },
-  ) => Value | Promise<Value>;
+  readonly decodeParameter?: (value: string, context: MediaCodecContext) => Value | Promise<Value>;
   /** Decodes one non-streaming inbound server request for a declared custom media type. */
-  readonly decodeInbound?: (
-    request: Request,
-    context: { readonly contentType: string },
-  ) => Value | Promise<Value>;
+  readonly decodeInbound?: (request: Request, context: MediaCodecContext) => Value | Promise<Value>;
 }
 
 /** Bounded, cancellable byte reader supplied to custom stream protocols. */
@@ -796,7 +783,7 @@ function classifyWireProperties(
     ([pattern, child]: [string, WireSchema]): readonly [RegExp, WireSchema] =>
       [new RegExp(pattern, "u"), child] as const,
   );
-  return Object.keys(value).map((sourceName: string): ClassifiedWireProperties => {
+  return Object.keys(value).map((sourceName: string): ClassifiedWireProperty => {
     const property: DeclaredWireProperty | undefined = declared.get(sourceName);
     const wireName: string = property?.wireName ?? sourceName;
     const schemas: WireSchema[] = property === undefined ? [] : [property.definition.schema];
@@ -1594,11 +1581,3 @@ function schemaMatches(
 export const jsonWireCodec: WireCodec = /* @__PURE__ */ createWireCodec(decodeSchemaContent);
 
 type DeclaredWireProperty = { readonly wireName: string; readonly definition: WireProperty };
-
-type ClassifiedWireProperties = {
-  sourceName: string;
-  wireName: string;
-  targetName: string;
-  schemas: WireSchema[];
-  additional: boolean;
-};

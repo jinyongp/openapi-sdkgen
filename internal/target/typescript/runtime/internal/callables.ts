@@ -1,5 +1,5 @@
 import { isRecord } from "./runtime-support.js";
-import type { OperationDefinition } from "./operation.js";
+import type { OperationDefinition, ParameterDefinition } from "./operation.js";
 import type { OperationStream, RawResponse, RequestOptions } from "./request.js";
 
 /** Shares inline descriptor construction through the existing operation import edge. */
@@ -53,28 +53,32 @@ type OperationOptionsArguments<Options extends RequestOptions> = [RequiredKeys<O
   ? [options?: Options]
   : [options: Options];
 
-const generatedOperationInputKeys: readonly [
+type OperationInputKey =
+  | "body"
+  | Exclude<ParameterDefinition["location"], "header" | "cookie">
+  | `${Extract<ParameterDefinition["location"], "header" | "cookie">}Params`;
+
+type OptionalOperationArguments<Input, Options> = readonly [Input | undefined, Options | undefined];
+
+const generatedOperationInputKeys: readonly OperationInputKey[] = [
   "body",
   "path",
   "query",
   "querystring",
   "headerParams",
   "cookieParams",
-] = ["body", "path", "query", "querystring", "headerParams", "cookieParams"] as const;
+];
 
 function isGeneratedOperationInput(value: unknown): boolean {
   return (
     isRecord(value) &&
-    generatedOperationInputKeys.some(
-      (key: "body" | "path" | "query" | "querystring" | "headerParams" | "cookieParams"): boolean =>
-        Object.hasOwn(value, key),
-    )
+    generatedOperationInputKeys.some((key: OperationInputKey): boolean => Object.hasOwn(value, key))
   );
 }
 
 function splitOptionalOperationArguments<Input, Options extends RequestOptions>(
   args: readonly unknown[],
-): readonly [Input | undefined, Options | undefined] {
+): OptionalOperationArguments<Input, Options> {
   const [first, second]: readonly unknown[] = args;
   if (args.length > 1 || isGeneratedOperationInput(first)) {
     return [first as Input | undefined, second as Options | undefined];
@@ -140,7 +144,7 @@ export function bindOperation<
     | ((...options: OperationOptionsArguments<Options>) => Promise<Output>) = hasInput
     ? inputOptional
       ? (...args: readonly unknown[]): Promise<Output> => {
-          const [input, options]: readonly [Input | undefined, Options | undefined] =
+          const [input, options]: OptionalOperationArguments<Input, Options> =
             splitOptionalOperationArguments<Input, Options>(args);
           return request<Output>(operation, input, options);
         }
@@ -160,7 +164,7 @@ export function bindOperation<
       ? (
           ...args: readonly unknown[]
         ): Promise<RawResponse<Output, Readonly<Record<string, unknown>>>> => {
-          const [input, options]: readonly [Input | undefined, Options | undefined] =
+          const [input, options]: OptionalOperationArguments<Input, Options> =
             splitOptionalOperationArguments<Input, Options>(args);
           return request.raw<Output>(operation, input, options);
         }
@@ -224,7 +228,7 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
         args[0] as Input,
         streamOptions(args[1] as Options | undefined),
       );
-    const [input, options]: readonly [Input | undefined, Options | undefined] =
+    const [input, options]: OptionalOperationArguments<Input, Options> =
       splitOptionalOperationArguments<Input, Options>(args);
     return request.stream<Item>(operation, input, streamOptions(options));
   };
@@ -265,7 +269,7 @@ export function bindPathOperation<
     | ((...options: OperationOptionsArguments<Options>) => Promise<Output>) = hasInput
     ? inputOptional
       ? (...args: readonly unknown[]): Promise<Output> => {
-          const [input, options]: readonly [Input | undefined, Options | undefined] =
+          const [input, options]: OptionalOperationArguments<Input, Options> =
             splitOptionalOperationArguments<Input, Options>(args);
           return callable(mergeInput(input), ...operationOptionsArguments(options));
         }
@@ -278,7 +282,7 @@ export function bindPathOperation<
     | ((...options: OperationOptionsArguments<Options>) => Promise<Raw>) = hasInput
     ? inputOptional
       ? (...args: readonly unknown[]): Promise<Raw> => {
-          const [input, options]: readonly [Input | undefined, Options | undefined] =
+          const [input, options]: OptionalOperationArguments<Input, Options> =
             splitOptionalOperationArguments<Input, Options>(args);
           return callable.raw(mergeInput(input), ...operationOptionsArguments(options));
         }
@@ -298,7 +302,7 @@ export function bindPathOperation<
       : hasInput
         ? inputOptional
           ? (...args: readonly unknown[]): unknown => {
-              const [input, options]: readonly [Input | undefined, Options | undefined] =
+              const [input, options]: OptionalOperationArguments<Input, Options> =
                 splitOptionalOperationArguments<Input, Options>(args);
               return sourceStream(mergeInput(input), options);
             }

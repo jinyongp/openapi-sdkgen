@@ -6,6 +6,7 @@ import type {
   StreamReader,
 } from "./wire-engine.js";
 import type { ServerSentEvent } from "./request.js";
+import type { Mutable } from "./runtime-support.js";
 
 /** Internal response-stream decoding options shared by HTTP framing implementations. */
 export interface StreamDecodeOptions {
@@ -245,7 +246,7 @@ async function* decodeSSEStreamItems(
       resetEvent();
       return undefined;
     }
-    const item: MutableServerSentEvent = {
+    const item: Mutable<ServerSentEvent> = {
       data: data.slice(0, -1),
     };
     if (event !== undefined) item.event = event;
@@ -379,10 +380,3 @@ function awaitAbortable<Value>(
     },
   );
 }
-
-type MutableServerSentEvent = {
-  data: string;
-  event?: string;
-  id?: string;
-  retry?: number;
-};

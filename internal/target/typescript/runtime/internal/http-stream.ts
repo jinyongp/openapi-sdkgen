@@ -2,7 +2,12 @@ import { createHTTPServices } from "./http-core.js";
 import { decodeResponseStreamItems } from "./streaming.js";
 import { jsonWireCodec } from "./wire-engine.js";
 import type { HTTPStreamDecodeOptions } from "./http-types.js";
-import type { MediaCodec, StreamCodec, WireResponseDefinition } from "./wire-engine.js";
+import type {
+  MediaCodec,
+  StreamCodec,
+  WireResponseDefinition,
+  WireTransformOptions,
+} from "./wire-engine.js";
 import type { ClientOptions } from "./configuration.js";
 import { TransportErrorCode, isAPIError } from "./runtime-support.js";
 import { operationDiagnosticName } from "./runtime-support.js";
@@ -28,7 +33,7 @@ import {
   serverError,
   transportError,
 } from "./http-core.js";
-import type { EncodedRequest, AbortContext } from "./http-types.js";
+import type { EncodedRequest, AbortContext, StreamingRequestInit } from "./http-types.js";
 import type { WireCodec } from "./wire-engine.js";
 import type { RequestExecutionServices } from "./http-types.js";
 import type { HTTPCodecExtensions, StreamingRequestExecutionServices } from "./http-types.js";
@@ -40,7 +45,7 @@ export function createOperationStreamService(
   wire: WireCodec,
 ): StreamingRequestExecutionServices["createOperationStream"] {
   const { transformWireValue }: WireCodec = wire;
-  const tolerantResponseTransformOptions: TolerantResponseTransformOptions = {
+  const tolerantResponseTransformOptions: WireTransformOptions = {
     unknownProperties: "preserve",
   } as const;
   function createOperationStream<Item>(
@@ -321,7 +326,7 @@ export function createOperationStreamService(
           cause,
         );
       }
-      const init: RequestInit = {
+      const init: StreamingRequestInit = {
         method: operation.method,
         headers: encoded.headers,
         ...(abort.signal === undefined ? {} : { signal: abort.signal }),
@@ -329,8 +334,7 @@ export function createOperationStreamService(
       };
       if (encoded.body !== undefined) {
         init.body = encoded.body as BodyInit;
-        if (isReadableStream(encoded.body))
-          (init as RequestInit & RequestDuplexExtension).duplex = "half";
+        if (isReadableStream(encoded.body)) init.duplex = "half";
       }
       if (credentials !== undefined) init.credentials = credentials;
       if (abort.signal?.aborted) throw abort.signal.reason;
@@ -488,9 +492,3 @@ function createJSONResponseStreamServices(): StreamingRequestExecutionServices {
 /** JSON-bodied, non-XML plans exposing non-multipart response streams and buffered sequential responses. */
 export const jsonResponseStreamServices: StreamingRequestExecutionServices =
   /* @__PURE__ */ createJSONResponseStreamServices();
-
-type TolerantResponseTransformOptions = { readonly unknownProperties: "preserve" };
-
-type RequestDuplexExtension = {
-  duplex?: "half";
-};

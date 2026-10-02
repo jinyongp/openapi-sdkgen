@@ -17,6 +17,11 @@ export interface OperationRequestOptions extends RequestOptions {
   readonly securityRequirement?: string;
 }
 
+/** Fetch request settings with the streaming-body extension used by Node. */
+export interface StreamingRequestInit extends RequestInit {
+  duplex?: "half";
+}
+
 /** Operation-specific schemas and codecs required to decode a framed response stream. */
 export interface HTTPStreamDecodeOptions {
   readonly contentType: string;

@@ -6,6 +6,7 @@ import type {
   WireProperty,
   WireSchema,
   WireSchemas,
+  WireTransformOptions,
 } from "./wire-engine.js";
 import type { ClientOptions, SecurityCredentialContext } from "./configuration.js";
 import { APIError, TransportErrorCode, isAPIError } from "./runtime-support.js";
@@ -44,6 +45,7 @@ import type {
   ResponseDecodeOptions,
   SDKSecuritySource,
   StreamingRequestExecutionServices,
+  StreamingRequestInit,
 } from "./http-types.js";
 import { isJSONMediaType, isXMLMediaType } from "./runtime-support.js";
 import type { WireCodec } from "./wire-engine.js";
@@ -802,7 +804,7 @@ export function awaitAbortable<Value>(
 export function createRequestContext(options: ClientOptions): RequestContext {
   const baseURL: string | undefined =
     options.baseURL === undefined ? undefined : normalizeBaseURL(options.baseURL);
-  const fetchImplementation: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> =
+  const fetchImplementation: RequestContext["fetchImplementation"] =
     options.transport?.fetch ?? options.fetch ?? globalThis.fetch;
   if (typeof fetchImplementation !== "function") {
     throw new TypeError("fetch is unavailable; pass ClientOptions.fetch");
@@ -829,7 +831,7 @@ export function createHTTPServices(
     "x-request-id",
   ]);
 
-  const tolerantResponseTransformOptions: TolerantResponseTransformOptions = {
+  const tolerantResponseTransformOptions: WireTransformOptions = {
     unknownProperties: "preserve",
   } as const;
 
@@ -2772,15 +2774,14 @@ export function createRequestCore(
           cause,
         );
       }
-      const init: RequestInit = {
+      const init: StreamingRequestInit = {
         method: operation.method,
         headers: encoded.headers,
         ...(encoded.redirect === undefined ? {} : { redirect: encoded.redirect }),
       };
       if (encoded.body !== undefined) {
         init.body = encoded.body as BodyInit;
-        if (isReadableStream(encoded.body))
-          (init as RequestInit & RequestDuplexExtension).duplex = "half";
+        if (isReadableStream(encoded.body)) init.duplex = "half";
       }
       if (abort.signal !== undefined) init.signal = abort.signal;
       if (credentials !== undefined) init.credentials = credentials;
@@ -2972,12 +2973,8 @@ type ResponseFailureMetadata = {
   response: Response;
 };
 
-type TolerantResponseTransformOptions = { readonly unknownProperties: "preserve" };
-
 type TrackedRequestBody = {
   readonly body: ReadableStream<Uint8Array>;
   readonly failure: () => unknown;
   readonly cancel: (reason?: unknown) => Promise<void>;
 };
-
-type RequestDuplexExtension = { duplex?: "half" };

@@ -198,7 +198,10 @@ type TransportErrorCodeValues = {
   readonly TRANSPORT_CAPABILITY_REQUIRED: "TRANSPORT_CAPABILITY_REQUIRED";
 };
 
-type OperationDiagnosticIdentity = {
-  readonly operationID?: string;
-  readonly route: string;
-};
+type OperationDiagnosticIdentity = Pick<
+  import("./operation.js").OperationDefinition,
+  "operationID" | "route"
+>;
+
+/** A shallow writable view of an existing object contract. */
+export type Mutable<Value> = { -readonly [Key in keyof Value]: Value[Key] };

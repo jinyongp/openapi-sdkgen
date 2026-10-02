@@ -82,7 +82,8 @@ func emitPreparedServerArtifacts(document *ir.Document, webhooks []webhookDefini
 
 func emittedServerRuntimeSource() []byte {
 	source := bytes.ReplaceAll(serverRuntimeTemplate, []byte(`from "../internal/codecs.js"`), []byte(`from "../internal/runtime/codecs.js"`))
-	return bytes.ReplaceAll(source, []byte(`from "../internal/objects.js"`), []byte(`from "../internal/runtime/objects.js"`))
+	source = bytes.ReplaceAll(source, []byte(`from "../internal/objects.js"`), []byte(`from "../internal/runtime/objects.js"`))
+	return bytes.ReplaceAll(source, []byte(`from "../internal/request.js"`), []byte(`from "../internal/runtime/request.js"`))
 }
 
 func collectCallbacks(document *ir.Document) ([]callbackDefinition, error) {
