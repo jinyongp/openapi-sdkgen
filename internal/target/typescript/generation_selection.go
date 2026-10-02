@@ -17,7 +17,7 @@ type generationSelection struct {
 	dependencies map[string]bool
 }
 
-func selectGenerationDocument(document *ir.Document, selection *generator.Selection) (*ir.Document, *generationSelection, []diagnostic.Diagnostic, error) {
+func selectGenerationDocument(document *ir.Document, selection *generator.Selection, includeMetadata bool) (*ir.Document, *generationSelection, []diagnostic.Diagnostic, error) {
 	if selection == nil {
 		return document, nil, nil, nil
 	}
@@ -116,7 +116,9 @@ func selectGenerationDocument(document *ir.Document, selection *generator.Select
 	}
 	// Raw remains the complete reference environment. Extension diagnostics are
 	// scoped by effective operation ownership after preparation.
-	if len(view.SourceMetadataJSON) == 0 && document.Raw != nil {
+	// Only source-export consumers need a synthetic snapshot before callback
+	// scoping narrows Raw. Default generation never serializes this fallback.
+	if includeMetadata && len(view.SourceMetadataJSON) == 0 && document.Raw != nil {
 		view.SourceMetadataJSON, err = json.Marshal(document.Raw)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("preserve selected source metadata: %w", err)

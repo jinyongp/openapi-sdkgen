@@ -142,3 +142,65 @@ func TestMetadataAddonPreservesEntryBeforeExternalReferenceBundling(t *testing.T
 		})
 	}
 }
+
+func TestMetadataAddonSelectedSyntheticSourceFallbackIsOptional(t *testing.T) {
+	document, err := sdkgen.Compile([]byte(strings.Replace(generationSelectionFixture, `"x-envelope":false,`, "", 1)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	document.SourceMetadataJSON = nil
+	components := document.Raw["components"].(map[string]any)
+	components["callbacks"] = map[string]any{"Unselected": map[string]any{"{$request.query.callback}": map[string]any{"post": map[string]any{"responses": map[string]any{"204": map[string]any{"description": "OK"}}}}}}
+	document.Raw["x-non-json"] = func() {}
+	selection := &generator.Selection{Operations: []string{"a"}}
+	registry, err := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, server := range []bool{false, true} {
+		var addons []string
+		if server {
+			addons = append(addons, "server")
+		}
+		options, err := registry.Resolve(addons)
+		if err != nil {
+			t.Fatal(err)
+		}
+		options.Selection = selection
+		if _, err := (Generator{}).Generate(document, options); err != nil {
+			t.Fatalf("default selected/server=%v serialized source: %v", server, err)
+		}
+		options, err = registry.Resolve(append(addons, "metadata"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		options.Selection = selection
+		if _, err := (Generator{}).Generate(document, options); err == nil {
+			t.Fatal("source add-on accepted non-JSON fallback")
+		}
+	}
+	delete(document.Raw, "x-non-json")
+	want, err := json.Marshal(document.Raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options, err := registry.Resolve([]string{"server", "metadata"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	options.Selection = selection
+	artifacts, err := (Generator{}).Generate(document, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var actual, original any
+	if err := json.Unmarshal([]byte(metadataJSON(t, artifactByPath(t, artifacts, "metadata.ts"))), &actual); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(want, &original); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(actual, original) || len(document.SourceMetadataJSON) != 0 {
+		t.Fatal("selected fallback changed the original document")
+	}
+}

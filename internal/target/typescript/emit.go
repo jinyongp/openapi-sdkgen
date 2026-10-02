@@ -136,7 +136,7 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	if err != nil {
 		return generator.Plan{}, nil, nil, fmt.Errorf("internal TypeScript target: diagnostic mode: %w", err)
 	}
-	plan, diagnostics, coverage, err := prepareSelectedSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission, options.Selection)
+	plan, diagnostics, coverage, err := prepareSelectedSourcePlanWithCoverage(document, options.HasAddon(generator.AddonServer), mode, options.FailOnResourceOmission, options.Selection, options.HasAddon(generator.AddonMetadata))
 	if err != nil {
 		return generator.Plan{}, diagnostics, coverage, err
 	}
@@ -283,10 +283,10 @@ func prepareSourcePlan(document *ir.Document, includeServer bool) (*sourcePlan, 
 
 func prepareSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, failOnResourceOmission ...bool) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	strictResourceOmission := len(failOnResourceOmission) != 0 && failOnResourceOmission[0]
-	return prepareSelectedSourcePlanWithCoverage(document, includeServer, mode, strictResourceOmission, nil)
+	return prepareSelectedSourcePlanWithCoverage(document, includeServer, mode, strictResourceOmission, nil, false)
 }
 
-func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, strictResourceOmission bool, selectors *generator.Selection) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
+func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer bool, mode diagnostic.Mode, strictResourceOmission bool, selectors *generator.Selection, includeMetadata bool) (*sourcePlan, []diagnostic.Diagnostic, []diagnostic.AnalysisCoverage, error) {
 	if document == nil {
 		return nil, nil, nil, fmt.Errorf("IR document is nil")
 	}
@@ -295,7 +295,7 @@ func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer 
 	}
 	var coverage []diagnostic.AnalysisCoverage
 	sourceDocument := document
-	document, selection, selectionDiagnostics, err := selectGenerationDocument(document, selectors)
+	document, selection, selectionDiagnostics, err := selectGenerationDocument(document, selectors, includeMetadata)
 	if err != nil {
 		return nil, nil, coverage, err
 	}
