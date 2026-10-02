@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestSelectBenchmarkCorpora(t *testing.T) {
@@ -63,13 +64,17 @@ func writeMergeShards(t *testing.T, shards []benchmarkReport) []string {
 func TestMergeBenchmarkReportsPreservesMeasuredResults(t *testing.T) {
 	manifest, original, shards := mergeFixture(t)
 	// Runners may have different CPU models, and the latest date is chronological.
+	measuredAt, err := time.Parse(time.RFC3339, original.Measurement.MeasuredAt)
+	if err != nil {
+		t.Fatal(err)
+	}
 	first := *original.Measurement
 	first.CPU = "first runner"
-	first.MeasuredAt = "2026-10-01T23:00:00+09:00"
+	first.MeasuredAt = measuredAt.Add(time.Hour).In(time.FixedZone("UTC+9", 9*60*60)).Format(time.RFC3339)
 	shards[0].Measurement = &first
 	last := *original.Measurement
 	last.CPU = "second runner"
-	last.MeasuredAt = "2026-10-01T15:00:00Z"
+	last.MeasuredAt = measuredAt.Add(2 * time.Hour).UTC().Format(time.RFC3339)
 	shards[len(shards)-1].Measurement = &last
 	paths := writeMergeShards(t, shards)
 	// Artifact enumeration order must not affect document ordering or totals.
