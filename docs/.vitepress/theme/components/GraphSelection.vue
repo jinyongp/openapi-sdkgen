@@ -28,8 +28,8 @@ const date = new Intl.DateTimeFormat(props.locale, { dateStyle: "medium", timeZo
     </div>
     <p v-if="ko">선택 SDK는 전체 파일 타입 검사를 {{ time(selected.typecheck.durationMillis) }}에 통과했습니다. <code>loadOperations</code>로 준비한 클라이언트의 경로·쿼리·본문·응답 처리도 모의 호출로 확인했습니다.</p>
     <p v-else>The selected SDK passed typechecking of every generated file in {{ time(selected.typecheck.durationMillis) }}. Mock calls also verified path, query, body, and response handling through a client prepared with <code>loadOperations</code>.</p>
-    <p v-if="ko">원문이 필요한 경우 <code>--with metadata</code>로 포함할 수 있습니다. 아래는 같은 API를 생성했을 때의 용량과 생성 시간입니다. 기본 설정에서도 API 호출과 필요한 타입은 모두 제공됩니다. Graph API 9개는 서로 연결된 스키마 {{ number(selected.generation.schemaArtifactCount) }}개를 사용합니다.</p>
-    <p v-else>Include the original document with <code>--with metadata</code> when you need it. The comparison below shows size and generation time for the same selected APIs. Default generation includes all API calls and required types. The nine Graph APIs use {{ number(selected.generation.schemaArtifactCount) }} connected schemas.</p>
+    <p v-if="ko">원문이 필요한 경우 <code>--with metadata</code>로 포함할 수 있습니다. 아래는 같은 API를 생성했을 때의 용량과 생성 시간입니다. 기본 설정에서도 API 호출과 필요한 타입은 모두 제공됩니다. Graph API 9개의 타입을 위해 스키마 파일 {{ number(selected.generation.schemaArtifactCount) }}개가 생성됐습니다.</p>
+    <p v-else>Include the original document with <code>--with metadata</code> when you need it. The comparison below shows size and generation time for the same selected APIs. Default generation includes all API calls and required types. The nine Graph APIs generate {{ number(selected.generation.schemaArtifactCount) }} schema files for their types.</p>
     <div class="graph-table" role="region" :aria-label="ko ? '원문 포함 여부에 따른 크기와 시간' : 'Size and time with optional source metadata'" tabindex="0">
       <table>
         <thead><tr><th scope="col">{{ ko ? "선택한 API" : "Selected APIs" }}</th><th scope="col">{{ ko ? "기본 · 용량 / 시간" : "Default · size / time" }}</th><th scope="col">{{ ko ? "원문 포함 · 용량 / 시간" : "Source included · size / time" }}</th></tr></thead>
