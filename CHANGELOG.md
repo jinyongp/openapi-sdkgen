@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v10.0.0 — 2026-10-02
+
 - `inspect` lists and filters API declarations, exports routes as a TOML
   selection, and optionally analyzes TypeScript client call paths. The default
   lookup reads mounted Path Item references independently of SDK generation.
