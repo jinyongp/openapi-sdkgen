@@ -222,8 +222,6 @@ CLI의 `--operation` 목록은 `selection.operations`만 대체하고 설정 파
 Link 의존 코드, 서버 지원, 기존 SDK 갱신 방법은
 [필요한 API만 생성하기](../guide/selective-client.md#generation)에서 설명합니다.
 
-<span id="fresh-incremental-and-check-modes"></span>
-
 ### 이름 있는 클라이언트 (다음 릴리스) {#named-clients}
 
 `[clients.<name>.selection]`으로 `clients/<name>/index.ts`에 API를 배정합니다.
@@ -239,6 +237,8 @@ CLI 선택 덮어쓰기는 별도로 적용하며, 루트 `[selection]`을 생�
 유지합니다. 이름은 영문 소문자로 시작하고 소문자·숫자·하이픈으로 구성한 64자 이내의
 이름을 사용합니다. Windows 장치 이름은 예약되어 있습니다. import, Link, 갱신 예제는
 [기능별 클라이언트 생성](../guide/named-clients.md)을 참고하세요.
+
+<span id="fresh-incremental-and-check-modes"></span>
 
 ## Fresh, incremental, check 모드
 
