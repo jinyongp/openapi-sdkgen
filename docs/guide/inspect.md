@@ -2,7 +2,7 @@
 
 Use `inspect` to browse an OpenAPI document, find operation IDs and routes, and
 copy the APIs you need into your generation configuration. This command is
-available in the next release.
+available starting with v10.0.0.
 
 ## Browse and filter {#browse}
 

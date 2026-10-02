@@ -23,7 +23,7 @@ openapi-sdkgen inspect [options]
 ```
 
 List APIs, filter their declarations, or export routes for selected generation.
-See [Find APIs](../guide/inspect.md) for the workflow. Available in the next release.
+See [Find APIs](../guide/inspect.md) for the workflow. Available starting with v10.0.0.
 
 | Option | Meaning |
 | --- | --- |
