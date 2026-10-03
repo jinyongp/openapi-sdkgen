@@ -22,45 +22,296 @@
     "memory": 25
   },
   "publication": {
-    "fresh-1x": {"wallNanoseconds":12000000,"bytesPerOperation":1179240},
-    "incremental-noop-1x": {"wallNanoseconds":39385202,"bytesPerOperation":3885376},
-    "incremental-noop-2x": {"wallNanoseconds":80061930,"bytesPerOperation":7682440},
-    "incremental-noop-4x": {"wallNanoseconds":165022679,"bytesPerOperation":15300760},
-    "incremental-one-change-1x": {"wallNanoseconds":43473199,"bytesPerOperation":4146760},
-    "incremental-stale-1x": {"wallNanoseconds":41833711,"bytesPerOperation":4087104}
+    "fresh-1x": {
+      "wallNanoseconds": 29009129,
+      "bytesPerOperation": 1208616
+    },
+    "incremental-noop-1x": {
+      "wallNanoseconds": 35961664,
+      "bytesPerOperation": 3951432
+    },
+    "incremental-noop-2x": {
+      "wallNanoseconds": 72506938,
+      "bytesPerOperation": 7814080
+    },
+    "incremental-noop-4x": {
+      "wallNanoseconds": 145453789,
+      "bytesPerOperation": 15563424
+    },
+    "incremental-one-change-1x": {
+      "wallNanoseconds": 39733199,
+      "bytesPerOperation": 4609176
+    },
+    "incremental-stale-1x": {
+      "wallNanoseconds": 37561737,
+      "bytesPerOperation": 4549504
+    }
   },
   "incremental": {
-    "full-noop": {"wallNanoseconds":24637839,"bytesPerOperation":3812312},
-    "one-operation-change": {"wallNanoseconds":174255047,"bytesPerOperation":115408928}
+    "full-noop": {
+      "wallNanoseconds": 48852507,
+      "bytesPerOperation": 8977576
+    },
+    "one-operation-change": {
+      "wallNanoseconds": 1408689934,
+      "bytesPerOperation": 257882152
+    }
   },
   "current": {
     "self-contained": {
-      "phases": {"compile":{"wallNanoseconds":20244595,"bytesPerOperation":13461864},"prepare":{"wallNanoseconds":13679536,"bytesPerOperation":14477104},"emit":{"wallNanoseconds":56725161,"bytesPerOperation":74534512},"publish":{"wallNanoseconds":18000000,"bytesPerOperation":2705592},"full":{"wallNanoseconds":462012087,"bytesPerOperation":107128512}},
-      "process": {"wallNanoseconds":480413190,"cpuNanoseconds":603050000,"peakHeapBytes":13877112,"maxRssBytes":34930688}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 21941740,
+          "bytesPerOperation": 14879336
+        },
+        "prepare": {
+          "wallNanoseconds": 77836471,
+          "bytesPerOperation": 66105824
+        },
+        "emit": {
+          "wallNanoseconds": 84749592,
+          "bytesPerOperation": 147165712
+        },
+        "publish": {
+          "wallNanoseconds": 1017647644,
+          "bytesPerOperation": 6909632
+        },
+        "full": {
+          "wallNanoseconds": 1280925702,
+          "bytesPerOperation": 231028272
+        }
+      },
+      "process": {
+        "wallNanoseconds": 1302641006,
+        "cpuNanoseconds": 1522143000,
+        "peakHeapBytes": 18759648,
+        "maxRssBytes": 39940096
+      }
     },
     "templated-resource": {
-      "phases": {"compile":{"wallNanoseconds":9732287,"bytesPerOperation":7652304},"prepare":{"wallNanoseconds":10756674,"bytesPerOperation":11654312},"emit":{"wallNanoseconds":36872993,"bytesPerOperation":53341648},"publish":{"wallNanoseconds":17000000,"bytesPerOperation":2408464},"full":{"wallNanoseconds":410522933,"bytesPerOperation":76767176}},
-      "process": {"wallNanoseconds":428950278,"cpuNanoseconds":522785000,"peakHeapBytes":11752600,"maxRssBytes":30883840}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 11182328,
+          "bytesPerOperation": 8344744
+        },
+        "prepare": {
+          "wallNanoseconds": 8305962,
+          "bytesPerOperation": 12879856
+        },
+        "emit": {
+          "wallNanoseconds": 59531610,
+          "bytesPerOperation": 110163528
+        },
+        "publish": {
+          "wallNanoseconds": 970791872,
+          "bytesPerOperation": 5743640
+        },
+        "full": {
+          "wallNanoseconds": 1131662945,
+          "bytesPerOperation": 134083640
+        }
+      },
+      "process": {
+        "wallNanoseconds": 1153187374,
+        "cpuNanoseconds": 1332882000,
+        "peakHeapBytes": 12532680,
+        "maxRssBytes": 35356672
+      }
     },
     "parameter-heavy": {
-      "phases": {"compile":{"wallNanoseconds":30491297,"bytesPerOperation":21975488},"prepare":{"wallNanoseconds":34765116,"bytesPerOperation":35697776},"emit":{"wallNanoseconds":46932344,"bytesPerOperation":74334784},"publish":{"wallNanoseconds":10000000,"bytesPerOperation":987784},"full":{"wallNanoseconds":301931421,"bytesPerOperation":136642472}},
-      "process": {"wallNanoseconds":307845293,"cpuNanoseconds":399320000,"peakHeapBytes":24383216,"maxRssBytes":50262016}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 41562175,
+          "bytesPerOperation": 31480912
+        },
+        "prepare": {
+          "wallNanoseconds": 20593142,
+          "bytesPerOperation": 28959408
+        },
+        "emit": {
+          "wallNanoseconds": 57416700,
+          "bytesPerOperation": 100861624
+        },
+        "publish": {
+          "wallNanoseconds": 486066385,
+          "bytesPerOperation": 2706968
+        },
+        "full": {
+          "wallNanoseconds": 648900192,
+          "bytesPerOperation": 162509128
+        }
+      },
+      "process": {
+        "wallNanoseconds": 650833516,
+        "cpuNanoseconds": 776879000,
+        "peakHeapBytes": 24006960,
+        "maxRssBytes": 46481408
+      }
     },
     "external-reference": {
-      "phases": {"compile":{"wallNanoseconds":67246326,"bytesPerOperation":48968152},"prepare":{"wallNanoseconds":4706514,"bytesPerOperation":6289360},"emit":{"wallNanoseconds":17562815,"bytesPerOperation":27873536},"publish":{"wallNanoseconds":8000000,"bytesPerOperation":1249160},"full":{"wallNanoseconds":259499423,"bytesPerOperation":84743256}},
-      "process": {"wallNanoseconds":285352499,"cpuNanoseconds":387524000,"peakHeapBytes":17209672,"maxRssBytes":41185280}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 61204184,
+          "bytesPerOperation": 52503736
+        },
+        "prepare": {
+          "wallNanoseconds": 6592440,
+          "bytesPerOperation": 10791824
+        },
+        "emit": {
+          "wallNanoseconds": 38536926,
+          "bytesPerOperation": 67248720
+        },
+        "publish": {
+          "wallNanoseconds": 506089618,
+          "bytesPerOperation": 3354936
+        },
+        "full": {
+          "wallNanoseconds": 633639234,
+          "bytesPerOperation": 131933600
+        }
+      },
+      "process": {
+        "wallNanoseconds": 660957938,
+        "cpuNanoseconds": 790744000,
+        "peakHeapBytes": 16099560,
+        "maxRssBytes": 41889792
+      }
     },
     "high-artifact": {
-      "phases": {"compile":{"wallNanoseconds":21960675,"bytesPerOperation":13295488},"prepare":{"wallNanoseconds":21757425,"bytesPerOperation":24603256},"emit":{"wallNanoseconds":61672834,"bytesPerOperation":95000000},"publish":{"wallNanoseconds":28000000,"bytesPerOperation":3990736},"full":{"wallNanoseconds":804667207,"bytesPerOperation":153405136}},
-      "process": {"wallNanoseconds":836580601,"cpuNanoseconds":1015622000,"peakHeapBytes":19202000,"maxRssBytes":41431040}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 21312284,
+          "bytesPerOperation": 15815128
+        },
+        "prepare": {
+          "wallNanoseconds": 36611038,
+          "bytesPerOperation": 42093776
+        },
+        "emit": {
+          "wallNanoseconds": 143106081,
+          "bytesPerOperation": 262893216
+        },
+        "publish": {
+          "wallNanoseconds": 2014012989,
+          "bytesPerOperation": 13254704
+        },
+        "full": {
+          "wallNanoseconds": 2345674014,
+          "bytesPerOperation": 325759584
+        }
+      },
+      "process": {
+        "wallNanoseconds": 2382149491,
+        "cpuNanoseconds": 2754614000,
+        "peakHeapBytes": 24003032,
+        "maxRssBytes": 51986432
+      }
     },
     "server-addon": {
-      "phases": {"compile":{"wallNanoseconds":7245952,"bytesPerOperation":5565592},"prepare":{"wallNanoseconds":5408294,"bytesPerOperation":6949752},"emit":{"wallNanoseconds":28489767,"bytesPerOperation":40966720},"publish":{"wallNanoseconds":9000000,"bytesPerOperation":1265552},"full":{"wallNanoseconds":227928020,"bytesPerOperation":55561048}},
-      "process": {"wallNanoseconds":238765110,"cpuNanoseconds":298223000,"peakHeapBytes":7309448,"maxRssBytes":25636864}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 7468349,
+          "bytesPerOperation": 6240336
+        },
+        "prepare": {
+          "wallNanoseconds": 18322978,
+          "bytesPerOperation": 18984944
+        },
+        "emit": {
+          "wallNanoseconds": 45161003,
+          "bytesPerOperation": 74221760
+        },
+        "publish": {
+          "wallNanoseconds": 511865827,
+          "bytesPerOperation": 3569000
+        },
+        "full": {
+          "wallNanoseconds": 610991708,
+          "bytesPerOperation": 101158080
+        }
+      },
+      "process": {
+        "wallNanoseconds": 638061261,
+        "cpuNanoseconds": 748635000,
+        "peakHeapBytes": 8214984,
+        "maxRssBytes": 29630464
+      }
     },
     "links-heavy": {
-      "phases": {"compile":{"wallNanoseconds":7015254,"bytesPerOperation":5459952},"prepare":{"wallNanoseconds":7367201,"bytesPerOperation":10168424},"emit":{"wallNanoseconds":40284959,"bytesPerOperation":76623656},"publish":{"wallNanoseconds":8000000,"bytesPerOperation":743144},"full":{"wallNanoseconds":188888185,"bytesPerOperation":92951064}},
-      "process": {"wallNanoseconds":201831586,"cpuNanoseconds":271905000,"peakHeapBytes":8936024,"maxRssBytes":27537408}
+      "phases": {
+        "compile": {
+          "wallNanoseconds": 9856272,
+          "bytesPerOperation": 7556576
+        },
+        "prepare": {
+          "wallNanoseconds": 6524586,
+          "bytesPerOperation": 10737232
+        },
+        "emit": {
+          "wallNanoseconds": 54317212,
+          "bytesPerOperation": 95041744
+        },
+        "publish": {
+          "wallNanoseconds": 363870052,
+          "bytesPerOperation": 1921792
+        },
+        "full": {
+          "wallNanoseconds": 464658219,
+          "bytesPerOperation": 114306144
+        }
+      },
+      "process": {
+        "wallNanoseconds": 473874699,
+        "cpuNanoseconds": 577689000,
+        "peakHeapBytes": 10502528,
+        "maxRssBytes": 30408704
+      }
+    }
+  },
+  "provenance": {
+    "commit": "13e088e69659906392357a78d87ca3743aa9a5f7",
+    "goVersion": "go version go1.27.1 linux/amd64",
+    "platform": "linux/amd64",
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "method": "Median of five warmed independent 1x runs of the unmodified reference commit; historical targets and regression tolerances unchanged.",
+    "workloadSourceSHA256": "1e970361a05da7e0a91caaa63e70d5114b92f87e0b7289fac4fb7099be0a0a7a",
+    "workloads": {
+      "self-contained": {
+        "inputBytes": 177132,
+        "artifactCount": 2744,
+        "artifactBytes": 6677713
+      },
+      "templated-resource": {
+        "inputBytes": 94832,
+        "artifactCount": 2103,
+        "artifactBytes": 5173605
+      },
+      "parameter-heavy": {
+        "inputBytes": 328786,
+        "artifactCount": 951,
+        "artifactBytes": 4073100
+      },
+      "external-reference": {
+        "inputBytes": 49237,
+        "artifactCount": 1303,
+        "artifactBytes": 3254707
+      },
+      "high-artifact": {
+        "inputBytes": 170555,
+        "artifactCount": 4712,
+        "artifactBytes": 11219769
+      },
+      "server-addon": {
+        "inputBytes": 72298,
+        "artifactCount": 1339,
+        "artifactBytes": 3538549
+      },
+      "links-heavy": {
+        "inputBytes": 92910,
+        "artifactCount": 727,
+        "artifactBytes": 3842151
+      }
     }
   }
 }

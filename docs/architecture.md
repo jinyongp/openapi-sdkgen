@@ -249,8 +249,12 @@ separate explicit commands.
 
 Performance has its own acceptance gate. It tracks compile, prepare, emit,
 publish, full-process, memory, fresh-publication, and incremental workloads
-against checked-in regression thresholds. The baselines serve as regression
-guards.
+against checked-in regression thresholds. The baseline records its reference
+commit, Go version, platform, and generated workload sizes. When supported
+generation changes alter those sizes, measure an unchanged reference commit
+independently before updating the baseline; keep the regression tolerances and
+historical improvement targets. Validate the candidate with separate runs rather
+than deriving its acceptance budgets from those same runs.
 
 ## Maintenance rules
 
