@@ -30,17 +30,26 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	if err != nil {
 		return nil, err
 	}
+	// Only private execution dependencies require a wider contract and a
+	// separate public map. An explicit selection can have the same two scopes.
+	hasPrivateRoutes := false
+	for _, operation := range manifest.Operations {
+		if operation.Visibility != "hidden" && operation.dependencyOnly {
+			hasPrivateRoutes = true
+			break
+		}
+	}
 
 	var output bytes.Buffer
 	fmt.Fprintf(&output, "import { assignCallableProperties, type RequestFunction } from %s\n", quoteTS(callables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(codecs))
 	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
-	if plan.selection == nil {
+	if !hasPrivateRoutes {
 		fmt.Fprintf(&output, "import type { Routes } from %s\n", quoteTS(routes))
 	} else {
-		output.WriteString("/** Private contracts including response-Link execution dependencies. */\ntype Routes = {\n")
+		fmt.Fprintf(&output, "/** Public contracts extended with private response-Link execution dependencies. */\ntype Routes = import(%s).Routes & {\n", quoteTS(routes))
 		for _, operation := range manifest.Operations {
-			if operation.Visibility == "hidden" {
+			if operation.Visibility == "hidden" || !operation.dependencyOnly {
 				continue
 			}
 			route := manifestRouteKey(operation)
@@ -204,7 +213,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	for _, property := range routeValues {
 		fmt.Fprintf(&output, "  defineOwnDataProperty(completed as Record<string, unknown>, %s, %s)\n", quoteTS(property.key), property.value)
 	}
-	if plan.selection != nil {
+	if hasPrivateRoutes {
 		emitTypedConstant(&output, "  ", "publicRoutes", "CallableRegistry[\"routes\"]", "{} as CallableRegistry[\"routes\"]")
 		for _, property := range routeValues {
 			if plan.selection.direct[property.key] {
@@ -219,7 +228,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		fmt.Fprintf(&output, "  defineOwnDataProperty(linkCalls, %s, %s)\n", quoteTS(property.key), property.value)
 	}
 	output.WriteString("  return {\n")
-	if plan.selection == nil {
+	if !hasPrivateRoutes {
 		output.WriteString("    routes: completed,\n")
 	} else {
 		output.WriteString("    routes: publicRoutes,\n")
