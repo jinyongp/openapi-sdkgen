@@ -15,24 +15,26 @@ SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(CDPATH="" cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$ROOT"
 . "${SCRIPT_DIR}/../lib/ui.sh"
+source "${SCRIPT_DIR}/../lib/commands.sh"
+set -- "${SCRIPT_ARGS[@]}"
 
 hide_cursor() {
-  if [ -t 1 ] && [ "$CURSOR_HIDDEN" -eq 0 ]; then
-    printf '\033[?25l'
+  if [ -t 2 ] && [ "$CURSOR_HIDDEN" -eq 0 ]; then
+    printf '\033[?25l' >&2
     CURSOR_HIDDEN=1
   fi
 }
 
 show_cursor() {
   if [ "$CURSOR_HIDDEN" -eq 1 ]; then
-    printf '\033[?25h'
+    printf '\033[?25h' >&2
     CURSOR_HIDDEN=0
   fi
 }
 
 abort_interrupted() {
   show_cursor
-  printf '\n'
+  printf '\n' >&2
   ui_note "Aborted."
   exit 130
 }
@@ -54,6 +56,11 @@ while [ "$#" -gt 0 ]; do
       ;;
     --yes|-y)
       AUTO_PUSH=1
+      ;;
+    --help|-h)
+      ui_note 'publish.sh [--dry-run] [--yes] [--since TAG] [--resume TAG] [patch|minor|major|vX.Y.Z[-prerelease]]'
+      ui_note 'Validates clean main and the toolchain; normal runs create and atomically push an annotated tag and main. --resume dispatches an existing release workflow. --dry-run checks without publishing. Notes use Releaseway standard.'
+      exit 0
       ;;
     tag=*)
       TAG_INPUT="${arg#tag=}"
@@ -233,7 +240,7 @@ get_latest_published_release_tag() {
 
 sync_tags() {
   if git remote get-url origin >/dev/null 2>&1; then
-    git fetch --tags --prune origin
+    run_step 'fetch release tags' git fetch --tags --prune origin
   fi
 }
 
@@ -474,7 +481,7 @@ render_bump_option() {
   fi
   printf -v bump_pad '%*s' $((8 - ${#bump})) ''
 
-  printf '  %s  %s%s %s%s\033[K\n' "$marker" "$bump_label" "$bump_pad" "$version" "$suffix"
+  printf '  %s  %s%s %s%s\033[K\n' "$marker" "$bump_label" "$bump_pad" "$version" "$suffix" >&2
 }
 
 render_bump_menu() {
@@ -494,10 +501,10 @@ update_bump_option() {
   selected="$2"
   up=$((3 - index))
 
-  printf '\033[%dA' "$up"
+  printf '\033[%dA' "$up" >&2
   render_bump_option "$index" "$selected"
   if [ "$up" -gt 1 ]; then
-    printf '\033[%dB' $((up - 1))
+    printf '\033[%dB' $((up - 1)) >&2
   fi
 }
 
@@ -534,7 +541,7 @@ select_bump_radio() {
   local key
   local rest
 
-  if [ ! -t 0 ] || [ ! -t 1 ] || [ "${TERM:-dumb}" = "dumb" ]; then
+  if [ ! -t 0 ] || [ ! -t 2 ] || [ "${TERM:-dumb}" = "dumb" ]; then
     return 1
   fi
 
@@ -618,7 +625,7 @@ select_bump() {
 run_checks() {
   ui_section "Checks"
   ui_note "Running release checks"
-  if bash "$ROOT/scripts/release/check.sh"; then
+  if run_step "release checks" bash "$ROOT/scripts/release/check.sh"; then
     ui_ok "checks passed"
   else
     ui_error "checks failed"
@@ -659,6 +666,21 @@ working_tree_changes() {
   git status --porcelain
 }
 
+report_working_tree_changes() {
+  local changes="$1"
+  local status_log="$LOG_DIR/working-tree.log"
+  printf '%s\n' "$changes" | python3 "$ROOT/scripts/lib/redact.py" >"$status_log"
+  if [ "$SCRIPT_VERBOSE" -eq 1 ]; then
+    while IFS= read -r change; do
+      [ -n "$change" ] || continue
+      ui_item "$change"
+    done <"$status_log"
+  else
+    script_diagnostic "$status_log"
+    ui_dim "Full working tree status: $status_log"
+  fi
+}
+
 if [ -n "$RESUME_TAG" ]; then
   resume_release "$RESUME_TAG"
 fi
@@ -667,11 +689,8 @@ confirm_dirty_tree() {
   local changes="$1"
 
   ui_section "Uncommitted changes"
-  while IFS= read -r change; do
-    [ -n "$change" ] || continue
-    ui_item "$change"
-  done <<<"$changes"
-  printf '\n'
+  report_working_tree_changes "$changes"
+  printf '\n' >&2
 
   if [ "$DRY_RUN" -eq 1 ]; then
     ui_dim "This is a dry run; no tag or push will be created."
@@ -687,7 +706,7 @@ confirm_dirty_tree() {
 
   ui_prompt "Continue with dirty working tree? [y/N]:"
   if ! read -r response; then
-    printf '\n'
+    printf '\n' >&2
     ui_error "No response; aborting release."
     exit 1
   fi
@@ -708,10 +727,7 @@ DIRTY_CHANGES="$(working_tree_changes)"
 if [ -n "$DIRTY_CHANGES" ]; then
 	if [ "$DRY_RUN" -eq 0 ]; then
 		ui_error "Release requires a clean working tree so checks match the tagged commit."
-		while IFS= read -r change; do
-			[ -n "$change" ] || continue
-			ui_item "$change"
-		done <<<"$DIRTY_CHANGES"
+		report_working_tree_changes "$DIRTY_CHANGES"
 		exit 1
 	fi
   confirm_dirty_tree "$DIRTY_CHANGES"
@@ -759,16 +775,18 @@ fi
 ui_section "Release base"
 ui_kv "Last stable tag" "${LATEST_TAG:-none}"
 ui_kv "Last release tag" "${LATEST_RELEASE_TAG:-none}"
-ui_section "Version commits since ${LATEST_TAG:-start}"
 COMMITS="$(format_commits "$RANGE")"
+if [[ "$SCRIPT_VERBOSE" == 1 ]]; then
+ui_section "Version commits since ${LATEST_TAG:-start}"
 while IFS= read -r commit; do
   [ -n "$commit" ] || continue
   ui_item "$commit"
 done <<<"$COMMITS"
+fi
 CHANGE_COUNT="$(printf '%s\n' "$COMMITS" | sed '/^$/d' | wc -l | tr -d ' ')"
 
 if [ "$CHANGE_COUNT" -eq 0 ] && [ -n "$LATEST_RELEASE_TAG" ]; then
-  printf '\n'
+  printf '\n' >&2
   ui_note "No commits to release."
   exit 0
 fi
@@ -810,11 +828,13 @@ if [ -n "$LATEST_PUBLISHED_TAG" ]; then
 else
   ui_kv "Last published release" "none"
 fi
+if [[ "$SCRIPT_VERBOSE" == 1 ]]; then
 ui_section "Release notes commits"
 while IFS= read -r commit; do
   [ -n "$commit" ] || continue
   ui_item "$commit"
 done <<<"$(format_commits "$NOTES_RANGE")"
+fi
 
 case "$TAG_INPUT" in
   patch|minor|major)
@@ -862,27 +882,7 @@ if [ "$DRY_RUN" -eq 0 ] && git ls-remote --exit-code --tags origin "refs/tags/$P
   exit 1
 fi
 
-ui_section "Changelog"
-if [ "$DRY_RUN" -eq 1 ]; then
-  node "$SCRIPT_DIR/changelog.mjs" "$PATCH_TAG" --preview
-  ui_note "Dry run: changelog preparation was previewed; no commit was created."
-else
-  node "$SCRIPT_DIR/changelog.mjs" "$PATCH_TAG" --write
-  if [ "$(git symbolic-ref --short HEAD)" != "main" ] || [ "$(git rev-parse HEAD)" != "$TARGET_SHA" ]; then
-    ui_error "branch or HEAD changed during changelog preparation."
-    exit 1
-  fi
-  if [ -n "$(git status --porcelain -- . ':!CHANGELOG.md')" ]; then
-    ui_error "working tree changed during changelog preparation."
-    exit 1
-  fi
-  if ! git diff --quiet -- CHANGELOG.md; then
-    # Stage only the release notes; checks validate the resulting immutable HEAD.
-    git add -- CHANGELOG.md
-    git commit -m "docs(release): prepare $PATCH_TAG changelog" --only -- CHANGELOG.md
-  fi
-  TARGET_SHA="$(git rev-parse HEAD)"
-fi
+ui_note "Releaseway standard generates GitHub release notes; add breaking-change and migration details to the release notes."
 
 run_checks
 if [ "$(git symbolic-ref --short HEAD)" != "main" ] || [ "$(git rev-parse HEAD)" != "$TARGET_SHA" ]; then
@@ -909,7 +909,7 @@ fi
 
 RELEASE_NOTES="$(printf 'Release %s\n\n%s' "$PATCH_TAG" "$(format_commits "$NOTES_RANGE" | sed 's/^/- /')")"
 git tag -a "$PATCH_TAG" -m "$RELEASE_NOTES" "$TARGET_SHA"
-if ! git push --atomic origin HEAD:main "refs/tags/$PATCH_TAG:refs/tags/$PATCH_TAG"; then
+if ! run_step "atomic branch and tag push" git push --atomic origin HEAD:main "refs/tags/$PATCH_TAG:refs/tags/$PATCH_TAG"; then
 	git tag -d "$PATCH_TAG" >/dev/null 2>&1 || true
 	ui_error "Push failed; removed the local tag created by this release attempt: $PATCH_TAG"
 	exit 1

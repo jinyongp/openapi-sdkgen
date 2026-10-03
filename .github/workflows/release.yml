@@ -19,7 +19,7 @@ concurrency:
 jobs:
   validate-release:
     name: Validate release tag
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
@@ -83,7 +83,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@14f7f9df2f098fed98f495a54e0d3ac77b4b32c7 # v0.3.2
+        uses: releaseway/npm-actions@269fbdeac83fed2df2880915726ed91edbe1bbdd # v0.4.0
 
   verify-npm-release:
     name: Verify npm distribution
@@ -95,7 +95,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [validate-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@c035d14050bca1e2028a6368823797d36c9cdbc5 # v0.1.0
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@4bbfa6aafc92a6cb8e823a51d54a6573237e0a76 # v0.2.0
     permissions:
       contents: read
     with:
@@ -108,7 +108,7 @@ jobs:
   publish-github-release:
     name: Publish GitHub Release
     needs: validate-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -127,12 +127,12 @@ jobs:
           version: "v2.17.0"
           args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@4fdc624aafb0c824fb81dd7aaf59031bb1f5aa0f # v0.2.0
+        uses: releaseway/actions@22219bebc51a4127c6dffd9e79706f08cdd678dc # v0.2.1
         with:
           tag: ${{ needs.validate-release.outputs.tag }}
           commit: ${{ needs.validate-release.outputs.commit }}
           prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
-          notes: github
+          notes: standard
           assets: |
             dist/checksums.txt
             dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.tar.gz
