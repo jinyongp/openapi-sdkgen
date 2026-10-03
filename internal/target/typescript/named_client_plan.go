@@ -62,11 +62,7 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 	if diagnostic.HasErrors(values) {
 		return &sourcePlan{document: document}, diagnostic.Sort(values), nil, nil
 	}
-	// The ordinary root SDK keeps its existing full-document default.
-	var union *generator.Selection
-	if root != nil {
-		union = &generator.Selection{Routes: sortedStringKeys(direct)}
-	}
+	union := &generator.Selection{Routes: sortedStringKeys(direct)}
 	plan, diagnostics, coverage, err := prepareSelectedSourcePlanWithCoverage(document, server, mode, options.FailOnResourceOmission, union, metadata)
 	if err != nil || diagnostic.HasErrors(diagnostics) {
 		return plan, diagnostics, coverage, err
@@ -75,6 +71,10 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 		return nil, diagnostics, coverage, err
 	}
 	plan.includeMetadata = metadata
+	// Without an explicit root selection, expose the named clients' public union.
+	if root == nil {
+		root = plan.selection
+	}
 	plan.root = scopedSourcePlan(plan, root)
 	for _, name := range names {
 		view := scopedSourcePlan(plan, selections[name])

@@ -80,15 +80,18 @@ exclusively by another client stays outside its initial dependencies. Large
 models can still have large dependency graphs. Bundler settings that deliberately
 combine pages into one chunk also combine their dependencies.
 
-## Choose the root SDK separately
+## Root SDK and generation scope
 
-Named clients and the existing root SDK have independent selections:
+Without a root selection, the root SDK exposes the union of the named clients' selections. Assign each API once in its named client configuration:
 
 | Configuration | Result |
 | --- | --- |
 | `[clients.orders.selection]` | APIs exposed by `clients/orders` |
 | `[selection]` | APIs exposed by the root SDK and its selective entry |
-| No `[selection]` | The root SDK exposes the full document |
+| Named clients without `[selection]` | The root SDK exposes their selected API union |
+| Neither named clients nor `[selection]` | The root SDK exposes the full document |
+
+Generation includes only APIs selected by the root or named clients and their required Link dependencies. Shared implementations are generated once; each named entry exposes its own selection. An ordinary `[selection]` without named clients follows the same generation rule.
 
 For example, add `[selection]` with `operations = ["listOrders"]` if the root SDK
 should expose only order listing. The catalog client still exposes its selected

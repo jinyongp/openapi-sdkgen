@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
 )
@@ -61,22 +60,46 @@ func TestNamedClientPlanKeepsIndependentRootsAndPrivateLinkClosure(t *testing.T)
 	}
 }
 
-func TestNamedClientsPreserveFullRootDefault(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(strings.ReplaceAll(generationSelectionFixture, `,"x-envelope":false`, "")))
-	if err != nil {
-		t.Fatal(err)
-	}
-	plan, values, err := (Generator{}).Prepare(document, generator.Options{Clients: map[string]generator.Client{"c": {Selection: &generator.Selection{Operations: []string{"c"}}}}})
-	if err != nil || diagnostic.HasErrors(values) {
-		t.Fatalf("prepare: %v, %v", err, values)
-	}
-	value, _ := plan.Value("typescript")
-	shared := value.(*sourcePlan)
-	if shared.root.selection != nil || len(shared.root.manifest.Operations) != len(shared.manifest.Operations) {
-		t.Fatal("clients restricted the ordinary SDK default")
-	}
-	if len(shared.clients[0].view.manifest.Operations) != 1 {
-		t.Fatal("full root leaked into named selection")
+func TestNamedClientsDefaultRootMatchesSelectionUnion(t *testing.T) {
+	for _, ids := range [][]string{{"c"}, {"a"}, {"a", "b"}, {"a", "c"}} {
+		t.Run(strings.Join(ids, "-"), func(t *testing.T) {
+			document := selectedFixtureDocument(t)
+			clients := make(map[string]generator.Client)
+			for _, id := range ids {
+				clients[id] = generator.Client{Selection: &generator.Selection{Operations: []string{id}}}
+			}
+			// Overlapping assignments must not duplicate shared implementations.
+			clients["overlap"] = clients[ids[0]]
+			var plans []*sourcePlan
+			for _, options := range []generator.Options{
+				{Selection: &generator.Selection{Operations: ids}},
+				{Clients: clients},
+			} {
+				plan, values, err := (Generator{}).Prepare(document, options)
+				if err != nil || diagnostic.HasErrors(values) {
+					t.Fatalf("prepare: %v, %v", err, values)
+				}
+				value, _ := plan.Value("typescript")
+				plans = append(plans, value.(*sourcePlan))
+			}
+			ordinary, named := plans[0], plans[1]
+			if !reflect.DeepEqual(ordinary.selection, named.root.selection) || !reflect.DeepEqual(ordinary.manifest, named.root.manifest) {
+				t.Fatal("implicit root differs from the equivalent ordinary selection")
+			}
+			if len(named.executions) != len(ordinary.executions) || len(named.modules.operations) != len(ordinary.modules.operations) {
+				t.Fatal("named assignments expanded or duplicated shared implementations")
+			}
+			for _, operation := range named.manifest.Operations {
+				if operation.RouteKey == "GET /unused" || operation.RouteKey == "GET /idless/{task-id}" {
+					t.Fatalf("unselected operation retained: %s", operation.RouteKey)
+				}
+			}
+			for _, client := range named.clients {
+				if len(client.view.selection.direct) != 1 {
+					t.Fatal("root union leaked into named public scope")
+				}
+			}
+		})
 	}
 }
 

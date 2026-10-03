@@ -12,6 +12,54 @@ import (
 	"openapi-sdkgen/internal/generator"
 )
 
+func TestNamedClientsImplicitRootUnionTypesAndExecution(t *testing.T) {
+	registry, _ := generator.NewAddonRegistry(generator.AddonMetadata)
+	options, _ := registry.Resolve([]string{"metadata"})
+	options.Clients = map[string]generator.Client{
+		"orders":  {Selection: &generator.Selection{Operations: []string{"a"}}},
+		"catalog": {Selection: &generator.Selection{Operations: []string{"c"}}},
+	}
+	probe := `import {createClient} from './index.js';
+import {createClient as orders} from './clients/orders/index.js';
+import {createClient as catalog} from './clients/catalog/index.js';
+import {generationSelection} from './metadata.js';
+export const routes: readonly ["GET /a", "GET /c"] = generationSelection.routes;
+export const dependencies: readonly ["GET /b"] = generationSelection.dependencyRoutes;
+createClient({baseURL:'https://api.test'}).$operations.a;
+createClient({baseURL:'https://api.test'}).$operations.c;
+// @ts-expect-error Link-only dependencies stay private in the root.
+createClient({baseURL:'https://api.test'}).$operations.b;
+// @ts-expect-error Unselected APIs stay outside the generated root.
+createClient({baseURL:'https://api.test'}).$operations.unused;
+// @ts-expect-error Named clients retain their own public scope.
+orders({baseURL:'https://api.test'}).$operations.c;
+// @ts-expect-error Named clients retain their own public scope.
+catalog({baseURL:'https://api.test'}).$operations.a;
+`
+	output := compileSelectedTypeScriptArtifacts(t, selectedFixtureDocument(t), options, probe)
+	script := `import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+const load=file=>import(pathToFileURL(process.argv[1]+'/'+file));
+const {createClient}=await load('index.js');
+const seen=[];
+const options={baseURL:'https://api.test',fetch:async(url)=>{seen.push(String(url));const r=Response.json({id:'one'});Object.defineProperty(r,'url',{value:String(url)});return r;}};
+const root=createClient(options);
+assert.deepEqual(Object.keys(root.$routes).sort(),['GET /a','GET /c']);
+await root.$links.a.next(await root.$operations.a.raw());
+assert.deepEqual(seen,['https://api.test/a','https://api.test/b']);
+const orders=(await load('clients/orders/index.js')).createClient(options);
+const catalog=(await load('clients/catalog/index.js')).createClient(options);
+assert.deepEqual(Object.keys(orders.$routes),['GET /a']);
+assert.deepEqual(Object.keys(catalog.$routes),['GET /c']);
+const selective=await load('selective/index.js');
+await selective.loadOperations([selective.operations.a,selective.operations.c]);
+await assert.rejects(selective.loadOperations([selective.routes['GET /b']]),{stage:'INPUT'});
+await assert.rejects(selective.loadOperations([selective.routes['GET /unused']]));
+`
+	if result, err := exec.Command("node", "--input-type=module", "--eval", script, output).CombinedOutput(); err != nil {
+		t.Fatalf("implicit root execution: %v\n%s", err, result)
+	}
+}
+
 func TestNamedClientsExposeIndependentTypesAndBindPrivateLinksLazily(t *testing.T) {
 	registry, _ := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 	options, _ := registry.Resolve([]string{"server", "metadata"})
