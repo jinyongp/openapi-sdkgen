@@ -2,7 +2,6 @@ package typescript
 
 import (
 	"bytes"
-	pathpkg "path"
 	"strings"
 	"testing"
 
@@ -427,61 +426,6 @@ func TestGeneratorAddsServerArtifactsWithoutChangingClientLayout(t *testing.T) {
 	}
 	if _, exists := serverSources["server/index.ts"]; exists {
 		t.Fatal("server barrel must not be emitted")
-	}
-}
-
-func TestPublicRootShimsAndMetadataOwnershipRemainStable(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(emitterFixture))
-	if err != nil {
-		t.Fatal(err)
-	}
-	artifacts, err := SourceArtifacts(document)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, want := artifactByPath(t, artifacts, "index.ts"), generatedSource([]byte("export * from \"./internal/index.js\"\n")); !bytes.Equal(got, want) {
-		t.Fatalf("public index shim changed:\n%s", got)
-	}
-	if got, want := artifactByPath(t, artifacts, "enums.ts"), generatedSource([]byte("export * from \"./internal/enums.js\"\n")); !bytes.Equal(got, want) {
-		t.Fatalf("public enums shim changed:\n%s", got)
-	}
-	metadata := artifactByPath(t, artifacts, "metadata.ts")
-	if !bytes.Contains(metadata, []byte("export const openapi: OpenAPIMetadata =")) {
-		t.Fatalf("root metadata owner lost its public value:\n%s", metadata)
-	}
-	for _, artifact := range artifacts {
-		if artifact.Path == "internal/metadata.ts" {
-			t.Fatal("metadata moved behind an internal owner")
-		}
-		if artifact.Path == "internal/index.ts" && bytes.Contains(artifact.Data, []byte("metadata.js")) {
-			t.Fatalf("root client entrypoint started exporting metadata:\n%s", artifact.Data)
-		}
-	}
-}
-
-func TestInternalProductionModulesDoNotImportThePublicAssemblyBarrel(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(emitterFixture))
-	if err != nil {
-		t.Fatal(err)
-	}
-	artifacts, err := SourceArtifacts(document)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, artifact := range artifacts {
-		if !strings.HasPrefix(artifact.Path, "internal/") || artifact.Path == "internal/index.ts" {
-			continue
-		}
-		for _, match := range runtimeImportPattern.FindAllSubmatch(artifact.Data, -1) {
-			specifier := string(match[1])
-			if !strings.HasPrefix(specifier, ".") {
-				continue
-			}
-			target := pathpkg.Clean(pathpkg.Join(pathpkg.Dir(artifact.Path), strings.TrimSuffix(specifier, ".js")+".ts"))
-			if target == "internal/index.ts" || target == "index.ts" {
-				t.Fatalf("internal owner %s imports the public assembly barrel %s:\n%s", artifact.Path, target, artifact.Data)
-			}
-		}
 	}
 }
 

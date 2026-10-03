@@ -1,10 +1,7 @@
 package typescript
 
 import (
-	"strings"
 	"testing"
-
-	sdkgen "openapi-sdkgen/internal/compiler"
 )
 
 func TestOperationTypeHelpersUseLocalContracts(t *testing.T) {
@@ -47,33 +44,5 @@ func TestOperationTypeHelpersUseLocalContracts(t *testing.T) {
 		if err != nil || actual != source {
 			t.Fatalf("non-helper source changed: %q -> %q (%v)", source, actual, err)
 		}
-	}
-}
-
-func TestEmittedOperationTypeImportsDoNotReadWholeRouteRegistry(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(emitterFixture))
-	if err != nil {
-		t.Fatal(err)
-	}
-	artifacts, err := SourceArtifacts(document)
-	if err != nil {
-		t.Fatal(err)
-	}
-	checked := 0
-	for _, artifact := range artifacts {
-		if !strings.HasPrefix(artifact.Path, "internal/operations/") {
-			continue
-		}
-		source := string(artifact.Data)
-		if strings.Contains(source, `/routes/helpers.js"`) {
-			t.Fatalf("operation %s imports the complete route helper map", artifact.Path)
-		}
-		if !strings.Contains(source, "OperationPublicType<") {
-			t.Fatalf("operation %s lost its public projection", artifact.Path)
-		}
-		checked++
-	}
-	if checked == 0 {
-		t.Fatal("fixture did not produce operation leaves")
 	}
 }

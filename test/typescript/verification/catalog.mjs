@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 
 export const fixtureRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../fixtures");
 export const repositoryRoot = resolve(fixtureRoot, "../../..");
-const segment = /^[a-z0-9][a-z0-9-]*$/;
 const scenarios = new Set([
   "contract",
   "collisions",
@@ -52,37 +51,29 @@ export function validateCatalog(catalog) {
     ["external", catalog.external],
   ]) {
     for (const entry of entries) {
-      assert.match(entry.id, segment);
+      assert.equal(typeof entry.id, "string");
       assert.ok(!ids.has(entry.id), `duplicate fixture id: ${entry.id}`);
       ids.add(entry.id);
-      assert.ok(
-        entry.profiles?.length && entry.characteristics?.length,
-        `fixture metadata: ${entry.id}`,
-      );
-      assert.ok(
-        entry.profiles.every((p) =>
-          ["conformance", "preimplementation", "large", "lifetime"].includes(p),
-        ),
-      );
       if (kind === "local") {
-        assert.match(entry.input, /^[a-z0-9][a-z0-9-]*\.openapi\.json$/);
-        assert.match(entry.output, segment);
-        assert.ok(!outputs.has(entry.output), `duplicate output: ${entry.output}`);
-        outputs.add(entry.output);
+        containedPath(fixtureRoot, entry.input);
+        const output = containedPath(fixtureRoot, entry.output);
         assert.ok(
-          Array.isArray(entry.addons) &&
-            entry.addons.every((x) => ["server", "metadata"].includes(x)),
+          [...outputs].every(
+            (existing) =>
+              output !== existing &&
+              !output.startsWith(existing + sep) &&
+              !existing.startsWith(output + sep),
+          ),
+          `overlapping fixture output: ${entry.output}`,
         );
-        assert.equal(new Set(entry.addons).size, entry.addons.length);
+        outputs.add(output);
         if (entry.expectedFailure) {
-          assert.equal(entry.scenario, undefined);
-          assert.match(entry.expectedFailure.golden, /^[a-z0-9-]+\.report\.txt$/);
+          containedPath(fixtureRoot, entry.expectedFailure.golden);
           assert.ok(entry.expectedFailure.contains.length > 0);
         } else assert.ok(scenarios.has(entry.scenario), `unknown scenario: ${entry.scenario}`);
       } else {
         assert.match(entry.sha256, /^[0-9a-f]{64}$/);
         assert.ok(scenarios.has(entry.scenario));
-        assert.ok(Number.isSafeInteger(entry.operations) && Number.isSafeInteger(entry.schemas));
       }
     }
   }

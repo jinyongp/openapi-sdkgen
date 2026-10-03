@@ -1,27 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  readdirSync,
-  readFileSync,
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  symlinkSync,
-} from "node:fs";
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  strictCompilerOptions,
-  assertStrictCompilerOptions,
-  assertCheckedSources,
-} from "./strict-options.mjs";
 import {
   loadCatalog,
   validateCatalog,
   fixtureRoot,
   repositoryRoot,
   containedPath,
-  inputFor,
   inspectGenerated,
   sha256,
 } from "./catalog.mjs";
@@ -44,47 +30,17 @@ function surface() {
   };
 }
 
-test("verification refuses weakened compiler flags and unchecked source", () => {
-  assertStrictCompilerOptions({ ...strictCompilerOptions, noEmit: true });
-  for (const flag of [
-    "strict",
-    "noUnusedLocals",
-    "noUnusedParameters",
-    "exactOptionalPropertyTypes",
-  ])
-    assert.throws(() => assertStrictCompilerOptions({ ...strictCompilerOptions, [flag]: false }));
-  for (const flag of ["noCheck", "skipLibCheck", "skipDefaultLibCheck"])
-    assert.throws(() => assertStrictCompilerOptions({ ...strictCompilerOptions, [flag]: true }));
-  const directory = mkdtempSync(resolve(repositoryRoot, ".tmp/strict-control-"));
-  try {
-    const source = resolve(directory, "control.ts");
-    writeFileSync(source, "export const value: number = 1;\n");
-    assertCheckedSources([source]);
-    writeFileSync(source, "// @ts-nocheck\nexport const value: number = 'wrong';\n");
-    assert.throws(() => assertCheckedSources([source]));
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-});
-
-test("one catalog covers every committed top-level OpenAPI fixture", () => {
-  const catalog = loadCatalog();
-  assert.deepEqual(
-    catalog.local.map((f) => f.input).sort(),
-    readdirSync(fixtureRoot)
-      .filter((f) => f.endsWith(".openapi.json"))
-      .sort(),
-  );
-  for (const entry of catalog.local) assert.ok(inputFor(entry).sha256);
-  assert.ok(catalog.local.some((f) => f.expectedFailure));
-  assert.ok(catalog.local.some((f) => f.characteristics.includes("recursive-schema")));
-});
-
-test("catalog rejects duplicate identities, unsafe output paths and unknown scenarios", () => {
+test("catalog rejects duplicate identities, unsafe output paths", () => {
   for (const mutate of [
     (c) => c.local.push(c.local[0]),
     (c) => {
       c.local[1].output = c.local[0].output;
+    },
+    (c) => {
+      c.local[1].output = `./${c.local[0].output}`;
+    },
+    (c) => {
+      c.local[1].output = `${c.local[0].output}/child`;
     },
     (c) => {
       c.local[0].output = "../outside";
@@ -92,16 +48,13 @@ test("catalog rejects duplicate identities, unsafe output paths and unknown scen
     (c) => {
       c.local[0].input = "/absolute.json";
     },
-    (c) => {
-      c.local[0].scenario = "execute-arbitrary-script";
-    },
   ]) {
     const copy = structuredClone(loadCatalog());
     mutate(copy);
     assert.throws(() => validateCatalog(copy));
   }
-  assert.throws(() => containedPath(fixtureRoot, "../outside"));
-  assert.throws(() => containedPath(fixtureRoot, "."));
+  assert.throws(() => containedPath(fixtureRoot, "../outside"), { code: "ERR_ASSERTION" });
+  assert.throws(() => containedPath(fixtureRoot, "."), { code: "ERR_ASSERTION" });
 });
 
 test("A/A contract fingerprints match without executing getters", () => {

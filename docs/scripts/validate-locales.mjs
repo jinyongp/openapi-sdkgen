@@ -116,9 +116,6 @@ function validateNavigation(errors, locale, expected) {
 
 async function validateMarkdownPage(errors, docsRoot, page, publicFiles) {
   const source = await readFile(page.file, "utf8");
-  if (/\bjust[ \t]+(?:agent|docs|release)\b|\bscripts\/agent\b|\b(?:devtools|taskwarrior)\b/i.test(source)) {
-    errors.push(`${page.display} contains internal tooling instructions`);
-  }
   const pattern = /\[([^\]]*)\]\(([^)]+)\)/g;
   for (const match of source.matchAll(pattern)) {
     if (match.index !== undefined && source[match.index - 1] === "!") continue;

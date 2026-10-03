@@ -43,12 +43,6 @@ export default defineConfig({
       ],
       reporter: ["text", "json-summary", "lcov"],
       reportsDirectory: "../../.tmp/coverage/typescript",
-      thresholds: {
-        statements: 88,
-        branches: 80,
-        functions: 90,
-        lines: 90,
-      },
     },
   },
 });

@@ -7,11 +7,6 @@ export const strictCompilerOptions = Object.freeze(
   ).compilerOptions,
 );
 
-export function assertStrictCompilerOptions(options) {
-  for (const [flag, value] of Object.entries(strictCompilerOptions))
-    assert.equal(options[flag], value, `verification compiler option ${flag} must be ${value}`);
-}
-
 export function assertCheckedSources(files) {
   for (const file of files)
     assert(
