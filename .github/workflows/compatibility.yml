@@ -15,7 +15,7 @@ concurrency:
 jobs:
   plan:
     name: Select all compatibility jobs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       documents: ${{ steps.matrix.outputs.documents }}
@@ -32,7 +32,7 @@ jobs:
   prepare:
     name: Prepare ${{ matrix.corpus }}
     needs: plan
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -48,10 +48,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: false
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-        with:
-          just-version: "1.58.0"
+          cache: true
       - name: Find reusable pinned corpus
         id: artifact
         run: python3 -B .github/scripts/compatibility_artifact.py find "$COMPATIBILITY_ARTIFACT"
@@ -73,7 +70,7 @@ jobs:
         if: steps.verified.outputs.reused != 'true' && matrix.fetch
         shell: bash
         run: |
-          just agent compatibility-fetch "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+          bash scripts/compatibility/fetch.sh fresh "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS"
       - name: Prepare checked-in snapshots
         if: steps.verified.outputs.reused != 'true' && !matrix.fetch
@@ -81,7 +78,7 @@ jobs:
       - name: Verify the complete pinned corpus
         shell: bash
         run: |
-          just agent compatibility-verify "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+          bash scripts/compatibility/fetch.sh offline "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS"
       - name: Save fresh corpus for this and later runs
         if: steps.verified.outputs.reused != 'true'
@@ -100,14 +97,14 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: corpus-preparation-${{ matrix.corpus }}
-          path: .tmp/agent-logs/
+          path: .tmp/runs/
           include-hidden-files: true
           retention-days: 7
 
   documents:
     name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
     needs: [plan, prepare]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -123,14 +120,11 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: false
+          cache: true
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           package-manager-cache: false
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-        with:
-          just-version: "1.58.0"
       - name: Find the prepared corpus artifact
         id: artifact
         run: python3 -B .github/scripts/compatibility_artifact.py find "$COMPATIBILITY_ARTIFACT" --required
@@ -147,14 +141,14 @@ jobs:
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
       - name: Install TypeScript dependencies
-        run: just agent ts-install
+        run: bash scripts/dev/typescript.sh install
       - name: Generate SDKs and verify every generated module
         id: benchmark
         timeout-minutes: 90
         shell: bash
         run: |
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
-            just agent compatibility-benchmark "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            bash scripts/compatibility/benchmark.sh "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
             .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" &
           compatibility_process=$!
@@ -179,7 +173,7 @@ jobs:
           name: document-shard-${{ matrix.corpus }}-${{ matrix.document }}
           path: |
             .tmp/compatibility-ci/
-            .tmp/agent-logs/
+            .tmp/runs/
           include-hidden-files: true
           retention-days: 7
 
@@ -187,21 +181,14 @@ jobs:
     name: Combine all corpus results
     needs: [plan, prepare, documents]
     if: always() && needs.prepare.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-        with:
-          just-version: "1.58.0"
+          cache: true
       - name: Download document measurements
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -212,7 +199,7 @@ jobs:
         run: |
           compatibility_failed=0
           for corpus in holdout modern production32 regression; do
-            if just agent compatibility-merge "test/compatibility/$corpus.json" \
+            if bash scripts/compatibility/merge.sh "test/compatibility/$corpus.json" \
               ".tmp/compatibility-ci/$corpus-results.json" \
               .tmp/compatibility-shards/document-shard-"$corpus"-*/compatibility-ci/report.json; then
               python3 -B .github/scripts/compatibility_gate.py \
@@ -232,6 +219,6 @@ jobs:
           name: full-corpus-compatibility
           path: |
             .tmp/compatibility-ci/
-            .tmp/agent-logs/
+            .tmp/runs/
           include-hidden-files: true
           retention-days: 7

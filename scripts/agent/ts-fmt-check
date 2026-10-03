@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/agent/lib.sh"
-agent_run "TypeScript format check" ts_pnpm run fmt:check
-agent_run "TypeScript runtime format check" ts_pnpm exec oxfmt --check "$ROOT/internal/target/typescript/runtime"

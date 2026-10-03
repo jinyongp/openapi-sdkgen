@@ -22,8 +22,8 @@ allowlist. Locked remote trust/cache behavior is exercised separately by
 `TestExternalResponseLinkLockedRemoteClosure`.
 
 ```sh
-just agent compatibility-verify test/compatibility/modern.json test
-just agent compatibility-benchmark test/compatibility/modern.json test .tmp/compatibility-modern.json 3m
+devtools run compatibility:verify test/compatibility/modern.json test
+devtools run compatibility:benchmark test/compatibility/modern.json test .tmp/compatibility-modern.json 3m
 ```
 
 The verifier checks pinned local files without a fetched-corpus receipt. Existing
@@ -73,8 +73,8 @@ revision in its entry and preserve the specification tree at
 Then verify and measure:
 
 ```sh
-just agent compatibility-verify test/compatibility/regression.json .tmp/compatibility-regression
-just agent compatibility-benchmark test/compatibility/regression.json .tmp/compatibility-regression test/compatibility/regression-results.json 10m
+devtools run compatibility:verify test/compatibility/regression.json .tmp/compatibility-regression
+devtools run compatibility:benchmark test/compatibility/regression.json .tmp/compatibility-regression test/compatibility/regression-results.json 10m
 ```
 
 The public page lists this cohort first, in manifest order, and links to each
@@ -93,8 +93,8 @@ The live download URLs are mutable; committed snapshots and hashes are the
 reproduction inputs. No local conversion or version rewrite is applied.
 
 ```sh
-just agent compatibility-verify test/compatibility/production32.json test
-just agent compatibility-benchmark test/compatibility/production32.json test .tmp/compatibility-production32.json 3m
+devtools run compatibility:verify test/compatibility/production32.json test
+devtools run compatibility:benchmark test/compatibility/production32.json test .tmp/compatibility-production32.json 3m
 ```
 
 `production32-results.json` records generation and strict TypeScript success for
@@ -145,19 +145,19 @@ claim external OAS 3.2 evidence.
 Fetch the exact upstream blobs and verify their Git blob IDs and byte sizes:
 
 ```sh
-just agent compatibility-fetch
+devtools run compatibility:fetch
 ```
 
 After the corpus exists, verify it without network access:
 
 ```sh
-just agent compatibility-verify
+devtools run compatibility:verify
 ```
 
 Run the heavyweight benchmark offline:
 
 ```sh
-just agent compatibility-benchmark
+devtools run compatibility:benchmark
 ```
 
 The default paths are:

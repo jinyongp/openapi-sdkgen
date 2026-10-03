@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 import shutil
 import subprocess
@@ -28,7 +29,7 @@ def find_artifact(name, required=False):
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         output.write(f"artifact-id={artifact['id'] if artifact else ''}\n")
         output.write(f"source-run={artifact['workflow_run']['id'] if artifact else ''}\n")
-    print("Pinned corpus artifact found" if artifact else "No reusable artifact; prepare fresh inputs")
+    print("Pinned corpus artifact found" if artifact else "No reusable artifact; prepare fresh inputs", file=sys.stderr)
 
 
 def restore_corpus(corpus, root):
@@ -40,10 +41,10 @@ def restore_corpus(corpus, root):
     temporary = (root / ".tmp").resolve()
     if not source.resolve().is_relative_to(temporary) or not destination.resolve().is_relative_to(temporary):
         raise RuntimeError("corpus paths must stay inside workspace .tmp")
-    result = subprocess.run(["just", "agent", "compatibility-verify",
+    result = subprocess.run(["bash", "scripts/compatibility/fetch.sh", "offline",
                              f"test/compatibility/{corpus}.json", str(source)], cwd=root)
     if result.returncode:
-        print("Artifact verification failed; prepare fresh inputs")
+        print("Artifact verification failed; prepare fresh inputs", file=sys.stderr)
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
     source.rename(destination)

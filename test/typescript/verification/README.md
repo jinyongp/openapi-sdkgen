@@ -1,6 +1,6 @@
 # Representation verification
 
-This harness is reusable C1/preimplementation infrastructure. It does not modify
+This harness compares generated SDK behavior and execution costs. It does not modify
 the generator or apply an optimization to its output. Each generator produces its
 own sources, then Oxc erases TypeScript into separate ES2022 ESM trees without
 bundling or minification. Source manifests are checked before comparison.
@@ -19,8 +19,8 @@ bundling or minification. Source manifests are checked before comparison.
 - `artifacts.mjs`: strict checking, unmodified source consumers, declaration consumers and full-client bundles.
 - `migration.mjs`: distinct-generator migration, no-op, fresh equivalence and publication conflict probes.
 
-The normal conformance wrapper runs the harness self-tests. Full comparative
-benchmarks are opt-in through `just agent representation-check`; they do not run
+The `typescript-tools` CI suite runs the harness self-tests. Full comparative
+benchmarks are opt-in through `devtools run verify:representation-check`; they do not run
 on every unit test invocation and do not download corpora or install packages.
 
 ## Measurement contract
@@ -59,8 +59,8 @@ checks the dedicated helper boundary that an optimizing bundler can conceal.
 The JSON report has separate correctness and performance-review fields. Exceptions,
 wrong hashes, contract differences or missing imports make the command exit
 nonzero. A measured cost beyond the predeclared review policy produces
-`status: review` and preserves the samples; it is **not** a performance pass even
-though older archived runs exited successfully. Current commands exit **2** for review,
+`status: review` and preserves the samples; it is **not** a performance pass.
+Commands exit **2** for review,
 **1** for a correctness/tool failure, and **0** for pass. Never turn review into a pass
 by checking only that a process completed.
 
@@ -81,7 +81,7 @@ routing. Null-prototype empty host maps are used for the valid unmatched-route t
 ## Running and preserving results
 
 ```sh
-just agent representation-check \
+devtools run verify:representation-check \
   --baseline /absolute/path/to/baseline-sdkgen \
   --candidate /absolute/path/to/candidate-sdkgen \
   --input github=/absolute/path/to/pinned-github.json \
@@ -107,15 +107,15 @@ final integrated implementation.
 
 ## Fingerprint and lifecycle guardrails
 
-Fingerprint version 2 hashes the root primitive value as well as its reachable descriptor graph. Version 1 missed primitive-only response changes; archived reports remain historical and the final candidate was rerun using version 2. Negative controls cover string/number/null/undefined differences. No getters are invoked.
+Fingerprint version 2 hashes the root primitive value as well as its reachable descriptor graph. Negative controls cover string/number/null/undefined differences. No getters are invoked.
 
 The lifecycle fixture must make a positive number of constructor calls when a candidate helper exists, and zero additional calls during requests and stream frames. A zero count because the helper was never loaded is not a passing lifecycle probe. Other reference-only fixtures may correctly leave a helper module unloaded.
 
 ## Artifact and migration commands
 
 ```sh
-just agent representation-artifacts --report .tmp/preimplementation/run-EXAMPLE/report.json --pairs 3
-just agent representation-migration --baseline /path/to/base --candidate /path/to/candidate
+devtools run verify:representation-artifacts --report .tmp/preimplementation/run-EXAMPLE/report.json --pairs 3
+devtools run verify:representation-migration --baseline /path/to/base --candidate /path/to/candidate
 ```
 
 The artifact command verifies the source and ESM hashes from its input report before using them. Strict source checking removes nocheck equally from both check copies; normal source and declaration consumers use the generated source as shipped. A baseline strict failure is retained with raw diagnostics. Matching candidate diagnostics are classified `baseline-blocked`, not PASS, and the command exits 2. A new or different candidate diagnostic fails with exit 1. Existing diagnostic comparison normalizes only check-directory paths, source positions and private lexical spellings; raw messages remain available for review. No compiler strictness flag is relaxed.
@@ -125,14 +125,14 @@ Migration compares existing managed files byte-for-byte, protects their mtimes o
 ## Independent process cost measurement
 
 ```sh
-just agent representation-measure --report .tmp/preimplementation/run-EXAMPLE/report.json --artifacts .tmp/preimplementation/run-EXAMPLE/artifacts-EXAMPLE/report.json --pairs 10
+devtools run verify:representation-measure --report .tmp/preimplementation/run-EXAMPLE/report.json --artifacts .tmp/preimplementation/run-EXAMPLE/artifacts-EXAMPLE/report.json --pairs 10
 ```
 
 This consumes the same pinned input/binary and compiler configurations as the correctness checks. It interleaves fresh generation, strict and consumer checks with per-child GNU time CPU/peak-RSS measurements. A generated directory belongs to the measuring invocation and is removed only after that individual run; raw measurements and command logs remain. A passing status means measurements completed, not that every performance delta meets the separate acceptance policy. This report does not include network/download/binary-build time or claim a cold filesystem.
 
 ## Local identifier allocation
 
-`just agent identifier-perf` measures the production Go local allocator with 1,000,
+`devtools run perf:identifiers` measures the production Go local allocator with 1,000,
 10,000 and 100,000 exact keys, including collection, freeze and lookup. It records
 five samples of three iterations per size with allocation statistics in
 an invocation-specific `.tmp/perf/local-identifiers-XXXXXX.log` printed by the

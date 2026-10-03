@@ -156,7 +156,8 @@ const report = {
 };
 const save = () => writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
 save();
-console.log(`report: ${relative(repositoryRoot, reportPath)}`);
+if (process.env.SCRIPT_VERBOSE === "1")
+  console.error(`report: ${relative(repositoryRoot, reportPath)}`);
 
 async function transpile(sourceRoot, destination, manifest) {
   mkdirSync(destination, { recursive: true });
@@ -328,9 +329,10 @@ try {
       "input changed during verification",
     );
     save();
-    console.log(
-      `ok ${entry.id}: unbundled contract + ${aaPairs} A/A + ${pairs} A/B pairs${row.memory.length ? " + lifetime/isolation" : ""}`,
-    );
+    if (process.env.SCRIPT_VERBOSE === "1")
+      console.error(
+        `ok ${entry.id}: unbundled contract + ${aaPairs} A/A + ${pairs} A/B pairs${row.memory.length ? " + lifetime/isolation" : ""}`,
+      );
   }
   for (const [key, path] of Object.entries(binaries))
     assert.equal(sha256(readFileSync(path)), hashes[key], "binary changed during verification");

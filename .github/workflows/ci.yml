@@ -16,23 +16,84 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
-    name: Validate source
-    runs-on: ubuntu-latest
+  suites:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [go, typescript-runtime, typescript-tools]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: false
+      # Go tests execute generated SDKs, so this suite also needs Node/TypeScript.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           package-manager-cache: false
-      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-        with:
-          just-version: "1.58.0"
       - name: Install TypeScript dependencies
-        run: just agent ts-install
-      - name: Validate
-        run: just agent ci
+        run: bash scripts/dev/typescript.sh install
+      - name: Run independent suite
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: bash scripts/dev/ci.sh "$SUITE"
+      - name: Preserve failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostics-${{ matrix.suite }}
+          path: .tmp/runs/
+          include-hidden-files: true
+          retention-days: 7
+
+  compilers:
+    name: TypeScript ${{ matrix.version }} consumers
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["5.7.3", "5.9.3", "6.0.3", "7.0.2"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install TypeScript dependencies
+        run: bash scripts/dev/typescript.sh install
+      - name: Check representative consumers
+        env:
+          COMPILER_VERSION: ${{ matrix.version }}
+        run: bash scripts/dev/ci.sh compiler "$COMPILER_VERSION"
+      - name: Preserve failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: diagnostics-typescript-${{ matrix.version }}
+          path: .tmp/runs/
+          include-hidden-files: true
+          retention-days: 7
+
+  validate:
+    name: Validate source
+    needs: [suites, compilers]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Require all suites to pass
+        env:
+          SUITES_RESULT: ${{ needs.suites.result }}
+          COMPILERS_RESULT: ${{ needs.compilers.result }}
+        run: |
+          if [[ "$SUITES_RESULT" != success || "$COMPILERS_RESULT" != success ]]; then
+            printf 'validation failed: suites=%s compilers=%s\n' "$SUITES_RESULT" "$COMPILERS_RESULT" >&2
+            exit 1
+          fi

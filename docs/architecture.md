@@ -225,24 +225,27 @@ the inventory and matrix provide readable views.
 Repository validation uses separate cost tiers for ordinary development and
 release workflows.
 
-`just agent ci` is the ordinary pull-request gate and remains available for
-manual validation. It covers formatting, vetting, Go tests/build/module
-integrity, TypeScript formatting/lint/typecheck, conformance generation,
-generate-check behavior, pinned consumer compiler versions (5.7.3, 5.9.3, 6.0.3,
-7.0.2), and coverage. Release publishing simulations belong to the release path.
-`just release` requires clean `main`, moves the `CHANGELOG.md` Unreleased notes
-under the selected version and UTC date, and creates a preparation commit containing
-only that file. It runs the full release checks on that HEAD before atomically
-pushing `main` and the annotated release tag. The next Unreleased section starts
-empty and needs notes before another release. A failed check or push leaves the
-preparation commit for an explicit same-version retry. Dry runs preview the
-changelog and run checks without editing files or creating commits; `--resume`
-uses the already published annotated tag without preparing new notes.
+`devtools run dev:ci` runs the ordinary pull-request suites locally. GitHub CI runs
+Go, TypeScript runtime, verification tools, and each pinned consumer compiler
+version (5.7.3, 5.9.3, 6.0.3, 7.0.2) independently. The `Validate source` job
+requires every suite to pass. CI prepares tools and directly invokes the same
+scripts; it does not install devtools. Suites avoid repeated preparation and
+full cross-product compiler checks. Coverage reports remain opt-in without
+fixed percentage gates. Runner jobs use `ubuntu-24.04`.
 
-`just agent check` is the broader integrated gate. In addition to the ordinary
-quality checks it exercises release scripts and workflows, npm package/publish
-contracts, and runnable examples. Release builds are also checked across the
-supported macOS, Linux, and Windows architectures.
+`devtools run release:publish` requires clean `main`, validates its existing HEAD,
+then atomically pushes `main` and the annotated tag. Dry runs perform the checks
+without editing files, creating commits, or publishing. Checks cannot change
+HEAD or leave the working tree dirty. A failed push removes only the local tag
+created by that attempt; `--resume` dispatches the existing tag's workflow.
+Releaseway standard generates GitHub release notes. Breaking changes and
+migration instructions can be added there, and retries preserve published
+release bodies. There is no mandatory changelog file or preparation commit.
+
+`devtools run dev:check` also exercises runnable examples and release cross-builds
+for macOS, Linux, and Windows. Release and npm distribution safety simulations
+run in the verification-tools suite. Performance and corpus benchmarks remain
+separate explicit commands.
 
 Performance has its own acceptance gate. It tracks compile, prepare, emit,
 publish, full-process, memory, fresh-publication, and incremental workloads

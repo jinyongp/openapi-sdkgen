@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -52,7 +53,7 @@ def checker_candidates(rows, root_pid, modules, executable):
     return sorted(candidates, key=lambda row: row["rssKiB"], reverse=True)
 
 
-def observe(root_pid, modules, output, reserve_kib):
+def observe(root_pid, modules, output, reserve_kib, verbose=False):
     next_sample = 0
     while True:
         rows = process_rows()
@@ -80,7 +81,10 @@ def observe(root_pid, modules, output, reserve_kib):
             line = json.dumps(row)
             with output.open("a") as destination:
                 destination.write(line + "\n")
-            print(line, flush=True)
+            if verbose:
+                print(line, file=sys.stderr, flush=True)
+            elif "terminatedChecker" in row:
+                print(f"checker terminated: {row['reason']}; resources: {output}", file=sys.stderr, flush=True)
             next_sample = time.monotonic() + 60
         time.sleep(2)
 
@@ -91,10 +95,14 @@ if __name__ == "__main__":
     parser.add_argument("--typescript-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--reserve-mib", type=int, default=3072)
+    parser.add_argument("--verbose", action="store_true")
     options = parser.parse_args()
+    if options.verbose:
+        print("warning: --verbose can produce large output; prefer the default command for routine work.", file=sys.stderr)
     observe(
         options.root_pid,
         (options.typescript_root / "node_modules").resolve(),
         options.output,
         options.reserve_mib * 1024,
+        options.verbose,
     )

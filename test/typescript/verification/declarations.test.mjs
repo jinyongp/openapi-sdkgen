@@ -36,7 +36,7 @@ function workspace(body) {
 function wrapper(args) {
   const result = spawnSync(
     "bash",
-    [resolve(repositoryRoot, "scripts/agent/ts-declarations"), ...args],
+    [resolve(repositoryRoot, "scripts/verification/declarations.sh"), ...args],
     {
       cwd: repositoryRoot,
       encoding: "utf8",

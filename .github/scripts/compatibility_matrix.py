@@ -3,6 +3,7 @@
 import json
 import hashlib
 import os
+import sys
 from pathlib import Path
 
 CORPORA = ("holdout", "modern", "production32", "regression")
@@ -41,4 +42,4 @@ if __name__ == "__main__":
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         output.write("documents=" + json.dumps(matrix) + "\n")
         output.write("corpora=" + json.dumps(corpus_matrix(Path.cwd())) + "\n")
-    print(f"Selected {len(matrix['include'])} documents across {len(CORPORA)} corpora")
+    print(f"Selected {len(matrix['include'])} documents across {len(CORPORA)} corpora", file=sys.stderr)

@@ -2,3 +2,271 @@ profile = 'openapi-sdkgen'
 
 [commands."perf:selection"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\"", "sdkgen", "test/typescript/verification/selection-benchmark.mjs"]
+
+# Local commands select this worktree and its toolchain. CI prepares the
+# toolchain and calls the same scripts directly. Each name is PURPOSE:COMMAND.
+
+[commands."compatibility:benchmark"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/compatibility/benchmark.sh"]
+
+[commands."compatibility:diagnostics"]
+exec = ["bash", "scripts/compatibility/diagnostics.sh"]
+
+[commands."compatibility:fetch"]
+exec = ["bash", "scripts/compatibility/fetch.sh"]
+
+[commands."compatibility:inspect"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/compatibility/inspect.sh"]
+
+[commands."compatibility:merge"]
+exec = ["bash", "scripts/compatibility/merge.sh"]
+
+[commands."compatibility:verify"]
+exec = ["bash", "scripts/compatibility/fetch.sh", "offline"]
+
+[commands."dev:build"]
+exec = ['bash', 'scripts/dev/go.sh', 'build']
+inject = true
+
+[commands."dev:check"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/check.sh']
+serve = ["todo-api", "widget-api", "capabilities-api", "capabilities-webhook"]
+[commands."dev:check".bind]
+TODO_API_PORT = { port = "todo-api" }
+WIDGET_API_PORT = { port = "widget-api" }
+CAPABILITIES_API_PORT = { port = "capabilities-api" }
+CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
+
+[commands."dev:ci"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/ci.sh']
+
+[commands."dev:coverage"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/go.sh', 'coverage']
+
+[commands."dev:fmt"]
+exec = ['bash', 'scripts/dev/go.sh', 'fmt']
+
+[commands."dev:fmt-check"]
+exec = ['bash', 'scripts/dev/go.sh', 'fmt-check']
+
+[commands."dev:fuzz"]
+exec = ['bash', 'scripts/dev/go.sh', 'fuzz']
+
+[commands."dev:mod-tidy"]
+exec = ['bash', 'scripts/dev/go.sh', 'mod-tidy']
+
+[commands."dev:mod-tidy-check"]
+exec = ['bash', 'scripts/dev/go.sh', 'mod-tidy-check']
+
+[commands."dev:mod-verify"]
+exec = ['bash', 'scripts/dev/go.sh', 'mod-verify']
+
+[commands."dev:race"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/go.sh', 'race']
+
+[commands."dev:test"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/go.sh', 'test']
+inject = true
+
+[commands."dev:ts-fmt"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/typescript.sh', 'fmt']
+
+[commands."dev:ts-fmt-check"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/typescript.sh', 'fmt-check']
+
+[commands."dev:ts-install"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/typescript.sh', 'install']
+
+[commands."dev:ts-lint"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/typescript.sh', 'lint']
+
+[commands."dev:ts-lock"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/dev/typescript.sh', 'lock']
+
+[commands."dev:vet"]
+exec = ['bash', 'scripts/dev/go.sh', 'vet']
+
+[commands."docs:build"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "build"]
+
+[commands."docs:dev"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "dev"]
+serve = ["docs-dev"]
+[commands."docs:dev".bind]
+DOCS_PORT = { port = "docs-dev" }
+[commands."docs:dev".ready]
+exec = ["bash", "-c", 'curl --noproxy "*" --fail --silent --output /dev/null "http://127.0.0.1:$DOCS_PORT/openapi-sdkgen/"']
+timeout = "2s"
+
+[commands."docs:install"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "install"]
+
+[commands."docs:lock"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "lock"]
+
+[commands."docs:preview"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "preview"]
+serve = ["docs-preview"]
+[commands."docs:preview".bind]
+DOCS_PORT = { port = "docs-preview" }
+[commands."docs:preview".ready]
+exec = ["bash", "-c", 'curl --noproxy "*" --fail --silent --output /dev/null "http://127.0.0.1:$DOCS_PORT/openapi-sdkgen/"']
+timeout = "2s"
+
+[commands."docs:validate"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "validate"]
+
+[commands."examples:advanced"]
+serve = ["widget-api"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/examples/example-advanced.sh"]
+[commands."examples:advanced".bind]
+WIDGET_API_PORT = { port = "widget-api" }
+
+[commands."examples:capabilities"]
+serve = ["capabilities-api", "capabilities-webhook"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/examples/example-capabilities.sh"]
+[commands."examples:capabilities".bind]
+CAPABILITIES_API_PORT = { port = "capabilities-api" }
+CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
+
+[commands."examples:todo"]
+serve = ["todo-api"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/examples/example-todo.sh"]
+[commands."examples:todo".bind]
+TODO_API_PORT = { port = "todo-api" }
+
+[commands."generate:check"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/generate/check.sh']
+
+[commands."generate:check-test"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/generate/check-test.sh']
+
+[commands."generate:sdk"]
+exec = ['bash', 'scripts/generate/sdk.sh']
+
+[commands."npm:source-check"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/npm/source-check.sh']
+
+[commands."perf:acceptance"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf-acceptance.sh"]
+
+[commands."perf:benchmark"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf.sh"]
+
+[commands."perf:identifiers"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/identifier-perf.sh"]
+
+[commands."perf:profile"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf-profile.sh"]
+
+[commands."perf:publication"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf-publication.sh"]
+
+[commands."release:check"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/release/check.sh']
+serve = ["todo-api", "widget-api", "capabilities-api", "capabilities-webhook"]
+[commands."release:check".bind]
+TODO_API_PORT = { port = "todo-api" }
+WIDGET_API_PORT = { port = "widget-api" }
+CAPABILITIES_API_PORT = { port = "capabilities-api" }
+CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
+
+[commands."release:cross-build"]
+exec = ['bash', 'scripts/release/cross-build.sh']
+
+[commands."release:publish"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/release/publish.sh']
+inject = true
+serve = ["todo-api", "widget-api", "capabilities-api", "capabilities-webhook"]
+[commands."release:publish".bind]
+TODO_API_PORT = { port = "todo-api" }
+WIDGET_API_PORT = { port = "widget-api" }
+CAPABILITIES_API_PORT = { port = "capabilities-api" }
+CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
+
+[commands."release:test"]
+exec = ['bash', 'scripts/release/test.sh']
+
+[commands."security:audit"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/security/audit.sh"]
+
+[commands."security:audit-test"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/security/audit-test.sh"]
+
+[commands."verify:compilers"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/compatibility.sh"]
+
+[commands."verify:declarations"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/declarations.sh"]
+
+[commands."verify:declarations-benchmark"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/declarations-benchmark.sh"]
+
+[commands."verify:declarations-options"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/declarations-options.sh"]
+
+[commands."verify:declarations-test"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/declarations-test.sh"]
+
+[commands."verify:named-clients-check"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/named-clients-check.sh"]
+
+[commands."verify:prepare"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/prepare.sh"]
+
+[commands."verify:representation-artifacts"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/representation-artifacts.sh"]
+
+[commands."verify:representation-check"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/representation-check.sh"]
+
+[commands."verify:representation-measure"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/representation-measure.sh"]
+
+[commands."verify:representation-migration"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/representation-migration.sh"]
+
+[commands."verify:runtime-delivery-browser"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/runtime-delivery-browser.sh"]
+
+[commands."verify:runtime-delivery-browser-report"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/runtime-delivery-browser-report.sh"]
+
+[commands."verify:runtime-delivery-check"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/runtime-delivery-check.sh"]
+
+[commands."verify:runtime-delivery-session"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/runtime-delivery-session.sh"]
+
+[commands."verify:runtime-delivery-session-report"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/runtime-delivery-session-report.sh"]
+
+[commands."verify:sdk-delivery-browser"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/sdk-delivery-browser.sh"]
+
+[commands."verify:sdk-delivery-browser-report"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/sdk-delivery-browser-report.sh"]
+
+[commands."verify:sdk-delivery-check"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/sdk-delivery-check.sh"]
+
+[commands."verify:typescript"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/typescript.sh"]
+
+[ports.docs-dev]
+range = [28000, 28199]
+
+[ports.docs-preview]
+range = [28000, 28199]
+
+[ports.todo-api]
+range = [28200, 28399]
+
+[ports.widget-api]
+range = [28200, 28399]
+
+[ports.capabilities-api]
+range = [28200, 28399]
+
+[ports.capabilities-webhook]
+range = [28200, 28399]

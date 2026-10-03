@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 import tomllib
 from pathlib import Path
 
@@ -97,7 +98,10 @@ if __name__ == "__main__":
     parser.add_argument("--resources-directory", type=Path)
     parser.add_argument("--resource-shards", type=Path)
     parser.add_argument("--selection-directory", type=Path)
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
+    if args.verbose:
+        print("warning: --verbose can produce large output; prefer the default command for routine work.", file=sys.stderr)
     manifest_bytes = Path(args.manifest).read_bytes()
     manifest = json.loads(manifest_bytes)
     if not Path(args.report).exists():
@@ -126,6 +130,9 @@ if __name__ == "__main__":
         (args.resources_directory / "resource-summary.json").write_text(json.dumps(resources, indent=2) + "\n")
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as output:
         output.write(f"## {Path(args.manifest).stem}\n\n" + summary + "\n")
-    print(summary, flush=True)
+    if args.verbose:
+        print(summary, file=sys.stderr, flush=True)
+    else:
+        print(f"{'failed' if failures else 'ok'} {Path(args.manifest).stem}: {len(report['documents'])} documents; full report in Step Summary", file=sys.stderr, flush=True)
     if failures:
         raise SystemExit("Strict verification incomplete: " + ", ".join(failures))

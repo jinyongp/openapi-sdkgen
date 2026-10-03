@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$ROOT"
-
-if ! command -v just >/dev/null 2>&1; then
-  echo "release checks require just" >&2
-  exit 1
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/commands.sh"
+set -- "${SCRIPT_ARGS[@]}"
+if [[ "${1:-}" == --help ]]; then
+  printf '%s\n' 'check.sh: installs pinned TypeScript dependencies, then runs repository checks, cross-builds and example clients. Writes temporary artifacts; does not publish.' >&2
+  exit 0
 fi
-
-just agent ts-install
-just agent ci
-just agent release-check
-
-printf 'ok release checks\n'
+bash "$ROOT/scripts/dev/typescript.sh" install
+bash "$ROOT/scripts/dev/check.sh" "$@"

@@ -52,13 +52,13 @@ the input pin even when an upstream branch or filename says `latest`.
 Run the normal generated-fixture and type/runtime checks:
 
 ```sh
-just agent conformance
+devtools run verify:typescript
 ```
 
 Compare two already-built generator binaries on all local positive cases:
 
 ```sh
-just agent representation-check \
+devtools run verify:representation-check \
   --baseline /absolute/path/to/baseline-sdkgen \
   --candidate /absolute/path/to/candidate-sdkgen
 ```

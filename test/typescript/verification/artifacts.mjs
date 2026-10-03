@@ -170,7 +170,8 @@ async function bundle(source, fixture, variant, scenario) {
   };
 }
 save();
-console.log(`artifact report: ${relative(repositoryRoot, resultPath)}`);
+if (process.env.SCRIPT_VERBOSE === "1")
+  console.error(`artifact report: ${relative(repositoryRoot, resultPath)}`);
 try {
   for (const fixture of fixtures) {
     const row = { id: fixture.id, variants: {}, samples: [] };
@@ -336,7 +337,8 @@ try {
     };
     row.status = baselineBlocked ? "baseline-blocked" : "pass";
     save();
-    console.log(`${row.status} ${fixture.id}: strict/source/declaration/helper/bundle checks`);
+    if (process.env.SCRIPT_VERBOSE === "1")
+      console.error(`${row.status} ${fixture.id}: strict/source/declaration/helper/bundle checks`);
   }
   report.baselineBlockers = report.fixtures
     .filter((row) => row.status === "baseline-blocked")

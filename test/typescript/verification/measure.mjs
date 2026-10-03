@@ -84,7 +84,8 @@ function generation(f, variant, iteration) {
   return metric;
 }
 save();
-console.log(`measurement report: ${relative(repositoryRoot, reportPath)}`);
+if (process.env.SCRIPT_VERBOSE === "1")
+  console.error(`measurement report: ${relative(repositoryRoot, reportPath)}`);
 try {
   for (const f of fixtures) {
     assert.equal(sha256(readFileSync(f.input.path)), f.input.sha256);
@@ -128,7 +129,8 @@ try {
           pairedSummary(row[kind], field),
         ]),
       );
-    console.log(JSON.stringify({ id: row.id, summary: row.summary }));
+    if (process.env.SCRIPT_VERBOSE === "1")
+      console.error(JSON.stringify({ id: row.id, summary: row.summary }));
     save();
   }
   for (const variant of ["baseline", "candidate"])

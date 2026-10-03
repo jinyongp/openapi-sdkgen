@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/commands.sh"
+set -- "${SCRIPT_ARGS[@]}"
+if [[ "${1:-}" == --help ]]; then
+  echo 'source-check.sh: pack and inspect the source npm distribution; uses the pnpm cache/network and disposable output.' >&2
+  exit 0
+fi
+require_system_node
 PNPM_VERSION="12.4.1"
 package_dir="$ROOT/npm"
 node - "$package_dir/package.json" <<'NODE'
@@ -35,7 +41,7 @@ done
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/openapi-sdkgen-npm-source-check.XXXXXX")"
 trap 'rm -rf "$temporary"' EXIT
 store="${npm_config_store_dir:-$ROOT/.tmp/pnpm-store}"
-corepack "pnpm@$PNPM_VERSION" --dir "$package_dir" --config.store-dir="$store" pack --pack-destination "$temporary" >/dev/null
+run_step 'pack npm source distribution' corepack "pnpm@$PNPM_VERSION" --dir "$package_dir" --config.store-dir="$store" pack --pack-destination "$temporary"
 
 tarball="$(find "$temporary" -maxdepth 1 -name '*.tgz' -print -quit)"
 if [[ -z "$tarball" ]]; then
@@ -57,4 +63,4 @@ for forbidden in package/bin/openapi-sdkgen.js package/.releaseway/native.json p
   fi
 done
 
-echo "ok npm Releaseway source contract"
+script_note "ok npm source distribution"

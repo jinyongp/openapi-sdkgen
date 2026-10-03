@@ -85,17 +85,19 @@ test("storage preflight uses account-available bytes rather than reserved free b
 
 function runnerFixture(t) {
   const directory = path.join(root, ".tmp/sdk-runner-tests", randomUUID());
-  const scripts = path.join(directory, "scripts/agent");
+  const scripts = path.join(directory, "scripts/verification");
   fs.mkdirSync(scripts, { recursive: true });
   fs.mkdirSync(path.join(directory, ".tmp"));
-  const wrapper = path.join(scripts, "sdk-delivery-check");
-  fs.copyFileSync(path.join(root, "scripts/agent/sdk-delivery-check"), wrapper);
-  // Run the real wrapper and lock; substitute only the expensive command bodies.
+  const wrapper = path.join(scripts, "sdk-delivery-check.sh");
+  fs.copyFileSync(path.join(root, "scripts/verification/sdk-delivery-check.sh"), wrapper);
+  fs.mkdirSync(path.join(directory, "scripts/lib"), { recursive: true });
+  // Run the real script and lock; substitute only the expensive command bodies.
   fs.writeFileSync(
-    path.join(scripts, "lib.sh"),
+    path.join(directory, "scripts/lib/commands.sh"),
     `ROOT=${JSON.stringify(directory)}
 TYPESCRIPT_ROOT="$ROOT/test"
-agent_run() { printf '%s\\n' "$1" >> "$ROOT/calls"; return "\${TEST_FAILURE_STATUS:-0}"; }
+SCRIPT_ARGS=("$@")
+run_step() { printf '%s\\n' "$1" >> "$ROOT/calls"; return "\${TEST_FAILURE_STATUS:-0}"; }
 `,
   );
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));

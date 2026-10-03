@@ -18,6 +18,6 @@ compatibility normalization and unsupported dialect diagnostics.
 `schema` describes the complete buffered value. `itemSchema` describes one
 incremental value. JSON application data uses an explicit stream adapter.
 
-Run generation and strict checking with `just agent generate-check INPUT
+Run generation and strict checking with `devtools run generate:check INPUT
 typescript -- --diagnostic-mode collect`. Runtime probes live in the TypeScript
-target tests and run through `just agent test` and `just agent conformance`.
+target tests and run through `devtools run dev:test` and `devtools run verify:typescript`.

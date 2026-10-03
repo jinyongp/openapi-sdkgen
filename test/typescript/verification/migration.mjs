@@ -84,7 +84,8 @@ function snapshot(dir) {
   );
 }
 save();
-console.log(`migration report: ${relative(repositoryRoot, reportPath)}`);
+if (process.env.SCRIPT_VERBOSE === "1")
+  console.error(`migration report: ${relative(repositoryRoot, reportPath)}`);
 try {
   for (const entry of fixtures) {
     const row = { id: entry.id, input: inputFor(entry), checks: [] };
@@ -159,7 +160,8 @@ try {
     }
     row.status = "pass";
     save();
-    console.log(`ok ${entry.id}: ${row.checks.length} migration/publication checks`);
+    if (process.env.SCRIPT_VERBOSE === "1")
+      console.error(`ok ${entry.id}: ${row.checks.length} migration/publication checks`);
   }
   for (const [which, binary] of Object.entries(binaries))
     assert.equal(sha256(readFileSync(binary)), hashes[which]);
