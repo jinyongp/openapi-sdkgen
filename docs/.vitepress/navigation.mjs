@@ -38,6 +38,10 @@ const sidebarGroups = [
         labels: { en: "Load selected operations", ko: "필요한 API만 불러오기" },
       },
       {
+        route: "/guide/selection-benchmarks",
+        labels: { en: "Compare selection costs", ko: "선택 방식별 비용 비교" },
+      },
+      {
         route: "/guide/transport",
         labels: { en: "Authentication, transport, and streams", ko: "인증·전송·스트림" },
       },

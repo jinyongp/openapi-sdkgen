@@ -1,1 +1,4 @@
 profile = 'openapi-sdkgen'
+
+[commands."perf:selection"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\"", "sdkgen", "test/typescript/verification/selection-benchmark.mjs"]

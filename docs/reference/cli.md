@@ -231,7 +231,8 @@ operations = ["listOrders", "createOrder"]
 Each client requires a nonempty selection and accepts only `selection` settings.
 The input document, target, output, and add-ons are shared. Root `[selection]`
 and CLI selection overrides apply independently; omitting root `[selection]`
-keeps the full root SDK. Client names are lowercase ASCII letters, digits, and
+exposes the named selections' union at the root. Shared generation includes only
+the root and named selections plus required Link dependencies. Client names are lowercase ASCII letters, digits, and
 hyphens, starting with a letter, with a maximum of 64 characters; Windows device
 names are reserved. See [Generate a client for each feature](../guide/named-clients.md)
 for imports, Links, and updates.

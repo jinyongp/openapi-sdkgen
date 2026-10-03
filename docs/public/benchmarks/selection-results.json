@@ -1,0 +1,703 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-10-03T06:47:30.172Z",
+  "commit": "7fe7039d0d9c688f91218f4522d1b92c89406704",
+  "node": "v24.21.0",
+  "typescript": "7.0.2",
+  "rolldown": "1.2.6",
+  "generatorSHA256": "3f0e290c6f63c7c39f35f9a532cca090094c76349907017da0ba0acb9f74b3fe",
+  "inputSHA256": "e3a4cd51d15c9573e79d55d75c89ec36371abba22f72d86f1ccd5024119d1ad8",
+  "environment": {
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "os": "Linux",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "architecture": "x64",
+    "totalMemoryBytes": 16281919488,
+    "go": "go version go1.27.1 linux/amd64"
+  },
+  "routes": [
+    "GET /items/item0",
+    "GET /items/item1",
+    "GET /items/item2",
+    "GET /items/item3",
+    "GET /items/item4",
+    "GET /items/item5",
+    "GET /items/item6",
+    "GET /items/item7",
+    "GET /source",
+    "GET /idless"
+  ],
+  "conditions": "Current generator, same 1000-operation source and 10 direct routes plus one private Link target. Rolldown minified browser-platform split ESM, executed in Node 24 with mocked fetch, not browser/network latency. Static references import exactly the same 10 providers. Dynamic lookup deployment includes all generated operation and route lookup entry modules as minified bundler inputs, preserving hashed paths; no unbundled raw JS copied. Initial/import, ready, Link-followed loaded files and all deployable chunks measured separately. gzip level 6 and Brotli quality 5 summed per response/file. Three rotated bundle builds, six rotated fresh runtime processes per case, warm filesystem, serial workloads. Build process high-water RSS not used for per-build comparisons.",
+  "generation": [
+    {
+      "name": "full",
+      "bytes": 14919352,
+      "files": 6060,
+      "summary": {
+        "seconds": {
+          "median": 3.047616877,
+          "min": 3.035307965,
+          "max": 3.068326804999999
+        },
+        "userSeconds": {
+          "median": 0.57,
+          "min": 0.56,
+          "max": 0.58
+        },
+        "systemSeconds": {
+          "median": 3.34,
+          "min": 3.31,
+          "max": 3.34
+        },
+        "peakRSSKiB": {
+          "median": 56656,
+          "min": 53004,
+          "max": 60240
+        }
+      },
+      "runs": [
+        {
+          "seconds": 3.047616877,
+          "userSeconds": 0.56,
+          "systemSeconds": 3.34,
+          "peakRSSKiB": 60240
+        },
+        {
+          "seconds": 3.068326804999999,
+          "userSeconds": 0.58,
+          "systemSeconds": 3.34,
+          "peakRSSKiB": 56656
+        },
+        {
+          "seconds": 3.035307965,
+          "userSeconds": 0.57,
+          "systemSeconds": 3.31,
+          "peakRSSKiB": 53004
+        }
+      ]
+    },
+    {
+      "name": "all",
+      "bytes": 14919352,
+      "files": 6060,
+      "summary": {
+        "seconds": {
+          "median": 3.043771423,
+          "min": 3.043283898,
+          "max": 3.188207222000001
+        },
+        "userSeconds": {
+          "median": 0.6,
+          "min": 0.59,
+          "max": 0.61
+        },
+        "systemSeconds": {
+          "median": 3.32,
+          "min": 3.28,
+          "max": 3.46
+        },
+        "peakRSSKiB": {
+          "median": 58204,
+          "min": 55264,
+          "max": 58436
+        }
+      },
+      "runs": [
+        {
+          "seconds": 3.043771423,
+          "userSeconds": 0.59,
+          "systemSeconds": 3.32,
+          "peakRSSKiB": 58204
+        },
+        {
+          "seconds": 3.043283898,
+          "userSeconds": 0.6,
+          "systemSeconds": 3.28,
+          "peakRSSKiB": 58436
+        },
+        {
+          "seconds": 3.188207222000001,
+          "userSeconds": 0.61,
+          "systemSeconds": 3.46,
+          "peakRSSKiB": 55264
+        }
+      ]
+    },
+    {
+      "name": "selected",
+      "bytes": 597376,
+      "files": 120,
+      "summary": {
+        "seconds": {
+          "median": 0.08517484100000002,
+          "min": 0.0809965800000009,
+          "max": 0.09049917199999982
+        },
+        "userSeconds": {
+          "median": 0.04,
+          "min": 0.03,
+          "max": 0.04
+        },
+        "systemSeconds": {
+          "median": 0.07,
+          "min": 0.05,
+          "max": 0.07
+        },
+        "peakRSSKiB": {
+          "median": 31048,
+          "min": 30664,
+          "max": 31560
+        }
+      },
+      "runs": [
+        {
+          "seconds": 0.08517484100000002,
+          "userSeconds": 0.03,
+          "systemSeconds": 0.07,
+          "peakRSSKiB": 31560
+        },
+        {
+          "seconds": 0.09049917199999982,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.07,
+          "peakRSSKiB": 31048
+        },
+        {
+          "seconds": 0.0809965800000009,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.05,
+          "peakRSSKiB": 30664
+        }
+      ]
+    },
+    {
+      "name": "named",
+      "bytes": 611481,
+      "files": 124,
+      "summary": {
+        "seconds": {
+          "median": 0.08528510000000096,
+          "min": 0.08510664199999973,
+          "max": 0.08762275800000134
+        },
+        "userSeconds": {
+          "median": 0.04,
+          "min": 0.03,
+          "max": 0.05
+        },
+        "systemSeconds": {
+          "median": 0.06,
+          "min": 0.05,
+          "max": 0.07
+        },
+        "peakRSSKiB": {
+          "median": 29512,
+          "min": 27848,
+          "max": 32712
+        }
+      },
+      "runs": [
+        {
+          "seconds": 0.08510664199999973,
+          "userSeconds": 0.03,
+          "systemSeconds": 0.07,
+          "peakRSSKiB": 29512
+        },
+        {
+          "seconds": 0.08762275800000134,
+          "userSeconds": 0.05,
+          "systemSeconds": 0.05,
+          "peakRSSKiB": 32712
+        },
+        {
+          "seconds": 0.08528510000000096,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.06,
+          "peakRSSKiB": 27848
+        }
+      ]
+    },
+    {
+      "name": "combined",
+      "bytes": 611481,
+      "files": 124,
+      "summary": {
+        "seconds": {
+          "median": 0.08509570700000041,
+          "min": 0.08349863299999924,
+          "max": 0.08937917199999992
+        },
+        "userSeconds": {
+          "median": 0.04,
+          "min": 0.04,
+          "max": 0.04
+        },
+        "systemSeconds": {
+          "median": 0.06,
+          "min": 0.06,
+          "max": 0.07
+        },
+        "peakRSSKiB": {
+          "median": 31304,
+          "min": 30276,
+          "max": 31432
+        }
+      },
+      "runs": [
+        {
+          "seconds": 0.08937917199999992,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.07,
+          "peakRSSKiB": 31304
+        },
+        {
+          "seconds": 0.08349863299999924,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.06,
+          "peakRSSKiB": 30276
+        },
+        {
+          "seconds": 0.08509570700000041,
+          "userSeconds": 0.04,
+          "systemSeconds": 0.06,
+          "peakRSSKiB": 31432
+        }
+      ]
+    }
+  ],
+  "bundles": [
+    {
+      "name": "selection",
+      "lookupEntries": 0,
+      "loaded": {
+        "import": {
+          "files": 1,
+          "bytes": 100690,
+          "gzipBytes": 28088,
+          "brotliBytes": 26317
+        },
+        "ready": {
+          "files": 1,
+          "bytes": 100690,
+          "gzipBytes": 28088,
+          "brotliBytes": 26317
+        },
+        "link": {
+          "files": 1,
+          "bytes": 100690,
+          "gzipBytes": 28088,
+          "brotliBytes": 26317
+        }
+      },
+      "deployed": {
+        "files": 1,
+        "bytes": 100690,
+        "gzipBytes": 28088,
+        "brotliBytes": 26317
+      },
+      "summary": {
+        "importMS": {
+          "median": 2.244547999999998,
+          "min": 2.1984470000000016,
+          "max": 2.410292000000002
+        },
+        "readyMS": {
+          "median": 2.8024440000000013,
+          "min": 2.7134249999999973,
+          "max": 2.9093370000000007
+        },
+        "prepareMS": {
+          "median": 0.5145029999999977,
+          "min": 0.4688769999999991,
+          "max": 0.594574999999999
+        },
+        "linkMS": {
+          "median": 0.7753260000000068,
+          "min": 0.761650000000003,
+          "max": 0.8539359999999974
+        },
+        "totalMS": {
+          "median": 24.559779,
+          "min": 20.928915000000003,
+          "max": 25.330506
+        },
+        "peakRSSKiB": {
+          "median": 61652,
+          "min": 61272,
+          "max": 61784
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 84.23805699999502,
+          "min": 41.125630000002275,
+          "max": 131.99935399999958
+        }
+      }
+    },
+    {
+      "name": "named-selection",
+      "lookupEntries": 0,
+      "loaded": {
+        "import": {
+          "files": 2,
+          "bytes": 67413,
+          "gzipBytes": 18686,
+          "brotliBytes": 18110
+        },
+        "ready": {
+          "files": 2,
+          "bytes": 67413,
+          "gzipBytes": 18686,
+          "brotliBytes": 18110
+        },
+        "link": {
+          "files": 3,
+          "bytes": 68215,
+          "gzipBytes": 19204,
+          "brotliBytes": 18561
+        }
+      },
+      "deployed": {
+        "files": 3,
+        "bytes": 68215,
+        "gzipBytes": 19204,
+        "brotliBytes": 18561
+      },
+      "summary": {
+        "importMS": {
+          "median": 2.2569680000000005,
+          "min": 2.191854000000001,
+          "max": 2.2689340000000016
+        },
+        "readyMS": {
+          "median": 2.9926889999999986,
+          "min": 2.9158680000000015,
+          "max": 3.074073000000002
+        },
+        "prepareMS": {
+          "median": 0.7691039999999987,
+          "min": 0.7125979999999998,
+          "max": 0.8171050000000015
+        },
+        "linkMS": {
+          "median": 1.5354439999999983,
+          "min": 1.4324280000000016,
+          "max": 2.0052810000000036
+        },
+        "totalMS": {
+          "median": 23.245845,
+          "min": 21.740908000000005,
+          "max": 26.554104999999996
+        },
+        "peakRSSKiB": {
+          "median": 62040,
+          "min": 61684,
+          "max": 62168
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 43.88289500000246,
+          "min": 36.67760199999975,
+          "max": 80.21553399999902
+        }
+      }
+    },
+    {
+      "name": "full-static",
+      "lookupEntries": 0,
+      "loaded": {
+        "import": {
+          "files": 4,
+          "bytes": 71430,
+          "gzipBytes": 20716,
+          "brotliBytes": 19927
+        },
+        "ready": {
+          "files": 5,
+          "bytes": 73434,
+          "gzipBytes": 21617,
+          "brotliBytes": 20783
+        },
+        "link": {
+          "files": 6,
+          "bytes": 74349,
+          "gzipBytes": 22187,
+          "brotliBytes": 21282
+        }
+      },
+      "deployed": {
+        "files": 6,
+        "bytes": 74349,
+        "gzipBytes": 22187,
+        "brotliBytes": 21282
+      },
+      "summary": {
+        "importMS": {
+          "median": 3.3733049999999984,
+          "min": 3.1116040000000016,
+          "max": 3.549247000000001
+        },
+        "readyMS": {
+          "median": 5.676031999999999,
+          "min": 5.1908650000000005,
+          "max": 8.767812000000001
+        },
+        "prepareMS": {
+          "median": 2.126784999999998,
+          "min": 2.028048000000002,
+          "max": 5.449183000000001
+        },
+        "linkMS": {
+          "median": 1.7382800000000032,
+          "min": 1.5847270000000009,
+          "max": 1.8354590000000002
+        },
+        "totalMS": {
+          "median": 24.961693999999998,
+          "min": 23.675998999999997,
+          "max": 29.210141000000004
+        },
+        "peakRSSKiB": {
+          "median": 62120,
+          "min": 62028,
+          "max": 62256
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 39.96773699999903,
+          "min": 38.21917200000098,
+          "max": 43.21424299999853
+        }
+      }
+    },
+    {
+      "name": "selected-static",
+      "lookupEntries": 0,
+      "loaded": {
+        "import": {
+          "files": 4,
+          "bytes": 71469,
+          "gzipBytes": 20732,
+          "brotliBytes": 19940
+        },
+        "ready": {
+          "files": 5,
+          "bytes": 73473,
+          "gzipBytes": 21633,
+          "brotliBytes": 20796
+        },
+        "link": {
+          "files": 6,
+          "bytes": 74314,
+          "gzipBytes": 22167,
+          "brotliBytes": 21260
+        }
+      },
+      "deployed": {
+        "files": 6,
+        "bytes": 74314,
+        "gzipBytes": 22167,
+        "brotliBytes": 21260
+      },
+      "summary": {
+        "importMS": {
+          "median": 3.2539830000000016,
+          "min": 3.1311210000000003,
+          "max": 6.456855000000001
+        },
+        "readyMS": {
+          "median": 8.376801999999998,
+          "min": 5.211563,
+          "max": 10.072251999999999
+        },
+        "prepareMS": {
+          "median": 2.2086049999999986,
+          "min": 2.0722120000000004,
+          "max": 5.413160000000001
+        },
+        "linkMS": {
+          "median": 1.7121970000000033,
+          "min": 1.6709519999999998,
+          "max": 1.779836000000003
+        },
+        "totalMS": {
+          "median": 27.755767,
+          "min": 24.903199,
+          "max": 28.602751
+        },
+        "peakRSSKiB": {
+          "median": 62116,
+          "min": 61744,
+          "max": 62292
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 37.212891999999556,
+          "min": 37.088207999997394,
+          "max": 37.24405800000386
+        }
+      }
+    },
+    {
+      "name": "full-lookup",
+      "lookupEntries": 1999,
+      "loaded": {
+        "import": {
+          "files": 2,
+          "bytes": 6321,
+          "gzipBytes": 2562,
+          "brotliBytes": 2445
+        },
+        "ready": {
+          "files": 25,
+          "bytes": 77448,
+          "gzipBytes": 27655,
+          "brotliBytes": 25997
+        },
+        "link": {
+          "files": 26,
+          "bytes": 78571,
+          "gzipBytes": 28350,
+          "brotliBytes": 26620
+        }
+      },
+      "deployed": {
+        "files": 3004,
+        "bytes": 1251789,
+        "gzipBytes": 890276,
+        "brotliBytes": 762438
+      },
+      "summary": {
+        "importMS": {
+          "median": 1.0032679999999985,
+          "min": 0.8963460000000012,
+          "max": 1.0075749999999992
+        },
+        "readyMS": {
+          "median": 14.994868,
+          "min": 13.802109999999999,
+          "max": 18.520985000000003
+        },
+        "prepareMS": {
+          "median": 13.991600000000002,
+          "min": 12.905763999999998,
+          "max": 17.516574000000002
+        },
+        "linkMS": {
+          "median": 1.427030000000002,
+          "min": 1.2722070000000016,
+          "max": 1.5066389999999998
+        },
+        "totalMS": {
+          "median": 33.162159,
+          "min": 30.632702000000002,
+          "max": 44.692452
+        },
+        "peakRSSKiB": {
+          "median": 68956,
+          "min": 68768,
+          "max": 69336
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 1363.823676,
+          "min": 1359.5372029999999,
+          "max": 1395.6112099999991
+        }
+      }
+    },
+    {
+      "name": "selected-lookup",
+      "lookupEntries": 19,
+      "loaded": {
+        "import": {
+          "files": 2,
+          "bytes": 6360,
+          "gzipBytes": 2594,
+          "brotliBytes": 2469
+        },
+        "ready": {
+          "files": 24,
+          "bytes": 76191,
+          "gzipBytes": 27259,
+          "brotliBytes": 25681
+        },
+        "link": {
+          "files": 25,
+          "bytes": 77032,
+          "gzipBytes": 27793,
+          "brotliBytes": 26145
+        }
+      },
+      "deployed": {
+        "files": 34,
+        "bytes": 78839,
+        "gzipBytes": 29443,
+        "brotliBytes": 27535
+      },
+      "summary": {
+        "importMS": {
+          "median": 1.057300999999999,
+          "min": 0.9216039999999985,
+          "max": 1.2281830000000014
+        },
+        "readyMS": {
+          "median": 15.378896999999998,
+          "min": 13.795645999999998,
+          "max": 17.284496999999998
+        },
+        "prepareMS": {
+          "median": 14.190164999999997,
+          "min": 12.627426999999997,
+          "max": 16.317296
+        },
+        "linkMS": {
+          "median": 1.4073009999999968,
+          "min": 1.3261299999999991,
+          "max": 1.697378999999998
+        },
+        "totalMS": {
+          "median": 34.720234000000005,
+          "min": 31.937860999999998,
+          "max": 36.696689000000006
+        },
+        "peakRSSKiB": {
+          "median": 68976,
+          "min": 68516,
+          "max": 69236
+        }
+      },
+      "buildSummary": {
+        "ms": {
+          "median": 63.6104220000052,
+          "min": 63.06873999999516,
+          "max": 81.81389399999898
+        }
+      }
+    }
+  ],
+  "validation": {
+    "generationTrials": 3,
+    "buildTrials": 3,
+    "runtimeTrials": 6,
+    "requestsPerRuntime": 12,
+    "runtimeCases": 6,
+    "preparedHTTPRequests": 0,
+    "fullSelectionByteIdentical": true,
+    "implicitAndExplicitNamedRootByteIdentical": true,
+    "goSuite": "pass",
+    "strictTypeScript": [
+      "6.0.3",
+      "7.0.2"
+    ],
+    "privateLinkAndPublicScope": "pass",
+    "browserNetwork": "not-measured",
+    "graphTypecheck": "excluded",
+    "optionalRuntimePerfTests": "7 skipped in earlier runtime suite"
+  }
+}

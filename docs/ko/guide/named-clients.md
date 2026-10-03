@@ -81,6 +81,9 @@ const product = await api.$routes["GET /products/{id}"]({
 
 ## 루트 SDK와 생성 범위
 
+루트 진입점과 `loadOperations`의 생성·배포 비용은
+[선택 방식별 비용 비교](./selection-benchmarks.md)에서 확인할 수 있습니다.
+
 루트 선택을 생략하면 루트 SDK는 이름 있는 클라이언트들의 선택을 합쳐 제공합니다.
 API 선택은 각 클라이언트 설정에 한 번만 적으면 됩니다.
 

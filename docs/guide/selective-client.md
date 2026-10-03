@@ -41,7 +41,8 @@ template from the document, such as `GET /tasks/{task-id}`. A route uses
 `path: { "task-id": "one" }` when calling the API. An API without an operation
 ID can be selected by route. Duplicate names select an API once.
 
-An absent `[selection]` generates the full API. An empty selection, unknown
+Without `[selection]` or named clients, generation includes the full API. With
+named clients alone, the root exposes their selected API union. An empty selection, unknown
 name, or hidden API produces an error. Document errors, including duplicate
 operation IDs, must be corrected before generating a subset.
 
@@ -64,6 +65,10 @@ and `GET /health` (no operation ID). Generate the SDK as described in
 JavaScript before serving it directly to a browser.
 
 ## Prepare code, then configure a client {#prepare}
+
+For generated source, deployed chunks, compressed bytes, and preparation time,
+see [Compare selection costs](./selection-benchmarks.md). Static operation imports
+and dynamic lookups have different deployment costs.
 
 ```ts
 import {

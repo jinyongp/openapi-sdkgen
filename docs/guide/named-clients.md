@@ -82,6 +82,9 @@ combine pages into one chunk also combine their dependencies.
 
 ## Root SDK and generation scope
 
+See [Compare selection costs](./selection-benchmarks.md) for generation and
+deployment measurements against the root entry and `loadOperations`.
+
 Without a root selection, the root SDK exposes the union of the named clients' selections. Assign each API once in its named client configuration:
 
 | Configuration | Result |
