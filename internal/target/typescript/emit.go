@@ -646,7 +646,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err != nil {
 		return err
 	}
-	if plan.selection != nil {
+	if plan.includeMetadata && plan.selection != nil {
 		selectionJSON, err := json.Marshal(map[string][]string{"routes": sortedStringKeys(plan.selection.direct), "dependencyRoutes": sortedStringKeys(plan.selection.dependencies)})
 		if err != nil {
 			return fmt.Errorf("encode generation selection metadata: %w", err)
@@ -658,7 +658,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		metadataSource = append(metadataSource, []byte("\n/** Public API selection and response-Link execution dependencies. */\n")...)
 		metadataSource = append(metadataSource, selectionSource...)
 	}
-	if len(shared.clients) != 0 {
+	if plan.includeMetadata && len(shared.clients) != 0 {
 		clients := make(map[string]map[string][]string)
 		for _, client := range shared.clients {
 			clients[client.name] = map[string][]string{"routes": sortedStringKeys(client.view.selection.direct), "dependencyRoutes": sortedStringKeys(client.view.selection.dependencies)}

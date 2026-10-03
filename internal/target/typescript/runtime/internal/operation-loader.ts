@@ -70,6 +70,8 @@ interface OperationLoaderOptions {
   readonly loadClient: () => Promise<PreparedClientModule>;
   /** Public roots of a generation selection; Link dependencies resolve privately. */
   readonly publicRoutes?: readonly string[];
+  /** Non-public routes in the generated execution union, including named-only APIs. */
+  readonly privateRoutes?: readonly string[];
 }
 
 /** A generated relative importer or an absolute lookup base supplied by internal callers. */
@@ -195,6 +197,8 @@ export function createOperationLoader(
   const generation: string = configuration.generation;
   const publicRoutes: ReadonlySet<string> | undefined =
     configuration.publicRoutes === undefined ? undefined : new Set(configuration.publicRoutes);
+  const privateRoutes: ReadonlySet<string> | undefined =
+    configuration.privateRoutes === undefined ? undefined : new Set(configuration.privateRoutes);
   const baseURL: URL | undefined =
     configuration.baseURL === undefined ? undefined : new URL("./lookup/", configuration.baseURL);
   const importModule: OperationModuleImporter =
@@ -205,6 +209,13 @@ export function createOperationLoader(
   const loads: Map<string, Promise<OperationExecutionProvider>> = new Map();
   const canonical: Map<string, OperationExecutionProvider> = new Map();
   let clientModule: Promise<PreparedClientModule> | undefined;
+
+  function isPublicRoute(route: string): boolean {
+    return (
+      (publicRoutes === undefined || publicRoutes.has(route)) &&
+      (privateRoutes === undefined || !privateRoutes.has(route))
+    );
+  }
 
   function validateProvider(value: unknown): OperationExecutionProvider {
     if (value === null || typeof value !== "object") {
@@ -396,7 +407,7 @@ export function createOperationLoader(
     // Application getter exceptions intentionally retain their original identity.
     const selected: readonly ReferenceData[] = collectSelectionReferences(selection, readReference);
     for (const data of selected) {
-      if (data.kind === "route" && publicRoutes !== undefined && !publicRoutes.has(data.key)) {
+      if (data.kind === "route" && !isPublicRoute(data.key)) {
         throw new OperationPreparationError(
           "INPUT",
           "Operation is outside the generated public selection",
@@ -407,9 +418,8 @@ export function createOperationLoader(
       selected.map((data: ReferenceData): Promise<OperationExecutionProvider> => load(data)),
     );
     if (
-      publicRoutes !== undefined &&
       providers.some(
-        (provider: OperationExecutionProvider): boolean => !publicRoutes.has(provider.route),
+        (provider: OperationExecutionProvider): boolean => !isPublicRoute(provider.route),
       )
     ) {
       throw new OperationPreparationError(

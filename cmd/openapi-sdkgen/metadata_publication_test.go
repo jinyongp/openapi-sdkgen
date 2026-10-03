@@ -61,7 +61,7 @@ func TestMetadataAddonTransitionsPreserveManagedOutput(t *testing.T) {
 		if after["user.ts"] != before["user.ts"] {
 			t.Fatal("user file changed")
 		}
-		if strings.Contains(after["metadata.ts"], "document:") != metadata || !strings.Contains(after["metadata.ts"], "generationSelection") {
+		if strings.Contains(after["metadata.ts"], "document:") != metadata || strings.Contains(after["metadata.ts"], "generationSelection") != metadata {
 			t.Fatal("metadata content or selection lost")
 		}
 		identity := after["selective/index.ts"]

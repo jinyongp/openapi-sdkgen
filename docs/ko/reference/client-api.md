@@ -261,8 +261,14 @@ console.log(openapi.document.info.title);
 API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다. 외부 `$ref`는
 원래 경로를 유지하며, YAML의 주석과 서식은 원본 파일에서 확인할 수 있습니다.
 
+루트 API를 선택해 생성하면 메타데이터 모듈에서 공개 경로와 내부 Link 의존성을
+담은 `generationSelection`을 제공합니다. 이름 있는 클라이언트를 설정하면
+클라이언트별 API 구성을 담은 `generationClients`도 제공합니다. 두 값 모두
+`--with metadata`를 지정했을 때만 포함됩니다.
+
 ### SDK 재생성 시 이전 방법 {#metadata-migration}
 
 다음 메이저 버전부터는 `--with metadata`를 지정하면 SDK에 원문이 포함됩니다.
-`openapi.document`를 사용하는 코드는 재생성 전에 이 옵션을 추가하거나 설정
+`openapi.document`, `generationSelection`, `generationClients`를 사용하는 코드는
+재생성 전에 이 옵션을 추가하거나 설정
 파일에 `addons = ["metadata"]`를 넣으세요. 이미 생성한 SDK가 제공하는 API는 유지됩니다.

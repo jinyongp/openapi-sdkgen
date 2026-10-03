@@ -262,9 +262,15 @@ The export contains the whole decoded JSON or YAML entry document, including API
 excluded by selection. External `$ref` values keep their original paths. YAML
 comments and formatting belong to the source file.
 
+With a root selection, the metadata module also exports `generationSelection`
+(public routes and private Link dependencies). With named clients, it exports
+`generationClients` (each client's assignment). Both records require
+`--with metadata`.
+
 ### Regeneration migration {#metadata-migration}
 
 In the next major release, SDK regeneration includes the source document when
-`--with metadata` is enabled. If your code reads `openapi.document`, add this
-option or `addons = ["metadata"]` to your configuration before regenerating.
+`--with metadata` is enabled. If your code reads `openapi.document`,
+`generationSelection`, or `generationClients`, add this option or
+`addons = ["metadata"]` to your configuration before regenerating.
 Existing generated SDKs retain their exports.

@@ -207,11 +207,33 @@ export type { ClientOptions } from "../internal/runtime/configuration.js"
 export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
 `, quoteTS(generation))
 	if root.selection != nil {
-		names, err := json.Marshal(sortedStringKeys(root.selection.direct))
-		if err != nil {
-			return err
+		var public, private []string
+		for _, module := range modules.operations {
+			if root.selection.direct[module.routeKey] {
+				public = append(public, module.routeKey)
+			} else {
+				private = append(private, module.routeKey)
+			}
 		}
-		entry = strings.Replace(entry, "  generation: "+quoteTS(generation)+",", "  generation: "+quoteTS(generation)+",\n  publicRoutes: "+string(names)+",", 1)
+		// The shared execution union includes private Link and named-client
+		// routes. Only those providers need a boundary; use its smaller side.
+		if len(private) != 0 {
+			sort.Strings(public)
+			sort.Strings(private)
+			publicJSON, err := json.Marshal(public)
+			if err != nil {
+				return err
+			}
+			privateJSON, err := json.Marshal(private)
+			if err != nil {
+				return err
+			}
+			property, names := "publicRoutes", publicJSON
+			if len(privateJSON)+len("privateRoutes") < len(publicJSON)+len("publicRoutes") {
+				property, names = "privateRoutes", privateJSON
+			}
+			entry = strings.Replace(entry, "  generation: "+quoteTS(generation)+",", "  generation: "+quoteTS(generation)+",\n  "+property+": "+string(names)+",", 1)
+		}
 	}
 	all, err := emitSelectiveNames(root)
 	if err != nil {

@@ -64,7 +64,7 @@ func TestMetadataAddonFullAndSelectedConsumerContracts(t *testing.T) {
 					} else if bytes.Contains(source, []byte("document:")) || bytes.Contains(source, []byte("/unused")) {
 						t.Fatal("default leaked source document")
 					}
-					if bytes.Contains(source, []byte("generationSelection")) != selected {
+					if bytes.Contains(source, []byte("generationSelection")) != (selected && metadata) {
 						t.Fatal("selection metadata changed")
 					}
 					probe := `import {openapi} from "./metadata.js";
