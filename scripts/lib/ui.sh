@@ -17,7 +17,7 @@ elif ui_env_enabled "${FORCE_COLOR:-}" || ui_env_enabled "${CLICOLOR_FORCE:-}"; 
   UI_COLOR=1
 elif [ "${CLICOLOR:-}" = "0" ]; then
   UI_COLOR=0
-elif [ -t 1 ]; then
+elif [ -t 2 ]; then
   UI_COLOR=1
 else
   UI_COLOR=0
@@ -41,60 +41,64 @@ else
   UI_RESET=""
 fi
 
-ui_section() {
-  printf '\n%s%s%s\n' "$UI_BOLD" "$1" "$UI_RESET"
+ui_printf() {
+  printf "$@" | python3 "$ROOT/scripts/lib/redact.py"
 }
+
+ui_section() {
+  ui_printf '\n%s%s%s\n' "$UI_BOLD" "$1" "$UI_RESET"
+} >&2
 
 ui_kv() {
-  printf '  %-12s %s\n' "$1" "$2"
-}
+  ui_printf '  %-12s %s\n' "$1" "$2"
+} >&2
 
 ui_subsection() {
-  printf '  %s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
-}
+  ui_printf '  %s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
+} >&2
 
 ui_item() {
-  printf '  %s-%s %s\n' "$UI_GREEN" "$UI_RESET" "$1"
-}
+  ui_printf '  %s-%s %s\n' "$UI_GREEN" "$UI_RESET" "$1"
+} >&2
 
 ui_note() {
-  printf '%s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
-}
+  ui_printf '%s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
+} >&2
 
 ui_note_err() {
   ui_note "$1" >&2
-}
+} >&2
 
 ui_command() {
-  printf '  %s%s%s\n' "$UI_CYAN" "$1" "$UI_RESET"
-}
+  ui_printf '  %s%s%s\n' "$UI_CYAN" "$1" "$UI_RESET"
+} >&2
 
 ui_ok() {
   if [ "$#" -eq 0 ]; then
-    printf '%sok%s\n' "$UI_GREEN" "$UI_RESET"
+    ui_printf '%sok%s\n' "$UI_GREEN" "$UI_RESET"
     return
   fi
-  printf '%sok:%s %s\n' "$UI_GREEN" "$UI_RESET" "$1"
-}
+  ui_printf '%sok:%s %s\n' "$UI_GREEN" "$UI_RESET" "$1"
+} >&2
 
 ui_warn() {
-  printf '%swarning:%s %s\n' "$UI_YELLOW" "$UI_RESET" "$1"
-}
+  ui_printf '%swarning:%s %s\n' "$UI_YELLOW" "$UI_RESET" "$1"
+} >&2
 
 ui_warn_err() {
   ui_warn "$1" >&2
-}
+} >&2
 
 ui_error() {
-  printf '%serror:%s %s\n' "$UI_RED" "$UI_RESET" "$1" >&2
-}
+  ui_printf '%serror:%s %s\n' "$UI_RED" "$UI_RESET" "$1" >&2
+} >&2
 
 ui_dim() {
-  printf '%s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
-}
+  ui_printf '%s%s%s\n' "$UI_DIM" "$1" "$UI_RESET"
+} >&2
 
 ui_prompt() {
-  printf '\n%s%s%s ' "$UI_BOLD" "$1" "$UI_RESET"
-}
+  ui_printf '\n%s%s%s ' "$UI_BOLD" "$1" "$UI_RESET"
+} >&2
 
 export UI_COLOR UI_BOLD UI_DIM UI_GREEN UI_RED UI_YELLOW UI_CYAN UI_RESET
