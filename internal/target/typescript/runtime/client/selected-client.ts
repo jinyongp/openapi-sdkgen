@@ -4,6 +4,7 @@ import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import { OperationPreparationError } from "./operation-loader.js";
 import type { ClientOptions } from "../http/configuration.js";
 import type { RequestContext } from "../http/http-types.js";
+import type { ResourcePath } from "./resource-binding-support.js";
 import type {
   OperationExecutionProvider,
   OperationResourcePlacement,
@@ -29,11 +30,22 @@ function define(target: object, key: string, value: unknown): void {
   defineOwnDataProperty(target as Record<string, unknown>, key, value);
 }
 
-function buildResource(node: ResourceNode, bound: readonly unknown[]): object {
+type ResourcePlacementBinder = (
+  call: object,
+  path: ResourcePath,
+  placement: OperationResourcePlacement,
+) => object;
+
+function buildResource(
+  node: ResourceNode,
+  bound: readonly unknown[],
+  bindResource: ResourcePlacementBinder,
+): object {
   let value: object = Object.create(null) as object;
   if (node.parameter !== undefined) {
     const child: ResourceNode = node.parameter;
-    value = (parameter: unknown): object => buildResource(child, [...bound, parameter]);
+    value = (parameter: unknown): object =>
+      buildResource(child, [...bound, parameter], bindResource);
   } else if (node.operation !== undefined) {
     const { call, placement }: SelectedOperation = node.operation;
     if (placement.pagination) {
@@ -51,19 +63,14 @@ function buildResource(node: ResourceNode, bound: readonly unknown[]): object {
       }
       // The compiler guarantees every exact operation has the same runtime
       // call/raw shape. Its generated declaration retains the precise overloads.
-      value = bindPathOperation(
-        call,
-        path,
-        placement.hasInput === true,
-        placement.inputOptional === true,
-      );
+      value = bindResource(call, path, placement);
     } else value = call;
   }
   for (const [name, child] of [...node.children].sort(
     ([left]: [string, ResourceNode], [right]: [string, ResourceNode]): 0 | 1 | -1 =>
       left < right ? -1 : left > right ? 1 : 0,
   )) {
-    define(value, name, buildResource(child, bound));
+    define(value, name, buildResource(child, bound, bindResource));
   }
   return value;
 }
@@ -73,6 +80,48 @@ export function createSelectedClient(
   options: ClientOptions,
   providers: readonly OperationExecutionProvider[],
   resolve: OperationProviderResolver,
+): object {
+  return createSelectedClientCore(
+    options,
+    providers,
+    resolve,
+    (call: object, path: ResourcePath, placement: OperationResourcePlacement): object =>
+      bindPathOperation(
+        call as ExactCall,
+        path,
+        placement.hasInput === true,
+        placement.inputOptional === true,
+      ),
+  );
+}
+
+/** Builds resources using exact binders carried by generation-validated providers. */
+export function createGeneratedSelectedClient(
+  options: ClientOptions,
+  providers: readonly OperationExecutionProvider[],
+  resolve: OperationProviderResolver,
+): object {
+  return createSelectedClientCore(
+    options,
+    providers,
+    resolve,
+    (call: object, path: ResourcePath, placement: OperationResourcePlacement): object => {
+      if (placement.bindResource === undefined) {
+        throw new OperationPreparationError(
+          "BINDING",
+          "Generated resource placement has no exact binder",
+        );
+      }
+      return placement.bindResource(call, path) as object;
+    },
+  );
+}
+
+function createSelectedClientCore(
+  options: ClientOptions,
+  providers: readonly OperationExecutionProvider[],
+  resolve: OperationProviderResolver,
+  bindResource: ResourcePlacementBinder,
 ): object {
   const context: RequestContext = createRequestContext(options);
   const routes: Record<string, ExactCall> = Object.create(null) as Record<string, ExactCall>;
@@ -143,7 +192,7 @@ export function createSelectedClient(
     if (provider.operationID !== undefined)
       defineOwnDataProperty(links, provider.operationID, helpers);
   }
-  const client: object = buildResource(resources, []);
+  const client: object = buildResource(resources, [], bindResource);
   define(client, "$routes", routes);
   define(client, "$operations", operations);
   if (Object.keys(links).length !== 0) define(client, "$links", links);

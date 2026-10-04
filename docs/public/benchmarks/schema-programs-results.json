@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-10-04T15:23:45.595Z",
+  "measuredAt": "2026-10-04T16:43:42.192Z",
   "node": "v24.21.0",
   "typescript": "7.0.2",
   "operations": 1000,
@@ -29,7 +29,214 @@
     {
       "variant": "current",
       "kind": "full",
-      "generatorSHA256": "2c2cf1da4a2b12dc094119728e13b4b76b867f6ea2e706f7500d75e3227e98f1",
+      "generatorSHA256": "305e946e013b4eac9ba795d9e16552c58d5d5c28f017a837a9afe1e47d7bb1b6",
+      "source": {
+        "files": 6123,
+        "bytes": 14710590
+      },
+      "runtime": {
+        "files": 91,
+        "bytes": 389430
+      },
+      "compositions": {
+        "files": 1,
+        "bytes": 2284
+      },
+      "programs": {
+        "files": 6,
+        "bytes": 28379
+      },
+      "programSourceSHA256": "8270b02d087133a7c4dbc9a9ea285730f3ccfc0089b9d7e99318ff3171e548c5",
+      "generation": {
+        "milliseconds": 3896.7599579999996,
+        "peakRSSKiB": 59072,
+        "runs": [
+          {
+            "milliseconds": 3896.7599579999996,
+            "userSeconds": 0.93,
+            "systemSeconds": 3.98,
+            "peakRSSKiB": 59072
+          },
+          {
+            "milliseconds": 4122.951601000001,
+            "userSeconds": 0.84,
+            "systemSeconds": 4.03,
+            "peakRSSKiB": 60344
+          },
+          {
+            "milliseconds": 3724.0019599999996,
+            "userSeconds": 0.81,
+            "systemSeconds": 3.85,
+            "peakRSSKiB": 56092
+          }
+        ]
+      },
+      "sourceCheck": {
+        "milliseconds": 3785.1135999999988,
+        "userSeconds": 6.62,
+        "systemSeconds": 5.85,
+        "peakRSSKiB": 1013428
+      },
+      "declarations": {
+        "milliseconds": 3415.330568999998,
+        "userSeconds": 7.4,
+        "systemSeconds": 6.58,
+        "peakRSSKiB": 1191832
+      },
+      "declarationSource": {
+        "files": 6123,
+        "bytes": 9573374
+      },
+      "bundle": {
+        "chunks": 1,
+        "bytes": 513604,
+        "gzipBytes": 61192,
+        "milliseconds": 1072.9318080000012,
+        "realCallPassed": true
+      }
+    },
+    {
+      "variant": "current",
+      "kind": "selected",
+      "generatorSHA256": "305e946e013b4eac9ba795d9e16552c58d5d5c28f017a837a9afe1e47d7bb1b6",
+      "source": {
+        "files": 158,
+        "bytes": 429315
+      },
+      "runtime": {
+        "files": 68,
+        "bytes": 215085
+      },
+      "compositions": {
+        "files": 1,
+        "bytes": 2284
+      },
+      "programs": {
+        "files": 4,
+        "bytes": 14319
+      },
+      "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
+      "generation": {
+        "milliseconds": 105.21056400000089,
+        "peakRSSKiB": 30328,
+        "runs": [
+          {
+            "milliseconds": 118.16168599999946,
+            "userSeconds": 0.04,
+            "systemSeconds": 0.1,
+            "peakRSSKiB": 27044
+          },
+          {
+            "milliseconds": 105.21056400000089,
+            "userSeconds": 0.03,
+            "systemSeconds": 0.09,
+            "peakRSSKiB": 30328
+          },
+          {
+            "milliseconds": 94.60530899999867,
+            "userSeconds": 0.04,
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 31224
+          }
+        ]
+      },
+      "sourceCheck": {
+        "milliseconds": 305.9249949999976,
+        "userSeconds": 0.59,
+        "systemSeconds": 0.18,
+        "peakRSSKiB": 143964
+      },
+      "declarations": {
+        "milliseconds": 300.9010420000013,
+        "userSeconds": 0.56,
+        "systemSeconds": 0.19,
+        "peakRSSKiB": 147104
+      },
+      "declarationSource": {
+        "files": 158,
+        "bytes": 233430
+      },
+      "bundle": {
+        "chunks": 1,
+        "bytes": 29878,
+        "gzipBytes": 8522,
+        "milliseconds": 72.43417100000079,
+        "realCallPassed": true
+      }
+    },
+    {
+      "variant": "current",
+      "kind": "named",
+      "generatorSHA256": "305e946e013b4eac9ba795d9e16552c58d5d5c28f017a837a9afe1e47d7bb1b6",
+      "source": {
+        "files": 162,
+        "bytes": 443017
+      },
+      "runtime": {
+        "files": 68,
+        "bytes": 215085
+      },
+      "compositions": {
+        "files": 1,
+        "bytes": 2284
+      },
+      "programs": {
+        "files": 4,
+        "bytes": 14319
+      },
+      "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
+      "generation": {
+        "milliseconds": 110.87157699999807,
+        "peakRSSKiB": 28416,
+        "runs": [
+          {
+            "milliseconds": 110.87157699999807,
+            "userSeconds": 0.06,
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 32120
+          },
+          {
+            "milliseconds": 104.88824599999862,
+            "userSeconds": 0.04,
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 28148
+          },
+          {
+            "milliseconds": 111.50720099999671,
+            "userSeconds": 0.06,
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 28416
+          }
+        ]
+      },
+      "sourceCheck": {
+        "milliseconds": 334.05910399999993,
+        "userSeconds": 0.61,
+        "systemSeconds": 0.23,
+        "peakRSSKiB": 146592
+      },
+      "declarations": {
+        "milliseconds": 311.65464300000167,
+        "userSeconds": 0.53,
+        "systemSeconds": 0.25,
+        "peakRSSKiB": 148384
+      },
+      "declarationSource": {
+        "files": 162,
+        "bytes": 244392
+      },
+      "bundle": {
+        "chunks": 3,
+        "bytes": 35279,
+        "gzipBytes": 10991,
+        "milliseconds": 109.10852000000159,
+        "realCallPassed": true
+      }
+    },
+    {
+      "variant": "before",
+      "kind": "full",
+      "generatorSHA256": "db76f9e52cf9a8f0e107a54c9364df6f85a580884dc6b8a9b05cf4d5de18c677",
       "source": {
         "files": 6117,
         "bytes": 14701368
@@ -48,40 +255,40 @@
       },
       "programSourceSHA256": "8270b02d087133a7c4dbc9a9ea285730f3ccfc0089b9d7e99318ff3171e548c5",
       "generation": {
-        "milliseconds": 3072.539165,
-        "peakRSSKiB": 58684,
+        "milliseconds": 3472.607408,
+        "peakRSSKiB": 58456,
         "runs": [
           {
-            "milliseconds": 3054.8164189999998,
-            "userSeconds": 0.58,
-            "systemSeconds": 3.36,
-            "peakRSSKiB": 59124
+            "milliseconds": 3472.607408,
+            "userSeconds": 0.72,
+            "systemSeconds": 3.67,
+            "peakRSSKiB": 58456
           },
           {
-            "milliseconds": 3080.9847919999997,
-            "userSeconds": 0.56,
-            "systemSeconds": 3.4,
-            "peakRSSKiB": 58152
+            "milliseconds": 3454.7248809999983,
+            "userSeconds": 0.68,
+            "systemSeconds": 3.74,
+            "peakRSSKiB": 60152
           },
           {
-            "milliseconds": 3072.539165,
-            "userSeconds": 0.59,
-            "systemSeconds": 3.35,
-            "peakRSSKiB": 58684
+            "milliseconds": 3588.4073869999993,
+            "userSeconds": 0.72,
+            "systemSeconds": 3.89,
+            "peakRSSKiB": 58024
           }
         ]
       },
       "sourceCheck": {
-        "milliseconds": 2991.8186429999987,
-        "userSeconds": 5.77,
-        "systemSeconds": 5.26,
-        "peakRSSKiB": 975156
+        "milliseconds": 3718.6621760000053,
+        "userSeconds": 6.99,
+        "systemSeconds": 5.75,
+        "peakRSSKiB": 1012352
       },
       "declarations": {
-        "milliseconds": 2715.1829449999987,
-        "userSeconds": 7.46,
-        "systemSeconds": 6.1,
-        "peakRSSKiB": 1199316
+        "milliseconds": 3079.251025999998,
+        "userSeconds": 7.48,
+        "systemSeconds": 5.64,
+        "peakRSSKiB": 1154136
       },
       "declarationSource": {
         "files": 6117,
@@ -91,14 +298,14 @@
         "chunks": 1,
         "bytes": 514082,
         "gzipBytes": 61359,
-        "milliseconds": 526.8035619999973,
+        "milliseconds": 484.032189000005,
         "realCallPassed": true
       }
     },
     {
-      "variant": "current",
+      "variant": "before",
       "kind": "selected",
-      "generatorSHA256": "2c2cf1da4a2b12dc094119728e13b4b76b867f6ea2e706f7500d75e3227e98f1",
+      "generatorSHA256": "db76f9e52cf9a8f0e107a54c9364df6f85a580884dc6b8a9b05cf4d5de18c677",
       "source": {
         "files": 152,
         "bytes": 420374
@@ -117,40 +324,40 @@
       },
       "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
       "generation": {
-        "milliseconds": 91.83766399999877,
-        "peakRSSKiB": 31136,
+        "milliseconds": 109.82906199999707,
+        "peakRSSKiB": 29480,
         "runs": [
           {
-            "milliseconds": 91.83766399999877,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 31136
-          },
-          {
-            "milliseconds": 88.56448799999998,
+            "milliseconds": 116.4087739999959,
             "userSeconds": 0.05,
-            "systemSeconds": 0.06,
-            "peakRSSKiB": 28832
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 29928
           },
           {
-            "milliseconds": 92.0294769999964,
-            "userSeconds": 0.03,
-            "systemSeconds": 0.09,
-            "peakRSSKiB": 31588
+            "milliseconds": 105.72373399999924,
+            "userSeconds": 0.06,
+            "systemSeconds": 0.06,
+            "peakRSSKiB": 29480
+          },
+          {
+            "milliseconds": 109.82906199999707,
+            "userSeconds": 0.06,
+            "systemSeconds": 0.07,
+            "peakRSSKiB": 28000
           }
         ]
       },
       "sourceCheck": {
-        "milliseconds": 235.49039899999843,
-        "userSeconds": 0.41,
-        "systemSeconds": 0.26,
-        "peakRSSKiB": 145296
+        "milliseconds": 294.8697289999982,
+        "userSeconds": 0.57,
+        "systemSeconds": 0.22,
+        "peakRSSKiB": 148768
       },
       "declarations": {
-        "milliseconds": 235.40723300000172,
-        "userSeconds": 0.52,
-        "systemSeconds": 0.17,
-        "peakRSSKiB": 152988
+        "milliseconds": 330.3773349999974,
+        "userSeconds": 0.61,
+        "systemSeconds": 0.19,
+        "peakRSSKiB": 146464
       },
       "declarationSource": {
         "files": 152,
@@ -160,14 +367,14 @@
         "chunks": 1,
         "bytes": 29878,
         "gzipBytes": 8522,
-        "milliseconds": 75.14945699999953,
+        "milliseconds": 60.70195799999783,
         "realCallPassed": true
       }
     },
     {
-      "variant": "current",
+      "variant": "before",
       "kind": "named",
-      "generatorSHA256": "2c2cf1da4a2b12dc094119728e13b4b76b867f6ea2e706f7500d75e3227e98f1",
+      "generatorSHA256": "db76f9e52cf9a8f0e107a54c9364df6f85a580884dc6b8a9b05cf4d5de18c677",
       "source": {
         "files": 156,
         "bytes": 434039
@@ -186,40 +393,40 @@
       },
       "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
       "generation": {
-        "milliseconds": 94.94607800000085,
-        "peakRSSKiB": 28068,
+        "milliseconds": 110.16053000000102,
+        "peakRSSKiB": 30120,
         "runs": [
           {
-            "milliseconds": 94.94607800000085,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 31332
-          },
-          {
-            "milliseconds": 103.78249499999947,
-            "userSeconds": 0.02,
-            "systemSeconds": 0.1,
-            "peakRSSKiB": 28004
-          },
-          {
-            "milliseconds": 91.41914199999883,
-            "userSeconds": 0.03,
+            "milliseconds": 110.16053000000102,
+            "userSeconds": 0.05,
             "systemSeconds": 0.08,
-            "peakRSSKiB": 28068
+            "peakRSSKiB": 30120
+          },
+          {
+            "milliseconds": 114.94285800000216,
+            "userSeconds": 0.05,
+            "systemSeconds": 0.08,
+            "peakRSSKiB": 31972
+          },
+          {
+            "milliseconds": 109.70485699999699,
+            "userSeconds": 0.06,
+            "systemSeconds": 0.07,
+            "peakRSSKiB": 27752
           }
         ]
       },
       "sourceCheck": {
-        "milliseconds": 254.5164479999985,
-        "userSeconds": 0.51,
-        "systemSeconds": 0.22,
-        "peakRSSKiB": 148956
+        "milliseconds": 332.345745000006,
+        "userSeconds": 0.65,
+        "systemSeconds": 0.24,
+        "peakRSSKiB": 149016
       },
       "declarations": {
-        "milliseconds": 243.59365100000286,
-        "userSeconds": 0.5,
-        "systemSeconds": 0.27,
-        "peakRSSKiB": 153884
+        "milliseconds": 299.31137099999614,
+        "userSeconds": 0.6,
+        "systemSeconds": 0.22,
+        "peakRSSKiB": 142480
       },
       "declarationSource": {
         "files": 156,
@@ -229,218 +436,11 @@
         "chunks": 3,
         "bytes": 36021,
         "gzipBytes": 11264,
-        "milliseconds": 132.72702800000116,
-        "realCallPassed": true
-      }
-    },
-    {
-      "variant": "before",
-      "kind": "full",
-      "generatorSHA256": "056166ef328cf529f01eb970b243541534e2f8e6df9ad55b4aec72c306af5afd",
-      "source": {
-        "files": 6110,
-        "bytes": 14783053
-      },
-      "runtime": {
-        "files": 78,
-        "bytes": 377601
-      },
-      "compositions": {
-        "files": 1,
-        "bytes": 2284
-      },
-      "programs": {
-        "files": 6,
-        "bytes": 28379
-      },
-      "programSourceSHA256": "8270b02d087133a7c4dbc9a9ea285730f3ccfc0089b9d7e99318ff3171e548c5",
-      "generation": {
-        "milliseconds": 3114.087001,
-        "peakRSSKiB": 59148,
-        "runs": [
-          {
-            "milliseconds": 3123.3838030000006,
-            "userSeconds": 0.62,
-            "systemSeconds": 3.4,
-            "peakRSSKiB": 58716
-          },
-          {
-            "milliseconds": 3114.087001,
-            "userSeconds": 0.52,
-            "systemSeconds": 3.47,
-            "peakRSSKiB": 60536
-          },
-          {
-            "milliseconds": 3081.4675749999988,
-            "userSeconds": 0.55,
-            "systemSeconds": 3.42,
-            "peakRSSKiB": 59148
-          }
-        ]
-      },
-      "sourceCheck": {
-        "milliseconds": 3314.719600999997,
-        "userSeconds": 5.72,
-        "systemSeconds": 4.91,
-        "peakRSSKiB": 905252
-      },
-      "declarations": {
-        "milliseconds": 2753.5192959999986,
-        "userSeconds": 6.02,
-        "systemSeconds": 5.96,
-        "peakRSSKiB": 1146092
-      },
-      "declarationSource": {
-        "files": 6110,
-        "bytes": 9557968
-      },
-      "bundle": {
-        "chunks": 1,
-        "bytes": 520173,
-        "gzipBytes": 61397,
-        "milliseconds": 584.3890180000017,
-        "realCallPassed": true
-      }
-    },
-    {
-      "variant": "before",
-      "kind": "selected",
-      "generatorSHA256": "056166ef328cf529f01eb970b243541534e2f8e6df9ad55b4aec72c306af5afd",
-      "source": {
-        "files": 146,
-        "bytes": 420507
-      },
-      "runtime": {
-        "files": 56,
-        "bytes": 205671
-      },
-      "compositions": {
-        "files": 1,
-        "bytes": 2284
-      },
-      "programs": {
-        "files": 4,
-        "bytes": 14319
-      },
-      "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
-      "generation": {
-        "milliseconds": 92.32553599999665,
-        "peakRSSKiB": 29012,
-        "runs": [
-          {
-            "milliseconds": 100.49234799999977,
-            "userSeconds": 0.03,
-            "systemSeconds": 0.09,
-            "peakRSSKiB": 32092
-          },
-          {
-            "milliseconds": 92.32553599999665,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.06,
-            "peakRSSKiB": 27996
-          },
-          {
-            "milliseconds": 88.50464899999497,
-            "userSeconds": 0.03,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 29012
-          }
-        ]
-      },
-      "sourceCheck": {
-        "milliseconds": 225.8740919999982,
-        "userSeconds": 0.42,
-        "systemSeconds": 0.23,
-        "peakRSSKiB": 144028
-      },
-      "declarations": {
-        "milliseconds": 233.22439499999746,
-        "userSeconds": 0.46,
-        "systemSeconds": 0.19,
-        "peakRSSKiB": 146268
-      },
-      "declarationSource": {
-        "files": 146,
-        "bytes": 228719
-      },
-      "bundle": {
-        "chunks": 1,
-        "bytes": 30239,
-        "gzipBytes": 8632,
-        "milliseconds": 162.84461700000247,
-        "realCallPassed": true
-      }
-    },
-    {
-      "variant": "before",
-      "kind": "named",
-      "generatorSHA256": "056166ef328cf529f01eb970b243541534e2f8e6df9ad55b4aec72c306af5afd",
-      "source": {
-        "files": 150,
-        "bytes": 434172
-      },
-      "runtime": {
-        "files": 56,
-        "bytes": 205671
-      },
-      "compositions": {
-        "files": 1,
-        "bytes": 2284
-      },
-      "programs": {
-        "files": 4,
-        "bytes": 14319
-      },
-      "programSourceSHA256": "9b92aa397f73f48fa97f22ad7955fdd678aad47eb1c48ce2b1f9ac3af4b49834",
-      "generation": {
-        "milliseconds": 92.71521300000313,
-        "peakRSSKiB": 31508,
-        "runs": [
-          {
-            "milliseconds": 95.97618099999818,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 32028
-          },
-          {
-            "milliseconds": 92.71521300000313,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 28440
-          },
-          {
-            "milliseconds": 92.24188900000445,
-            "userSeconds": 0.04,
-            "systemSeconds": 0.07,
-            "peakRSSKiB": 31508
-          }
-        ]
-      },
-      "sourceCheck": {
-        "milliseconds": 234.02069699999993,
-        "userSeconds": 0.45,
-        "systemSeconds": 0.22,
-        "peakRSSKiB": 145052
-      },
-      "declarations": {
-        "milliseconds": 238.63900200000353,
-        "userSeconds": 0.49,
-        "systemSeconds": 0.24,
-        "peakRSSKiB": 142748
-      },
-      "declarationSource": {
-        "files": 150,
-        "bytes": 239681
-      },
-      "bundle": {
-        "chunks": 3,
-        "bytes": 36180,
-        "gzipBytes": 11296,
-        "milliseconds": 144.16010700000334,
+        "milliseconds": 161.1924629999994,
         "realCallPassed": true
       }
     }
   ],
-  "generatorSourceSHA256": "b0aac7b4e740365fab8fdab40a7bfe693e2f9ff5c98ed31c7b2adfda0cf03e3b",
-  "beforeSourceSHA256": "20d7077bf5958be52b50e1b1025b5049ec8b5d3e64f20bb30f6b25ddd7e56af9"
+  "generatorSourceSHA256": "85bacbe1902d1145c39765512ac7a0f416505360966b13ab78544cd4dde8547c",
+  "beforeSourceSHA256": "b0aac7b4e740365fab8fdab40a7bfe693e2f9ff5c98ed31c7b2adfda0cf03e3b"
 }

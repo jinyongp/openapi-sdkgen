@@ -1,4 +1,4 @@
-import { createSelectedClient } from "./selected-client.js";
+import { createSelectedClient, createGeneratedSelectedClient } from "./selected-client.js";
 import { operationLoaderABI, OperationPreparationError } from "./operation-loader.js";
 import type { OperationExecutionProvider } from "./operation-loader.js";
 import type { ClientOptions } from "../http/configuration.js";
@@ -7,6 +7,22 @@ import type { ClientOptions } from "../http/configuration.js";
 export function createNamedClientFactory(
   providers: readonly OperationExecutionProvider[],
   generation: string,
+): (options: ClientOptions) => object {
+  return createNamedClientFactoryCore(providers, generation, createSelectedClient);
+}
+
+/** Uses exact resource binders from generation-validated execution providers. */
+export function createGeneratedNamedClientFactory(
+  providers: readonly OperationExecutionProvider[],
+  generation: string,
+): (options: ClientOptions) => object {
+  return createNamedClientFactoryCore(providers, generation, createGeneratedSelectedClient);
+}
+
+function createNamedClientFactoryCore(
+  providers: readonly OperationExecutionProvider[],
+  generation: string,
+  createClient: typeof createSelectedClient,
 ): (options: ClientOptions) => object {
   const loads: Map<string, Promise<OperationExecutionProvider>> = new Map<
     string,
@@ -29,7 +45,7 @@ export function createNamedClientFactory(
     loads.set(provider.route, Promise.resolve(validate(provider, provider.route)));
   }
   return (options: ClientOptions): object =>
-    createSelectedClient(
+    createClient(
       options,
       providers,
       (

@@ -15,17 +15,17 @@ mocked Fetch. The default entry needs no selection configuration.
 
 | Generation | All TypeScript files | All source lines | Runtime files | Runtime lines |
 | --- | ---: | ---: | ---: | ---: |
-| Default generation | 114 | 7,778 | 71 | 5,696 |
-| Full-capability test control | 218 | 17,313 | 180 | 15,508 |
+| Default generation | 120 | 8,027 | 77 | 5,940 |
+| Full-capability test control | 224 | 17,562 | 186 | 15,752 |
 
 | Application entry | JS chunks | Entry JS bytes | Entry gzip bytes | All deployed JS bytes | All deployed gzip bytes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Full-capability test control | 1 | 107,892 | 31,162 | 107,892 | 31,162 |
-| Default root | 1 | 27,451 | 8,460 | 27,451 | 8,460 |
-| Static selective | 3 | 18,671 | 6,412 | 34,741 | 12,513 |
-| Lazy selective | 7 | 369 | 273 | 35,943 | 13,684 |
+| Full-capability test control | 1 | 107,216 | 30,925 | 107,216 | 30,925 |
+| Default root | 1 | 26,776 | 8,216 | 26,776 | 8,216 |
+| Static selective | 3 | 19,330 | 6,609 | 34,358 | 12,314 |
+| Lazy selective | 7 | 369 | 274 | 35,598 | 13,517 |
 
-The default root is **26.81 KiB of JS and 8.26 KiB gzip** in this sample,
+The default root is **26.15 KiB of JS and 8.02 KiB gzip** in this sample,
 about 27% of the control's compressed size. Static and lazy preparation reduce
 the entry size but deploy more compressed bytes than the root for this small
 API. Entry size alone does not describe the cost of a completed call. Shared
@@ -55,7 +55,7 @@ behavior and dependencies without fixed byte or line-count thresholds.
 Measured on October 4, 2026 UTC, in the uncommitted development tree based on
 `6c349f9`. <a :href="withBase('/benchmarks/runtime-features-results.json')">Raw results</a> include the
 generator/input/source hashes and every output chunk's size and hash.
-The generator source hash starts with `b0aac7b4e740`.
+The generator source hash starts with `85bacbe1902d`.
 Conditions: Node.js 24.21.0, TypeScript 7.0.2, Vite 8.3.0 / Rolldown 1.2.6,
 browser ESM, ES2022, Oxc minification, code splitting, and `modulePreload: false`.
 Gzip level 6 is applied separately to each deployed chunk and then summed.
@@ -79,38 +79,34 @@ These are reproducible sample sizes, not a size guarantee for every API.
 
 ## One, two, or three APIs
 
-This compares the captured source after composition sharing, `20d7077bf595`,
-with the current `b0aac7b4e740` source under identical inputs and tool settings.
-CLI `--operation` selects the APIs; each default-root bundle calls every selected
-API. The query case adds one required integer query parameter. Sizes are bytes.
+This compares operation input binding source `b0aac7b4e740` with current resource binding source `85bacbe1902d` under the same inputs and tool settings. Each CLI operation selection bundles the default root and calls every selected API.
 
 | Selected APIs | Before JS | Current JS | Before gzip | Current gzip | Current TS files / lines | Current runtime files / lines |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Get one | 25,226 | 25,039 | 8,174 | 8,127 | 101 / 7,115 | 69 / 5,714 |
-| Get one with query | 28,545 | 28,360 | 9,093 | 9,041 | 103 / 7,421 | 70 / 5,972 |
-| Get and list | 26,672 | 26,568 | 8,367 | 8,354 | 108 / 7,528 | 70 / 5,750 |
-| Get and create | 26,231 | 26,036 | 8,317 | 8,263 | 107 / 7,484 | 70 / 5,731 |
-| Get, list, and create | 27,669 | 27,560 | 8,502 | 8,489 | 114 / 7,892 | 71 / 5,767 |
+| Get one | 25,039 | 24,364 | 8,127 | 7,883 | 107 / 7,370 | 75 / 5,964 |
+| Get one with query | 28,360 | 27,678 | 9,041 | 8,789 | 109 / 7,676 | 76 / 6,222 |
+| Get and list | 26,568 | 25,893 | 8,354 | 8,114 | 114 / 7,783 | 76 / 6,000 |
+| Get and create | 26,036 | 25,361 | 8,263 | 8,027 | 113 / 7,739 | 76 / 5,981 |
+| Get, list, and create | 27,560 | 26,885 | 8,489 | 8,245 | 120 / 8,147 | 77 / 6,017 |
 
-Prepared input contracts now select the required-input, no-input or optional-input
-binder directly. Generic helpers compose the same canonical implementations.
-All five bundles shrink in JS and gzip; the one-API gzip saves 47 bytes (0.57%).
-HTTP policies, validation, credential providers, undeclared response-media
-fallbacks, cancellation, errors and `.raw()` behavior remain intact.
+Prepared resource input selects its required, empty or optional binder. Stream,
+Link and pagination binding follows prepared capabilities. Generic helpers reuse
+the same owners. All five final JS/gzip bundles shrink; one API saves 675 JS bytes
+(2.70%) and 244 gzip bytes (3.00%). HTTP policies, validation, credentials,
+undeclared response-media handling, cancellation, errors and `.raw()` are preserved.
 
-Responsibility-based files increase the count. Total one-API source shrinks from
-287,267 to 286,423 bytes, while get-and-list grows from 304,917 to 305,505 bytes
-and three APIs grow from 321,749 to 322,253 bytes. Those cases need two input
-contracts. Source includes type-only and selective/loading contracts, so measure
-source and delivered size together. The binder split yields a small additional
-bundle reduction.
+Final deployed JS/gzip measures this improvement. Source counts are diagnostics:
+one-API source grows from 286,423 to 295,645 bytes while the bundle shrinks.
+Named and selective providers carry exact resource binders, so generated client
+assembly also removes generic dispatch from the final bundle. Generic providers
+retain their existing helper path and ABI 1.
 
-The three-API row calls all three APIs. The default-root table above calls only
-`getItem`, so its bundle size differs. Fixture options also affect source counts.
-<a :href="withBase('/benchmarks/schema-operation-results.json')">Current before/after raw measurements</a>
-record strict compilation and actual mocked bundle calls. The
-<a :href="withBase('/benchmarks/schema-operation-before-callables-results.json')">earlier small-API HTTP results</a>
-are preserved. These samples do not establish a universal minimum SDK size.
+The three-API row calls all three APIs. The root table above calls only `getItem`.
+<a :href="withBase('/benchmarks/schema-operation-results.json')">Current raw results</a>
+include strict compilation and actual mocked bundle calls. The
+<a :href="withBase('/benchmarks/schema-operation-before-resources-results.json')">previous operation binder results</a>
+are preserved. Node.js 24.21.0, TypeScript 7.0.2, Vite 8.3.0/Oxc, browser ESM
+ES2022 and gzip level 6 match the preceding phase.
 
 ## Previous 1,000-API HTTP contract comparison
 
@@ -204,7 +200,7 @@ These results still do not establish a universal minimum SDK size.
 
 ## Selecting binders by input contract
 
-The current `b0aac7b4e740` source imports each operation's prepared input binder
+The preceding `b0aac7b4e740` source imports each operation's prepared input binder
 directly. Separate canonical owners provide callable types, resource and stream
 binding, and namespace decoration; generic helpers compose the same implementations.
 Providers reuse the selected `bindBase` or `bindStream` first parameter type.
@@ -224,12 +220,26 @@ files and type import paths. Four compiler strict-source, fresh-declaration and
 hover checks verify the public contracts. Full, selected and named gzip save 38,
 110 and 32 bytes respectively. File count and delivered size move differently.
 
-<a :href="withBase('/benchmarks/schema-programs-results.json')">Current raw results</a>
+<a :href="withBase('/benchmarks/schema-programs-before-resources-results.json')">Raw results for that phase</a>
 include six actual calls, programs, source/declarations, generation/check/emission
 time and peak RSS. Measurement ran sequentially after regression and performance
 checks. Timing is observational, not a speed guarantee. The
 <a :href="withBase('/benchmarks/schema-programs-before-callables-results.json')">prior composition results</a>
 are preserved. Shared HTTP, validation, error and selective/loading costs remain.
+
+## Selecting resource input and capabilities
+
+Current source `85bacbe1902d` compares with `b0aac7b4e740` on the same 1,000-API fixture. The table reports final deployed JS/gzip; the selected root stays unchanged and both full and named bundles shrink.
+
+| Scope | Before JS | Current JS | Before gzip | Current gzip |
+| --- | ---: | ---: | ---: | ---: |
+| All 1,000 APIs | 514,082 | 513,604 | 61,359 | 61,192 |
+| 10 selected APIs | 29,878 | 29,878 | 8,522 | 8,522 |
+| Named client with those 10 APIs | 36,021 | 35,279 | 11,264 | 10,991 |
+
+Named gzip saves 273 bytes (2.42%). Operation type declarations and attached JSDoc remain identical in all three scopes.
+
+<a :href="withBase('/benchmarks/schema-programs-results.json')">Current raw results</a> include six strict-source, declaration and actual bundle-call checks, plus generation/compilation time and RSS. Timing observations may include concurrent validation load and do not establish a stable speed change.
 
 ## Earlier 1,000-operation selection measurement
 

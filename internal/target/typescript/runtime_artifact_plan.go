@@ -6,6 +6,8 @@ import (
 )
 
 func prepareRuntimeArtifactPlan(plan *sourcePlan) error {
+	plan.modules.resourceExecutions = plan.executions
+	plan.modules.resourceLinks = plan.links
 	if err := prepareSchemaRuntimePlan(plan); err != nil {
 		return err
 	}
@@ -27,6 +29,18 @@ func prepareRuntimeArtifactPlan(plan *sourcePlan) error {
 		if !bindings[template] {
 			roots = append(roots, template)
 			bindings[template] = true
+		}
+		if len(item.PathParameterOrder) > 0 {
+			binding := resourceBinding(item, plan.modules)
+			for _, resourceTemplate := range []string{binding.template, "resource-stream-binding.ts", "resource-helper-binding.ts"} {
+				if resourceTemplate == "resource-stream-binding.ts" && binding.streamName == "" || resourceTemplate == "resource-helper-binding.ts" && !binding.links && !binding.pagination {
+					continue
+				}
+				if !bindings[resourceTemplate] {
+					roots = append(roots, resourceTemplate)
+					bindings[resourceTemplate] = true
+				}
+			}
 		}
 	}
 	if len(plan.streams) > 0 {

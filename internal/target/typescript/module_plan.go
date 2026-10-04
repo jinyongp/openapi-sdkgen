@@ -10,6 +10,8 @@ import (
 )
 
 type semanticModulePlan struct {
+	resourceExecutions        map[string]operationExecutionPlan
+	resourceLinks             []generatedLink
 	schemaPrograms            *schemaRuntimePlan
 	runtimeComposition        runtimeComposition
 	schemas                   []schemaModulePlan

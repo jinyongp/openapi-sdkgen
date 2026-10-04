@@ -2,6 +2,7 @@ import { collectSelectionReferences } from "./selection.js";
 import type { OperationReference, SelectionInput } from "./selection-types.js";
 import type { ClientOptions } from "../http/configuration.js";
 import type { RequestContext } from "../http/http-types.js";
+import type { ResourcePathBinder } from "./resource-binding-support.js";
 
 /** Version of the generated lookup/provider protocol, not an authentication token. */
 export const operationLoaderABI: 1 = 1;
@@ -24,6 +25,8 @@ export interface OperationResourcePlacement {
   readonly hasInput?: boolean;
   readonly inputOptional?: boolean;
   readonly pagination?: boolean;
+  /** Exact binding emitted with this provider's generation identity. */
+  readonly bindResource?: ResourcePathBinder;
 }
 
 /** A compiler-owned execution module. Client state is supplied only when binding. */

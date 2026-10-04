@@ -195,7 +195,7 @@ import type { Operations, RouteReferences, Client } from "./types.js"
 const loader: OperationLoader = /* @__PURE__ */ createOperationLoader({
   generation: %s,
   importModule: (filename: string): Promise<unknown> => import(/* @vite-ignore */ filename),
-  loadClient: (): Promise<typeof import("../internal/runtime/client/selected-client.js")> => import("../internal/runtime/client/selected-client.js"),
+  loadClient: (): Promise<Pick<typeof import("../internal/runtime/client/selected-client.js"), "createSelectedClient">> => import("../internal/runtime/client/selected-client.js").then((module: typeof import("../internal/runtime/client/selected-client.js")): Pick<typeof module, "createSelectedClient"> => ({ createSelectedClient: module.createGeneratedSelectedClient })),
 })
 /** References keyed by exact operationId; accessing a key does not load its implementation. */
 export const operations: Operations = loader.operations as Operations

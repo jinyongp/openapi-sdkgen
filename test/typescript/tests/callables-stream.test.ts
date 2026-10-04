@@ -157,5 +157,7 @@ describe("stream callable binding", () => {
     );
     expect(bound.links).toBe(links);
     expect(bound.paginate).toBe(paginate);
+    expect(raw.mock.calls.at(-1)?.[0].path).toBe(decoded.mock.calls.at(-1)?.[0].path);
+    expect(stream.mock.calls.at(-1)?.[0].path).toBe(decoded.mock.calls.at(-1)?.[0].path);
   });
 });

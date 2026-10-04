@@ -41,7 +41,7 @@ func emitNamedClientArtifactsTo(shared *sourcePlan, generation string, write fun
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(&entry, "import { createNamedClientFactory } from %s\nimport type { ClientOptions } from %s\nimport type { Client } from \"./types.js\"\n\n", quoteTS(factory), quoteTS(options))
+		fmt.Fprintf(&entry, "import { createGeneratedNamedClientFactory as createNamedClientFactory } from %s\nimport type { ClientOptions } from %s\nimport type { Client } from \"./types.js\"\n\n", quoteTS(factory), quoteTS(options))
 		emitTypedConstant(&entry, "", "bind", "ReturnType<typeof createNamedClientFactory>", "/* @__PURE__ */ createNamedClientFactory(["+strings.Join(aliases, ", ")+"], "+quoteTS(generation)+")")
 		entry.WriteString("/** Creates an independently configured client for this entry's selected APIs. */\nexport function createClient(options: ClientOptions): Client {\n  return bind(options) as Client\n}\nexport type * from \"./types.js\"\n")
 		fmt.Fprintf(&entry, "export type { ClientOptions } from %s\n", quoteTS(options))

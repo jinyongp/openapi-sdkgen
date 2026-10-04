@@ -234,6 +234,15 @@ their internal request type from the selected `bindBase` or `bindStream` paramet
 preserving its buffered or streaming contract without a repeated type import.
 Public callable aliases, signature help and HTTP error provenance remain intact.
 
+Resource calls select their remaining input binder independently from the exact
+operation's input. Stream, Link and pagination owners follow prepared
+capabilities. Path merging and method registration have canonical owners;
+decoded, raw and stream calls share the same bound path object. Providers carry
+the exact binder in their resource placement metadata. Generated named and
+selective clients use it through the shared client assembly core. Generic
+helpers retain metadata-based dispatch for arbitrary providers. Provider ABI 1
+and generation identity checks are preserved.
+
 Ordinary JSON entries omit the generic `wire-core` interpreter, branch selection
 and evaluation collection when their selected contracts do not require them.
 Shared call-local validation caches and finite-number checks remain necessary.

@@ -81,7 +81,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	childIdentities := resourceChildIdentities(module.identity, module.node)
 	names := newLocalIdentifierPlan(module.path)
-	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindGeneratedPathOperation", "Surface", "build", "registry", "bound", "members"); err != nil {
+	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindResourceInput", "bindResourceNoInput", "bindResourceOptionalInput", "bindResourceInputStream", "bindResourceNoInputStream", "bindResourceOptionalInputStream", "bindResourceLinks", "bindResourcePagination", "Surface", "build", "registry", "bound", "members"); err != nil {
 		return nil, err
 	}
 	for _, node := range append([]*resourceNode{module.node}, resourceChildNodes(module.node)...) {
@@ -103,10 +103,17 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		return nil, err
 	}
 	needsAssign := module.node.parameterChild != nil
-	needsPath := false
+	bindings := make(map[string]map[string]bool)
 	for name, operation := range module.node.operations {
 		if len(operation.PathParameterOrder) > 0 {
-			needsPath = true
+			for template, imported := range resourceBinding(operation, plan).imports() {
+				if bindings[template] == nil {
+					bindings[template] = make(map[string]bool)
+				}
+				for _, name := range imported {
+					bindings[template][name] = true
+				}
+			}
 		}
 		if module.node.children[name] != nil {
 			needsAssign = true
@@ -119,12 +126,17 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	if needsAssign {
 		fmt.Fprintf(&output, "import { assignCallableProperties } from %s\n", quoteTS(callablesSpecifier))
 	}
-	if needsPath {
-		binding, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/resource-binding.ts")
+	templates := make([]string, 0, len(bindings))
+	for template := range bindings {
+		templates = append(templates, template)
+	}
+	sort.Strings(templates)
+	for _, template := range templates {
+		binding, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/"+template)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "import { bindGeneratedPathOperation } from %s\n", quoteTS(binding))
+		fmt.Fprintf(&output, "import { %s } from %s\n", strings.Join(sortedStringKeys(bindings[template]), ", "), quoteTS(binding))
 	}
 	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
 		path := paths[identity]
@@ -360,12 +372,9 @@ func emitResourceModuleOperationValue(output *bytes.Buffer, document *ir.Documen
 	for index, parameter := range operation.PathParameterOrder {
 		values = append(values, quoteTS(parameter)+": bound["+fmt.Sprint(index)+"]")
 	}
-	hasInput := operation.InputSections.hasInput(true)
-	inputOptional := false
-	if hasInput {
-		inputOptional = !operation.prepared.resourceInputRequired
-	}
-	fmt.Fprintf(output, "bindGeneratedPathOperation(%s, { %s }, %t, %t) as %s", call, strings.Join(values, ", "), hasInput, inputOptional, resourceCall)
+	binding := resourceBinding(operation, plan)
+	path := "{ " + strings.Join(values, ", ") + " }"
+	fmt.Fprintf(output, "%s as %s", binding.expression(call, path), resourceCall)
 	return nil
 }
 

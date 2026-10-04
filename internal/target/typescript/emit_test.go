@@ -244,7 +244,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if !strings.Contains(clientSource, `readonly "createProduct": Routes["POST /products"]`) || !strings.Contains(clientSource, `readonly call:`) || !strings.Contains(clientSource, `readonly rawResponse:`) {
 		t.Fatalf("raw-capable operation call missing:\n%s", clientSource)
 	}
-	if !strings.Contains(clientSource, "(productID: string)") || !strings.Contains(clientSource, "bindGeneratedPathOperation(") {
+	if !strings.Contains(clientSource, "(productID: string)") || !strings.Contains(clientSource, "bindResourceNoInput(") {
 		t.Fatalf("instance resource builder missing:\n%s", clientSource)
 	}
 	for _, expected := range []string{

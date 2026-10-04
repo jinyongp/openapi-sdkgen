@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -48,6 +49,30 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	if err := emitRuntimeComposition(&output, execution.composition, importFrom); err != nil {
 		return nil, err
+	}
+	needsResourceBinding := false
+	for _, placement := range placements {
+		if len(placement.PathParameters) > 0 && !placement.Pagination {
+			needsResourceBinding = true
+			break
+		}
+	}
+	resource := resourceBinding(item, plan)
+	if needsResourceBinding {
+		if err := importFrom("type { ResourcePath }", "internal/runtime/client/resource-binding-support.ts"); err != nil {
+			return nil, err
+		}
+		imports := resource.imports()
+		templates := make([]string, 0, len(imports))
+		for template := range imports {
+			templates = append(templates, template)
+		}
+		sort.Strings(templates)
+		for _, template := range templates {
+			if err := importFrom("{ "+strings.Join(imports[template], ", ")+" }", "internal/runtime/client/"+template); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	input, out := make([]string, 0, len(execution.inputSchemas)), make([]string, 0, len(execution.outputSchemas))
@@ -99,15 +124,29 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		outputArg = "outputSchemas"
 	}
 	output.WriteString("\n/** Compiler-owned base execution provider; no client configuration is cached here. */\n")
+	if needsResourceBinding {
+		fmt.Fprintf(&output, "function bindResource(operation: object, path: ResourcePath): unknown {\n  return %s\n}\n", resource.expression("operation", "path"))
+	}
 	fmt.Fprintf(&output, "interface ExecutionProvider extends OperationExecutionProvider { readonly route: %s; readonly profile: %s; bind(context: RequestContext): %s }\n", quoteTS(module.routeKey), quoteTS(string(execution.profile)), callType)
 	output.WriteString("/** Compiler-owned execution provider with an exact route identity. */\nexport const provider: ExecutionProvider = /* @__PURE__ */ Object.freeze({\n")
 	fmt.Fprintf(&output, "  abi: %d, generation: %s,\n", selectiveExecutionABI, quoteTS(generation))
 	if len(placements) > 0 {
-		data, err := json.Marshal(placements)
-		if err != nil {
-			return nil, err
+		output.WriteString("  resources: [")
+		for index, placement := range placements {
+			if index > 0 {
+				output.WriteString(", ")
+			}
+			data, err := json.Marshal(placement)
+			if err != nil {
+				return nil, err
+			}
+			if len(placement.PathParameters) > 0 && !placement.Pagination {
+				fmt.Fprintf(&output, "%s, bindResource }", strings.TrimSuffix(string(data), "}"))
+			} else {
+				output.Write(data)
+			}
 		}
-		fmt.Fprintf(&output, "  resources: %s,\n", data)
+		output.WriteString("],\n")
 	}
 	fmt.Fprintf(&output, "  route: %s,\n", quoteTS(module.routeKey))
 	if item.compiled.OperationID != "" {
