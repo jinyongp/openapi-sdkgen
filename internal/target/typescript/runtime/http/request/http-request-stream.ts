@@ -16,6 +16,7 @@ import type {
   RequestStreamServices,
 } from "../../media/http-media-types.js";
 import { isPromise } from "../http-execution-support.js";
+/** Composes prepared request framing and stream lifecycle services. */
 export function createRequestStreamServices(
   wire: WireCodec,
   encoders: Readonly<

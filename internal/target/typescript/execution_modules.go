@@ -53,9 +53,6 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	if err := importFrom("{ "+strings.Join(binders, ", ")+" }", module.path); err != nil {
 		return nil, err
 	}
-	if err := importFrom("{ createRequestCore }", "internal/runtime/http/request/http-request-core.ts"); err != nil {
-		return nil, err
-	}
 	if err := emitRuntimeComposition(&output, execution.composition, importFrom); err != nil {
 		return nil, err
 	}

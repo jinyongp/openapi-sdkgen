@@ -158,7 +158,7 @@ describe("generated public entry bundle isolation", () => {
     for (const required of [
       "internal/client/factory.ts",
       "internal/client/registry.ts",
-      "internal/runtime/http/request/http-request-core.ts",
+      "internal/runtime/http/request/http-buffered-core.ts",
       "internal/runtime/schema/program-execution.ts",
     ])
       expect(modules, bundleEvidence(result!)).toContain(required);
@@ -197,7 +197,8 @@ describe("generated public entry bundle isolation", () => {
     expect(result).toBeDefined();
     const modules = internalModules(result!);
     expect(modules).toContain("internal/executions/bundle-isolation-sentinel/get.ts");
-    expect(modules).toContain("internal/runtime/http/request/http-request-core.ts");
+    expect(modules).toContain("internal/runtime/http/request/http-buffered-core.ts");
+    expect(modules).not.toContain("internal/runtime/http/request/http-request-core.ts");
     expect(modules).toContain("internal/runtime/schema/program-execution.ts");
     expect(modules).not.toContain("internal/runtime/schema/wire-core.ts");
     for (const excluded of [

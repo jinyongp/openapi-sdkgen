@@ -95,7 +95,10 @@ func fullCapabilityMatrixPlan(plan *sourcePlan) {
 	}
 	plan.callbacks, _ = collectCallbacksDiagnostics(plan.document, plan.omittedOperations)
 	plan.webhooks, _ = collectWebhooksDiagnostics(plan.document)
-	full := runtimeComposition{imports: []runtimeHandlerImport{{path: "internal/runtime/compatibility/http-codecs.ts", names: []string{"fullRequestServices"}}}, httpTypes: []string{"StreamingRequestExecutionServices"}, servicesType: "StreamingRequestExecutionServices", declarations: []string{"const services: StreamingRequestExecutionServices = fullRequestServices"}}
+	full := runtimeComposition{imports: []runtimeHandlerImport{
+		{path: "internal/runtime/compatibility/http-codecs.ts", names: []string{"fullRequestServices"}},
+		{path: "internal/runtime/http/request/http-request-core.ts", names: []string{"createRequestCore"}},
+	}, httpTypes: []string{"StreamingRequestExecutionServices"}, servicesType: "StreamingRequestExecutionServices", declarations: []string{"const services: StreamingRequestExecutionServices = fullRequestServices"}}
 	root := plan
 	if plan.root != nil {
 		root = plan.root

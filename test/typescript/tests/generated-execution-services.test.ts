@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { bindBase } from "../fixtures/generated/lifecycle/internal/operations/inline/post.js";
 import { createRequestCore } from "../fixtures/generated/lifecycle/internal/runtime/http/request/http-request-core.js";
 import { createRequestContext } from "../fixtures/generated/lifecycle/internal/runtime/http/http-execution-support.js";
-import { createBasicHTTPServices } from "../fixtures/generated/lifecycle/internal/runtime/http/request/http-basic.js";
+import { createBasicHTTPServices } from "../../../internal/target/typescript/runtime/http/request/http-basic.js";
 import { createBasicProgramCodec } from "../fixtures/generated/lifecycle/internal/runtime/schema/program-basic.js";
 import { encodeJSONBody } from "../fixtures/generated/lifecycle/internal/runtime/media/http-body-json.js";
 import type { RequestExecutionServices } from "../../../internal/target/typescript/runtime/http/http-types.js";

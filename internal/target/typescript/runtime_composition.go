@@ -177,26 +177,64 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 		result.declarations = append(result.declarations, "const decodeStreams: NonNullable<HTTPCodecExtensions[\"decodeResponseStreamItems\"]> = (body: ReadableStream<Uint8Array>, options: HTTPStreamDecodeOptions): AsyncIterable<unknown> => decodeFrames(body, { contentType: options.contentType, streamFraming: options.streamFraming, maxFrameBytes: options.maxFrameBytes, streamCodec: options.streamCodec, signal: options.signal"+extra+" })")
 		extensions = append(extensions, "decodeResponseStreamItems: decodeStreams")
 	}
-	httpFactory := "createBasicHTTPServices"
-	httpTemplate := "http-basic"
+	httpFactory := "composeBasicHTTPServices"
+	httpTemplate := "http-basic-core"
 	if has("http.general") || streaming || prefix("request.framing.") || prefix("response.framing.") || media("open") || media("xml") || media("multipart") || media("form") || media("text") || media("binary") || media("custom") {
 		httpFactory = "createHTTPServices"
 		httpTemplate = "http-services"
 	}
 	add("internal/runtime/"+httpTemplate+".ts", httpFactory)
 	httpArguments := ""
-	if httpFactory == "createBasicHTTPServices" && has("http.query") {
-		add("internal/runtime/http/request/http-query.ts", "createQueryEncoder")
-		httpArguments = ", /* @__PURE__ */ createQueryEncoder(wire)"
+	if httpFactory == "composeBasicHTTPServices" {
+		result.httpTypes = append(result.httpTypes, "BasicRequestParameterServices")
+		encoder, encoderSource := "createSchemaParameterEncoder", "http-parameter-schema"
+		if has("http.parameter.sort") {
+			encoder, encoderSource = "createParameterEncoder", "http-parameter-sort"
+		}
+		serializer, serializerSource := "serializeSimpleScalarPathParameter", "http-path-scalar"
+		if has("http.path.general") {
+			serializer, serializerSource = "serializeSchemaPathParameter", "http-path"
+		}
+		server, serverSource := "resolveStaticOperationBaseURL", "http-server"
+		if has("http.server.variables") {
+			server, serverSource = "resolveOperationBaseURL", "http-server-variables"
+		}
+		add("internal/runtime/"+encoderSource+".ts", encoder)
+		add("internal/runtime/"+serializerSource+".ts", serializer)
+		add("internal/runtime/"+serverSource+".ts", server)
+		add("internal/runtime/http/response/http-response-json.ts", "createJSONResponseServices")
+		result.declarations = append(result.declarations, "const parameters: BasicRequestParameterServices = { encodeParameter: /* @__PURE__ */ "+encoder+"(wire), serializePathParameter: "+serializer+", resolveBaseURL: "+server+" }")
+		httpArguments = ", parameters, /* @__PURE__ */ createJSONResponseServices(wire)"
+		if has("http.query") {
+			add("internal/runtime/http/request/http-query-core.ts", "createPreparedQueryEncoder")
+			httpArguments += ", /* @__PURE__ */ createPreparedQueryEncoder(parameters.encodeParameter)"
+		}
+		add("internal/runtime/http/request/http-buffered-core.ts", "createBufferedRequestCore as createRequestCore")
+	} else {
+		add("internal/runtime/http/request/http-request-core.ts", "createRequestCore")
 	}
 	security := prepareSecurityHandlers(features)
 	suffix := ""
 	if len(security.fields) > 0 {
-		add("internal/runtime/http/http-security.ts", "createOperationSecurity")
+		narrowBearer := has("security.http.bearer") && !has("security.multiple-requirements")
+		for _, feature := range features {
+			if strings.HasPrefix(string(feature), "security.") && string(feature) != "security.http.bearer" {
+				narrowBearer = false
+			}
+		}
+		if narrowBearer {
+			add("internal/runtime/http/http-security-bearer.ts", "createBearerOperationSecurity")
+		} else {
+			add("internal/runtime/http/http-security.ts", "createOperationSecurity")
+		}
 		for _, dependency := range security.imports {
 			add(dependency.path, dependency.names...)
 		}
-		suffix = ", applyOperationSecurity: /* @__PURE__ */ createOperationSecurity({ " + strings.Join(security.fields, ", ") + " })"
+		if narrowBearer {
+			suffix = ", applyOperationSecurity: /* @__PURE__ */ createBearerOperationSecurity(httpBearer)"
+		} else {
+			suffix = ", applyOperationSecurity: /* @__PURE__ */ createOperationSecurity({ " + strings.Join(security.fields, ", ") + " })"
+		}
 	}
 	extensionValue := "{ " + strings.Join(extensions, ", ") + " }"
 	if len(extensionSources) > 0 {

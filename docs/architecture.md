@@ -232,6 +232,23 @@ Supported arbitrary-schema helpers retain the canonical interpreter behind
 their explicit compatibility roots. This is generated execution code, with no
 runtime `eval`, generated-source AST pruning or new consumer dependency.
 
+HTTP preparation also freezes path shape, structured-sort use, server variables
+and the number of security requirements. The client root merges these facts;
+named clients and execution providers use their own selected closure. Known
+simple string paths, ordinary schema parameters, static server URLs and single
+Bearer requirements select narrow policies. Unknown or compound contracts keep
+the general policy. Buffered JSON response services retain actual undeclared
+text, XML, binary and custom-codec fallback decoding.
+
+`http/request` owns parameter encoding, URL construction and the buffered
+executor. `http/response` owns body/error decoding and the optional streaming-raw
+policy. HTTP security has a common provider/credential/collision orchestrator
+with separate source, credential-dispatch and requirement-selection policies.
+The existing general helpers compose these same canonical implementations.
+Canonical port types own each injected policy; narrow modules do not import the
+general facade. Differential tests compare emitted narrow and general graphs,
+including required general policies in mixed root/named/provider scopes.
+
 The optional `schema-programs:perf` measurement checks shared programs on a
 1,000-operation fixture, strict source, fresh declarations and actual browser
 bundle calls. Runtime size measurements and their limits are published in the

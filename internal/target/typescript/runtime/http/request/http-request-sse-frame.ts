@@ -1,4 +1,5 @@
 import { isRecord } from "../../shared/runtime-support.js";
+/** Encodes one server-sent-event request item. */
 export function encodeSSERequestItem(value: unknown): string {
   if (!isRecord(value)) throw new TypeError("SSE stream item must be an object");
   for (const field of Object.keys(value)) {

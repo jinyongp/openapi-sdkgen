@@ -25,10 +25,10 @@ func TestLightweightHTTPContractSelection(t *testing.T) {
 			for _, artifact := range plan.runtimeArtifacts {
 				paths[artifact.source] = true
 			}
-			if paths["http-services.ts"] != test.general || paths["http-basic.ts"] == test.general {
+			if paths["http-services.ts"] != test.general || paths["http-basic-core.ts"] == test.general {
 				t.Fatalf("wrong contract-specific request implementation: general=%t paths=%v", test.general, paths)
 			}
-			if paths["http-query.ts"] != test.query {
+			if paths["http-query-core.ts"] != test.query || paths["http-query.ts"] != (test.general && test.query) {
 				t.Fatalf("wrong query implementation inclusion: want=%t paths=%v", test.query, paths)
 			}
 			if paths["http-execution.ts"] {

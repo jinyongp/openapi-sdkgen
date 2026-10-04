@@ -92,10 +92,6 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	if err != nil {
 		return nil, err
 	}
-	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/request/http-request-core.ts")
-	if err != nil {
-		return nil, err
-	}
 	context, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/http-execution-support.ts")
 	if err != nil {
 		return nil, err
@@ -118,7 +114,6 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	}
 	var output bytes.Buffer
 	fmt.Fprintf(&output, "import type { ClientOptions } from %s\n", quoteTS(configuration))
-	fmt.Fprintf(&output, "import { createRequestCore } from %s\n", quoteTS(http))
 	fmt.Fprintf(&output, "import { createRequestContext } from %s\n", quoteTS(context))
 	fmt.Fprintf(&output, "import { createCallableRegistry } from %s\n", quoteTS(registry))
 	fmt.Fprintf(&output, "import { build as buildResources } from %s\n", quoteTS(resources))

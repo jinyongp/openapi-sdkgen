@@ -5,6 +5,8 @@ import "strings"
 // Public names retain one canonical contract owner after runtime separation.
 func runtimeTypeTemplate(name, fallback string) string {
 	switch name {
+	case "BasicRequestParameterServices":
+		return "http-request-parameter-types.ts"
 	case "MediaCodec":
 		return "media-codec-types.ts"
 	case "StreamReader", "StreamContext", "StreamProtocol", "StreamAdapter", "StreamCodec", "StreamFraming":

@@ -3,6 +3,7 @@ import type {
   EncodedStreamRequestBody,
 } from "../../media/media-service-types.js";
 import type { TextRequestEncoder } from "../../media/http-media-types.js";
+/** Composes text framing with a prepared request-item encoder. */
 export function createTextRequestEncoder(
   encodeItem: (value: unknown) => string,
 ): TextRequestEncoder {

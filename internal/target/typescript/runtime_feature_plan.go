@@ -226,6 +226,30 @@ func prepareRuntimeFeatures(plan *sourcePlan) (*runtimeFeaturePlan, error) {
 			return nil, err
 		}
 		runtimeSecurityFeatures(plan.document, requirements, features)
+		if len(requirements) > 1 {
+			features["security.multiple-requirements"] = true
+		}
+		for _, parameter := range item.prepared.parameters {
+			if parameter.Sort != nil {
+				features["http.parameter.sort"] = true
+			}
+			if parameter.Location == "path" {
+				schema, known := parameter.Schema.(map[string]any)
+				_, reference := schema["$ref"]
+				_, dynamic := schema["$dynamicRef"]
+				if !known || schema["type"] != "string" || reference || dynamic || parameter.ContentType != "" || parameter.Style != "simple" {
+					features["http.path.general"] = true
+				}
+			}
+		}
+		servers, _ := effectiveOperationServers(plan.document, item.compiled)
+		for _, value := range servers {
+			server, _ := value.(map[string]any)
+			url, _ := server["url"].(string)
+			if strings.Contains(url, "{") {
+				features["http.server.variables"] = true
+			}
+		}
 		if item.compiled.PaginationPlan != nil {
 			features["callable.pagination"] = true
 		}
