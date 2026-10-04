@@ -19,7 +19,7 @@ func TestRuntimeFeaturePublicationTransitionsPreserveOwnership(t *testing.T) {
 	if err := generate(base); err != nil {
 		t.Fatal(err)
 	}
-	xml := filepath.Join(output, "internal/runtime/xml-codec.ts")
+	xml := filepath.Join(output, "internal/runtime/media/xml/xml-codec.ts")
 	original, err := os.ReadFile(xml)
 	if err != nil {
 		t.Fatal(err)

@@ -1,4 +1,3 @@
-// Compile-only public API contracts, also checked from emitted declarations alone.
 import {
   createClient,
   loadOperations,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { provider as jsonProvider } from "../fixtures/generated/lifecycle/internal/executions/inline/post.js";
 import { provider as streamProvider } from "../fixtures/generated/lifecycle/internal/executions/events/get.js";
 import { createClient } from "../fixtures/generated/lifecycle/index.js";
-import { createRequestContext } from "../fixtures/generated/lifecycle/internal/runtime/http-execution-support.js";
+import { createRequestContext } from "../fixtures/generated/lifecycle/internal/runtime/http/http-execution-support.js";
 
 describe("compiler-emitted execution providers", () => {
   it("automatically selects and binds JSON services with the real input and raw contract", async () => {

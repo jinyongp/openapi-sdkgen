@@ -3,17 +3,18 @@ import {
   createOperationLoader,
   operationLookupFilename,
   staticOperationReference,
-  type OperationExecutionProvider,
-  type OperationLoader,
-  type OperationLoaderConfiguration,
-  type OperationLookupEntry,
-  type OperationProviderResolver,
-  type PreparedClientModule,
-} from "../../../internal/target/typescript/runtime/internal/operation-loader.js";
+} from "../../../internal/target/typescript/runtime/client/operation-loader.js";
+import type {
+  OperationExecutionProvider,
+  OperationLoader,
+  OperationLoaderConfiguration,
+  OperationLookupEntry,
+  PreparedClientModule,
+} from "../../../internal/target/typescript/runtime/client/operation-loader.js";
 import {
   createOperationLoader as emittedLoader,
   staticOperationReference as emittedStatic,
-} from "../fixtures/generated/lifecycle/internal/runtime/operation-loader.js";
+} from "../fixtures/generated/lifecycle/internal/runtime/client/operation-loader.js";
 
 type RoutePolicy = Pick<OperationLoaderConfiguration, "publicRoutes" | "privateRoutes">;
 type FixtureClientArguments = Parameters<PreparedClientModule["createSelectedClient"]>;

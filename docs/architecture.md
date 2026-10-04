@@ -178,6 +178,65 @@ pagination, Links, request construction, and HTTP execution behind internal
 generated entry points. The server add-on uses its own Fetch-native runtime
 surface and shares schema/wire semantics where applicable.
 
+### Schema programs and runtime ownership
+
+`schema/plan` lowers normalized schema resources into typed semantic nodes. The
+same nodes drive descriptors and contract-specific validation/transformation in
+`schema/emit`. Preparation interns programs by lowered meaning and execution
+policy, shares equivalent input/output projections, and freezes their source and
+dependencies. Reference target names remain in each contract's descriptor;
+the same dispatch algorithm can be shared across different targets because it
+reads the target from the owning descriptor. Slot identities apply this same
+rule. Other semantic differences remain part of the execution identity.
+Descriptors and program bindings are cached separately and frozen together.
+Emission cannot add a previously unseen contract. Program modules
+live under `internal/schema-programs/shared/`; their identities use the complete
+SHA-256 digest encoded with portable base64url names.
+
+Generated JSON contracts contain direct checks for their value types, numeric
+bounds, lengths, required properties and children. They call selected canonical
+operators for composition, patterns, dependencies, evaluation, content, formats
+and dynamic scope. The generated executor dispatches these prepared programs;
+it does not fall back to interpreting arbitrary schemas. XML/header/inbound
+coercion uses prepared representation views and explicit child conjunctions.
+The optional server routes prepare their own schema closure without changing
+client artifacts or selective execution identity.
+
+Authored runtime and generated `internal/runtime` use matching directories:
+
+| Directory | Ownership and permitted dependencies |
+| --- | --- |
+| `shared` | JSON values, object utilities, transport metadata and common errors; shared only |
+| `schema` | Schema types, execution ports, call-local state and schema operators; schema/shared |
+| `stream` | Framing, abort and protocol contracts; stream/shared |
+| `media` | Body, XML, multipart and codec contracts; media/schema/stream/shared |
+| `security` | Authentication schemes; security/shared |
+| `http` | Request, response and execution configuration; lower runtime layers |
+| `client` | Callables, selection, loading, pagination and Links; HTTP and lower layers |
+| `compatibility` | Explicit arbitrary-schema/full-capability helper composition |
+
+Every internal object contract has one canonical type owner; forwarding modules
+reuse that owner. Boundary checks include value imports, erased type imports,
+re-exports, import types, dynamic imports and ownership cycles. They run on
+authored runtime and actual feature-generated runtime/program/server artifacts.
+The established generic operation loader's `import(url)` and public arbitrary
+schema `server/runtime.ts` facade have explicit, tested roles.
+
+Ordinary JSON entries omit the generic `wire-core` interpreter, branch selection
+and evaluation collection when their selected contracts do not require them.
+Shared call-local validation caches and finite-number checks remain necessary.
+Preparation also reuses complete schema-reference closures across strongly
+connected components, while preserving input/output projection boundaries.
+Semantic-only analysis does not build unused TypeScript descriptor strings.
+Supported arbitrary-schema helpers retain the canonical interpreter behind
+their explicit compatibility roots. This is generated execution code, with no
+runtime `eval`, generated-source AST pruning or new consumer dependency.
+
+The optional `schema-programs:perf` measurement checks shared programs on a
+1,000-operation fixture, strict source, fresh declarations and actual browser
+bundle calls. Runtime size measurements and their limits are published in the
+[selection cost guide](guide/selection-benchmarks.md#small-api-runtime).
+
 ## Generated-output publication
 
 The dedicated output subsystem owns publication. Target emission streams

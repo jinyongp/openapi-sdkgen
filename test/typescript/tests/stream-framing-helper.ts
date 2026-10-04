@@ -1,14 +1,9 @@
 import { vi } from "vitest";
 import type { Mock } from "vitest";
-import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/internal/http-advanced.js";
-import {
-  jsonWireCodec,
-  type StreamFraming,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
-import {
-  decodeInboundBody,
-  InboundRequestError,
-} from "../../../internal/target/typescript/runtime/server/runtime.js";
+import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/compatibility/http-advanced.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import type { StreamFraming } from "../../../internal/target/typescript/runtime/stream/stream-protocol-types.js";
+import { decodeInboundBody } from "../../../internal/target/typescript/runtime/server/runtime.js";
 
 export type TestedFraming = Extract<
   StreamFraming,

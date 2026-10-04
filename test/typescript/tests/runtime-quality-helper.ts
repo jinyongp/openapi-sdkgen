@@ -1,4 +1,4 @@
-import { decodeResponseStreamItems } from "../../../internal/target/typescript/runtime/internal/streaming.js";
+import { decodeResponseStreamItems } from "../../../internal/target/typescript/runtime/compatibility/streaming.js";
 export async function fragmentedSSE(
   size: number,
   chunkSize: number,

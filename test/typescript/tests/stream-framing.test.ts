@@ -6,9 +6,8 @@ import {
   collectFraming,
   framingItems,
   framingSource,
-  type ChunkedBody,
-  type TestedFraming,
 } from "./stream-framing-helper.js";
+import type { ChunkedBody, TestedFraming } from "./stream-framing-helper.js";
 const encoder: TextEncoder = new TextEncoder();
 const framings: readonly TestedFraming[] = ["line-delimited-json", "json-sequence", "multipart"];
 

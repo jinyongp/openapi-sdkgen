@@ -17,8 +17,12 @@ const (
 // dependency needs come from actual rendering, never from scanning source text.
 // The context is not shared across independent generation or emission calls.
 type wireRenderContext struct {
+	componentNames map[projection]map[string]bool
+	schemaPrograms *schemaRuntimePlan
+	programImports map[string]schemaProgramImport
 	properties     wirePropertiesMode
 	usesProperties bool
+	semanticOnly   bool
 	// Optional semantic observer used by execution planning, never a text parser.
 	execution *executionSchemaFacts
 }

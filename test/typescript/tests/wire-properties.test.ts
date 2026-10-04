@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { wireProperties } from "../../../internal/target/typescript/runtime/internal/wire-properties.js";
-import { createWireProperties } from "../../../internal/target/typescript/runtime/internal/callables.js";
-import type { WireSchema } from "../../../internal/target/typescript/runtime/internal/codecs.js";
-import { wireProperties as emitted } from "../fixtures/generated/lifecycle/internal/runtime/wire-properties.js";
-import { createWireProperties as emittedFacade } from "../fixtures/generated/lifecycle/internal/runtime/callables.js";
+import { wireProperties } from "../../../internal/target/typescript/runtime/schema/wire-properties.js";
+import { createWireProperties } from "../../../internal/target/typescript/runtime/client/callables.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
+import { wireProperties as emitted } from "../fixtures/generated/lifecycle/internal/runtime/schema/wire-properties.js";
+import { createWireProperties as emittedFacade } from "../fixtures/generated/lifecycle/internal/runtime/client/callables.js";
 
 function checkTypes() {
   // @ts-expect-error Keys remain strings rather than arbitrary JSON values.

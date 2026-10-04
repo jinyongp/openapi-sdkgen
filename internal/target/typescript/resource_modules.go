@@ -74,7 +74,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	if err != nil {
 		return nil, err
 	}
-	callablesSpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
+	callablesSpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/callables.ts")
 	if err != nil {
 		return nil, err
 	}

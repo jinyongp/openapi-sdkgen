@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-
 import { buildArtifactTree, findArtifact } from "../../../docs/.vitepress/theme/playground/tree.js";
 
 const artifacts = [

@@ -151,7 +151,7 @@ func verifyResponseStatusSelector(t *testing.T, output string) {
 		sources = append(sources, "{responses:"+wire+",allowed:"+string(data)+"}")
 	}
 	script := `import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
-const {selectResponseDefinition}=await import(pathToFileURL(process.argv[1]+'/internal/runtime/http-execution-support.js'));
+const {selectResponseDefinition}=await import(pathToFileURL(process.argv[1]+'/internal/runtime/http/http-execution-support.js'));
 const fixtures=[` + strings.Join(sources, ",") + `];let comparisons=0;
 for(const fixture of fixtures)for(let status=200;status<300;status++){
  const witnessed=new Set();

@@ -1,10 +1,9 @@
-import type { StreamFraming } from "../internal/wire-types.js";
+import type { StreamFraming } from "../stream/stream-protocol-types.js";
 import type {
   InboundFrameDecoder,
   InboundProtocolDecodeOptions,
   ServerCodecContext,
 } from "./runtime-types.js";
-
 import { InboundRequestError } from "./runtime-errors.js";
 export async function* decodeInboundBuiltInStreamFrames(
   codecContext: ServerCodecContext,

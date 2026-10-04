@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import { TransportErrorCode } from "../../../internal/target/typescript/runtime/internal/errors.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import { TransportErrorCode } from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
 
 const operation: OperationDefinition = {
   route: "GET /headers",

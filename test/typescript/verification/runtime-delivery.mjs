@@ -11,7 +11,8 @@ import { exerciseRuntimeDelivery } from "./runtime-delivery-fixture.mjs";
 import { strictCompilerOptions, assertCheckedSources } from "./strict-options.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const runtimePath = "internal/target/typescript/runtime/internal";
+const baselineRuntimePath = "internal/target/typescript/runtime/internal";
+const runtimePath = "internal/target/typescript/runtime";
 const baselineRef = process.argv[2] ?? "fec52dc85c17969aacdf0edf8de022d0ebd7af80";
 const require = createRequire(new URL("../package.json", import.meta.url));
 const tsPackageFile = require.resolve("typescript/package.json");
@@ -129,11 +130,11 @@ const workloads = [
 function compileSources(kind, baseline) {
   const paths =
     kind === "baseline"
-      ? git("ls-tree", "-r", "--name-only", baseline, "--", runtimePath)
+      ? git("ls-tree", "-r", "--name-only", baseline, "--", baselineRuntimePath)
           .split("\n")
           .filter((name) => name.endsWith(".ts"))
       : fs
-          .readdirSync(path.join(root, runtimePath))
+          .readdirSync(path.join(root, runtimePath), { recursive: true })
           .filter((name) => name.endsWith(".ts"))
           .map((name) => `${runtimePath}/${name}`);
   assert(paths.length > 0, "runtime source inventory must not be empty");
@@ -145,12 +146,20 @@ function compileSources(kind, baseline) {
         ? git("show", `${baseline}:${filename}`) + "\n"
         : fs.readFileSync(path.join(root, filename), "utf8");
     hashes[filename] = hash(source);
-    write(path.join(runDir, kind, "source", path.basename(filename)), source);
+    write(
+      path.join(
+        runDir,
+        kind,
+        "source",
+        kind === "baseline" ? path.basename(filename) : path.relative(runtimePath, filename),
+      ),
+      source,
+    );
   }
   const configFile = path.join(runDir, kind, "tsconfig.json");
   if (kind === "candidate")
     assertCheckedSources(
-      paths.map((name) => path.join(runDir, kind, "source", path.basename(name))),
+      paths.map((name) => path.join(runDir, kind, "source", path.relative(runtimePath, name))),
     );
   write(
     configFile,
@@ -171,7 +180,7 @@ function compileSources(kind, baseline) {
           outDir: "runtime",
           rootDir: "source",
         },
-        include: ["source/*.ts"],
+        include: ["source/**/*.ts"],
       },
       null,
       2,
@@ -197,23 +206,28 @@ function compileSources(kind, baseline) {
 function createEntry(kind, names) {
   const file = path.join(runDir, kind, names.join("-"), "entry.js");
   const compact =
-    kind === "candidate" && fs.existsSync(path.join(runDir, kind, "runtime/http-json.js"));
+    kind === "candidate" &&
+    fs.existsSync(path.join(runDir, kind, "runtime/compatibility/http-json.js"));
   const hasJSON = names.some((name) => name === "get" || name === "post");
   const hasFull = names.includes("stream");
   const hasXML = names.includes("xml");
   const imports = compact
     ? [
-        'import { createRequestContext } from "../runtime/http-core.js";',
-        'import { createRequestCore, createHTTPServices } from "../runtime/http-core.js";',
-        ...(hasJSON ? ['import { jsonWireCodec } from "../runtime/wire-engine.js";'] : []),
+        'import { createRequestContext } from "../runtime/compatibility/http-core.js";',
+        'import { createRequestCore, createHTTPServices } from "../runtime/compatibility/http-core.js";',
+        ...(hasJSON
+          ? ['import { jsonWireCodec } from "../runtime/compatibility/wire-engine.js";']
+          : []),
         ...(hasFull
-          ? ['import { jsonResponseStreamServices } from "../runtime/http-stream.js";']
+          ? [
+              'import { jsonResponseStreamServices } from "../runtime/compatibility/http-stream.js";',
+            ]
           : []),
       ]
     : ['import { createRequest } from "../runtime/http.js";'];
   if (compact && hasXML)
     imports.push(
-      'import { xmlWireCodec, bufferedXMLCodecExtensions } from "../runtime/codecs.js";',
+      'import { xmlWireCodec, bufferedXMLCodecExtensions } from "../runtime/compatibility/codecs.js";',
     );
   let source = imports.join("\n") + "\nexport function createAPIs(options) {\n";
   if (compact) {
@@ -269,7 +283,24 @@ function graph(entry) {
   visit(entry);
   return [...files].sort();
 }
-async function exercise(entry, names) {
+function compareDTO(value, currentPolicy) {
+  if (Array.isArray(value)) return value.map((item) => compareDTO(item, currentPolicy));
+  if (value === null || typeof value !== "object") return value;
+  if (currentPolicy) {
+    assert.equal(Object.getPrototypeOf(value), Object.prototype, "current plain DTO policy");
+    for (const name of Object.keys(value)) {
+      assert.equal(
+        Object.getOwnPropertyDescriptor(value, name).writable,
+        true,
+        "current mutable DTO policy",
+      );
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([name, item]) => [name, compareDTO(item, currentPolicy)]),
+  );
+}
+async function exercise(entry, names, kind) {
   const traces = [];
   const { createAPIs } = await import(pathToFileURL(entry).href);
   const browserFixture = await exerciseRuntimeDelivery(
@@ -354,7 +385,10 @@ async function exercise(entry, names) {
     assert.equal(raw.status, 200);
     assert.equal(raw.data.todoId, "todo-1");
   }
-  return { traces, values };
+  // The historical revision predates the approved plain/mutable DTO policy.
+  // Compare values without prototype differences and check current policy
+  // explicitly; request, error, abort and native/bundle checks remain intact.
+  return { traces, values: compareDTO(values, kind === "candidate") };
 }
 const report = {
   runID,
@@ -375,7 +409,10 @@ try {
     for (const kind of ["baseline", "candidate"]) {
       const entry = createEntry(kind, names);
       const nativeFiles = graph(entry);
-      if (kind === "candidate" && fs.existsSync(path.join(runDir, kind, "runtime/http-json.js"))) {
+      if (
+        kind === "candidate" &&
+        fs.existsSync(path.join(runDir, kind, "runtime/compatibility/http-json.js"))
+      ) {
         assert(
           !nativeFiles.some((file) => /\/(http-advanced|http-codecs)\.js$/.test(file)),
           "Focused fixtures must not load the full media adapter",
@@ -401,7 +438,7 @@ try {
         },
         { raw: 0, brotli5: 0, gzip6: 0 },
       );
-      const result = await exercise(entry, names);
+      const result = await exercise(entry, names, kind);
       if (kind === "baseline") baselineResult = result;
       else assert.deepEqual(result, baselineResult, `${names.join("+")} native differential`);
       const build = await rolldown({
@@ -424,7 +461,7 @@ try {
       const chunks = output.output.filter((item) => item.type === "chunk");
       assert.equal(chunks.length, 1);
       assert.deepEqual(
-        await exercise(path.join(dir, "index.js"), names),
+        await exercise(path.join(dir, "index.js"), names, kind),
         result,
         `${names.join("+")} bundle differential`,
       );
@@ -452,6 +489,8 @@ try {
     }
   }
   report.status = "pass";
+  report.dtoComparison =
+    "Historical prototype differences are normalized; current plain/mutable DTO policy is asserted explicitly.";
   report.scope =
     "Runtime native Node ESM and minified static bundle differential; native bytes are per-file compressed inventory, not HTTP transfer or latency. Separate runtime typecheck is required.";
 } catch (error) {

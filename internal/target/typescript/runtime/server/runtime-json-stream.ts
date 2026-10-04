@@ -1,4 +1,4 @@
-import { DelimitedTextFrames } from "../internal/framing-text.js";
+import { DelimitedTextFrames } from "../stream/framing/framing-text.js";
 import type { ServerCodecContext, InboundProtocolDecodeOptions } from "./runtime-types.js";
 import { InboundRequestError } from "./runtime-errors.js";
 import { awaitInboundAbortable } from "./runtime-shared.js";

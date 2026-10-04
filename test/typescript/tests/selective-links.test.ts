@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { APIError } from "../fixtures/generated/selection-links/internal/runtime/errors.js";
+import { APIError } from "../fixtures/generated/selection-links/internal/runtime/shared/runtime-support.js";
 import * as publicAPI from "../fixtures/generated/selection-links/selective/index.js";
 import {
   createOperationLoader,
   staticOperationReference,
-} from "../fixtures/generated/selection-links/internal/runtime/operation-loader.js";
-import { createSelectedClient } from "../fixtures/generated/selection-links/internal/runtime/selected-client.js";
+} from "../fixtures/generated/selection-links/internal/runtime/client/operation-loader.js";
+import { createSelectedClient } from "../fixtures/generated/selection-links/internal/runtime/client/selected-client.js";
 import { provider as sourceProvider } from "../fixtures/generated/selection-links/internal/executions/source/get.js";
 import { provider as itemProvider } from "../fixtures/generated/selection-links/internal/executions/items/by-id/get.js";
 import { operation as sourceReference } from "../fixtures/generated/selection-links/selective/operations/source/get.js";
 import { operation as itemReference } from "../fixtures/generated/selection-links/selective/operations/items/by-id/get.js";
-import type { OperationExecutionProvider } from "../fixtures/generated/selection-links/internal/runtime/operation-loader.js";
+import type { OperationExecutionProvider } from "../fixtures/generated/selection-links/internal/runtime/client/operation-loader.js";
 import type {
   BaseCall,
   Links,
 } from "../fixtures/generated/selection-links/internal/operations/source/get.js";
-import type { ClientOptions } from "../fixtures/generated/selection-links/internal/runtime/configuration.js";
+import type { ClientOptions } from "../fixtures/generated/selection-links/internal/runtime/http/configuration.js";
 
 type SourceClient = {
   readonly $routes: Record<string, unknown>;

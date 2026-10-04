@@ -8,8 +8,8 @@ import (
 
 func prepareServerComposition(features []runtimeFeature) []byte {
 	var output bytes.Buffer
-	output.WriteString("import { createWireCodec } from '../internal/runtime/wire-core.js'\nimport type { WireCodec } from '../internal/runtime/wire-types.js'\nimport type { ServerCodecContext, ServerBound } from './runtime-types.js'\nimport { bindServerCodec } from './runtime-codecs.js'\nexport type * from './runtime-types.js'\nexport { InboundRequestError } from './runtime-errors.js'\nexport { matchInboundRoute, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs } from './runtime-shared.js'\nexport { requiresInboundAuthentication, collectInboundSecurityCandidates } from './runtime-authentication.js'\n")
-	wire := prepareWireHandlers(features)
+	output.WriteString("import { createProgramCodec } from '../internal/runtime/schema/program-codec.js'\nimport type { WireCodec } from '../internal/runtime/schema/wire-types.js'\nimport type { ServerCodecContext, ServerBound } from './runtime-types.js'\nimport { bindServerCodec } from './runtime-codecs.js'\nexport type * from './runtime-types.js'\nexport { InboundRequestError } from './runtime-errors.js'\nexport { matchInboundRoute, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs } from './runtime-shared.js'\nexport { requiresInboundAuthentication, collectInboundSecurityCandidates } from './runtime-authentication.js'\n")
+	wire := prepareWireHandlers(programHandlerFeatures(features))
 	for _, dependency := range wire.imports {
 		fmt.Fprintf(&output, "import { %s } from '../%s'\n", strings.Join(dependency.names, ", "), strings.TrimSuffix(dependency.path, ".ts")+".js")
 	}
@@ -32,14 +32,14 @@ func prepareServerComposition(features []runtimeFeature) []byte {
 	}
 	xml := contains(".media.xml") || contains(".media.open") || contains(".open-part-media")
 	if xml && has("schema.contentSchema") {
-		output.WriteString("import type { WireSchema, WireSchemas } from '../internal/runtime/wire-types.js'\nimport { isXMLMediaType } from '../internal/runtime/runtime-support.js'\n")
+		output.WriteString("import type { WireSchema, WireSchemas } from '../internal/runtime/schema/wire-types.js'\nimport { isXMLMediaType } from '../internal/runtime/shared/runtime-support.js'\n")
 		for index, field := range fields {
 			if field == "decodeContent: decodeSchemaContent" {
 				fields[index] = "decodeContent: (value: string, schema: WireSchema, schemas: WireSchemas, ignore: boolean | undefined): unknown => decodeSchemaContent(value, schema, schemas, ignore, (source: string, media: string, contract: WireSchema, components: WireSchemas): unknown => { if(isXMLMediaType(media)) return xml.decodeXML(source, contract.contentSchema ?? {}, components); throw new TypeError(`unsupported contentMediaType ${media}`) })"
 			}
 		}
 	}
-	fmt.Fprintf(&output, "const wire: WireCodec = /* @__PURE__ */ createWireCodec({ %s })\n", strings.Join(fields, ", "))
+	fmt.Fprintf(&output, "const wire: WireCodec = /* @__PURE__ */ createProgramCodec({ %s })\n", strings.Join(fields, ", "))
 	context := []string{"wire"}
 	if xml {
 		output.WriteString("import { decodeLegacyXML } from './runtime-legacy-xml.js'\n")
@@ -48,7 +48,7 @@ func prepareServerComposition(features []runtimeFeature) []byte {
 		if has("schema.dynamic") {
 			dynamic = "{ extend: extendDynamicScope, resolve: resolveDynamicReference }"
 		}
-		output.WriteString("import { createXMLCodec } from '../internal/runtime/xml-codec.js'\n")
+		output.WriteString("import { createXMLCodec } from '../internal/runtime/media/xml/xml-codec.js'\n")
 		fmt.Fprintf(&output, "const xml: ReturnType<typeof createXMLCodec> = /* @__PURE__ */ createXMLCodec(wire, %s)\n", dynamic)
 		context = append(context, "xml")
 	}

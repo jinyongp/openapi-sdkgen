@@ -1332,6 +1332,23 @@ func hasVisibleResponseBodies(document *ir.Document) bool {
 }
 
 func (wire *wireRenderContext) operationDefinition(document *ir.Document, irOperation ir.Operation, operation ManifestOperation) (string, error) {
+	if wire.semanticOnly {
+		for _, parameter := range operation.prepared.clientParameters {
+			if _, err := wire.wireSchemaDescriptorForDocument(document, parameter.Schema, projectionInput); err != nil {
+				return "", err
+			}
+		}
+		if _, _, err := wire.operationRequestWireBodies(document, irOperation); err != nil {
+			return "", err
+		}
+		if _, _, err := wire.operationResponseWireBodies(document, irOperation); err != nil {
+			return "", err
+		}
+		if _, _, err := operationSecurityDefinition(document, irOperation); err != nil {
+			return "", err
+		}
+		return "{}", nil
+	}
 	var fields []string
 	fields = append(fields,
 		"route: "+quoteTS(manifestRouteKey(operation)),

@@ -184,7 +184,11 @@ func prepareSecurityHandlers(features []runtimeFeature) runtimeSecurityHandlers 
 func freezeRuntimeHandlerImports(imports map[string]map[string]bool) []runtimeHandlerImport {
 	var result []runtimeHandlerImport
 	for _, source := range sortedRuntimeHandlerKeys(imports) {
-		result = append(result, runtimeHandlerImport{path: "internal/runtime/" + source + ".ts", names: sortedStringKeys(imports[source])})
+		artifact := "internal/runtime/" + source + ".ts"
+		if !strings.Contains(source, "/") {
+			artifact = runtimeTemplatePath(source + ".ts")
+		}
+		result = append(result, runtimeHandlerImport{path: artifact, names: sortedStringKeys(imports[source])})
 	}
 	return result
 }

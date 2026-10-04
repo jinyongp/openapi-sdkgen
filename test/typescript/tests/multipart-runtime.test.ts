@@ -1,13 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
-
-import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/internal/http-advanced.js";
-import { jsonWireCodec } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
-import type {
-  MediaCodec,
-  WireBodyDefinition,
-  WireSchema,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/compatibility/http-advanced.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import type { MediaCodec } from "../../../internal/target/typescript/runtime/media/media-codec-types.js";
+import type { WireBodyDefinition } from "../../../internal/target/typescript/runtime/media/media-contract-types.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 const services = createAdvancedHTTPServices(() => {
   throw new Error("base HTTP services are not used by multipart codec tests");

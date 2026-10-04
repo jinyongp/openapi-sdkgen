@@ -3,6 +3,9 @@ profile = 'openapi-sdkgen'
 [commands."selection:perf"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\"", "sdkgen", "test/typescript/verification/selection-benchmark.mjs"]
 
+[commands."schema-programs:perf"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/perf/schema-programs.sh']
+
 # Local commands select this worktree and its toolchain. CI prepares the
 # toolchain and calls the same scripts directly. Each name is COMMAND:TARGET; the operation comes first.
 

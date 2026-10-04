@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { jsonWireCodec } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
 import { fragmentedSSE } from "./runtime-quality-helper.js";
 
 const perfIt = process.env.OPENAPI_SDKGEN_QUALITY_PERF === "1" ? it : it.skip;

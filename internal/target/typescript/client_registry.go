@@ -14,15 +14,15 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	artifact := plan.fixed["client-registry"]
-	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/callables.ts")
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/client/callables.ts")
 	if err != nil {
 		return nil, err
 	}
-	codecs, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/wire-types.ts")
+	codecs, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/schema/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}
-	objects, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/objects.ts")
+	objects, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/shared/objects.ts")
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 )
 
 type webhookDefinition struct {
+	programImports     map[string]schemaProgramImport
 	runtimeFacts       executionSchemaFacts
 	name               string
 	property           string
@@ -30,6 +31,7 @@ type webhookDefinition struct {
 }
 
 type callbackDefinition struct {
+	programImports     map[string]schemaProgramImport
 	runtimeFacts       executionSchemaFacts
 	name               string
 	sourceRouteKey     string
@@ -74,12 +76,12 @@ func emitPreparedServerArtifacts(document *ir.Document, webhooks []webhookDefini
 	return emitPreparedServerArtifactsWithTemplates(document, webhooks, callbacks, composition, serverRuntimeTemplateNames)
 }
 
-func emitPreparedServerArtifactsWithTemplates(document *ir.Document, webhooks []webhookDefinition, callbacks []callbackDefinition, compositions map[string][]byte, templates []string) ([]Artifact, error) {
-	webhookSource, err := emitWebhooks(document, webhooks)
+func emitPreparedServerArtifactsWithTemplates(document *ir.Document, webhooks []webhookDefinition, callbacks []callbackDefinition, compositions map[string][]byte, templates []string, programs ...*schemaRuntimePlan) ([]Artifact, error) {
+	webhookSource, err := emitWebhooks(document, webhooks, programs...)
 	if err != nil {
 		return nil, err
 	}
-	callbackSource, err := emitCallbacks(document, callbacks)
+	callbackSource, err := emitCallbacks(document, callbacks, programs...)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +113,8 @@ func emittedServerRuntimeSource() []byte {
 }
 
 func rewriteServerRuntimeImports(source []byte) []byte {
-	source = bytes.ReplaceAll(source, []byte(`"../internal/`), []byte(`"../internal/runtime/`))
-	return bytes.ReplaceAll(source, []byte(`'../internal/`), []byte(`'../internal/runtime/`))
+	source = bytes.ReplaceAll(source, []byte(`"../`), []byte(`"../internal/runtime/`))
+	return bytes.ReplaceAll(source, []byte(`'../`), []byte(`'../internal/runtime/`))
 }
 
 func collectCallbacks(document *ir.Document) ([]callbackDefinition, error) {
@@ -123,7 +125,7 @@ func collectCallbacks(document *ir.Document) ([]callbackDefinition, error) {
 	return result, nil
 }
 
-func collectCallbacksDiagnostics(document *ir.Document, omitted map[string]bool) ([]callbackDefinition, []error) {
+func collectCallbacksDiagnostics(document *ir.Document, omitted map[string]bool, programs ...*schemaRuntimePlan) ([]callbackDefinition, []error) {
 	result := make([]callbackDefinition, 0)
 	var failures []error
 	for _, operation := range document.Operations {
@@ -133,7 +135,7 @@ func collectCallbacksDiagnostics(document *ir.Document, omitted map[string]bool)
 		callbacks, _ := operation.Raw["callbacks"].(map[string]any)
 		for _, callbackName := range sortedAnyKeys(callbacks) {
 			value := map[string]any{callbackName: callbacks[callbackName]}
-			definitions, callbackFailures := collectCallbackMapDiagnostics(document, value, openAPIPointer("paths", operation.Path, strings.ToLower(operation.Method), "callbacks"), operationRouteKey(operation), operation.OperationID, "")
+			definitions, callbackFailures := collectCallbackMapDiagnostics(document, value, openAPIPointer("paths", operation.Path, strings.ToLower(operation.Method), "callbacks"), operationRouteKey(operation), operation.OperationID, "", programs...)
 			failures = append(failures, callbackFailures...)
 			result = append(result, definitions...)
 		}
@@ -142,7 +144,7 @@ func collectCallbacksDiagnostics(document *ir.Document, omitted map[string]bool)
 	componentCallbacks, _ := components["callbacks"].(map[string]any)
 	for _, componentName := range sortedAnyKeys(componentCallbacks) {
 		value := map[string]any{componentName: componentCallbacks[componentName]}
-		definitions, callbackFailures := collectCallbackMapDiagnostics(document, value, openAPIPointer("components", "callbacks"), "", "", componentName)
+		definitions, callbackFailures := collectCallbackMapDiagnostics(document, value, openAPIPointer("components", "callbacks"), "", "", componentName, programs...)
 		failures = append(failures, callbackFailures...)
 		result = append(result, definitions...)
 	}
@@ -158,7 +160,7 @@ func collectCallbackMap(document *ir.Document, values map[string]any, path, sour
 	return result, nil
 }
 
-func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any, path, sourceRouteKey, sourceOperationID, componentName string) ([]callbackDefinition, []error) {
+func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any, path, sourceRouteKey, sourceOperationID, componentName string, programs ...*schemaRuntimePlan) ([]callbackDefinition, []error) {
 	names := sortedAnyKeys(values)
 	result := make([]callbackDefinition, 0, len(names))
 	var failures []error
@@ -190,6 +192,9 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 				}
 				operationPath := appendOpenAPIPointer(appendOpenAPIPointer(appendOpenAPIPointer(path, name), expression), item.key)
 				wire := newWireRenderContext(wirePropertiesConstructed)
+				if len(programs) > 0 {
+					wire.schemaPrograms = programs[0]
+				}
 				facts := executionSchemaFacts{}
 				wire.execution = &facts
 				parameters, paramsType, parameterErr := wire.inboundParameterDefinitions(document, resolvedPathItem, operation, operationPath, true)
@@ -216,7 +221,7 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 					name: appendOpenAPIPointer(path, name), sourceRouteKey: sourceRouteKey, sourceOperationID: sourceOperationID, componentName: componentName, callbackName: name,
 					expression: expression, operationID: operationID, method: method,
 					bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType,
-					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts,
+					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, programImports: wire.programImports,
 				})
 			}
 		}
@@ -484,13 +489,23 @@ func inboundResponseHeaderValuesType(document *ir.Document, response map[string]
 	return "Readonly<{ " + strings.Join(fields, "; ") + " }>", nil
 }
 
-func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byte, error) {
+func emitCallbacks(document *ir.Document, callbacks []callbackDefinition, programs ...*schemaRuntimePlan) ([]byte, error) {
 	planned, err := planCallbackIdentifiers(callbacks)
 	if err != nil {
 		return nil, err
 	}
 	callbacks = planned
 	wire := newWireRenderContext(wirePropertiesConstructed)
+	if len(programs) > 0 && programs[0] != nil {
+		wire.schemaPrograms = programs[0]
+		wire.componentNames = programs[0].kindComponents["callback"]
+	}
+	wire.programImports = make(map[string]schemaProgramImport)
+	for _, definition := range callbacks {
+		for target, dependency := range definition.programImports {
+			wire.programImports[target] = dependency
+		}
+	}
 	for _, definition := range callbacks {
 		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
 	}
@@ -502,10 +517,15 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 		return nil, err
 	}
 	var output bytes.Buffer
+	programImports, err := wire.programImportSource("server/callbacks.ts")
+	if err != nil {
+		return nil, err
+	}
+	output.WriteString(programImports)
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
-	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/wire-types.js\"\n")
+	output.WriteString("import type { WireSchemas } from \"../internal/runtime/schema/wire-types.js\"\nimport type { MediaCodec } from \"../internal/runtime/media/media-codec-types.js\"\nimport type { StreamCodec } from \"../internal/runtime/stream/stream-protocol-types.js\"\n")
 	if len(callbacks) > 0 && wire.usesProperties {
-		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
+		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/schema/wire-properties.js\"\n")
 	}
 	if len(callbacks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
@@ -513,7 +533,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition) ([]byt
 	output.WriteString("\n")
 	if len(callbacks) > 0 {
 		output.WriteString("interface CallbackDefinition { readonly operationID: string; readonly method: string; readonly parameters: readonly InboundParameterDefinition[]; readonly responses: readonly import(\"./runtime.js\").InboundResponseDefinition[]; readonly security: unknown }\n")
-		if err := emitInboundSchemas(&output, document); err != nil {
+		if err := emitInboundSchemas(&output, document, wire.componentNames); err != nil {
 			return nil, err
 		}
 		output.Write(wireComponents.Bytes())
@@ -662,7 +682,7 @@ func collectWebhooks(document *ir.Document) ([]webhookDefinition, error) {
 	return result, nil
 }
 
-func collectWebhooksDiagnostics(document *ir.Document) ([]webhookDefinition, []error) {
+func collectWebhooksDiagnostics(document *ir.Document, programs ...*schemaRuntimePlan) ([]webhookDefinition, []error) {
 	values, _ := document.Raw["webhooks"].(map[string]any)
 	names := sortedAnyKeys(values)
 	result := make([]webhookDefinition, 0, len(names))
@@ -673,7 +693,7 @@ func collectWebhooksDiagnostics(document *ir.Document) ([]webhookDefinition, []e
 			failures = append(failures, fmt.Errorf("%s must be a Path Item Object", openAPIPointer("webhooks", name)))
 			continue
 		}
-		definitions, webhookFailures := collectWebhookDiagnostics(document, name, item)
+		definitions, webhookFailures := collectWebhookDiagnostics(document, name, item, programs...)
 		failures = append(failures, webhookFailures...)
 		result = append(result, definitions...)
 	}
@@ -694,7 +714,7 @@ func collectWebhook(document *ir.Document, name string, item map[string]any) ([]
 	return result, nil
 }
 
-func collectWebhookDiagnostics(document *ir.Document, name string, item map[string]any) ([]webhookDefinition, []error) {
+func collectWebhookDiagnostics(document *ir.Document, name string, item map[string]any, programs ...*schemaRuntimePlan) ([]webhookDefinition, []error) {
 	operations, resolvedItem, failures := serverPathItemOperationsDiagnostics(document, item, openAPIPointer("webhooks", name))
 	result := make([]webhookDefinition, 0, len(operations))
 	for _, itemOperation := range operations {
@@ -702,6 +722,9 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		operation := itemOperation.operation
 		operationPath := openAPIPointer("webhooks", name, itemOperation.key)
 		wire := newWireRenderContext(wirePropertiesConstructed)
+		if len(programs) > 0 {
+			wire.schemaPrograms = programs[0]
+		}
 		facts := executionSchemaFacts{}
 		wire.execution = &facts
 		parameters, paramsType, parameterErr := wire.inboundParameterDefinitions(document, resolvedItem, operation, operationPath, true)
@@ -731,7 +754,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		methodName := method
 		result = append(result, webhookDefinition{
 			name: name, property: name, operationID: operationID,
-			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts,
+			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, programImports: wire.programImports,
 		})
 	}
 	return result, failures
@@ -997,13 +1020,20 @@ func (definition webhookDefinition) bodyPlansOrEmpty() string {
 	return definition.bodyPlans
 }
 
-func emitInboundSchemas(output *bytes.Buffer, document *ir.Document) error {
+func emitInboundSchemas(output *bytes.Buffer, document *ir.Document, selected ...map[projection]map[string]bool) error {
 	values := make(map[string]any, len(document.ComponentSchemas)+len(document.Schemas))
 	for name, schema := range document.ComponentSchemas {
 		values[name] = schema
 	}
 	for name, schema := range document.Schemas {
 		values[name] = schema.Value
+	}
+	if len(selected) > 0 && selected[0] != nil {
+		for name := range values {
+			if !selected[0][projectionInput][name] && !selected[0][projectionOutput][name] {
+				delete(values, name)
+			}
+		}
 	}
 	schemas, err := runtimeJSONExpression(values)
 	if err != nil {
@@ -1048,13 +1078,23 @@ func emitInboundSecuritySchemes(output *bytes.Buffer, document *ir.Document, sec
 	return nil
 }
 
-func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, error) {
+func emitWebhooks(document *ir.Document, webhooks []webhookDefinition, programs ...*schemaRuntimePlan) ([]byte, error) {
 	planned, err := planWebhookIdentifiers(webhooks)
 	if err != nil {
 		return nil, err
 	}
 	webhooks = planned
 	wire := newWireRenderContext(wirePropertiesConstructed)
+	if len(programs) > 0 && programs[0] != nil {
+		wire.schemaPrograms = programs[0]
+		wire.componentNames = programs[0].kindComponents["webhook"]
+	}
+	wire.programImports = make(map[string]schemaProgramImport)
+	for _, definition := range webhooks {
+		for target, dependency := range definition.programImports {
+			wire.programImports[target] = dependency
+		}
+	}
 	for _, definition := range webhooks {
 		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
 	}
@@ -1066,10 +1106,15 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 		return nil, err
 	}
 	var output bytes.Buffer
+	programImports, err := wire.programImportSource("server/webhooks.ts")
+	if err != nil {
+		return nil, err
+	}
+	output.WriteString(programImports)
 	output.WriteString("import { collectInboundSecurityCandidates, decodeInboundBody, decodeInboundParameters, matchInboundRoute, InboundRequestError, normalizeInboundMediaCodecs, normalizeInboundStreamCodecs, requiresInboundAuthentication, responseFromHandler, type Authenticate, type InboundParameterValues, type InboundRequestContext, type InboundResponse, type InboundParameterDefinition, type InboundSchemas, type InboundSecuritySchemes } from \"./runtime.js\"\n")
-	output.WriteString("import type { MediaCodec, StreamCodec, WireSchemas } from \"../internal/runtime/wire-types.js\"\n")
+	output.WriteString("import type { WireSchemas } from \"../internal/runtime/schema/wire-types.js\"\nimport type { MediaCodec } from \"../internal/runtime/media/media-codec-types.js\"\nimport type { StreamCodec } from \"../internal/runtime/stream/stream-protocol-types.js\"\n")
 	if len(webhooks) > 0 && wire.usesProperties {
-		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/wire-properties.js\"\n")
+		output.WriteString("import { wireProperties as __sdkgen_Properties } from \"../internal/runtime/schema/wire-properties.js\"\n")
 	}
 	if len(webhooks) > 0 {
 		output.WriteString("import type * as Contract from \"../internal/schemas/index.js\"\n")
@@ -1077,7 +1122,7 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition) ([]byte, 
 	output.WriteString("\n")
 	if len(webhooks) > 0 {
 		output.WriteString("interface WebhookDefinition { readonly operationID: string; readonly method: string; readonly parameters: readonly InboundParameterDefinition[]; readonly responses: readonly import(\"./runtime.js\").InboundResponseDefinition[]; readonly security: unknown; readonly requestBodyPlans: readonly import(\"./runtime.js\").InboundBodyPlan[]; readonly requestBodyRequired: boolean }\n")
-		if err := emitInboundSchemas(&output, document); err != nil {
+		if err := emitInboundSchemas(&output, document, wire.componentNames); err != nil {
 			return nil, err
 		}
 		output.Write(wireComponents.Bytes())

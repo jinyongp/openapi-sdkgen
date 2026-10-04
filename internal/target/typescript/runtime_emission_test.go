@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"bytes"
+	"encoding/json"
 	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/generator"
 	"os/exec"
@@ -68,6 +69,7 @@ func TestRuntimeFeatureEmissionRegression(t *testing.T) {
 		value, _ := plan.Value("typescript")
 		prepared := value.(*sourcePlan)
 		before := append([]runtimeTemplateArtifact(nil), prepared.runtimeArtifacts...)
+		programsBefore := schemaProgramsSnapshot(t, prepared.schemaPrograms)
 		artifacts, err := target.Emit(plan)
 		if err != nil {
 			t.Fatal(err)
@@ -92,12 +94,21 @@ func TestRuntimeFeatureEmissionRegression(t *testing.T) {
 		if !reflect.DeepEqual(before, prepared.runtimeArtifacts) {
 			t.Fatal("emission changed the prepared runtime closure")
 		}
-		_, xml := emitted["internal/runtime/xml-codec.ts"]
+		if !bytes.Equal(programsBefore, schemaProgramsSnapshot(t, prepared.schemaPrograms)) {
+			t.Fatal("Emit/EmitTo changed the frozen schema program registry")
+		}
+		if _, err := prepared.schemaPrograms.lower(map[string]any{"const": "unprepared contract"}, projectionInput, false, false, false, nil); err == nil {
+			t.Fatal("sealed schema registry accepted a contract absent from preparation")
+		}
+		if !bytes.Equal(programsBefore, schemaProgramsSnapshot(t, prepared.schemaPrograms)) {
+			t.Fatal("rejected contract changed prepared programs")
+		}
+		_, xml := emitted["internal/runtime/media/xml/xml-codec.ts"]
 		if xml == selected {
 			t.Fatalf("XML artifact inclusion selected=%t xml=%t", selected, xml)
 		}
 		for _, name := range []string{"security-basic", "wire-format-date", "http-multipart-request", "stream-sse", "links", "pagination"} {
-			if emitted["internal/runtime/"+name+".ts"] != nil {
+			if emitted[runtimeTemplatePath(name+".ts")] != nil {
 				t.Fatalf("unused runtime artifact %s", name)
 			}
 		}
@@ -134,4 +145,32 @@ func TestRuntimeFeatureEmissionRegression(t *testing.T) {
 		t.Fatal("JSON webhook did not use its narrow composition")
 	}
 	compileTypeScriptArtifactSet(t, withServer, "consumer.ts", `import {createWebhookRouter} from './server/webhooks.js'; import {decodeInboundBody} from './server/runtime.js';void createWebhookRouter;void decodeInboundBody;`)
+}
+
+func schemaProgramsSnapshot(t *testing.T, programs *schemaRuntimePlan) []byte {
+	t.Helper()
+	if programs == nil || !programs.sealed {
+		t.Fatal("schema programs were not frozen during preparation")
+	}
+	modules := make(map[string][]byte, len(programs.modules))
+	descriptors := make(map[string]map[wirePropertiesMode]string, len(programs.modules))
+	for _, module := range programs.modules {
+		modules[module.path] = append([]byte(nil), module.source...)
+	}
+	for node, binding := range programs.owners {
+		identity, err := schemaSemanticKey(node, "snapshot", false, false, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		descriptors[identity] = binding.descriptors
+	}
+	data, err := json.Marshal(struct {
+		Nodes       int
+		Modules     map[string][]byte
+		Descriptors map[string]map[wirePropertiesMode]string
+	}{len(programs.nodes), modules, descriptors})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }

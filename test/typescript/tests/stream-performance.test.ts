@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-
-import type { WireSchema } from "../../../internal/target/typescript/runtime/internal/codecs.js";
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-
-import {
-  streamPerformanceBaseline,
-  type StreamPerformanceMetric,
-} from "./stream-performance-baseline.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import { streamPerformanceBaseline } from "./stream-performance-baseline.js";
+import type { StreamPerformanceMetric } from "./stream-performance-baseline.js";
 
 const perfIt = process.env.OPENAPI_SDKGEN_STREAM_PERF === "1" ? it : it.skip;
 

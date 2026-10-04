@@ -325,7 +325,7 @@ func TestSourceArtifactsEmitsNegatedSchemaAssertion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if source := schemaWireSource(artifacts); !strings.Contains(source, `not: { constValue: "forbidden" }`) {
+	if source := schemaWireSource(artifacts); !strings.Contains(source, `not: { constValue: "forbidden", program:`) {
 		t.Fatalf("negated schema descriptor missing:\n%s", source)
 	}
 }

@@ -67,12 +67,22 @@ type executionSchemaNode struct {
 // dialect and resource identity are those of that immutable lowered document.
 // Partial visiting states are never cached as completed transitive summaries.
 type executionPlanner struct {
-	document *ir.Document
-	schemas  map[executionSchemaReference]*executionSchemaNode
+	document       *ir.Document
+	schemas        map[executionSchemaReference]*executionSchemaNode
+	closures       map[string]executionSchemaClosure
+	singleClosures map[executionSchemaReference]executionSchemaClosure
+	components     map[executionSchemaReference]executionSchemaReference
+}
+
+// A completed closure belongs to the immutable document. Inline capabilities
+// are added by the caller and do not change the referenced component closure.
+type executionSchemaClosure struct {
+	capabilities  executionSchemaCapabilities
+	input, output []string
 }
 
 func newExecutionPlanner(document *ir.Document) *executionPlanner {
-	return &executionPlanner{document: document, schemas: make(map[executionSchemaReference]*executionSchemaNode)}
+	return &executionPlanner{document: document, schemas: make(map[executionSchemaReference]*executionSchemaNode), closures: make(map[string]executionSchemaClosure), singleClosures: make(map[executionSchemaReference]executionSchemaClosure), components: make(map[executionSchemaReference]executionSchemaReference)}
 }
 
 type operationExecutionPlan struct {
@@ -90,6 +100,27 @@ type operationExecutionPlan struct {
 }
 
 func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (executionSchemaCapabilities, []string, []string, error) {
+	var root executionSchemaReference
+	var key string
+	var cached executionSchemaClosure
+	var exists bool
+	if len(facts.references) == 1 {
+		for reference := range facts.references {
+			root = reference
+		}
+		canonical := root
+		if component, complete := planner.components[root]; complete {
+			canonical = component
+		}
+		cached, exists = planner.singleClosures[canonical]
+	} else {
+		key = planner.schemaClosureIdentity(facts.references)
+		cached, exists = planner.closures[key]
+	}
+	if exists {
+		closure := cached
+		return closure.capabilities | facts.capabilities, closure.input, closure.output, nil
+	}
 	queue := sortedExecutionReferences(facts.references)
 	seen := make(map[executionSchemaReference]bool)
 	changed := make([]executionSchemaReference, 0)
@@ -119,6 +150,7 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 				}
 			}
 			wire := newWireRenderContext(wirePropertiesConstructed)
+			wire.semanticOnly = true
 			wire.execution = &node.facts
 			if _, err := wire.wireSchemaDescriptorForDocument(planner.document, schema, key.direction); err != nil {
 				return 0, nil, nil, err
@@ -161,7 +193,7 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 			}
 		}
 	}
-	capabilities := facts.capabilities
+	capabilities := executionSchemaCapabilities(0)
 	input, output := make(map[string]bool), make(map[string]bool)
 	for key := range seen {
 		capabilities |= planner.schemas[key].capabilities
@@ -171,7 +203,14 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 			output[key.name] = true
 		}
 	}
-	return capabilities, sortedStringKeys(input), sortedStringKeys(output), nil
+	closure := executionSchemaClosure{capabilities: capabilities, input: sortedStringKeys(input), output: sortedStringKeys(output)}
+	planner.indexSchemaComponents(seen)
+	if len(facts.references) == 1 {
+		planner.singleClosures[planner.components[root]] = closure
+	} else {
+		planner.closures[planner.schemaClosureIdentity(facts.references)] = closure
+	}
+	return capabilities | facts.capabilities, closure.input, closure.output, nil
 }
 
 // prepareOperationExecutions resolves every emitted operation before output
@@ -226,6 +265,7 @@ func executionXMLMedia(value string) bool {
 
 func (planner *executionPlanner) operation(operation ir.Operation, item ManifestOperation, hasStream bool) (operationExecutionPlan, error) {
 	wire := newWireRenderContext(wirePropertiesConstructed)
+	wire.semanticOnly = true
 	facts := executionSchemaFacts{}
 	wire.execution = &facts
 	// This is the same semantic lowering used by the operation binder. Its text

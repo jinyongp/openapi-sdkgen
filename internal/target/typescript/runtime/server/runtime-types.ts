@@ -1,16 +1,10 @@
-import type {
-  MediaCodec,
-  StreamCodec,
-  StreamContext,
-  StreamFraming,
-  WireCodec,
-  WireEncodingDefinition,
-  WireHeaderDefinition,
-  WireSchema,
-  WireSchemas,
-} from "../internal/wire-types.js";
-import type { Mutable } from "../internal/objects.js";
-import type { XMLCodec } from "../internal/xml-types.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
+import type { StreamCodec, StreamContext, StreamFraming } from "../stream/stream-protocol-types.js";
+import type { WireCodec, WireSchema, WireSchemas } from "../schema/wire-types.js";
+import type { WireEncodingDefinition } from "../media/media-contract-types.js";
+import type { WireHeaderDefinition } from "../media/media-contract-types.js";
+import type { Mutable } from "../shared/runtime-support.js";
+import type { XMLCodec } from "../media/xml/xml-types.js";
 
 /** Metadata provided to host-owned inbound authentication policy. */
 export interface InboundRequestContext {
@@ -189,12 +183,31 @@ export type RequiredStreamSignal = {
 export interface ServerCodecContext {
   readonly wire: WireCodec;
   readonly xml?: XMLCodec;
-  readonly decodeLegacyXML?: typeof import("./runtime-legacy-xml.js").decodeLegacyXML;
-  readonly decodeFormValue?: typeof import("./runtime-parameters.js").decodeInboundFormValue;
+  readonly decodeLegacyXML?: InboundLegacyXMLDecoder;
+  readonly decodeFormValue?: InboundFormDecoder;
   readonly frames?: Readonly<
     Partial<Record<Exclude<StreamFraming, "custom">, InboundFrameDecoder>>
   >;
 }
+export type InboundLegacyXMLDecoder = (
+  codecContext: ServerCodecContext,
+  source: string,
+  schema: InboundSchema | undefined,
+  schemas: InboundSchemas,
+  wireSchema?: WireSchema,
+  wireSchemas?: WireSchemas,
+) => unknown;
+export type InboundFormDecoder = (
+  codecContext: ServerCodecContext,
+  value: unknown,
+  schema: InboundSchema | undefined,
+  schemas: InboundSchemas,
+  wireSchema?: WireSchema,
+  wireSchemas?: WireSchemas,
+  encoding?: readonly WireEncodingDefinition[],
+  contentType?: string,
+  codecs?: ReadonlyMap<string, MediaCodec<unknown>>,
+) => Promise<unknown>;
 export type InboundFrameDecoder = (
   codecContext: ServerCodecContext,
   body: ReadableStream<Uint8Array>,

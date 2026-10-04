@@ -5,8 +5,8 @@ import {
   collectFraming,
   framingItems,
   framingSource,
-  type TestedFraming,
 } from "./stream-framing-helper.js";
+import type { TestedFraming } from "./stream-framing-helper.js";
 import { referenceFramingItems } from "./stream-framing-reference.js";
 
 const perfIt: typeof it.skip = process.env.OPENAPI_SDKGEN_STREAM_PERF === "1" ? it : it.skip;

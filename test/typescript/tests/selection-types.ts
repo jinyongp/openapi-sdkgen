@@ -1,4 +1,3 @@
-// Compile-only contract checks, also copied into strict source and d.ts-only consumers.
 import type {
   GuaranteedSelection,
   OperationReference,
@@ -6,7 +5,7 @@ import type {
   PossibleSelection,
   SelectedOperationCalls,
   SelectionInput,
-} from "../fixtures/generated/lifecycle/internal/runtime/selection-types.js";
+} from "../fixtures/generated/lifecycle/internal/runtime/client/selection-types.js";
 import type { BaseCall as Echo } from "../fixtures/generated/lifecycle/internal/operations/inline/post.js";
 import type {
   BaseCall as Events,

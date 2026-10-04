@@ -104,7 +104,7 @@ func TestSelectionScopeIncludesNamedOnlyProviders(t *testing.T) {
 		script := `import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
 const load=file=>import(pathToFileURL(process.argv[1]+'/'+file));
 const selective=await load('selective/index.js');
-const runtime=await load('internal/runtime/operation-loader.js');
+const runtime=await load('internal/runtime/client/operation-loader.js');
 const namedOnly=await load('internal/executions/unused/get.js');
 for(const ref of [runtime.staticOperationReference(namedOnly.provider),selective.routes['GET /unused']]){
   await assert.rejects(selective.loadOperations([ref]),{stage:'INPUT'});

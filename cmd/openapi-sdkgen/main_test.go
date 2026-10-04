@@ -600,7 +600,7 @@ func TestGenerateWritesTypeScriptSourceTree(t *testing.T) {
 	if err := run([]string{"generate", "--input", input, "--target", "typescript", "--output", output}); err != nil {
 		t.Fatal(err)
 	}
-	for _, expected := range []string{"index.ts", "metadata.ts", "internal/schemas/index.ts", "internal/schemas/wire.ts", "internal/client/index.ts", "internal/client/factory.ts", "internal/client/types.ts", "internal/resources/root.ts", "internal/routes/index.ts", "internal/errors.ts", "internal/index.ts", "internal/runtime/errors.ts", "internal/runtime/http-request-core.ts", "internal/runtime/http-basic.ts"} {
+	for _, expected := range []string{"index.ts", "metadata.ts", "internal/schemas/index.ts", "internal/schemas/wire.ts", "internal/client/index.ts", "internal/client/factory.ts", "internal/client/types.ts", "internal/resources/root.ts", "internal/routes/index.ts", "internal/errors.ts", "internal/index.ts", "internal/runtime/client/errors.ts", "internal/runtime/http/request/http-request-core.ts", "internal/runtime/http/request/http-basic.ts"} {
 		if _, err := os.Stat(filepath.Join(output, expected)); err != nil {
 			t.Fatalf("missing %s: %v", expected, err)
 		}

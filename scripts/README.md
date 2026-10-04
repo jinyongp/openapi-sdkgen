@@ -52,6 +52,13 @@ commands also need the project's Node version and Corepack.
 Reports name their output paths. Local logs remain under `.tmp/runs` until the
 owner removes them; CI uploads failure diagnostics with seven-day retention.
 
+`devtools run schema-programs:perf [OUTPUT] [BASELINE_SOURCE]` measures 1,000 APIs
+and a 10-route selection using shared schemas and a private Link target. It checks
+strict generated source, fresh declarations, actual browser bundle calls and
+named-client program sharing. The optional captured source tree builds a before
+generator under the same toolchain. Three generation trials and one compiler
+trial report time and peak RSS; they do not impose size or timing thresholds.
+
 Use `--help` to check arguments, side effects, and output paths. `--verbose`
 requests full redacted output for one invocation and warns on stderr before
 work starts. Prefer the default command for routine work.

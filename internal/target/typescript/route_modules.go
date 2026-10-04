@@ -94,11 +94,11 @@ func emitRouteInputs(manifest Manifest, plan *semanticModulePlan) ([]byte, error
 }
 
 func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
-	request, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/request.ts")
+	request, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/http/request.ts")
 	if err != nil {
 		return nil, err
 	}
-	identity, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/identity.ts")
+	identity, err := plan.relativeModuleSpecifier(plan.fixed["route-helpers"], "internal/runtime/shared/identity.ts")
 	if err != nil {
 		return nil, err
 	}

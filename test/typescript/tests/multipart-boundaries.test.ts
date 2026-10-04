@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-
-import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/internal/http-advanced.js";
-import { jsonWireCodec } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
-import type { HTTPStreamDecodeOptions } from "../../../internal/target/typescript/runtime/internal/http-types.js";
+import { createAdvancedHTTPServices } from "../../../internal/target/typescript/runtime/compatibility/http-advanced.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import type { HTTPStreamDecodeOptions } from "../../../internal/target/typescript/runtime/media/media-service-types.js";
 
 const services = createAdvancedHTTPServices(() => {
   throw new Error("multipart codecs must not execute an HTTP request");

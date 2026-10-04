@@ -16,6 +16,12 @@ and asserted-format handlers. Request bodies, response bodies, headers,
 parameters, schema references, and private Link targets all contribute to this
 decision. Schema validation remains enabled for every declared constraint.
 
+The generator also emits validation and DTO transformation for each prepared
+schema contract. Ordinary JSON uses direct type, bound, length and property
+checks; advanced contracts connect their required shared operators. Equivalent
+contracts share programs across operations and named clients. The generic schema
+interpreter is retained for explicitly imported arbitrary-schema helpers.
+
 Buffered JSON APIs with schema-based path and query parameters automatically use
 a smaller HTTP implementation. Query serializers are generated only when a
 contract declares query parameters. Content-based parameters, typed header or

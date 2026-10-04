@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createClient } from "../fixtures/generated/execution-media/index.js";
-import { createRequestContext } from "../fixtures/generated/execution-media/internal/runtime/http-execution-support.js";
+import { createRequestContext } from "../fixtures/generated/execution-media/internal/runtime/http/http-execution-support.js";
 import { provider as json } from "../fixtures/generated/execution-media/internal/executions/json/post.js";
 import { provider as xml } from "../fixtures/generated/execution-media/internal/executions/xml/post.js";
 import { provider as header } from "../fixtures/generated/execution-media/internal/executions/header/get.js";
@@ -13,7 +13,7 @@ import { provider as nested } from "../fixtures/generated/execution-media/intern
 import { provider as error } from "../fixtures/generated/execution-media/internal/executions/error/get.js";
 import { provider as custom } from "../fixtures/generated/execution-media/internal/executions/custom/get.js";
 import { provider as idless } from "../fixtures/generated/execution-media/internal/executions/plain/get.js";
-import type { ClientOptions } from "../fixtures/generated/execution-media/internal/runtime/configuration.js";
+import type { ClientOptions } from "../fixtures/generated/execution-media/internal/runtime/http/configuration.js";
 
 const item = { id: "one", count: 2 };
 const xmlBody = "<item><count>2</count><id>one</id></item>";

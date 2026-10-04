@@ -4,8 +4,8 @@ import {
   decodeWireValue,
   encodeXML,
   encodeWireValue,
-  type WireSchema,
-} from "../../../internal/target/typescript/runtime/internal/codecs.js";
+} from "../../../internal/target/typescript/runtime/compatibility/codecs.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 const catalogSchema: WireSchema = {
   types: ["object"],

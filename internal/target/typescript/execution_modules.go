@@ -24,18 +24,18 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		fmt.Fprintf(&output, "import %s from %s\n", clause, quoteTS(specifier))
 		return nil
 	}
-	if err := importFrom("type { RequestContext }", "internal/runtime/http-types.ts"); err != nil {
+	if err := importFrom("type { RequestContext }", "internal/runtime/http/http-types.ts"); err != nil {
 		return nil, err
 	}
 	requestType := "BufferedRequestFunction"
 	if execution.hasStream {
 		requestType = "RequestFunction"
 	}
-	if err := importFrom("type { "+requestType+" }", "internal/runtime/callables.ts"); err != nil {
+	if err := importFrom("type { "+requestType+" }", "internal/runtime/client/callables.ts"); err != nil {
 		return nil, err
 	}
 	binders := []string{"bindBase", "type BaseCall"}
-	if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/operation-loader.ts"); err != nil {
+	if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/client/operation-loader.ts"); err != nil {
 		return nil, err
 	}
 	if len(linkedTargets) > 0 {
@@ -53,7 +53,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	if err := importFrom("{ "+strings.Join(binders, ", ")+" }", module.path); err != nil {
 		return nil, err
 	}
-	if err := importFrom("{ createRequestCore }", "internal/runtime/http-request-core.ts"); err != nil {
+	if err := importFrom("{ createRequestCore }", "internal/runtime/http/request/http-request-core.ts"); err != nil {
 		return nil, err
 	}
 	if err := emitRuntimeComposition(&output, execution.composition, importFrom); err != nil {

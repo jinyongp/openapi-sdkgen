@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-
 import {
   mergeLinkInput,
   resolveLinkInput,
-} from "../../../internal/target/typescript/runtime/internal/links.js";
-import { APIError } from "../../../internal/target/typescript/runtime/internal/errors.js";
-import type { RawResponse } from "../../../internal/target/typescript/runtime/internal/request.js";
+} from "../../../internal/target/typescript/runtime/client/links.js";
+import { APIError } from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
+import type { RawResponse } from "../../../internal/target/typescript/runtime/http/request.js";
 
 function sourceResponse(): RawResponse<unknown> {
   const response = new Response(null, {

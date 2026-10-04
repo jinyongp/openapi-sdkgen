@@ -187,7 +187,7 @@ async function transpile(sourceRoot, destination, manifest) {
   );
   return {
     files: names.length,
-    helper: existsSync(resolve(destination, "internal/runtime/wire-properties.js")),
+    helper: existsSync(resolve(destination, "internal/runtime/schema/wire-properties.js")),
     esmTreeSha256: sha256(
       JSON.stringify(
         names.map((f) => [

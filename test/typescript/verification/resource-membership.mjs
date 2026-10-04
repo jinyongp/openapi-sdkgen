@@ -173,7 +173,7 @@ export function verifyResourceMembership(generatedTypes, outputDirectory) {
     );
     // Check the actual emitted guarantee algorithm, not a substitute test implementation.
     const selectionSource = fs.readFileSync(
-      path.resolve(path.dirname(sourceFile), "../internal/runtime/selection-types.ts"),
+      path.resolve(path.dirname(sourceFile), "../internal/runtime/client/selection-types.ts"),
       "utf8",
     );
     report.selectionTypesSHA256 = hash(selectionSource);

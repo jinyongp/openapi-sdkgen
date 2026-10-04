@@ -378,7 +378,7 @@ void possibleID;
     for (const workload of sdkDeliveryWorkloads(count)) {
       const entries = [
         path.join(javascript, "selective/index.js"),
-        path.join(javascript, "internal/runtime/selected-client.js"),
+        path.join(javascript, "internal/runtime/client/selected-client.js"),
         ...workload.routes.map((route) => path.join(javascript, lookup(route))),
       ];
       const selected = inventory(graph(entries, javascript), javascript);

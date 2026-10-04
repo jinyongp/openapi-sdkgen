@@ -4,14 +4,16 @@ import {
   createOperationLoader,
   operationLookupFilename,
   staticOperationReference,
-  type OperationExecutionProvider,
-  type OperationLookupEntry,
-} from "../../../internal/target/typescript/runtime/internal/operation-loader.js";
+} from "../../../internal/target/typescript/runtime/client/operation-loader.js";
+import type {
+  OperationExecutionProvider,
+  OperationLookupEntry,
+} from "../../../internal/target/typescript/runtime/client/operation-loader.js";
 import {
   createOperationLoader as emittedLoader,
   operationLookupFilename as emittedFilename,
   staticOperationReference as emittedStatic,
-} from "../fixtures/generated/lifecycle/internal/runtime/operation-loader.js";
+} from "../fixtures/generated/lifecycle/internal/runtime/client/operation-loader.js";
 
 const generation = "fixture-generation";
 const provider = (route: string, operationID?: string): OperationExecutionProvider => ({

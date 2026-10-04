@@ -95,7 +95,7 @@ for (const [index, relative] of reports.entries()) {
     ...stage,
     selected: graph([
       "selective/index.js",
-      "internal/runtime/selected-client.js",
+      "internal/runtime/client/selected-client.js",
       ...stage.routes.map(lookup),
       ...(stage.followLink ? [provider("GET /linked/{itemId}")] : []),
     ]),

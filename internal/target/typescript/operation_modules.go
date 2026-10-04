@@ -49,19 +49,19 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 }
 
 func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, stream generatedStream, hasStream bool) ([]byte, error) {
-	runtimeCallables, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/callables.ts")
+	runtimeCallables, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/callables.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeCodecs, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/wire-types.ts")
+	runtimeCodecs, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/schema/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeErrors, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/errors.ts")
+	runtimeErrors, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/errors.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeHTTPError, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/http-errors.ts")
+	runtimeHTTPError, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/http/response/http-errors.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +69,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	runtimeRequest, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/request.ts")
+	runtimeRequest, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/http/request.ts")
 	if err != nil {
 		return nil, err
 	}
-	runtimeIdentity, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/identity.ts")
+	runtimeIdentity, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/shared/identity.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	contractTypes, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/contract-types.ts")
+	contractTypes, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/contract-types.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -180,6 +180,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	wire := newWireRenderContext(wirePropertiesConstructed)
+	wire.schemaPrograms = plan.schemaPrograms
 	definition, err := wire.operationDefinition(document, operation, item)
 	if err != nil {
 		return nil, err
@@ -190,6 +191,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	var output strings.Builder
+	programImports, err := wire.programImportSource(module.path)
+	if err != nil {
+		return nil, err
+	}
+	output.WriteString(programImports)
 	output.Grow(len(bodySource) + 4096)
 	callableImports := "bindGeneratedOperation, type BufferedRequestFunction"
 	if hasStream {
@@ -216,14 +222,14 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		fmt.Fprintf(&output, "import type * as Errors from %s\n", quoteTS(errorCatalog))
 	}
 	if operation.PaginationPlan != nil {
-		runtimePagination, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/pagination.ts")
+		runtimePagination, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/pagination.ts")
 		if err != nil {
 			return nil, err
 		}
 		fmt.Fprintf(&output, "import { createPaginator, type PaginateInput } from %s\n", quoteTS(runtimePagination))
 	}
 	if linksType != "never" {
-		runtimeLinks, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/links.ts")
+		runtimeLinks, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/links.ts")
 		if err != nil {
 			return nil, err
 		}

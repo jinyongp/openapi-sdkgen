@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 
 const root = path.resolve(process.argv[2], "execution-media");
 const load = (relative) => import(pathToFileURL(path.join(root, relative)).href);
-const { createRequestContext } = await load("internal/runtime/http-execution-support.js");
+const { createRequestContext } = await load("internal/runtime/http/http-execution-support.js");
 const { createClient } = await load("index.js");
 const providers = {};
 for (const [name, method] of [

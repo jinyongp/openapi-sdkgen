@@ -1,32 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
-
 import {
   Enums,
   createClient,
   isErrorCategory,
   isEnumValue,
-  type Client,
-  type Components,
-  type EnumValue,
-  type OperationInput,
-  type OperationParameter,
-  type Operations,
+} from "../fixtures/generated/collisions/index.js";
+import type {
+  Client,
+  Components,
+  EnumValue,
+  OperationInput,
+  OperationParameter,
+  Operations,
 } from "../fixtures/generated/collisions/index.js";
 import {
   Enums as DirectEnums,
   isEnumValue as isDirectEnumValue,
-  type EnumValue as DirectEnumValue,
 } from "../fixtures/generated/collisions/enums.js";
-import {
-  createCallbackHandlers,
-  type Callbacks,
-  type CallbackHandlers,
-  type ComponentCallbacks,
+import type { EnumValue as DirectEnumValue } from "../fixtures/generated/collisions/enums.js";
+import { createCallbackHandlers } from "../fixtures/generated/collisions/server/callbacks.js";
+import type {
+  Callbacks,
+  CallbackHandlers,
+  ComponentCallbacks,
 } from "../fixtures/generated/collisions/server/callbacks.js";
-import {
-  createWebhookRouter,
-  type WebhookHandlers,
-} from "../fixtures/generated/collisions/server/webhooks.js";
+import { createWebhookRouter } from "../fixtures/generated/collisions/server/webhooks.js";
+import type { WebhookHandlers } from "../fixtures/generated/collisions/server/webhooks.js";
 
 type MoneyInput = Components["Money"]["input"];
 type MoneyOutput = Components["Money"]["output"];

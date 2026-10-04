@@ -55,7 +55,7 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 		output.WriteByte('\n')
 	}
 	if usedWire {
-		types, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/wire-types.ts")
+		types, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/schema/wire-types.ts")
 		if err != nil {
 			return nil, err
 		}
@@ -65,10 +65,16 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 	fmt.Fprintf(&output, "export type %s = %s\n", export, typeSource)
 	if usedWire {
 		wire := newWireRenderContext(wirePropertiesLiteral)
+		wire.schemaPrograms = plan.schemaPrograms
 		descriptor, err := wire.wireSchemaDescriptorForDocument(document, value, direction)
 		if err != nil {
 			return nil, err
 		}
+		programImports, err := wire.programImportSource(artifact)
+		if err != nil {
+			return nil, err
+		}
+		output.WriteString(programImports)
 		fmt.Fprintf(&output, "\nexport const %sWireSchema: WireSchema = %s\n", direction, descriptor)
 	}
 	return []byte(generatedTypeImports(output.String())), nil

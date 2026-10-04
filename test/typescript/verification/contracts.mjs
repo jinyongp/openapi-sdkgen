@@ -82,8 +82,8 @@ export function assertSameContract(baseline, candidate) {
 export function assertSameSdkContract(baseline, candidate) {
   const normalized = structuredClone(candidate);
   const additions = [];
-  const helper = "internal/runtime/wire-properties.js";
-  const facade = "internal/runtime/callables.js";
+  const helper = "internal/runtime/schema/wire-properties.js";
+  const facade = "internal/runtime/client/callables.js";
   if (!Object.hasOwn(baseline.exports, helper) && Object.hasOwn(candidate.exports, helper)) {
     assert.deepEqual(
       candidate.exports[helper],

@@ -63,7 +63,7 @@ for (const fixture of new Set([
 const witness = `
 import { provider as json } from "./lifecycle/internal/executions/inline/post.js";
 import { provider as streaming } from "./lifecycle/internal/executions/events/get.js";
-import { createRequestContext } from "./lifecycle/internal/runtime/http-execution-support.js";
+import { createRequestContext } from "./lifecycle/internal/runtime/http/http-execution-support.js";
 const context = createRequestContext({baseURL:"https://example.test",fetch:async()=>Response.json({value:1})});
 const call = json.bind(context);
 void call({body:{value:1}});
@@ -95,7 +95,7 @@ async function consumeMedia() {
 }
 void consumeMedia;
 import type { ResourceMethod as LocalResource, Input as LocalInput, Output as LocalOutput, RawResponse as LocalRaw } from "./lifecycle/internal/operations/inline/post.js";
-import type { OperationPublicType } from "./lifecycle/internal/runtime/contract-types.js";
+import type { OperationPublicType } from "./lifecycle/internal/runtime/client/contract-types.js";
 import type { ResourceCall as PublicResource, RouteInput, RouteOutput, RouteRawResponse, OperationInput } from "./lifecycle/internal/routes/helpers.js";
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type AssertSame<Value extends true> = Value;
@@ -253,7 +253,7 @@ import assert from "node:assert/strict";
 import {provider as json} from "./javascript/lifecycle/internal/executions/inline/post.js";
 import {provider as streaming} from "./javascript/lifecycle/internal/executions/events/get.js";
 import {provider as schema} from "./javascript/bundle-isolation/internal/executions/bundle-isolation-sentinel/get.js";
-import {createRequestContext} from "./javascript/lifecycle/internal/runtime/http-execution-support.js";
+import {createRequestContext} from "./javascript/lifecycle/internal/runtime/http/http-execution-support.js";
 import {createClient} from "./javascript/lifecycle/index.js";
 let calls=[];
 const options={baseURL:"https://example.test",authorization:"Bearer private",fetch:async(url,init)=>{
@@ -376,19 +376,20 @@ for (const relative of [
   "discriminator-dependencies/internal/executions/echo/post.js",
 ]) {
   const modules = nativeImports(path.join(output, "javascript", relative));
-  assert(modules.some((name) => name.endsWith("/runtime/http-execution-support.js")));
-  assert(modules.some((name) => name.endsWith("/runtime/wire-core.js")));
+  assert(modules.some((name) => name.endsWith("/runtime/http/http-execution-support.js")));
+  assert(modules.some((name) => name.endsWith("/runtime/schema/program-execution.js")));
+  assert(!modules.some((name) => name.endsWith("/runtime/schema/wire-core.js")));
   for (const forbidden of [
-    "/runtime/http.js",
-    "/runtime/http-codecs.js",
-    "/runtime/http-advanced.js",
-    "/runtime/http-stream.js",
-    "/runtime/codecs.js",
-    "/runtime/wire-xml.js",
-    "/runtime/xml-codec.js",
-    "/runtime/streaming.js",
-    "/runtime/selection-types.js",
-    "/runtime/selection.js",
+    "/runtime/compatibility/http.js",
+    "/runtime/compatibility/http-codecs.js",
+    "/runtime/compatibility/http-advanced.js",
+    "/runtime/compatibility/http-stream.js",
+    "/runtime/compatibility/codecs.js",
+    "/runtime/compatibility/wire-xml.js",
+    "/runtime/media/xml/xml-codec.js",
+    "/runtime/compatibility/streaming.js",
+    "/runtime/client/selection-types.js",
+    "/runtime/client/selection.js",
     "/schemas/wire.js",
     "/client/registry.js",
   ]) {
@@ -419,13 +420,14 @@ for (const [name, method] of [
   );
   if (!["form", "multipart", "text"].includes(name)) {
     assert(
-      modules.some((file) => file.endsWith("/runtime/xml-codec.js")),
+      modules.some((file) => file.endsWith("/runtime/media/xml/xml-codec.js")),
       `${name} lost XML implementation`,
     );
     assert(
       !modules.some(
         (file) =>
-          file.endsWith("/runtime/http-stream.js") || file.endsWith("/runtime/http-advanced.js"),
+          file.endsWith("/runtime/compatibility/http-stream.js") ||
+          file.endsWith("/runtime/compatibility/http-advanced.js"),
       ),
       `${name} retained unrelated advanced implementation`,
     );
@@ -436,7 +438,7 @@ for (const [name, method] of [
       text: "http-body-text",
     }[name];
     assert(
-      modules.some((file) => file.endsWith(`/runtime/${handler}.js`)),
+      modules.some((file) => file.endsWith(`/runtime/media/${handler}.js`)),
       `${name} lost its body handler`,
     );
   }
@@ -451,8 +453,10 @@ for (const [relative, modules] of Object.entries(graphs)) {
 // The mixed root is an independent negative control for a JSON-only provider.
 // The feature matrix additionally checks a same-source full-capability control.
 const fullGraph = nativeImports(path.join(output, "javascript/execution-media/index.js"));
-assert(fullGraph.some((name) => name.endsWith("/runtime/xml-codec.js")));
-assert.throws(() => assert(!fullGraph.some((name) => name.endsWith("/runtime/xml-codec.js"))));
+assert(fullGraph.some((name) => name.endsWith("/runtime/media/xml/xml-codec.js")));
+assert.throws(() =>
+  assert(!fullGraph.some((name) => name.endsWith("/runtime/media/xml/xml-codec.js"))),
+);
 const resourceMembership = verifyResourceMembership(
   path.join(output, "source/lifecycle/selective/types.ts"),
   path.join(output, "resource-membership"),

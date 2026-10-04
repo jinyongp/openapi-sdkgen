@@ -56,11 +56,17 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 	multipartRequest := open || has("request.media.multipart")
 	multipartResponse := open || has("response.media.multipart")
 	xmlNeeded := open || media("xml") || prefix("request.open-part-media") || prefix("response.open-part-media")
-	wire := prepareWireHandlers(features)
+	wire := prepareWireHandlers(programHandlerFeatures(features))
 	for _, dependency := range wire.imports {
 		add(dependency.path, dependency.names...)
 	}
-	add("internal/runtime/wire-core.ts", "createWireCodec")
+	programFactory := "createBasicProgramCodec"
+	programRuntime := "internal/runtime/schema/program-basic.ts"
+	if has("schema.allOf") || has("schema.anyOf") || has("schema.oneOf") || has("schema.not") || has("schema.if") || has("schema.contains") {
+		programFactory = "createProgramCodec"
+		programRuntime = "internal/runtime/schema/program-codec.ts"
+	}
+	add(programRuntime, programFactory)
 	fields := append([]string(nil), wire.fields...)
 	if xmlNeeded && has("schema.contentSchema") {
 		result.wireTypes = append(result.wireTypes, "WireSchema", "WireSchemas")
@@ -69,14 +75,14 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 				fields[index] = "decodeContent: (value: string, schema: WireSchema, schemas: WireSchemas, ignore: boolean | undefined): unknown => decodeSchemaContent(value, schema, schemas, ignore, (source: string, media: string, contract: WireSchema, components: WireSchemas): unknown => { if (isXMLMediaType(media)) return xml.decodeXML(source, contract.contentSchema ?? {}, components); throw new TypeError(`unsupported contentMediaType ${media}`) })"
 			}
 		}
-		add("internal/runtime/runtime-support.ts", "isXMLMediaType")
+		add("internal/runtime/shared/runtime-support.ts", "isXMLMediaType")
 	}
-	result.declarations = append(result.declarations, "const wire: WireCodec = /* @__PURE__ */ createWireCodec({ "+strings.Join(fields, ", ")+" })")
+	result.declarations = append(result.declarations, "const wire: WireCodec = /* @__PURE__ */ "+programFactory+"({ "+strings.Join(fields, ", ")+" })")
 	xml := "undefined"
 	extensions := []string{}
 	extensionSources := []string{}
 	if xmlNeeded {
-		add("internal/runtime/xml-codec.ts", "createXMLCodec")
+		add("internal/runtime/media/xml/xml-codec.ts", "createXMLCodec")
 		dynamic := "undefined"
 		if has("schema.dynamic") {
 			dynamic = "{ extend: extendDynamicScope, resolve: resolveDynamicReference }"
@@ -86,15 +92,15 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 		extensionSources = append(extensionSources, "xml")
 	}
 	if multipartRequest || multipartResponse {
-		add("internal/runtime/http-header-content.ts", "createHeaderContentDecoder")
+		add("internal/runtime/http/response/http-header-content.ts", "createHeaderContentDecoder")
 		result.declarations = append(result.declarations, "const header: ReturnType<typeof createHeaderContentDecoder> = /* @__PURE__ */ createHeaderContentDecoder(wire, "+xml+")")
 	}
 	if multipartRequest {
-		add("internal/runtime/http-multipart-request.ts", "createMultipartRequestServices")
+		add("internal/runtime/media/http-multipart-request.ts", "createMultipartRequestServices")
 		result.declarations = append(result.declarations, "const multipartRequest: ReturnType<typeof createMultipartRequestServices> = /* @__PURE__ */ createMultipartRequestServices(wire, "+xml+", header)")
 	}
 	if multipartResponse {
-		add("internal/runtime/http-multipart-response.ts", "createMultipartResponseServices")
+		add("internal/runtime/media/http-multipart-response.ts", "createMultipartResponseServices")
 		result.declarations = append(result.declarations, "const multipartResponse: ReturnType<typeof createMultipartResponseServices> = /* @__PURE__ */ createMultipartResponseServices(wire, "+xml+", header)")
 		extensions = append(extensions, "decodeMultipartResponse: multipartResponse.decodeMultipartResponse")
 	}
@@ -117,19 +123,19 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 		result.wireTypes = append(result.wireTypes, "WireSchema", "WireSchemas", "MediaCodec")
 		encoders = append(encoders, "xml: (_media: string, value: unknown, _codecs: ReadonlyMap<string, MediaCodec<unknown>>, schema: WireSchema | undefined, schemas: WireSchemas): BodyInit => xml.encodeXML(value, schema ?? {}, schemas)")
 	}
-	add("internal/runtime/http-body.ts", "createBodyEncoder")
+	add("internal/runtime/media/http-body.ts", "createBodyEncoder")
 	extensions = append(extensions, "encodeRequestBody: /* @__PURE__ */ createBodyEncoder({ "+strings.Join(encoders, ", ")+" })")
 	requestFrames := []string{}
 	for _, kind := range []string{"line-delimited-json", "json-sequence", "sse"} {
 		if !prefix("request.framing.") || !(has("request.framing.complete."+kind) || has("request.framing.incremental."+kind)) {
 			continue
 		}
-		add("internal/runtime/http-request-text-stream.ts", "createTextRequestEncoder")
+		add("internal/runtime/http/request/http-request-text-stream.ts", "createTextRequestEncoder")
 		encoder := "encodeSSERequestItem"
 		if kind == "sse" {
-			add("internal/runtime/http-request-sse-frame.ts", encoder)
+			add("internal/runtime/http/request/http-request-sse-frame.ts", encoder)
 		} else {
-			add("internal/runtime/http-request-json-frame.ts", "encodeJSONStreamItem")
+			add("internal/runtime/http/request/http-request-json-frame.ts", "encodeJSONStreamItem")
 			encoder = "(value: unknown): string => `"
 			if kind == "json-sequence" {
 				encoder += "\\u001e"
@@ -139,7 +145,7 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 		requestFrames = append(requestFrames, quoteTS(kind)+": /* @__PURE__ */ createTextRequestEncoder("+encoder+")")
 	}
 	if prefix("request.framing.") {
-		add("internal/runtime/http-request-stream.ts", "createRequestStreamServices")
+		add("internal/runtime/http/request/http-request-stream.ts", "createRequestStreamServices")
 		multipart := "undefined"
 		if multipartRequest {
 			multipart = "multipartRequest.encodeStream"
@@ -148,7 +154,7 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 	}
 	if prefix("response.framing.") || streaming {
 		result.httpTypes = append(result.httpTypes, "HTTPCodecExtensions", "HTTPStreamDecodeOptions")
-		add("internal/runtime/stream-core.ts", "createStreamDecoder")
+		add("internal/runtime/stream/stream-core.ts", "createStreamDecoder")
 		protocols := []string{}
 		for _, kind := range []string{"line-delimited-json", "json-sequence", "sse"} {
 			if !has("response.framing.complete."+kind) && !has("response.framing.incremental."+kind) {
@@ -180,13 +186,13 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 	add("internal/runtime/"+httpTemplate+".ts", httpFactory)
 	httpArguments := ""
 	if httpFactory == "createBasicHTTPServices" && has("http.query") {
-		add("internal/runtime/http-query.ts", "createQueryEncoder")
+		add("internal/runtime/http/request/http-query.ts", "createQueryEncoder")
 		httpArguments = ", /* @__PURE__ */ createQueryEncoder(wire)"
 	}
 	security := prepareSecurityHandlers(features)
 	suffix := ""
 	if len(security.fields) > 0 {
-		add("internal/runtime/http-security.ts", "createOperationSecurity")
+		add("internal/runtime/http/http-security.ts", "createOperationSecurity")
 		for _, dependency := range security.imports {
 			add(dependency.path, dependency.names...)
 		}
@@ -204,7 +210,7 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 	if streaming {
 		result.servicesType = "StreamingRequestExecutionServices"
 		result.httpTypes = append(result.httpTypes, "StreamingRequestExecutionServices")
-		add("internal/runtime/http-stream-core.ts", "createOperationStreamService")
+		add("internal/runtime/http/http-stream-core.ts", "createOperationStreamService")
 		services = "/* @__PURE__ */ Object.assign({}, baseServices, { createOperationStream: /* @__PURE__ */ createOperationStreamService((): RequestExecutionServices => baseServices, decodeStreams, wire) })"
 	}
 	result.declarations = append(result.declarations, "const services: "+result.servicesType+" = "+services)
@@ -213,12 +219,10 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 }
 
 func emitRuntimeComposition(output *bytes.Buffer, composition runtimeComposition, importFrom func(string, string) error) error {
-	if len(composition.wireTypes) > 0 {
-		if err := importFrom("type { "+strings.Join(uniqueStrings(composition.wireTypes), ", ")+" }", "internal/runtime/wire-types.ts"); err != nil {
-			return err
-		}
+	if err := emitRuntimeTypeImports(composition.wireTypes, "wire-types.ts", importFrom); err != nil {
+		return err
 	}
-	if err := importFrom("type { "+strings.Join(uniqueStrings(composition.httpTypes), ", ")+" }", "internal/runtime/http-types.ts"); err != nil {
+	if err := emitRuntimeTypeImports(composition.httpTypes, "http-types.ts", importFrom); err != nil {
 		return err
 	}
 	for _, dependency := range composition.imports {

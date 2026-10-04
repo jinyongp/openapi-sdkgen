@@ -1,10 +1,10 @@
-import { defineOwnDataProperty } from "../internal/objects.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import type {
   InboundCookies,
   InboundSecurityCandidate,
   InboundSecuritySchemes,
 } from "./runtime-types.js";
-import { isRecord } from "./runtime-shared.js";
+import { isRecord } from "../shared/runtime-support.js";
 import { parseInboundCookies } from "./runtime-shared.js";
 import { inboundCookieFirst } from "./runtime-shared.js";
 

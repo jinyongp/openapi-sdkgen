@@ -151,15 +151,15 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	}
 	for _, expected := range []string{
 		`export type * from "./schemas/index.js"`,
-		`export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from "./runtime/pagination-types.js"`,
+		`export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from "./runtime/client/pagination-types.js"`,
 		`export type * from "./enums.js"`,
 		`export type * from "./errors.js"`,
 		`export type * from "./client/index.js"`,
-		`export { SortDirection } from "./runtime/constants.js"`,
+		`export { SortDirection } from "./runtime/shared/constants.js"`,
 		`export { Enums } from "./enums.js"`,
 		`export { isErrorCategory } from "./errors.js"`,
 		`export { createClient } from "./client/index.js"`,
-		`from "./runtime/errors.js"`,
+		`from "./runtime/client/errors.js"`,
 	} {
 		if !strings.Contains(generatedIndex, expected) {
 			t.Fatalf("generated entrypoint missing %q:\n%s", expected, generatedIndex)
@@ -180,10 +180,10 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 			t.Fatalf("runtime JSDoc missing %q:\n%s", expected, runtimeModules)
 		}
 	}
-	if !strings.Contains(clientSource, `from "../runtime/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/callables.js"`) {
+	if !strings.Contains(clientSource, `from "../runtime/http/request/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/client/callables.js"`) {
 		t.Fatalf("client does not use its generated source runtime:\n%s", clientSource)
 	}
-	if strings.Contains(errorsSource, "../../runtime") || !strings.Contains(errorsSource, `from "./runtime/errors.js"`) {
+	if strings.Contains(errorsSource, "../../runtime") || !strings.Contains(errorsSource, `from "./runtime/client/errors.js"`) {
 		t.Fatalf("errors do not use the generated source runtime:\n%s", errorsSource)
 	}
 	if strings.Contains(errorsSource, "Contract.") != strings.Contains(errorsSource, `import type * as Contract from "./schemas/index.js"`) {
@@ -299,10 +299,10 @@ func TestRootReachableRuntimeInitializersAreOptimizerVisible(t *testing.T) {
 		"internal/client/registry.ts",
 		"internal/enums.ts",
 		"internal/errors.ts",
-		"internal/runtime/wire-core.ts",
-		"internal/runtime/constants.ts",
-		"internal/runtime/http-execution-support.ts",
-		"internal/runtime/http-request-values.ts",
+		"internal/runtime/schema/wire-state.ts",
+		"internal/runtime/shared/constants.ts",
+		"internal/runtime/http/http-execution-support.ts",
+		"internal/runtime/http/request/http-request-values.ts",
 	} {
 		source := string(artifactByPath(t, artifacts, path))
 		for lineNumber, line := range strings.Split(source, "\n") {
@@ -358,7 +358,7 @@ func TestPathBoundPaginationImportsRuntimeHelpers(t *testing.T) {
 	}
 	client := clientSemanticSource(artifacts)
 	for _, expected := range []string{
-		`import { createPaginator, type PaginateInput } from "../../../../runtime/pagination.js"`,
+		`import { createPaginator, type PaginateInput } from "../../../../runtime/client/pagination.js"`,
 		`readonly "GET /orders/{orderID}/items": import("../operations/orders/by-order-id/items/get.js").Contract`,
 		"export function bindPagination",
 		"createPaginator<",

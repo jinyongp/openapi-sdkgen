@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import * as templateHTTP from "../../../internal/target/typescript/runtime/internal/http.js";
-import * as templateCore from "../../../internal/target/typescript/runtime/internal/http-core.js";
-import * as templateContext from "../../../internal/target/typescript/runtime/internal/http-core.js";
-import * as templateJSON from "../../../internal/target/typescript/runtime/internal/http-json.js";
-import * as templateFull from "../../../internal/target/typescript/runtime/internal/http-codecs.js";
-import * as templateWire from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
-import * as templateCodecs from "../../../internal/target/typescript/runtime/internal/codecs.js";
-import * as templateBinder from "../../../internal/target/typescript/runtime/internal/callables.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-import type { WireSchema } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import * as templateHTTP from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import * as templateCore from "../../../internal/target/typescript/runtime/compatibility/http-core.js";
+import * as templateContext from "../../../internal/target/typescript/runtime/compatibility/http-core.js";
+import * as templateJSON from "../../../internal/target/typescript/runtime/compatibility/http-json.js";
+import * as templateFull from "../../../internal/target/typescript/runtime/compatibility/http-codecs.js";
+import * as templateWire from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import * as templateCodecs from "../../../internal/target/typescript/runtime/compatibility/codecs.js";
+import * as templateBinder from "../../../internal/target/typescript/runtime/client/callables.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 const jsonOperation: OperationDefinition = {
   route: "GET /items/{id}",

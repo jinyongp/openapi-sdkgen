@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   assignCallableProperties,
   bindPathOperation,
-} from "../../../internal/target/typescript/runtime/internal/callables.js";
-import type { RequestOptions } from "../../../internal/target/typescript/runtime/internal/request.js";
+} from "../../../internal/target/typescript/runtime/client/callables.js";
+import type { RequestOptions } from "../../../internal/target/typescript/runtime/http/request.js";
 import { createClient } from "../fixtures/generated/lifecycle/index.js";
 
 // These checks must not execute: the generated stream-only surface deliberately

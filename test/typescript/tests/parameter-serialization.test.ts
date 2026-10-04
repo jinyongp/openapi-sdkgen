@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import { TransportErrorCode } from "../../../internal/target/typescript/runtime/internal/errors.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import { TransportErrorCode } from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
 import type {
   OperationDefinition,
   ParameterDefinition,
-} from "../../../internal/target/typescript/runtime/internal/operation.js";
+} from "../../../internal/target/typescript/runtime/http/operation.js";
 
 type ParameterCase = {
   name: string;

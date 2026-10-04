@@ -88,15 +88,15 @@ func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []genera
 
 func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {
 	artifact := plan.fixed["client-factory"]
-	configuration, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/configuration.ts")
+	configuration, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/configuration.ts")
 	if err != nil {
 		return nil, err
 	}
-	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http-request-core.ts")
+	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/request/http-request-core.ts")
 	if err != nil {
 		return nil, err
 	}
-	context, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http-execution-support.ts")
+	context, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/http-execution-support.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	if len(streams) > 0 {
 		requestType = "RequestFunction"
 	}
-	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/callables.ts")
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/client/callables.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +197,15 @@ func emitClientIndex(plan *semanticModulePlan) ([]byte, error) {
 }
 
 func publicRuntimeExportSource() []byte {
-	return []byte(`export type { MediaCodec, StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamReader } from "./runtime/wire-types.js"
-export type { ClientOptions, SecurityCredentialContext, SecurityCredentialProvider } from "./runtime/configuration.js"
-export type { TransportError } from "./runtime/errors.js"
-export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/links-types.js"
-export type { OperationCall } from "./runtime/callables.js"
-export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/pagination-types.js"
-export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, ServerSentEvent, StreamResponseMetadata, StreamSource } from "./runtime/request.js"
-export type { APIKeyCredential, HTTPBasicCredential, HTTPBearerCredential, HTTPCredential, MutualTLSCredential, OAuthCredential, SecurityCredential, SecurityCredentials, SecurityRequirementDefinition, SecuritySchemeDefinition } from "./runtime/security.js"
-export type { Transport, TransportCapabilities } from "./runtime/transport.js"
+	return []byte(`export type { MediaCodec } from "./runtime/media/media-codec-types.js"
+export type { StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamReader } from "./runtime/stream/stream-protocol-types.js"
+export type { ClientOptions, SecurityCredentialContext, SecurityCredentialProvider } from "./runtime/http/configuration.js"
+export type { TransportError } from "./runtime/client/errors.js"
+export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/client/links-types.js"
+export type { OperationCall } from "./runtime/client/callables.js"
+export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/client/pagination-types.js"
+export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, ServerSentEvent, StreamResponseMetadata, StreamSource } from "./runtime/http/request.js"
+export type { APIKeyCredential, HTTPBasicCredential, HTTPBearerCredential, HTTPCredential, MutualTLSCredential, OAuthCredential, SecurityCredential, SecurityCredentials, SecurityRequirementDefinition, SecuritySchemeDefinition } from "./runtime/security/security.js"
+export type { Transport, TransportCapabilities } from "./runtime/shared/transport.js"
 `)
 }

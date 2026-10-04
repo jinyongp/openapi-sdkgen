@@ -137,9 +137,9 @@ try {
       const dir = resolve(output, entry.id, `new-helper-${kind}`);
       mustGenerate("baseline", entry, dir);
       const untouched = snapshot(dir),
-        target = resolve(dir, "internal/runtime/wire-properties.ts");
+        target = resolve(dir, "internal/runtime/schema/wire-properties.ts");
       assert.equal(
-        Object.hasOwn(inspectGenerated(dir).files, "internal/runtime/wire-properties.ts"),
+        Object.hasOwn(inspectGenerated(dir).files, "internal/runtime/schema/wire-properties.ts"),
         false,
       );
       const userFile = resolve(output, `${entry.id}-${kind}-user.txt`);

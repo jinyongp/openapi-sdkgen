@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSelectedClient } from "../../../internal/target/typescript/runtime/internal/selected-client.js";
+import { createSelectedClient } from "../../../internal/target/typescript/runtime/client/selected-client.js";
 import type {
   OperationExecutionProvider,
   OperationProviderResolver,
-} from "../../../internal/target/typescript/runtime/internal/operation-loader.js";
+} from "../../../internal/target/typescript/runtime/client/operation-loader.js";
 
 type RuntimeCall = ((...args: unknown[]) => Promise<unknown>) & {
   raw: (...args: unknown[]) => Promise<unknown>;

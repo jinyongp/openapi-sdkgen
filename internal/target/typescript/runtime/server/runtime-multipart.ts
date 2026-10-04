@@ -1,11 +1,8 @@
-import { MultipartByteFrames } from "../internal/framing-multipart.js";
-import type { MultipartFramingFailure } from "../internal/framing-multipart.js";
-import type {
-  MediaCodec,
-  WireEncodingDefinition,
-  WireSchema,
-  WireSchemas,
-} from "../internal/wire-types.js";
+import { MultipartByteFrames } from "../stream/framing/framing-multipart.js";
+import type { MultipartFramingFailure } from "../stream/framing/framing-multipart.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
+import type { WireEncodingDefinition } from "../media/media-contract-types.js";
+import type { WireSchema, WireSchemas } from "../schema/wire-types.js";
 import type {
   InboundMultipartPartDecodeOptions,
   InboundProtocolDecodeOptions,

@@ -15,17 +15,17 @@ mocked Fetch. The default entry needs no selection configuration.
 
 | Generation | All TypeScript files | All source lines | Runtime files | Runtime lines |
 | --- | ---: | ---: | ---: | ---: |
-| Default generation | 76 | 7,797 | 38 | 5,951 |
-| Full-capability test control | 163 | 15,536 | 125 | 13,729 |
+| Default generation | 94 | 7,754 | 49 | 5,623 |
+| Full-capability test control | 180 | 16,275 | 142 | 14,467 |
 
 | Application entry | JS chunks | Entry JS bytes | Entry gzip bytes | All deployed JS bytes | All deployed gzip bytes |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Full-capability test control | 1 | 105,335 | 30,427 | 105,335 | 30,427 |
-| Default root | 1 | 32,386 | 10,326 | 32,386 | 10,326 |
-| Static selective | 3 | 23,434 | 8,114 | 40,869 | 14,665 |
-| Lazy selective | 7 | 369 | 272 | 42,062 | 15,847 |
+| Full-capability test control | 1 | 106,930 | 30,805 | 106,930 | 30,805 |
+| Default root | 1 | 31,904 | 9,603 | 31,904 | 9,603 |
+| Static selective | 3 | 22,224 | 7,343 | 39,326 | 13,806 |
+| Lazy selective | 7 | 369 | 274 | 40,536 | 15,029 |
 
-The default root is **31.63 KiB of JS and 10.08 KiB gzip** in this sample,
+The default root is **31.16 KiB of JS and 9.38 KiB gzip** in this sample,
 about one third of the control's compressed size. Static and lazy preparation reduce
 the entry size but deploy more compressed bytes than the root for this small
 API. Entry size alone does not describe the cost of a completed call. Shared
@@ -55,7 +55,7 @@ behavior and dependencies without fixed byte or line-count thresholds.
 Measured on October 4, 2026 UTC, in the uncommitted development tree based on
 `6c349f9`. <a :href="withBase('/benchmarks/runtime-features-results.json')">Raw results</a> include the
 generator/input/source hashes and every output chunk's size and hash.
-The generator source hash starts with `f987a4b25cf7`.
+The generator source hash starts with `4c47c6012ef5`.
 Conditions: Node.js 24.21.0, TypeScript 7.0.2, Vite 8.3.0 / Rolldown 1.2.6,
 browser ESM, ES2022, Oxc minification, code splitting, and `modulePreload: false`.
 Gzip level 6 is applied separately to each deployed chunk and then summed.
@@ -66,16 +66,91 @@ total deployed gzip bytes:
 
 | Contract | Selected runtime | Full-capability control |
 | --- | ---: | ---: |
-| XML client | 17,177 | 29,790 |
-| Multipart client | 19,274 | 29,806 |
-| Mixed-media client | 20,704 | 30,794 |
-| JSON webhook router | 12,256 | 23,234 |
-| XML webhook router | 17,387 | 23,261 |
-| Multipart webhook router | 17,363 | 23,236 |
+| XML client | 16,989 | 30,163 |
+| Multipart client | 19,032 | 30,179 |
+| Mixed-media client | 21,021 | 31,897 |
+| JSON webhook router | 12,199 | 23,627 |
+| XML webhook router | 17,312 | 23,654 |
+| Multipart webhook router | 17,278 | 23,629 |
 
 Source counts include type-only files; source maps and HTTP overhead are excluded.
 Mocked execution runs in Node.js; browser network and timing are not measured.
 These are reproducible sample sizes, not a size guarantee for every API.
+
+## One, two, or three APIs
+
+The following comparison uses the captured working tree immediately before the
+schema-program change and the current generator, with identical inputs and tool
+settings. CLI `--operation` selects the APIs; each bundle calls every selected
+API through the default root. The query case adds one required integer query
+parameter. Bytes below use decimal units.
+
+| Selected APIs | Before JS | Current JS | Before gzip | Current gzip | Current TS files / lines | Current runtime files / lines |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Get one | 31,082 | 29,569 | 10,160 | 9,283 | 80 / 7,043 | 48 / 5,655 |
+| Get one with query | 34,536 | 32,890 | 11,072 | 10,174 | 82 / 7,348 | 49 / 5,912 |
+| Get and list | 31,574 | 31,015 | 10,228 | 9,494 | 86 / 7,414 | 48 / 5,655 |
+| Get and create | 32,011 | 30,575 | 10,289 | 9,430 | 86 / 7,406 | 49 / 5,672 |
+| Get, list, and create | 32,495 | 32,013 | 10,358 | 9,633 | 92 / 7,772 | 49 / 5,672 |
+
+All five bundles shrink in both JS and gzip. Responsibility-based modules
+increase the file count; file count alone does not indicate delivered size.
+The generator emits contract-specific validation/transformation programs and
+shares equivalent programs. Ordinary JSON imports the selected execution
+operators without the generic schema interpreter. Explicit arbitrary-schema
+helpers retain their complete compatibility implementation.
+
+The three-API row calls all three APIs. The default-root table above calls only
+`getItem`, so its bundle size differs. Generated source inventories can also
+differ when the fixture options differ.
+<a :href="withBase('/benchmarks/schema-operation-results.json')">Before/after raw measurements</a>
+record strict source compilation and actual mocked bundle calls for every row.
+These sample results do not establish a universal minimum SDK size.
+
+## Current 1,000-API schema-program comparison
+
+Using the same captured source baseline, the current generator shares six
+schema programs across the complete 1,000-API fixture. Selecting ten public APIs
+plus their private Link target produces four programs. The named client shares
+exactly the same program files and bytes as root selection.
+
+Numbers below show before → current. Each browser bundle performs `getItem0`;
+the root entries still retain the generated API surface of their scope.
+
+| Case | TS files | TS bytes | Shared programs | Declaration bytes | Deployed gzip bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| All 1,000 APIs | 6073 → 6090 | 14,909,005 → 15,284,115 | 0 → 6 | 9,451,987 → 9,547,766 | 61,027 → 61,489 |
+| 10 selected APIs | 119 → 134 | 407,194 → 421,476 | 0 → 4 | 215,670 → 223,535 | 10,152 → 9,492 |
+| Named client with those 10 APIs | 123 → 138 | 420,829 → 435,141 | 0 → 4 | 226,615 → 234,497 | 12,672 → 12,107 |
+
+The complete SDK grows by 462 gzip bytes (0.76%) and about 375 KB of TypeScript
+source. The selected root saves 660 gzip bytes (6.50%); named saves 565 (4.46%).
+Contract-specific generation improves selected delivery size here, while adding
+source and declaration cost. Sharing avoids one program copy per operation;
+it does not guarantee that every full SDK becomes smaller.
+
+| Current scope | Generation median ms / peak RSS KiB | Strict source ms / peak RSS KiB | Declaration emission ms / peak RSS KiB |
+| --- | ---: | ---: | ---: |
+| All 1,000 APIs | 3,065.8 / 60,440 | 3,171.2 / 1,049,868 | 2,708.3 / 1,139,744 |
+| 10 selected APIs | 104.5 / 32,304 | 295.9 / 148,640 | 287.3 / 141,664 |
+| Named client with those 10 APIs | 102.6 / 32,092 | 304.4 / 146,656 | 295.5 / 153,312 |
+
+Generation uses three fresh processes and empty output directories. Each strict
+source and declaration check uses one fresh compiler process; generated
+`@ts-nocheck` is removed. Runs are serial with a warm filesystem cache, so
+these timings are observations rather than stable speedup claims. The report
+includes the corresponding baseline timings, all trials, input/binary/program
+hashes, source/declaration counts, and executed bundle results. Compiler version
+and bundle settings match the small measurements above. This does not resolve
+the earlier 10,000-API inference limit described below.
+
+<a :href="withBase('/benchmarks/schema-programs-results.json')">Current comparison raw results</a>.
+
+```sh
+devtools run schema-programs:perf
+# To compare a captured source tree:
+devtools run schema-programs:perf .tmp/schema-programs-measurement /path/to/captured-source
+```
 
 ## Earlier 1,000-operation selection measurement
 

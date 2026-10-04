@@ -1,15 +1,12 @@
-import type {
-  MediaCodec,
-  WireEncodingDefinition,
-  WireSchema,
-  WireSchemas,
-} from "../internal/wire-types.js";
-import { defineOwnDataProperty } from "../internal/objects.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
+import type { WireEncodingDefinition } from "../media/media-contract-types.js";
+import type { WireSchema, WireSchemas } from "../schema/wire-types.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import {
   wireArrayItemSchema as inboundWireArrayItemSchema,
   wirePropertySchema as inboundWirePropertySchema,
   wireSchemaTypes as inboundWireSchemaTypes,
-} from "../internal/schema-query.js";
+} from "../schema/schema-query.js";
 import type {
   InboundCookies,
   InboundParameterDefinition,
@@ -22,7 +19,7 @@ import type {
 } from "./runtime-types.js";
 import { parseInboundCookies } from "./runtime-shared.js";
 import { resolveInboundSchema } from "./runtime-shared.js";
-import { isRecord } from "./runtime-shared.js";
+import { isRecord } from "../shared/runtime-support.js";
 import { normalizeInboundMediaType } from "./runtime-shared.js";
 import { decodeXMLBody } from "./runtime-codecs.js";
 import { isInboundBinaryMedia } from "./runtime-shared.js";

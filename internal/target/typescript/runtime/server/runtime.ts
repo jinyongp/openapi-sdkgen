@@ -1,4 +1,4 @@
-import { xmlWireCodec, encodeXML, decodeXML } from "../internal/codecs.js";
+import { xmlWireCodec, encodeXML, decodeXML } from "../compatibility/codecs.js";
 import type { ServerCodecContext, ServerBound } from "./runtime-types.js";
 import { bindServerCodec } from "./runtime-codecs.js";
 import { decodeLegacyXML } from "./runtime-legacy-xml.js";

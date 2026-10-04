@@ -14,7 +14,7 @@ case "$suite" in
     bash "$ROOT/scripts/dev/typescript.sh" fmt-check
     bash "$ROOT/scripts/dev/typescript.sh" lint
     bash "$ROOT/scripts/verification/declarations-test.sh"
-    run_step 'verification tool tests' ts_node node --test "$TYPESCRIPT_ROOT/verification/verification.test.mjs" "$TYPESCRIPT_ROOT/verification/sdk-delivery-runner.test.mjs"
+    run_step 'verification tool tests' ts_node node --test "$TYPESCRIPT_ROOT/verification/verification.test.mjs" "$TYPESCRIPT_ROOT/verification/sdk-delivery-runner.test.mjs" "$TYPESCRIPT_ROOT/verification/runtime-boundaries.test.mjs"
     bash "$ROOT/scripts/generate/check-test.sh"
     bash "$ROOT/scripts/npm/source-check.sh"
     bash "$ROOT/scripts/release/test.sh" ;;

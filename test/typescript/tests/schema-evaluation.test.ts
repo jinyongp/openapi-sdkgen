@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import {
-  jsonWireCodec,
-  type WireSchema,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 type Schema = boolean | Record<string, unknown>;
 type Suite = {

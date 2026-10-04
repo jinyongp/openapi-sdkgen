@@ -1,7 +1,6 @@
 import { gzipSync } from "node:zlib";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-
 import { beforeAll, describe, expect, it } from "vitest";
 import { build } from "vite";
 
@@ -72,7 +71,11 @@ function bundle(name: string, source: string): Promise<BundleResult> {
     return {
       code: chunk.code,
       gzipBytes: gzipSync(chunk.code, { level: 9 }).byteLength,
-      modules: chunk.moduleIds,
+      // Parsed/re-exported modules may remain in moduleIds with zero emitted
+      // bytes. Ownership isolation concerns code that survived tree shaking.
+      modules: Object.entries(chunk.modules)
+        .filter(([, module]) => module.renderedLength > 0)
+        .map(([id]) => id),
     };
   });
   bundleCases.set(name, pending);
@@ -106,12 +109,12 @@ beforeAll(async () => {
     rootError: rootValue("isAPIError"),
     requestStreamError: `export { isAPIError } from "sdkgen-request-stream:index"`,
     requestStreamClient: `export { createClient } from "sdkgen-request-stream:index"`,
-    directError: directValue("isAPIError", "runtime/errors"),
+    directError: directValue("isAPIError", "runtime/client/errors"),
     executionProvider: directValue("provider", "executions/bundle-isolation-sentinel/get"),
     rootClient: rootValue("createClient"),
     directClient: directValue("createClient", "client/index"),
     rootSort: rootValue("SortDirection"),
-    directSort: directValue("SortDirection", "runtime/constants"),
+    directSort: directValue("SortDirection", "runtime/shared/constants"),
     rootEnums: rootValue("Enums"),
     directEnums: directValue("Enums", "enums"),
     rootType: `import type { Client } from "sdkgen-fixture:index"; export type BundledClient = Client`,
@@ -138,7 +141,7 @@ describe("generated public entry bundle isolation", () => {
     const result = results.rootError;
     expect(result).toBeDefined();
     expect(internalModules(result!), bundleEvidence(result!)).toEqual([
-      "internal/runtime/runtime-support.ts",
+      "internal/runtime/shared/runtime-support.ts",
     ]);
     expect(result!.code).not.toContain("XML schema");
     expect(result!.code).not.toContain("baseURL");
@@ -155,19 +158,19 @@ describe("generated public entry bundle isolation", () => {
     for (const required of [
       "internal/client/factory.ts",
       "internal/client/registry.ts",
-      "internal/runtime/http-request-core.ts",
-      "internal/runtime/wire-core.ts",
+      "internal/runtime/http/request/http-request-core.ts",
+      "internal/runtime/schema/program-execution.ts",
     ])
       expect(modules, bundleEvidence(result!)).toContain(required);
     for (const excluded of [
       "internal/enums.ts",
       "internal/errors.ts",
-      "internal/runtime/http-services.ts",
-      "internal/runtime/http-response-headers.ts",
-      "internal/runtime/http-codecs.ts",
-      "internal/runtime/codecs.ts",
-      "internal/runtime/xml-codec.ts",
-      "internal/runtime/stream-sse.ts",
+      "internal/runtime/http/request/http-services.ts",
+      "internal/runtime/http/response/http-response-headers.ts",
+      "internal/runtime/compatibility/http-codecs.ts",
+      "internal/runtime/compatibility/codecs.ts",
+      "internal/runtime/media/xml/xml-codec.ts",
+      "internal/runtime/stream/stream-sse.ts",
     ])
       expect(modules, bundleEvidence(result!)).not.toContain(excluded);
     expect(result!.code).not.toContain("Symbol.iterator");
@@ -178,14 +181,14 @@ describe("generated public entry bundle isolation", () => {
     const guard: BundleResult = results.requestStreamError!;
     const client: BundleResult = results.requestStreamClient!;
     expect(internalModules(guard, requestStreamRoot), bundleEvidence(guard)).toEqual([
-      "internal/runtime/runtime-support.ts",
+      "internal/runtime/shared/runtime-support.ts",
     ]);
     const modules: string[] = internalModules(client, requestStreamRoot);
     expect(modules, bundleEvidence(client)).toContain(
-      "internal/runtime/http-request-text-stream.ts",
+      "internal/runtime/http/request/http-request-text-stream.ts",
     );
     expect(modules, bundleEvidence(client)).toContain(
-      "internal/runtime/http-request-json-frame.ts",
+      "internal/runtime/http/request/http-request-json-frame.ts",
     );
   });
 
@@ -194,16 +197,17 @@ describe("generated public entry bundle isolation", () => {
     expect(result).toBeDefined();
     const modules = internalModules(result!);
     expect(modules).toContain("internal/executions/bundle-isolation-sentinel/get.ts");
-    expect(modules).toContain("internal/runtime/http-request-core.ts");
-    expect(modules).toContain("internal/runtime/wire-core.ts");
+    expect(modules).toContain("internal/runtime/http/request/http-request-core.ts");
+    expect(modules).toContain("internal/runtime/schema/program-execution.ts");
+    expect(modules).not.toContain("internal/runtime/schema/wire-core.ts");
     for (const excluded of [
-      "internal/runtime/http.ts",
-      "internal/runtime/http-codecs.ts",
-      "internal/runtime/http-advanced.ts",
-      "internal/runtime/http-stream.ts",
-      "internal/runtime/streaming.ts",
-      "internal/runtime/codecs.ts",
-      "internal/runtime/wire-xml.ts",
+      "internal/runtime/compatibility/http.ts",
+      "internal/runtime/compatibility/http-codecs.ts",
+      "internal/runtime/compatibility/http-advanced.ts",
+      "internal/runtime/compatibility/http-stream.ts",
+      "internal/runtime/compatibility/streaming.ts",
+      "internal/runtime/compatibility/codecs.ts",
+      "internal/runtime/compatibility/wire-xml.ts",
       "internal/schemas/wire.ts",
       "internal/client/registry.ts",
       "internal/client/factory.ts",
@@ -219,7 +223,7 @@ describe("generated public entry bundle isolation", () => {
     const result = results.rootSort;
     expect(result).toBeDefined();
     expect(internalModules(result!), bundleEvidence(result!)).toEqual([
-      "internal/runtime/constants.ts",
+      "internal/runtime/shared/constants.ts",
     ]);
     expect(result!.code).not.toContain("bundle-enum-sentinel-01");
     expect(result!.code).not.toContain("bundle-error-category-sentinel");

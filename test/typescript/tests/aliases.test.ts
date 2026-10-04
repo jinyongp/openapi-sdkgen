@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createClient,
-  type Components,
-  type OperationInput,
-} from "../fixtures/generated/aliases/index.js";
+import { createClient } from "../fixtures/generated/aliases/index.js";
+import type { Components, OperationInput } from "../fixtures/generated/aliases/index.js";
 
 type EnvelopeInput = Components["Envelope"]["input"];
 type EnvelopeOutput = Components["Envelope"]["output"];

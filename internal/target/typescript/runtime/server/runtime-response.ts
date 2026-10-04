@@ -1,11 +1,8 @@
-import type {
-  MediaCodec,
-  WireHeaderDefinition,
-  WireSchema,
-  WireSchemas,
-} from "../internal/wire-types.js";
-import { defineOwnDataProperty } from "../internal/objects.js";
-import { decodeSimpleWireHeader } from "../internal/schema-query.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
+import type { WireHeaderDefinition } from "../media/media-contract-types.js";
+import type { WireSchema, WireSchemas } from "../schema/wire-types.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
+import { decodeSimpleWireHeader } from "../schema/schema-query.js";
 import type {
   InboundResponse,
   InboundResponseDefinition,
@@ -18,7 +15,7 @@ import { inboundMediaTypeMatches } from "./runtime-shared.js";
 import { inboundMediaTypeMatchScore } from "./runtime-shared.js";
 import { requireServerXML } from "./runtime-codecs.js";
 import { inboundMediaCodec } from "./runtime-shared.js";
-import { isRecord } from "./runtime-shared.js";
+import { isRecord } from "../shared/runtime-support.js";
 
 export function assertInboundJSONSerializable(
   value: unknown,

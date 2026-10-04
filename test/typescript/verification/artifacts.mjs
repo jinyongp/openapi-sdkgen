@@ -255,7 +255,7 @@ try {
         dirname(reportPath),
         fixture.id,
         variant,
-        "esm/internal/runtime/wire-properties.js",
+        "esm/internal/runtime/schema/wire-properties.js",
       );
       const helperContract = existsSync(helper)
         ? await (async () => {

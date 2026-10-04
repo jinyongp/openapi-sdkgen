@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createClient,
-  type Components,
-  type OperationInput,
-} from "../fixtures/generated/representation/index.js";
+import { createClient } from "../fixtures/generated/representation/index.js";
+import type { Components, OperationInput } from "../fixtures/generated/representation/index.js";
 
 const body: Components["Node"]["input"] = {
   label: "root",

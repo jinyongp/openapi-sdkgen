@@ -33,11 +33,11 @@ func emitNamedClientArtifactsTo(shared *sourcePlan, generation string, write fun
 			aliases = append(aliases, alias)
 			fmt.Fprintf(&entry, "import { provider as %s } from %s\n", alias, quoteTS(specifier))
 		}
-		factory, err := view.modules.relativeModuleSpecifier(base+"index.ts", "internal/runtime/named-client.ts")
+		factory, err := view.modules.relativeModuleSpecifier(base+"index.ts", "internal/runtime/client/named-client.ts")
 		if err != nil {
 			return err
 		}
-		options, err := view.modules.relativeModuleSpecifier(base+"index.ts", "internal/runtime/configuration.ts")
+		options, err := view.modules.relativeModuleSpecifier(base+"index.ts", "internal/runtime/http/configuration.ts")
 		if err != nil {
 			return err
 		}

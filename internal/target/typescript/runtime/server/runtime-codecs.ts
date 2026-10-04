@@ -4,8 +4,8 @@ import type {
   InboundSchema,
   InboundSchemas,
 } from "./runtime-types.js";
-import type { WireSchema, WireSchemas } from "../internal/wire-types.js";
-import type { XMLCodec } from "../internal/xml-types.js";
+import type { WireSchema, WireSchemas } from "../schema/wire-types.js";
+import type { XMLCodec } from "../media/xml/xml-types.js";
 export function requireServerXML(context: ServerCodecContext): XMLCodec {
   if (context.xml === undefined) throw new TypeError("Required XML service is missing");
   return context.xml;

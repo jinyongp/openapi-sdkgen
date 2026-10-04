@@ -1,6 +1,6 @@
 import type { ServerCodecContext, InboundProtocolDecodeOptions } from "./runtime-types.js";
 import { InboundRequestError } from "./runtime-errors.js";
-import { decodeSSEStreamItems } from "../internal/stream-sse.js";
+import { decodeSSEStreamItems } from "../stream/stream-sse.js";
 export async function* decodeInboundSSEFrames(
   _context: ServerCodecContext,
   body: ReadableStream<Uint8Array>,

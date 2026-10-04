@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-
-import {
-  jsonWireCodec,
-  type WireSchema,
-  type WireSchemas,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
+import type {
+  WireSchema,
+  WireSchemas,
+} from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 const { validateWireValue, encodeWireValue, decodeWireValue } = jsonWireCodec;
 const validate = (value: unknown, schema: WireSchema) =>

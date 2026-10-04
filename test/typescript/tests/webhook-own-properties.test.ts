@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createWebhookRouter,
-  type WebhookHandlers,
-  type WebhookRoutes,
+import { createWebhookRouter } from "../fixtures/generated/collisions/server/webhooks.js";
+import type {
+  WebhookHandlers,
+  WebhookRoutes,
 } from "../fixtures/generated/collisions/server/webhooks.js";
 
 // The fixture has an optional exact "constructor" member. TypeScript also

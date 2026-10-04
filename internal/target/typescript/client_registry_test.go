@@ -44,7 +44,7 @@ func TestCallableRegistryOwnsSingleBindingAndCapabilityAssembly(t *testing.T) {
 		t.Fatalf("link factory imports = %d, want one source factory:\n%s", got, registry)
 	}
 	for _, expected := range []string{
-		`import { defineOwnDataProperty } from "../runtime/objects.js"`,
+		`import { defineOwnDataProperty } from "../runtime/shared/objects.js"`,
 		`const completed: { -readonly [Route in keyof Routes]: Routes[Route]["call"] } = {} as { -readonly [Route in keyof Routes]: Routes[Route]["call"] }`,
 		`const operations: Record<string, unknown> = {}`,
 		`defineOwnDataProperty(completed as Record<string, unknown>, "GET /events",`,

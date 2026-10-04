@@ -57,13 +57,17 @@ func prepareExecutionSchemaModules(modules *semanticModulePlan, executions map[s
 	}
 	for _, module := range modules.operations {
 		execution := executions[module.routeKey]
-		if path := executionSchemaModulePath("input", execution.inputSchemas); uses[path] > 1 {
-			execution.inputBundle = path
-			execution.inputSchemas = groups[path].names
+		if len(execution.inputSchemas) > 1 {
+			if path := executionSchemaModulePath("input", execution.inputSchemas); uses[path] > 1 {
+				execution.inputBundle = path
+				execution.inputSchemas = groups[path].names
+			}
 		}
-		if path := executionSchemaModulePath("output", execution.outputSchemas); uses[path] > 1 {
-			execution.outputBundle = path
-			execution.outputSchemas = groups[path].names
+		if len(execution.outputSchemas) > 1 {
+			if path := executionSchemaModulePath("output", execution.outputSchemas); uses[path] > 1 {
+				execution.outputBundle = path
+				execution.outputSchemas = groups[path].names
+			}
 		}
 		executions[module.routeKey] = execution
 	}
@@ -75,7 +79,7 @@ func prepareExecutionSchemaModules(modules *semanticModulePlan, executions map[s
 
 func emitExecutionSchemaModule(plan *semanticModulePlan, module executionSchemaModule) ([]byte, error) {
 	var output bytes.Buffer
-	types, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/wire-types.ts")
+	types, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/schema/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}

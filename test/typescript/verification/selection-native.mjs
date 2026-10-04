@@ -10,7 +10,7 @@ const directory = path.join(path.dirname(javascript), "selection-native");
 fs.mkdirSync(directory, { recursive: true });
 const entry = path.join(directory, "entry.mjs");
 const source = `
-import { collectSelectionReferences } from "../javascript/lifecycle/internal/runtime/selection.js";
+import { collectSelectionReferences } from "../javascript/lifecycle/internal/runtime/client/selection.js";
 import defaults, { a, b } from "./feature.mjs";
 import * as feature from "./feature.mjs";
 export function run() {

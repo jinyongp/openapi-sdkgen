@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import { selectResponseDefinition } from "../../../internal/target/typescript/runtime/internal/http-core.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-import type { WireResponseDefinition } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import { selectResponseDefinition } from "../../../internal/target/typescript/runtime/compatibility/http-core.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import type { WireResponseDefinition } from "../../../internal/target/typescript/runtime/http/response/http-response-types.js";
 
 const operation = (responses: readonly WireResponseDefinition[]): OperationDefinition => ({
   route: "GET /value",

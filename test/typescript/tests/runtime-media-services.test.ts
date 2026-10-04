@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   createRequestCore,
   createRequestContext,
-} from "../../../internal/target/typescript/runtime/internal/http-core.js";
-import { bufferedXMLRequestServices } from "../../../internal/target/typescript/runtime/internal/http-buffered.js";
-import { jsonResponseStreamServices } from "../../../internal/target/typescript/runtime/internal/http-json-stream.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
+} from "../../../internal/target/typescript/runtime/compatibility/http-core.js";
+import { bufferedXMLRequestServices } from "../../../internal/target/typescript/runtime/compatibility/http-buffered.js";
+import { jsonResponseStreamServices } from "../../../internal/target/typescript/runtime/compatibility/http-json-stream.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
 
 const streamOperation: OperationDefinition = {
   route: "GET /items",

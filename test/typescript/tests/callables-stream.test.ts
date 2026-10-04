@@ -1,17 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
-
 import {
   bindPathOperation,
   bindStreamOperation,
-  type InputOperationCall,
-  type RequestFunction,
-} from "../../../internal/target/typescript/runtime/internal/callables.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
+} from "../../../internal/target/typescript/runtime/client/callables.js";
+import type {
+  InputOperationCall,
+  RequestFunction,
+} from "../../../internal/target/typescript/runtime/client/callables.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
 import type {
   OperationStream,
   RawResponse,
   RequestOptions,
-} from "../../../internal/target/typescript/runtime/internal/request.js";
+} from "../../../internal/target/typescript/runtime/http/request.js";
 
 const operation: OperationDefinition = {
   route: "GET /items/{id}",

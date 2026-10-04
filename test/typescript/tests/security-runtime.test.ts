@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import { TransportErrorCode } from "../../../internal/target/typescript/runtime/internal/errors.js";
-import type { ClientOptions } from "../../../internal/target/typescript/runtime/internal/configuration.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-import type { RequestOptions } from "../../../internal/target/typescript/runtime/internal/request.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import { TransportErrorCode } from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
+import type { ClientOptions } from "../../../internal/target/typescript/runtime/http/configuration.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import type { RequestOptions } from "../../../internal/target/typescript/runtime/http/request.js";
 import type {
   SecurityCredentials,
   SecuritySchemeDefinition,
-} from "../../../internal/target/typescript/runtime/internal/security.js";
+} from "../../../internal/target/typescript/runtime/security/security.js";
 
 const key: SecuritySchemeDefinition = {
   name: "Key",

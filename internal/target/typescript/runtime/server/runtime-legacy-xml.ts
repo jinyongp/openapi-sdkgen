@@ -1,18 +1,18 @@
-import type { WireSchema, WireSchemas, WireXML } from "../internal/wire-types.js";
-import { defineOwnDataProperty } from "../internal/objects.js";
+import type { WireSchema, WireSchemas, WireXML } from "../schema/wire-types.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import {
   wireArrayItemSchema as inboundWireArrayItemSchema,
   wirePropertyNames as inboundWirePropertyNames,
   wirePropertySchema as inboundWirePropertySchema,
   wireSchemaTypes as inboundWireSchemaTypes,
-} from "../internal/schema-query.js";
+} from "../schema/schema-query.js";
 import type {
   InboundSchema,
   InboundSchemas,
   InboundXMLNode,
   ServerCodecContext,
 } from "./runtime-types.js";
-import { isRecord } from "./runtime-shared.js";
+import { isRecord } from "../shared/runtime-support.js";
 import { inboundSchemaRecord } from "./runtime-shared.js";
 import { materializeInboundWireSchema } from "./runtime-shared.js";
 import { inboundWireSchemaAlternatives } from "./runtime-shared.js";

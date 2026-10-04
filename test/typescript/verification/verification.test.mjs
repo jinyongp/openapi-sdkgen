@@ -222,32 +222,32 @@ test("shared helper-contract vectors accept the baseline and reject wrong proper
 
 function moduleContract() {
   return {
-    exports: { "internal/runtime/callables.js": ["bindOperation"] },
+    exports: { "internal/runtime/client/callables.js": ["bindOperation"] },
     rootExports: ["createClient"],
   };
 }
 test("only the precise additive internal helper and facade exports are allowed", () => {
   const a = moduleContract(),
     b = structuredClone(a);
-  b.exports["internal/runtime/wire-properties.js"] = ["wireProperties"];
-  b.exports["internal/runtime/callables.js"].push("createWireProperties");
+  b.exports["internal/runtime/schema/wire-properties.js"] = ["wireProperties"];
+  b.exports["internal/runtime/client/callables.js"].push("createWireProperties");
   assert.equal(assertSameSdkContract(a, b).length, 2);
 });
 test("removing an existing helper export is not hidden by the addition allowance", () => {
   const a = moduleContract();
-  a.exports["internal/runtime/wire-properties.js"] = ["wireProperties"];
-  a.exports["internal/runtime/callables.js"].push("createWireProperties");
+  a.exports["internal/runtime/schema/wire-properties.js"] = ["wireProperties"];
+  a.exports["internal/runtime/client/callables.js"].push("createWireProperties");
   const b = structuredClone(a);
-  b.exports["internal/runtime/callables.js"] = ["bindOperation"];
+  b.exports["internal/runtime/client/callables.js"] = ["bindOperation"];
   assert.throws(() => assertSameSdkContract(a, b));
 });
 test("unrelated export changes remain failures", () => {
   const a = moduleContract(),
     b = structuredClone(a);
-  b.exports["internal/runtime/wire-properties.js"] = ["wireProperties", "hiddenExtra"];
+  b.exports["internal/runtime/schema/wire-properties.js"] = ["wireProperties", "hiddenExtra"];
   assert.throws(() => assertSameSdkContract(a, b));
-  b.exports["internal/runtime/wire-properties.js"] = ["wireProperties"];
-  b.exports["internal/runtime/callables.js"] = ["createWireProperties"];
+  b.exports["internal/runtime/schema/wire-properties.js"] = ["wireProperties"];
+  b.exports["internal/runtime/client/callables.js"] = ["createWireProperties"];
   assert.throws(() => assertSameSdkContract(a, b));
 });
 

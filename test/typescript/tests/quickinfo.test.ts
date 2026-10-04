@@ -1,8 +1,8 @@
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn } from "node:child_process";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { once } from "node:events";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const typescriptRoot = fileURLToPath(new URL("..", import.meta.url));

@@ -1,7 +1,7 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { collectSelectionReferences as template } from "../../../internal/target/typescript/runtime/internal/selection.js";
-import { collectSelectionReferences as emitted } from "../fixtures/generated/lifecycle/internal/runtime/selection.js";
+import { collectSelectionReferences as template } from "../../../internal/target/typescript/runtime/client/selection.js";
+import { collectSelectionReferences as emitted } from "../fixtures/generated/lifecycle/internal/runtime/client/selection.js";
 
 for (const [label, collect] of [
   ["template", template],

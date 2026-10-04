@@ -79,7 +79,23 @@ type runtimeMatrixCatalog struct {
 // The full-capability control is composed from exactly the tested source basis.
 // Only test preparation changes; no AST rewriting or historical baseline runs.
 func fullCapabilityMatrixPlan(plan *sourcePlan) {
-	full := runtimeComposition{imports: []runtimeHandlerImport{{path: "internal/runtime/http-codecs.ts", names: []string{"fullRequestServices"}}}, httpTypes: []string{"StreamingRequestExecutionServices"}, servicesType: "StreamingRequestExecutionServices", declarations: []string{"const services: StreamingRequestExecutionServices = fullRequestServices"}}
+	// The control executes the canonical arbitrary-schema implementation. Keep
+	// generated programs out of this test-only graph so the size comparison does
+	// not charge the control for two independent execution algorithms.
+	plan.schemaPrograms = nil
+	plan.modules.schemaPrograms = nil
+	plan.serverSchemaPrograms = nil
+	if plan.root != nil {
+		plan.root.schemaPrograms = nil
+		plan.root.modules.schemaPrograms = nil
+	}
+	for _, client := range plan.clients {
+		client.view.schemaPrograms = nil
+		client.view.modules.schemaPrograms = nil
+	}
+	plan.callbacks, _ = collectCallbacksDiagnostics(plan.document, plan.omittedOperations)
+	plan.webhooks, _ = collectWebhooksDiagnostics(plan.document)
+	full := runtimeComposition{imports: []runtimeHandlerImport{{path: "internal/runtime/compatibility/http-codecs.ts", names: []string{"fullRequestServices"}}}, httpTypes: []string{"StreamingRequestExecutionServices"}, servicesType: "StreamingRequestExecutionServices", declarations: []string{"const services: StreamingRequestExecutionServices = fullRequestServices"}}
 	root := plan
 	if plan.root != nil {
 		root = plan.root
@@ -101,6 +117,11 @@ func fullCapabilityMatrixPlan(plan *sourcePlan) {
 
 func copyRuntimeMatrixOutput(t *testing.T, source, target string) {
 	t.Helper()
+	// Each target is an owned fixture output. A previous program identity must
+	// not remain in a fresh source/native inventory after repeated measurements.
+	if err := os.RemoveAll(target); err != nil {
+		t.Fatal(err)
+	}
 	err := filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err

@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generatedModuleGraph } from "./runtime-feature-imports.mjs";
+import { runtimeBoundaryViolations } from "./runtime-boundaries.mjs";
 const matrix = path.resolve(process.argv[2]);
 const catalogPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -21,6 +22,19 @@ for (const fixture of catalog.fixtures) {
   const entry = fixture.group === "server" ? "server/webhooks.js" : "index.js";
   const selected = graph(path.join(base, "selected-js", fixture.name), entry);
   const full = graph(path.join(base, "full-js", fixture.name), entry);
+  assert.deepEqual(
+    runtimeBoundaryViolations(path.join(base, "selected", fixture.name), { generated: true }),
+    [],
+    `${fixture.group}/${fixture.name}: generated ownership boundaries`,
+  );
+  assert.ok(
+    !selected.has("wire-core.js"),
+    `${fixture.group}/${fixture.name}: generic schema interpreter in generated entry`,
+  );
+  assert.ok(
+    full.has("wire-core.js"),
+    `${fixture.group}/${fixture.name}: compatibility control must exercise its interpreter`,
+  );
   for (const module of fixture.required ?? []) {
     assert.ok(
       selected.has(module),

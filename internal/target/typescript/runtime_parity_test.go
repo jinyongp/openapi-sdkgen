@@ -175,7 +175,7 @@ func TestRuntimeSupportsStandardFormatAssertionRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	output := compileTypeScriptArtifactSet(t, artifacts, "consumer.ts", `import {validateWireValue} from './internal/runtime/codecs.js'; void validateWireValue;`)
+	output := compileTypeScriptArtifactSet(t, artifacts, "consumer.ts", `import {validateWireValue} from './internal/runtime/compatibility/codecs.js'; void validateWireValue;`)
 	script := `
 import { pathToFileURL } from "node:url";
 const { validateWireValue } = await import(pathToFileURL(process.argv[1]).href);
@@ -192,7 +192,7 @@ for (const [format, value] of Object.entries(invalid)) {
   catch (error) { if (String(error).includes("accepted")) throw error; }
 }
 `
-	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "internal", "runtime", "codecs.js")).CombinedOutput(); err != nil {
+	if output, err := exec.Command("node", "--input-type=module", "--eval", script, filepath.Join(output, "internal", "runtime", "compatibility", "codecs.js")).CombinedOutput(); err != nil {
 		t.Fatalf("execute TypeScript format registry runtime test: %v\n%s", err, output)
 	}
 }
@@ -1932,7 +1932,7 @@ try {
 
 func TestStreamRuntimeHasNoProviderOrRealtimeSemantics(t *testing.T) {
 	for _, path := range []string{
-		"runtime/internal/http.ts",
+		"runtime/compatibility/http.ts",
 		"runtime/server/runtime.ts",
 	} {
 		source, err := os.ReadFile(path)

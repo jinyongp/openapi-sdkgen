@@ -140,7 +140,7 @@ const native = await exercise(
   [
     path.join(generated, "internal/executions/items/by-id/get.js"),
     path.join(generated, "internal/executions/xml/get.js"),
-    path.join(generated, "internal/runtime/xml-codec.js"),
+    path.join(generated, "internal/runtime/media/xml/xml-codec.js"),
   ],
   [path.join(generated, "internal/executions/unavailable/get.js")],
 );
@@ -181,7 +181,7 @@ const targetChunks = (endings) =>
 const privateChunks = targetChunks([
   "/internal/executions/items/by-id/get.js",
   "/internal/executions/xml/get.js",
-  "/internal/runtime/xml-codec.js",
+  "/internal/runtime/media/xml/xml-codec.js",
 ]);
 const unavailableChunks = targetChunks(["/internal/executions/unavailable/get.js"]);
 assert(

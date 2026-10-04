@@ -1,18 +1,11 @@
 import { describe, expect, it } from "vitest";
-
-import {
-  createClient,
-  type Operations,
-} from "../fixtures/generated/transport-native-headers/index.js";
+import { createClient } from "../fixtures/generated/transport-native-headers/index.js";
+import type { Operations } from "../fixtures/generated/transport-native-headers/index.js";
 import { openapi } from "../fixtures/generated/transport-native-headers/metadata.js";
-import {
-  createCallbackHandlers,
-  type Callbacks,
-} from "../fixtures/generated/transport-native-headers/server/callbacks.js";
-import {
-  createWebhookRouter,
-  type Webhooks,
-} from "../fixtures/generated/transport-native-headers/server/webhooks.js";
+import { createCallbackHandlers } from "../fixtures/generated/transport-native-headers/server/callbacks.js";
+import type { Callbacks } from "../fixtures/generated/transport-native-headers/server/callbacks.js";
+import { createWebhookRouter } from "../fixtures/generated/transport-native-headers/server/webhooks.js";
+import type { Webhooks } from "../fixtures/generated/transport-native-headers/server/webhooks.js";
 
 type AllHeaderInput = NonNullable<Operations["allEnvironmentHeaders"]["input"]["headerParams"]>;
 

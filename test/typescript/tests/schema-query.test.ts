@@ -3,12 +3,12 @@ import {
   decodeSimpleWireHeader,
   wireSchemaTypes,
   wirePropertySchema,
-} from "../../../internal/target/typescript/runtime/internal/schema-query.js";
-import { jsonWireCodec } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+} from "../../../internal/target/typescript/runtime/schema/schema-query.js";
+import { jsonWireCodec } from "../../../internal/target/typescript/runtime/compatibility/wire-engine.js";
 import type {
   WireSchema,
   WireSchemas,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+} from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 function decode(
   value: string,

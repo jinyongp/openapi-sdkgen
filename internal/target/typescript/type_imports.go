@@ -8,6 +8,7 @@ import "strings"
 func generatedTypeImports(source string) string {
 	lines := strings.SplitAfter(source, "\n")
 	var body strings.Builder
+	body.Grow(len(source))
 	for _, line := range lines {
 		if !strings.HasPrefix(line, "import ") {
 			body.WriteString(line)
@@ -15,6 +16,7 @@ func generatedTypeImports(source string) string {
 	}
 	used := generatedIdentifiers(body.String())
 	var result strings.Builder
+	result.Grow(len(source))
 	for _, line := range lines {
 		if !strings.HasPrefix(line, "import ") {
 			result.WriteString(line)

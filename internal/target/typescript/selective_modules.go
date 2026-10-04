@@ -151,7 +151,7 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 			if err != nil {
 				return err
 			}
-			loaderSpecifier, err := modules.relativeModuleSpecifier(artifact, "internal/runtime/operation-loader.ts")
+			loaderSpecifier, err := modules.relativeModuleSpecifier(artifact, "internal/runtime/client/operation-loader.ts")
 			if err != nil {
 				return err
 			}
@@ -165,7 +165,7 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		if err != nil {
 			return err
 		}
-		loaderSpecifier, err := modules.relativeModuleSpecifier(artifact, "internal/runtime/operation-loader.ts")
+		loaderSpecifier, err := modules.relativeModuleSpecifier(artifact, "internal/runtime/client/operation-loader.ts")
 		if err != nil {
 			return err
 		}
@@ -178,15 +178,15 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 	if err != nil {
 		return err
 	}
-	entry := fmt.Sprintf(`import { createOperationLoader } from "../internal/runtime/operation-loader.js"
-import type { SelectionInput } from "../internal/runtime/selection-types.js"
-import type { PreparedOperations, OperationLoader, SelectedClientOptions } from "../internal/runtime/operation-loader.js"
+	entry := fmt.Sprintf(`import { createOperationLoader } from "../internal/runtime/client/operation-loader.js"
+import type { SelectionInput } from "../internal/runtime/client/selection-types.js"
+import type { PreparedOperations, OperationLoader, SelectedClientOptions } from "../internal/runtime/client/operation-loader.js"
 import type { Operations, RouteReferences, Client } from "./types.js"
 
 const loader: OperationLoader = /* @__PURE__ */ createOperationLoader({
   generation: %s,
   importModule: (filename: string): Promise<unknown> => import(/* @vite-ignore */ filename),
-  loadClient: (): Promise<typeof import("../internal/runtime/selected-client.js")> => import("../internal/runtime/selected-client.js"),
+  loadClient: (): Promise<typeof import("../internal/runtime/client/selected-client.js")> => import("../internal/runtime/client/selected-client.js"),
 })
 /** References keyed by exact operationId; accessing a key does not load its implementation. */
 export const operations: Operations = loader.operations as Operations
@@ -201,12 +201,12 @@ export function createClient<Selection>(options: SelectedClientOptions<Selection
   return loader.createClient(options) as Client<Selection>
 }
 export type * from "./types.js"
-export type { PreparedOperations } from "../internal/runtime/operation-loader.js"
-export type { OperationReference, OperationSelection } from "../internal/runtime/selection-types.js"
-export type { ClientOptions } from "../internal/runtime/configuration.js"
-export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
-export { isOperationHTTPError } from "../internal/runtime/http-errors.js"
-export type { HTTPErrorFor, OperationHTTPError } from "../internal/runtime/http-errors.js"
+export type { PreparedOperations } from "../internal/runtime/client/operation-loader.js"
+export type { OperationReference, OperationSelection } from "../internal/runtime/client/selection-types.js"
+export type { ClientOptions } from "../internal/runtime/http/configuration.js"
+export { OperationPreparationError } from "../internal/runtime/client/operation-loader.js"
+export { isOperationHTTPError } from "../internal/runtime/http/response/http-errors.js"
+export type { HTTPErrorFor, OperationHTTPError } from "../internal/runtime/http/response/http-errors.js"
 `, quoteTS(generation))
 	if root.selection != nil {
 		var public, private []string
@@ -259,7 +259,7 @@ func emitSelectiveTypes(plan *sourcePlan) ([]byte, error) {
 
 func emitSelectiveTypesAt(plan *sourcePlan, artifact string, named bool) ([]byte, error) {
 	var output bytes.Buffer
-	selectionTypes, err := plan.modules.relativeModuleSpecifier(artifact, "internal/runtime/selection-types.ts")
+	selectionTypes, err := plan.modules.relativeModuleSpecifier(artifact, "internal/runtime/client/selection-types.ts")
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createClient, type OperationInput } from "../fixtures/generated/lifecycle/index.js";
+import { createClient } from "../fixtures/generated/lifecycle/index.js";
+import type { OperationInput } from "../fixtures/generated/lifecycle/index.js";
 
 const input: OperationInput<"echoInline"> = { body: { value: 0, nested: { flag: false } } };
 // @ts-expect-error Inline value must remain a number.

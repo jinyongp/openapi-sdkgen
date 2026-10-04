@@ -1,39 +1,38 @@
 import { describe, expect, it, vi } from "vitest";
-
 import {
   bindGeneratedOperation,
   bindOperation,
   bindPathOperation,
-  type RequestFunction,
-} from "../../../internal/target/typescript/runtime/internal/callables.js";
+} from "../../../internal/target/typescript/runtime/client/callables.js";
+import type { RequestFunction } from "../../../internal/target/typescript/runtime/client/callables.js";
 import {
   TransportErrorCode,
   getErrorCode,
   isAPIError,
   isErrorCode,
-} from "../../../internal/target/typescript/runtime/internal/errors.js";
+} from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
 import {
   transformWireValue,
   validateWireValue,
-  type StreamFraming,
-  type WireBodyDefinition,
-  type WireSchema,
-} from "../../../internal/target/typescript/runtime/internal/codecs.js";
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
+} from "../../../internal/target/typescript/runtime/compatibility/codecs.js";
+import type { StreamFraming } from "../../../internal/target/typescript/runtime/stream/stream-protocol-types.js";
+import type { WireBodyDefinition } from "../../../internal/target/typescript/runtime/media/media-contract-types.js";
+import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
 import {
   mergeLinkInput,
   resolveLinkInput,
-} from "../../../internal/target/typescript/runtime/internal/links.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-import { createPaginator } from "../../../internal/target/typescript/runtime/internal/pagination.js";
+} from "../../../internal/target/typescript/runtime/client/links.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import { createPaginator } from "../../../internal/target/typescript/runtime/client/pagination.js";
 import type {
   RawResponse,
   RequestOptions,
-} from "../../../internal/target/typescript/runtime/internal/request.js";
+} from "../../../internal/target/typescript/runtime/http/request.js";
 import type {
   SecurityCredential,
   SecuritySchemeDefinition,
-} from "../../../internal/target/typescript/runtime/internal/security.js";
+} from "../../../internal/target/typescript/runtime/security/security.js";
 
 const testStreamFraming = (
   contentType: string,

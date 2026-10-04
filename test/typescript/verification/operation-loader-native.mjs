@@ -9,7 +9,7 @@ const javascript = path.resolve(process.argv[2]);
 const directory = path.join(path.dirname(javascript), "loader-native");
 fs.mkdirSync(path.join(directory, "lookup"), { recursive: true });
 const runtime = await import(
-  pathToFileURL(path.join(javascript, "lifecycle/internal/runtime/operation-loader.js")).href
+  pathToFileURL(path.join(javascript, "lifecycle/internal/runtime/client/operation-loader.js")).href
 );
 const generation = "native-loader-fixture";
 fs.writeFileSync(

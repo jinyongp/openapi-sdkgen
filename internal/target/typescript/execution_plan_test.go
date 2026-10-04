@@ -94,7 +94,7 @@ func TestExecutionSchemaSummaryCyclePropagatesLateCapability(t *testing.T) {
 		"B":   {"type": "object", "properties": map[string]any{"a": map[string]any{"$ref": "#/components/schemas/A"}}},
 		"XML": {"type": "string", "contentMediaType": "application/xml", "contentSchema": map[string]any{"type": "object"}},
 	}}
-	for _, roots := range [][]string{{"A", "B"}, {"B", "A"}} {
+	for _, roots := range [][]string{{"A", "B", "A", "B"}, {"B", "A", "B", "A"}} {
 		planner := newExecutionPlanner(document)
 		for _, name := range roots {
 			key := executionSchemaReference{name: name, direction: projectionOutput}

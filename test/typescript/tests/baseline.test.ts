@@ -1,23 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-
-import {
-  createClient as createOpenAPI30Client,
-  type Operations as OpenAPI30Operations,
-  type Routes as OpenAPI30Routes,
+import { createClient as createOpenAPI30Client } from "../fixtures/generated/baseline-oas30/index.js";
+import type {
+  Operations as OpenAPI30Operations,
+  Routes as OpenAPI30Routes,
 } from "../fixtures/generated/baseline-oas30/index.js";
-import {
-  createClient as createOpenAPI31Client,
-  type Operations as OpenAPI31Operations,
-  type Routes as OpenAPI31Routes,
+import { createClient as createOpenAPI31Client } from "../fixtures/generated/baseline-oas31/index.js";
+import type {
+  Operations as OpenAPI31Operations,
+  Routes as OpenAPI31Routes,
 } from "../fixtures/generated/baseline-oas31/index.js";
-import {
-  createCallbackHandlers,
-  type RouteCallbacks,
-} from "../fixtures/generated/baseline-oas31/server/callbacks.js";
-import {
-  createClient as createOpenAPI32Client,
-  type Operations as OpenAPI32Operations,
-  type Routes as OpenAPI32Routes,
+import { createCallbackHandlers } from "../fixtures/generated/baseline-oas31/server/callbacks.js";
+import type { RouteCallbacks } from "../fixtures/generated/baseline-oas31/server/callbacks.js";
+import { createClient as createOpenAPI32Client } from "../fixtures/generated/baseline-oas32/index.js";
+import type {
+  Operations as OpenAPI32Operations,
+  Routes as OpenAPI32Routes,
 } from "../fixtures/generated/baseline-oas32/index.js";
 
 type ExpectNever<Value extends never> = Value;

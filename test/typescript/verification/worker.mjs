@@ -50,7 +50,7 @@ if (mode === "leaf") {
   assert.ok(mod.inputWireSchema || mod.outputWireSchema);
   const files = [...loaded].map((p) => p.slice(root.length + 1)).sort();
   assert.equal(
-    files.includes("internal/runtime/codecs.js"),
+    files.includes("internal/runtime/compatibility/codecs.js"),
     false,
     "schema leaf loaded full codecs runtime",
   );
@@ -96,11 +96,11 @@ if (mode === "timing") {
   for (const file of files) {
     const imported = await import(pathToFileURL(resolve(root, file)));
     if (
-      file === "internal/runtime/callables.js" &&
+      file === "internal/runtime/client/callables.js" &&
       Object.hasOwn(imported, "createWireProperties")
     ) {
       const implementation = await import(
-        pathToFileURL(resolve(root, "internal/runtime/wire-properties.js"))
+        pathToFileURL(resolve(root, "internal/runtime/schema/wire-properties.js"))
       );
       assert.equal(
         imported.createWireProperties,
@@ -154,7 +154,7 @@ if (mode === "timing") {
   console.log(JSON.stringify(results));
 } else if (mode === "lifetime") {
   assert.equal(typeof global.gc, "function", "memory runs require --expose-gc");
-  const helperLoaded = loaded.has(resolve(root, "internal/runtime/wire-properties.js"));
+  const helperLoaded = loaded.has(resolve(root, "internal/runtime/schema/wire-properties.js"));
   if (helperLoaded) assert.equal(instrumented, true, "loaded helper was not instrumented");
   if (helperExpected !== "true")
     assert.equal(instrumented, false, "unexpected helper implementation");

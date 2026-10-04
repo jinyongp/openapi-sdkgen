@@ -1,19 +1,23 @@
-import { defineOwnDataProperty } from "../internal/objects.js";
+import {
+  bindSchemaView,
+  conjoinSchemas,
+  schemaView,
+  unconstrainedSchema,
+} from "../schema/program-derived.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
 import type {
-  MediaCodec,
   StreamCodec,
   StreamContext,
   StreamProtocol,
   StreamReader,
-  WireProperty,
-  WireSchema,
-  WireSchemas,
-} from "../internal/wire-types.js";
+} from "../stream/stream-protocol-types.js";
+import type { WireProperty, WireSchema, WireSchemas } from "../schema/wire-types.js";
 import {
   wireArrayItemSchema as inboundWireArrayItemSchema,
   wireSchemaTypes as inboundWireSchemaTypes,
-} from "../internal/schema-query.js";
-import type { Mutable } from "../internal/objects.js";
+} from "../schema/schema-query.js";
+import type { Mutable } from "../shared/runtime-support.js";
 import type {
   InboundBodyOptions,
   InboundBodyPlan,
@@ -21,7 +25,6 @@ import type {
   InboundProtocolItems,
   InboundSchema,
   InboundSchemas,
-  InboundWireSchemaConjunction,
   RequiredStreamSignal,
   ServerCodecContext,
 } from "./runtime-types.js";
@@ -317,7 +320,7 @@ export function materializeInboundWireSchema(
     );
   if (conjunctions.length === 0) delete result.allOf;
   else result.allOf = conjunctions;
-  return result;
+  return bindSchemaView(result, schema, dynamicScope);
 }
 
 export function inboundWireSchemaAlternatives(
@@ -325,14 +328,10 @@ export function inboundWireSchemaAlternatives(
   schemas: WireSchemas,
   seen: ReadonlySet<WireSchema> = new Set(),
 ): readonly WireSchema[] {
-  if (seen.has(schema)) return [{}];
+  if (seen.has(schema)) return [unconstrainedSchema];
   const nestedSeen: Set<WireSchema> = new Set(seen);
   nestedSeen.add(schema);
-  const own: Mutable<WireSchema> = { ...schema };
-  delete own.reference;
-  delete own.allOf;
-  delete own.oneOf;
-  delete own.anyOf;
+  const own: WireSchema = schemaView(schema, "alternatives");
   let alternatives: WireSchema[] = [own];
   const conjunctions: (readonly WireSchema[])[] = [];
   if (schema.dynamicReference !== undefined)
@@ -354,10 +353,8 @@ export function inboundWireSchemaAlternatives(
     );
   }
   for (const choices of conjunctions) {
-    alternatives = alternatives.flatMap((base: WireSchema): InboundWireSchemaConjunction[] =>
-      choices.map((choice: WireSchema): InboundWireSchemaConjunction => ({
-        allOf: [base, choice],
-      })),
+    alternatives = alternatives.flatMap((base: WireSchema): WireSchema[] =>
+      choices.map((choice: WireSchema): WireSchema => conjoinSchemas([base, choice])),
     );
   }
   return alternatives;

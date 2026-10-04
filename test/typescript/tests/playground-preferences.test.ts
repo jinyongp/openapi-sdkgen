@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-
 import {
   readPlaygroundPreferences,
-  type PreferenceStorage,
   writePlaygroundPreferences,
 } from "../../../docs/.vitepress/theme/playground/preferences.js";
+import type { PreferenceStorage } from "../../../docs/.vitepress/theme/playground/preferences.js";
 
 function memoryStorage(initial: Record<string, string> = {}): PreferenceStorage {
   const values = new Map(Object.entries(initial));

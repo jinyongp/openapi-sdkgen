@@ -1,13 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-
-import { createRequest } from "../../../internal/target/typescript/runtime/internal/http.js";
-import { TransportErrorCode } from "../../../internal/target/typescript/runtime/internal/errors.js";
-import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
-import type {
-  MediaCodec,
-  WireMultipartHeaderDefinition,
-  WireSchemas,
-} from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
+import { createRequest } from "../../../internal/target/typescript/runtime/compatibility/http.js";
+import { TransportErrorCode } from "../../../internal/target/typescript/runtime/shared/runtime-support.js";
+import type { OperationDefinition } from "../../../internal/target/typescript/runtime/http/operation.js";
+import type { MediaCodec } from "../../../internal/target/typescript/runtime/media/media-codec-types.js";
+import type { WireMultipartHeaderDefinition } from "../../../internal/target/typescript/runtime/media/media-contract-types.js";
+import type { WireSchemas } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 
 type HeaderCase = {
   name: string;

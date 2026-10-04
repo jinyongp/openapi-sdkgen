@@ -1,13 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-
 import {
   TransportErrorCode,
-  createClient,
   getRequestID,
   isAPIError,
-  isErrorCategory,
   isErrorCode,
 } from "../fixtures/generated/client/index.js";
+import { createClient, isErrorCategory } from "../fixtures/generated/client/index.js";
 import type {
   Client,
   LinkCalls,

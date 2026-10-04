@@ -46,7 +46,7 @@ func TestRuntimeFeatureHandlerCompositionRegression(t *testing.T) {
 			artifacts = append(artifacts, artifact)
 		}
 	}
-	artifacts = append(artifacts, Artifact{Path: "control.ts", Data: []byte("export { fullRequestServices } from './internal/runtime/http-codecs.js'\n")})
+	artifacts = append(artifacts, Artifact{Path: "control.ts", Data: []byte("export { fullRequestServices } from './internal/runtime/compatibility/http-codecs.js'\n")})
 	output := compileTypeScriptArtifactSet(t, artifacts, "consumer.ts", `import {createClient} from './index.js'; void createClient;`)
 	ts, err := filepath.Abs("../../../test/typescript/node_modules/typescript-6/lib/typescript.js")
 	if err != nil {

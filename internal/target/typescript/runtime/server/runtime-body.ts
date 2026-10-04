@@ -1,5 +1,5 @@
-import type { MediaCodec } from "../internal/wire-types.js";
-import { defineOwnDataProperty } from "../internal/objects.js";
+import type { MediaCodec } from "../media/media-codec-types.js";
+import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import type {
   InboundBodyOptions,
   InboundBodyPlan,
