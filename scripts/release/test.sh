@@ -208,3 +208,84 @@ if output="$(run_release --since v1.1.0 --yes patch 2>&1)"; then
 fi
 assert_contains "$output" "Release requires a clean working tree"
 [[ "$(git -C "$repository" rev-parse HEAD)" == "$clean_head" ]] || fail "dirty tree caused preparation"
+
+# Execute the workflow's retry step with real checksums and a mocked release API.
+assets_step="$test_root/assets-step.sh"
+python3 - "$ROOT/.github/workflows/release.yml" "$assets_step" <<'PY'
+import pathlib
+import sys
+
+lines = pathlib.Path(sys.argv[1]).read_text().splitlines()
+step = lines.index("        id: assets")
+start = lines.index("        run: |", step) + 1
+body = []
+for line in lines[start:]:
+    if line and not line.startswith("          "):
+        break
+    body.append(line[10:])
+if not body:
+    raise SystemExit("missing workflow asset retry step")
+pathlib.Path(sys.argv[2]).write_text("\n".join(body) + "\n")
+PY
+assets_fixture="$test_root/assets-fixture"
+assets_bin="$test_root/assets-bin"
+mkdir -p "$assets_fixture" "$assets_bin"
+for platform in darwin linux windows; do
+  extension=tar.gz
+  if [[ "$platform" == windows ]]; then extension=zip; fi
+  for arch in amd64 arm64; do
+    printf '%s %s\n' "$platform" "$arch" >"$assets_fixture/openapi-sdkgen_1.0.0_${platform}_${arch}.${extension}"
+  done
+done
+(cd "$assets_fixture" && sha256sum openapi-sdkgen_* >checksums.txt)
+cat >"$assets_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1" in
+  api)
+    case "$RELEASE_TEST_ASSETS_CASE" in
+      new) ;;
+      draft) printf '{"draft":true,"immutable":false}\n' ;;
+      mutable) printf '{"draft":false,"immutable":false}\n' ;;
+      api-failure) exit 1 ;;
+      *) printf '{"draft":false,"immutable":true}\n' ;;
+    esac
+    ;;
+  release)
+    cp "$RELEASE_TEST_ASSETS_FIXTURE/"* dist/
+    case "$RELEASE_TEST_ASSETS_CASE" in
+      corrupt) printf 'corrupt\n' >>dist/openapi-sdkgen_1.0.0_linux_amd64.tar.gz ;;
+      missing)
+        rm dist/openapi-sdkgen_1.0.0_windows_arm64.zip
+        (cd dist && sha256sum openapi-sdkgen_* >checksums.txt)
+        ;;
+    esac
+    ;;
+  *) exit 1 ;;
+esac
+EOF
+chmod +x "$assets_bin/gh"
+run_assets_step() {
+  local scenario="$1"
+  local directory="$test_root/assets-$scenario"
+  mkdir -p "$directory"
+  (
+    cd "$directory"
+    export RUNNER_TEMP="$directory" GITHUB_OUTPUT="$directory/output"
+    export TAG=v1.0.0 VERSION=1.0.0 GITHUB_REPOSITORY=test/repository
+    export RELEASE_TEST_ASSETS_CASE="$scenario" RELEASE_TEST_ASSETS_FIXTURE="$assets_fixture"
+    PATH="$assets_bin:$PATH" bash "$assets_step"
+  )
+}
+for scenario in new draft published; do
+  run_assets_step "$scenario" >/dev/null || fail "asset retry rejected $scenario release"
+  expected_build=true
+  if [[ "$scenario" == published ]]; then expected_build=false; fi
+  assert_contains "$(cat "$test_root/assets-$scenario/output")" "build=$expected_build"
+done
+for scenario in mutable api-failure corrupt missing; do
+  if run_assets_step "$scenario" >"$test_root/assets-$scenario.log" 2>&1; then
+    fail "asset retry accepted $scenario release"
+  fi
+  [[ ! -s "$test_root/assets-$scenario/output" ]] || fail "failed asset retry enabled publication"
+done

@@ -118,10 +118,45 @@ jobs:
           fetch-depth: 0
       - name: Verify immutable tag target
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
+      - name: Reuse published immutable assets on retry
+        id: assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.validate-release.outputs.tag }}
+          VERSION: ${{ needs.validate-release.outputs.version }}
+        run: |
+          set -euo pipefail
+          release_json="$RUNNER_TEMP/published-release.json"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[] | select(.tag_name == env.TAG) | {draft, immutable}' > "$release_json"
+          if [[ ! -s "$release_json" ]] || jq -e '.draft == true' "$release_json" >/dev/null; then
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! jq -e '.immutable == true' "$release_json" >/dev/null; then
+            echo 'Published release must be immutable before reusing its assets.' >&2
+            exit 1
+          fi
+          mkdir -p dist
+          gh release download "$TAG" --dir dist \
+            --pattern checksums.txt \
+            --pattern "openapi-sdkgen_${VERSION}_*.tar.gz" \
+            --pattern "openapi-sdkgen_${VERSION}_*.zip"
+          (cd dist && sha256sum --check --strict checksums.txt)
+          for platform in darwin linux windows; do
+            extension=tar.gz
+            if [[ "$platform" == windows ]]; then extension=zip; fi
+            for arch in amd64 arm64; do
+              test -f "dist/openapi-sdkgen_${VERSION}_${platform}_${arch}.${extension}"
+            done
+          done
+          echo 'build=false' >> "$GITHUB_OUTPUT"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.assets.outputs.build == 'true'
         with:
           go-version-file: go.mod
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        if: steps.assets.outputs.build == 'true'
         with:
           distribution: goreleaser
           version: "v2.17.0"
