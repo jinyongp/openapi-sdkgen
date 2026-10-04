@@ -162,12 +162,13 @@ jobs:
           version: "v2.17.0"
           args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@31c98fec4bbf03f4e179c2a9b3031a50d771a1d3 # v0.3.0
+        uses: releaseway/actions@c054f2de3448e79e5d854155e701e13ad31a520c # v0.3.1
         with:
           tag: ${{ needs.validate-release.outputs.tag }}
           commit: ${{ needs.validate-release.outputs.commit }}
           prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
           notes: standard
+          upload-concurrency: "4"
           assets: |
             dist/checksums.txt
             dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.tar.gz
