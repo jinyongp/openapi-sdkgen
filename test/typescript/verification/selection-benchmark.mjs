@@ -14,7 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const base = path.join(root, ".tmp/selection-benchmark");
 if (process.argv.includes("--help")) {
   console.log(
-    "Measures 1000 APIs / 10 selections; requires dev:build and installed TypeScript verification dependencies. Writes .tmp/selection-benchmark/report.json. Three generation/bundle trials and six runtime trials.",
+    "Measures 1000 APIs / 10 selections; requires build:dev and installed TypeScript verification dependencies. Writes .tmp/selection-benchmark/report.json. Three generation/bundle trials and six runtime trials.",
   );
   process.exit(0);
 }

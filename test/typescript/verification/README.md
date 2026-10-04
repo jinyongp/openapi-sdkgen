@@ -20,7 +20,7 @@ bundling or minification. Source manifests are checked before comparison.
 - `migration.mjs`: distinct-generator migration, no-op, fresh equivalence and publication conflict probes.
 
 The `typescript-tools` CI suite runs the harness self-tests. Full comparative
-benchmarks are opt-in through `devtools run verify:representation-check`; they do not run
+benchmarks are opt-in through `devtools run representation-check:verify`; they do not run
 on every unit test invocation and do not download corpora or install packages.
 
 ## Measurement contract
@@ -81,7 +81,7 @@ routing. Null-prototype empty host maps are used for the valid unmatched-route t
 ## Running and preserving results
 
 ```sh
-devtools run verify:representation-check \
+devtools run representation-check:verify \
   --baseline /absolute/path/to/baseline-sdkgen \
   --candidate /absolute/path/to/candidate-sdkgen \
   --input github=/absolute/path/to/pinned-github.json \
@@ -114,8 +114,8 @@ The lifecycle fixture must make a positive number of constructor calls when a ca
 ## Artifact and migration commands
 
 ```sh
-devtools run verify:representation-artifacts --report .tmp/preimplementation/run-EXAMPLE/report.json --pairs 3
-devtools run verify:representation-migration --baseline /path/to/base --candidate /path/to/candidate
+devtools run representation-artifacts:verify --report .tmp/preimplementation/run-EXAMPLE/report.json --pairs 3
+devtools run representation-migration:verify --baseline /path/to/base --candidate /path/to/candidate
 ```
 
 The artifact command verifies the source and ESM hashes from its input report before using them. Strict source checking removes nocheck equally from both check copies; normal source and declaration consumers use the generated source as shipped. A baseline strict failure is retained with raw diagnostics. Matching candidate diagnostics are classified `baseline-blocked`, not PASS, and the command exits 2. A new or different candidate diagnostic fails with exit 1. Existing diagnostic comparison normalizes only check-directory paths, source positions and private lexical spellings; raw messages remain available for review. No compiler strictness flag is relaxed.
@@ -125,14 +125,14 @@ Migration compares existing managed files byte-for-byte, protects their mtimes o
 ## Independent process cost measurement
 
 ```sh
-devtools run verify:representation-measure --report .tmp/preimplementation/run-EXAMPLE/report.json --artifacts .tmp/preimplementation/run-EXAMPLE/artifacts-EXAMPLE/report.json --pairs 10
+devtools run representation-measure:verify --report .tmp/preimplementation/run-EXAMPLE/report.json --artifacts .tmp/preimplementation/run-EXAMPLE/artifacts-EXAMPLE/report.json --pairs 10
 ```
 
 This consumes the same pinned input/binary and compiler configurations as the correctness checks. It interleaves fresh generation, strict and consumer checks with per-child GNU time CPU/peak-RSS measurements. A generated directory belongs to the measuring invocation and is removed only after that individual run; raw measurements and command logs remain. A passing status means measurements completed, not that every performance delta meets the separate acceptance policy. This report does not include network/download/binary-build time or claim a cold filesystem.
 
 ## Local identifier allocation
 
-`devtools run perf:identifiers` measures the production Go local allocator with 1,000,
+`devtools run identifiers:perf` measures the production Go local allocator with 1,000,
 10,000 and 100,000 exact keys, including collection, freeze and lookup. It records
 five samples of three iterations per size with allocation statistics in
 an invocation-specific `.tmp/perf/local-identifiers-XXXXXX.log` printed by the

@@ -1,6 +1,6 @@
 # Project scripts
 
-Local commands use `devtools run PURPOSE:COMMAND ARG...`. Arguments follow the
+Local commands use `devtools run COMMAND:TARGET ARG...`. Arguments follow the
 command name directly. Devtools selects the project
 directory, environment, and local Node runtime. CI prepares its toolchain and
 calls the same scripts directly. Versions come from `go.mod`, `.node-version`,
@@ -11,22 +11,22 @@ Scripts are grouped by responsibility: `dev`, `generate`, `compatibility`,
 Documentation commands stay in `docs/scripts`. Go measurement helpers and
 TypeScript verification implementations stay with the code they exercise.
 
-| Namespace | Examples |
+| Target | Examples |
 | --- | --- |
-| `dev:` | `dev:build`, `dev:test`, `dev:ci go`, `dev:ts-lint` |
-| `generate:` | `generate:sdk INPUT OUTPUT`, `generate:check INPUT` |
-| `verify:` | `verify:typescript [test\|typecheck\|coverage]`, `verify:compilers 5.7.3`, `verify:representation-check` |
-| `compatibility:` | `compatibility:fetch`, `compatibility:benchmark`, `compatibility:merge` |
-| `perf:` | `perf:benchmark`, `perf:identifiers`, `perf:profile`, `perf:acceptance` |
-| `security:` | `security:audit`, `security:audit-test` |
-| `examples:` | `examples:todo`, `examples:advanced`, `examples:capabilities` |
-| `release:` | `release:check`, `release:cross-build`, `release:test`, `release:publish` |
-| `npm:` | `npm:source-check` |
-| `docs:` | `docs:validate`, `docs:build`, `docs:dev` |
+| `dev` | `build:dev`, `test:dev`, `ci:dev go`, `ts-lint:dev` |
+| `generate` | `sdk:generate INPUT OUTPUT`, `check:generate INPUT` |
+| `verify` | `typescript:verify [test\|typecheck\|coverage]`, `compilers:verify 5.7.3`, `representation-check:verify` |
+| `compatibility` | `fetch:compatibility`, `benchmark:compatibility`, `merge:compatibility` |
+| `perf` | `benchmark:perf`, `identifiers:perf`, `profile:perf`, `acceptance:perf` |
+| `security` | `audit:security`, `audit-test:security` |
+| `examples` | `todo:examples`, `advanced:examples`, `capabilities:examples` |
+| `release` | `check:release`, `cross-build:release`, `test:release`, `publish:release` |
+| `npm` | `source-check:npm` |
+| `docs` | `validate:docs`, `build:docs`, `dev:docs` |
 
 Use `devtools command list` for the full command list. TypeScript runtime checks,
-typechecking and optional coverage share `verify:typescript` with a mode argument.
-`generate:check INPUT [TARGET] -- GENERATOR_OPTIONS...` uses its own separator
+typechecking and optional coverage share `typescript:verify` with a mode argument.
+`check:generate INPUT [TARGET] -- GENERATOR_OPTIONS...` uses its own separator
 to distinguish generator options from the check script's arguments.
 
 | Group | Responsibility | Execution cost / CI placement |

@@ -129,8 +129,8 @@ the current charts. Machine-local paths are removed from public downloads.
 In a checkout with the local Go/Node toolchain and verification dependencies:
 
 ```sh
-devtools run dev:build
-devtools run perf:selection
+devtools run build:dev
+devtools run selection:perf
 ```
 
 The command writes `.tmp/selection-benchmark/report.json` and uses the repository's

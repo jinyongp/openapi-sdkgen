@@ -121,8 +121,8 @@ named 설정만으로 전체 루트를 만들던 과거 측정은 현재 그래�
 로컬 Go·Node 환경과 검증 의존성을 준비한 저장소에서 실행합니다.
 
 ```sh
-devtools run dev:build
-devtools run perf:selection
+devtools run build:dev
+devtools run selection:perf
 ```
 
 결과는 `.tmp/selection-benchmark/report.json`에 저장합니다. 저장소의 표본과 실행

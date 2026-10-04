@@ -57,7 +57,7 @@ const report = {
   toolSha256: sha256(JSON.stringify(toolFiles)),
   generatorSha256: sha256(readFileSync(binary)),
   build: {
-    command: "devtools run dev:build",
+    command: "devtools run build:dev",
     millis: Number(process.env.SDKGEN_DECLARATION_BUILD_MILLIS),
     includedInMeasurements: false,
   },

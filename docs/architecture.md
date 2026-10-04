@@ -225,7 +225,7 @@ the inventory and matrix provide readable views.
 Repository validation uses separate cost tiers for ordinary development and
 release workflows.
 
-`devtools run dev:ci` runs the ordinary pull-request suites locally. GitHub CI runs
+`devtools run ci:dev` runs the ordinary pull-request suites locally. GitHub CI runs
 Go, TypeScript runtime, verification tools, and each pinned consumer compiler
 version (5.7.3, 5.9.3, 6.0.3, 7.0.2) independently. The `Validate source` job
 requires every suite to pass. CI prepares tools and directly invokes the same
@@ -233,7 +233,7 @@ scripts; it does not install devtools. Suites avoid repeated preparation and
 full cross-product compiler checks. Coverage reports remain opt-in without
 fixed percentage gates. Runner jobs use `ubuntu-24.04`.
 
-`devtools run release:publish` requires clean `main`, validates its existing HEAD,
+`devtools run publish:release` requires clean `main`, validates its existing HEAD,
 then atomically pushes `main` and the annotated tag. Dry runs perform the checks
 without editing files, creating commits, or publishing. Checks cannot change
 HEAD or leave the working tree dirty. A failed push removes only the local tag
@@ -242,7 +242,7 @@ Releaseway standard generates GitHub release notes. Breaking changes and
 migration instructions can be added there, and retries preserve published
 release bodies. There is no mandatory changelog file or preparation commit.
 
-`devtools run dev:check` also exercises runnable examples and release cross-builds
+`devtools run check:dev` also exercises runnable examples and release cross-builds
 for macOS, Linux, and Windows. Release and npm distribution safety simulations
 run in the verification-tools suite. Performance and corpus benchmarks remain
 separate explicit commands.
