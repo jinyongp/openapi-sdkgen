@@ -1,0 +1,25 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "dynamic", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Tree" } } }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Tree": {
+        "$dynamicAnchor": "node",
+        "type": "object",
+        "properties": { "children": { "type": "array", "items": { "$dynamicRef": "#node" } } }
+      }
+    }
+  }
+}

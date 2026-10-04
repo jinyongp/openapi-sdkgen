@@ -22,6 +22,12 @@ and authentication policy.
 The same OpenAPI schemas used by the client are used to parse and validate
 inbound requests before typed values reach your handlers.
 
+Generated routers connect only the runtime features required by their inbound
+contracts. The `server/runtime` helper entry still supports arbitrary supported
+schemas and includes the full codec set. A JSON-only router does not import
+that generic helper implementation. The server add-on leaves client artifacts
+unchanged, so importing the client does not load inbound codecs.
+
 ## Receive a Todo Webhook
 
 Suppose the OpenAPI document defines a Webhook named `todoCompleted`.

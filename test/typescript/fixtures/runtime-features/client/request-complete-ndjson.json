@@ -1,0 +1,28 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "request-complete-ndjson", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-ndjson": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id"],
+                  "properties": { "id": { "type": "string" } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  }
+}

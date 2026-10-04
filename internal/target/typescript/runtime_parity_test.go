@@ -171,11 +171,11 @@ if (calls !== 1) throw new Error("valid OpenAPI 3.0 bound did not reach fetch");
 }
 
 func TestRuntimeSupportsStandardFormatAssertionRegistry(t *testing.T) {
-	document, err := sdkgen.Compile([]byte(`{"openapi":"3.1.1","info":{"title":"Formats","version":"1"},"paths":{}}`))
+	artifacts, err := emitRuntimeTemplateArtifacts()
 	if err != nil {
 		t.Fatal(err)
 	}
-	output := compileTypeScriptArtifacts(t, document)
+	output := compileTypeScriptArtifactSet(t, artifacts, "consumer.ts", `import {validateWireValue} from './internal/runtime/codecs.js'; void validateWireValue;`)
 	script := `
 import { pathToFileURL } from "node:url";
 const { validateWireValue } = await import(pathToFileURL(process.argv[1]).href);
@@ -4016,7 +4016,7 @@ func TestVisibleRecursiveComponentCanServeRequestSuccessAndErrorRoles(t *testing
 	for _, expected := range []string{
 		`readonly "NodeError": {`,
 		`readonly "child"?: Input`,
-		`readonly "child"?: Output`,
+		`"child"?: Output`,
 	} {
 		if !strings.Contains(types, expected) {
 			t.Fatalf("dual-role component missing %q:\n%s", expected, types)

@@ -535,17 +535,32 @@ func arrayType(document *ir.Document, schema map[string]any, direction projectio
 			// absent. Preserve that openness instead of producing a closed tuple.
 			parts = append(parts, "...unknown[]")
 		}
-		return "readonly [" + strings.Join(parts, ", ") + "]", nil
+		return projectionReadonly(direction) + "[" + strings.Join(parts, ", ") + "]", nil
 	}
 	items, exists := schema["items"]
 	if !exists {
-		return "readonly unknown[]", nil
+		return projectionReadonly(direction) + "unknown[]", nil
 	}
 	itemType, err := schemaTypeForScope(document, items, direction, scope)
 	if err != nil {
 		return "", err
 	}
-	return "readonly (" + itemType + ")[]", nil
+	return projectionReadonly(direction) + "(" + itemType + ")[]", nil
+}
+
+func projectionReadonly(direction projection) string {
+	if direction == projectionInput {
+		return "readonly "
+	}
+	return ""
+}
+
+func projectionRecord(direction projection, value string) string {
+	result := "Record<string, " + value + ">"
+	if direction == projectionInput {
+		return "Readonly<" + result + ">"
+	}
+	return result
 }
 
 func objectType(document *ir.Document, schema map[string]any, direction projection) (string, error) {
@@ -573,12 +588,12 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 			return "", err
 		}
 		if dynamic != "" {
-			return objectIndexType(document, schema, scope, dynamic), nil
+			return objectIndexType(document, schema, direction, scope, dynamic), nil
 		}
 		if additional, ok := schema["additionalProperties"].(bool); ok && !additional {
-			return "Readonly<Record<string, never>>", nil
+			return projectionRecord(direction, "never"), nil
 		}
-		return "Readonly<Record<string, unknown>>", nil
+		return projectionRecord(direction, "unknown"), nil
 	}
 	required := make(map[string]bool)
 	if values, ok := schema["required"].([]any); ok {
@@ -624,7 +639,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		}
 		propertyIndexTypes = append(propertyIndexTypes, propertyType)
 		emitSchemaValueJSDoc(&output, document, "  ", propertySchema, "OpenAPI property `"+sanitizeComment(wireName)+"`.")
-		fmt.Fprintf(&output, "  readonly %s%s: %s\n", propertyName, optional, propertyType)
+		fmt.Fprintf(&output, "  %s%s%s: %s\n", projectionReadonly(direction), propertyName, optional, propertyType)
 	}
 	output.WriteString("}")
 	additional, err := objectAdditionalType(document, schema, direction, scope)
@@ -635,14 +650,14 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 		return output.String(), nil
 	}
 	indexType := typeUnion(append([]string{additional}, propertyIndexTypes...))
-	return "(" + output.String() + ") & (" + objectIndexType(document, schema, scope, indexType) + ")", nil
+	return "(" + output.String() + ") & (" + objectIndexType(document, schema, direction, scope, indexType) + ")", nil
 }
 
-func objectIndexType(document *ir.Document, schema map[string]any, scope typeRenderScope, value string) string {
+func objectIndexType(document *ir.Document, schema map[string]any, direction projection, scope typeRenderScope, value string) string {
 	if objectIndexHasSelfReference(document, schema, scope) {
-		return "{ readonly [key: string]: " + value + " }"
+		return "{ " + projectionReadonly(direction) + "[key: string]: " + value + " }"
 	}
-	return "Readonly<Record<string, " + value + ">>"
+	return projectionRecord(direction, value)
 }
 
 func objectIndexHasSelfReference(document *ir.Document, schema map[string]any, scope typeRenderScope) bool {
@@ -749,7 +764,12 @@ func referencedType(document *ir.Document, name string, direction projection, sc
 }
 
 func isSuccessResponseStatus(status string) bool {
-	return status == "default" || strings.HasPrefix(status, "2")
+	for code := 200; code < 300; code++ {
+		if responseStatusScore(status, code) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func operationOutputType(document *ir.Document, operation ir.Operation) (string, error) {
@@ -839,27 +859,24 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 		return "", err
 	}
 	var result []string
-	for _, response := range responses {
-		if !isSuccessResponseStatus(response.Status) {
-			continue
-		}
-		statusType := "number"
-		status := response.Status
-		if len(status) == 3 && status[0] >= '0' && status[0] <= '9' && status[1] >= '0' && status[1] <= '9' && status[2] >= '0' && status[2] <= '9' {
-			statusType = status
-		}
+	for _, branch := range responseStatusBranches(responses, true) {
+		response := branch.response
+		statusType := responseStatusUnion(branch.statuses)
 		headerType, err := responseHeaderType(document, response.Raw, scope)
 		if err != nil {
 			return "", err
 		}
-		if len(response.Content) == 0 {
+		if branch.media == nil {
 			result = append(result, "RawResponseFor<"+statusType+", undefined, void, "+headerType+">")
 			continue
 		}
-		for _, media := range response.Content {
+		for _, media := range []ir.MediaType{*branch.media} {
 			schemaObject, _ := media.Schema.(map[string]any)
 			_, hasItemSchema := media.Raw["itemSchema"]
-			valueType := "void"
+			valueType := "unknown"
+			if hasItemSchema || media.Stream.IsStreaming() {
+				valueType = "void"
+			}
 			if !hasItemSchema && !media.Stream.IsStreaming() && media.Schema != nil {
 				if media.Schema == false {
 					valueType = "never"
@@ -872,11 +889,11 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 					}
 				}
 			}
-			result = append(result, "RawResponseFor<"+statusType+", "+quoteTS(media.ContentType)+", "+valueType+", "+headerType+">")
+			result = append(result, "RawResponseFor<"+statusType+", "+rawResponseContentType(media.ContentType)+", "+valueType+", "+headerType+">")
 		}
 	}
 	if len(result) == 0 {
-		return "RawResponseFor<number, string | undefined, void>", nil
+		return "RawResponseFor<" + responseStatusUnion(successfulHTTPStatuses()) + ", string | undefined, unknown>", nil
 	}
 	return strings.Join(uniqueStrings(result), " | "), nil
 }
@@ -965,7 +982,7 @@ func operationMediaOutputTypesForScope(document *ir.Document, operation ir.Opera
 		}
 		for _, media := range response.Content {
 			schemaObject, _ := media.Schema.(map[string]any)
-			valueType := "void"
+			valueType := "unknown"
 			if media.Schema != nil {
 				schema := media.Schema
 				if schema == false {
@@ -1087,10 +1104,7 @@ func operationSuccessSchema(document *ir.Document, operation ir.Operation) (map[
 	if err != nil {
 		return nil, false, err
 	}
-	for _, response := range responses {
-		if !isSuccessResponseStatus(response.Status) {
-			continue
-		}
+	for _, response := range reachableSuccessResponses(responses) {
 		for _, media := range response.Content {
 			schema, _ := media.Schema.(map[string]any)
 			if len(schema) == 0 {

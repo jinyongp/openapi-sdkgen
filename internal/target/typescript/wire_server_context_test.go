@@ -43,7 +43,7 @@ func TestPreparedServerDefinitionsCarryWirePropertyNeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, artifact := range artifacts {
-		if artifact.Path == "server/runtime.ts" {
+		if artifact.Path != "server/webhooks.ts" && artifact.Path != "server/callbacks.ts" {
 			continue
 		}
 		source := string(artifact.Data)

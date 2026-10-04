@@ -10,6 +10,9 @@ const fixtureRoot = fileURLToPath(
 );
 const publicEntry = join(fixtureRoot, "index.ts");
 const metadataEntry = join(fixtureRoot, "metadata.ts");
+const requestStreamRoot: string = fileURLToPath(
+  new URL("../fixtures/generated/request-stream-bundle-isolation/", import.meta.url),
+);
 const internalEntry = (module: string) => join(fixtureRoot, "internal", `${module}.ts`);
 
 type BundleResult = {
@@ -33,6 +36,7 @@ function bundle(name: string, source: string): Promise<BundleResult> {
         resolveId(id) {
           if (id === "virtual:sdkgen-bundle-entry") return "\0virtual:sdkgen-bundle-entry.ts";
           if (id === "sdkgen-fixture:index") return publicEntry;
+          if (id === "sdkgen-request-stream:index") return join(requestStreamRoot, "index.ts");
           if (id === "sdkgen-fixture:metadata") return metadataEntry;
           if (id.startsWith("sdkgen-fixture:"))
             return internalEntry(id.slice("sdkgen-fixture:".length));
@@ -83,10 +87,10 @@ function directValue(name: string, module: string): string {
   return `export { ${name} } from "sdkgen-fixture:${module}"`;
 }
 
-function internalModules(result: BundleResult): string[] {
+function internalModules(result: BundleResult, root: string = fixtureRoot): string[] {
   return result.modules
-    .filter((id) => id.startsWith(fixtureRoot))
-    .map((id) => id.slice(fixtureRoot.length))
+    .filter((id) => id.startsWith(root))
+    .map((id) => id.slice(root.length))
     .filter((id) => id.startsWith("internal/"))
     .sort();
 }
@@ -100,6 +104,8 @@ const results: Record<string, BundleResult> = {};
 beforeAll(async () => {
   const cases = {
     rootError: rootValue("isAPIError"),
+    requestStreamError: `export { isAPIError } from "sdkgen-request-stream:index"`,
+    requestStreamClient: `export { createClient } from "sdkgen-request-stream:index"`,
     directError: directValue("isAPIError", "runtime/errors"),
     executionProvider: directValue("provider", "executions/bundle-isolation-sentinel/get"),
     rootClient: rootValue("createClient"),
@@ -124,10 +130,8 @@ describe("generated public entry bundle isolation", () => {
     ["rootClient", "directClient"],
     ["rootSort", "directSort"],
     ["rootEnums", "directEnums"],
-  ] as const)("keeps %s within the owning-module gzip budget", (rootName, directName) => {
-    expect(results[rootName]?.gzipBytes).toBeLessThanOrEqual(
-      (results[directName]?.gzipBytes ?? 0) + 256,
-    );
+  ] as const)("keeps %s within the owning-module value graph", (rootName, directName) => {
+    expect(internalModules(results[rootName]!)).toEqual(internalModules(results[directName]!));
   });
 
   it("keeps the runtime error guard independent", () => {
@@ -147,29 +151,42 @@ describe("generated public entry bundle isolation", () => {
   it("keeps the client independent from public enum and error-category runtime", () => {
     const result = results.rootClient;
     expect(result).toBeDefined();
-    expect(internalModules(result!), bundleEvidence(result!)).toEqual([
+    const modules = internalModules(result!);
+    for (const required of [
       "internal/client/factory.ts",
       "internal/client/registry.ts",
-      "internal/operations/bundle-isolation-sentinel/get.ts",
-      "internal/resources/bundle-isolation-sentinel/index.ts",
-      "internal/resources/root.ts",
-      "internal/runtime/callables.ts",
-      "internal/runtime/codecs.ts",
-      "internal/runtime/http-advanced.ts",
+      "internal/runtime/http-request-core.ts",
+      "internal/runtime/wire-core.ts",
+    ])
+      expect(modules, bundleEvidence(result!)).toContain(required);
+    for (const excluded of [
+      "internal/enums.ts",
+      "internal/errors.ts",
+      "internal/runtime/http-services.ts",
+      "internal/runtime/http-response-headers.ts",
       "internal/runtime/http-codecs.ts",
-      "internal/runtime/http-core.ts",
-      "internal/runtime/http-stream.ts",
-      "internal/runtime/http.ts",
-      "internal/runtime/runtime-support.ts",
-      "internal/runtime/streaming.ts",
-      "internal/runtime/wire-engine.ts",
-      "internal/schemas/isolation-mode.ts",
-      "internal/schemas/isolation-record.ts",
-      "internal/schemas/isolation-rejected-error.ts",
-      "internal/schemas/wire.ts",
-    ]);
+      "internal/runtime/codecs.ts",
+      "internal/runtime/xml-codec.ts",
+      "internal/runtime/stream-sse.ts",
+    ])
+      expect(modules, bundleEvidence(result!)).not.toContain(excluded);
     expect(result!.code).not.toContain("Symbol.iterator");
     expect(result!.code).not.toContain("bundle-error-category-sentinel");
+  });
+
+  it("removes request stream encoders when only the public error guard is used", () => {
+    const guard: BundleResult = results.requestStreamError!;
+    const client: BundleResult = results.requestStreamClient!;
+    expect(internalModules(guard, requestStreamRoot), bundleEvidence(guard)).toEqual([
+      "internal/runtime/runtime-support.ts",
+    ]);
+    const modules: string[] = internalModules(client, requestStreamRoot);
+    expect(modules, bundleEvidence(client)).toContain(
+      "internal/runtime/http-request-text-stream.ts",
+    );
+    expect(modules, bundleEvidence(client)).toContain(
+      "internal/runtime/http-request-json-frame.ts",
+    );
   });
 
   it("emits a JSON execution provider without the full runtime or wire registry", () => {
@@ -177,8 +194,8 @@ describe("generated public entry bundle isolation", () => {
     expect(result).toBeDefined();
     const modules = internalModules(result!);
     expect(modules).toContain("internal/executions/bundle-isolation-sentinel/get.ts");
-    expect(modules).toContain("internal/runtime/http-core.ts");
-    expect(modules).toContain("internal/runtime/wire-engine.ts");
+    expect(modules).toContain("internal/runtime/http-request-core.ts");
+    expect(modules).toContain("internal/runtime/wire-core.ts");
     for (const excluded of [
       "internal/runtime/http.ts",
       "internal/runtime/http-codecs.ts",

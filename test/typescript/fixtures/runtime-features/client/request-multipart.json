@@ -1,0 +1,25 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "request-multipart", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/mixed": {
+              "itemSchema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  }
+}

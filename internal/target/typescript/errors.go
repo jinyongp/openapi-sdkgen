@@ -103,7 +103,7 @@ func emitErrors(document *ir.Document) ([]byte, error) {
 		output.WriteString("}\n\n")
 	}
 	output.WriteString("/** Union of all server and SDK transport error codes. */\n")
-	output.WriteString("export type ErrorCode = ServerErrorCode | TransportErrorCode\n\n")
+	output.WriteString("export type ErrorCode = ServerErrorCode | TransportErrorCode | `HTTP_${number}`\n\n")
 	return append(bytes.TrimRight(output.Bytes(), "\n"), '\n'), nil
 }
 
@@ -372,6 +372,20 @@ func operationErrorTypeExpression(document *ir.Document, operation ir.Operation,
 		local = append(local, value)
 		contract = append(contract, "Errors."+value)
 	}
+	localHTTP, err := operationHTTPErrorType(document, operation, typeRenderLocal)
+	if err != nil {
+		return typeExpression{}, err
+	}
+	contractHTTP, err := operationHTTPErrorType(document, operation, typeRenderContract)
+	if err != nil {
+		return typeExpression{}, err
+	}
+	if localHTTP != "never" {
+		local = append(local, localHTTP)
+		contract = append(contract, contractHTTP)
+	}
+	local = append(local, "APIError<string, unknown>")
+	contract = append(contract, "APIError<string, unknown>")
 	local = append(local, "TransportError")
 	contract = append(contract, "TransportError")
 	return scopedTypeExpression(strings.Join(local, " | "), strings.Join(contract, " | ")), nil

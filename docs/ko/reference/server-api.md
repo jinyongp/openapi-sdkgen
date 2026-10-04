@@ -14,6 +14,11 @@ TypeScript 서버 확장은 `--with server`로 생성합니다. OpenAPI 웹훅�
 | --- | --- |
 | `./generated/api/server/webhooks` | 웹훅 라우터와 생성된 웹훅 처리 함수 타입 |
 | `./generated/api/server/callbacks` | 콜백 엔드포인트와 생성된 콜백 처리 함수 타입 |
+| `./generated/api/server/runtime` | 지원하는 임의 스키마를 처리하는 범용 수신 디코딩·검증·응답 함수 |
+
+생성된 라우터는 각각 필요한 코덱을 사용합니다. 범용 실행 함수를 직접 가져오면
+전체 코덱이 포함되며 기존 함수 시그니처는 유지됩니다.
+자세한 내용은 [실행 코드 선택](../guide/selective-client.md#api에-필요한-실행-코드만-생성하기)을 참고하세요.
 
 <span id="webhook"></span>
 

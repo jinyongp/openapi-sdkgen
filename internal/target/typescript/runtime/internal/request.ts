@@ -1,4 +1,4 @@
-import type { StreamCodec } from "./codecs.js";
+import type { StreamCodec } from "./wire-types.js";
 
 import type { RequestMetadata } from "./runtime-support.js";
 /** Request metadata shares the canonical definition used by SDK errors. */

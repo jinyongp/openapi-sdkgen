@@ -92,7 +92,11 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	if err != nil {
 		return nil, err
 	}
-	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http.ts")
+	http, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http-request-core.ts")
+	if err != nil {
+		return nil, err
+	}
+	context, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http-execution-support.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +118,8 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	}
 	var output bytes.Buffer
 	fmt.Fprintf(&output, "import type { ClientOptions } from %s\n", quoteTS(configuration))
-	fmt.Fprintf(&output, "import { createRequest } from %s\n", quoteTS(http))
+	fmt.Fprintf(&output, "import { createRequestCore } from %s\n", quoteTS(http))
+	fmt.Fprintf(&output, "import { createRequestContext } from %s\n", quoteTS(context))
 	fmt.Fprintf(&output, "import { createCallableRegistry } from %s\n", quoteTS(registry))
 	fmt.Fprintf(&output, "import { build as buildResources } from %s\n", quoteTS(resources))
 	fmt.Fprintf(&output, "import type { Client } from %s\n", quoteTS(types))
@@ -127,9 +132,31 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	} else if outputSchemas {
 		fmt.Fprintf(&output, "import { outputSchemas } from %s\n", quoteTS(wire))
 	}
+	if err := emitRuntimeComposition(&output, plan.runtimeComposition, func(clause, target string) error {
+		specifier, err := plan.relativeModuleSpecifier(artifact, target)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&output, "import %s from %s\n", clause, quoteTS(specifier))
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 	output.WriteString("\n/**\n * Creates a generated API client.\n *\n * The base URL must include the selected API version prefix, such as `/v1`.\n *\n * @param options Deployment URL, fetch implementation, and transport defaults.\n * @returns A typed {@link Client}.\n */\n")
 	output.WriteString("export function createClient(options: ClientOptions): Client {\n")
-	emitTypedConstant(&output, "  ", "request", "ReturnType<typeof createRequest>", "createRequest(options)")
+	requestType := "BufferedRequestFunction"
+	if len(streams) > 0 {
+		requestType = "RequestFunction"
+	}
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/callables.ts")
+	if err != nil {
+		return nil, err
+	}
+	// Imports remain top-level even when emitted after composition declarations.
+	// The request type preserves the absence of an undeclared stream capability.
+	// Write this import before the function using a separate prefix below.
+	prefix := fmt.Sprintf("import type { %s } from %s\n", requestType, quoteTS(callables))
+	emitTypedConstant(&output, "  ", "request", requestType, "createRequestCore(createRequestContext(options), services)")
 	arguments := []string{"request"}
 	if inputSchemas {
 		arguments = append(arguments, "inputSchemas")
@@ -150,7 +177,7 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	output.WriteString("    ...resources,\n")
 	output.WriteString("  }\n")
 	output.WriteString("}\n")
-	return output.Bytes(), nil
+	return append([]byte(prefix), output.Bytes()...), nil
 }
 
 func emitClientIndex(plan *semanticModulePlan) ([]byte, error) {
@@ -170,12 +197,12 @@ func emitClientIndex(plan *semanticModulePlan) ([]byte, error) {
 }
 
 func publicRuntimeExportSource() []byte {
-	return []byte(`export type { MediaCodec, StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamReader } from "./runtime/codecs.js"
+	return []byte(`export type { MediaCodec, StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamReader } from "./runtime/wire-types.js"
 export type { ClientOptions, SecurityCredentialContext, SecurityCredentialProvider } from "./runtime/configuration.js"
 export type { TransportError } from "./runtime/errors.js"
-export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/links.js"
+export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/links-types.js"
 export type { OperationCall } from "./runtime/callables.js"
-export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/pagination.js"
+export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/pagination-types.js"
 export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, ServerSentEvent, StreamResponseMetadata, StreamSource } from "./runtime/request.js"
 export type { APIKeyCredential, HTTPBasicCredential, HTTPBearerCredential, HTTPCredential, MutualTLSCredential, OAuthCredential, SecurityCredential, SecurityCredentials, SecurityRequirementDefinition, SecuritySchemeDefinition } from "./runtime/security.js"
 export type { Transport, TransportCapabilities } from "./runtime/transport.js"

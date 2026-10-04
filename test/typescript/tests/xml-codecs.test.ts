@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   decodeXML,
+  decodeWireValue,
   encodeXML,
+  encodeWireValue,
   type WireSchema,
 } from "../../../internal/target/typescript/runtime/internal/codecs.js";
 
@@ -52,6 +54,154 @@ const catalogSchema: WireSchema = {
 };
 
 describe("XML runtime codecs", () => {
+  it("preserves branch mapping through recursive dynamic refs and wrapped arrays", (): void => {
+    const node: WireSchema = {
+      dynamicAnchor: "node",
+      types: ["object"],
+      required: ["wire_name"],
+      xml: { name: "node" },
+      properties: {
+        wire_name: {
+          property: "wireName",
+          schema: { types: ["string"], xml: { attribute: true, name: "name" } },
+        },
+        children: {
+          property: "children",
+          schema: {
+            types: ["array"],
+            xml: { wrapped: true },
+            items: { dynamicReference: { anchor: "node", fallback: { reference: "Node" } } },
+          },
+        },
+      },
+      anyOf: [
+        { properties: { wire_count: { property: "wireCount", schema: { types: ["integer"] } } } },
+        { properties: { wire_label: { property: "wireLabel", schema: { types: ["string"] } } } },
+      ],
+    };
+    const components: Record<string, WireSchema> = { Node: node };
+    const schema: WireSchema = { reference: "Node" };
+    const value: Record<string, unknown> = {
+      wireName: "root",
+      wireCount: 2,
+      wireLabel: "a",
+      children: [{ wireName: "child", wireCount: 3 }],
+    };
+    const wire: unknown = encodeWireValue(value, schema, components);
+    expect(
+      decodeWireValue(
+        decodeXML(encodeXML(wire, schema, components), schema, components),
+        schema,
+        components,
+      ),
+    ).toEqual(value);
+    const conflict: WireSchema = {
+      properties: {
+        value: {
+          property: "value",
+          schema: {
+            allOf: [
+              { types: ["string"], xml: { name: "first" } },
+              { types: ["string"], xml: { name: "second" } },
+            ],
+          },
+        },
+      },
+    };
+    expect(() => encodeXML({ value: "x" }, conflict, {})).toThrow("ambiguous representation");
+  });
+  it("selects referenced object branches without merging inactive XML names", (): void => {
+    const components: Record<string, WireSchema> = {
+      Number: { types: ["integer"], minimum: 2 },
+      A: {
+        types: ["object"],
+        required: ["kind", "count"],
+        properties: {
+          kind: { property: "kind", schema: { constValue: "a" } },
+          count: { property: "count", schema: { reference: "Number", xml: { name: "value" } } },
+        },
+      },
+      B: {
+        types: ["object"],
+        required: ["kind", "label"],
+        properties: {
+          kind: { property: "kind", schema: { constValue: "b" } },
+          label: { property: "label", schema: { types: ["string"], xml: { name: "value" } } },
+        },
+      },
+    };
+    const schema: WireSchema = {
+      xml: { name: "root" },
+      oneOf: [{ reference: "A" }, { reference: "B" }],
+    };
+    for (const value of [
+      { kind: "a", count: 2 },
+      { kind: "b", label: "hello" },
+    ]) {
+      expect(decodeXML(encodeXML(value, schema, components), schema, components)).toEqual(value);
+    }
+    expect(() =>
+      decodeXML("<root><kind>a</kind><value>1</value></root>", schema, components),
+    ).toThrow();
+  });
+
+  it("preserves all matching anyOf fields and rejects simultaneous XML collisions", (): void => {
+    const first: WireSchema = {
+      types: ["object"],
+      properties: { first: { property: "first", schema: { types: ["string"] } } },
+    };
+    const second: WireSchema = {
+      types: ["object"],
+      properties: { second: { property: "second", schema: { types: ["integer"] } } },
+    };
+    const schema: WireSchema = { xml: { name: "root" }, anyOf: [first, second] };
+    const value: Record<string, unknown> = { first: "a", second: 2 };
+    expect(decodeXML(encodeXML(value, schema, {}), schema, {})).toEqual(value);
+    const collision: WireSchema = {
+      anyOf: [
+        first,
+        {
+          properties: {
+            second: { property: "second", schema: { types: ["string"], xml: { name: "first" } } },
+          },
+        },
+      ],
+    };
+    expect(() => encodeXML({ first: "a", second: "b" }, collision, {})).toThrow(
+      "ambiguous representation",
+    );
+    expect(() => decodeXML("<root><first>a</first></root>", collision, {})).toThrow(
+      "ambiguous representation",
+    );
+  });
+
+  it("selects conditional fields and decodes constrained scalar unions", (): void => {
+    const schema: WireSchema = {
+      types: ["object"],
+      properties: { kind: { property: "kind", schema: { types: ["string"] } } },
+      if: {
+        required: ["kind"],
+        properties: { kind: { property: "kind", schema: { constValue: "count" } } },
+      },
+      then: { properties: { count: { property: "count", schema: { types: ["integer"] } } } },
+      else: { properties: { label: { property: "label", schema: { types: ["string"] } } } },
+    };
+    for (const value of [
+      { kind: "count", count: 3 },
+      { kind: "label", label: "hello" },
+    ]) {
+      expect(decodeXML(encodeXML(value, schema, {}), schema, {})).toEqual(value);
+    }
+    const scalar: WireSchema = {
+      anyOf: [
+        { types: ["integer"], minimum: 2 },
+        { types: ["string"], pattern: "^[a-z]+$" },
+      ],
+    };
+    expect(decodeXML("<root>hello</root>", scalar, {})).toBe("hello");
+    expect(decodeXML("<root>2</root>", scalar, {})).toBe(2);
+    expect(() => decodeXML("<root>1</root>", scalar, {})).toThrow();
+  });
   it.each([
     ["p", true],
     ["p", false],

@@ -86,6 +86,36 @@ if (result.status === 200) {
 The generated raw response is status-aware, so TypeScript can narrow fields
 based on `result.status`.
 
+## Work with decoded response objects
+
+Schema-defined response records use ordinary JavaScript objects with
+`Object.prototype`, including nested records, `.raw().data`, declared error
+bodies, multipart results, stream items, and pagination items. They support
+`instanceof Object` and strict deep comparison with ordinary object literals.
+Earlier generated clients used null-prototype records for these mappings;
+regenerate the SDK if your application relies on the new behavior.
+
+JSON names such as `__proto__`, `constructor`, and `hasOwnProperty` remain own
+data properties. Use `Object.hasOwn(value, name)` when testing for a field, since
+a declared field can shadow an inherited object method. This conversion happens
+where schema mappings already construct records. Opaque values and native
+objects such as `Blob`, typed arrays, and streams retain their existing identity
+and representation.
+
+Response/output schema types are mutable too: you can edit fields and nested
+records, push into arrays, update tuples, and assign map entries. `readOnly` in
+OpenAPI means a property is omitted from the request projection; it does not
+make the returned field immutable. `writeOnly` properties remain absent from
+output types. Input projections still accept readonly arrays and objects.
+Enum literals, client catalogs, and metadata keep their existing constraints.
+
+When migrating, response mocks and server handlers must supply mutable arrays
+where the output contract declares arrays. A deeply readonly fixture may need
+an editable copy. Spreading its parent only copies the parent; nested objects
+and arrays are still shared, and `structuredClone` keeps its argument's static
+TypeScript type. Editing a returned DTO does not send a request or persist the
+change on the server.
+
 ## Choose a request media type
 
 If one request body declares several media types, the generated body input is a
@@ -185,6 +215,36 @@ await api.$operations.publishTodoEvents({
 If the sequential media type declares only `schema`, pass the complete schema
 value instead. When it declares both `schema` and `itemSchema`, the generated
 request body accepts either the complete value or a [`StreamSource<T>`](../reference/streaming.md#streaming-request-bodies).
+
+## Status and media in successful responses
+
+Raw responses use the finite successful status range `200`–`299`. An exact
+status narrows its body when a more general response uses the same media type:
+with `200: Item` and `default: Problem`, `status === 200` gives `Item`, while
+`202` can still return `Problem`. A same-media `2XX` response covers every
+successful status, so its `default` body stays in the HTTP error contract and
+does not broaden normal, raw, streaming, or pagination results.
+
+Different media, wildcard ranges, and bodyless declarations remain distinct
+where they can still be selected. Raw `contentType` is the normalized concrete
+response header. Wildcard declarations use a string or a template literal type,
+rather than claiming that the server returned a wildcard header.
+
+## Narrow declared HTTP errors
+
+Use `isOperationHTTPError(error, api.$operations.operationID)` to narrow a failure
+to that operation's declared HTTP responses. The same helper accepts `.raw()`,
+`.stream()`, and bound resource methods. Within the guard, `status` narrows the
+decoded `data`; `contentType` distinguishes declared media representations, and
+a required literal error code narrows its corresponding `details`.
+
+The guard checks the actual SDK call and validates the current decoded body.
+Manually constructed errors, failures from another operation, transport failures,
+and invalid or subsequently modified bodies do not pass. `contentType` is the
+selected declaration; use `error.response.headers` for the actual response header.
+`OperationHTTPError<typeof method>` extracts this declared union. Existing
+`APIError<Code, Details>` and `isErrorCode` calls remain available, including codes
+that are not declared in the document.
 
 ## Where to go next
 

@@ -102,7 +102,7 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 		if wire.usesProperties {
 			imports += ", WireProperty"
 		}
-		fmt.Fprintf(&output, "import type { %s } from \"../runtime/codecs.js\"\n", imports)
+		fmt.Fprintf(&output, "import type { %s } from \"../runtime/wire-types.js\"\n", imports)
 	}
 	for _, declaration := range projections.imports {
 		output.WriteString(declaration)
@@ -315,7 +315,7 @@ func emitSchemaWireRegistry(plan *semanticModulePlan) ([]byte, error) {
 		return nil, err
 	}
 	var output bytes.Buffer
-	output.WriteString("import type { WireSchemas } from \"../runtime/codecs.js\"\n")
+	output.WriteString("import type { WireSchemas } from \"../runtime/wire-types.js\"\n")
 	inputProperties := make([]runtimeProperty, 0, len(plan.schemas))
 	outputProperties := make([]runtimeProperty, 0, len(plan.schemas))
 	for _, schema := range plan.schemas {

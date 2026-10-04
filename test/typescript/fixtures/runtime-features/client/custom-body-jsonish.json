@@ -1,0 +1,39 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "custom-body-jsonish", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-jsonish": {
+              "schema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["id"],
+                  "properties": { "id": { "type": "string" } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

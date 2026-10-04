@@ -115,6 +115,7 @@ func schemaRequiresFormatAssertion(value any) bool {
 
 func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction projection, formatAssertion, legacyNullable bool) (string, error) {
 	if boolean, ok := value.(bool); ok {
+		wire.recordRuntimeSchemaField("boolean")
 		return fmt.Sprintf("{ boolean: %t }", boolean), nil
 	}
 	schema, ok := value.(map[string]any)
@@ -136,6 +137,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 		wire.recordExecutionReference(name, direction)
 		wire.recordExecutionCapability(executionSchemaDynamic)
+		wire.recordRuntimeSchemaField("dynamic")
 		referenceDescriptor := "{ dynamicReference: { anchor: " + quoteTS(anchor) + ", fallback: { reference: " + quoteTS(name) + " } } }"
 		if len(schema) == 1 {
 			return referenceDescriptor, nil
@@ -159,6 +161,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 		wire.recordExecutionReference(name, direction)
 		referenceDescriptor := "{ reference: " + quoteTS(name) + " }"
+		wire.recordRuntimeSchemaField("reference")
 		if len(schema) == 1 {
 			return referenceDescriptor, nil
 		}
@@ -177,6 +180,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 
 	var fields []string
 	if anchor, _ := schema["x-sdkgen-dynamic-anchor"].(string); anchor != "" {
+		wire.recordRuntimeSchemaField("dynamic")
 		fields = append(fields, "dynamicAnchor: "+quoteTS(anchor))
 	}
 	types := schemaTypes(schema["type"])
@@ -192,6 +196,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 	if len(types) > 0 {
 		values := make([]string, 0, len(types))
 		for _, value := range types {
+			wire.recordRuntimeSchemaValue("type", value)
 			values = append(values, quoteTS(value))
 		}
 		fields = append(fields, "types: ["+strings.Join(values, ", ")+"]")
@@ -202,6 +207,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			return "", fmt.Errorf("encode const: %w", err)
 		}
 		fields = append(fields, "constValue: "+encoded)
+		wire.recordRuntimeSchemaField("const")
 	}
 	if values, ok := schema["enum"].([]any); ok && len(values) > 0 {
 		encoded, err := runtimeJSONExpression(values)
@@ -209,6 +215,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			return "", fmt.Errorf("encode enum: %w", err)
 		}
 		fields = append(fields, "enumValues: "+encoded)
+		wire.recordRuntimeSchemaField("enum")
 	}
 	exclusiveMaximum, maximumIsExclusive := schema["exclusiveMaximum"].(bool)
 	exclusiveMinimum, minimumIsExclusive := schema["exclusiveMinimum"].(bool)
@@ -220,6 +227,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			}
 			if len(encoded) > 0 && encoded[0] != '"' {
 				fields = append(fields, "exclusiveMaximum: "+string(encoded))
+				wire.recordRuntimeSchemaField("exclusiveMaximum")
 			}
 		}
 	}
@@ -231,6 +239,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			}
 			if len(encoded) > 0 && encoded[0] != '"' {
 				fields = append(fields, "exclusiveMinimum: "+string(encoded))
+				wire.recordRuntimeSchemaField("exclusiveMinimum")
 			}
 		}
 	}
@@ -248,30 +257,38 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 		if string(encoded) != "true" && string(encoded) != "false" && string(encoded) != "null" && len(encoded) > 0 && encoded[0] != '"' {
 			fields = append(fields, keyword+": "+string(encoded))
+			wire.recordRuntimeSchemaField(keyword)
 		}
 	}
 	if value, ok := schema["pattern"].(string); ok {
+		wire.recordRuntimeSchemaField("pattern")
 		fields = append(fields, "pattern: "+quoteTS(value))
 	}
 	if value, ok := schema["format"].(string); ok && value != "" {
 		fields = append(fields, "format: "+quoteTS(value))
 		if formatAssertion || schemaRequiresFormatAssertion(schema) {
+			wire.recordRuntimeSchemaValue("format", value)
 			fields = append(fields, "formatAssertion: true")
 		}
 	}
 	if value, ok := schema["uniqueItems"].(bool); ok && value {
+		wire.recordRuntimeSchemaField("uniqueItems")
 		fields = append(fields, "uniqueItems: true")
 	}
 	if value, ok := schema["contentEncoding"].(string); ok && value != "" {
+		wire.recordRuntimeSchemaField("contentEncoding")
 		fields = append(fields, "contentEncoding: "+quoteTS(value))
 	}
 	if value, ok := schema["contentMediaType"].(string); ok && value != "" {
+		wire.recordRuntimeSchemaField("contentMediaType")
+		wire.recordRuntimeMedia("schema.content", value, ir.StreamFramingNone, false)
 		if executionXMLMedia(value) {
 			wire.recordExecutionCapability(executionSchemaXML)
 		}
 		fields = append(fields, "contentMediaType: "+quoteTS(value))
 	}
 	if value, exists := schema["contentSchema"]; exists {
+		wire.recordRuntimeSchemaField("contentSchema")
 		descriptor, err := wire.wireSchemaDescriptorScoped(value, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -279,6 +296,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "contentSchema: "+descriptor)
 	}
 	if xml, ok := schema["xml"].(map[string]any); ok && len(xml) > 0 {
+		wire.recordRuntimeSchemaField("xml")
 		encoded, err := runtimeJSONExpression(xml)
 		if err != nil {
 			return "", fmt.Errorf("encode XML Object: %w", err)
@@ -309,6 +327,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 			entries = append(entries, runtimeProperty{key: wireName, value: nested})
 		}
 		if len(entries) > 0 {
+			wire.recordRuntimeSchemaField("properties")
 			expression, err := wire.propertyExpression(entries)
 			if err != nil {
 				return "", err
@@ -317,6 +336,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 	}
 	if patterns, ok := schema["patternProperties"].(map[string]any); ok && len(patterns) > 0 {
+		wire.recordRuntimeSchemaField("patternProperties")
 		names := make([]string, 0, len(patterns))
 		for name := range patterns {
 			names = append(names, name)
@@ -333,6 +353,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "patternProperties: "+runtimeObjectExpression(entries))
 	}
 	if propertyNames, exists := schema["propertyNames"]; exists {
+		wire.recordRuntimeSchemaField("propertyNames")
 		descriptor, err := wire.wireSchemaDescriptorScoped(propertyNames, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -340,6 +361,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "propertyNames: "+descriptor)
 	}
 	if dependencies, ok := schema["dependentRequired"].(map[string]any); ok && len(dependencies) > 0 {
+		wire.recordRuntimeSchemaField("dependentRequired")
 		names := make([]string, 0, len(dependencies))
 		for name := range dependencies {
 			names = append(names, name)
@@ -359,6 +381,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "dependentRequired: "+runtimeObjectExpression(entries))
 	}
 	if dependencies, ok := schema["dependentSchemas"].(map[string]any); ok && len(dependencies) > 0 {
+		wire.recordRuntimeSchemaField("dependentSchemas")
 		names := make([]string, 0, len(dependencies))
 		for name := range dependencies {
 			names = append(names, name)
@@ -392,10 +415,12 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 		sort.Strings(names)
 		if len(names) > 0 {
+			wire.recordRuntimeSchemaField("required")
 			fields = append(fields, "required: ["+strings.Join(names, ", ")+"]")
 		}
 	}
 	if items, exists := schema["items"]; exists {
+		wire.recordRuntimeSchemaField("items")
 		descriptor, err := wire.wireSchemaDescriptorScoped(items, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -403,6 +428,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "items: "+descriptor)
 	}
 	if contains, exists := schema["contains"]; exists {
+		wire.recordRuntimeSchemaField("contains")
 		descriptor, err := wire.wireSchemaDescriptorScoped(contains, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -419,6 +445,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		}
 	}
 	if prefixItems, ok := schema["prefixItems"].([]any); ok && len(prefixItems) > 0 {
+		wire.recordRuntimeSchemaField("prefixItems")
 		items := make([]string, 0, len(prefixItems))
 		for _, value := range prefixItems {
 			descriptor, err := wire.wireSchemaDescriptorScoped(value, direction, formatAssertion, legacyNullable)
@@ -430,6 +457,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, "prefixItems: ["+strings.Join(items, ", ")+"]")
 	}
 	if additional, exists := schema["additionalProperties"]; exists {
+		wire.recordRuntimeSchemaField("additionalProperties")
 		if boolean, ok := additional.(bool); ok && !boolean {
 			fields = append(fields, "additionalProperties: false")
 		} else {
@@ -445,6 +473,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		if !exists {
 			continue
 		}
+		wire.recordRuntimeSchemaField(keyword)
 		if boolean, ok := value.(bool); ok && !boolean {
 			fields = append(fields, keyword+": false")
 			continue
@@ -460,6 +489,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		if len(variants) == 0 {
 			continue
 		}
+		wire.recordRuntimeSchemaField(keyword)
 		items := make([]string, 0, len(variants))
 		for _, value := range variants {
 			descriptor, err := wire.wireSchemaDescriptorScoped(value, direction, formatAssertion, legacyNullable)
@@ -471,6 +501,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		fields = append(fields, keyword+": ["+strings.Join(items, ", ")+"]")
 	}
 	if negated, exists := schema["not"]; exists {
+		wire.recordRuntimeSchemaField("not")
 		descriptor, err := wire.wireSchemaDescriptorScoped(negated, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -482,6 +513,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 		if !exists {
 			continue
 		}
+		wire.recordRuntimeSchemaField(keyword)
 		descriptor, err := wire.wireSchemaDescriptorScoped(child, direction, formatAssertion, legacyNullable)
 		if err != nil {
 			return "", err
@@ -490,6 +522,7 @@ func (wire *wireRenderContext) wireSchemaDescriptorScoped(value any, direction p
 	}
 	if discriminator, ok := schema["discriminator"].(map[string]any); ok {
 		if property, ok := discriminator["propertyName"].(string); ok && property != "" {
+			wire.recordRuntimeSchemaField("discriminator")
 			mapping, err := wire.discriminatorWireMapping(schema, discriminator, direction, formatAssertion, legacyNullable)
 			if err != nil {
 				return "", err
@@ -586,6 +619,7 @@ func (wire *wireRenderContext) operationRequestWireBodies(document *ir.Document,
 	}
 	entries := make([]string, 0, len(body.Content))
 	for _, media := range body.Content {
+		wire.recordRuntimeMedia("request", media.ContentType, media.Stream.Framing, media.ItemSchema != nil)
 		schemaObject, _ := media.Schema.(map[string]any)
 		booleanSchema, isBooleanSchema := media.Schema.(bool)
 		schemaIsFalse := isBooleanSchema && !booleanSchema
@@ -689,6 +723,7 @@ func (wire *wireRenderContext) multipartWireEncoding(document *ir.Document, valu
 		fields = append(fields, "name: "+quoteTS(name))
 	}
 	if contentType, _ := value["contentType"].(string); contentType != "" {
+		wire.recordRuntimeMedia("part", contentType, ir.StreamFramingNone, false)
 		fields = append(fields, "contentType: "+quoteTS(contentType))
 	}
 	if style, _ := value["style"].(string); style != "" {
@@ -777,6 +812,7 @@ func (wire *wireRenderContext) multipartWireHeaders(document *ir.Document, value
 			fields = append(fields, "required: true")
 		}
 		if contentType != "" {
+			wire.recordRuntimeMedia("part.header", contentType, ir.StreamFramingNone, false)
 			fields = append(fields, "contentType: "+quoteTS(contentType))
 		}
 		entries = append(entries, "{ "+strings.Join(fields, ", ")+" }")
@@ -795,10 +831,15 @@ func (wire *wireRenderContext) operationResponseWireBodies(document *ir.Document
 		if err != nil {
 			return "", false, err
 		}
-		if len(response.Content) == 0 && headers != "" {
-			entries = append(entries, "{ status: "+quoteTS(response.Status)+", contentType: \"\", schema: {}, headers: "+headers+" }")
+		if len(response.Content) == 0 {
+			entry := "{ status: " + quoteTS(response.Status) + ", contentType: \"\", schema: {}"
+			if headers != "" {
+				entry += ", headers: " + headers
+			}
+			entries = append(entries, entry+" }")
 		}
 		for _, media := range response.Content {
+			wire.recordRuntimeMedia("response", media.ContentType, media.Stream.Framing, media.ItemSchema != nil)
 			schemaObject, _ := media.Schema.(map[string]any)
 			booleanSchema, isBooleanSchema := media.Schema.(bool)
 			schemaIsFalse := isBooleanSchema && !booleanSchema
@@ -901,6 +942,7 @@ func (wire *wireRenderContext) responseWireHeaders(document *ir.Document, respon
 		}
 		entry := "{ name: " + quoteTS(name) + ", property: " + quoteTS(name) + ", style: " + quoteTS(style) + ", explode: " + fmt.Sprint(explode) + ", schema: " + descriptor
 		if contentType != "" {
+			wire.recordRuntimeMedia("response.header", contentType, ir.StreamFramingNone, false)
 			entry += ", contentType: " + quoteTS(contentType)
 		}
 		if boolValue(header, "required") {

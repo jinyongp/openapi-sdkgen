@@ -31,7 +31,7 @@ The 3.2-only fields come from the
 The TypeScript target generates types and executable client behavior for:
 
 - paths, HTTP methods, path/query/header/cookie parameters, and request bodies;
-- JSON, text, binary, form, multipart, and supported streaming media;
+- JSON, XML, text, binary, form, multipart, and supported streaming media;
 - status-specific responses, response headers, and raw response access;
 - request and decoded-response validation from the applicable OpenAPI/JSON
   Schema contract.
@@ -39,6 +39,13 @@ The TypeScript target generates types and executable client behavior for:
 Operations can be called through generated resource methods, exact
 `"METHOD /path"` routes, or `operationId` values. See
 [Use the generated client](../guide/client.md).
+
+XML object unions preserve the declared branch constraints and property mappings.
+Multipart encodes each part with its declared media codec, including JSON string
+quoting, asynchronous custom encoders, and per-part headers. Header schemas are
+validated as a whole, including composed object and scalar/array alternatives.
+Generated runtime handlers follow these contracts and their schema dependencies;
+see [runtime feature selection](../guide/selective-client.md#runtime-features-follow-the-generated-apis).
 
 ## Servers and security
 
@@ -113,8 +120,12 @@ For example, a path-template/path-Parameter name mismatch is reported as
 explicit operation Security Requirement that names an undeclared scheme is
 `COMP-SEC-001` and is also operation-scoped; the same defect at root security
 is document-blocking. sdkgen never renames path parameters or invents security
-schemes to recover these inputs. OAS 3.2 Security Scheme URI names are not
-rejected merely because no same-named component exists.
+schemes to recover these inputs. OAS 3.2 Security Requirement keys first match
+exact component names, then resolve same-document URI fragments and local
+Security Scheme aliases. Credentials still use the resolved component name.
+Malformed escapes, missing or non-security targets, reference cycles, and
+external Security Scheme URI targets are rejected; URI resolution does not
+fetch another document.
 
 ## Compatibility evidence
 

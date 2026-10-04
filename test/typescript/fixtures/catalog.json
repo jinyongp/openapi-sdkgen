@@ -105,6 +105,15 @@
       "scenario": "surface"
     },
     {
+      "id": "request-stream-bundle-isolation",
+      "input": "runtime-features/client/request-ndjson.json",
+      "output": "request-stream-bundle-isolation",
+      "addons": [],
+      "profiles": ["conformance", "preimplementation"],
+      "characteristics": ["optional-runtime-isolation", "request-stream"],
+      "scenario": "surface"
+    },
+    {
       "id": "transport-native-headers",
       "input": "transport-native-headers.openapi.json",
       "output": "transport-native-headers",

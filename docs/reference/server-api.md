@@ -14,6 +14,11 @@ For a guided setup, see
 | --- | --- |
 | `./generated/api/server/webhooks` | Webhook router and generated Webhook handler types |
 | `./generated/api/server/callbacks` | Callback endpoints and generated Callback handler types |
+| `./generated/api/server/runtime` | Generic inbound decoding, validation, and response helpers for arbitrary supported schemas |
+
+Generated routers use their own required codec set. Importing the generic
+runtime helpers explicitly retains the full codec set; their function signatures
+remain compatible. See [runtime selection](../guide/selective-client.md#runtime-features-follow-the-generated-apis).
 
 ## Webhooks
 

@@ -1,0 +1,27 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "request-complete-sse", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/event-stream": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": { "data": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  }
+}

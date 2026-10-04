@@ -221,6 +221,7 @@ import {
   isAPIError,
   isErrorCategory,
   isErrorCode,
+  isOperationHTTPError,
   TransportErrorCode,
 } from "./generated/api";
 ```
@@ -228,11 +229,23 @@ import {
 - `isAPIError(error)`: 생성된 API 오류인지 확인
 - `isErrorCode(error, code)`: 정확한 오류 코드 확인
 - `isErrorCategory(error, category)`: 오류 범주 확인
+- `isOperationHTTPError(error, method)`: 해당 생성 메서드에서 발생한 HTTP 오류인지
+  확인하고 선언된 상태·본문·미디어 타입으로 좁히기
 - `TransportErrorCode`: 전송 과정에서 발생할 수 있는 오류 코드
 
 인증 요구 사항 선택 오류는 `SECURITY_REQUIREMENT_REQUIRED`와
 `SECURITY_REQUIREMENT_INVALID`를 사용합니다. 인증 정보 획득 및 적용 오류는
 `SECURITY_CREDENTIALS_REQUIRED`와 `SECURITY_CREDENTIALS_INVALID`를 사용합니다.
+
+오퍼레이션 가드는 일반 호출, raw 호출, 스트리밍 호출, 경로가 바인딩된 리소스
+메서드에 사용할 수 있습니다. 현재 본문을 다시 검증하므로 직접 만든 오류,
+다른 오퍼레이션의 오류, 전송 오류, 잘못되었거나 변조된 본문은 통과하지 못합니다.
+`contentType`은 선택된 선언 값이며 실제 헤더는 `error.response`에서 확인합니다.
+`OperationHTTPError<typeof method>`로 같은 오류 타입을 추출할 수 있습니다.
+루트·클라이언트별·선택형 진입점에서 이 함수와 타입을 제공합니다.
+기존 `APIError<Code, Details>`도 계속 사용할 수 있고 `Status`, `Data` 타입 인자를
+추가하면 더 정확한 HTTP 오류를 표현할 수 있습니다. 사용 방법은
+[오퍼레이션의 HTTP 오류 타입 좁히기](../guide/client.md#오퍼레이션의-http-오류-타입-좁히기)를 참고하세요.
 
 <span id="openapi-메타데이터"></span>
 

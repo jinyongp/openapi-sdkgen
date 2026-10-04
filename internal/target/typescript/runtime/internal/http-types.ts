@@ -7,10 +7,11 @@ import type {
   WireEncodingDefinition,
   WireSchema,
   WireSchemas,
-} from "./wire-engine.js";
+} from "./wire-types.js";
 import type { ClientOptions } from "./configuration.js";
 import type { OperationDefinition } from "./operation.js";
 import type { OperationStream, RequestMetadata, RequestOptions } from "./request.js";
+import type { APIError } from "./runtime-support.js";
 
 /** Internal operation options after generated security selection is attached. */
 export interface OperationRequestOptions extends RequestOptions {
@@ -111,6 +112,13 @@ export interface StreamProtocolEncodeOptions {
   readonly codecs: ReadonlyMap<string, MediaCodec<unknown>>;
 }
 
+/** Encodes typed query values using their OpenAPI escaping and serialization rules. */
+export type QueryEncoder = (
+  query: Readonly<Record<string, unknown>>,
+  operation: OperationDefinition,
+  location: "query" | "querystring",
+) => string;
+
 /** One query parameter value with its OpenAPI escaping and serialization rules. */
 export interface QueryPart {
   readonly name?: string;
@@ -147,7 +155,17 @@ export interface RequestContext {
 }
 
 /** Concrete operation implementations selected by the generator; no runtime feature registry. */
+export type OperationSecurity = (
+  options: ClientOptions,
+  operation: OperationDefinition,
+  encoded: EncodedRequest,
+  requestOptions: OperationRequestOptions,
+  credentials: RequestCredentials | undefined,
+) => EncodedRequest | Promise<EncodedRequest>;
+
+/** Canonical buffered execution hooks shared by generated provider compositions. */
 export interface RequestExecutionServices {
+  readonly applyOperationSecurity?: OperationSecurity;
   encodeRequest(
     baseURL: string | undefined,
     client: ClientOptions,
@@ -173,6 +191,12 @@ export interface RequestExecutionServices {
     response: Response,
     value: unknown,
   ): unknown;
+  createHTTPError(
+    operation: OperationDefinition,
+    response: Response,
+    request: RequestMetadata,
+    data: unknown,
+  ): APIError;
 }
 
 /** Execution services for an operation exposing the existing synchronous stream handle. */
@@ -187,6 +211,13 @@ export interface StreamingRequestExecutionServices extends RequestExecutionServi
     input: unknown,
     requestOptions: RequestOptions,
   ): OperationStream<Item>;
+}
+
+/** Canonical value shared by named, positional and streaming multipart encoders. */
+export interface MultipartPartValue {
+  readonly body: BlobPart;
+  readonly contentType?: string;
+  readonly filename?: string;
 }
 
 /** Media-specific operations required only by plans that can reach those code paths. */

@@ -1,0 +1,26 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "format-ipv4", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "format": "ipv4",
+                "$vocabulary": {
+                  "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
+                }
+              }
+            }
+          }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  }
+}

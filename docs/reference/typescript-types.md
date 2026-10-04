@@ -99,6 +99,24 @@ another client is absent; a representation unused by this client's APIs is
 `never`. Use `Parameters` and `ReturnType` on this client's methods to extract
 their exact call types.
 
+## Response body types
+
+Decoded response DTOs are mutable, including nested objects, arrays, tuples,
+and maps. The same output contract applies to ordinary results, `raw.data`,
+HTTP error bodies, stream and pagination items, and server handler responses.
+Input types still accept readonly values. Literal constraints and OpenAPI
+`readOnly`/`writeOnly` projections remain in effect; response metadata and enum
+catalogs keep their readonly contracts.
+
+An existing server handler or mock returning a readonly array must return a
+mutable array for a mutable output contract. Editing a DTO changes the local
+object and any shared references, without saving to the API. See
+[editing decoded data](../guide/client.md#work-with-decoded-response-objects).
+
+`OperationHTTPError<typeof method>` extracts the method's declared HTTP failure
+union. Use [`isOperationHTTPError`](./client-api.md#errors) to narrow an unknown
+caught value to that union.
+
 ## Extract from a generated method
 
 Pass the type of a generated method to an `Operation*` helper.

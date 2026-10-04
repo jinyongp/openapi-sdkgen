@@ -75,7 +75,7 @@ func prepareExecutionSchemaModules(modules *semanticModulePlan, executions map[s
 
 func emitExecutionSchemaModule(plan *semanticModulePlan, module executionSchemaModule) ([]byte, error) {
 	var output bytes.Buffer
-	types, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/wire-engine.ts")
+	types, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}

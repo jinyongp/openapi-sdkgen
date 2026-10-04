@@ -5,7 +5,81 @@ Choose an entry point to control what the application imports and deploys.
 These are separate decisions: a small application bundle can come from a large
 generated SDK, and a small initial import can still require many deployment files.
 
-This benchmark compares 10 APIs from one 1,000-operation fixture, including an
+## Small API runtime cost {#small-api-runtime}
+
+The current development generator automatically selects runtime handlers from
+the generated APIs. This sample has three JSON APIs with Bearer authentication,
+object/array validation, string-length and object-property constraints. All four bundles perform the
+same `getItem` request and check the URL, credentials, and returned DTO with
+mocked Fetch. The default entry needs no selection configuration.
+
+| Generation | All TypeScript files | All source lines | Runtime files | Runtime lines |
+| --- | ---: | ---: | ---: | ---: |
+| Default generation | 76 | 7,797 | 38 | 5,951 |
+| Full-capability test control | 163 | 15,536 | 125 | 13,729 |
+
+| Application entry | JS chunks | Entry JS bytes | Entry gzip bytes | All deployed JS bytes | All deployed gzip bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Full-capability test control | 1 | 105,335 | 30,427 | 105,335 | 30,427 |
+| Default root | 1 | 32,386 | 10,326 | 32,386 | 10,326 |
+| Static selective | 3 | 23,434 | 8,114 | 40,869 | 14,665 |
+| Lazy selective | 7 | 369 | 272 | 42,062 | 15,847 |
+
+The default root is **31.63 KiB of JS and 10.08 KiB gzip** in this sample,
+about one third of the control's compressed size. Static and lazy preparation reduce
+the entry size but deploy more compressed bytes than the root for this small
+API. Entry size alone does not describe the cost of a completed call. Shared
+request handling, validation, errors, and client APIs still have a fixed cost;
+automatic selection does not make them disappear.
+
+The full-capability control uses the same current runtime implementation with
+all handlers connected by test preparation. It measures feature selection,
+rather than comparing against an older release with different behavior. The
+historical esbuild result of about 97 KB / 28.8 KB gzip uses different input and
+tool settings and is not the baseline for this table.
+
+Reproduce from a repository checkout with the TypeScript verification
+dependencies installed:
+
+```sh
+devtools run runtime-features:perf
+```
+
+This optional command generates and executes 73 client/server fixtures, checks
+226 scenarios against the same-source control, checks 3,290 module exclusions
+with matching control inclusions, and measures the four browser bundles.
+Separate regression tests check strict generated source and fresh declaration-only
+consumers with TypeScript 5.7.3, 5.9.3, 6.0.3, and 7.0.2. Ordinary CI checks
+behavior and dependencies without fixed byte or line-count thresholds.
+
+Measured on October 4, 2026 UTC, in the uncommitted development tree based on
+`6c349f9`. <a :href="withBase('/benchmarks/runtime-features-results.json')">Raw results</a> include the
+generator/input/source hashes and every output chunk's size and hash.
+The generator source hash starts with `f987a4b25cf7`.
+Conditions: Node.js 24.21.0, TypeScript 7.0.2, Vite 8.3.0 / Rolldown 1.2.6,
+browser ESM, ES2022, Oxc minification, code splitting, and `modulePreload: false`.
+Gzip level 6 is applied separately to each deployed chunk and then summed.
+The raw report also records source, native module bytes, and minified bundle
+bytes for all 73 fixtures. These additional bundles export the entire client
+factory or webhook router, rather than the single call above. Examples of their
+total deployed gzip bytes:
+
+| Contract | Selected runtime | Full-capability control |
+| --- | ---: | ---: |
+| XML client | 17,177 | 29,790 |
+| Multipart client | 19,274 | 29,806 |
+| Mixed-media client | 20,704 | 30,794 |
+| JSON webhook router | 12,256 | 23,234 |
+| XML webhook router | 17,387 | 23,261 |
+| Multipart webhook router | 17,363 | 23,236 |
+
+Source counts include type-only files; source maps and HTTP overhead are excluded.
+Mocked execution runs in Node.js; browser network and timing are not measured.
+These are reproducible sample sizes, not a size guarantee for every API.
+
+## Earlier 1,000-operation selection measurement
+
+The following historical benchmark compares 10 APIs from one 1,000-operation fixture, including an
 operation without an ID and one private OpenAPI Link target. The fixture also
 contains shared and recursive models, XML, and streaming operations. Each case
 performs the same calls and receives the same responses.

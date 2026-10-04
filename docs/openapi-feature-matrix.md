@@ -38,7 +38,7 @@ Authoritative specifications: [OAS 3.0.4](https://spec.openapis.org/oas/v3.0.4.h
 | HTTP operations, parameters, media, components | `openapi_support_test.go`, `types_test.go` | TypeScript diagnostics |
 | ESM import and runtime transport behavior | `runtime_parity_test.go` | TypeScript |
 | Metadata/docs/examples/extensions | `metadata_test.go` | TypeScript |
-| CLI output and consumer applications | `cmd/openapi-sdkgen/main_test.go`, `devtools run examples:*` | TypeScript |
+| CLI output and consumer applications | `cmd/openapi-sdkgen/main_test.go`, `devtools run todo:examples` | TypeScript |
 
 ## Version Detection and Top-level Objects
 

@@ -4,7 +4,7 @@ profile = 'openapi-sdkgen'
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\"", "sdkgen", "test/typescript/verification/selection-benchmark.mjs"]
 
 # Local commands select this worktree and its toolchain. CI prepares the
-# toolchain and calls the same scripts directly. Each name is COMMAND:TARGET.
+# toolchain and calls the same scripts directly. Each name is COMMAND:TARGET; the operation comes first.
 
 [commands."benchmark:compatibility"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/compatibility/benchmark.sh"]
@@ -149,6 +149,9 @@ exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 
 
 [commands."acceptance:perf"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf-acceptance.sh"]
+
+[commands."runtime-features:perf"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/perf/runtime-features.sh']
 
 [commands."benchmark:perf"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/perf/perf.sh"]

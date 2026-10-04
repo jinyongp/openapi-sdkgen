@@ -1,0 +1,25 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "binary", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

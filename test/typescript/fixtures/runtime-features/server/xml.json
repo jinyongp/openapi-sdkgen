@@ -1,0 +1,78 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "server-xml", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "count"],
+                "properties": { "id": { "type": "string" }, "count": { "type": "integer" } },
+                "additionalProperties": false,
+                "xml": { "name": "item" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "required": ["accepted"],
+                  "properties": { "accepted": { "type": "integer" } },
+                  "additionalProperties": false,
+                  "xml": { "name": "result" }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "probe"
+      }
+    }
+  },
+  "webhooks": {
+    "delivery": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "required": ["id", "count"],
+                "properties": { "id": { "type": "string" }, "count": { "type": "integer" } },
+                "additionalProperties": false,
+                "xml": { "name": "item" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "required": ["accepted"],
+                  "properties": { "accepted": { "type": "integer" } },
+                  "additionalProperties": false,
+                  "xml": { "name": "result" }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "receive"
+      }
+    }
+  }
+}

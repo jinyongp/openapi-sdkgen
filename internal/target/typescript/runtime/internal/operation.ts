@@ -3,7 +3,7 @@ import type {
   WireResponseDefinition,
   WireSchema,
   WireSchemas,
-} from "./codecs.js";
+} from "./wire-types.js";
 import type { SecurityRequirementDefinition } from "./security.js";
 
 /** Endpoint-neutral operation metadata emitted by `sdkgen` for the transport runtime. */

@@ -28,7 +28,7 @@ for index in 01 02 03 04 05; do
 done
 
 "$ROOT/scripts/verification/prepare.sh"
-if ! OPENAPI_SDKGEN_STREAM_PERF=1 run_data "stream performance" ts_pnpm exec vitest run tests/stream-performance.test.ts >"$stream_log"; then
+if ! OPENAPI_SDKGEN_STREAM_PERF=1 OPENAPI_SDKGEN_STREAM_PERF_EVIDENCE="$gate_dir/stream-framing.jsonl" run_data "stream performance" ts_pnpm exec vitest run tests/stream-performance.test.ts tests/stream-framing-performance.test.ts >"$stream_log"; then
   echo "failed TypeScript stream performance acceptance" >&2
   script_diagnostic "$stream_log"
   exit 1

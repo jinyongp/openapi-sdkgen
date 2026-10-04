@@ -21,46 +21,149 @@ var runtimeTemplates embed.FS
 //go:embed runtime/server/runtime.ts
 var serverRuntimeTemplate []byte
 
+//go:embed runtime/server/*.ts
+var serverRuntimeTemplates embed.FS
+
+// The public generic helper is a full-capability root with an explicit inventory.
+// New embedded files do not implicitly become generated server artifacts.
+var serverRuntimeTemplateNames = []string{
+	"runtime-authentication.ts", "runtime-body.ts", "runtime-codecs.ts", "runtime-errors.ts",
+	"runtime-json-stream.ts", "runtime-legacy-xml.ts", "runtime-multipart.ts", "runtime-parameters.ts",
+	"runtime-response.ts", "runtime-shared.ts", "runtime-sse-stream.ts", "runtime-stream.ts",
+	"runtime-types.ts", "runtime.ts",
+}
+
 type runtimeTemplateArtifact struct {
 	source string
 	path   string
 }
 
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
+	{source: "http-query.ts", path: "internal/runtime/http-query.ts"},
+	{source: "http-basic.ts", path: "internal/runtime/http-basic.ts"},
+	{source: "http-execution-support.ts", path: "internal/runtime/http-execution-support.ts"},
+	{source: "http-request-core.ts", path: "internal/runtime/http-request-core.ts"},
+	{source: "http-request-values.ts", path: "internal/runtime/http-request-values.ts"},
+	{source: "http-response-services.ts", path: "internal/runtime/http-response-services.ts"},
+	{source: "http-response-headers.ts", path: "internal/runtime/http-response-headers.ts"},
+	{source: "http-services.ts", path: "internal/runtime/http-services.ts"},
+	{source: "callables.ts", path: "internal/runtime/callables.ts"},
+	{source: "codecs.ts", path: "internal/runtime/codecs.ts"},
+	{source: "configuration.ts", path: "internal/runtime/configuration.ts"},
+	{source: "constants.ts", path: "internal/runtime/constants.ts"},
 	{source: "contract-types.ts", path: "internal/runtime/contract-types.ts"},
-	{source: "selected-client.ts", path: "internal/runtime/selected-client.ts"},
-	{source: "named-client.ts", path: "internal/runtime/named-client.ts"},
-	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
-	{source: "selection.ts", path: "internal/runtime/selection.ts"},
-	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
-	{source: "runtime-support.ts", path: "internal/runtime/runtime-support.ts"},
-	{source: "http-stream.ts", path: "internal/runtime/http-stream.ts"},
-	{source: "http-json-stream.ts", path: "internal/runtime/http-json-stream.ts"},
-	{source: "http-buffered.ts", path: "internal/runtime/http-buffered.ts"},
+	{source: "errors.ts", path: "internal/runtime/errors.ts"},
+	{source: "framing-multipart.ts", path: "internal/runtime/framing-multipart.ts"},
+	{source: "framing-text.ts", path: "internal/runtime/framing-text.ts"},
+	{source: "framing.ts", path: "internal/runtime/framing.ts"},
 	{source: "http-advanced.ts", path: "internal/runtime/http-advanced.ts"},
-	{source: "http-json.ts", path: "internal/runtime/http-json.ts"},
-	{source: "http-types.ts", path: "internal/runtime/http-types.ts"},
+	{source: "http-body-binary.ts", path: "internal/runtime/http-body-binary.ts"},
+	{source: "http-body-custom.ts", path: "internal/runtime/http-body-custom.ts"},
+	{source: "http-body-form.ts", path: "internal/runtime/http-body-form.ts"},
+	{source: "http-body-json.ts", path: "internal/runtime/http-body-json.ts"},
+	{source: "http-body-text.ts", path: "internal/runtime/http-body-text.ts"},
+	{source: "http-body.ts", path: "internal/runtime/http-body.ts"},
+	{source: "http-buffered.ts", path: "internal/runtime/http-buffered.ts"},
 	{source: "http-codecs.ts", path: "internal/runtime/http-codecs.ts"},
 	{source: "http-core.ts", path: "internal/runtime/http-core.ts"},
-	{source: "media-type.ts", path: "internal/runtime/media-type.ts"},
-	{source: "wire-xml.ts", path: "internal/runtime/wire-xml.ts"},
-	{source: "wire-engine.ts", path: "internal/runtime/wire-engine.ts"},
-	{source: "objects.ts", path: "internal/runtime/objects.ts"},
-	{source: "identity.ts", path: "internal/runtime/identity.ts"},
-	{source: "request.ts", path: "internal/runtime/request.ts"},
-	{source: "errors.ts", path: "internal/runtime/errors.ts"},
-	{source: "transport.ts", path: "internal/runtime/transport.ts"},
-	{source: "security.ts", path: "internal/runtime/security.ts"},
-	{source: "operation.ts", path: "internal/runtime/operation.ts"},
-	{source: "configuration.ts", path: "internal/runtime/configuration.ts"},
-	{source: "links.ts", path: "internal/runtime/links.ts"},
-	{source: "callables.ts", path: "internal/runtime/callables.ts"},
-	{source: "pagination.ts", path: "internal/runtime/pagination.ts"},
-	{source: "codecs.ts", path: "internal/runtime/codecs.ts"},
-	{source: "wire-properties.ts", path: "internal/runtime/wire-properties.ts"},
-	{source: "streaming.ts", path: "internal/runtime/streaming.ts"},
+	{source: "http-errors.ts", path: "internal/runtime/http-errors.ts"},
+	{source: "http-execution.ts", path: "internal/runtime/http-execution.ts"},
+	{source: "http-header-content.ts", path: "internal/runtime/http-header-content.ts"},
+	{source: "http-json-stream.ts", path: "internal/runtime/http-json-stream.ts"},
+	{source: "http-json.ts", path: "internal/runtime/http-json.ts"},
+	{source: "http-media-types.ts", path: "internal/runtime/http-media-types.ts"},
+	{source: "http-multipart-request.ts", path: "internal/runtime/http-multipart-request.ts"},
+	{source: "http-multipart-response.ts", path: "internal/runtime/http-multipart-response.ts"},
+	{source: "http-request-json-frame.ts", path: "internal/runtime/http-request-json-frame.ts"},
+	{source: "http-request-sse-frame.ts", path: "internal/runtime/http-request-sse-frame.ts"},
+	{source: "http-request-stream.ts", path: "internal/runtime/http-request-stream.ts"},
+	{source: "http-request-text-stream.ts", path: "internal/runtime/http-request-text-stream.ts"},
+	{source: "http-security.ts", path: "internal/runtime/http-security.ts"},
+	{source: "http-stream-core.ts", path: "internal/runtime/http-stream-core.ts"},
+	{source: "http-stream.ts", path: "internal/runtime/http-stream.ts"},
+	{source: "http-types.ts", path: "internal/runtime/http-types.ts"},
 	{source: "http.ts", path: "internal/runtime/http.ts"},
-	{source: "constants.ts", path: "internal/runtime/constants.ts"},
+	{source: "identity.ts", path: "internal/runtime/identity.ts"},
+	{source: "links-types.ts", path: "internal/runtime/links-types.ts"},
+	{source: "links.ts", path: "internal/runtime/links.ts"},
+	{source: "media-type.ts", path: "internal/runtime/media-type.ts"},
+	{source: "named-client.ts", path: "internal/runtime/named-client.ts"},
+	{source: "objects.ts", path: "internal/runtime/objects.ts"},
+	{source: "operation-loader.ts", path: "internal/runtime/operation-loader.ts"},
+	{source: "operation.ts", path: "internal/runtime/operation.ts"},
+	{source: "pagination-types.ts", path: "internal/runtime/pagination-types.ts"},
+	{source: "pagination.ts", path: "internal/runtime/pagination.ts"},
+	{source: "request.ts", path: "internal/runtime/request.ts"},
+	{source: "runtime-support.ts", path: "internal/runtime/runtime-support.ts"},
+	{source: "schema-query.ts", path: "internal/runtime/schema-query.ts"},
+	{source: "security-api-cookie.ts", path: "internal/runtime/security-api-cookie.ts"},
+	{source: "security-api-header.ts", path: "internal/runtime/security-api-header.ts"},
+	{source: "security-api-query.ts", path: "internal/runtime/security-api-query.ts"},
+	{source: "security-basic.ts", path: "internal/runtime/security-basic.ts"},
+	{source: "security-bearer.ts", path: "internal/runtime/security-bearer.ts"},
+	{source: "security-diagnostics.ts", path: "internal/runtime/security-diagnostics.ts"},
+	{source: "security-handler-types.ts", path: "internal/runtime/security-handler-types.ts"},
+	{source: "security-handlers.ts", path: "internal/runtime/security-handlers.ts"},
+	{source: "security-http.ts", path: "internal/runtime/security-http.ts"},
+	{source: "security-mtls.ts", path: "internal/runtime/security-mtls.ts"},
+	{source: "security-oauth.ts", path: "internal/runtime/security-oauth.ts"},
+	{source: "security.ts", path: "internal/runtime/security.ts"},
+	{source: "selected-client.ts", path: "internal/runtime/selected-client.ts"},
+	{source: "selection-types.ts", path: "internal/runtime/selection-types.ts"},
+	{source: "selection.ts", path: "internal/runtime/selection.ts"},
+	{source: "stream-abort.ts", path: "internal/runtime/stream-abort.ts"},
+	{source: "stream-core.ts", path: "internal/runtime/stream-core.ts"},
+	{source: "stream-json.ts", path: "internal/runtime/stream-json.ts"},
+	{source: "stream-sse.ts", path: "internal/runtime/stream-sse.ts"},
+	{source: "stream-types.ts", path: "internal/runtime/stream-types.ts"},
+	{source: "streaming.ts", path: "internal/runtime/streaming.ts"},
+	{source: "transport.ts", path: "internal/runtime/transport.ts"},
+	{source: "wire-array-contains.ts", path: "internal/runtime/wire-array-contains.ts"},
+	{source: "wire-array-limits.ts", path: "internal/runtime/wire-array-limits.ts"},
+	{source: "wire-array-unevaluated.ts", path: "internal/runtime/wire-array-unevaluated.ts"},
+	{source: "wire-array-unique.ts", path: "internal/runtime/wire-array-unique.ts"},
+	{source: "wire-array.ts", path: "internal/runtime/wire-array.ts"},
+	{source: "wire-composition.ts", path: "internal/runtime/wire-composition.ts"},
+	{source: "wire-content.ts", path: "internal/runtime/wire-content.ts"},
+	{source: "wire-context.ts", path: "internal/runtime/wire-context.ts"},
+	{source: "wire-core.ts", path: "internal/runtime/wire-core.ts"},
+	{source: "wire-dynamic.ts", path: "internal/runtime/wire-dynamic.ts"},
+	{source: "wire-engine.ts", path: "internal/runtime/wire-engine.ts"},
+	{source: "wire-equality.ts", path: "internal/runtime/wire-equality.ts"},
+	{source: "wire-format-date-time.ts", path: "internal/runtime/wire-format-date-time.ts"},
+	{source: "wire-format-date.ts", path: "internal/runtime/wire-format-date.ts"},
+	{source: "wire-format-duration.ts", path: "internal/runtime/wire-format-duration.ts"},
+	{source: "wire-format-email.ts", path: "internal/runtime/wire-format-email.ts"},
+	{source: "wire-format-hostname.ts", path: "internal/runtime/wire-format-hostname.ts"},
+	{source: "wire-format-idn-email.ts", path: "internal/runtime/wire-format-idn-email.ts"},
+	{source: "wire-format-idn-hostname.ts", path: "internal/runtime/wire-format-idn-hostname.ts"},
+	{source: "wire-format-ipv4.ts", path: "internal/runtime/wire-format-ipv4.ts"},
+	{source: "wire-format-ipv6.ts", path: "internal/runtime/wire-format-ipv6.ts"},
+	{source: "wire-format-json-pointer.ts", path: "internal/runtime/wire-format-json-pointer.ts"},
+	{source: "wire-format-regex.ts", path: "internal/runtime/wire-format-regex.ts"},
+	{source: "wire-format-relative-json-pointer.ts", path: "internal/runtime/wire-format-relative-json-pointer.ts"},
+	{source: "wire-format-time.ts", path: "internal/runtime/wire-format-time.ts"},
+	{source: "wire-format-uri-template.ts", path: "internal/runtime/wire-format-uri-template.ts"},
+	{source: "wire-format-uri.ts", path: "internal/runtime/wire-format-uri.ts"},
+	{source: "wire-format-uuid.ts", path: "internal/runtime/wire-format-uuid.ts"},
+	{source: "wire-format.ts", path: "internal/runtime/wire-format.ts"},
+	{source: "wire-handlers.ts", path: "internal/runtime/wire-handlers.ts"},
+	{source: "wire-literal.ts", path: "internal/runtime/wire-literal.ts"},
+	{source: "wire-multiple-of.ts", path: "internal/runtime/wire-multiple-of.ts"},
+	{source: "wire-number.ts", path: "internal/runtime/wire-number.ts"},
+	{source: "wire-object-dependencies.ts", path: "internal/runtime/wire-object-dependencies.ts"},
+	{source: "wire-object-limits.ts", path: "internal/runtime/wire-object-limits.ts"},
+	{source: "wire-object-unevaluated.ts", path: "internal/runtime/wire-object-unevaluated.ts"},
+	{source: "wire-object.ts", path: "internal/runtime/wire-object.ts"},
+	{source: "wire-pattern.ts", path: "internal/runtime/wire-pattern.ts"},
+	{source: "wire-properties.ts", path: "internal/runtime/wire-properties.ts"},
+	{source: "wire-property-names.ts", path: "internal/runtime/wire-property-names.ts"},
+	{source: "wire-string-pattern.ts", path: "internal/runtime/wire-string-pattern.ts"},
+	{source: "wire-string.ts", path: "internal/runtime/wire-string.ts"},
+	{source: "wire-types.ts", path: "internal/runtime/wire-types.ts"},
+	{source: "wire-xml.ts", path: "internal/runtime/wire-xml.ts"},
+	{source: "xml-codec.ts", path: "internal/runtime/xml-codec.ts"},
+	{source: "xml-types.ts", path: "internal/runtime/xml-types.ts"},
 }
 
 func readRuntimeTemplate(name string) ([]byte, error) {
@@ -72,8 +175,12 @@ func readRuntimeTemplate(name string) ([]byte, error) {
 }
 
 func emitRuntimeTemplateArtifacts() ([]Artifact, error) {
-	artifacts := make([]Artifact, 0, len(runtimeTemplateArtifacts))
-	for _, template := range runtimeTemplateArtifacts {
+	return emitPreparedRuntimeTemplateArtifacts(runtimeTemplateArtifacts)
+}
+
+func emitPreparedRuntimeTemplateArtifacts(templates []runtimeTemplateArtifact) ([]Artifact, error) {
+	artifacts := make([]Artifact, 0, len(templates))
+	for _, template := range templates {
 		source, err := readRuntimeTemplate(template.source)
 		if err != nil {
 			return nil, err
@@ -101,6 +208,11 @@ func (Generator) SupportsAddon(addon generator.Addon) bool {
 }
 
 type sourcePlan struct {
+	runtimeArtifacts            []runtimeTemplateArtifact
+	serverRuntimeArtifacts      []runtimeTemplateArtifact
+	serverCompositions          map[string][]byte
+	serverRuntimeFiles          []string
+	runtimeFeatures             *runtimeFeaturePlan
 	document                    *ir.Document
 	ownership                   *sourceOwnershipIndex
 	includeServer               bool
@@ -150,6 +262,11 @@ func (Generator) PrepareWithCoverage(document *ir.Document, options generator.Op
 	}
 	plan.includeMetadata = options.HasAddon(generator.AddonMetadata)
 	plan.typeCheck = options.TypeScriptTypeCheck != nil && *options.TypeScriptTypeCheck
+	if !diagnostic.HasErrors(diagnostics) && plan.modules != nil && plan.root != nil {
+		if err := prepareRuntimeArtifactPlan(plan); err != nil {
+			return generator.Plan{}, diagnostics, coverage, err
+		}
+	}
 	if !diagnostic.HasErrors(diagnostics) {
 		if !hasMeaningfulEntrySurface(plan) {
 			diagnostics = append(diagnostics, noMeaningfulEntrySurfaceDiagnostic(plan.document, plan.ownership))
@@ -432,6 +549,13 @@ func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer 
 		if executionErr != nil {
 			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript execution schema modules: %w", executionErr)
 		}
+		plan.runtimeFeatures, executionErr = prepareRuntimeFeatures(plan)
+		if executionErr != nil {
+			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript runtime feature plan: %w", executionErr)
+		}
+		if executionErr = prepareRuntimeArtifactPlan(plan); executionErr != nil {
+			return nil, diagnostic.Sort(diagnostics), coverage, executionErr
+		}
 		coverage = append(coverage, targetAnalysisCoverage("target.modules", diagnostic.CoverageComplete, ""))
 	} else {
 		coverage = append(coverage, targetAnalysisCoverage(
@@ -692,7 +816,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		return err
 	}
 	indexSource := generatedIndexSource(enumsSource)
-	runtimeArtifacts, err := emitRuntimeTemplateArtifacts()
+	runtimeArtifacts, err := emitPreparedRuntimeTemplateArtifacts(shared.runtimeArtifacts)
 	if err != nil {
 		return err
 	}
@@ -714,7 +838,16 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		}
 	}
 	if includeServer {
-		serverArtifacts, err := emitPreparedServerArtifacts(shared.document, shared.webhooks, shared.callbacks)
+		extraRuntime, err := emitPreparedRuntimeTemplateArtifacts(shared.serverRuntimeArtifacts)
+		if err != nil {
+			return err
+		}
+		for _, artifact := range extraRuntime {
+			if err := publish(artifact); err != nil {
+				return err
+			}
+		}
+		serverArtifacts, err := emitPreparedServerArtifactsWithTemplates(shared.document, shared.webhooks, shared.callbacks, shared.serverCompositions, shared.serverRuntimeFiles)
 		if err != nil {
 			return err
 		}
@@ -778,7 +911,7 @@ func artifactEmissionOrder(path string) string {
 func generatedIndexSource(enumsSource []byte) []byte {
 	var output strings.Builder
 	output.WriteString("export type * from \"./schemas/index.js\"\n")
-	output.WriteString("export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from \"./runtime/pagination.js\"\n")
+	output.WriteString("export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from \"./runtime/pagination-types.js\"\n")
 	for _, module := range []string{"enums", "errors"} {
 		fmt.Fprintf(&output, "export type * from %s\n", quoteTS("./"+module+".js"))
 	}
@@ -795,6 +928,8 @@ func generatedIndexSource(enumsSource []byte) []byte {
 	output.WriteString("export { isErrorCategory } from \"./errors.js\"\n")
 	output.WriteString("export { createClient } from \"./client/index.js\"\n")
 	output.WriteString("export { APIError, TransportErrorCode, getErrorCode, getRequestID, isAPIError, isErrorCode } from \"./runtime/errors.js\"\n")
+	output.WriteString("export { isOperationHTTPError } from \"./runtime/http-errors.js\"\n")
+	output.WriteString("export type { HTTPErrorFor, OperationHTTPError } from \"./runtime/http-errors.js\"\n")
 	return []byte(output.String())
 }
 

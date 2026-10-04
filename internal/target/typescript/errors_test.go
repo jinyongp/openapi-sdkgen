@@ -273,8 +273,8 @@ func TestErrorContractsPropagateAndDeduplicateComposedErrorSchemas(t *testing.T)
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(types, []string{
-		`ServerError<"invalid_widget", Readonly<Record<string, unknown>>>`,
-		`ServerError<"missing_widget", Readonly<Record<string, unknown>>>`,
+		`ServerError<"invalid_widget", Record<string, unknown>>`,
+		`ServerError<"missing_widget", Record<string, unknown>>`,
 	}) {
 		t.Fatalf("operation error types = %#v", types)
 	}
@@ -326,7 +326,7 @@ func TestErrorContractsAggregateCodeDetailsAndNarrowOperations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := expression.render(typeRenderContract); got != `Errors.ServerError<"shared-code", Contract.ComponentOutput<"AlphaDetails">> | TransportError` {
+	if got := expression.render(typeRenderContract); got != `Errors.ServerError<"shared-code", Contract.ComponentOutput<"AlphaDetails">> | HTTPErrorFor<400, Contract.ComponentOutput<"AlphaError">, "application/json"> | APIError<string, unknown> | TransportError` {
 		t.Fatalf("operation error expression = %q", got)
 	}
 }

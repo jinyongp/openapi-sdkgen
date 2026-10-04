@@ -1,0 +1,4338 @@
+{
+  "measuredAt": "2026-10-04T06:15:18.110Z",
+  "commit": "6c349f9d098e175b242f49d3d28cefe6f2e3f731",
+  "dirty": true,
+  "generatorSourceSHA256": "f987a4b25cf7f2041691ad4520f74f0aa3e1a5b5f325b8c0007ca6810cf9710c",
+  "input": "test/typescript/fixtures/runtime-features/client/small-json.json",
+  "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+  "environment": {
+    "node": "v24.21.0",
+    "vite": "8.3.0",
+    "rolldown": "1.2.6",
+    "typescript": "7.0.2",
+    "target": "ES2022",
+    "platform": "browser",
+    "format": "ESM",
+    "minify": "oxc",
+    "modulePreload": false,
+    "gzipLevel": 6,
+    "nativeBundleCallsPassed": true
+  },
+  "source": {
+    "default": {
+      "total": {
+        "files": 76,
+        "bytes": 302077,
+        "lines": 7797
+      },
+      "runtime": {
+        "files": 38,
+        "bytes": 220487,
+        "lines": 5951
+      },
+      "sourceSHA256": "081194422657c68d61e66ae116e24404ded5f4efaaaa39a84cb916abc739e974"
+    },
+    "fullCapabilityControl": {
+      "total": {
+        "files": 163,
+        "bytes": 589019,
+        "lines": 15536
+      },
+      "runtime": {
+        "files": 125,
+        "bytes": 510371,
+        "lines": 13729
+      },
+      "sourceSHA256": "3b095c9029806c2c283b4970ac3becae6d3c78c997a06000bf1a0fa2262a2a31"
+    }
+  },
+  "bundles": [
+    {
+      "name": "full-capability-control",
+      "chunks": 1,
+      "entryBytes": 105335,
+      "entryGzipBytes": 30427,
+      "deployedBytes": 105335,
+      "deployedGzipBytes": 30427,
+      "outputs": [
+        {
+          "file": "entry.mjs",
+          "entry": true,
+          "bytes": 105335,
+          "gzipBytes": 30427,
+          "sha256": "e92edffd4a186f01f9faf060e68be7e0486e61ee78e073c4e1a2392900845ff1"
+        }
+      ]
+    },
+    {
+      "name": "default-root",
+      "chunks": 1,
+      "entryBytes": 32386,
+      "entryGzipBytes": 10326,
+      "deployedBytes": 32386,
+      "deployedGzipBytes": 10326,
+      "outputs": [
+        {
+          "file": "entry.mjs",
+          "entry": true,
+          "bytes": 32386,
+          "gzipBytes": 10326,
+          "sha256": "fa2cf8f25be5a6fd8f9ce11652cb23398b8cb5a06f613455270e9ae97aa3b693"
+        }
+      ]
+    },
+    {
+      "name": "static-selective",
+      "chunks": 3,
+      "entryBytes": 23434,
+      "entryGzipBytes": 8114,
+      "deployedBytes": 40869,
+      "deployedGzipBytes": 14665,
+      "outputs": [
+        {
+          "file": "entry.mjs",
+          "entry": true,
+          "bytes": 23434,
+          "gzipBytes": 8114,
+          "sha256": "7224651f50e2fcb5021e5f71e54f67e0cc7504b21890614a8a65f90947d1964b"
+        },
+        {
+          "file": "chunk-B1Inprz5.mjs",
+          "entry": false,
+          "bytes": 1970,
+          "gzipBytes": 888,
+          "sha256": "eebad662957b0586972650e13a5d92c8701358a1c14c7ebf23dc92183da9ab76"
+        },
+        {
+          "file": "chunk-D2x-tZLs.mjs",
+          "entry": false,
+          "bytes": 15465,
+          "gzipBytes": 5663,
+          "sha256": "c70a0305a887a81ce25f75fa2f0622e8408a8807fefd3841669d84ef5cda8ca0"
+        }
+      ]
+    },
+    {
+      "name": "lazy-selective",
+      "chunks": 7,
+      "entryBytes": 369,
+      "entryGzipBytes": 272,
+      "deployedBytes": 42062,
+      "deployedGzipBytes": 15847,
+      "outputs": [
+        {
+          "file": "entry.mjs",
+          "entry": true,
+          "bytes": 369,
+          "gzipBytes": 272,
+          "sha256": "bcef72210ea99a53e7a0c616a0cce2fc31f2ebfeb1f261e1a870329c8e3abcee"
+        },
+        {
+          "file": "chunk-B3nfOi5I.mjs",
+          "entry": false,
+          "bytes": 1364,
+          "gzipBytes": 742,
+          "sha256": "298e58483be1903930c5a1661df3e66b3ef02723b34237990ad3a5f5e6052628"
+        },
+        {
+          "file": "chunk-CCEilzyA.mjs",
+          "entry": false,
+          "bytes": 2004,
+          "gzipBytes": 906,
+          "sha256": "0279848c5418bf305dc988923503bf2e0af86db2bde3642c0b3d968e2165b804"
+        },
+        {
+          "file": "chunk-CJ0gpwpx.mjs",
+          "entry": false,
+          "bytes": 509,
+          "gzipBytes": 320,
+          "sha256": "ad8f97ad396b17f9f52bd8e8e0462288f78c272e77254ccb8bcf527e8e64042b"
+        },
+        {
+          "file": "chunk-D66AncMc.mjs",
+          "entry": false,
+          "bytes": 8551,
+          "gzipBytes": 3182,
+          "sha256": "057ad7045141a24eaa68cb89093cf549234dc59abb8863ac4f1909f29a707a0e"
+        },
+        {
+          "file": "chunk-Dhqlt7_6.mjs",
+          "entry": false,
+          "bytes": 6256,
+          "gzipBytes": 2525,
+          "sha256": "a2a158de6a8bb6e197a58501254ffe3db6b10880d6630d8bdf643507ab99c365"
+        },
+        {
+          "file": "chunk-EBRIC-nG.mjs",
+          "entry": false,
+          "bytes": 23009,
+          "gzipBytes": 7900,
+          "sha256": "cc2c41daca73b65276d419563f2960f87a9154c8da32e814d090c3573045e9b4"
+        }
+      ]
+    }
+  ],
+  "featureSizes": [
+    {
+      "name": "small-json",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 76,
+              "bytes": 302077,
+              "lines": 7797
+            },
+            "runtime": {
+              "files": 38,
+              "bytes": 220487,
+              "lines": 5951
+            },
+            "sourceSHA256": "081194422657c68d61e66ae116e24404ded5f4efaaaa39a84cb916abc739e974"
+          },
+          "native": {
+            "files": 35,
+            "bytes": 111567,
+            "gzipBytes": 33986
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 32262,
+            "gzipBytes": 10273
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 163,
+              "bytes": 589019,
+              "lines": 15536
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "3b095c9029806c2c283b4970ac3becae6d3c78c997a06000bf1a0fa2262a2a31"
+          },
+          "native": {
+            "files": 110,
+            "bytes": 339034,
+            "gzipBytes": 97672
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 105211,
+            "gzipBytes": 30369
+          }
+        }
+      }
+    },
+    {
+      "name": "only-xmlEcho",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 66,
+              "bytes": 357520,
+              "lines": 9379
+            },
+            "runtime": {
+              "files": 39,
+              "bytes": 305497,
+              "lines": 8228
+            },
+            "sourceSHA256": "e0c4ba1170a967df4ac768034c3197fe3a5b37bf34a432b4de925a532cf778e9"
+          },
+          "native": {
+            "files": 33,
+            "bytes": 185816,
+            "gzipBytes": 45982
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 58669,
+            "gzipBytes": 17177
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 152,
+              "bytes": 560616,
+              "lines": 14859
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "361734b1018279fc58937e858ba71c7787a04759526a76438e61008691287dfc"
+          },
+          "native": {
+            "files": 107,
+            "bytes": 334667,
+            "gzipBytes": 95774
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102789,
+            "gzipBytes": 29790
+          }
+        }
+      }
+    },
+    {
+      "name": "only-formEcho",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 66,
+              "bytes": 327870,
+              "lines": 8599
+            },
+            "runtime": {
+              "files": 39,
+              "bytes": 276401,
+              "lines": 7452
+            },
+            "sourceSHA256": "7c79e4f0de5614133ef6063694602261005b5d7447dcb689efcfbcbd0e3c01e2"
+          },
+          "native": {
+            "files": 33,
+            "bytes": 158247,
+            "gzipBytes": 40349
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 48447,
+            "gzipBytes": 13745
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 152,
+              "bytes": 560743,
+              "lines": 14859
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "449b6789fc57b997f8f3e8f2ed64bd4725023d4c4eb4968d1dbbbdd50cf756da"
+          },
+          "native": {
+            "files": 107,
+            "bytes": 334713,
+            "gzipBytes": 95791
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102833,
+            "gzipBytes": 29812
+          }
+        }
+      }
+    },
+    {
+      "name": "only-multipartEcho",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 68,
+              "bytes": 380982,
+              "lines": 9984
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 327902,
+              "lines": 8821
+            },
+            "sourceSHA256": "7f9c76c897f4cdddaa89b5e7a6243059c60fe0d1f5722e1afb897cead275b336"
+          },
+          "native": {
+            "files": 35,
+            "bytes": 204312,
+            "gzipBytes": 50404
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 65492,
+            "gzipBytes": 19274
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 152,
+              "bytes": 561200,
+              "lines": 14859
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "9b7891109e8a651b7769d954582091585ad1c217f9ee3960abe4ad1fe65e3b19"
+          },
+          "native": {
+            "files": 107,
+            "bytes": 334730,
+            "gzipBytes": 95803
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102840,
+            "gzipBytes": 29806
+          }
+        }
+      }
+    },
+    {
+      "name": "only-textEcho",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 64,
+              "bytes": 321889,
+              "lines": 8456
+            },
+            "runtime": {
+              "files": 38,
+              "bytes": 273286,
+              "lines": 7371
+            },
+            "sourceSHA256": "1d12a9e9fdde152c975cea74082b9f46e296c414a57fa4b4263042807913505c"
+          },
+          "native": {
+            "files": 31,
+            "bytes": 154027,
+            "gzipBytes": 38866
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 46833,
+            "gzipBytes": 13387
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557992,
+              "lines": 14798
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "51572fc08e74304f8e672b367af0801f8c4823e7a7035d26adcb30d832eafe3a"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333319,
+            "gzipBytes": 95267
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102287,
+            "gzipBytes": 29692
+          }
+        }
+      }
+    },
+    {
+      "name": "only-customCodec",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 65,
+              "bytes": 324776,
+              "lines": 8526
+            },
+            "runtime": {
+              "files": 38,
+              "bytes": 273839,
+              "lines": 7380
+            },
+            "sourceSHA256": "665bb4fee7dea08d147d4de6c4ae78747e49ff652a23d18a47ede702b72b0bf2"
+          },
+          "native": {
+            "files": 32,
+            "bytes": 155588,
+            "gzipBytes": 39590
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 47510,
+            "gzipBytes": 13591
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 152,
+              "bytes": 560378,
+              "lines": 14860
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "3a57a642bc9f980222603d1842a477d9caa390f117e6e32485ba9b1767bbb3bf"
+          },
+          "native": {
+            "files": 107,
+            "bytes": 334273,
+            "gzipBytes": 95822
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102599,
+            "gzipBytes": 29829
+          }
+        }
+      }
+    },
+    {
+      "name": "request-ndjson",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 333259,
+              "lines": 8749
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 283439,
+              "lines": 7653
+            },
+            "sourceSHA256": "436a60affbd4bd7522638d9e6361e9c63900611b1a8c47be8d47f30edf394b43"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 162829,
+            "gzipBytes": 41510
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50075,
+            "gzipBytes": 14176
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558246,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "0e57ff54a7668ad5460fb2b8f4c152bbbf4006d6c401af6c354cbf3c19b976f5"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333465,
+            "gzipBytes": 95378
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102566,
+            "gzipBytes": 29812
+          }
+        }
+      }
+    },
+    {
+      "name": "response-ndjson",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 69,
+              "bytes": 353678,
+              "lines": 9255
+            },
+            "runtime": {
+              "files": 43,
+              "bytes": 302688,
+              "lines": 8168
+            },
+            "sourceSHA256": "67d55be11ff67ff7665af154fcc3a6ca306fffacfb3471166c508bf701d2ef3e"
+          },
+          "native": {
+            "files": 35,
+            "bytes": 180543,
+            "gzipBytes": 45641
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 55952,
+            "gzipBytes": 16143
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558465,
+              "lines": 14788
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5e072facdcae1190f4a835ff460cda361a74252b7fbd5360519a60b3ae39d769"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 334276,
+            "gzipBytes": 95490
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103282,
+            "gzipBytes": 29940
+          }
+        }
+      }
+    },
+    {
+      "name": "request-sequence",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 333253,
+              "lines": 8749
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 283439,
+              "lines": 7653
+            },
+            "sourceSHA256": "57270b8affc69d95ea71c99ea978905513d98d28a23dcdb73e6b11fbeb1d95a0"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 162823,
+            "gzipBytes": 41506
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50069,
+            "gzipBytes": 14176
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558240,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "3012a634e88582961d9a1002124fc98c54ff24ad2567da1f96918bcd129021a3"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333459,
+            "gzipBytes": 95373
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102560,
+            "gzipBytes": 29804
+          }
+        }
+      }
+    },
+    {
+      "name": "response-sequence",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 69,
+              "bytes": 353654,
+              "lines": 9255
+            },
+            "runtime": {
+              "files": 43,
+              "bytes": 302688,
+              "lines": 8168
+            },
+            "sourceSHA256": "c74f6611abc6eee0004c4f0b885179984731d725b6d8ae2bf43b95af43511f94"
+          },
+          "native": {
+            "files": 35,
+            "bytes": 180525,
+            "gzipBytes": 45630
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 55934,
+            "gzipBytes": 16139
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558453,
+              "lines": 14788
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "7ddb125c68646b35b6e69150a097c891bf92e4616d47b3fb7753f4d06bd01f58"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 334264,
+            "gzipBytes": 95482
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103270,
+            "gzipBytes": 29932
+          }
+        }
+      }
+    },
+    {
+      "name": "request-sse",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 334418,
+              "lines": 8780
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 284773,
+              "lines": 7684
+            },
+            "sourceSHA256": "32440a364c03d8a9005297834cec02847a84fd62d49e5c1b6a995d5b8612b556"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 164175,
+            "gzipBytes": 41804
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50905,
+            "gzipBytes": 14399
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558205,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "ac7e41f063224399fa1fde2ecdaf4ccbebabf475ca6e89c93eb65d5a993b47d6"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333418,
+            "gzipBytes": 95355
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102524,
+            "gzipBytes": 29794
+          }
+        }
+      }
+    },
+    {
+      "name": "response-sse",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 68,
+              "bytes": 354777,
+              "lines": 9295
+            },
+            "runtime": {
+              "files": 42,
+              "bytes": 303906,
+              "lines": 8208
+            },
+            "sourceSHA256": "4e33d5d21593682393b67d84f07f92067b96a9306de0da6ed903d17fefb05359"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 181824,
+            "gzipBytes": 45572
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 55909,
+            "gzipBytes": 16240
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558380,
+              "lines": 14788
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5d95bec6cc25a178d9437c870cdbc4b06ff0c943e7f49daac7e55f64a9f1e742"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 334185,
+            "gzipBytes": 95467
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103201,
+            "gzipBytes": 29922
+          }
+        }
+      }
+    },
+    {
+      "name": "request-multipart",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 384118,
+              "lines": 10102
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 333788,
+              "lines": 8994
+            },
+            "sourceSHA256": "4b8b8020d3bd7ff2563795e14ee4e84268facd8ac3604ae32d4abe17de61534d"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 207625,
+            "gzipBytes": 50844
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 67016,
+            "gzipBytes": 19607
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558226,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "fe172493228853881763be9fcac01124623a0e11742fa8d76a1405e8e219364a"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333445,
+            "gzipBytes": 95364
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102546,
+            "gzipBytes": 29804
+          }
+        }
+      }
+    },
+    {
+      "name": "response-multipart",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 72,
+              "bytes": 401325,
+              "lines": 10496
+            },
+            "runtime": {
+              "files": 46,
+              "bytes": 348932,
+              "lines": 9393
+            },
+            "sourceSHA256": "95b51869d90359372b7fe7241e611b4817fd831e837a5abb8df58d86014d43b7"
+          },
+          "native": {
+            "files": 38,
+            "bytes": 223749,
+            "gzipBytes": 55705
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 71169,
+            "gzipBytes": 21000
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558394,
+              "lines": 14788
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "6ded6e597d3a54a955d3220d8e6c2defe6f78c009ac23028522f2641188096d5"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 334241,
+            "gzipBytes": 95475
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103247,
+            "gzipBytes": 29932
+          }
+        }
+      }
+    },
+    {
+      "name": "request-custom",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 65,
+              "bytes": 329935,
+              "lines": 8669
+            },
+            "runtime": {
+              "files": 39,
+              "bytes": 280706,
+              "lines": 7577
+            },
+            "sourceSHA256": "f89bf27600384b56a3a6c8f5a0ddbcad860af42bbb229cbf5b98231c38bcc596"
+          },
+          "native": {
+            "files": 32,
+            "bytes": 160206,
+            "gzipBytes": 40442
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 49442,
+            "gzipBytes": 13977
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558233,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "1b1492fbb3e985c3d80a5c5aadd2cc1d916404999432a9bcac200f6a94e12496"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333452,
+            "gzipBytes": 95373
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102553,
+            "gzipBytes": 29804
+          }
+        }
+      }
+    },
+    {
+      "name": "response-custom",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 349503,
+              "lines": 9139
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 298762,
+              "lines": 8054
+            },
+            "sourceSHA256": "ab0aeceebc6f80c15752b6c2745a2369bf19fc4fd464ef21f96368f2b19ef8e0"
+          },
+          "native": {
+            "files": 33,
+            "bytes": 176676,
+            "gzipBytes": 44083
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 54612,
+            "gzipBytes": 15674
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558439,
+              "lines": 14788
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "c885508c771bfe57b40a0d53d94c9cb89286b135c1b84ee3c5f6aa0232b94453"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 334250,
+            "gzipBytes": 95482
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103256,
+            "gzipBytes": 29932
+          }
+        }
+      }
+    },
+    {
+      "name": "binary",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 65,
+              "bytes": 323476,
+              "lines": 8498
+            },
+            "runtime": {
+              "files": 39,
+              "bytes": 274704,
+              "lines": 7413
+            },
+            "sourceSHA256": "a897a115546ef920fae46720015d022558faa72a98e7fad0ac0d6d5cb73faa3c"
+          },
+          "native": {
+            "files": 32,
+            "bytes": 155077,
+            "gzipBytes": 39393
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 47104,
+            "gzipBytes": 13430
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558145,
+              "lines": 14798
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "e384a188e9375c8670827f7bcf6450047c0799ffe08b232c8456bdf4615df193"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333352,
+            "gzipBytes": 95277
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102316,
+            "gzipBytes": 29691
+          }
+        }
+      }
+    },
+    {
+      "name": "xml-and-stream",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 70,
+              "bytes": 387616,
+              "lines": 10130
+            },
+            "runtime": {
+              "files": 44,
+              "bytes": 334346,
+              "lines": 9016
+            },
+            "sourceSHA256": "e655911df13bd65f4a06821200a12f5c7ad67c0bf9f81d348b3fdbc25e56fb5f"
+          },
+          "native": {
+            "files": 36,
+            "bytes": 211156,
+            "gzipBytes": 52162
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 67509,
+            "gzipBytes": 19840
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 559884,
+              "lines": 14809
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "aeaaf0124104abd196a0c8c8dbd594c56d8fc113b37edf6ccc7341330199aeca"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 335055,
+            "gzipBytes": 95561
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103872,
+            "gzipBytes": 30009
+          }
+        }
+      }
+    },
+    {
+      "name": "wildcard",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 77,
+              "bytes": 405210,
+              "lines": 10636
+            },
+            "runtime": {
+              "files": 51,
+              "bytes": 353371,
+              "lines": 9519
+            },
+            "sourceSHA256": "ed43e65800915a2f06943849f0801d21566e59c76d6604dbb4f003e22208876d"
+          },
+          "native": {
+            "files": 43,
+            "bytes": 224929,
+            "gzipBytes": 57275
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 71194,
+            "gzipBytes": 21039
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558104,
+              "lines": 14798
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "a332c4f5cddd3431daee296a8285f92e37ceb621e785a3ac8eae5b784afd3ae3"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333319,
+            "gzipBytes": 95275
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102285,
+            "gzipBytes": 29691
+          }
+        }
+      }
+    },
+    {
+      "name": "format-uuid",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 60,
+              "bytes": 252298,
+              "lines": 6563
+            },
+            "runtime": {
+              "files": 34,
+              "bytes": 203289,
+              "lines": 5476
+            },
+            "sourceSHA256": "e573c68d1ac8ae15dc2934e98824c29f2665c5c1bed98777795378409deb9494"
+          },
+          "native": {
+            "files": 28,
+            "bytes": 92705,
+            "gzipBytes": 28207
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 24720,
+            "gzipBytes": 8303
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557943,
+              "lines": 14798
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "360c0b58b55f69808e440963f1a224dd6241bd1d2906a2311081c94d3cd1f340"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333290,
+            "gzipBytes": 95290
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102258,
+            "gzipBytes": 29691
+          }
+        }
+      }
+    },
+    {
+      "name": "format-ipv4",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 60,
+              "bytes": 252440,
+              "lines": 6570
+            },
+            "runtime": {
+              "files": 34,
+              "bytes": 203431,
+              "lines": 5483
+            },
+            "sourceSHA256": "daa1832aab9581b5131a072cc3eeaabd1f16a1c1c4d8faa38d60624d5ecf4009"
+          },
+          "native": {
+            "files": 28,
+            "bytes": 92797,
+            "gzipBytes": 28277
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 24743,
+            "gzipBytes": 8324
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557943,
+              "lines": 14798
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "7655afe0a28e6094662f12317d71559744258566595e8858138d1330017aa3e4"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333290,
+            "gzipBytes": 95289
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102258,
+            "gzipBytes": 29693
+          }
+        }
+      }
+    },
+    {
+      "name": "dynamic",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 61,
+              "bytes": 254636,
+              "lines": 6624
+            },
+            "runtime": {
+              "files": 34,
+              "bytes": 204094,
+              "lines": 5493
+            },
+            "sourceSHA256": "ac9185a95679315ff6598e2b87df8139f95ace59c6b8608d980b20d840d4faea"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 94031,
+            "gzipBytes": 28856
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 24924,
+            "gzipBytes": 8374
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 152,
+              "bytes": 559640,
+              "lines": 14843
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "34207a4b298a249071c84937065b1d58b2c4a1b84b1aa26f648ded4cd2fb5681"
+          },
+          "native": {
+            "files": 107,
+            "bytes": 334073,
+            "gzipBytes": 95736
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102435,
+            "gzipBytes": 29748
+          }
+        }
+      }
+    },
+    {
+      "name": "runtime-quality-3-0-3",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 105,
+              "bytes": 422243,
+              "lines": 10924
+            },
+            "runtime": {
+              "files": 37,
+              "bytes": 272730,
+              "lines": 7356
+            },
+            "sourceSHA256": "f3f99f72418f611048d1348a7ff204154632b7f6d924b7b27788fb306304220e"
+          },
+          "native": {
+            "files": 44,
+            "bytes": 168490,
+            "gzipBytes": 45208
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50104,
+            "gzipBytes": 13852
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 193,
+              "bytes": 656185,
+              "lines": 17234
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "daf1b2aae2f542f5fe2761240a6291f169e2d3e3cb7072ceff1415c184125d63"
+          },
+          "native": {
+            "files": 120,
+            "bytes": 348314,
+            "gzipBytes": 101889
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 105586,
+            "gzipBytes": 30180
+          }
+        }
+      }
+    },
+    {
+      "name": "runtime-quality-3-1-1",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 210,
+              "bytes": 736005,
+              "lines": 18349
+            },
+            "runtime": {
+              "files": 45,
+              "bytes": 321999,
+              "lines": 8703
+            },
+            "sourceSHA256": "874d2e5ae7cdb8768146a4326cac0a53b5ed7c2d636869e1203ebdef3d1f7398"
+          },
+          "native": {
+            "files": 76,
+            "bytes": 244248,
+            "gzipBytes": 69810
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 75401,
+            "gzipBytes": 19626
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 290,
+              "bytes": 905915,
+              "lines": 23122
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "4fb4ee316548324f28f98e12ee7556141c6326d915eb6d1dc7966631d0b96af2"
+          },
+          "native": {
+            "files": 145,
+            "bytes": 384189,
+            "gzipBytes": 116521
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 117026,
+            "gzipBytes": 31496
+          }
+        }
+      }
+    },
+    {
+      "name": "runtime-quality-3-2-0",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 243,
+              "bytes": 840218,
+              "lines": 20925
+            },
+            "runtime": {
+              "files": 50,
+              "bytes": 353175,
+              "lines": 9555
+            },
+            "sourceSHA256": "b0d42e65c6944eb0b2d61bda568b257f24842e187c658e5b846d245af9e4934e"
+          },
+          "native": {
+            "files": 88,
+            "bytes": 282869,
+            "gzipBytes": 81132
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 87134,
+            "gzipBytes": 22759
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 318,
+              "bytes": 973589,
+              "lines": 24785
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "8fa16b68124e973b122ccf66d41fcf24d1c4757d769f1fdd9a8a1707688204fa"
+          },
+          "native": {
+            "files": 153,
+            "bytes": 395347,
+            "gzipBytes": 121057
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 120579,
+            "gzipBytes": 32000
+          }
+        }
+      }
+    },
+    {
+      "name": "discriminator-dependencies",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 79,
+              "bytes": 298270,
+              "lines": 7750
+            },
+            "runtime": {
+              "files": 34,
+              "bytes": 208377,
+              "lines": 5653
+            },
+            "sourceSHA256": "462c5de1daeee9cd661066ee95ee9f34254edb9e48433da8fa42907dc1a08c1a"
+          },
+          "native": {
+            "files": 39,
+            "bytes": 107456,
+            "gzipBytes": 33658
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 28897,
+            "gzipBytes": 9077
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 170,
+              "bytes": 597818,
+              "lines": 15794
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "3b2f6e27bea6a5dde397d6cba8a107919c6da9e440f0b6053bb1233adba108bb"
+          },
+          "native": {
+            "files": 117,
+            "bytes": 344164,
+            "gzipBytes": 100078
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 104977,
+            "gzipBytes": 30130
+          }
+        }
+      }
+    },
+    {
+      "name": "selection-links",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 91,
+              "bytes": 439739,
+              "lines": 11132
+            },
+            "runtime": {
+              "files": 40,
+              "bytes": 317310,
+              "lines": 8507
+            },
+            "sourceSHA256": "6c878b0f6e0820efd097d4b985688f7d4269566bf91b3725aecd431928442c10"
+          },
+          "native": {
+            "files": 42,
+            "bytes": 205367,
+            "gzipBytes": 52994
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 64756,
+            "gzipBytes": 18730
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 176,
+              "bytes": 630064,
+              "lines": 16309
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5e38cc5860394a3b0a0743fc9ff73300fd5ec3c5673890224eadb8a91b9db2ff"
+          },
+          "native": {
+            "files": 117,
+            "bytes": 355452,
+            "gzipBytes": 103272
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 109313,
+            "gzipBytes": 31449
+          }
+        }
+      }
+    },
+    {
+      "name": "selection-public",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 91,
+              "bytes": 326058,
+              "lines": 8419
+            },
+            "runtime": {
+              "files": 32,
+              "bytes": 202139,
+              "lines": 5445
+            },
+            "sourceSHA256": "677d3d051f5c5b79ec7e1c728a18498514591ad8b23f9d33363d026c2e46fdbb"
+          },
+          "native": {
+            "files": 35,
+            "bytes": 100959,
+            "gzipBytes": 31702
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 26233,
+            "gzipBytes": 8449
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 184,
+              "bytes": 630947,
+              "lines": 16647
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "47299363e72c1e7c846ddf61681983602afd7694bf80212692b0901ebeb058ab"
+          },
+          "native": {
+            "files": 115,
+            "bytes": 342872,
+            "gzipBytes": 99479
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103981,
+            "gzipBytes": 29931
+          }
+        }
+      }
+    },
+    {
+      "name": "execution-media",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 138,
+              "bytes": 554919,
+              "lines": 14232
+            },
+            "runtime": {
+              "files": 46,
+              "bytes": 339808,
+              "lines": 9129
+            },
+            "sourceSHA256": "96ac6192bcf6c110cfe44537f45494cff3b106a4502765f2b1ad4fbddd310aa6"
+          },
+          "native": {
+            "files": 61,
+            "bytes": 234491,
+            "gzipBytes": 63242
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 73242,
+            "gzipBytes": 20704
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 217,
+              "bytes": 714512,
+              "lines": 18692
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "7753268002f8b47d3f6c7adbb9f9cb48e875de011191c94e2eea4809c0c2c047"
+          },
+          "native": {
+            "files": 129,
+            "bytes": 358913,
+            "gzipBytes": 106268
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 108853,
+            "gzipBytes": 30794
+          }
+        }
+      }
+    },
+    {
+      "name": "client",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 107,
+              "bytes": 442406,
+              "lines": 11197
+            },
+            "runtime": {
+              "files": 45,
+              "bytes": 291556,
+              "lines": 7831
+            },
+            "sourceSHA256": "57ec04e9bb5f12b339132802132fe68f27296eff6281a0659eb5709cf82c027a"
+          },
+          "native": {
+            "files": 54,
+            "bytes": 185946,
+            "gzipBytes": 51902
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 57060,
+            "gzipBytes": 15733
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 187,
+              "bytes": 657339,
+              "lines": 17036
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "d6886456eaa3a3a3d78ec10098f8a2d75ba057d4e230b38bd16f9e39d8428f46"
+          },
+          "native": {
+            "files": 124,
+            "bytes": 360013,
+            "gzipBytes": 105958
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 111189,
+            "gzipBytes": 31702
+          }
+        }
+      }
+    },
+    {
+      "name": "collisions",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 180,
+              "bytes": 855875,
+              "lines": 19667
+            },
+            "runtime": {
+              "files": 88,
+              "bytes": 409617,
+              "lines": 11068
+            },
+            "sourceSHA256": "6fbf71c2e962f905206265c8e0d2c2b9e8406b2b0b494bfbd8d3aaea1c497eb8"
+          },
+          "native": {
+            "files": 66,
+            "bytes": 231779,
+            "gzipBytes": 63552
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 71575,
+            "gzipBytes": 19440
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 217,
+              "bytes": 945774,
+              "lines": 22214
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "2dc07839a97deab131e25fdbd82c295ee8243cdb16b193eafaca5d57194287c4"
+          },
+          "native": {
+            "files": 134,
+            "bytes": 378438,
+            "gzipBytes": 111291
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 116603,
+            "gzipBytes": 32566
+          }
+        }
+      }
+    },
+    {
+      "name": "bundle-isolation",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 63,
+              "bytes": 270580,
+              "lines": 6839
+            },
+            "runtime": {
+              "files": 34,
+              "bytes": 204605,
+              "lines": 5509
+            },
+            "sourceSHA256": "9ab6ada2985bbc50bb8936fef7f8370dbf57cd8e6d3e7c374de17bacf976f702"
+          },
+          "native": {
+            "files": 31,
+            "bytes": 100983,
+            "gzipBytes": 31019
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 26280,
+            "gzipBytes": 8643
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 154,
+              "bytes": 575394,
+              "lines": 15044
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "2815a11fb162b8bd247830145a2123120ddad06ef00d2d2abb428f9061bc4fec"
+          },
+          "native": {
+            "files": 109,
+            "bytes": 340427,
+            "gzipBytes": 97723
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103381,
+            "gzipBytes": 29914
+          }
+        }
+      }
+    },
+    {
+      "name": "transport-native-headers",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 184,
+              "bytes": 775994,
+              "lines": 19652
+            },
+            "runtime": {
+              "files": 92,
+              "bytes": 426524,
+              "lines": 11539
+            },
+            "sourceSHA256": "54c81dc621362bfc2dfae2891156f50a09815393a2b25c4c1529591374e1bd2b"
+          },
+          "native": {
+            "files": 55,
+            "bytes": 224501,
+            "gzipBytes": 59401
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 71580,
+            "gzipBytes": 19355
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 217,
+              "bytes": 850176,
+              "lines": 21722
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "b747fd6aa81621354e66d952927f27d71a0369df452f2f2ba1312a81f5866fbc"
+          },
+          "native": {
+            "files": 123,
+            "bytes": 365216,
+            "gzipBytes": 105859
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 114403,
+            "gzipBytes": 31895
+          }
+        }
+      }
+    },
+    {
+      "name": "baseline-oas30",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 56,
+              "bytes": 246908,
+              "lines": 6441
+            },
+            "runtime": {
+              "files": 32,
+              "bytes": 202139,
+              "lines": 5445
+            },
+            "sourceSHA256": "95b51178a85d1410597883d5c79e4801c438ba04f8a6de37ba1fe89693c458c3"
+          },
+          "native": {
+            "files": 25,
+            "bytes": 90593,
+            "gzipBytes": 27145
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 24545,
+            "gzipBytes": 8264
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 149,
+              "bytes": 554311,
+              "lines": 14711
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "374f2876ec0b9217ef54cc56501c5ac552670edcd20606cc418e66160d70a3d9"
+          },
+          "native": {
+            "files": 105,
+            "bytes": 332506,
+            "gzipBytes": 94923
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102297,
+            "gzipBytes": 29722
+          }
+        }
+      }
+    },
+    {
+      "name": "baseline-oas31",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 134,
+              "bytes": 548691,
+              "lines": 14367
+            },
+            "runtime": {
+              "files": 81,
+              "bytes": 323647,
+              "lines": 8762
+            },
+            "sourceSHA256": "bfd811b98dd5fdefccfe34e0ea649ce36281db157939674c0bcbb4ad5a2a3f66"
+          },
+          "native": {
+            "files": 31,
+            "bytes": 102655,
+            "gzipBytes": 31526
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 27916,
+            "gzipBytes": 9323
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 178,
+              "bytes": 730756,
+              "lines": 19274
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "114963c8b1460b2e0e8623f61621623f83cd27e9d32fde7d031ad93d9f2507b1"
+          },
+          "native": {
+            "files": 111,
+            "bytes": 344568,
+            "gzipBytes": 99304
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 105669,
+            "gzipBytes": 30763
+          }
+        }
+      }
+    },
+    {
+      "name": "baseline-oas32",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 75,
+              "bytes": 371885,
+              "lines": 9687
+            },
+            "runtime": {
+              "files": 45,
+              "bytes": 309328,
+              "lines": 8328
+            },
+            "sourceSHA256": "e6fa31264feffcb9cd39a6ba493e0ab7e5f19b3d7c1d1d1a884f34ff76e89b76"
+          },
+          "native": {
+            "files": 38,
+            "bytes": 183139,
+            "gzipBytes": 46926
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 56320,
+            "gzipBytes": 16219
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 155,
+              "bytes": 569341,
+              "lines": 15050
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "be1703b1d759763664cc3ef2d25027f7a5c6bf5c81a92355329511f854b7ec22"
+          },
+          "native": {
+            "files": 108,
+            "bytes": 336057,
+            "gzipBytes": 96399
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 103415,
+            "gzipBytes": 29975
+          }
+        }
+      }
+    },
+    {
+      "name": "representation",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 77,
+              "bytes": 294850,
+              "lines": 7613
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 206338,
+              "lines": 5549
+            },
+            "sourceSHA256": "832341671fa2c87239916501907476eef79bc0951f784e4aaca669a8ffcde806"
+          },
+          "native": {
+            "files": 37,
+            "bytes": 105571,
+            "gzipBytes": 32878
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 30311,
+            "gzipBytes": 9374
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 166,
+              "bytes": 596742,
+              "lines": 15760
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "fe86fc73c9f7c184e9be3b07ca72b3266018ea7de97f7783c6241f673c1e9bc0"
+          },
+          "native": {
+            "files": 113,
+            "bytes": 343276,
+            "gzipBytes": 98828
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 106977,
+            "gzipBytes": 30564
+          }
+        }
+      }
+    },
+    {
+      "name": "lifecycle",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 78,
+              "bytes": 377508,
+              "lines": 9846
+            },
+            "runtime": {
+              "files": 46,
+              "bytes": 310264,
+              "lines": 8349
+            },
+            "sourceSHA256": "1d7a7b917da58e6c0bbb3b2497be1eea5c1393d581695c87e9439652d02c51a2"
+          },
+          "native": {
+            "files": 39,
+            "bytes": 185078,
+            "gzipBytes": 47468
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 57278,
+            "gzipBytes": 16389
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 157,
+              "bytes": 573968,
+              "lines": 15187
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "79521c78a3b21d2f20ba10c92335f704acee051ceb5ed3be530749ff7dc21174"
+          },
+          "native": {
+            "files": 108,
+            "bytes": 337072,
+            "gzipBytes": 96559
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 104181,
+            "gzipBytes": 30104
+          }
+        }
+      }
+    },
+    {
+      "name": "aliases",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 103,
+              "bytes": 445860,
+              "lines": 11322
+            },
+            "runtime": {
+              "files": 48,
+              "bytes": 318700,
+              "lines": 8551
+            },
+            "sourceSHA256": "cc3c4949c60839024b2da2bd2f4e1d07ef96d2b3c582fb5a45450eab686ff555"
+          },
+          "native": {
+            "files": 56,
+            "bytes": 210347,
+            "gzipBytes": 57099
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 65582,
+            "gzipBytes": 18328
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 180,
+              "bytes": 633090,
+              "lines": 16449
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "69bc953163fc055b2ccc9bf77b8aa81d0f71abc0aa552df8be1af26e618ba778"
+          },
+          "native": {
+            "files": 124,
+            "bytes": 361011,
+            "gzipBytes": 105564
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 112222,
+            "gzipBytes": 31883
+          }
+        }
+      }
+    },
+    {
+      "name": "security-apiKey-header",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267468,
+              "lines": 6995
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219046,
+              "lines": 5916
+            },
+            "sourceSHA256": "15d100e555fd518a2b2a7faecf5877a588db8dd77dd7477e2e9f5a2d9c1c7f31"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104528,
+            "gzipBytes": 31008
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29280,
+            "gzipBytes": 9628
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557504,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "0e3eafc08d86a7afddc0a6c0e2baac9a33855fd30d11ecc17aa6080d84e657ac"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333423,
+            "gzipBytes": 95390
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102526,
+            "gzipBytes": 29814
+          }
+        }
+      }
+    },
+    {
+      "name": "security-apiKey-query",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267632,
+              "lines": 7000
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219219,
+              "lines": 5921
+            },
+            "sourceSHA256": "1200e4c949fcfebe4ceb763eec2cb82010cb25ef9b6f74008d0378a8ceb54f73"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104681,
+            "gzipBytes": 31063
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29376,
+            "gzipBytes": 9653
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557503,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "31e95de4da733d598fe6c59ca875bfd084be5499f2845d532f5fd90b3e80f014"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333422,
+            "gzipBytes": 95389
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102525,
+            "gzipBytes": 29814
+          }
+        }
+      }
+    },
+    {
+      "name": "security-apiKey-cookie",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267974,
+              "lines": 7006
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219552,
+              "lines": 5927
+            },
+            "sourceSHA256": "18b046e759c706727206f945a677817715fc96bcd0f6ed479ff3735943c3b866"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 105012,
+            "gzipBytes": 31206
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29518,
+            "gzipBytes": 9692
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557504,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5f88d5f0f7bb601f71dc22297f00fb73106a19a7102db095fbf0111a8e1b47c7"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333423,
+            "gzipBytes": 95390
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102526,
+            "gzipBytes": 29815
+          }
+        }
+      }
+    },
+    {
+      "name": "security-http-basic",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267798,
+              "lines": 7003
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219425,
+              "lines": 5924
+            },
+            "sourceSHA256": "d9e6d96860dd8896e28f17bd7b4310fdcccbbf10f043a11edffb9262e526c5ab"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104786,
+            "gzipBytes": 31110
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29430,
+            "gzipBytes": 9687
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557471,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5826401be933a2c7318ec0b0ff1dacdefbef0bf6c99472c07a106a1f3b5ea953"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333390,
+            "gzipBytes": 95368
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102495,
+            "gzipBytes": 29796
+          }
+        }
+      }
+    },
+    {
+      "name": "security-http-digest",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267444,
+              "lines": 6995
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219064,
+              "lines": 5916
+            },
+            "sourceSHA256": "9627aa01e8181e8f81152a7d9d65c7fbd2c8d6f03054c3588226a63cec3f6ad2"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104512,
+            "gzipBytes": 30987
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29255,
+            "gzipBytes": 9617
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557472,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "2cf30b6062f6ce4ca8d96fe88e186450d78ac763a99c2825051c9aa53fade603"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333391,
+            "gzipBytes": 95368
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102496,
+            "gzipBytes": 29797
+          }
+        }
+      }
+    },
+    {
+      "name": "security-oauth2",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267674,
+              "lines": 6996
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219101,
+              "lines": 5917
+            },
+            "sourceSHA256": "9460110199da713535aa83daf042169edec50056d6d7397405988a2e80c60835"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104742,
+            "gzipBytes": 31071
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29399,
+            "gzipBytes": 9682
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557655,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "abc250cb1e070e511bb6238ee5e967a4127595613511b24a31182504b8153e27"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333574,
+            "gzipBytes": 95433
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102627,
+            "gzipBytes": 29846
+          }
+        }
+      }
+    },
+    {
+      "name": "security-openIdConnect",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267568,
+              "lines": 6996
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219101,
+              "lines": 5917
+            },
+            "sourceSHA256": "305079e1b333acb6522753143e66310efe791ac18d122809f3258b0a5540b735"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104629,
+            "gzipBytes": 31050
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29338,
+            "gzipBytes": 9658
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557535,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "ee73f5f02d2614fc4ad89aee2179ff8750b7d2b75d80679bd7bf0f91e0173061"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333454,
+            "gzipBytes": 95408
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102559,
+            "gzipBytes": 29826
+          }
+        }
+      }
+    },
+    {
+      "name": "security-mutualTLS",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 62,
+              "bytes": 267473,
+              "lines": 6992
+            },
+            "runtime": {
+              "files": 36,
+              "bytes": 219116,
+              "lines": 5913
+            },
+            "sourceSHA256": "6ada96a9c277fa61282ccf1123c60e8b478e912572e447fba64fc315c04c06c0"
+          },
+          "native": {
+            "files": 29,
+            "bytes": 104617,
+            "gzipBytes": 31053
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29299,
+            "gzipBytes": 9612
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557459,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "b0c5086dd77269240757f76a3347418494bc6a1c1f311b4d002933fa7a92c226"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333378,
+            "gzipBytes": 95366
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102485,
+            "gzipBytes": 29794
+          }
+        }
+      }
+    },
+    {
+      "name": "security-mixed-security",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 63,
+              "bytes": 269174,
+              "lines": 7037
+            },
+            "runtime": {
+              "files": 37,
+              "bytes": 220534,
+              "lines": 5956
+            },
+            "sourceSHA256": "fa1cdf77154589da835eb3552bc920ed9b98ef0cee70427bcc2496ce055b0e17"
+          },
+          "native": {
+            "files": 30,
+            "bytes": 105708,
+            "gzipBytes": 31533
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 29628,
+            "gzipBytes": 9722
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557555,
+              "lines": 14790
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "83c9b50ff272a426a29a1e5cd0d7db73282d760c4e643352763ec2d2e1a482e4"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333474,
+            "gzipBytes": 95403
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102569,
+            "gzipBytes": 29825
+          }
+        }
+      }
+    },
+    {
+      "name": "request-complete-ndjson",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 333278,
+              "lines": 8749
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 283439,
+              "lines": 7653
+            },
+            "sourceSHA256": "de1ab6050457d605bcafb285b46c435d14dfcf0de8068d0a901ab44357c42545"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 162864,
+            "gzipBytes": 41527
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50103,
+            "gzipBytes": 14190
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558265,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "37d38e82d98f59ac7e261430c90b4f9618825c39a1694b531a99f5ff23101462"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333500,
+            "gzipBytes": 95395
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102594,
+            "gzipBytes": 29824
+          }
+        }
+      }
+    },
+    {
+      "name": "response-complete-ndjson",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 68,
+              "bytes": 334484,
+              "lines": 8787
+            },
+            "runtime": {
+              "files": 42,
+              "bytes": 285108,
+              "lines": 7705
+            },
+            "sourceSHA256": "6235581d04432ad209cfbd0fa4f013ee0115eb8c1ffe44990b84559018155f81"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 164162,
+            "gzipBytes": 42123
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50738,
+            "gzipBytes": 14606
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557448,
+              "lines": 14785
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "c009b25e14c61246df4febc211809ef2370d581c9766016209f1a0d6a00ecc5d"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333373,
+            "gzipBytes": 95373
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102485,
+            "gzipBytes": 29799
+          }
+        }
+      }
+    },
+    {
+      "name": "request-complete-sequence",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 333272,
+              "lines": 8749
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 283439,
+              "lines": 7653
+            },
+            "sourceSHA256": "6ef5e268b7d6bca0cb7cd0631d0daad21b10b0507f8cb065365c50e88f492adf"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 162858,
+            "gzipBytes": 41519
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50097,
+            "gzipBytes": 14189
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558259,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "81589486db1c24fda1831597034057a0c1acc1e5a0c0bd9515be992dfbc2ee4b"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333494,
+            "gzipBytes": 95386
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102588,
+            "gzipBytes": 29815
+          }
+        }
+      }
+    },
+    {
+      "name": "response-complete-sequence",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 68,
+              "bytes": 334466,
+              "lines": 8787
+            },
+            "runtime": {
+              "files": 42,
+              "bytes": 285108,
+              "lines": 7705
+            },
+            "sourceSHA256": "a6850d10564247269c0436baf094a46d183c1d6f196de2a1e67a9dca3da9cd75"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 164150,
+            "gzipBytes": 42115
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50726,
+            "gzipBytes": 14601
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557442,
+              "lines": 14785
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "6b6184c10b1fabaa3eaf9c422c18273dd2025b1b91db8f951f3c52fecbefe7ef"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333367,
+            "gzipBytes": 95368
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102479,
+            "gzipBytes": 29790
+          }
+        }
+      }
+    },
+    {
+      "name": "request-complete-sse",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 334437,
+              "lines": 8780
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 284773,
+              "lines": 7684
+            },
+            "sourceSHA256": "eb4968a4c1b6bd48d2b5b4e0e5dd750bc90df70dec2820cf82cdeb0b9b9ade35"
+          },
+          "native": {
+            "files": 34,
+            "bytes": 164210,
+            "gzipBytes": 41819
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50933,
+            "gzipBytes": 14412
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558224,
+              "lines": 14803
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "15ed2f2858831e7d39363af508a13a62c1f4612fd30cfaa92341cf749acdd373"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333453,
+            "gzipBytes": 95370
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102552,
+            "gzipBytes": 29805
+          }
+        }
+      }
+    },
+    {
+      "name": "response-complete-sse",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 67,
+              "bytes": 335624,
+              "lines": 8827
+            },
+            "runtime": {
+              "files": 41,
+              "bytes": 286326,
+              "lines": 7745
+            },
+            "sourceSHA256": "148892b66611d1bd5fed3df813efbaae6ca5b3f7b55408e027b5d24e8306a23f"
+          },
+          "native": {
+            "files": 33,
+            "bytes": 165490,
+            "gzipBytes": 42053
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 50736,
+            "gzipBytes": 14702
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 557404,
+              "lines": 14785
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "900c6bd37903c72e80170c690b84cbc46686417740674e2ae23799942e20ef58"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333329,
+            "gzipBytes": 95350
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102446,
+            "gzipBytes": 29780
+          }
+        }
+      }
+    },
+    {
+      "name": "custom-body-jsonish",
+      "group": "client",
+      "entry": "index.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 64,
+              "bytes": 322874,
+              "lines": 8480
+            },
+            "runtime": {
+              "files": 38,
+              "bytes": 273711,
+              "lines": 7380
+            },
+            "sourceSHA256": "03c4324ef7690f9124a1ac6cf1ac0c3d4696e3a2a3045531023291db769895b5"
+          },
+          "native": {
+            "files": 31,
+            "bytes": 154653,
+            "gzipBytes": 39107
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 47364,
+            "gzipBytes": 13536
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 151,
+              "bytes": 558536,
+              "lines": 14813
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "a0dd3b37008b8009743d2137a36a73f7a5c78f9966793033c54e3d7e3a7d8e9c"
+          },
+          "native": {
+            "files": 106,
+            "bytes": 333651,
+            "gzipBytes": 95367
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 102697,
+            "gzipBytes": 29807
+          }
+        }
+      }
+    },
+    {
+      "name": "binary",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 129,
+              "bytes": 574227,
+              "lines": 15175
+            },
+            "runtime": {
+              "files": 85,
+              "bytes": 372908,
+              "lines": 10135
+            },
+            "sourceSHA256": "50ca2002600fd04fc0249440e18727f034e0a5e5481e953a16150fe74904a7e2"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 129908,
+            "gzipBytes": 30112
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43228,
+            "gzipBytes": 12221
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 707700,
+              "lines": 18721
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "d8070b0a14a7b9e077a640852a51daf522773e27a93dc2048f8698a1f2993b81"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 246668,
+            "gzipBytes": 66847
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79578,
+            "gzipBytes": 23203
+          }
+        }
+      }
+    },
+    {
+      "name": "complete-ndjson",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 585102,
+              "lines": 15440
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 381643,
+              "lines": 10375
+            },
+            "sourceSHA256": "31ff40d9a0cdb336d40c11a02d644e0a0408c17358981917c180e3d2d2f2994e"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 134501,
+            "gzipBytes": 31808
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 44982,
+            "gzipBytes": 12733
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708766,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "ddfd149e19de009d083e184d5bc07bb72447e94420fa0e44ff70d4c9c7a7e777"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247185,
+            "gzipBytes": 66933
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79957,
+            "gzipBytes": 23266
+          }
+        }
+      }
+    },
+    {
+      "name": "complete-sequence",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 585084,
+              "lines": 15440
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 381643,
+              "lines": 10375
+            },
+            "sourceSHA256": "5f2b0b19af4b8bf7a53f5205b9f71b750d720af960694b1f414149df236e466e"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 134489,
+            "gzipBytes": 31799
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 44970,
+            "gzipBytes": 12732
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708754,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "70e358cfd6329f4e949a869e15692787e502b6965be448e6eb418f6a23925410"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247179,
+            "gzipBytes": 66927
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79951,
+            "gzipBytes": 23266
+          }
+        }
+      }
+    },
+    {
+      "name": "complete-sse",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 585936,
+              "lines": 15463
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 382977,
+              "lines": 10406
+            },
+            "sourceSHA256": "a1da1cbba0b700fd44fc0550b011a666b536a928a677ae0f94671dff6bd5fc09"
+          },
+          "native": {
+            "files": 18,
+            "bytes": 137539,
+            "gzipBytes": 32637
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 45341,
+            "gzipBytes": 12899
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708419,
+              "lines": 18731
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "17c903ec685806f27647c177a19167073a26dcb5b01242c215d55303d7d80da4"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247053,
+            "gzipBytes": 66912
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79851,
+            "gzipBytes": 23257
+          }
+        }
+      }
+    },
+    {
+      "name": "custom",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 128,
+              "bytes": 574056,
+              "lines": 15160
+            },
+            "runtime": {
+              "files": 84,
+              "bytes": 371915,
+              "lines": 10102
+            },
+            "sourceSHA256": "96ddf03a73994662351e3d8b4d5307b3331c6b6d03f2af1972177da835c7d55e"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 130289,
+            "gzipBytes": 30153
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43497,
+            "gzipBytes": 12262
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708522,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "6318192bb86bc36546e0c1b34dc9ae46b64b87d7165b55bc669bdccf6cf51db1"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247049,
+            "gzipBytes": 66888
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79847,
+            "gzipBytes": 23241
+          }
+        }
+      }
+    },
+    {
+      "name": "form",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 128,
+              "bytes": 575663,
+              "lines": 15208
+            },
+            "runtime": {
+              "files": 84,
+              "bytes": 373496,
+              "lines": 10150
+            },
+            "sourceSHA256": "621a7b5f50621d37f07c85dc000ee2d46e175621f7a71502891fc7cf278391d6"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 130303,
+            "gzipBytes": 30166
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43511,
+            "gzipBytes": 12259
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708564,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "da0ee5785ca004d8a67113c9f284f88e3338396e7f535c48ac58b83f917a72be"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247063,
+            "gzipBytes": 66901
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79861,
+            "gzipBytes": 23236
+          }
+        }
+      }
+    },
+    {
+      "name": "inbound-only-dynamic",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 126,
+              "bytes": 521345,
+              "lines": 13709
+            },
+            "runtime": {
+              "files": 81,
+              "bytes": 317192,
+              "lines": 8616
+            },
+            "sourceSHA256": "0bbd3be1fe187ee44271c42c53030d186fd2503a8e5170efcbd4b5c31a42ac02"
+          },
+          "native": {
+            "files": 16,
+            "bytes": 132017,
+            "gzipBytes": 30818
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 44052,
+            "gzipBytes": 12396
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 170,
+              "bytes": 710365,
+              "lines": 18773
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "0f326860f4e4b5e23a59daf4432b8c43b7cf54016f87c261622b441d904764fa"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247497,
+            "gzipBytes": 66978
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 80200,
+            "gzipBytes": 23317
+          }
+        }
+      }
+    },
+    {
+      "name": "inbound-only-mixed",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 125,
+              "bytes": 521520,
+              "lines": 13696
+            },
+            "runtime": {
+              "files": 81,
+              "bytes": 317192,
+              "lines": 8616
+            },
+            "sourceSHA256": "20a2e2987759888ac1d5e9126d8165e8b9fc6e8f46feaf2af83648f8b82b2659"
+          },
+          "native": {
+            "files": 19,
+            "bytes": 183227,
+            "gzipBytes": 41841
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 63109,
+            "gzipBytes": 17893
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 710343,
+              "lines": 18757
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "50b62b71ae8dcf2c09d50a0ee6d30e9e76842bed63e6a74372a9381830efecaf"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 248398,
+            "gzipBytes": 66967
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 80850,
+            "gzipBytes": 23290
+          }
+        }
+      }
+    },
+    {
+      "name": "inbound-only-xml",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 125,
+              "bytes": 519682,
+              "lines": 13677
+            },
+            "runtime": {
+              "files": 81,
+              "bytes": 317192,
+              "lines": 8616
+            },
+            "sourceSHA256": "45972823180bbb89427f3b88241545d818ffba1cb33dff0296f7f381c296f8d4"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 177924,
+            "gzipBytes": 40173
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 60814,
+            "gzipBytes": 17383
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708632,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "fc4dbe95840a60f96e294a3e7ca5c6c084093447871173011861e57b6decd82c"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247171,
+            "gzipBytes": 66913
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79931,
+            "gzipBytes": 23257
+          }
+        }
+      }
+    },
+    {
+      "name": "json",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 125,
+              "bytes": 519316,
+              "lines": 13674
+            },
+            "runtime": {
+              "files": 81,
+              "bytes": 317192,
+              "lines": 8616
+            },
+            "sourceSHA256": "92ac3f387a9203c8e2ef49fa04a44cc04398986ecb26e4376e5191bb5ca127da"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 130286,
+            "gzipBytes": 30150
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43494,
+            "gzipBytes": 12256
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708507,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "5e45b2f8b7d892f0d859fa97507d7d2cf81703f06f1c729b206e31d76b8bd721"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247046,
+            "gzipBytes": 66885
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79844,
+            "gzipBytes": 23234
+          }
+        }
+      }
+    },
+    {
+      "name": "multipart",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 129,
+              "bytes": 596859,
+              "lines": 15748
+            },
+            "runtime": {
+              "files": 85,
+              "bytes": 393339,
+              "lines": 10671
+            },
+            "sourceSHA256": "f2d32d64fcf5cb30e974c9254cfd81b0fa1f6b96aa2b5cc44b6f98ac6ae85c7e"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 177802,
+            "gzipBytes": 40160
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 60730,
+            "gzipBytes": 17363
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708522,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "f355d1f87062552d9324c0b789c695945ab9437907e5ab93a13bd181008e6226"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247049,
+            "gzipBytes": 66900
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79847,
+            "gzipBytes": 23236
+          }
+        }
+      }
+    },
+    {
+      "name": "ndjson",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 584987,
+              "lines": 15440
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 381643,
+              "lines": 10375
+            },
+            "sourceSHA256": "57d1db86fdcc159cc731326702603a76fec3eaf91459d5082281ef82dd3d7e3a"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 134403,
+            "gzipBytes": 31787
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 44909,
+            "gzipBytes": 12710
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708651,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "f14cddebab71f8cce21f0cbf1b8afc19a483091b3dde5c8fb57b12297a872e34"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247087,
+            "gzipBytes": 66912
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79884,
+            "gzipBytes": 23245
+          }
+        }
+      }
+    },
+    {
+      "name": "sequence",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 584969,
+              "lines": 15440
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 381643,
+              "lines": 10375
+            },
+            "sourceSHA256": "ce80989156f8a43b190d3b281fa8ea2edfe809564f3a854c9e04a7dc4e4e3f33"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 134391,
+            "gzipBytes": 31778
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 44897,
+            "gzipBytes": 12709
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708639,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "6a07bdccd67ad375fbc5378724946124438a5ad544cc9daf647079caa88c0fd5"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247081,
+            "gzipBytes": 66906
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79878,
+            "gzipBytes": 23245
+          }
+        }
+      }
+    },
+    {
+      "name": "sse",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 131,
+              "bytes": 585821,
+              "lines": 15463
+            },
+            "runtime": {
+              "files": 87,
+              "bytes": 382977,
+              "lines": 10406
+            },
+            "sourceSHA256": "44b39b4c0e4ae6e8644939b699f48f74f89be1785c487e001774a66cc5059f8f"
+          },
+          "native": {
+            "files": 18,
+            "bytes": 137441,
+            "gzipBytes": 32617
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 45268,
+            "gzipBytes": 12874
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708304,
+              "lines": 18731
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "119aa681bf97a76176d8f9a875a943f42ab7927b03a2070947dc87bf3965e512"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 246955,
+            "gzipBytes": 66892
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79778,
+            "gzipBytes": 23234
+          }
+        }
+      }
+    },
+    {
+      "name": "stream-custom",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 129,
+              "bytes": 581523,
+              "lines": 15359
+            },
+            "runtime": {
+              "files": 85,
+              "bytes": 378910,
+              "lines": 10299
+            },
+            "sourceSHA256": "149bc41d20c727e01f31c666e39151f01240719936490a8cbb1ba115b9076322"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 130314,
+            "gzipBytes": 30173
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43521,
+            "gzipBytes": 12269
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708625,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "463a6f40dea093ff8be2fa2a5bab2700d70caa67a945b05b270eb8bdfa920234"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247074,
+            "gzipBytes": 66908
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79871,
+            "gzipBytes": 23248
+          }
+        }
+      }
+    },
+    {
+      "name": "stream-multipart",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 130,
+              "bytes": 604412,
+              "lines": 15948
+            },
+            "runtime": {
+              "files": 86,
+              "bytes": 400334,
+              "lines": 10868
+            },
+            "sourceSHA256": "eb7c26787630ca82bdc6db6cef1cead89a84accbdf7400931f50c2b6113818a0"
+          },
+          "native": {
+            "files": 19,
+            "bytes": 189488,
+            "gzipBytes": 43495
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 65691,
+            "gzipBytes": 18894
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708616,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "e04f13d35022caaece2b7cd9a74364b9a66747d3f3669de325292d2028c37d6a"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247072,
+            "gzipBytes": 66910
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79869,
+            "gzipBytes": 23247
+          }
+        }
+      }
+    },
+    {
+      "name": "text",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 128,
+              "bytes": 572686,
+              "lines": 15133
+            },
+            "runtime": {
+              "files": 84,
+              "bytes": 371490,
+              "lines": 10093
+            },
+            "sourceSHA256": "59f95c775829ada726d8e661fcc887e0fb2f2029135f849eb981008caf6abfac"
+          },
+          "native": {
+            "files": 15,
+            "bytes": 129855,
+            "gzipBytes": 30095
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 43178,
+            "gzipBytes": 12204
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 707593,
+              "lines": 18721
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "518674af31683da8d30843865e14061b4ef1f9ff24dc954ee6c8aace295f4ac6"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 246615,
+            "gzipBytes": 66830
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79528,
+            "gzipBytes": 23181
+          }
+        }
+      }
+    },
+    {
+      "name": "xml",
+      "group": "server",
+      "entry": "server/webhooks.js",
+      "variants": {
+        "selected": {
+          "source": {
+            "total": {
+              "files": 127,
+              "bytes": 574342,
+              "lines": 15143
+            },
+            "runtime": {
+              "files": 83,
+              "bytes": 370934,
+              "lines": 10078
+            },
+            "sourceSHA256": "80c349313f9d50caa10532ee2198055aede8b1468b96919898cf0410d56b1e0b"
+          },
+          "native": {
+            "files": 17,
+            "bytes": 177986,
+            "gzipBytes": 40173
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 60857,
+            "gzipBytes": 17387
+          }
+        },
+        "full": {
+          "source": {
+            "total": {
+              "files": 169,
+              "bytes": 708870,
+              "lines": 18739
+            },
+            "runtime": {
+              "files": 125,
+              "bytes": 510371,
+              "lines": 13729
+            },
+            "sourceSHA256": "b169e6dfc5aa70644a2171ed60390cab297e948969e173d866d31339b80156e4"
+          },
+          "native": {
+            "files": 65,
+            "bytes": 247233,
+            "gzipBytes": 66913
+          },
+          "bundle": {
+            "chunks": 1,
+            "bytes": 79974,
+            "gzipBytes": 23261
+          }
+        }
+      }
+    }
+  ]
+}

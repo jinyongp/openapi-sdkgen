@@ -1,4 +1,4 @@
-import { createRequestContext } from "./http-core.js";
+import { createRequestContext } from "./http-execution-support.js";
 import { bindPathOperation } from "./callables.js";
 import { defineOwnDataProperty } from "./runtime-support.js";
 import { OperationPreparationError } from "./operation-loader.js";

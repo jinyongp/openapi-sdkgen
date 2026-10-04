@@ -304,7 +304,7 @@ func TestEnvelopeDataProjectsOrdinaryOutputButKeepsRawBody(t *testing.T) {
 	if !strings.Contains(client, `type __sdkgen_Output = string | void`) {
 		t.Fatalf("projected output missing:\n%s", client)
 	}
-	if !strings.Contains(client, `readonly "meta":`) {
+	if !strings.Contains(client, `"meta":`) {
 		t.Fatalf("raw response lost complete envelope:\n%s", client)
 	}
 }

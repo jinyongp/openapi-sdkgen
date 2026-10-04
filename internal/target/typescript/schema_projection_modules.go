@@ -55,7 +55,7 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 		output.WriteByte('\n')
 	}
 	if usedWire {
-		types, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/codecs.ts")
+		types, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/wire-types.ts")
 		if err != nil {
 			return nil, err
 		}

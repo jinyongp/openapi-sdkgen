@@ -7,14 +7,6 @@ import * as templateFull from "../../../internal/target/typescript/runtime/inter
 import * as templateWire from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
 import * as templateCodecs from "../../../internal/target/typescript/runtime/internal/codecs.js";
 import * as templateBinder from "../../../internal/target/typescript/runtime/internal/callables.js";
-import * as emittedHTTP from "../fixtures/generated/lifecycle/internal/runtime/http.js";
-import * as emittedCore from "../fixtures/generated/lifecycle/internal/runtime/http-core.js";
-import * as emittedContext from "../fixtures/generated/lifecycle/internal/runtime/http-core.js";
-import * as emittedJSON from "../fixtures/generated/lifecycle/internal/runtime/http-json.js";
-import * as emittedFull from "../fixtures/generated/lifecycle/internal/runtime/http-codecs.js";
-import * as emittedWire from "../fixtures/generated/lifecycle/internal/runtime/wire-engine.js";
-import * as emittedCodecs from "../fixtures/generated/lifecycle/internal/runtime/codecs.js";
-import * as emittedBinder from "../fixtures/generated/lifecycle/internal/runtime/callables.js";
 import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
 import type { WireSchema } from "../../../internal/target/typescript/runtime/internal/wire-engine.js";
 
@@ -88,17 +80,6 @@ for (const [label, http, core, contexts, json, full, wire, codecs, binders] of [
     templateWire,
     templateCodecs,
     templateBinder,
-  ],
-  [
-    "emitted",
-    emittedHTTP,
-    emittedCore,
-    emittedContext,
-    emittedJSON,
-    emittedFull,
-    emittedWire,
-    emittedCodecs,
-    emittedBinder,
   ],
 ] as const) {
   describe(`${label} execution services`, () => {

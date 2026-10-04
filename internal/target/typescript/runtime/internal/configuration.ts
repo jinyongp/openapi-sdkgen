@@ -1,4 +1,4 @@
-import type { MediaCodec, StreamCodec } from "./codecs.js";
+import type { MediaCodec, StreamCodec } from "./wire-types.js";
 import type { OperationDefinition, ServerSelection } from "./operation.js";
 import type { SecurityCredentials, SecurityRequirementDefinition } from "./security.js";
 import type { Transport } from "./transport.js";

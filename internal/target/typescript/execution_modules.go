@@ -24,11 +24,7 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		fmt.Fprintf(&output, "import %s from %s\n", clause, quoteTS(specifier))
 		return nil
 	}
-	httpTypes := "type { RequestContext }"
-	if execution.profile == executionJSON || execution.profile == executionBufferedXML {
-		httpTypes = "type { RequestContext, RequestExecutionServices }"
-	}
-	if err := importFrom(httpTypes, "internal/runtime/http-types.ts"); err != nil {
+	if err := importFrom("type { RequestContext }", "internal/runtime/http-types.ts"); err != nil {
 		return nil, err
 	}
 	requestType := "BufferedRequestFunction"
@@ -37,11 +33,6 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	if err := importFrom("type { "+requestType+" }", "internal/runtime/callables.ts"); err != nil {
 		return nil, err
-	}
-	if execution.inputBundle == "" && len(execution.inputSchemas) > 0 || execution.outputBundle == "" && len(execution.outputSchemas) > 0 {
-		if err := importFrom("type { WireSchemas }", "internal/runtime/wire-engine.ts"); err != nil {
-			return nil, err
-		}
 	}
 	binders := []string{"bindBase", "type BaseCall"}
 	if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/operation-loader.ts"); err != nil {
@@ -62,32 +53,11 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	if err := importFrom("{ "+strings.Join(binders, ", ")+" }", module.path); err != nil {
 		return nil, err
 	}
-	core := "{ createRequestCore }"
-	if execution.profile == executionJSON || execution.profile == executionBufferedXML {
-		core = "{ createRequestCore, createHTTPServices }"
-	}
-	if err := importFrom(core, "internal/runtime/http-core.ts"); err != nil {
+	if err := importFrom("{ createRequestCore }", "internal/runtime/http-request-core.ts"); err != nil {
 		return nil, err
 	}
-	switch execution.profile {
-	case executionJSON:
-		if err := importFrom("{ jsonWireCodec }", "internal/runtime/wire-engine.ts"); err != nil {
-			return nil, err
-		}
-	case executionBufferedXML:
-		if err := importFrom("{ xmlWireCodec, bufferedXMLCodecExtensions }", "internal/runtime/codecs.ts"); err != nil {
-			return nil, err
-		}
-	case executionJSONStream:
-		if err := importFrom("{ jsonResponseStreamServices as services }", "internal/runtime/http-stream.ts"); err != nil {
-			return nil, err
-		}
-	case executionGeneral:
-		if err := importFrom("{ fullRequestServices as services }", "internal/runtime/http-codecs.ts"); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("unrecognized execution profile %q", execution.profile)
+	if err := emitRuntimeComposition(&output, execution.composition, importFrom); err != nil {
+		return nil, err
 	}
 
 	input, out := make([]string, 0, len(execution.inputSchemas)), make([]string, 0, len(execution.outputSchemas))
@@ -123,11 +93,6 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 		}
 	}
 	output.WriteByte('\n')
-	if execution.profile == executionJSON {
-		output.WriteString("const services: RequestExecutionServices = /* @__PURE__ */ createHTTPServices(jsonWireCodec, { encodeRequestBody(_contentType: string, value: unknown): BodyInit { return JSON.stringify(value) } })\n")
-	} else if execution.profile == executionBufferedXML {
-		output.WriteString("const services: RequestExecutionServices = /* @__PURE__ */ createHTTPServices(xmlWireCodec, bufferedXMLCodecExtensions)\n")
-	}
 	inputArg, outputArg := "undefined", "undefined"
 	if execution.inputBundle != "" {
 		inputArg = "inputSchemas"

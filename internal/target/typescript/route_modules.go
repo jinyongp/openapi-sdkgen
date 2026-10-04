@@ -191,6 +191,7 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	output.WriteString("  readonly options: RouteOptions<Route>\n")
 	output.WriteString("  readonly output: RouteOutput<Route>\n")
 	output.WriteString("  readonly error: PublicType<Routes[Route][\"error\"]>\n")
+	output.WriteString("  readonly httpError: PublicType<Routes[Route][\"httpError\"]>\n")
 	output.WriteString("  readonly rawResponse: RouteRawResponse<Route>\n")
 	output.WriteString("  readonly call: OperationMethod<Route>\n")
 	output.WriteString("  readonly resourceCall: ResourceCall<Route>\n")

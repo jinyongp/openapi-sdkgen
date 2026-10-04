@@ -97,6 +97,23 @@ type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}
 쓰지 않는 방향의 표현은 `never`입니다. 해당 메서드의 정확한 호출 타입은
 `Parameters`와 `ReturnType`으로 추출할 수 있습니다.
 
+## 응답 본문 타입
+
+디코딩한 응답 DTO는 중첩 객체, 배열, 튜플, 맵까지 수정 가능한 타입으로 생성합니다.
+일반 반환값, `raw.data`, HTTP 오류 본문, 스트림·페이지네이션 항목, 서버 핸들러의
+응답 본문에 같은 출력 계약을 적용합니다. 입력 타입은 읽기 전용 값도 계속 받습니다.
+리터럴 제약과 OpenAPI의 `readOnly`·`writeOnly`에 따른 입출력 필드 구분도 유지하며,
+응답 메타데이터와 열거형 목록에는 기존 읽기 전용 계약을 적용합니다.
+
+기존 서버 핸들러나 모의 응답이 읽기 전용 배열을 반환했다면 수정 가능한 출력 계약에
+맞는 배열을 반환해야 합니다. DTO를 편집하면 로컬 객체와 공유 참조의 값이 바뀌며
+API에 자동으로 저장되지는 않습니다. 자세한 내용은
+[응답 데이터 편집](../guide/client.md#변환된-응답-객체-사용)을 참고하세요.
+
+`OperationHTTPError<typeof method>`는 해당 메서드에 선언된 HTTP 오류 타입을
+추출합니다. 잡은 오류가 `unknown`이면
+[`isOperationHTTPError`](./client-api.md#오류-처리)로 이 타입에 맞는지 확인합니다.
+
 ## 생성된 메서드에서 추출
 
 생성된 메서드의 타입을 `Operation*` 타입 추출 도구에 전달합니다.

@@ -139,7 +139,7 @@ func TestSchemaTypeProjectsReadAndWriteOnlyProperties(t *testing.T) {
 		t.Fatalf("input = %q, %v", input, err)
 	}
 	output, err := schemaType(&ir.Document{}, schema, projectionOutput)
-	if err != nil || output == input || !containsAll(output, `readonly "visible": string`, `readonly "read": string`) || containsAll(output, `readonly "write": string`) {
+	if err != nil || output == input || !containsAll(output, `"visible": string`, `"read": string`) || containsAll(output, `"write": string`) || strings.Contains(output, "readonly ") {
 		t.Fatalf("output = %q, %v", output, err)
 	}
 }
@@ -177,11 +177,11 @@ func TestOperationOutputTypesIncludeDefaultResponses(t *testing.T) {
 	}}
 	document := &ir.Document{}
 	output, err := operationOutputType(document, operation)
-	if err != nil || !strings.Contains(output, `readonly "id"?: string`) {
+	if err != nil || !strings.Contains(output, `"id"?: string`) {
 		t.Fatalf("output = %q, %v", output, err)
 	}
 	raw, err := operationRawResponseType(document, operation)
-	if err != nil || !strings.Contains(raw, "RawResponseFor<number") || !strings.Contains(raw, `readonly "id"?: string`) {
+	if err != nil || !strings.Contains(raw, "RawResponseFor<200 | 201") || !strings.Contains(raw, `"id"?: string`) {
 		t.Fatalf("raw = %q, %v", raw, err)
 	}
 }
@@ -243,7 +243,7 @@ func TestSchemaTypeKeepsPrefixItemsOpenWhenItemsIsAbsent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if value != "readonly [string, ...unknown[]]" {
+	if value != "[string, ...unknown[]]" {
 		t.Fatalf("type = %q", value)
 	}
 }
@@ -258,7 +258,7 @@ func TestSourceArtifactsGenerateRecursiveComponentSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if source := schemaProjectionSource(artifacts); !strings.Contains(source, `readonly "next"?: Input`) || !strings.Contains(source, `readonly "next"?: Output`) {
+	if source := schemaProjectionSource(artifacts); !strings.Contains(source, `readonly "next"?: Input`) || !strings.Contains(source, `"next"?: Output`) {
 		t.Fatalf("recursive schema missing from generated types:\n%s", source)
 	}
 }

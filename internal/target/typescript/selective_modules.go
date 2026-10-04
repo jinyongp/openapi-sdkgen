@@ -205,6 +205,8 @@ export type { PreparedOperations } from "../internal/runtime/operation-loader.js
 export type { OperationReference, OperationSelection } from "../internal/runtime/selection-types.js"
 export type { ClientOptions } from "../internal/runtime/configuration.js"
 export { OperationPreparationError } from "../internal/runtime/operation-loader.js"
+export { isOperationHTTPError } from "../internal/runtime/http-errors.js"
+export type { HTTPErrorFor, OperationHTTPError } from "../internal/runtime/http-errors.js"
 `, quoteTS(generation))
 	if root.selection != nil {
 		var public, private []string

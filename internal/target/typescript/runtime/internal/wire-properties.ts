@@ -1,4 +1,4 @@
-import type { WireProperty, WireSchema } from "./codecs.js";
+import type { WireProperty, WireSchema } from "./wire-types.js";
 
 /**
  * Constructs identity-mapped property descriptors from compiler-owned arrays.

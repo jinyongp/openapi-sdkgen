@@ -41,7 +41,7 @@ func TestOperationResponseMediaSetsPartitionNormalAndStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output != "string | readonly (Readonly<Record<string, unknown>>)[]" {
+	if output != "string | (Record<string, unknown>)[]" {
 		t.Fatalf("normal output = %q, want dual-mode complete output", output)
 	}
 	media, err := operationMediaOutputTypes(document, operation)
@@ -50,7 +50,7 @@ func TestOperationResponseMediaSetsPartitionNormalAndStreaming(t *testing.T) {
 	}
 	if !reflect.DeepEqual(media, map[string]string{
 		"application/json":  "string",
-		"text/event-stream": "readonly (Readonly<Record<string, unknown>>)[]",
+		"text/event-stream": "(Record<string, unknown>)[]",
 		"text/plain":        "string",
 	}) {
 		t.Fatalf("normal media outputs = %#v", media)

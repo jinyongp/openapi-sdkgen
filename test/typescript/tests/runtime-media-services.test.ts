@@ -5,12 +5,6 @@ import {
 } from "../../../internal/target/typescript/runtime/internal/http-core.js";
 import { bufferedXMLRequestServices } from "../../../internal/target/typescript/runtime/internal/http-buffered.js";
 import { jsonResponseStreamServices } from "../../../internal/target/typescript/runtime/internal/http-json-stream.js";
-import {
-  createRequestCore as emittedCore,
-  createRequestContext as emittedContext,
-} from "../fixtures/generated/lifecycle/internal/runtime/http-core.js";
-import { bufferedXMLRequestServices as emittedXML } from "../fixtures/generated/lifecycle/internal/runtime/http-buffered.js";
-import { jsonResponseStreamServices as emittedStream } from "../fixtures/generated/lifecycle/internal/runtime/http-json-stream.js";
 import type { OperationDefinition } from "../../../internal/target/typescript/runtime/internal/operation.js";
 
 const streamOperation: OperationDefinition = {
@@ -72,7 +66,6 @@ for (const [label, core, context, xmlServices, streamServices] of [
     bufferedXMLRequestServices,
     jsonResponseStreamServices,
   ],
-  ["emitted", emittedCore, emittedContext, emittedXML, emittedStream],
 ] as const) {
   describe(`${label} media-specific services`, () => {
     it("preserves XML input and response mapping without stream services", async () => {

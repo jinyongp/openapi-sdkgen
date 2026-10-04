@@ -26,7 +26,11 @@ func plannedSecurityRequirements(values []ir.SecurityRequirement) []operationSec
 	for _, value := range values {
 		names := make([]string, 0, len(value.Schemes))
 		for _, scheme := range value.Schemes {
-			names = append(names, scheme.Name)
+			name := scheme.Name
+			if scheme.Reference != "" {
+				name = scheme.Reference
+			}
+			names = append(names, name)
 		}
 		id := "anonymous"
 		if len(names) > 0 {
@@ -50,34 +54,10 @@ func syntheticOperationSecurityRequirements(document *ir.Document, operation ir.
 	if !exists {
 		return nil, false, nil
 	}
-	values, ok := value.([]any)
-	if !ok {
-		return nil, false, fmt.Errorf("security must be an array")
-	}
-	requirements := make([]ir.SecurityRequirement, 0, len(values))
-	for index, value := range values {
-		requirement, ok := value.(map[string]any)
-		if !ok {
-			return nil, false, fmt.Errorf("security requirement %d must be an object", index)
-		}
-		schemes := make([]ir.SecurityRequirementScheme, 0, len(requirement))
-		for _, name := range sortedAnyKeys(requirement) {
-			rawScopes, ok := requirement[name].([]any)
-			if !ok {
-				return nil, false, fmt.Errorf("security scheme %q scopes must be an array", name)
-			}
-			scopes := make([]string, 0, len(rawScopes))
-			for _, rawScope := range rawScopes {
-				scope, ok := rawScope.(string)
-				if !ok {
-					return nil, false, fmt.Errorf("security scheme %q has a non-string scope", name)
-				}
-				scopes = append(scopes, scope)
-			}
-			sort.Strings(scopes)
-			schemes = append(schemes, ir.SecurityRequirementScheme{Name: name, Scopes: scopes})
-		}
-		requirements = append(requirements, ir.SecurityRequirement{Schemes: schemes, Raw: requirement})
+	allowURI := document.OpenAPIVersionLine == "3.2" || strings.HasPrefix(stringMapValue(document.Raw, "openapi"), "3.2.")
+	requirements, err := ir.ReadSecurityRequirements(document.Raw, value, allowURI)
+	if err != nil {
+		return nil, false, err
 	}
 	if len(requirements) == 0 {
 		return nil, false, nil
@@ -105,6 +85,9 @@ func operationSecurityDefinition(document *ir.Document, operation ir.Operation) 
 	for index, requirement := range requirements {
 		definitions := make([]string, 0, len(requirement.schemes))
 		for _, requested := range requirement.schemes {
+			if requested.ResolutionError != "" {
+				return "", false, fmt.Errorf("%s", requested.ResolutionError)
+			}
 			scheme, ok := securityScheme(document, requested.Name)
 			if !ok {
 				return "", false, fmt.Errorf("security requirement %d references unknown scheme %q", index, requested.Name)
@@ -123,30 +106,19 @@ func operationSecurityDefinition(document *ir.Document, operation ir.Operation) 
 func securityScheme(document *ir.Document, name string) (ir.SecurityScheme, bool) {
 	if document.SecuritySchemes != nil {
 		scheme, ok := document.SecuritySchemes[name]
-		return scheme, ok
+		if ok {
+			return scheme, true
+		}
 	}
-	components, _ := document.Raw["components"].(map[string]any)
-	schemes, _ := components["securitySchemes"].(map[string]any)
-	raw, ok := schemes[name].(map[string]any)
-	if !ok {
-		return ir.SecurityScheme{}, false
-	}
-	return ir.SecurityScheme{
-		Name:              name,
-		Type:              stringMapValue(raw, "type"),
-		Location:          stringMapValue(raw, "in"),
-		ParameterName:     stringMapValue(raw, "name"),
-		Scheme:            stringMapValue(raw, "scheme"),
-		BearerFormat:      stringMapValue(raw, "bearerFormat"),
-		Flows:             raw["flows"],
-		OpenIDConnectURL:  stringMapValue(raw, "openIdConnectUrl"),
-		OAuth2MetadataURL: stringMapValue(raw, "oauth2MetadataUrl"),
-		Deprecated:        boolValue(raw, "deprecated"),
-		Raw:               raw,
-	}, true
+	allowURI := document.OpenAPIVersionLine == "3.2" || strings.HasPrefix(stringMapValue(document.Raw, "openapi"), "3.2.")
+	scheme, err := ir.ResolveSecurityScheme(document.Raw, name, allowURI)
+	return scheme, err == nil
 }
 
 func securitySchemeDefinition(scheme ir.SecurityScheme, scopes []string) (string, error) {
+	if scheme.ResolutionError != "" {
+		return "", fmt.Errorf("%s", scheme.ResolutionError)
+	}
 	name := scheme.Name
 	kind := scheme.Type
 	if kind == "" {
@@ -203,6 +175,29 @@ func securitySchemeDefinition(scheme ir.SecurityScheme, scopes []string) (string
 	return "{ " + strings.Join(fields, ", ") + " }", nil
 }
 
+func inboundSecurityRequirements(document *ir.Document, value any) ([]ir.SecurityRequirement, error) {
+	allowURI := document.OpenAPIVersionLine == "3.2" || strings.HasPrefix(stringMapValue(document.Raw, "openapi"), "3.2.")
+	requirements, err := ir.ReadSecurityRequirements(document.Raw, value, allowURI)
+	if err != nil {
+		return nil, err
+	}
+	for _, requirement := range requirements {
+		for _, requested := range requirement.Schemes {
+			if requested.ResolutionError != "" {
+				return nil, fmt.Errorf("%s", requested.ResolutionError)
+			}
+			scheme, exists := securityScheme(document, requested.Name)
+			if !exists {
+				return nil, fmt.Errorf("unknown security scheme %q", requested.Name)
+			}
+			if _, err := securitySchemeDefinition(scheme, requested.Scopes); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return requirements, nil
+}
+
 func stringMapValue(values map[string]any, key string) string {
 	value, _ := values[key].(string)
 	return value
@@ -221,6 +216,10 @@ func rootSecurityValue(document *ir.Document) any {
 func securityRequirementsValue(requirements []ir.SecurityRequirement) []any {
 	values := make([]any, 0, len(requirements))
 	for _, requirement := range requirements {
+		if requirement.Raw != nil {
+			values = append(values, requirement.Raw)
+			continue
+		}
 		value := make(map[string]any, len(requirement.Schemes))
 		for _, scheme := range requirement.Schemes {
 			scopes := make([]any, 0, len(scheme.Scopes))

@@ -1,0 +1,60 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "server-binary", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["accepted"],
+                  "properties": { "accepted": { "type": "integer" } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "operationId": "probe"
+      }
+    }
+  },
+  "webhooks": {
+    "delivery": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["accepted"],
+                  "properties": { "accepted": { "type": "integer" } },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "operationId": "receive"
+      }
+    }
+  }
+}

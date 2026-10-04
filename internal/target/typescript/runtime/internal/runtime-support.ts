@@ -32,7 +32,12 @@ export const TransportErrorCode: TransportErrorCodeValues = {
 export type TransportErrorCode = (typeof TransportErrorCode)[keyof typeof TransportErrorCode];
 
 /** Values used to construct an {@link APIError}. */
-export interface APIErrorOptions<Code extends string, Details = unknown> {
+export interface APIErrorOptions<
+  Code extends string,
+  Details = unknown,
+  Status extends number = number,
+  Data = unknown,
+> {
   /** Stable server or transport error code. */
   readonly code: Code;
   /** Human-readable error message. Do not branch application logic on this value. */
@@ -40,13 +45,15 @@ export interface APIErrorOptions<Code extends string, Details = unknown> {
   /** Metadata for the request that produced the error. */
   readonly request?: RequestMetadata;
   /** HTTP status code when the server returned a response. */
-  readonly status?: number;
+  readonly status?: Status;
+  /** Declared media representation selected for a server error. */
+  readonly contentType?: string | undefined;
   /** Structured server validation or domain-error details, when provided. */
   readonly details?: Details;
   /** Legacy structured server validation fields, when provided. */
   readonly fields?: unknown;
   /** Decoded response body, retained so a Link can follow an error response. */
-  readonly data?: unknown;
+  readonly data?: Data;
   /** Original Fetch API response, when one was received. */
   readonly response?: Response;
   /** Original exception that caused a transport or decoding failure. */
@@ -58,7 +65,12 @@ export interface APIErrorOptions<Code extends string, Details = unknown> {
  *
  * Use generated error guards or {@link isErrorCode} instead of matching messages.
  */
-export class APIError<Code extends string = string, Details = unknown> extends Error {
+export class APIError<
+  Code extends string = string,
+  Details = unknown,
+  Status extends number = number,
+  Data = unknown,
+> extends Error {
   /** Standard JavaScript error name. */
   override readonly name: "APIError" = "APIError";
   /** Stable server or transport error code. */
@@ -66,24 +78,27 @@ export class APIError<Code extends string = string, Details = unknown> extends E
   /** Metadata for the request that produced the error. */
   readonly request: RequestMetadata;
   /** HTTP status code, absent when no response was received. */
-  readonly status?: number;
+  readonly status?: Status;
+  /** Declared media representation selected for a server error. */
+  readonly contentType?: string | undefined;
   /** Structured server validation or domain-error details. */
   readonly details?: Details;
   /** Legacy structured server validation fields. */
   readonly fields?: unknown;
   /** Decoded response body, when the server returned a response. */
-  readonly data?: unknown;
+  readonly data?: Data;
   /** Original Fetch API response, when available. */
   readonly response?: Response;
   /** Original exception, when this error wraps another failure. */
   override readonly cause?: unknown;
 
   /** Creates a normalized API or transport error. */
-  constructor(options: APIErrorOptions<Code, Details>) {
+  constructor(options: APIErrorOptions<Code, Details, Status, Data>) {
     super(options.message);
     this.code = options.code;
     this.request = options.request ?? {};
     if (options.status !== undefined) this.status = options.status;
+    if (options.contentType !== undefined) this.contentType = options.contentType;
     if (options.details !== undefined) this.details = options.details;
     if (options.fields !== undefined) this.fields = options.fields;
     if (options.data !== undefined) this.data = options.data;

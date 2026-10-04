@@ -14,11 +14,6 @@ import { SortDirection as generatedSortDirection } from "../fixtures/generated/l
 import * as generatedErrors from "../fixtures/generated/lifecycle/internal/runtime/errors.js";
 import * as generatedObjects from "../fixtures/generated/lifecycle/internal/runtime/objects.js";
 import * as generatedOperation from "../fixtures/generated/lifecycle/internal/runtime/operation.js";
-import * as generatedMedia from "../fixtures/generated/lifecycle/internal/runtime/media-type.js";
-import * as generatedCodecs from "../fixtures/generated/lifecycle/internal/runtime/codecs.js";
-import * as generatedXML from "../fixtures/generated/lifecycle/internal/runtime/wire-xml.js";
-import * as generatedStream from "../fixtures/generated/lifecycle/internal/runtime/http-stream.js";
-import * as generatedJSONStream from "../fixtures/generated/lifecycle/internal/runtime/http-json-stream.js";
 
 describe("runtime constant parity", () => {
   it("keeps generated sort directions identical to the runtime template", () => {
@@ -27,18 +22,13 @@ describe("runtime constant parity", () => {
 });
 
 for (const modules of [
-  { name: "source", support, errors, objects, operation, media, codecs, xml, stream, jsonStream },
+  { name: "source", support, errors, objects, operation },
   {
     name: "generated",
     support: generatedSupport,
     errors: generatedErrors,
     objects: generatedObjects,
     operation: generatedOperation,
-    media: generatedMedia,
-    codecs: generatedCodecs,
-    xml: generatedXML,
-    stream: generatedStream,
-    jsonStream: generatedJSONStream,
   },
 ] as const) {
   describe(`runtime module identity (${modules.name})`, () => {
@@ -55,13 +45,6 @@ for (const modules of [
       expect(modules.operation.operationDiagnosticName).toBe(
         modules.support.operationDiagnosticName,
       );
-      expect(modules.media.isJSONMediaType).toBe(modules.support.isJSONMediaType);
-      expect(modules.media.isXMLMediaType).toBe(modules.support.isXMLMediaType);
-      expect(modules.xml.encodeXML).toBe(modules.codecs.encodeXML);
-      expect(modules.xml.decodeXML).toBe(modules.codecs.decodeXML);
-      expect(modules.jsonStream.jsonResponseStreamServices).toBe(
-        modules.stream.jsonResponseStreamServices,
-      );
     });
     it("retains safe own-property construction and exact diagnostic identity", () => {
       const target: Record<string, string> = {};
@@ -75,3 +58,13 @@ for (const modules of [
     });
   });
 }
+
+describe("full-capability compatibility facades", () => {
+  it("forwards shared media, XML and stream implementations", () => {
+    expect(media.isJSONMediaType).toBe(support.isJSONMediaType);
+    expect(media.isXMLMediaType).toBe(support.isXMLMediaType);
+    expect(xml.encodeXML).toBe(codecs.encodeXML);
+    expect(xml.decodeXML).toBe(codecs.decodeXML);
+    expect(jsonStream.jsonResponseStreamServices).toBe(stream.jsonResponseStreamServices);
+  });
+});

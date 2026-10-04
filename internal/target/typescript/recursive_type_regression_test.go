@@ -36,8 +36,8 @@ func TestSchemaModulesTypecheckRecursiveJSONValue(t *testing.T) {
 	}
 	source := schemaProjectionSource(artifacts)
 	if !strings.Contains(source, "{ readonly [key: string]: Input }") ||
-		!strings.Contains(source, "{ readonly [key: string]: Output }") {
-		t.Fatalf("recursive JSON projection did not use readonly index signatures:\n%s", source)
+		!strings.Contains(source, "{ [key: string]: Output }") {
+		t.Fatalf("recursive JSON projection did not preserve input/output mutability:\n%s", source)
 	}
 	if strings.Contains(source, "Readonly<Record<string, Input>>") ||
 		strings.Contains(source, "Readonly<Record<string, Output>>") {

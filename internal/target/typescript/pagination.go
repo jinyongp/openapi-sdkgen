@@ -337,10 +337,7 @@ func paginationRepresentations(document *ir.Document, operation ir.Operation, po
 	}
 	var result []paginationRepresentation
 	var diagnostics []diagnostic.Diagnostic
-	for _, response := range responses {
-		if !isSuccessResponseStatus(response.Status) {
-			continue
-		}
+	for _, response := range reachableSuccessResponses(responses) {
 		for _, media := range response.Content {
 			_, hasSchema := media.Raw["schema"]
 			label := response.Status + " " + media.ContentType

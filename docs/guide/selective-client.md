@@ -8,6 +8,40 @@ of its TypeScript types, so changing the application's selection does not
 require regenerating the SDK. To reduce the generated files themselves, choose
 the APIs during generation as described below.
 
+## Runtime features follow the generated APIs
+
+The generator includes runtime handlers required by the generated API set.
+A JSON-only document does not generate XML, multipart, SSE, or unrelated security
+and asserted-format handlers. Request bodies, response bodies, headers,
+parameters, schema references, and private Link targets all contribute to this
+decision. Schema validation remains enabled for every declared constraint.
+
+Buffered JSON APIs with schema-based path and query parameters automatically use
+a smaller HTTP implementation. Query serializers are generated only when a
+contract declares query parameters. Content-based parameters, typed header or
+cookie parameters, response headers, multiple request body representations, and
+advanced media or framing retain the general implementation. Both paths share
+the same schema validators, server selection, raw responses, error provenance,
+cancellation, and security handling. No lightweight setting is required.
+
+The regular root client uses the union of its APIs' requirements. Named entries
+and prepared operations use their own requirements, so a JSON operation can avoid
+XML code even when another operation in the SDK needs it. `[selection]` also
+removes unselected operations and their exclusive runtime files at generation
+time. There is no separate list of runtime features to maintain.
+
+Some contracts intentionally retain more code: multipart parts may select XML
+through their incoming `Content-Type`, and schema content or dynamic references
+may require handlers beyond the outer JSON representation. XML schema metadata
+alone does not require an XML codec for an ordinary JSON body. With
+`--with server`, generic server helpers retain support for arbitrary supported
+schemas; generated callback and webhook routers use their own feature sets.
+Adding that add-on does not change the client artifacts or pull those generic
+helpers into a browser client bundle.
+
+See the [small API measurement](./selection-benchmarks.md#small-api-runtime)
+for the default entry's source and bundle sizes and a reproducible command.
+
 ## Generate only the APIs you need {#generation}
 
 To assign different API sets to separate import paths, use
@@ -53,8 +87,10 @@ document's loaded references; see [Link support](../reference/capabilities.md).
 
 With `--with server`, callbacks belonging to the selected APIs and all top-level
 webhooks are generated. To change the selected set in an existing SDK, use
-`--incremental`; the update replaces owned files and preserves your own files.
-`--check --output` verifies the existing SDK against the requested set.
+`--incremental`; the update replaces owned files, removes obsolete generated
+runtime files, and preserves your own files. An edited generated file blocks the
+update instead of being overwritten. `--check --output` verifies the existing SDK
+against the requested set without changing it.
 
 The CLI also accepts repeatable `--operation` and `--route` flags. See the
 [CLI reference](../reference/cli.md#api-selection) for overrides and syntax.

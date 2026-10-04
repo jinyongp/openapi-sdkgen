@@ -180,4 +180,26 @@ for (const locale of ["en", "ko"])
           .replace("중앙값, 선은 최소–최대", "낮을수록 작음");
     fs.writeFileSync(path.join(directory, `${chart.id}-${locale}.svg`), measuredSvg);
   }
-console.log("ok selection benchmark evidence, six execution cases, and 14 Sectile SVG exports");
+const features = JSON.parse(fs.readFileSync(path.join(directory, "runtime-features-results.json")));
+assert.match(features.generatorSourceSHA256, /^[a-f0-9]{64}$/);
+assert.match(features.inputSHA256, /^[a-f0-9]{64}$/);
+assert.equal(features.environment.nativeBundleCallsPassed, true);
+assert.equal(features.environment.gzipLevel, 6);
+assert.equal(features.bundles.length, 4);
+for (const row of features.bundles) {
+  assert.equal(row.chunks, row.outputs.length);
+  assert.equal(row.deployedBytes, row.outputs.reduce((sum, item) => sum + item.bytes, 0));
+  assert.equal(row.deployedGzipBytes, row.outputs.reduce((sum, item) => sum + item.gzipBytes, 0));
+  const entry = row.outputs.find((item) => item.entry);
+  assert.equal(row.entryBytes, entry.bytes);
+  assert.equal(row.entryGzipBytes, entry.gzipBytes);
+}
+assert.equal(new Set(features.featureSizes.map((row) => `${row.group}/${row.name}`)).size, features.featureSizes.length);
+for (const row of features.featureSizes) {
+  for (const variant of Object.values(row.variants)) {
+    assert.ok(variant.source.total.files >= variant.source.runtime.files);
+    assert.ok(variant.source.total.lines >= variant.source.runtime.lines);
+    assert.ok(variant.native.files > 0 && variant.bundle.chunks > 0);
+  }
+}
+console.log("ok selection benchmark evidence, feature size evidence, six execution cases, and 14 Sectile SVG exports");

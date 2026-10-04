@@ -1,4 +1,5 @@
 import { isRecord } from "./runtime-support.js";
+import { registerHTTPErrorMethod, inheritHTTPErrorMethod } from "./http-errors.js";
 import type { OperationDefinition, ParameterDefinition } from "./operation.js";
 import type { OperationStream, RawResponse, RequestOptions } from "./request.js";
 
@@ -177,6 +178,8 @@ export function bindOperation<
         ...options: OperationOptionsArguments<Options>
       ): Promise<RawResponse<Output, Readonly<Record<string, unknown>>>> =>
         request.raw<Output>(operation, undefined, options[0]);
+  registerHTTPErrorMethod(call, operation.route);
+  registerHTTPErrorMethod(raw, operation.route);
   return Object.assign(call, { raw }) as OperationCall<Input, Output, Options, Raw>;
 }
 
@@ -215,7 +218,9 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
     if (defaultAccept === undefined || options?.accept !== undefined) return options;
     return { ...options, accept: defaultAccept } as Options;
   };
-  return (...args: readonly unknown[]): OperationStream<Item> => {
+  const stream: (...args: readonly unknown[]) => OperationStream<Item> = (
+    ...args: readonly unknown[]
+  ): OperationStream<Item> => {
     if (!hasInput)
       return request.stream<Item>(
         operation,
@@ -232,6 +237,7 @@ export function bindStreamOperation<Input, Item, Options extends RequestOptions 
       splitOptionalOperationArguments<Input, Options>(args);
     return request.stream<Item>(operation, input, streamOptions(options));
   };
+  return registerHTTPErrorMethod(stream, operation.route);
 }
 
 /**
@@ -314,6 +320,9 @@ export function bindPathOperation<
   // only call/raw/stream merge the resource path into an operation input.
   const links: unknown = Reflect.get(callable, "links");
   const paginate: unknown = Reflect.get(callable, "paginate");
+  inheritHTTPErrorMethod(call, callable);
+  inheritHTTPErrorMethod(raw, callable);
+  if (stream !== undefined) inheritHTTPErrorMethod(stream, callable);
   return Object.assign(
     call,
     { raw },

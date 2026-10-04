@@ -63,7 +63,7 @@ for (const fixture of new Set([
 const witness = `
 import { provider as json } from "./lifecycle/internal/executions/inline/post.js";
 import { provider as streaming } from "./lifecycle/internal/executions/events/get.js";
-import { createRequestContext } from "./lifecycle/internal/runtime/http-core.js";
+import { createRequestContext } from "./lifecycle/internal/runtime/http-execution-support.js";
 const context = createRequestContext({baseURL:"https://example.test",fetch:async()=>Response.json({value:1})});
 const call = json.bind(context);
 void call({body:{value:1}});
@@ -253,7 +253,7 @@ import assert from "node:assert/strict";
 import {provider as json} from "./javascript/lifecycle/internal/executions/inline/post.js";
 import {provider as streaming} from "./javascript/lifecycle/internal/executions/events/get.js";
 import {provider as schema} from "./javascript/bundle-isolation/internal/executions/bundle-isolation-sentinel/get.js";
-import {createRequestContext} from "./javascript/lifecycle/internal/runtime/http-core.js";
+import {createRequestContext} from "./javascript/lifecycle/internal/runtime/http-execution-support.js";
 import {createClient} from "./javascript/lifecycle/index.js";
 let calls=[];
 const options={baseURL:"https://example.test",authorization:"Bearer private",fetch:async(url,init)=>{
@@ -376,8 +376,8 @@ for (const relative of [
   "discriminator-dependencies/internal/executions/echo/post.js",
 ]) {
   const modules = nativeImports(path.join(output, "javascript", relative));
-  assert(modules.some((name) => name.endsWith("/runtime/http-core.js")));
-  assert(modules.some((name) => name.endsWith("/runtime/wire-engine.js")));
+  assert(modules.some((name) => name.endsWith("/runtime/http-execution-support.js")));
+  assert(modules.some((name) => name.endsWith("/runtime/wire-core.js")));
   for (const forbidden of [
     "/runtime/http.js",
     "/runtime/http-codecs.js",
@@ -385,6 +385,7 @@ for (const relative of [
     "/runtime/http-stream.js",
     "/runtime/codecs.js",
     "/runtime/wire-xml.js",
+    "/runtime/xml-codec.js",
     "/runtime/streaming.js",
     "/runtime/selection-types.js",
     "/runtime/selection.js",
@@ -418,7 +419,7 @@ for (const [name, method] of [
   );
   if (!["form", "multipart", "text"].includes(name)) {
     assert(
-      modules.some((file) => file.endsWith("/runtime/codecs.js")),
+      modules.some((file) => file.endsWith("/runtime/xml-codec.js")),
       `${name} lost XML implementation`,
     );
     assert(
@@ -429,9 +430,14 @@ for (const [name, method] of [
       `${name} retained unrelated advanced implementation`,
     );
   } else {
+    const handler = {
+      form: "http-body-form",
+      multipart: "http-multipart-request",
+      text: "http-body-text",
+    }[name];
     assert(
-      modules.some((file) => file.endsWith("/runtime/http-codecs.js")),
-      `${name} lost its general services`,
+      modules.some((file) => file.endsWith(`/runtime/${handler}.js`)),
+      `${name} lost its body handler`,
     );
   }
   graphs[relative] = modules;
@@ -442,9 +448,11 @@ for (const [relative, modules] of Object.entries(graphs)) {
     `${relative} retained an unused schema`,
   );
 }
-// Ensure the dependency check catches a full-runtime edge instead of only accepting the candidate.
-const fullGraph = nativeImports(path.join(output, "javascript/lifecycle/internal/runtime/http.js"));
-assert(fullGraph.some((name) => name.endsWith("/runtime/http-codecs.js")));
+// The mixed root is an independent negative control for a JSON-only provider.
+// The feature matrix additionally checks a same-source full-capability control.
+const fullGraph = nativeImports(path.join(output, "javascript/execution-media/index.js"));
+assert(fullGraph.some((name) => name.endsWith("/runtime/xml-codec.js")));
+assert.throws(() => assert(!fullGraph.some((name) => name.endsWith("/runtime/xml-codec.js"))));
 const resourceMembership = verifyResourceMembership(
   path.join(output, "source/lifecycle/selective/types.ts"),
   path.join(output, "resource-membership"),
@@ -462,7 +470,7 @@ const report = {
     "Actual Go-emitted fixtures: strict implementation/declaration checks, d.ts-only public client consumption, native media/selection and native/static-bundled lazy-Link execution. Browser HTTP delivery and large-SDK scale are separate validations.",
   inventories,
   graphs,
-  fullRuntimeGraphNegativeControl: true,
+  mixedRootGraphNegativeControl: true,
   isolatedTypeGraphs,
   wholeRouteTypeGraphNegativeControl: true,
   witnessSHA256: sha256(witness),

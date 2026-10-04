@@ -1,0 +1,25 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "request-sequence", "version": "1" },
+  "paths": {
+    "/probe": {
+      "post": {
+        "operationId": "probe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json-seq": {
+              "itemSchema": {
+                "type": "object",
+                "required": ["id"],
+                "properties": { "id": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": { "204": { "description": "OK" } }
+      }
+    }
+  }
+}

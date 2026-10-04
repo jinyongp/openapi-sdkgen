@@ -18,7 +18,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	if err != nil {
 		return nil, err
 	}
-	codecs, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/codecs.ts")
+	codecs, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,11 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	}
 
 	var output bytes.Buffer
-	fmt.Fprintf(&output, "import { assignCallableProperties, type RequestFunction } from %s\n", quoteTS(callables))
+	requestType := "BufferedRequestFunction"
+	if len(streams) > 0 {
+		requestType = "RequestFunction"
+	}
+	fmt.Fprintf(&output, "import { assignCallableProperties, type %s } from %s\n", requestType, quoteTS(callables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(codecs))
 	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
 	if !hasPrivateRoutes {
@@ -138,7 +142,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	output.WriteString("}\n\n")
 
 	output.WriteString("/** Binds and decorates every generated operation exactly once. */\n")
-	output.WriteString("export function createCallableRegistry(request: RequestFunction, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): CallableRegistry {\n")
+	fmt.Fprintf(&output, "export function createCallableRegistry(request: %s, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): CallableRegistry {\n", requestType)
 	for _, operation := range manifest.Operations {
 		if operation.Visibility == "hidden" {
 			continue

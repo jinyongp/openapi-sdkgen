@@ -53,11 +53,19 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	if err != nil {
 		return nil, err
 	}
-	runtimeCodecs, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/codecs.ts")
+	runtimeCodecs, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/wire-types.ts")
 	if err != nil {
 		return nil, err
 	}
 	runtimeErrors, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/errors.ts")
+	if err != nil {
+		return nil, err
+	}
+	runtimeHTTPError, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/http-errors.ts")
+	if err != nil {
+		return nil, err
+	}
+	httpErrorType, err := operationHTTPErrorType(document, operation, typeRenderContract)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +200,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 	fmt.Fprintf(&output, "import { %s } from %s\n", callableImports, quoteTS(runtimeCallables))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
-	fmt.Fprintf(&output, "import type { TransportError } from %s\n", quoteTS(runtimeErrors))
+	fmt.Fprintf(&output, "import type { APIError, TransportError } from %s\n", quoteTS(runtimeErrors))
+	fmt.Fprintf(&output, "import type { HTTPErrorFor, HTTPErrorIdentity } from %s\n", quoteTS(runtimeHTTPError))
 	fmt.Fprintf(&output, "import type { BinaryBody, OperationStream, RawResponseFor, RequestOptions, StreamSource } from %s\n", quoteTS(runtimeRequest))
 	fmt.Fprintf(&output, "import type { OperationTypeIdentity, RouteTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
 	fmt.Fprintf(&output, "import type { OperationPublicType, OperationResourceRawCapability } from %s\n", quoteTS(contractTypes))
@@ -219,7 +228,6 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 			return nil, err
 		}
 		fmt.Fprintf(&output, "import { mergeLinkInput, resolveLinkInput, type LinkInvocation, type RequiredLinkInvocation } from %s\n", quoteTS(runtimeLinks))
-		fmt.Fprintf(&output, "import type { APIError } from %s\n", quoteTS(runtimeErrors))
 	}
 	output.WriteByte('\n')
 	fmt.Fprintf(&output, "export type RouteKey = %s\n", quoteTS(module.routeKey))
@@ -242,6 +250,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "export type Options = %sOptions\n", operationName)
 	fmt.Fprintf(&output, "export type Output = %sOutput\n", operationName)
 	fmt.Fprintf(&output, "export type Error = %s\n", item.renderError(typeRenderContract))
+	fmt.Fprintf(&output, "export type HTTPError = %s\n", httpErrorType)
 	fmt.Fprintf(&output, "export type RawResponse = %sRawResponse\n", operationName)
 	fmt.Fprintf(&output, "export type BaseCall = %sCall\n", operationName)
 	fmt.Fprintf(&output, "export type RawCall = %sRawCall\n", operationName)
@@ -249,8 +258,8 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	fmt.Fprintf(&output, "export type ResourceRawCall = %s\n", map[bool]string{true: operationName + "ResourceRawCall", false: "never"}[item.Visibility == "public"])
 	fmt.Fprintf(&output, "export type Pagination = %s\n", paginationType)
 	fmt.Fprintf(&output, "export type Links = %s\n", linksType)
-	fmt.Fprintf(&output, "export type Stream = %s\n", streamType)
-	fmt.Fprintf(&output, "export type ResourceStream = %s\n", resourceStreamType)
+	fmt.Fprintf(&output, "export type Stream = (%s) & HTTPErrorIdentity<HTTPError>\n", streamType)
+	fmt.Fprintf(&output, "export type ResourceStream = (%s) & HTTPErrorIdentity<HTTPError>\n", resourceStreamType)
 	fmt.Fprintf(&output, "export type ExactCall = (%s) & OperationTypeIdentity<RouteKey, \"exact\">\n", exactCallType)
 	fmt.Fprintf(&output, "export type ResourceCall = %s\n\n", resourceCallType)
 	output.WriteString("export type ResourceMethod<Route extends RouteKey = RouteKey> = ResourceCall & RouteTypeIdentity<Route> & OperationTypeIdentity<Route, \"resource\">\n\n")
@@ -260,6 +269,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	output.WriteString("  readonly options: Options\n")
 	output.WriteString("  readonly output: Output\n")
 	output.WriteString("  readonly error: Error\n")
+	output.WriteString("  readonly httpError: HTTPError\n")
 	output.WriteString("  readonly rawResponse: RawResponse\n")
 	output.WriteString("  readonly call: ExactCall\n")
 	output.WriteString("  readonly resourceCall: ResourceCall\n")

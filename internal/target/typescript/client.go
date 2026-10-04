@@ -162,6 +162,11 @@ func emitOperationCallInterface(output *bytes.Buffer, operation ir.Operation, it
 	if rawCapabilityType != "" {
 		extends = " extends " + rawCapabilityType
 	}
+	if extends == "" {
+		extends = " extends HTTPErrorIdentity<HTTPError>"
+	} else {
+		extends += ", HTTPErrorIdentity<HTTPError>"
+	}
 	fmt.Fprintf(output, "interface %s%s {\n", callName, extends)
 	if buffered {
 		if len(mediaTypes) > 1 {
@@ -184,7 +189,7 @@ func emitOperationRawCallInterface(output *bytes.Buffer, operation ir.Operation,
 	optionsType := "RouteOptions<" + quoteTS(operationRouteKey(operation)) + ">"
 	optionsRequired := item.optionsRequired
 	mediaTypes := item.mediaTypes
-	fmt.Fprintf(output, "interface %s {\n", callName)
+	fmt.Fprintf(output, "interface %s extends HTTPErrorIdentity<HTTPError> {\n", callName)
 	if len(mediaTypes) > 1 {
 		for _, mediaType := range mediaTypes {
 			mediaOptionsType := "Omit<" + optionsType + ", \"accept\"> & { readonly accept: " + quoteTS(mediaType) + " }"
@@ -371,7 +376,7 @@ func operationHasBufferedSuccess(document *ir.Document, operation ir.Operation) 
 func responseMediaTypes(responses []ir.Response) []string {
 	seen := make(map[string]bool)
 	var result []string
-	for _, response := range responses {
+	for _, response := range reachableSuccessResponses(responses) {
 		if !isSuccessResponseStatus(response.Status) {
 			continue
 		}
@@ -393,7 +398,7 @@ func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation
 		return err
 	}
 	successful := make([]ir.Response, 0, len(responses))
-	for _, response := range responses {
+	for _, response := range reachableSuccessResponses(responses) {
 		if isSuccessResponseStatus(response.Status) {
 			successful = append(successful, response)
 		}

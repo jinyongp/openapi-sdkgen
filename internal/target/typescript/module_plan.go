@@ -10,6 +10,7 @@ import (
 )
 
 type semanticModulePlan struct {
+	runtimeComposition        runtimeComposition
 	schemas                   []schemaModulePlan
 	operations                []operationModulePlan
 	resources                 []resourceModulePlan

@@ -1,9 +1,10 @@
 # Project scripts
 
-Local commands use `devtools run COMMAND:TARGET ARG...`. Arguments follow the
-command name directly. Devtools selects the project
-directory, environment, and local Node runtime. CI prepares its toolchain and
-calls the same scripts directly. Versions come from `go.mod`, `.node-version`,
+Local commands use `devtools run COMMAND:TARGET ARG...`, with the operation first
+and the target group second. Arguments follow the command name directly.
+Devtools selects the project directory, environment, and local Node runtime.
+CI prepares its toolchain and calls the same scripts directly. Versions come
+from `go.mod`, `.node-version`,
 and each package's `packageManager` and lockfile.
 
 Scripts are grouped by responsibility: `dev`, `generate`, `compatibility`,
@@ -17,7 +18,7 @@ TypeScript verification implementations stay with the code they exercise.
 | `generate` | `sdk:generate INPUT OUTPUT`, `check:generate INPUT` |
 | `verify` | `typescript:verify [test\|typecheck\|coverage]`, `compilers:verify 5.7.3`, `representation-check:verify` |
 | `compatibility` | `fetch:compatibility`, `benchmark:compatibility`, `merge:compatibility` |
-| `perf` | `benchmark:perf`, `identifiers:perf`, `profile:perf`, `acceptance:perf` |
+| `perf` | `benchmark:perf`, `identifiers:perf`, `profile:perf`, `acceptance:perf`, `runtime-features:perf` |
 | `security` | `audit:security`, `audit-test:security` |
 | `examples` | `todo:examples`, `advanced:examples`, `capabilities:examples` |
 | `release` | `check:release`, `cross-build:release`, `test:release`, `publish:release` |

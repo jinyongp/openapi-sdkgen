@@ -352,7 +352,10 @@ describe("generated client QuickInfo", () => {
     ],
     ["contract.tasks.paginate", 'PaginateCall<"GET /tasks">'],
     ["openAPI31.source.get.links", 'Links & RouteTypeIdentity<"GET /source">'],
-    ["openAPI32.events.get.stream", 'Stream & RouteTypeIdentity<"GET /events">'],
+    [
+      "openAPI32.events.get.stream",
+      'OperationStream<string>) & HTTPErrorIdentity<never> & RouteTypeIdentity<"GET /events">',
+    ],
   ])("keeps %s capability concise", async (expression, expected) => {
     const info = await quickInfo(expression);
 

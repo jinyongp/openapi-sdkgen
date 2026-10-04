@@ -11,7 +11,7 @@ import type {
   StreamingRequestExecutionServices,
   AdvancedHTTPServices,
 } from "./http-types.js";
-import type { WireCodec } from "./wire-engine.js";
+import type { WireCodec } from "./wire-types.js";
 
 function createFullRequestServices(): StreamingRequestExecutionServices {
   const wire: WireCodec = {

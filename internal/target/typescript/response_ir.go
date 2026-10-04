@@ -28,7 +28,7 @@ func operationResponseMediaSets(document *ir.Document, operation ir.Operation) (
 		normal:    make([]ir.Response, 0, len(responses)),
 		streaming: make([]ir.Response, 0, len(responses)),
 	}
-	for _, response := range responses {
+	for _, response := range reachableSuccessResponses(responses) {
 		if len(response.Content) == 0 {
 			sets.normal = append(sets.normal, response)
 			continue

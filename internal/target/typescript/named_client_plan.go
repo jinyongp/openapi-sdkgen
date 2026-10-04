@@ -79,6 +79,7 @@ func prepareClientSourcePlanWithCoverage(document *ir.Document, options generato
 	for _, name := range names {
 		view := scopedSourcePlan(plan, selections[name])
 		view.includeServer = false
+		view.runtimeFeatures = scopedRuntimeFeatures(plan.runtimeFeatures, view.manifest, false)
 		if !hasMeaningfulEntrySurface(view) {
 			value := noMeaningfulEntrySurfaceDiagnostic(view.document, plan.ownership)
 			value.Message = fmt.Sprintf("Client %q: %s", name, value.Message)
@@ -123,6 +124,7 @@ func scopedSourcePlan(shared *sourcePlan, selection *generationSelection) *sourc
 		}
 	}
 	view.manifest = &manifest
+	view.runtimeFeatures = scopedRuntimeFeatures(shared.runtimeFeatures, view.manifest, view.includeServer)
 	view.resourceTree = cloneSelectedResourceTree(shared.resourceTree, selection.direct)
 	view.resourceReachable = make(map[string]bool)
 	resourceOperationIDs(view.resourceTree, view.resourceReachable)
@@ -158,6 +160,8 @@ func scopedSourcePlan(shared *sourcePlan, selection *generationSelection) *sourc
 		}
 	}
 	view.modules = &modules
+	clientFeatures := clientRuntimeFeatures(shared.runtimeFeatures, view.manifest)
+	modules.runtimeComposition = prepareRuntimeComposition(clientFeatures, len(view.streams) > 0)
 	return &view
 }
 

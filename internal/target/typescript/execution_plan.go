@@ -36,6 +36,7 @@ const (
 type executionSchemaFacts struct {
 	capabilities executionSchemaCapabilities
 	references   map[executionSchemaReference]bool
+	features     runtimeFeatureSet
 }
 
 func (wire *wireRenderContext) recordExecutionReference(name string, direction projection) {
@@ -56,6 +57,7 @@ func (wire *wireRenderContext) recordExecutionCapability(capability executionSch
 
 type executionSchemaNode struct {
 	facts        executionSchemaFacts
+	features     runtimeFeatureSet
 	capabilities executionSchemaCapabilities
 	parents      map[executionSchemaReference]bool
 	loaded       bool
@@ -74,13 +76,17 @@ func newExecutionPlanner(document *ir.Document) *executionPlanner {
 }
 
 type operationExecutionPlan struct {
-	profile       executionProfile
-	reasons       []string
-	inputSchemas  []string
-	outputSchemas []string
-	inputBundle   string
-	outputBundle  string
-	hasStream     bool
+	features         []runtimeFeature
+	wireHandlers     runtimeWireHandlers
+	securityHandlers runtimeSecurityHandlers
+	composition      runtimeComposition
+	profile          executionProfile
+	reasons          []string
+	inputSchemas     []string
+	outputSchemas    []string
+	inputBundle      string
+	outputBundle     string
+	hasStream        bool
 }
 
 func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (executionSchemaCapabilities, []string, []string, error) {
@@ -99,7 +105,8 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 			node = &executionSchemaNode{parents: make(map[executionSchemaReference]bool)}
 			planner.schemas[key] = node
 		}
-		if !node.loaded {
+		loadedNow := !node.loaded
+		if loadedNow {
 			value, ok := planner.document.Schemas[key.name]
 			var schema any
 			if ok {
@@ -117,6 +124,8 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 				return 0, nil, nil, err
 			}
 			node.capabilities = node.facts.capabilities
+			node.features = make(runtimeFeatureSet)
+			node.features.merge(node.facts.features)
 			node.loaded = true
 			changed = append(changed, key)
 		}
@@ -128,14 +137,15 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 			}
 			dependency.parents[key] = true
 			combined := node.capabilities | dependency.capabilities
-			if combined != node.capabilities {
+			featuresChanged := loadedNow && node.features.merge(dependency.features)
+			if combined != node.capabilities || featuresChanged {
 				node.capabilities = combined
 				changed = append(changed, key)
 			}
 			queue = append(queue, child)
 		}
 	}
-	// Monotone propagation needs at most one growth per capability per node.
+	// Monotone propagation grows each capability and feature at most once per node.
 	// In particular, A -> B -> A plus a later XML edge updates BOTH A and B.
 	for len(changed) > 0 {
 		key := changed[0]
@@ -144,7 +154,8 @@ func (planner *executionPlanner) schemaClosure(facts executionSchemaFacts) (exec
 		for parent := range node.parents {
 			owner := planner.schemas[parent]
 			combined := owner.capabilities | node.capabilities
-			if combined != owner.capabilities {
+			featuresChanged := owner.features.merge(node.features)
+			if combined != owner.capabilities || featuresChanged {
 				owner.capabilities = combined
 				changed = append(changed, parent)
 			}
@@ -238,6 +249,7 @@ func (planner *executionPlanner) operation(operation ir.Operation, item Manifest
 	}
 	jsonRequest := true
 	for _, parameter := range item.prepared.clientParameters {
+		wire.recordRuntimeMedia("parameter", parameter.ContentType, ir.StreamFramingNone, false)
 		if executionXMLMedia(parameter.ContentType) {
 			needsXML = true
 			reasons["xml-parameter"] = true
@@ -336,5 +348,7 @@ func (planner *executionPlanner) operation(operation ir.Operation, item Manifest
 		reasons["non-json-request-body"] = true
 	}
 	result.reasons = sortedStringKeys(reasons)
+	features := planner.loadedRuntimeFeatures(facts)
+	result.features = features.sorted()
 	return result, nil
 }

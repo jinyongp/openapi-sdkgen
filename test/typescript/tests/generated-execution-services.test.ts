@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { bindBase } from "../fixtures/generated/lifecycle/internal/operations/inline/post.js";
-import {
-  createRequestCore,
-  createRequestContext,
-} from "../fixtures/generated/lifecycle/internal/runtime/http-core.js";
-import { jsonRequestServices } from "../fixtures/generated/lifecycle/internal/runtime/http-json.js";
+import { createRequestCore } from "../fixtures/generated/lifecycle/internal/runtime/http-request-core.js";
+import { createRequestContext } from "../fixtures/generated/lifecycle/internal/runtime/http-execution-support.js";
+import { createBasicHTTPServices } from "../fixtures/generated/lifecycle/internal/runtime/http-basic.js";
+import { createWireCodec } from "../fixtures/generated/lifecycle/internal/runtime/wire-core.js";
+import { validateNumber } from "../fixtures/generated/lifecycle/internal/runtime/wire-number.js";
+import { encodeJSONBody } from "../fixtures/generated/lifecycle/internal/runtime/http-body-json.js";
+import type { RequestExecutionServices } from "../fixtures/generated/lifecycle/internal/runtime/http-types.js";
+const jsonRequestServices: RequestExecutionServices = createBasicHTTPServices(
+  createWireCodec({ number: validateNumber }),
+  { encodeRequestBody: encodeJSONBody },
+);
 
 describe("generated operation execution services", () => {
   it("binds an actual emitted definition to a buffered executor without a stream assertion", async () => {

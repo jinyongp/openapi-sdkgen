@@ -63,7 +63,7 @@ const operation: OperationDefinition = {
         {
           name: "X-Form",
           property: "form",
-          contentType: "application/x-www-form-urlencoded",
+          contentType: "application/x-www-form-urlencoded; charset=utf-8",
           schema: {},
         },
         {

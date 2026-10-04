@@ -92,7 +92,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	if strings.Contains(productInput, `readonly "id":`) || !strings.Contains(productInput, `readonly "secret":`) {
 		t.Fatalf("input readOnly/writeOnly projection is wrong:\n%s", productInput)
 	}
-	if !strings.Contains(productOutput, `readonly "id":`) || strings.Contains(productOutput, `readonly "secret":`) {
+	if !strings.Contains(productOutput, `"id":`) || strings.Contains(productOutput, `"secret":`) || strings.Contains(productOutput, "readonly ") {
 		t.Fatalf("output readOnly/writeOnly projection is wrong:\n%s", productOutput)
 	}
 	if strings.Contains(schemaRegistrySource, `readonly "HiddenOnly":`) {
@@ -107,7 +107,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 		"@default \"legacy\"",
 		"@deprecated This OpenAPI value is deprecated.",
 		"Component types keyed by exact OpenAPI schema names",
-		`readonly "id": import("./identifier.js").Output`,
+		`"id": import("./identifier.js").Output`,
 	} {
 		if !strings.Contains(typesSource, expected) {
 			t.Fatalf("type JSDoc missing %q:\n%s", expected, typesSource)
@@ -151,7 +151,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 	}
 	for _, expected := range []string{
 		`export type * from "./schemas/index.js"`,
-		`export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from "./runtime/pagination.js"`,
+		`export type { BothPaginationInput, CursorPaginationInput, OffsetPaginationInput } from "./runtime/pagination-types.js"`,
 		`export type * from "./enums.js"`,
 		`export type * from "./errors.js"`,
 		`export type * from "./client/index.js"`,
@@ -173,14 +173,14 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 		"Configuration shared by every operation on a generated client.",
 		"Successful response including decoded data",
 		"Creates a lazy async iterator over all items",
-		"Creates the endpoint-neutral Fetch API request executor",
-		"@param options Client-wide base URL and transport defaults.",
+		"Binds normalized client state to only the request services",
+		"Normalizes client defaults once; keeps request callbacks",
 	} {
 		if !strings.Contains(runtimeModules, expected) {
 			t.Fatalf("runtime JSDoc missing %q:\n%s", expected, runtimeModules)
 		}
 	}
-	if !strings.Contains(clientSource, `from "../runtime/http.js"`) || !strings.Contains(clientSource, `from "../runtime/callables.js"`) {
+	if !strings.Contains(clientSource, `from "../runtime/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/callables.js"`) {
 		t.Fatalf("client does not use its generated source runtime:\n%s", clientSource)
 	}
 	if strings.Contains(errorsSource, "../../runtime") || !strings.Contains(errorsSource, `from "./runtime/errors.js"`) {
@@ -299,9 +299,10 @@ func TestRootReachableRuntimeInitializersAreOptimizerVisible(t *testing.T) {
 		"internal/client/registry.ts",
 		"internal/enums.ts",
 		"internal/errors.ts",
-		"internal/runtime/codecs.ts",
+		"internal/runtime/wire-core.ts",
 		"internal/runtime/constants.ts",
-		"internal/runtime/http.ts",
+		"internal/runtime/http-execution-support.ts",
+		"internal/runtime/http-request-values.ts",
 	} {
 		source := string(artifactByPath(t, artifacts, path))
 		for lineNumber, line := range strings.Split(source, "\n") {
@@ -413,8 +414,10 @@ func TestGeneratorAddsServerArtifactsWithoutChangingClientLayout(t *testing.T) {
 		}
 	}
 	serverOnly := []string{"server/runtime.ts", "server/webhooks.ts", "server/callbacks.ts"}
-	if len(serverSources) != len(clientSources)+len(serverOnly) {
-		t.Fatalf("server selection changed the client artifact path set: client=%d server=%d", len(clientSources), len(serverSources))
+	for path := range serverSources {
+		if clientSources[path] == nil && !strings.HasPrefix(path, "server/") && !strings.HasPrefix(path, "internal/runtime/") {
+			t.Fatalf("unexpected server-only artifact %s", path)
+		}
 	}
 	for _, path := range serverOnly {
 		if _, exists := serverSources[path]; !exists {
@@ -444,7 +447,7 @@ func TestGeneratorWithServerEmitsFetchNativeWebhookRouter(t *testing.T) {
       }
     }
   },
-  "components": {"schemas": {"Order": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}}}
+  "components": {"securitySchemes":{"signature":{"type":"apiKey","in":"header","name":"X-Signature"}},"schemas": {"Order": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}}}
 }`))
 	if err != nil {
 		t.Fatal(err)
@@ -479,7 +482,7 @@ func TestGeneratorWithServerEmitsFetchNativeWebhookRouter(t *testing.T) {
 			t.Fatalf("webhook source missing %q:\n%s", expected, webhooks)
 		}
 	}
-	runtime := string(artifactByPath(t, artifacts, "server/runtime.ts"))
+	runtime := string(artifactByPath(t, artifacts, "server/runtime-types.ts")) + string(artifactByPath(t, artifacts, "server/runtime-body.ts")) + string(artifactByPath(t, artifacts, "server/runtime-response.ts"))
 	for _, expected := range []string{"export type Authenticate", "new Response(\"Unsupported Media Type\", { status: 415 })", "export async function responseFromHandler"} {
 		if !strings.Contains(runtime, expected) {
 			t.Fatalf("server runtime missing %q:\n%s", expected, runtime)
@@ -691,7 +694,7 @@ func TestExactRouteCarriesIDLessLinkAndStreamCapabilities(t *testing.T) {
 	client := clientSemanticSource(artifacts)
 	for _, expected := range []string{
 		`readonly "GET /events": import("../operations/events/get.js").Contract`,
-		`export type Stream = (options?: Omit<Options, "accept">) => OperationStream<string>`,
+		`export type Stream = ((options?: Omit<Options, "accept">) => OperationStream<string>) & HTTPErrorIdentity<HTTPError>`,
 		`readonly "GET /source": import("../operations/source/get.js").Contract`,
 		`export type Links = { readonly "follow":`,
 		`readonly "GET /source": Routes["GET /source"]["call"]`,

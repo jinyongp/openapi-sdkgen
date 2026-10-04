@@ -286,10 +286,7 @@ func validateEnvelopeRepresentations(document *ir.Document, operation ir.Operati
 	}
 	bodyRepresentations := 0
 	var incompatible []string
-	for _, response := range responses {
-		if !isSuccessResponseStatus(response.Status) {
-			continue
-		}
+	for _, response := range reachableSuccessResponses(responses) {
 		for _, media := range response.Content {
 			bodyRepresentations++
 			_, exists := media.Raw["schema"]

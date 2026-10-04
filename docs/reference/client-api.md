@@ -223,6 +223,7 @@ import {
   isAPIError,
   isErrorCategory,
   isErrorCode,
+  isOperationHTTPError,
   TransportErrorCode,
 } from "./generated/api";
 ```
@@ -230,11 +231,22 @@ import {
 - `isAPIError(error)`: checks for any generated API error
 - `isErrorCode(error, code)`: checks an exact error code
 - `isErrorCategory(error, category)`: checks an error category
+- `isOperationHTTPError(error, method)`: checks a real HTTP error from that
+  generated method and narrows its declared status, body, and media union
 - `TransportErrorCode`: lists errors raised while sending or receiving a request
 
 Security selection uses `SECURITY_REQUIREMENT_REQUIRED` and
 `SECURITY_REQUIREMENT_INVALID`. Credential acquisition and application use
 `SECURITY_CREDENTIALS_REQUIRED` and `SECURITY_CREDENTIALS_INVALID`.
+
+The operation guard accepts ordinary, raw, streaming, and bound resource methods.
+It revalidates the current body and rejects constructed errors, another operation's
+errors, transport failures, and invalid or modified bodies. Its `contentType`
+is the selected declaration; the actual header is on `error.response`.
+`OperationHTTPError<typeof method>` extracts the same union. The root, named,
+and selective entries export this helper and type. Existing `APIError<Code, Details>`
+uses remain compatible; additional `Status` and `Data` type arguments describe
+more precise HTTP failures. See [declared HTTP errors](../guide/client.md#narrow-declared-http-errors).
 
 ## OpenAPI metadata
 

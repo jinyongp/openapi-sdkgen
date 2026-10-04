@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 
 const root = path.resolve(process.argv[2], "execution-media");
 const load = (relative) => import(pathToFileURL(path.join(root, relative)).href);
-const { createRequestContext } = await load("internal/runtime/http-core.js");
+const { createRequestContext } = await load("internal/runtime/http-execution-support.js");
 const { createClient } = await load("index.js");
 const providers = {};
 for (const [name, method] of [
@@ -26,11 +26,10 @@ for (const [name, method] of [
   providers[name] = (await load(`internal/executions/${name}/${method}.js`)).provider;
 }
 const item = { id: "one", count: 2 };
-const decodedItem = Object.assign(Object.create(null), item);
+const decodedItem = { ...item };
 function assertDecoded(actual, fields) {
-  // The shared transformer deliberately constructs null-prototype records.
-  // Check that contract as well as the expected field values in native ESM.
-  assert.deepEqual(actual, Object.assign(Object.create(null), fields));
+  assert.equal(Object.getPrototypeOf(actual), Object.prototype);
+  assert.deepEqual(actual, fields);
 }
 const xml = "<item><count>2</count><id>one</id></item>";
 const invalidXML = "<item><count>-1</count><id>one</id></item>";
