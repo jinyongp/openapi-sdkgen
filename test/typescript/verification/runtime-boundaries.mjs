@@ -10,7 +10,8 @@ const allowed = {
   media: ["media", "schema", "stream", "shared"],
   security: ["security", "shared"],
   http: ["http", "schema", "media", "stream", "security", "shared"],
-  client: ["client", "http", "schema", "media", "stream", "security", "shared"],
+  client: ["client", "composition", "http", "schema", "media", "stream", "security", "shared"],
+  composition: ["http", "schema", "media", "stream", "security", "shared"],
   server: ["server", "schema", "media", "stream", "security", "shared"],
   compatibility: [
     "compatibility",
@@ -32,6 +33,7 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
   function layerOf(relative) {
     if (!generated) return relative.split("/")[0];
     if (relative.startsWith("internal/runtime/")) return relative.split("/")[2];
+    if (relative.startsWith("internal/execution-compositions/")) return "composition";
     if (
       relative.startsWith("internal/schema-programs/") ||
       relative === "internal/types.ts" ||
@@ -53,6 +55,18 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
       ts.ScriptTarget.Latest,
       true,
     );
+    if (layer === "composition") {
+      for (const statement of tree.statements) {
+        if (
+          !ts.isImportDeclaration(statement) &&
+          !ts.isExportDeclaration(statement) &&
+          !ts.isFunctionDeclaration(statement) &&
+          !ts.isInterfaceDeclaration(statement) &&
+          !ts.isTypeAliasDeclaration(statement)
+        )
+          violations.push(`${relative}: composition initializes module state`);
+      }
+    }
     function dependency(specifier, dynamic = false) {
       if (!ts.isStringLiteralLike(specifier)) {
         if (
@@ -80,6 +94,8 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
       const compatibilityRoot = relative === "server/runtime.ts" && targetLayer === "compatibility";
       if (!compatibilityRoot && !allowed[layer]?.includes(targetLayer))
         violations.push(`${relative}: forbidden ${layer} -> ${targetLayer} (${targetRelative})`);
+      if (layer === "composition" && !targetRelative.startsWith("internal/runtime/"))
+        violations.push(`${relative}: composition captures generated dependency ${targetRelative}`);
       edges.add(targetRelative);
     }
     function visit(node) {
@@ -101,7 +117,12 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
     }
   }
   if (generated) {
-    for (const directory of ["internal/runtime", "internal/schema-programs", "server"]) {
+    for (const directory of [
+      "internal/runtime",
+      "internal/schema-programs",
+      "internal/execution-compositions",
+      "server",
+    ]) {
       const location = path.join(root, directory);
       if (fs.existsSync(location)) walk(location);
     }

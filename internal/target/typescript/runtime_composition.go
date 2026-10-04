@@ -9,15 +9,19 @@ import (
 // A composition contains only preparation-owned imports and factory calls.
 // Every algorithm remains in one canonical runtime template.
 type runtimeComposition struct {
-	imports      []runtimeHandlerImport
-	declarations []string
-	servicesType string
-	wireTypes    []string
-	httpTypes    []string
+	identity        string
+	sharedPath      string
+	callerWireTypes []string
+	imports         []runtimeHandlerImport
+	declarations    []string
+	servicesType    string
+	wireTypes       []string
+	httpTypes       []string
 }
 
 func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtimeComposition {
 	result := runtimeComposition{servicesType: "RequestExecutionServices", wireTypes: []string{"WireCodec"}, httpTypes: []string{"RequestExecutionServices"}}
+	result.identity = executionCompositionIdentity(features, streaming)
 	imports := make(map[string]map[string]bool)
 	add := func(source string, names ...string) {
 		source = strings.TrimSuffix(strings.TrimPrefix(source, "internal/runtime/"), ".ts")
@@ -257,7 +261,18 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 }
 
 func emitRuntimeComposition(output *bytes.Buffer, composition runtimeComposition, importFrom func(string, string) error) error {
-	if err := emitRuntimeTypeImports(composition.wireTypes, "wire-types.ts", importFrom); err != nil {
+	if composition.sharedPath != "" {
+		if err := emitRuntimeTypeImports(composition.callerWireTypes, "wire-types.ts", importFrom); err != nil {
+			return err
+		}
+		if err := importFrom("{ createExecutionServices, createRequestCore }", composition.sharedPath); err != nil {
+			return err
+		}
+		fmt.Fprintln(output, "\nconst services: ReturnType<typeof createExecutionServices> = /* @__PURE__ */ createExecutionServices()")
+		return nil
+	}
+	wireTypes := append(append([]string(nil), composition.wireTypes...), composition.callerWireTypes...)
+	if err := emitRuntimeTypeImports(wireTypes, "wire-types.ts", importFrom); err != nil {
 		return err
 	}
 	if err := emitRuntimeTypeImports(composition.httpTypes, "http-types.ts", importFrom); err != nil {

@@ -287,6 +287,7 @@ type sourcePlan struct {
 	modules                     *semanticModulePlan
 	executions                  map[string]operationExecutionPlan
 	executionSchemas            []executionSchemaModule
+	executionCompositions       []executionCompositionModule
 	links                       []generatedLink
 	streams                     []generatedStream
 	webhooks                    []webhookDefinition
@@ -614,6 +615,10 @@ func prepareSelectedSourcePlanWithCoverage(document *ir.Document, includeServer 
 		plan.runtimeFeatures, executionErr = prepareRuntimeFeatures(plan)
 		if executionErr != nil {
 			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript runtime feature plan: %w", executionErr)
+		}
+		plan.executionCompositions, executionErr = prepareExecutionCompositionModules(modules, executions)
+		if executionErr != nil {
+			return nil, diagnostic.Sort(diagnostics), coverage, fmt.Errorf("build TypeScript execution composition modules: %w", executionErr)
 		}
 		if executionErr = prepareRuntimeArtifactPlan(plan); executionErr != nil {
 			return nil, diagnostic.Sort(diagnostics), coverage, executionErr

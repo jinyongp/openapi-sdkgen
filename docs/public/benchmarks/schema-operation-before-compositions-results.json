@@ -169,13 +169,13 @@
     ]
   },
   "current": {
-    "measuredAt": "2026-10-04T13:25:43.252Z",
+    "measuredAt": "2026-10-04T12:20:33.252Z",
     "node": "v24.21.0",
     "typescript": "7.0.2",
     "vite": "8.3.0",
     "input": "test/typescript/fixtures/runtime-features/client/small-json.json",
     "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-    "generatorBinarySHA256": "5e606e0fcdac68dc0a590e8d25f0f33fba11d8de50db3c0f3d79b31932b2f5e4",
+    "generatorBinarySHA256": "863976aad14de6129328519d5fb6a54312bbff64b336e95fce873cc467cf1cbd",
     "settings": {
       "target": "ES2022",
       "platform": "browser",
@@ -335,8 +335,9 @@
           "POST /items"
         ]
       }
-    ]
+    ],
+    "generatorSourceSHA256": "fc3b2016bf6de12114028a2590664f4e896b8a167c96ec2a5493a20dcc228006"
   },
-  "generatorSourceSHA256": "20d7077bf5958be52b50e1b1025b5049ec8b5d3e64f20bb30f6b25ddd7e56af9",
+  "generatorSourceSHA256": "fc3b2016bf6de12114028a2590664f4e896b8a167c96ec2a5493a20dcc228006",
   "beforeSourceSHA256": "4c47c6012ef542c54da2ee000d75f425b09fa368f8fe8ca23d5b5377c25976ad"
 }

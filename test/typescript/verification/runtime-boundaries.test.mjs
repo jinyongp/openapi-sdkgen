@@ -34,3 +34,30 @@ test("boundaries reject value/type/re-export/import type/dynamic edges and cycle
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("generated composition factories cannot capture provider or client dependencies", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "sdkgen-compositions-"));
+  try {
+    fs.mkdirSync(path.join(root, "internal/execution-compositions"), { recursive: true });
+    fs.mkdirSync(path.join(root, "internal/client"), { recursive: true });
+    fs.writeFileSync(path.join(root, "internal/client/factory.ts"), "export interface Client {}\n");
+    fs.writeFileSync(
+      path.join(root, "internal/execution-compositions/services.ts"),
+      'import type { Client } from "../client/factory.js";',
+    );
+    assert.match(
+      runtimeBoundaryViolations(root, { generated: true })[0],
+      /forbidden composition -> client/,
+    );
+    fs.writeFileSync(
+      path.join(root, "internal/execution-compositions/services.ts"),
+      "const services = createServices();",
+    );
+    assert.match(
+      runtimeBoundaryViolations(root, { generated: true })[0],
+      /composition initializes module state/,
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

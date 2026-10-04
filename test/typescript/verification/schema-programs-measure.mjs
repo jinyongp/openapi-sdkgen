@@ -162,6 +162,9 @@ for (const [variant, generator] of generators) {
       generatorSHA256: hash(fs.readFileSync(generator)),
       source: summarize(sources),
       runtime: summarize(sources.filter((file) => file.includes("/internal/runtime/"))),
+      compositions: summarize(
+        sources.filter((file) => file.includes("/internal/execution-compositions/")),
+      ),
       programs: summarize(programs),
       programSourceSHA256: hash(
         programs

@@ -249,6 +249,25 @@ Canonical port types own each injected policy; narrow modules do not import the
 general facade. Differential tests compare emitted narrow and general graphs,
 including required general policies in mixed root/named/provider scopes.
 
+Repeated operation providers with the same prepared runtime features and stream
+capability share assembly functions under `internal/execution-compositions/`.
+Preparation assigns their paths from these semantic facts and registers only
+groups used by multiple providers. A single provider retains inline assembly.
+These generated client-layer modules import only selected canonical runtime
+owners and initialize no module state. Each provider calls the factory at its
+own initialization, preserving independent service instances; request contexts,
+credentials, codecs and projected schema closures remain outside the factory.
+Default and named client factories retain their existing composition path.
+Emission consumes the frozen registry, including the identity-neutral artifacts
+used to fingerprint selective loading. The execution ABI remains version 1;
+the generation fingerprint changes with the emitted execution code.
+
+Boundary checks also cover these generated assembly modules, rejecting captured
+client/schema artifacts, reverse runtime dependencies and module initialization.
+Regression tests exercise selection-stable paths, strict declarations, independent
+instances, asynchronous credentials, custom codecs, mutable input revalidation
+and concurrent cancellation.
+
 The optional `schema-programs:perf` measurement checks shared programs on a
 1,000-operation fixture, strict source, fresh declarations and actual browser
 bundle calls. Runtime size measurements and their limits are published in the

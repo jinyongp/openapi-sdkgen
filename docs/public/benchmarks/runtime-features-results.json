@@ -1,8 +1,8 @@
 {
-  "measuredAt": "2026-10-04T12:21:50.312Z",
+  "measuredAt": "2026-10-04T13:27:01.304Z",
   "commit": "6c349f9d098e175b242f49d3d28cefe6f2e3f731",
   "dirty": true,
-  "generatorSourceSHA256": "fc3b2016bf6de12114028a2590664f4e896b8a167c96ec2a5493a20dcc228006",
+  "generatorSourceSHA256": "20d7077bf5958be52b50e1b1025b5049ec8b5d3e64f20bb30f6b25ddd7e56af9",
   "input": "test/typescript/fixtures/runtime-features/client/small-json.json",
   "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
   "environment": {
@@ -1435,16 +1435,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 138,
-              "bytes": 456843,
-              "lines": 11519
+              "files": 141,
+              "bytes": 457599,
+              "lines": 11555
             },
             "runtime": {
               "files": 68,
               "bytes": 299712,
               "lines": 7885
             },
-            "sourceSHA256": "2a8da0edb05eeee60fd718b894c0676877f400b2343251613f2bbe2361fba6f3"
+            "sourceSHA256": "72c48d5f3aa348d2859e825b7feef2a024fe30aab09e05a3138885fdb6d6a646"
           },
           "native": {
             "files": 68,
@@ -1460,16 +1460,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 239,
-              "bytes": 722595,
-              "lines": 18810
+              "files": 242,
+              "bytes": 726900,
+              "lines": 18909
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "e856c02189dd894af836b5197dabcd416b851d8f04a6e08e11ef1986d5a5dca1"
+            "sourceSHA256": "b79a8fd6ce3110a93a4f59abc60f81594df919bee7728154f5d743db2e06b406"
           },
           "native": {
             "files": 148,
@@ -1492,16 +1492,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 259,
-              "bytes": 863478,
-              "lines": 20104
+              "files": 265,
+              "bytes": 863308,
+              "lines": 20170
             },
             "runtime": {
               "files": 81,
               "bytes": 357438,
               "lines": 9452
             },
-            "sourceSHA256": "fba452abe1018b354246338e21b3cde196b073508cfe64d7079d95f5e99d9615"
+            "sourceSHA256": "72ff8e31cba5ad7d82d78428334ddcbb8ad1cdacec1e935e58fe02163d29fcef"
           },
           "native": {
             "files": 113,
@@ -1517,16 +1517,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 336,
-              "bytes": 974719,
-              "lines": 24698
+              "files": 342,
+              "bytes": 986041,
+              "lines": 24920
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "37a9ec30d230c747963aa7d64635fa53bcc0f7b8e42fc9b60b9987f239dc4ded"
+            "sourceSHA256": "b5759b3024912e7103fbe9cabf1b983466dd63f85ab020498812531b441c4727"
           },
           "native": {
             "files": 173,
@@ -1549,16 +1549,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 293,
-              "bytes": 977395,
-              "lines": 22729
+              "files": 299,
+              "bytes": 973775,
+              "lines": 22745
             },
             "runtime": {
               "files": 84,
               "bytes": 386567,
               "lines": 10225
             },
-            "sourceSHA256": "c72855947e5fab6d56e8d2e2094674eda325644ade118dcb5cbe2c2e317e99ef"
+            "sourceSHA256": "318e78f59d0c287cdb5772c9ad80fc92dfd2fab3573f1bcc38a3a8da260db692"
           },
           "native": {
             "files": 127,
@@ -1574,16 +1574,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 364,
-              "bytes": 1043058,
-              "lines": 26361
+              "files": 370,
+              "bytes": 1054380,
+              "lines": 26583
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "5bbd34a797d8d1212cbfb8112cc7e9f69e0edb1cf6799564da7e51860a9f9055"
+            "sourceSHA256": "75571948eedf49e0ccb86665b41e92b43ed4ef63f8898e1e1e6b87c43ab0ed86"
           },
           "native": {
             "files": 181,
@@ -1663,16 +1663,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 128,
-              "bytes": 488015,
-              "lines": 11947
+              "files": 129,
+              "bytes": 487693,
+              "lines": 11957
             },
             "runtime": {
               "files": 73,
               "bytes": 347820,
               "lines": 9106
             },
-            "sourceSHA256": "46d9e8a7b8580f42c39528be7d631c92a451dd9fe7fb20fcc2e5c4cb69ee8fcd"
+            "sourceSHA256": "55f8bbdf6125be6e2440c724f9b457dd4cd9ebb5bbe338daff832b7648c7df2a"
           },
           "native": {
             "files": 68,
@@ -1688,16 +1688,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 222,
-              "bytes": 696131,
-              "lines": 17885
+              "files": 223,
+              "bytes": 698400,
+              "lines": 17925
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "f0f81489aeb1ad4c21211a75f6259e2f0e30b581b952c54e51939cee66a6c73c"
+            "sourceSHA256": "59710b50eb197d7d6b99f9040e25c09e8345efb07221aa6723f772bbcfe86f8a"
           },
           "native": {
             "files": 145,
@@ -1720,16 +1720,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 115,
-              "bytes": 333250,
-              "lines": 8198
+              "files": 116,
+              "bytes": 326146,
+              "lines": 8126
             },
             "runtime": {
               "files": 55,
               "bytes": 197684,
               "lines": 5129
             },
-            "sourceSHA256": "ca5b780729a9f8904b0cd7e7f0e30885853ec62660e588e28bd64eadfd93be62"
+            "sourceSHA256": "c356a12fdb51cedf703b79921dfa8487a61438fd6023f6ea8608381f09a671b5"
           },
           "native": {
             "files": 50,
@@ -1745,16 +1745,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 230,
-              "bytes": 697217,
-              "lines": 18223
+              "files": 231,
+              "bytes": 699486,
+              "lines": 18263
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "8da9b5822caf75ebdd9f10368d7f146e8394ce4aaa5420a4f6c03c241f0eeb86"
+            "sourceSHA256": "787dd890ed0247fd43669c25bef41deb419846f533e6f4ba4f2974e1a445dbf1"
           },
           "native": {
             "files": 143,
@@ -1777,16 +1777,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 176,
-              "bytes": 618673,
-              "lines": 15199
+              "files": 177,
+              "bytes": 618428,
+              "lines": 15211
             },
             "runtime": {
               "files": 78,
               "bytes": 369386,
               "lines": 9698
             },
-            "sourceSHA256": "d38fe7c83573fd3de40bdbff3231bb4bed99ddc5ceb065d6572b73d42c4c9055"
+            "sourceSHA256": "4fe187b1b0a163914ae1bdbc55a5710275853a298d4a107aeaaea3e37a5f724b"
           },
           "native": {
             "files": 88,
@@ -1802,16 +1802,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 263,
-              "bytes": 781531,
-              "lines": 20268
+              "files": 264,
+              "bytes": 783776,
+              "lines": 20306
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "b96f60b5c8da7cf6cd5a1a5ee0ebaff84ce35538f36ee8885dde5bb2248bf30c"
+            "sourceSHA256": "b3e0289676cdf0028669da6dca8a23213eff785f064e7b5e9356d782ca4aa21b"
           },
           "native": {
             "files": 157,
@@ -1891,16 +1891,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 232,
-              "bytes": 991186,
-              "lines": 22109
+              "files": 233,
+              "bytes": 990325,
+              "lines": 22115
             },
             "runtime": {
               "files": 124,
               "bytes": 460691,
               "lines": 12351
             },
-            "sourceSHA256": "8b6704f54b64319acc83c5f7d3a360623ecbe49d29ecfade46708bceb3d38009"
+            "sourceSHA256": "9f1dd3b093c11c6113386201a43c614f5bdf96a09da47c301957bdd391a8137e"
           },
           "native": {
             "files": 105,
@@ -1916,16 +1916,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 263,
-              "bytes": 1014169,
-              "lines": 23794
+              "files": 264,
+              "bytes": 1016852,
+              "lines": 23836
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "a2831da0e28b796f5bc0d6df9628b7fd9b68cb8a153e428dd00e84b62a98b540"
+            "sourceSHA256": "af4cd1c66dfe1d1a2f4c97300b4567459ba79e16360bb6d1d87fca16bdd87ed2"
           },
           "native": {
             "files": 162,
@@ -2005,16 +2005,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 230,
-              "bytes": 852315,
-              "lines": 21243
+              "files": 232,
+              "bytes": 851313,
+              "lines": 21248
             },
             "runtime": {
               "files": 136,
               "bytes": 486691,
               "lines": 13032
             },
-            "sourceSHA256": "dd47aaecdbbefdb08f919e88650dccb68533e98ae351de693a2f841f1f55c04d"
+            "sourceSHA256": "a05522e3728e2c7056adfe1ef29390a80b7a1fc407a25486ed1c6e932cb42fb0"
           },
           "native": {
             "files": 85,
@@ -2030,16 +2030,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 263,
-              "bytes": 918802,
-              "lines": 23302
+              "files": 265,
+              "bytes": 922506,
+              "lines": 23375
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "5716bac95e93d4baa084df44065245555ec4236fa8109b6f9b72fe349d7db223"
+            "sourceSHA256": "e75ee7b6c22055051ed1b1cc508ca37d752e9ccc72627c596a58987837483506"
           },
           "native": {
             "files": 151,
@@ -2119,16 +2119,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 164,
-              "bytes": 589387,
-              "lines": 15224
+              "files": 165,
+              "bytes": 588978,
+              "lines": 15232
             },
             "runtime": {
               "files": 109,
               "bytes": 352288,
               "lines": 9506
             },
-            "sourceSHA256": "ad6deb299e822f0c0efd50913b163ceb22a2e4cf97ff766ebc88027697bfbd56"
+            "sourceSHA256": "82965c30bb792862c88ddca5a133895f0ecb3f4fef7dc969dd5d7c4a8ffd268a"
           },
           "native": {
             "files": 47,
@@ -2144,16 +2144,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 224,
-              "bytes": 798500,
-              "lines": 20853
+              "files": 225,
+              "bytes": 800769,
+              "lines": 20893
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "aa8c06c2914797b8cc8fcb46af72987c5ff29629271c30c7ed8c1721f7b32c51"
+            "sourceSHA256": "64f8c54e6aff17850569c814fd476f93c7d61c973bf4cb011e68bc11782d808b"
           },
           "native": {
             "files": 139,
@@ -2347,16 +2347,16 @@
         "selected": {
           "source": {
             "total": {
-              "files": 143,
-              "bytes": 525541,
-              "lines": 12371
+              "files": 144,
+              "bytes": 525012,
+              "lines": 12379
             },
             "runtime": {
               "files": 79,
               "bytes": 347255,
               "lines": 9082
             },
-            "sourceSHA256": "81e9ad4c09c24cfe66f9d4d5549f4684fed21474800388a1ef61862cbdc74a37"
+            "sourceSHA256": "04d09194c740c727e8725556b8b13ec1483c74fe064b3551c2b25f3a5ca8edfb"
           },
           "native": {
             "files": 86,
@@ -2372,16 +2372,16 @@
         "full": {
           "source": {
             "total": {
-              "files": 226,
-              "bytes": 699073,
-              "lines": 18025
+              "files": 227,
+              "bytes": 701342,
+              "lines": 18065
             },
             "runtime": {
               "files": 171,
               "bytes": 575345,
               "lines": 15304
             },
-            "sourceSHA256": "cc7968c14e48dbf82527829bfb48c89669c4dd7b861ee9627b8e8a2525289333"
+            "sourceSHA256": "ed67b640fed91ad58b4f7a9e3b249552ada75d8ad0122c598d365eb422de1aca"
           },
           "native": {
             "files": 152,

@@ -55,7 +55,7 @@ behavior and dependencies without fixed byte or line-count thresholds.
 Measured on October 4, 2026 UTC, in the uncommitted development tree based on
 `6c349f9`. <a :href="withBase('/benchmarks/runtime-features-results.json')">Raw results</a> include the
 generator/input/source hashes and every output chunk's size and hash.
-The generator source hash starts with `fc3b2016bf6d`.
+The generator source hash starts with `20d7077bf595`.
 Conditions: Node.js 24.21.0, TypeScript 7.0.2, Vite 8.3.0 / Rolldown 1.2.6,
 browser ESM, ES2022, Oxc minification, code splitting, and `modulePreload: false`.
 Gzip level 6 is applied separately to each deployed chunk and then summed.
@@ -115,14 +115,14 @@ differ when the fixture options differ.
 record strict source compilation and actual mocked bundle calls for every row.
 These sample results do not establish a universal minimum SDK size.
 
-## Current 1,000-API HTTP contract comparison
+## Previous 1,000-API HTTP contract comparison
 
-Using the captured source before the HTTP change (`4c47c6012ef5`), the current generator shares six
+The HTTP policy phase (`4c47c6012ef5` → `fc3b2016bf6d`) shares six
 schema programs across the complete 1,000-API fixture. Selecting ten public APIs
 plus their private Link target produces four programs. The named client shares
 exactly the same program files and bytes as root selection.
 
-Numbers below show before → current. Each browser bundle performs `getItem0`;
+Numbers below show before → after that phase. Each browser bundle performs `getItem0`;
 the root entries still retain the generated API surface of their scope.
 
 | Case | TS files | TS bytes | Shared programs | Declaration bytes | Deployed gzip bytes |
@@ -155,7 +155,7 @@ hashes, source/declaration counts, and executed bundle results. Compiler version
 and bundle settings match the small measurements above. This does not resolve
 the earlier 10,000-API inference limit described below.
 
-<a :href="withBase('/benchmarks/schema-programs-results.json')">Current comparison raw results</a>.
+<a :href="withBase('/benchmarks/schema-programs-before-compositions-results.json')">HTTP-phase raw results</a>.
 The earlier schema-program comparison is preserved in
 <a :href="withBase('/benchmarks/schema-operation-before-http-results.json')">small-API results</a>
 and <a :href="withBase('/benchmarks/schema-programs-before-http-results.json')">1,000-API results</a>.
@@ -165,6 +165,45 @@ devtools run schema-programs:perf
 # To compare a captured source tree:
 devtools run schema-programs:perf .tmp/schema-programs-measurement /path/to/captured-source
 ```
+
+## Current repeated execution assembly comparison
+
+The next phase (`fc3b2016bf6d` → `20d7077bf595`) shares factory code for
+providers with identical prepared features and stream capability. Each provider
+still creates its own services. A single provider emits its assembly directly;
+default and named client factories retain their existing execution path.
+The five small default-root bundles above remain byte-for-byte the same.
+
+The same 1,000-API comparison now produces these before → current results:
+
+| Case | TS files | TS bytes | Declaration bytes | JS bytes | Deployed gzip bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| All 1,000 APIs | 6,109 → 6,110 | 16,144,263 → 14,783,053 | 9,557,464 → 9,557,968 | 520,173 → 520,173 | 61,397 → 61,397 |
+| 10 selected APIs | 145 → 146 | 431,883 → 420,507 | 228,215 → 228,719 | 30,239 → 30,239 | 8,632 → 8,632 |
+| Named client with those 10 APIs | 149 → 150 | 445,548 → 434,172 | 239,177 → 239,681 | 37,290 → 36,180 | 11,459 → 11,296 |
+
+Full generation saves **1,361,210 source bytes (8.43%)**. Each scope adds one
+2,284-byte assembly module and 504 declaration bytes. Six full-scope schema
+programs, four selected/named programs and all canonical runtime source remain
+identical. The full and selected-root delivery sizes are unchanged; named saves
+163 gzip bytes (1.42%). This reduces generated source duplication; it does not
+reduce the fixed runtime cost of a one-operation root bundle.
+
+The generated `internal/execution-compositions/` directory owns assembly
+functions. It imports only the required canonical runtime modules and initializes
+no module state. Client context, credentials, custom codecs and projected schema
+closures remain outside it. Regression tests cover independent instances,
+asynchronous credentials, mutable input revalidation and concurrent cancellation.
+Selecting one operation removes an unused shared factory from managed output;
+selecting matching operations again restores the same semantic path.
+
+<a :href="withBase('/benchmarks/schema-programs-results.json')">Current raw comparison</a>
+records the six executed bundles, strict source/declarations and generation,
+checking and declaration time/RSS under the conditions above. Timing is an
+observation, not a speed guarantee. The previous HTTP phase is preserved in the
+linked report above and
+<a :href="withBase('/benchmarks/schema-operation-before-compositions-results.json')">its small-API report</a>.
+These results still do not establish a universal minimum SDK size.
 
 ## Earlier 1,000-operation selection measurement
 

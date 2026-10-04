@@ -100,6 +100,15 @@ func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Ar
 		root = plan.root
 	}
 	modules := plan.modules
+	for _, composition := range plan.executionCompositions {
+		source, err := emitExecutionCompositionModule(modules, composition)
+		if err != nil {
+			return err
+		}
+		if err := write(Artifact{Path: composition.path, Data: generatedSource(source)}); err != nil {
+			return err
+		}
+	}
 	for _, bundle := range plan.executionSchemas {
 		source, err := emitExecutionSchemaModule(modules, bundle)
 		if err != nil {

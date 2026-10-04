@@ -279,7 +279,7 @@ func prepareRuntimeFeatures(plan *sourcePlan) (*runtimeFeaturePlan, error) {
 		if !exists {
 			composition = prepareRuntimeComposition(frozen, execution.hasStream)
 			if inline {
-				composition.wireTypes = append(composition.wireTypes, "WireSchemas")
+				composition.callerWireTypes = []string{"WireSchemas"}
 			}
 			compositions[compositionKey] = composition
 		}

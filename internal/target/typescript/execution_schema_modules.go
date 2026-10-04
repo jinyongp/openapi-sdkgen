@@ -71,9 +71,8 @@ func prepareExecutionSchemaModules(modules *semanticModulePlan, executions map[s
 		}
 		executions[module.routeKey] = execution
 	}
-	if err := modules.validate(); err != nil {
-		return nil, err
-	}
+	// Validate all added execution artifacts together after runtime composition
+	// preparation, rather than rescanning the complete module graph twice.
 	return result, nil
 }
 
