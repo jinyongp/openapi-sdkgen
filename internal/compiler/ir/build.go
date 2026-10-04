@@ -26,7 +26,7 @@ func Build(document *openapidoc.Document) (*Document, error) {
 		}
 	}
 	info, _ := document.Raw["info"].(map[string]any)
-	security, err := readSecurityRequirements(document.Raw["security"])
+	security, err := ReadSecurityRequirements(document.Raw, document.Raw["security"], versionLine == openapidoc.Version32)
 	if err != nil {
 		return nil, fmt.Errorf("root security: %w", err)
 	}
@@ -351,7 +351,7 @@ func buildOperation(document map[string]any, path, method, pointer string, pathI
 	if !securityDeclared {
 		securityValue = document["security"]
 	}
-	security, err := readSecurityRequirements(securityValue)
+	security, err := ReadSecurityRequirements(document, securityValue, strings.HasPrefix(stringValue(document, "openapi"), "3.2."))
 	if err != nil {
 		return Operation{}, err
 	}
@@ -735,19 +735,11 @@ func readSecuritySchemes(raw map[string]any) map[string]SecurityScheme {
 		if !ok {
 			continue
 		}
-		result[name] = SecurityScheme{
-			Name:              name,
-			Type:              stringValue(scheme, "type"),
-			Location:          stringValue(scheme, "in"),
-			ParameterName:     stringValue(scheme, "name"),
-			Scheme:            stringValue(scheme, "scheme"),
-			BearerFormat:      stringValue(scheme, "bearerFormat"),
-			Flows:             scheme["flows"],
-			OpenIDConnectURL:  stringValue(scheme, "openIdConnectUrl"),
-			OAuth2MetadataURL: stringValue(scheme, "oauth2MetadataUrl"),
-			Deprecated:        boolValue(scheme, "deprecated"),
-			Raw:               scheme,
+		resolved, err := ResolveSecurityScheme(raw, name, false)
+		if err != nil {
+			resolved = SecurityScheme{Name: name, Raw: scheme, SourceRaw: scheme, ResolutionError: err.Error()}
 		}
+		result[name] = resolved
 	}
 	return result
 }

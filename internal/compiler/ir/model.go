@@ -220,6 +220,10 @@ type SecurityRequirement struct {
 type SecurityRequirementScheme struct {
 	Name   string
 	Scopes []string
+	// Reference retains a URI key independently from the credential identity.
+	Reference string
+	// ResolutionError keeps unresolved schemes at the existing target boundary.
+	ResolutionError string
 }
 
 type SecurityScheme struct {
@@ -234,6 +238,8 @@ type SecurityScheme struct {
 	OAuth2MetadataURL string
 	Deprecated        bool
 	Raw               map[string]any
+	SourceRaw         map[string]any
+	ResolutionError   string
 }
 
 // StringExtension preserves declaration presence independently from its value
