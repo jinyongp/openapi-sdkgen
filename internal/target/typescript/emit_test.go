@@ -180,7 +180,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 			t.Fatalf("runtime JSDoc missing %q:\n%s", expected, runtimeModules)
 		}
 	}
-	if !strings.Contains(clientSource, `from "../runtime/http/request/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/client/callables.js"`) {
+	if !strings.Contains(clientSource, `from "../runtime/http/request/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/http/request/request-execution-types.js"`) {
 		t.Fatalf("client does not use its generated source runtime:\n%s", clientSource)
 	}
 	if strings.Contains(errorsSource, "../../runtime") || !strings.Contains(errorsSource, `from "./runtime/client/errors.js"`) {

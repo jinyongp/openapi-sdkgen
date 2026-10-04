@@ -1,5 +1,5 @@
 import { createRequestContext } from "../http/http-execution-support.js";
-import { bindPathOperation } from "./callables.js";
+import { bindPathOperation } from "./resource-binding.js";
 import { defineOwnDataProperty } from "../shared/runtime-support.js";
 import { OperationPreparationError } from "./operation-loader.js";
 import type { ClientOptions } from "../http/configuration.js";

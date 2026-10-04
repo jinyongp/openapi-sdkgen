@@ -14,7 +14,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
 	artifact := plan.fixed["client-registry"]
-	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/client/callables.ts")
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/request/request-execution-types.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,12 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	if len(streams) > 0 {
 		requestType = "RequestFunction"
 	}
-	fmt.Fprintf(&output, "import { assignCallableProperties, type %s } from %s\n", requestType, quoteTS(callables))
+	fmt.Fprintf(&output, "import type { %s } from %s\n", requestType, quoteTS(callables))
+	properties, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/client/callable-properties.ts")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(&output, "import { assignCallableProperties } from %s\n", quoteTS(properties))
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(codecs))
 	fmt.Fprintf(&output, "import { defineOwnDataProperty } from %s\n", quoteTS(objects))
 	if !hasPrivateRoutes {
@@ -244,7 +249,7 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	source := output.String()
 	used := generatedIdentifiers(source)
 	if used["assignCallableProperties"] == 1 {
-		source = strings.Replace(source, "assignCallableProperties, ", "", 1)
+		source = strings.Replace(source, "import { assignCallableProperties } from "+quoteTS(properties)+"\n", "", 1)
 	}
 	if used["defineOwnDataProperty"] == 1 {
 		source = strings.Replace(source, "import { defineOwnDataProperty } from "+quoteTS(objects)+"\n", "", 1)

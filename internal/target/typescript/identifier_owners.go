@@ -10,6 +10,7 @@ func operationLocalIdentifiers(module operationModulePlan, item ManifestOperatio
 		"TransportError", "BinaryBody", "OperationStream", "RawResponseFor", "RequestOptions", "StreamSource",
 		"OperationTypeIdentity", "LinkCalls", "OperationRawCall", "PaginateCall", "ResourceRawCapability",
 		"RouteTypeIdentity", "OperationPublicType", "OperationResourceRawCapability", "ResourceRawMethod", "ResourceMethod",
+		"bindInputOperation", "bindNoInputOperation", "bindOptionalInputOperation",
 		"RouteInput", "RouteOptions", "RouteOutput", "RouteRawResponse", "RouteResourceInput", "StreamCall",
 		"ContractSchemas", "Errors", "createPaginator", "PaginateInput", "mergeLinkInput", "resolveLinkInput",
 		"LinkInvocation", "RequiredLinkInvocation", "APIError", "RouteKey", "RequestInputs", "Input", "ResourceInput",

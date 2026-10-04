@@ -74,7 +74,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	if err != nil {
 		return nil, err
 	}
-	callablesSpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/callables.ts")
+	callablesSpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/callable-properties.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -116,15 +116,15 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	var output bytes.Buffer
 	fmt.Fprintf(&output, "import type { CallableRegistry } from %s\n", quoteTS(registrySpecifier))
 	fmt.Fprintf(&output, "import type { PaginateCall, ResourceCall } from %s\n", quoteTS(helperSpecifier))
-	if needsAssign || needsPath {
-		imports := make([]string, 0, 2)
-		if needsAssign {
-			imports = append(imports, "assignCallableProperties")
+	if needsAssign {
+		fmt.Fprintf(&output, "import { assignCallableProperties } from %s\n", quoteTS(callablesSpecifier))
+	}
+	if needsPath {
+		binding, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/resource-binding.ts")
+		if err != nil {
+			return nil, err
 		}
-		if needsPath {
-			imports = append(imports, "bindGeneratedPathOperation")
-		}
-		fmt.Fprintf(&output, "import { %s } from %s\n", strings.Join(imports, ", "), quoteTS(callablesSpecifier))
+		fmt.Fprintf(&output, "import { bindGeneratedPathOperation } from %s\n", quoteTS(binding))
 	}
 	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
 		path := paths[identity]

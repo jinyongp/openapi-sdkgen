@@ -49,7 +49,8 @@ func emitOperationArtifactsTo(document *ir.Document, manifest Manifest, plan *se
 }
 
 func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module operationModulePlan, operation ir.Operation, item ManifestOperation, resourceReachable bool, links []generatedLink, stream generatedStream, hasStream bool) ([]byte, error) {
-	runtimeCallables, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/callables.ts")
+	bindingName, bindingTemplate := callableInputBinding(item)
+	runtimeBinding, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/"+bindingTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -197,14 +198,18 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 	output.WriteString(programImports)
 	output.Grow(len(bodySource) + 4096)
-	callableImports := "bindGeneratedOperation, type BufferedRequestFunction"
-	if hasStream {
-		callableImports = "bindGeneratedOperation, bindStreamOperation, type BufferedRequestFunction, type RequestFunction"
-	}
+	bindingImports := bindingName + ", type BufferedRequestFunction"
 	if wire.usesProperties {
-		callableImports += ", createWireProperties as __sdkgen_Properties"
+		bindingImports += ", createWireProperties as __sdkgen_Properties"
 	}
-	fmt.Fprintf(&output, "import { %s } from %s\n", callableImports, quoteTS(runtimeCallables))
+	fmt.Fprintf(&output, "import { %s } from %s\n", bindingImports, quoteTS(runtimeBinding))
+	if hasStream {
+		streamBinding, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/stream-binding.ts")
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "import { bindStreamOperation, type RequestFunction } from %s\n", quoteTS(streamBinding))
+	}
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
 	fmt.Fprintf(&output, "import type { APIError, TransportError } from %s\n", quoteTS(runtimeErrors))
 	fmt.Fprintf(&output, "import type { HTTPErrorFor, HTTPErrorIdentity } from %s\n", quoteTS(runtimeHTTPError))
@@ -296,7 +301,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		outputSchemas = "_outputSchemas"
 	}
 	fmt.Fprintf(&output, "export function bindBase(request: BufferedRequestFunction, %s?: WireSchemas, %s?: WireSchemas): BaseCall {\n", inputSchemas, outputSchemas)
-	fmt.Fprintf(&output, "  return bindGeneratedOperation(request, %s, %t, %t) as BaseCall\n", definition, hasInput, inputOptional)
+	fmt.Fprintf(&output, "  return %s(request, %s) as BaseCall\n", bindingName, definition)
 	output.WriteString("}\n")
 
 	if operation.PaginationPlan != nil {

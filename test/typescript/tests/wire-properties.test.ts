@@ -3,7 +3,7 @@ import { wireProperties } from "../../../internal/target/typescript/runtime/sche
 import { createWireProperties } from "../../../internal/target/typescript/runtime/client/callables.js";
 import type { WireSchema } from "../../../internal/target/typescript/runtime/schema/wire-types.js";
 import { wireProperties as emitted } from "../fixtures/generated/lifecycle/internal/runtime/schema/wire-properties.js";
-import { createWireProperties as emittedFacade } from "../fixtures/generated/lifecycle/internal/runtime/client/callables.js";
+import { createWireProperties as emittedFacade } from "../fixtures/generated/lifecycle/internal/runtime/client/operation-bind-input.js";
 
 function checkTypes() {
   // @ts-expect-error Keys remain strings rather than arbitrary JSON values.

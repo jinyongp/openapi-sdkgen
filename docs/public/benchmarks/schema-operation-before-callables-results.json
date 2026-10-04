@@ -1,5 +1,174 @@
 {
   "before": {
+    "measuredAt": "2026-10-04T10:21:07.237Z",
+    "node": "v24.21.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "input": "test/typescript/fixtures/runtime-features/client/small-json.json",
+    "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+    "generatorBinarySHA256": "7ec504e5cf247449bce19d9044b13930ece0f84d5ee2d9f539eb307df1d38420",
+    "settings": {
+      "target": "ES2022",
+      "platform": "browser",
+      "format": "ESM",
+      "minify": "oxc",
+      "gzipLevel": 6,
+      "client": "default-root",
+      "selection": "CLI --operation",
+      "appCalls": "all selected operations"
+    },
+    "results": [
+      {
+        "name": "one-get",
+        "operations": [
+          "getItem"
+        ],
+        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+        "source": {
+          "total": {
+            "files": 80,
+            "bytes": 282237,
+            "lines": 7043
+          },
+          "runtime": {
+            "files": 48,
+            "bytes": 215259,
+            "lines": 5655
+          }
+        },
+        "bundle": {
+          "chunks": 1,
+          "bytes": 29569,
+          "gzipBytes": 9283
+        },
+        "strictCompilationPassed": true,
+        "realBundleCallsPassed": [
+          "GET /items/one"
+        ]
+      },
+      {
+        "name": "one-get-query",
+        "operations": [
+          "getItem"
+        ],
+        "inputSHA256": "e323586455ac704c09c38a9307a1518f73f04b972578c5efaa6882e89b1a6633",
+        "source": {
+          "total": {
+            "files": 82,
+            "bytes": 293929,
+            "lines": 7348
+          },
+          "runtime": {
+            "files": 49,
+            "bytes": 224334,
+            "lines": 5912
+          }
+        },
+        "bundle": {
+          "chunks": 1,
+          "bytes": 32890,
+          "gzipBytes": 10174
+        },
+        "strictCompilationPassed": true,
+        "realBundleCallsPassed": [
+          "GET /items/one"
+        ]
+      },
+      {
+        "name": "two-get-list",
+        "operations": [
+          "getItem",
+          "listItems"
+        ],
+        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+        "source": {
+          "total": {
+            "files": 86,
+            "bytes": 299062,
+            "lines": 7414
+          },
+          "runtime": {
+            "files": 48,
+            "bytes": 215259,
+            "lines": 5655
+          }
+        },
+        "bundle": {
+          "chunks": 1,
+          "bytes": 31015,
+          "gzipBytes": 9494
+        },
+        "strictCompilationPassed": true,
+        "realBundleCallsPassed": [
+          "GET /items/one",
+          "GET /items"
+        ]
+      },
+      {
+        "name": "two-get-create",
+        "operations": [
+          "getItem",
+          "createItem"
+        ],
+        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+        "source": {
+          "total": {
+            "files": 86,
+            "bytes": 298451,
+            "lines": 7406
+          },
+          "runtime": {
+            "files": 49,
+            "bytes": 215898,
+            "lines": 5672
+          }
+        },
+        "bundle": {
+          "chunks": 1,
+          "bytes": 30575,
+          "gzipBytes": 9430
+        },
+        "strictCompilationPassed": true,
+        "realBundleCallsPassed": [
+          "GET /items/one",
+          "POST /items"
+        ]
+      },
+      {
+        "name": "three",
+        "operations": [
+          "getItem",
+          "listItems",
+          "createItem"
+        ],
+        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
+        "source": {
+          "total": {
+            "files": 92,
+            "bytes": 315069,
+            "lines": 7772
+          },
+          "runtime": {
+            "files": 49,
+            "bytes": 215898,
+            "lines": 5672
+          }
+        },
+        "bundle": {
+          "chunks": 1,
+          "bytes": 32013,
+          "gzipBytes": 9633
+        },
+        "strictCompilationPassed": true,
+        "realBundleCallsPassed": [
+          "GET /items/one",
+          "GET /items",
+          "POST /items"
+        ]
+      }
+    ]
+  },
+  "current": {
     "measuredAt": "2026-10-04T13:25:43.252Z",
     "node": "v24.21.0",
     "typescript": "7.0.2",
@@ -168,175 +337,6 @@
       }
     ]
   },
-  "current": {
-    "measuredAt": "2026-10-04T15:01:18.170Z",
-    "node": "v24.21.0",
-    "typescript": "7.0.2",
-    "vite": "8.3.0",
-    "input": "test/typescript/fixtures/runtime-features/client/small-json.json",
-    "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-    "generatorBinarySHA256": "2c2cf1da4a2b12dc094119728e13b4b76b867f6ea2e706f7500d75e3227e98f1",
-    "settings": {
-      "target": "ES2022",
-      "platform": "browser",
-      "format": "ESM",
-      "minify": "oxc",
-      "gzipLevel": 6,
-      "client": "default-root",
-      "selection": "CLI --operation",
-      "appCalls": "all selected operations"
-    },
-    "results": [
-      {
-        "name": "one-get",
-        "operations": [
-          "getItem"
-        ],
-        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-        "source": {
-          "total": {
-            "files": 101,
-            "bytes": 286423,
-            "lines": 7115
-          },
-          "runtime": {
-            "files": 69,
-            "bytes": 217820,
-            "lines": 5714
-          }
-        },
-        "bundle": {
-          "chunks": 1,
-          "bytes": 25039,
-          "gzipBytes": 8127
-        },
-        "strictCompilationPassed": true,
-        "realBundleCallsPassed": [
-          "GET /items/one"
-        ]
-      },
-      {
-        "name": "one-get-query",
-        "operations": [
-          "getItem"
-        ],
-        "inputSHA256": "e323586455ac704c09c38a9307a1518f73f04b972578c5efaa6882e89b1a6633",
-        "source": {
-          "total": {
-            "files": 103,
-            "bytes": 298336,
-            "lines": 7421
-          },
-          "runtime": {
-            "files": 70,
-            "bytes": 227030,
-            "lines": 5972
-          }
-        },
-        "bundle": {
-          "chunks": 1,
-          "bytes": 28360,
-          "gzipBytes": 9041
-        },
-        "strictCompilationPassed": true,
-        "realBundleCallsPassed": [
-          "GET /items/one"
-        ]
-      },
-      {
-        "name": "two-get-list",
-        "operations": [
-          "getItem",
-          "listItems"
-        ],
-        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-        "source": {
-          "total": {
-            "files": 108,
-            "bytes": 305505,
-            "lines": 7528
-          },
-          "runtime": {
-            "files": 70,
-            "bytes": 219334,
-            "lines": 5750
-          }
-        },
-        "bundle": {
-          "chunks": 1,
-          "bytes": 26568,
-          "gzipBytes": 8354
-        },
-        "strictCompilationPassed": true,
-        "realBundleCallsPassed": [
-          "GET /items/one",
-          "GET /items"
-        ]
-      },
-      {
-        "name": "two-get-create",
-        "operations": [
-          "getItem",
-          "createItem"
-        ],
-        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-        "source": {
-          "total": {
-            "files": 107,
-            "bytes": 303378,
-            "lines": 7484
-          },
-          "runtime": {
-            "files": 70,
-            "bytes": 218459,
-            "lines": 5731
-          }
-        },
-        "bundle": {
-          "chunks": 1,
-          "bytes": 26036,
-          "gzipBytes": 8263
-        },
-        "strictCompilationPassed": true,
-        "realBundleCallsPassed": [
-          "GET /items/one",
-          "POST /items"
-        ]
-      },
-      {
-        "name": "three",
-        "operations": [
-          "getItem",
-          "listItems",
-          "createItem"
-        ],
-        "inputSHA256": "bf1f9d1ce38ae5da10a211b8e5c43aa16a7e3efcd1b1c854f7edf60458aafb1a",
-        "source": {
-          "total": {
-            "files": 114,
-            "bytes": 322253,
-            "lines": 7892
-          },
-          "runtime": {
-            "files": 71,
-            "bytes": 219973,
-            "lines": 5767
-          }
-        },
-        "bundle": {
-          "chunks": 1,
-          "bytes": 27560,
-          "gzipBytes": 8489
-        },
-        "strictCompilationPassed": true,
-        "realBundleCallsPassed": [
-          "GET /items/one",
-          "GET /items",
-          "POST /items"
-        ]
-      }
-    ]
-  },
-  "generatorSourceSHA256": "b0aac7b4e740365fab8fdab40a7bfe693e2f9ff5c98ed31c7b2adfda0cf03e3b",
-  "beforeSourceSHA256": "20d7077bf5958be52b50e1b1025b5049ec8b5d3e64f20bb30f6b25ddd7e56af9"
+  "generatorSourceSHA256": "20d7077bf5958be52b50e1b1025b5049ec8b5d3e64f20bb30f6b25ddd7e56af9",
+  "beforeSourceSHA256": "4c47c6012ef542c54da2ee000d75f425b09fa368f8fe8ca23d5b5377c25976ad"
 }

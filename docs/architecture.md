@@ -222,6 +222,18 @@ authored runtime and actual feature-generated runtime/program/server artifacts.
 The established generic operation loader's `import(url)` and public arbitrary
 schema `server/runtime.ts` facade have explicit, tested roles.
 
+Buffered callable imports also follow prepared input facts. The compiler chooses
+one canonical binder for required input, no input, or optional input; emission
+and runtime closure use the same decision. `client/callable-types.ts` owns the
+callable contracts, `operation-binding.ts` owns method identity registration,
+and separate modules own resource binding, stream binding, optional argument
+resolution and namespace decoration. The generic `client/callables.ts` facade
+composes these same owners for compatibility helpers. Generated buffered
+operations reference their selected binder directly. Execution providers derive
+their internal request type from the selected `bindBase` or `bindStream` parameter,
+preserving its buffered or streaming contract without a repeated type import.
+Public callable aliases, signature help and HTTP error provenance remain intact.
+
 Ordinary JSON entries omit the generic `wire-core` interpreter, branch selection
 and evaluation collection when their selected contracts do not require them.
 Shared call-local validation caches and finite-number checks remain necessary.

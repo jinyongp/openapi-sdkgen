@@ -98,7 +98,7 @@ func TestOperationModuleTypechecksRecursiveBodyInput(t *testing.T) {
 		"export type Output = __sdkgen_Output",
 		"export type BaseCall = __sdkgen_Call",
 		"export type ExactCall =",
-		"bindGeneratedOperation(request,",
+		"bindInputOperation(request,",
 	} {
 		if !strings.Contains(operationSource, expected) {
 			t.Fatalf("recursive operation source missing %q:\n%s", expected, operationSource)

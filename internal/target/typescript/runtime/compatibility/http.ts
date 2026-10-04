@@ -1,4 +1,4 @@
-import type { RequestFunction } from "../client/callables.js";
+import type { RequestFunction } from "../http/request/request-execution-types.js";
 import type { ClientOptions } from "../http/configuration.js";
 import { createRequestContext } from "./http-core.js";
 import { createRequestCore } from "./http-core.js";

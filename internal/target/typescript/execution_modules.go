@@ -27,13 +27,6 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	if err := importFrom("type { RequestContext }", "internal/runtime/http/http-types.ts"); err != nil {
 		return nil, err
 	}
-	requestType := "BufferedRequestFunction"
-	if execution.hasStream {
-		requestType = "RequestFunction"
-	}
-	if err := importFrom("type { "+requestType+" }", "internal/runtime/client/callables.ts"); err != nil {
-		return nil, err
-	}
 	binders := []string{"bindBase", "type BaseCall"}
 	if err := importFrom("type { OperationExecutionProvider }", "internal/runtime/client/operation-loader.ts"); err != nil {
 		return nil, err
@@ -122,7 +115,11 @@ func emitOperationExecutionProvider(plan *semanticModulePlan, module operationMo
 	}
 	fmt.Fprintf(&output, "  profile: %s,\n", quoteTS(string(execution.profile)))
 	output.WriteString("  bind(context: RequestContext): ReturnType<ExecutionProvider[\"bind\"]> {\n")
-	fmt.Fprintf(&output, "    const request: %s = createRequestCore(context, services)\n", requestType)
+	requestBinding := "bindBase"
+	if execution.hasStream {
+		requestBinding = "bindStream"
+	}
+	fmt.Fprintf(&output, "    const request: Parameters<typeof %s>[0] = createRequestCore(context, services)\n", requestBinding)
 	fmt.Fprintf(&output, "    const base: BaseCall = bindBase(request, %s, %s)\n", inputArg, outputArg)
 	var capabilities []string
 	if execution.hasStream {

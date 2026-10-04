@@ -20,7 +20,18 @@ func prepareRuntimeArtifactPlan(plan *sourcePlan) error {
 	}
 	clientFeatures := clientRuntimeFeatures(root.runtimeFeatures, root.manifest)
 	root.modules.runtimeComposition = prepareRuntimeComposition(clientFeatures, len(root.streams) > 0)
-	roots := []string{"objects.ts", "configuration.ts", "wire-types.ts", "errors.ts", "http-errors.ts", "constants.ts", "links-types.ts", "callables.ts", "pagination-types.ts", "request.ts", "security.ts", "transport.ts", "selected-client.ts", "named-client.ts", "selection.ts", "selection-types.ts", "contract-types.ts", "wire-properties.ts", "operation.ts"}
+	roots := []string{"objects.ts", "configuration.ts", "wire-types.ts", "errors.ts", "http-errors.ts", "constants.ts", "links-types.ts", "callable-types.ts", "callable-properties.ts", "pagination-types.ts", "request.ts", "security.ts", "transport.ts", "selected-client.ts", "named-client.ts", "selection.ts", "selection-types.ts", "contract-types.ts", "wire-properties.ts", "operation.ts"}
+	bindings := make(map[string]bool, 3)
+	for _, item := range plan.manifest.Operations {
+		_, template := callableInputBinding(item)
+		if !bindings[template] {
+			roots = append(roots, template)
+			bindings[template] = true
+		}
+	}
+	if len(plan.streams) > 0 {
+		roots = append(roots, "stream-binding.ts")
+	}
 	roots = append(roots, "media-codec-types.ts", "stream-protocol-types.ts")
 	for _, module := range plan.schemaPrograms.modules {
 		roots = append(roots, module.dependencies...)

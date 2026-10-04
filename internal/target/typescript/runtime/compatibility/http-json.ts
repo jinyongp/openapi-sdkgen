@@ -1,4 +1,4 @@
-import type { BufferedRequestFunction } from "../client/callables.js";
+import type { BufferedRequestFunction } from "../http/request/request-execution-types.js";
 import type { ClientOptions } from "../http/configuration.js";
 import type { RequestExecutionServices } from "../http/http-types.js";
 import { createRequestContext } from "./http-core.js";

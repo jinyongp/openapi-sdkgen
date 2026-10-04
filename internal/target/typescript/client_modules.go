@@ -143,7 +143,7 @@ func emitClientFactory(document *ir.Document, plan *semanticModulePlan, links []
 	if len(streams) > 0 {
 		requestType = "RequestFunction"
 	}
-	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/client/callables.ts")
+	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/request/request-execution-types.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ export type { StreamAdapter, StreamCodec, StreamContext, StreamProtocol, StreamR
 export type { ClientOptions, SecurityCredentialContext, SecurityCredentialProvider } from "./runtime/http/configuration.js"
 export type { TransportError } from "./runtime/client/errors.js"
 export type { LinkDefinition, LinkInputOverride, LinkInvocation, LinkParameterDefinition, RequiredLinkInvocation } from "./runtime/client/links-types.js"
-export type { OperationCall } from "./runtime/client/callables.js"
+export type { OperationCall } from "./runtime/client/callable-types.js"
 export type { PaginateInput, PaginationPlan, PaginationProfile } from "./runtime/client/pagination-types.js"
 export type { OperationStream, RawResponse, RawResponseFor, RequestMetadata, RequestOptions, ServerSentEvent, StreamResponseMetadata, StreamSource } from "./runtime/http/request.js"
 export type { APIKeyCredential, HTTPBasicCredential, HTTPBearerCredential, HTTPCredential, MutualTLSCredential, OAuthCredential, SecurityCredential, SecurityCredentials, SecurityRequirementDefinition, SecuritySchemeDefinition } from "./runtime/security/security.js"
