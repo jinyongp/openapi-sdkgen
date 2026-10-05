@@ -36,6 +36,7 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
     if (relative.startsWith("internal/execution-compositions/")) return "composition";
     if (
       relative.startsWith("internal/schema-programs/") ||
+      relative.startsWith("internal/schema-descriptors/") ||
       relative === "internal/types.ts" ||
       relative.startsWith("internal/schemas/") ||
       relative.startsWith("internal/projections/")
@@ -120,6 +121,7 @@ export function runtimeBoundaryViolations(root, { generated = false } = {}) {
     for (const directory of [
       "internal/runtime",
       "internal/schema-programs",
+      "internal/schema-descriptors",
       "internal/execution-compositions",
       "server",
     ]) {

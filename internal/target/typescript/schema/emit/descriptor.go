@@ -15,6 +15,7 @@ type DescriptorOptions struct {
 	Literal    func(any) (string, error)
 	Properties func([]PropertyExpression) (string, error)
 	Program    func(*plan.Node) (string, error)
+	Reference  func(*plan.Node) (string, error)
 }
 
 func Descriptor(node *plan.Node, options DescriptorOptions) (string, error) {
@@ -43,11 +44,11 @@ func descriptorValue(value plan.Value, options DescriptorOptions) (string, error
 	case plan.Literal:
 		return options.Literal(typed.Data)
 	case plan.Child:
-		return Descriptor(typed.Node, options)
+		return descriptorChild(typed.Node, options)
 	case plan.Children:
 		var items []string
 		for _, node := range typed.Nodes {
-			item, err := Descriptor(node, options)
+			item, err := descriptorChild(node, options)
 			if err != nil {
 				return "", err
 			}
@@ -57,7 +58,7 @@ func descriptorValue(value plan.Value, options DescriptorOptions) (string, error
 	case plan.Properties:
 		var entries []PropertyExpression
 		for _, property := range typed.Entries {
-			child, err := Descriptor(property.Schema, options)
+			child, err := descriptorChild(property.Schema, options)
 			if err != nil {
 				return "", err
 			}
@@ -71,7 +72,7 @@ func descriptorValue(value plan.Value, options DescriptorOptions) (string, error
 		if err != nil {
 			return "", err
 		}
-		fallback, err := Descriptor(typed.Fallback, options)
+		fallback, err := descriptorChild(typed.Fallback, options)
 		if err != nil {
 			return "", err
 		}
@@ -90,7 +91,7 @@ func descriptorValue(value plan.Value, options DescriptorOptions) (string, error
 			result += ", mapping: " + mapping
 		}
 		if typed.Default != nil {
-			child, err := Descriptor(typed.Default, options)
+			child, err := descriptorChild(typed.Default, options)
 			if err != nil {
 				return "", err
 			}
@@ -108,11 +109,21 @@ func descriptorMap(entries []plan.Property, options DescriptorOptions) (string, 
 		if err != nil {
 			return "", err
 		}
-		value, err := Descriptor(entry.Schema, options)
+		value, err := descriptorChild(entry.Schema, options)
 		if err != nil {
 			return "", err
 		}
 		items = append(items, "["+key+", "+value+"]")
 	}
 	return "/* @__PURE__ */ Object.fromEntries([" + strings.Join(items, ", ") + "])", nil
+}
+
+func descriptorChild(node *plan.Node, options DescriptorOptions) (string, error) {
+	if options.Reference != nil {
+		value, err := options.Reference(node)
+		if err != nil || value != "" {
+			return value, err
+		}
+	}
+	return Descriptor(node, options)
 }

@@ -71,7 +71,7 @@ func TestSourceArtifactsEmitInlineOneOfErrorContracts(t *testing.T) {
 			t.Errorf("operation error type missing %q:\n%s", expected, operationSource)
 		}
 	}
-	if !strings.Contains(schemaSource, "oneOf:") {
+	if !strings.Contains(schemaSource+schemaWireSource(artifacts), "oneOf:") {
 		t.Errorf("runtime union schema missing:\n%s", schemaSource)
 	}
 }

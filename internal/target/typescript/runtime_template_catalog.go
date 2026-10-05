@@ -111,6 +111,7 @@ var runtimeTemplateDependencies = map[string][]string{
 	"program-codec.ts":                     {"program-binding.ts", "program-execution.ts", "wire-control-flow.ts", "wire-types.ts"},
 	"program-derived.ts":                   {"runtime-support.ts", "wire-object-mapping.ts", "wire-state.ts", "wire-types.ts"},
 	"program-execution.ts":                 {"json-values.ts", "wire-state.ts", "wire-types.ts"},
+	"program-properties.ts":                {"runtime-support.ts", "wire-types.ts"},
 	"request-execution-types.ts":           {"operation.ts", "request.ts"},
 	"request.ts":                           {"runtime-support.ts", "stream-protocol-types.ts", "stream-types.ts"},
 	"runtime-support.ts":                   {},

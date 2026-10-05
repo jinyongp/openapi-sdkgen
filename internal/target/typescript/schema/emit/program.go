@@ -7,14 +7,16 @@ import (
 )
 
 type ProgramOptions struct {
-	Nodes       []*plan.Node
-	Views       bool
-	Annotations bool
-	Literal     func(any) (string, error)
-	TypesPath   string
-	StatePath   string
-	MappingPath string
-	SupportPath string
+	Nodes          []*plan.Node
+	Views          bool
+	Annotations    bool
+	Literal        func(any) (string, error)
+	TypesPath      string
+	StatePath      string
+	MappingPath    string
+	SupportPath    string
+	PropertiesPath string
+	DerivedPath    string
 }
 
 // ProgramPolicy removes execution policies that cannot affect this contract's
@@ -143,13 +145,6 @@ func Programs(root *plan.Node, options ProgramOptions) ([]byte, error) {
 	writer := &programWriter{options: options}
 	nodes := programNodes(root, options)
 	flagNodes := append([]*plan.Node(nil), nodes...)
-	if options.Views {
-		for _, node := range nodes {
-			for _, view := range programViews(node) {
-				flagNodes = append(flagNodes, view)
-			}
-		}
-	}
 	needsMerge, needsMapping, needsRecord, needsEvaluation := false, false, false, false
 	for _, node := range flagNodes {
 		needsMerge = needsMerge || !referenceOnly(node) && has(node, "reference", "dynamicReference", "allOf", "oneOf", "anyOf", "if", "patternProperties")
@@ -177,9 +172,39 @@ func Programs(root *plan.Node, options ProgramOptions) ([]byte, error) {
 		writer.line("import { mergeWireRepresentations } from %s", writer.literal(options.MappingPath))
 	}
 	if hasObjectMapping(flagNodes) {
-		writer.line("import { isRecord, defineOwnDataProperty } from %s", writer.literal(options.SupportPath))
+		if needsOwnProperties(flagNodes) || options.PropertiesPath == "" {
+			writer.line("import { isRecord, defineOwnDataProperty } from %s", writer.literal(options.SupportPath))
+		} else {
+			writer.line("import { isRecord } from %s", writer.literal(options.SupportPath))
+		}
 	} else if needsRecord {
 		writer.line("import { isRecord } from %s", writer.literal(options.SupportPath))
+	}
+	if options.PropertiesPath != "" {
+		var imports []string
+		if objectHas(flagNodes, "properties") {
+			imports = append(imports, "validateProgramProperties")
+			for _, node := range flagNodes {
+				if typeAllows(node, "object") && has(node, "properties") && !has(node, "patternProperties") {
+					imports = append(imports, "transformProgramProperties")
+					break
+				}
+			}
+		}
+		if objectHas(flagNodes, "required") {
+			imports = append(imports, "validateProgramRequired")
+		}
+		if len(imports) > 0 {
+			writer.line("import { %s } from %s", strings.Join(imports, ", "), writer.literal(options.PropertiesPath))
+		}
+	}
+	if options.Views {
+		for _, node := range nodes {
+			if referenceOnly(node) {
+				writer.line("import { unconstrainedSchema } from %s", writer.literal(options.DerivedPath))
+				break
+			}
+		}
 	}
 	for index, node := range nodes {
 		var views []string
@@ -187,23 +212,17 @@ func Programs(root *plan.Node, options ProgramOptions) ([]byte, error) {
 			variants := programViews(node)
 			for _, kind := range []string{"local", "inherited", "alternatives"} {
 				if variant := variants[kind]; variant != nil {
-					writer.line("const program%d_%s: SchemaProgram = {", index, kind)
-					writer.line("validate(%s): Evaluation {", programArguments)
-					writer.validation(variant)
-					writer.line("}")
-					if needsTransformation(variant) {
-						writer.line(", transform(%s): unknown {", programArguments)
-						writer.transformation(variant)
-						writer.line("}")
+					expression := fmt.Sprintf("program%d", index)
+					if referenceOnly(node) {
+						expression = "unconstrainedSchema.program!"
 					}
-					writer.line("}")
-					views = append(views, fmt.Sprintf("%s: program%d_%s", kind, index, kind))
+					views = append(views, kind+": "+expression)
 				}
 			}
 		}
 		writer.line("export const program%d: SchemaProgram = {", index)
 		if len(views) > 0 {
-			writer.line("views: { %s },", strings.Join(views, ", "))
+			writer.line("get views(): NonNullable<SchemaProgram['views']> { return { %s } },", strings.Join(views, ", "))
 		}
 		writer.line("validate(%s): Evaluation {", programArguments)
 		writer.validation(node)
@@ -223,7 +242,7 @@ func Programs(root *plan.Node, options ProgramOptions) ([]byte, error) {
 
 func (writer *programWriter) validation(node *plan.Node) {
 	if referenceOnly(node) {
-		writer.line("const referenced: WireSchema | undefined = _components[_schema.reference!]")
+		writer.line("const referenced: WireSchema | undefined = _schema.reference === undefined ? undefined : _components[_schema.reference]")
 		writer.line("if (referenced === undefined) throw new TypeError(`missing generated schema reference ${_schema.reference}`)")
 		writer.line("return _context.execution.validate(_value, referenced, _components, _direction, _options, _scope, _context, _ignore)")
 		return
@@ -250,7 +269,7 @@ func (writer *programWriter) validation(node *plan.Node) {
 		}
 	}
 	if has(node, "reference") {
-		writer.line("const referenced: WireSchema | undefined = _components[_schema.reference!]")
+		writer.line("const referenced: WireSchema | undefined = _schema.reference === undefined ? undefined : _components[_schema.reference]")
 		if writer.options.Annotations {
 			writer.line("if (referenced !== undefined) mergeEvaluation(evaluation, _context.execution.validate(_value, referenced, _components, _direction, _options, scope, _context, _ignore))")
 		} else {
@@ -288,9 +307,8 @@ func (writer *programWriter) validation(node *plan.Node) {
 			writer.line("_context.handlers.multipleOf!(_value, _schema)")
 		}
 		for _, bound := range []struct{ name, operator, message string }{{"maximum", ">", "<="}, {"exclusiveMaximum", ">=", "<"}, {"minimum", "<", ">="}, {"exclusiveMinimum", "<=", ">"}} {
-			if value, ok := node.Get(bound.name).(plan.Literal); ok {
-				literal := writer.literal(value.Data)
-				writer.line("if (_value %s %s) throw new TypeError(%s)", bound.operator, literal, writer.literal("must be "+bound.message+" "+literal))
+			if has(node, bound.name) {
+				writer.line("if (_value %s _schema.%s!) throw new TypeError(`must be %s ${_schema.%s}`)", bound.operator, bound.name, bound.message, bound.name)
 			}
 		}
 		writer.line("}")
@@ -298,9 +316,8 @@ func (writer *programWriter) validation(node *plan.Node) {
 	if has(node, "minLength", "maxLength", "pattern", "formatAssertion") {
 		writer.line("if (typeof _value === 'string') {")
 		for _, bound := range []struct{ name, operator, message string }{{"minLength", "<", ">="}, {"maxLength", ">", "<="}} {
-			if value, ok := node.Get(bound.name).(plan.Literal); ok {
-				literal := writer.literal(value.Data)
-				writer.line("if ([..._value].length %s %s) throw new TypeError(%s)", bound.operator, literal, writer.literal("must have length "+bound.message+" "+literal))
+			if has(node, bound.name) {
+				writer.line("if ([..._value].length %s _schema.%s!) throw new TypeError(`must have length %s ${_schema.%s}`)", bound.operator, bound.name, bound.message, bound.name)
 			}
 		}
 		if has(node, "pattern") {
@@ -321,9 +338,8 @@ func (writer *programWriter) validation(node *plan.Node) {
 		writer.line("if (Array.isArray(_value)) {")
 		writer.line("for (let index: number = 0; index < _value.length; index++) { if (!Object.hasOwn(_value, index)) throw new TypeError('must not contain sparse items') }")
 		for _, bound := range []struct{ name, operator, message string }{{"minItems", "<", ">="}, {"maxItems", ">", "<="}} {
-			if value, ok := node.Get(bound.name).(plan.Literal); ok {
-				literal := writer.literal(value.Data)
-				writer.line("if (_value.length %s %s) throw new TypeError(%s)", bound.operator, literal, writer.literal("must have items "+bound.message+" "+literal))
+			if has(node, bound.name) {
+				writer.line("if (_value.length %s _schema.%s!) throw new TypeError(`must have items %s ${_schema.%s}`)", bound.operator, bound.name, bound.message, bound.name)
 			}
 		}
 		if has(node, "uniqueItems") {
@@ -352,26 +368,36 @@ func (writer *programWriter) validation(node *plan.Node) {
 	}
 	writer.line("if (!isRecord(_value)) return evaluation")
 	for _, bound := range []struct{ name, operator, message string }{{"minProperties", "<", ">="}, {"maxProperties", ">", "<="}} {
-		if value, ok := node.Get(bound.name).(plan.Literal); ok {
-			literal := writer.literal(value.Data)
-			writer.line("if (Object.keys(_value).length %s %s) throw new TypeError(%s)", bound.operator, literal, writer.literal("must have properties "+bound.message+" "+literal))
+		if has(node, bound.name) {
+			writer.line("if (Object.keys(_value).length %s _schema.%s!) throw new TypeError(`must have properties %s ${_schema.%s}`)", bound.operator, bound.name, bound.message, bound.name)
 		}
 	}
-	properties, _ := node.Get("properties").(plan.Properties)
-	for index, property := range properties.Entries {
-		name := writer.literal(property.Name)
-		writer.line("const source%d: string = _direction === 'encode' ? _schema.properties![%s]!.property : %s", index, name, name)
-		annotation := ""
-		if writer.options.Annotations {
-			annotation = fmt.Sprintf("; evaluation.properties.add(source%d)", index)
+	if has(node, "properties") {
+		if writer.options.PropertiesPath != "" {
+			annotation := ""
+			if writer.options.Annotations {
+				annotation = ", evaluation"
+			}
+			writer.line("validateProgramProperties(_value, _schema, _components, _direction, _options, scope, _context%s)", annotation)
+		} else {
+			writer.line("for (const [name, property] of Object.entries(_schema.properties!)) {")
+			writer.line("const source: string = _direction === 'encode' ? property.property : name")
+			annotation := ""
+			if writer.options.Annotations {
+				annotation = "; evaluation.properties.add(source)"
+			}
+			writer.line("if (Object.hasOwn(_value, source)) { try { %s%s } catch (cause: unknown) { throw new TypeError(`property ${name}: ${cause instanceof Error ? cause.message : 'invalid value'}`, { cause }) } }", writer.child("property.schema", "_value[source]"), annotation)
+			writer.line("}")
 		}
-		writer.line("if (Object.hasOwn(_value, source%d)) { try { %s%s } catch (cause: unknown) { throw new TypeError(`property ${%s}: ${cause instanceof Error ? cause.message : 'invalid value'}`, { cause }) } }", index, writer.child("_schema.properties!["+name+"]!.schema", fmt.Sprintf("_value[source%d]", index)), annotation, name)
 	}
-	if required, ok := node.Get("required").(plan.Literal); ok {
-		for index, name := range required.Data.([]string) {
-			literal := writer.literal(name)
-			writer.line("const required%d: string = _direction === 'encode' ? (_schema.properties?.[%s]?.property ?? %s) : %s", index, literal, literal, literal)
-			writer.line("if (!Object.hasOwn(_value, required%d) || _value[required%d] === undefined) throw new TypeError(%s)", index, index, writer.literal("missing required property "+name))
+	if has(node, "required") {
+		if writer.options.PropertiesPath != "" {
+			writer.line("validateProgramRequired(_value, _schema, _direction)")
+		} else {
+			writer.line("for (const name of _schema.required!) {")
+			writer.line("const required: string = _direction === 'encode' ? (_schema.properties?.[name]?.property ?? name) : name")
+			writer.line("if (!Object.hasOwn(_value, required) || _value[required] === undefined) throw new TypeError(`missing required property ${name}`)")
+			writer.line("}")
 		}
 	}
 	if has(node, "dependentRequired", "dependentSchemas") {
@@ -386,13 +412,9 @@ func (writer *programWriter) validation(node *plan.Node) {
 		writer.line("}")
 	} else if has(node, "additionalProperties") {
 		writer.line("for (const key of Object.keys(_value)) {")
-		var tests []string
-		for index := range properties.Entries {
-			tests = append(tests, fmt.Sprintf("key !== source%d", index))
-		}
 		condition := "true"
-		if len(tests) > 0 {
-			condition = strings.Join(tests, " && ")
+		if has(node, "properties") {
+			condition = "!Object.hasOwn(_schema.properties!, key)"
 		}
 		writer.line("if (%s) {", condition)
 		if _, ok := node.Get("additionalProperties").(plan.Child); ok {
@@ -427,22 +449,19 @@ func (writer *programWriter) itemValidation(node *plan.Node) {
 	if writer.options.Annotations {
 		annotation = "; evaluation.indexes.add(index)"
 	}
-	if prefix, ok := node.Get("prefixItems").(plan.Children); ok {
-		writer.line("switch (index) {")
-		for index := range prefix.Nodes {
-			writer.line("case %d: %s%s; break", index, writer.child(fmt.Sprintf("_schema.prefixItems![%d]!", index), "item"), annotation)
-		}
+	if has(node, "prefixItems") {
+		writer.line("const prefix: WireSchema | undefined = _schema.prefixItems![index]")
+		writer.line("if (prefix !== undefined) { %s%s }", writer.child("prefix", "item"), annotation)
 		if has(node, "items") {
-			writer.line("default: %s%s", writer.child("_schema.items!", "item"), annotation)
+			writer.line("else { %s%s }", writer.child("_schema.items!", "item"), annotation)
 		}
-		writer.line("}")
 	} else {
 		writer.line("%s%s", writer.child("_schema.items!", "item"), annotation)
 	}
 }
 func (writer *programWriter) transformation(node *plan.Node) {
 	if referenceOnly(node) {
-		writer.line("const referenced: WireSchema | undefined = _components[_schema.reference!]")
+		writer.line("const referenced: WireSchema | undefined = _schema.reference === undefined ? undefined : _components[_schema.reference]")
 		writer.line("if (referenced === undefined) throw new TypeError(`missing generated schema reference ${_schema.reference}`)")
 		writer.line("return _context.execution.transform(_value, referenced, _components, _direction, _options, _scope, _context, _ignore)")
 		return
@@ -459,18 +478,15 @@ func (writer *programWriter) transformation(node *plan.Node) {
 		writer.line("if (target !== undefined) representations.push(_context.execution.transform(_value, target, _components, _direction, _options, scope, _context, _ignore))")
 	}
 	if has(node, "reference") {
-		writer.line("const referenced: WireSchema | undefined = _components[_schema.reference!]")
+		writer.line("const referenced: WireSchema | undefined = _schema.reference === undefined ? undefined : _components[_schema.reference]")
 		writer.line("if (referenced !== undefined) representations.push(_context.execution.transform(_value, referenced, _components, _direction, _options, scope, _context, _ignore))")
 	}
 	writer.line("let transformed: unknown = _value")
 	if typeAllows(node, "array") && has(node, "items", "prefixItems") {
 		writer.line("if (Array.isArray(_value)) transformed = _value.map((item: unknown, _index: number): unknown => {")
-		if prefix, ok := node.Get("prefixItems").(plan.Children); ok {
-			writer.line("switch (_index) {")
-			for index := range prefix.Nodes {
-				writer.line("case %d: return %s", index, writer.transform(fmt.Sprintf("_schema.prefixItems![%d]!", index), "item"))
-			}
-			writer.line("}")
+		if has(node, "prefixItems") {
+			writer.line("const prefix: WireSchema | undefined = _schema.prefixItems![_index]")
+			writer.line("if (prefix !== undefined) return %s", writer.transform("prefix", "item"))
 		}
 		if has(node, "items") {
 			writer.line("return %s", writer.transform("_schema.items!", "item"))
@@ -526,6 +542,24 @@ func hasObjectMapping(nodes []*plan.Node) bool {
 	}
 	return false
 }
+
+func objectHas(nodes []*plan.Node, name string) bool {
+	for _, node := range nodes {
+		if typeAllows(node, "object") && has(node, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func needsOwnProperties(nodes []*plan.Node) bool {
+	for _, node := range nodes {
+		if typeAllows(node, "object") && (has(node, "patternProperties") || schemaChild(node, "additionalProperties") || has(node, "additionalProperties") && !has(node, "properties")) {
+			return true
+		}
+	}
+	return false
+}
 func referenceMerge(nodes []*plan.Node) bool {
 	for _, node := range nodes {
 		if !referenceOnly(node) && has(node, "reference", "dynamicReference") {
@@ -539,11 +573,15 @@ func ProgramDependencies(root *plan.Node, options ProgramOptions) []string {
 	dependencies := []string{"wire-types.ts", "wire-state.ts"}
 	nodes := programNodes(root, options)
 	if options.Views {
-		for _, node := range append([]*plan.Node(nil), nodes...) {
-			for _, variant := range programViews(node) {
-				nodes = append(nodes, variant)
+		for _, node := range nodes {
+			if referenceOnly(node) {
+				dependencies = append(dependencies, "program-derived.ts")
+				break
 			}
 		}
+	}
+	if options.PropertiesPath != "" && (objectHas(nodes, "properties") || objectHas(nodes, "required")) {
+		dependencies = append(dependencies, "program-properties.ts")
 	}
 	if options.Annotations && referenceMerge(nodes) {
 		dependencies = append(dependencies, "wire-state.ts")
@@ -611,25 +649,28 @@ func programViews(node *plan.Node) map[string]*plan.Node {
 	return result
 }
 
+// ProgramViews exposes the prepared schema projections used by media codecs.
+func ProgramViews(node *plan.Node) map[string]*plan.Node { return programViews(node) }
+
 func (writer *programWriter) staticObjectTransformation(node *plan.Node) {
-	properties, _ := node.Get("properties").(plan.Properties)
 	writer.line("if (isRecord(transformed)) {")
-	writer.line("const source: Record<string, unknown> = transformed; const result: Record<string, unknown> = {}")
-	writer.line("for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item)")
-	// Lowering preserves exact JSON property names in both projections. Generated
-	// programs therefore need no runtime rename table or destination collision set.
-	for _, property := range properties.Entries {
-		name := writer.literal(property.Name)
-		writer.line("if (Object.hasOwn(source, %s)) defineOwnDataProperty(result, %s, %s)", name, name, writer.transform("_schema.properties!["+name+"]!.schema", "source["+name+"]"))
+	if has(node, "properties") && writer.options.PropertiesPath != "" {
+		writer.line("const source: Record<string, unknown> = transformed; const result: Record<string, unknown> = transformProgramProperties(source, _schema, _components, _direction, _options, scope, _context)")
+	} else {
+		writer.line("const source: Record<string, unknown> = transformed; const result: Record<string, unknown> = {}")
+		writer.line("for (const [key, item] of Object.entries(source)) defineOwnDataProperty(result, key, item)")
+		// Lowering preserves exact JSON property names in both projections. Generated
+		// programs therefore need no runtime rename table or destination collision set.
+		if has(node, "properties") {
+			writer.line("for (const [name, property] of Object.entries(_schema.properties!)) {")
+			writer.line("if (Object.hasOwn(source, name)) defineOwnDataProperty(result, name, %s)", writer.transform("property.schema", "source[name]"))
+			writer.line("}")
+		}
 	}
 	if schemaChild(node, "additionalProperties") {
-		var tests []string
-		for _, property := range properties.Entries {
-			tests = append(tests, "key !== "+writer.literal(property.Name))
-		}
 		condition := "true"
-		if len(tests) > 0 {
-			condition = strings.Join(tests, " && ")
+		if has(node, "properties") {
+			condition = "!Object.hasOwn(_schema.properties!, key)"
 		}
 		writer.line("for (const key of Object.keys(source)) { if (%s) defineOwnDataProperty(result, key, %s) }", condition, writer.transform("_schema.additionalProperties as WireSchema", "source[key]"))
 	}

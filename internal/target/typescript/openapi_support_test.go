@@ -647,7 +647,7 @@ func schemaProjectionSource(artifacts []Artifact) string {
 func schemaWireSource(artifacts []Artifact) string {
 	var output strings.Builder
 	for _, artifact := range artifacts {
-		if strings.HasPrefix(artifact.Path, "internal/schemas/") && artifact.Path != "internal/schemas/index.ts" {
+		if strings.HasPrefix(artifact.Path, "internal/schema-descriptors/") || strings.HasPrefix(artifact.Path, "internal/schemas/") && artifact.Path != "internal/schemas/index.ts" {
 			output.Write(artifact.Data)
 			output.WriteByte('\n')
 		}
@@ -658,7 +658,7 @@ func schemaWireSource(artifacts []Artifact) string {
 func clientSemanticSource(artifacts []Artifact) string {
 	var output strings.Builder
 	for _, artifact := range artifacts {
-		if strings.HasPrefix(artifact.Path, "internal/client/") || strings.HasPrefix(artifact.Path, "internal/operations/") || strings.HasPrefix(artifact.Path, "internal/routes/") || strings.HasPrefix(artifact.Path, "internal/resources/") {
+		if strings.HasPrefix(artifact.Path, "internal/client/") || strings.HasPrefix(artifact.Path, "internal/schema-descriptors/") || strings.HasPrefix(artifact.Path, "internal/operations/") || strings.HasPrefix(artifact.Path, "internal/routes/") || strings.HasPrefix(artifact.Path, "internal/resources/") {
 			output.Write(artifact.Data)
 			output.WriteByte('\n')
 		}

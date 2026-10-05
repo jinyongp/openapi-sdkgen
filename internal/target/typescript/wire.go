@@ -142,26 +142,49 @@ func (wire *wireRenderContext) lowerSchemaDescriptor(value any, direction projec
 	return wire.emitSchemaDescriptor(node)
 }
 func (wire *wireRenderContext) emitSchemaDescriptor(node *schemaplan.Node) (string, error) {
-	program, err := wire.programExpression(node)
-	if err != nil {
-		return "", err
-	}
 	var module *schemaProgramBinding
+	var err error
 	if wire.schemaPrograms != nil {
 		module, err = wire.schemaPrograms.moduleFor(node)
 		if err != nil {
 			return "", err
 		}
+		shared, err := wire.schemaPrograms.sharedDescriptor(node, wire.properties, module)
+		if err != nil {
+			return "", err
+		}
+		if shared != nil {
+			return wire.importDescriptor(shared), nil
+		}
 		if descriptor, exists := module.descriptors[wire.properties]; exists {
 			wire.usesProperties = wire.usesProperties || module.properties[wire.properties]
+			if wire.programImports == nil {
+				wire.programImports = make(map[string]schemaProgramImport)
+			}
+			for path, dependency := range module.imports[wire.properties] {
+				wire.programImports[path] = dependency
+			}
 			return descriptor, nil
 		}
 		if wire.schemaPrograms.sealed {
 			return "", fmt.Errorf("unprepared schema descriptor mode %d", wire.properties)
 		}
 	}
+	program, err := wire.programExpression(node)
+	if err != nil {
+		return "", err
+	}
 	usesProperties := false
-	descriptor, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{Program: program, Literal: schemaDescriptorLiteral, Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
+	descriptor, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{Program: program, Literal: schemaDescriptorLiteral, Reference: func(child *schemaplan.Node) (string, error) {
+		if wire.schemaPrograms == nil {
+			return "", nil
+		}
+		shared, err := wire.schemaPrograms.sharedDescriptor(child, wire.properties, module)
+		if err != nil || shared == nil {
+			return "", err
+		}
+		return wire.importDescriptor(shared), nil
+	}, Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
 		usesProperties = true
 		properties := make([]runtimeProperty, 0, len(entries))
 		for _, entry := range entries {
@@ -172,6 +195,10 @@ func (wire *wireRenderContext) emitSchemaDescriptor(node *schemaplan.Node) (stri
 	if err == nil && module != nil {
 		module.descriptors[wire.properties] = descriptor
 		module.properties[wire.properties] = usesProperties
+		module.imports[wire.properties] = make(map[string]schemaProgramImport, len(wire.programImports))
+		for path, dependency := range wire.programImports {
+			module.imports[wire.properties][path] = dependency
+		}
 	}
 	return descriptor, err
 }

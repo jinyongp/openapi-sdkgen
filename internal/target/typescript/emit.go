@@ -71,6 +71,7 @@ var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
 	{source: "program-basic.ts", path: "internal/runtime/schema/program-basic.ts"},
 	{source: "program-binding.ts", path: "internal/runtime/schema/program-binding.ts"},
 	{source: "program-execution.ts", path: "internal/runtime/schema/program-execution.ts"},
+	{source: "program-properties.ts", path: "internal/runtime/schema/program-properties.ts"},
 	{source: "wire-control-flow.ts", path: "internal/runtime/schema/wire-control-flow.ts"},
 	{source: "program-codec.ts", path: "internal/runtime/schema/program-codec.ts"},
 	{source: "json-values.ts", path: "internal/runtime/shared/json-values.ts"},

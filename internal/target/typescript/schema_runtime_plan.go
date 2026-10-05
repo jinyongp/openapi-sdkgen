@@ -11,38 +11,41 @@ import (
 	"strings"
 )
 
-type schemaProgramModule struct {
+type schemaRuntimeModule struct {
 	path         string
 	alias        string
-	expressions  []string
 	node         *schemaplan.Node
 	source       []byte
 	dependencies []string
 }
 type schemaProgramBinding struct {
-	*schemaProgramModule
-	slots       map[*schemaplan.Node]int
+	*schemaRuntimeModule
+	programs    map[*schemaplan.Node]*schemaRuntimeModule
 	descriptors map[wirePropertiesMode]string
 	properties  map[wirePropertiesMode]bool
+	imports     map[wirePropertiesMode]map[string]schemaProgramImport
 }
 type schemaRuntimePlan struct {
-	views          bool
-	kindComponents map[string]map[projection]map[string]bool
-	annotations    bool
-	sealed         bool
-	nodes          map[string]*schemaplan.Node
-	contracts      map[string]*schemaplan.Node
-	modules        map[string]*schemaProgramModule
-	owners         map[*schemaplan.Node]*schemaProgramBinding
+	views             bool
+	kindComponents    map[string]map[projection]map[string]bool
+	annotations       bool
+	sealed            bool
+	nodes             map[string]*schemaplan.Node
+	contracts         map[string]*schemaplan.Node
+	modules           map[string]*schemaRuntimeModule
+	owners            map[*schemaplan.Node]*schemaProgramBinding
+	descriptorKeys    map[*schemaplan.Node]string
+	descriptorUses    map[string]int
+	descriptorModules map[string]*schemaRuntimeModule
 }
 type schemaProgramImport struct {
 	alias string
 	path  string
-	slots int
+	name  string
 }
 
 func newSchemaRuntimePlan() *schemaRuntimePlan {
-	return &schemaRuntimePlan{nodes: make(map[string]*schemaplan.Node), contracts: make(map[string]*schemaplan.Node), modules: make(map[string]*schemaProgramModule), owners: make(map[*schemaplan.Node]*schemaProgramBinding)}
+	return &schemaRuntimePlan{nodes: make(map[string]*schemaplan.Node), contracts: make(map[string]*schemaplan.Node), modules: make(map[string]*schemaRuntimeModule), owners: make(map[*schemaplan.Node]*schemaProgramBinding), descriptorKeys: make(map[*schemaplan.Node]string), descriptorUses: make(map[string]int), descriptorModules: make(map[string]*schemaRuntimeModule)}
 }
 
 func schemaSemanticKey(value any, direction projection, format, legacy, ignore bool) (string, error) {
@@ -90,45 +93,61 @@ func (runtime *schemaRuntimePlan) lower(value any, direction projection, format,
 	}
 	if canonical, exists := runtime.contracts[semanticKey]; exists {
 		runtime.nodes[key] = canonical
+		runtime.descriptorUses[runtime.descriptorKeys[canonical]]++
 		return canonical, nil
 	}
 	runtime.nodes[key] = node
 	runtime.contracts[semanticKey] = node
 	nodes, slots := schemaemit.ProgramSlots(node)
-	policy.Nodes = nodes
-	algorithmKey, err := schemaSemanticKey(json.RawMessage(schemaemit.ProgramIdentity(node)), projection("shared"), policy.Annotations, policy.Views, ignore)
-	if err != nil {
-		return nil, err
-	}
-	if module, exists := runtime.modules[algorithmKey]; exists {
-		runtime.owners[node] = &schemaProgramBinding{schemaProgramModule: module, slots: slots, descriptors: make(map[wirePropertiesMode]string), properties: make(map[wirePropertiesMode]bool)}
-		return node, nil
-	}
-	module := &schemaProgramModule{path: "internal/schema-programs/shared/schema_" + algorithmKey + ".ts", alias: "__sdkgen_P" + strings.ReplaceAll(algorithmKey, "-", "$"), node: node}
-	count := 0
-	for _, slot := range slots {
-		if slot >= count {
-			count = slot + 1
+	modules := make([]*schemaRuntimeModule, len(nodes))
+	for index, child := range nodes {
+		module, err := runtime.prepareProgram(child, policy)
+		if err != nil {
+			return nil, err
 		}
+		modules[index] = module
 	}
-	for slot := 0; slot < count; slot++ {
-		module.expressions = append(module.expressions, fmt.Sprintf("%s_program%d", module.alias, slot))
+	programs := make(map[*schemaplan.Node]*schemaRuntimeModule, len(slots))
+	for child, slot := range slots {
+		programs[child] = modules[slot]
+		identity, err := schemaSemanticKey(child, projection("descriptor"), runtime.annotations, runtime.views, false)
+		if err != nil {
+			return nil, err
+		}
+		runtime.descriptorKeys[child] = identity
+		runtime.descriptorUses[identity]++
 	}
+	runtime.owners[node] = &schemaProgramBinding{schemaRuntimeModule: programs[node], programs: programs, descriptors: make(map[wirePropertiesMode]string), properties: make(map[wirePropertiesMode]bool), imports: make(map[wirePropertiesMode]map[string]schemaProgramImport)}
+	return node, nil
+}
+
+// Programs read each contract's data from its descriptor. Share identical emitted
+// algorithms across all roots, retaining projection and execution policy in code.
+func (runtime *schemaRuntimePlan) prepareProgram(node *schemaplan.Node, policy schemaemit.ProgramOptions) (*schemaRuntimeModule, error) {
+	policy.Nodes = []*schemaplan.Node{node}
+	policy = schemaemit.ProgramPolicy(node, policy)
+	const modulePath = "internal/schema-programs/shared/schema.ts"
 	from := func(target string) string {
-		value, err := relativeModuleSpecifier(module.path, target)
+		value, err := relativeModuleSpecifier(modulePath, target)
 		if err != nil {
 			panic(err)
 		}
 		return value
 	}
-	module.source, err = schemaemit.Programs(node, schemaemit.ProgramOptions{Nodes: nodes, Views: policy.Views, Annotations: policy.Annotations, Literal: schemaDescriptorLiteral, TypesPath: from(runtimeTemplatePath("wire-types.ts")), StatePath: from(runtimeTemplatePath("wire-state.ts")), MappingPath: from(runtimeTemplatePath("wire-object-mapping.ts")), SupportPath: from(runtimeTemplatePath("runtime-support.ts"))})
+	policy.PropertiesPath = from(runtimeTemplatePath("program-properties.ts"))
+	source, err := schemaemit.Programs(node, schemaemit.ProgramOptions{Nodes: policy.Nodes, Views: policy.Views, Annotations: policy.Annotations, Literal: schemaDescriptorLiteral, TypesPath: from(runtimeTemplatePath("wire-types.ts")), StatePath: from(runtimeTemplatePath("wire-state.ts")), MappingPath: from(runtimeTemplatePath("wire-object-mapping.ts")), SupportPath: from(runtimeTemplatePath("runtime-support.ts")), PropertiesPath: policy.PropertiesPath, DerivedPath: from(runtimeTemplatePath("program-derived.ts"))})
 	if err != nil {
 		return nil, err
 	}
+	sum := sha256.Sum256(source)
+	algorithmKey := base64.RawURLEncoding.EncodeToString(sum[:])
+	if module, exists := runtime.modules[algorithmKey]; exists {
+		return module, nil
+	}
+	module := &schemaRuntimeModule{path: "internal/schema-programs/shared/schema_" + algorithmKey + ".ts", alias: "__sdkgen_P" + strings.ReplaceAll(algorithmKey, "-", "$"), node: node, source: source}
 	runtime.modules[algorithmKey] = module
 	module.dependencies = schemaemit.ProgramDependencies(node, policy)
-	runtime.owners[node] = &schemaProgramBinding{schemaProgramModule: module, slots: slots, descriptors: make(map[wirePropertiesMode]string), properties: make(map[wirePropertiesMode]bool)}
-	return node, nil
+	return module, nil
 }
 
 func (runtime *schemaRuntimePlan) moduleFor(node *schemaplan.Node) (*schemaProgramBinding, error) {
@@ -149,13 +168,15 @@ func (wire *wireRenderContext) programExpression(node *schemaplan.Node) (func(*s
 	if wire.programImports == nil {
 		wire.programImports = make(map[string]schemaProgramImport)
 	}
-	wire.programImports[module.path] = schemaProgramImport{alias: module.alias, path: module.path, slots: len(module.expressions)}
+	for _, program := range module.programs {
+		wire.programImports[program.path] = schemaProgramImport{alias: program.alias, path: program.path}
+	}
 	return func(child *schemaplan.Node) (string, error) {
-		slot, exists := module.slots[child]
+		program, exists := module.programs[child]
 		if !exists {
 			return "", fmt.Errorf("unprepared schema program slot")
 		}
-		return module.expressions[slot], nil
+		return program.alias + "_program0", nil
 	}, nil
 }
 
@@ -172,11 +193,11 @@ func (wire *wireRenderContext) programImportSource(artifact string) (string, err
 		if err != nil {
 			return "", err
 		}
-		var names []string
-		for slot := 0; slot < dependency.slots; slot++ {
-			names = append(names, fmt.Sprintf("program%d as %s_program%d", slot, dependency.alias, slot))
+		name := dependency.name
+		if name == "" {
+			name = "program0"
 		}
-		result += fmt.Sprintf("import { %s } from %s\n", strings.Join(names, ", "), quoteTS(specifier))
+		result += fmt.Sprintf("import { %s as %s_%s } from %s\n", name, dependency.alias, name, quoteTS(specifier))
 	}
 	return result, nil
 }
@@ -192,7 +213,7 @@ func prepareSchemaRuntimePlan(source *sourcePlan) error {
 					runtime.views = true
 				}
 				switch string(feature) {
-				case "http.general", "media.xml", "media.open", "media.multipart", "schema.contentXML":
+				case "media.xml", "media.open", "media.multipart", "schema.contentXML":
 					runtime.views = true
 				}
 				switch string(feature) {
@@ -249,6 +270,7 @@ func (runtime *schemaRuntimePlan) freeze() error {
 		for _, mode := range []wirePropertiesMode{wirePropertiesLiteral, wirePropertiesConstructed} {
 			if mode == wirePropertiesConstructed && !binding.properties[wirePropertiesLiteral] {
 				binding.descriptors[mode] = binding.descriptors[wirePropertiesLiteral]
+				binding.imports[mode] = binding.imports[wirePropertiesLiteral]
 				continue
 			}
 			wire := newWireRenderContext(mode)

@@ -16,17 +16,21 @@ func TestGeneratedSchemaProgramsMatchCompatibilitySemantics(t *testing.T) {
 		"BooleanFalse":          false,
 		"BooleanTrue":           true,
 		"Number":                map[string]any{"type": "number", "minimum": -1, "exclusiveMaximum": 3, "multipleOf": 0.1},
+		"OtherNumber":           map[string]any{"type": "number", "minimum": 1, "exclusiveMaximum": 2, "multipleOf": 0.1},
 		"Integer":               map[string]any{"type": "integer"},
 		"ReferenceObjectNumber": map[string]any{"type": "object", "properties": map[string]any{"value": map[string]any{"$ref": "#/components/schemas/Number"}}},
 		"ReferenceObjectString": map[string]any{"type": "object", "properties": map[string]any{"value": map[string]any{"$ref": "#/components/schemas/String"}}},
 		"AnchorOnly":            map[string]any{"type": "integer", "$dynamicAnchor": "number"},
 		"String":                map[string]any{"type": "string", "minLength": 1, "maxLength": 3, "pattern": "^[a-z😀]+$"},
+		"OtherString":           map[string]any{"type": "string", "minLength": 2, "maxLength": 5, "pattern": "^[a-z😀]+$"},
 		"Literal":               map[string]any{"enum": []any{nil, "a", 1, map[string]any{"x": 1}}},
 		"Object":                map[string]any{"type": "object", "required": []any{"x"}, "properties": map[string]any{"x": map[string]any{"type": "integer"}, "read": map[string]any{"type": "string", "readOnly": true}, "write": map[string]any{"type": "string", "writeOnly": true}}, "additionalProperties": false},
+		"OtherObject":           map[string]any{"type": "object", "required": []any{"y"}, "properties": map[string]any{"y": map[string]any{"type": "string"}}, "additionalProperties": false},
 		"Additional":            map[string]any{"type": "object", "properties": map[string]any{"x": map[string]any{"type": "number"}}, "additionalProperties": map[string]any{"type": "string"}},
 		"Pattern":               map[string]any{"type": "object", "patternProperties": map[string]any{"^x": map[string]any{"type": "integer"}, "x$": map[string]any{"minimum": 1}}, "additionalProperties": false},
 		"Dependencies":          map[string]any{"type": "object", "properties": map[string]any{"x": map[string]any{}, "y": map[string]any{}}, "dependentRequired": map[string]any{"x": []any{"y"}}, "dependentSchemas": map[string]any{"y": map[string]any{"properties": map[string]any{"x": map[string]any{"type": "integer"}}}}, "propertyNames": map[string]any{"maxLength": 1}},
 		"Array":                 map[string]any{"type": "array", "prefixItems": []any{map[string]any{"type": "integer"}}, "items": map[string]any{"type": "string"}, "minItems": 1, "maxItems": 3, "uniqueItems": true},
+		"OtherArray":            map[string]any{"type": "array", "prefixItems": []any{map[string]any{"type": "integer"}, map[string]any{"type": "string"}}, "items": map[string]any{"type": "string"}, "minItems": 2, "maxItems": 4, "uniqueItems": true},
 		"Contains":              map[string]any{"type": "array", "contains": map[string]any{"type": "integer"}, "minContains": 1, "maxContains": 2, "unevaluatedItems": false},
 		"OneOf":                 map[string]any{"oneOf": []any{map[string]any{"type": "object", "required": []any{"x"}, "properties": map[string]any{"x": map[string]any{"type": "integer"}}, "additionalProperties": false}, map[string]any{"type": "object", "required": []any{"y"}, "properties": map[string]any{"y": map[string]any{"type": "string"}}, "additionalProperties": false}}},
 		"AnyOf":                 map[string]any{"anyOf": []any{map[string]any{"type": "integer"}, map[string]any{"type": "number", "minimum": 1}}},
@@ -51,7 +55,8 @@ func TestGeneratedSchemaProgramsMatchCompatibilitySemantics(t *testing.T) {
 	schemas["Probe"] = map[string]any{"anyOf": variants}
 	content := map[string]any{"application/json": map[string]any{"schema": map[string]any{"$ref": "#/components/schemas/Probe"}}}
 	operation := map[string]any{"operationId": "probe", "requestBody": map[string]any{"content": content}, "responses": map[string]any{"200": map[string]any{"description": "ok", "content": content}}}
-	data, err := json.Marshal(map[string]any{"openapi": "3.1.1", "info": map[string]any{"title": "Programs", "version": "1"}, "paths": map[string]any{"/probe": map[string]any{"post": operation}}, "components": map[string]any{"schemas": schemas}})
+	xmlOperation := map[string]any{"operationId": "xmlProbe", "responses": map[string]any{"200": map[string]any{"description": "ok", "content": map[string]any{"application/xml": map[string]any{"schema": map[string]any{"$ref": "#/components/schemas/Probe"}}}}}}
+	data, err := json.Marshal(map[string]any{"openapi": "3.1.1", "info": map[string]any{"title": "Programs", "version": "1"}, "paths": map[string]any{"/probe": map[string]any{"post": operation}, "/xml": map[string]any{"get": xmlOperation}}, "components": map[string]any{"schemas": schemas}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,6 +89,7 @@ const {inputSchemas,outputSchemas}=await load('internal/schemas/wire.js');
 const {createProgramCodec}=await load('internal/runtime/schema/program-codec.js');
 const {fullWireHandlers}=await load('internal/runtime/compatibility/wire-handlers.js');
 const {jsonWireCodec}=await load('internal/runtime/compatibility/wire-engine.js');
+const {schemaView}=await load('internal/runtime/schema/program-derived.js');
 const generated=createProgramCodec(fullWireHandlers);
 const values=[undefined,null,true,false,-2,-1,0,0.1,1,1.5,2,3,NaN,Infinity,'','a','bad','😀','abcd','127.0.0.1','{"x":1}','{"x":"a"}','MQ==',[],[1],[1,'a'],[1,'a','a'],[1,2,3],[1,undefined],new Array(1),{}, {value:1},{value:'a'},{x:1},{x:0},{x:'a'},{y:'a'},{x:1,y:'a'},{x:1,extra:1},{x:1,extra:Infinity},{x:1,write:'a',read:'a'},JSON.parse('{"__proto__":1,"constructor":"a"}'),Object.create({x:1}),{x:1,children:[{x:2}]}];
 function outcome(codec,value,schema,schemas,direction,options) {
@@ -93,10 +99,11 @@ function outcome(codec,value,schema,schemas,direction,options) {
 let comparisons=0;
 for(const [direction,schemas] of [['encode',inputSchemas],['decode',outputSchemas]]){
  for(const [name,schema] of Object.entries(schemas)) {
-  for(const value of values) for(const unknownProperties of ['reject','preserve']) {
+  const contracts=[schema,...['local','inherited','alternatives'].filter(kind=>schema.program?.views?.[kind]!==undefined).map(kind=>schemaView(schema,kind))];
+  for(const contract of contracts) for(const value of values) for(const unknownProperties of ['reject','preserve']) {
    const before=structuredClone(value);
-   const expected=outcome(jsonWireCodec,value,schema,schemas,direction,{unknownProperties});
-   const actual=outcome(generated,value,schema,schemas,direction,{unknownProperties});
+   const expected=outcome(jsonWireCodec,value,contract,schemas,direction,{unknownProperties});
+   const actual=outcome(generated,value,contract,schemas,direction,{unknownProperties});
    assert.deepEqual(actual,expected,JSON.stringify({name,direction,unknownProperties,value}));
    assert.deepEqual(structuredClone(value),before,'source mutated'); comparisons++;
   }
