@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -274,6 +275,11 @@ func PublishArtifacts(path string, artifacts []generator.Artifact, incremental b
 		return err
 	}
 	defer publisher.Rollback()
+	// Collected publication already knows the complete file count and has a
+	// validated path map. Reuse its storage instead of growing a second map.
+	clear(seen)
+	publisher.seen = seen
+	publisher.hashes = make(map[string]string, len(artifacts))
 	publisher.generation = generation
 	publisher.parallelWrites = !incremental
 	for _, artifact := range artifacts {
@@ -631,14 +637,16 @@ func newIncrementalPublisher(path string) (*Publisher, error) {
 		return fail(publicationFailure(fmt.Errorf("create output staging directory: %w", err)))
 	}
 	return &Publisher{
-		output: path, staging: staging, seen: make(map[string]bool), directories: make(map[string]bool), hashes: make(map[string]string),
+		output: path, staging: staging, seen: make(map[string]bool, len(previous)), directories: make(map[string]bool), hashes: make(map[string]string, len(previous)),
 		previous: previous, previousGeneration: previousGeneration, incremental: true, lock: lock,
 	}, nil
 }
 
 func artifactContentHash(data []byte) string {
 	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:])
+	var encoded [sha256.Size * 2]byte
+	hex.Encode(encoded[:], sum[:])
+	return string(encoded[:])
 }
 
 func manifestData(hashes map[string]string, generation *Generation) ([]byte, error) {
@@ -722,7 +730,8 @@ func ReadManifest(path string) (Manifest, error) {
 		if err != nil || clean != artifactPath || artifactPath == ManifestName || len(hash) != sha256.Size*2 {
 			return Manifest{}, fmt.Errorf("incremental output manifest contains invalid artifact %q", artifactPath)
 		}
-		if _, err := hex.DecodeString(hash); err != nil {
+		var decoded [sha256.Size]byte
+		if _, err := hex.Decode(decoded[:], []byte(hash)); err != nil {
 			return Manifest{}, fmt.Errorf("incremental output manifest contains invalid hash for %q", artifactPath)
 		}
 	}
@@ -732,6 +741,7 @@ func ReadManifest(path string) (Manifest, error) {
 // ValidateOwnedFiles verifies that every manifest-owned artifact is unchanged.
 func ValidateOwnedFiles(path string, files map[string]string) error {
 	buffer := make([]byte, 32*1024)
+	digest := sha256.New()
 	artifactPaths := make([]string, 0, len(files))
 	for artifactPath := range files {
 		artifactPaths = append(artifactPaths, artifactPath)
@@ -750,7 +760,7 @@ func ValidateOwnedFiles(path string, files map[string]string) error {
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("manifest-owned generated artifact %s must be a regular file", fullPath)
 		}
-		actual, err := fileHash(fullPath, buffer)
+		actual, err := fileHash(fullPath, buffer, digest)
 		if err != nil {
 			return fmt.Errorf("read manifest-owned generated artifact %s: %w", fullPath, err)
 		}
@@ -761,20 +771,23 @@ func ValidateOwnedFiles(path string, files map[string]string) error {
 	return nil
 }
 
-func fileHash(path string, buffer []byte) (string, error) {
+func fileHash(path string, buffer []byte, digest hash.Hash) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
-	hash := sha256.New()
-	if _, err := io.CopyBuffer(hash, struct{ io.Reader }{file}, buffer); err != nil {
+	digest.Reset()
+	if _, err := io.CopyBuffer(digest, struct{ io.Reader }{file}, buffer); err != nil {
 		_ = file.Close()
 		return "", err
 	}
 	if err := file.Close(); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(hash.Sum(nil)), nil
+	var sum [sha256.Size]byte
+	var encoded [sha256.Size * 2]byte
+	hex.Encode(encoded[:], digest.Sum(sum[:0]))
+	return string(encoded[:]), nil
 }
 
 func (publisher *Publisher) commitIncremental() error {
@@ -903,7 +916,7 @@ func validateExistingSafeParents(output, directory string) error {
 		return fmt.Errorf("resolve generated artifact directory: %w", err)
 	}
 	current := output
-	for _, segment := range strings.Split(relative, string(filepath.Separator)) {
+	for segment := range strings.SplitSeq(relative, string(filepath.Separator)) {
 		if segment == "." || segment == "" {
 			continue
 		}
@@ -925,7 +938,7 @@ func safeParents(output, directory string, create bool) error {
 		return fmt.Errorf("resolve generated artifact directory: %w", err)
 	}
 	current := output
-	for _, segment := range strings.Split(relative, string(filepath.Separator)) {
+	for segment := range strings.SplitSeq(relative, string(filepath.Separator)) {
 		if segment == "." || segment == "" {
 			continue
 		}
