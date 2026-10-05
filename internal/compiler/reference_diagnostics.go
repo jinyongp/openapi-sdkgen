@@ -20,6 +20,9 @@ func unresolvedLocalReferenceDiagnostics(value any, source string) []diagnostic.
 func scanUnresolvedLocalReferences(root, value any, path []string, source string, result *[]diagnostic.Diagnostic) {
 	switch typed := value.(type) {
 	case map[string]any:
+		if openapiwalk.ObjectContextAt(path) == openapiwalk.ObjectSchema {
+			scanDiscriminatorLocalReferences(root, typed, path, source, result)
+		}
 		if reference, _ := typed["$ref"].(string); strings.HasPrefix(reference, "#/") {
 			if _, found := resolveLocalReference(root, reference); !found {
 				*result = append(*result, diagnostic.Diagnostic{
@@ -47,6 +50,48 @@ func scanUnresolvedLocalReferences(root, value any, path []string, source string
 		for index, child := range typed {
 			scanUnresolvedLocalReferences(root, child, append(path, strconv.Itoa(index)), source, result)
 		}
+	}
+}
+
+func scanDiscriminatorLocalReferences(root any, schema map[string]any, path []string, source string, result *[]diagnostic.Diagnostic) {
+	discriminator, _ := schema["discriminator"].(map[string]any)
+	if discriminator == nil {
+		return
+	}
+	check := func(value any, location []string) {
+		reference, ok := value.(string)
+		if !ok || reference == "" || strings.Contains(reference, ":") || strings.HasPrefix(reference, "./") || strings.HasPrefix(reference, "../") || strings.HasPrefix(reference, "/") {
+			return
+		}
+		if strings.HasPrefix(reference, "#") {
+			fragment, err := url.PathUnescape(strings.TrimPrefix(reference, "#"))
+			if err != nil || !strings.HasPrefix(fragment, "/") {
+				// Anchor and external-document resolution belongs to the reference loader.
+				return
+			}
+		} else {
+			reference = sourceJSONPointer([]string{"components", "schemas", reference})
+		}
+		if _, found := resolveLocalReference(root, reference); found {
+			return
+		}
+		*result = append(*result, diagnostic.Diagnostic{
+			Severity: diagnostic.SeverityError,
+			Code:     "SDKGEN-E120",
+			Phase:    diagnostic.PhaseReferences,
+			Scope:    failure.ScopeDocument,
+			Effect:   failure.EffectBlock,
+			Location: diagnostic.Location{Source: source, Pointer: sourceJSONPointer(location)},
+			Message:  fmt.Sprintf("Discriminator reference %q does not resolve to a schema in this document.", value),
+			Hint:     "Correct the discriminator mapping or declare the referenced component schema.",
+		})
+	}
+	mapping, _ := discriminator["mapping"].(map[string]any)
+	for name, reference := range mapping {
+		check(reference, append(append(path, "discriminator", "mapping"), name))
+	}
+	if reference, exists := discriminator["defaultMapping"]; exists {
+		check(reference, append(path, "discriminator", "defaultMapping"))
 	}
 }
 
