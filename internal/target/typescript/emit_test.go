@@ -180,7 +180,7 @@ func TestSourceArtifactsStayConsistentAndDeterministic(t *testing.T) {
 			t.Fatalf("runtime JSDoc missing %q:\n%s", expected, runtimeModules)
 		}
 	}
-	if !strings.Contains(clientSource, `from "../runtime/http/request/http-request-core.js"`) || !strings.Contains(clientSource, `from "../runtime/http/request/request-execution-types.js"`) {
+	if !strings.Contains(clientSource, `from "../runtime/http/request/http-buffered-core.js"`) || !strings.Contains(clientSource, `from "../runtime/http/request/request-execution-types.js"`) {
 		t.Fatalf("client does not use its generated source runtime:\n%s", clientSource)
 	}
 	if strings.Contains(errorsSource, "../../runtime") || !strings.Contains(errorsSource, `from "./runtime/client/errors.js"`) {
@@ -295,15 +295,17 @@ func TestRootReachableRuntimeInitializersAreOptimizerVisible(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, path := range []string{
+	paths := []string{
 		"internal/client/registry.ts",
 		"internal/enums.ts",
 		"internal/errors.ts",
-		"internal/runtime/schema/wire-state.ts",
-		"internal/runtime/shared/constants.ts",
-		"internal/runtime/http/http-execution-support.ts",
-		"internal/runtime/http/request/http-request-values.ts",
-	} {
+	}
+	for _, artifact := range artifacts {
+		if strings.HasPrefix(artifact.Path, "internal/runtime/") {
+			paths = append(paths, artifact.Path)
+		}
+	}
+	for _, path := range paths {
 		source := string(artifactByPath(t, artifacts, path))
 		for lineNumber, line := range strings.Split(source, "\n") {
 			if !strings.HasPrefix(line, "const ") && !strings.HasPrefix(line, "export const ") {

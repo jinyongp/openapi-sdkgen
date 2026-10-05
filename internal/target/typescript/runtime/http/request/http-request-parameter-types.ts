@@ -10,6 +10,12 @@ export type ParameterWireEncoder = (
   parameter: ParameterDefinition | undefined,
   value: unknown,
 ) => unknown;
+/** Writes a prepared operation's declared header input values. */
+export type HeaderParameterEncoder = (
+  headers: Headers,
+  values: Record<string, unknown>,
+  operation: OperationDefinition,
+) => void;
 /** Serializes an already transformed path parameter. */
 export type PathParameterSerializer = (
   parameter: ParameterDefinition | undefined,

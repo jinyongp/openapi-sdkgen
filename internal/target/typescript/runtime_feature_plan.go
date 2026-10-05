@@ -206,7 +206,9 @@ func prepareRuntimeFeatures(plan *sourcePlan) (*runtimeFeaturePlan, error) {
 			if parameter.Location == "query" {
 				features["http.query"] = true
 			}
-			if parameter.Location != "path" && parameter.Location != "query" || parameter.ContentType != "" {
+			if parameter.Location == "header" && parameter.ContentType == "" {
+				features["http.header.schema"] = true
+			} else if parameter.Location != "path" && parameter.Location != "query" || parameter.ContentType != "" {
 				features["http.general"] = true
 			}
 		}

@@ -46,13 +46,14 @@ func TestHTTPContractSpecializationRegression(t *testing.T) {
 		}
 	}
 	// Build the control with the same prepared schemas, operation definition,
-	// resources and runtime source, but the complete HTTP/security composition.
+	// resources and runtime source, but the complete HTTP/security composition,
+	// including the streaming request core.
 	plan, _, _, err := prepareClientSourcePlanWithCoverage(document, generator.Options{}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	features := append(clientRuntimeFeatures(plan.runtimeFeatures, plan.manifest), runtimeFeature("http.general"), runtimeFeature("security.open"))
-	plan.modules.runtimeComposition = prepareRuntimeComposition(features, false)
+	plan.modules.runtimeComposition = prepareRuntimeComposition(features, true)
 	control, err := emitClientFactory(document, plan.modules, plan.links, plan.streams)
 	if err != nil {
 		t.Fatal(err)

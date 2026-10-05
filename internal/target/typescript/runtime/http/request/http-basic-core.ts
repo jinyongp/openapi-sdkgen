@@ -12,7 +12,10 @@ import { isPromise } from "../http-execution-support.js";
 import { assertSafeOperationPath } from "./http-request-path-safety.js";
 import { appendRawHeaders, setHeader } from "./http-request-headers.js";
 import { rejectUndefinedArrayValues } from "./http-request-input.js";
-import type { BasicRequestParameterServices } from "./http-request-parameter-types.js";
+import type {
+  BasicRequestParameterServices,
+  HeaderParameterEncoder,
+} from "./http-request-parameter-types.js";
 import type { BufferedResponseServices } from "../response/http-response-service-types.js";
 
 /** Buffered JSON contracts use the same validators, URL rules, response and error services. */
@@ -22,6 +25,7 @@ export function composeBasicHTTPServices(
   parameters: BasicRequestParameterServices,
   responses: BufferedResponseServices,
   queryEncoder?: QueryEncoder,
+  headerEncoder?: HeaderParameterEncoder,
 ): RequestExecutionServices {
   const { encodeParameter, serializePathParameter, resolveBaseURL }: BasicRequestParameterServices =
     parameters;
@@ -77,6 +81,13 @@ export function composeBasicHTTPServices(
     const contractNames: ReadonlySet<string> = new Set(operation.headerNames ?? []);
     appendRawHeaders(headers, client.headers, contractNames);
     appendRawHeaders(headers, options.headers, contractNames);
+    if (headerEncoder !== undefined) {
+      headerEncoder(
+        headers,
+        isRecord(values["headerParams"]) ? values["headerParams"] : {},
+        operation,
+      );
+    }
     setHeader(headers, "Authorization", options.authorization ?? client.authorization);
     setHeader(headers, "Accept", options.accept);
     setHeader(headers, "X-CSRF-Token", options.csrfToken);

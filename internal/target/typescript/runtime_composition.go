@@ -213,7 +213,16 @@ func prepareRuntimeComposition(features []runtimeFeature, streaming bool) runtim
 			add("internal/runtime/http/request/http-query-core.ts", "createPreparedQueryEncoder")
 			httpArguments += ", /* @__PURE__ */ createPreparedQueryEncoder(parameters.encodeParameter)"
 		}
+		if has("http.header.schema") {
+			if !has("http.query") {
+				httpArguments += ", undefined"
+			}
+			add("internal/runtime/http/request/http-header-schema.ts", "createSchemaHeaderEncoder")
+			httpArguments += ", /* @__PURE__ */ createSchemaHeaderEncoder(parameters.encodeParameter)"
+		}
 		add("internal/runtime/http/request/http-buffered-core.ts", "createBufferedRequestCore as createRequestCore")
+	} else if !streaming && !prefix("response.framing.") {
+		add("internal/runtime/http/request/http-general-buffered-core.ts", "createGeneralBufferedRequestCore as createRequestCore")
 	} else {
 		add("internal/runtime/http/request/http-request-core.ts", "createRequestCore")
 	}

@@ -41,6 +41,9 @@ type runtimeTemplateArtifact struct {
 var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
 	{source: "http-basic-core.ts", path: "internal/runtime/http/request/http-basic-core.ts"},
 	{source: "http-buffered-core.ts", path: "internal/runtime/http/request/http-buffered-core.ts"},
+	{source: "http-header-schema.ts", path: "internal/runtime/http/request/http-header-schema.ts"},
+	{source: "http-simple-value.ts", path: "internal/runtime/http/request/http-simple-value.ts"},
+	{source: "http-general-buffered-core.ts", path: "internal/runtime/http/request/http-general-buffered-core.ts"},
 	{source: "http-parameter-schema.ts", path: "internal/runtime/http/request/http-parameter-schema.ts"},
 	{source: "http-parameter-sort.ts", path: "internal/runtime/http/request/http-parameter-sort.ts"},
 	{source: "http-path-scalar.ts", path: "internal/runtime/http/request/http-path-scalar.ts"},

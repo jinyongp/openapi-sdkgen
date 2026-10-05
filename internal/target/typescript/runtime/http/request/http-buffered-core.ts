@@ -27,7 +27,7 @@ import { awaitAbortable } from "../../stream/stream-abort.js";
 import { transportError } from "../../shared/runtime-support.js";
 
 import type { RequestExecutionPolicy } from "./http-request-policy-types.js";
-/** Canonical buffered executor preserves failures, raw metadata, deadlines and cancellation. */
+/** Binds normalized client state to only the request services needed for buffered execution. */
 export function createBufferedRequestCore(
   context: RequestContext,
   services: RequestExecutionServices,

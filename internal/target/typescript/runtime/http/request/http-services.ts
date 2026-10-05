@@ -44,6 +44,7 @@ import {
 } from "./http-query.js";
 import { createResponseServices } from "../response/http-response-services.js";
 import { createResponseHeaderDecoder } from "../response/http-response-headers.js";
+import { serializeSimpleValue } from "./http-simple-value.js";
 /** Shared parameter, header and response algorithms without an implicit advanced-media import. */
 export function createHTTPServices(
   wire: WireCodec,
@@ -913,19 +914,6 @@ export function createHTTPServices(
         serializeContentParameterSync(value, parameter.contentType, parameter.schema, components),
       );
     return serializeSchemaPathParameter(parameter, name, value);
-  }
-
-  function serializeSimpleValue(value: unknown, explode: boolean): string {
-    if (Array.isArray(value)) return value.map(String).join(",");
-    if (isRecord(value)) {
-      return Object.entries(value)
-        .filter((entry: [string, unknown]): boolean => entry[1] !== undefined)
-        .flatMap(([key, item]: [string, unknown]): string | string[] =>
-          explode ? `${key}=${String(item)}` : [key, String(item)],
-        )
-        .join(",");
-    }
-    return String(value);
   }
 
   async function serializeContentParameter(
