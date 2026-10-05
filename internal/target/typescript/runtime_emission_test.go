@@ -153,7 +153,7 @@ func schemaProgramsSnapshot(t *testing.T, programs *schemaRuntimePlan) []byte {
 		t.Fatal("schema programs were not frozen during preparation")
 	}
 	modules := make(map[string][]byte, len(programs.modules))
-	descriptors := make(map[string]map[wirePropertiesMode]string, len(programs.modules))
+	descriptors := make(map[string][wirePropertiesConstructed + 1]string, len(programs.modules))
 	for _, module := range programs.modules {
 		modules[module.path] = append([]byte(nil), module.source...)
 	}
@@ -167,7 +167,7 @@ func schemaProgramsSnapshot(t *testing.T, programs *schemaRuntimePlan) []byte {
 	data, err := json.Marshal(struct {
 		Nodes       int
 		Modules     map[string][]byte
-		Descriptors map[string]map[wirePropertiesMode]string
+		Descriptors map[string][wirePropertiesConstructed + 1]string
 	}{len(programs.nodes), modules, descriptors})
 	if err != nil {
 		t.Fatal(err)

@@ -205,6 +205,18 @@ func responseMediaRangeCovers(covering, candidate string) bool {
 }
 
 func responseStatusUnion(statuses []int) string {
+	// A range excluding more than half its members cannot be shorter than
+	// these literals. Most operations declare only one or two exact statuses.
+	if len(statuses) < 50 {
+		values := make([]string, len(statuses))
+		for index, status := range statuses {
+			values[index] = strconv.Itoa(status)
+		}
+		if len(values) == 0 {
+			return "never"
+		}
+		return strings.Join(values, " | ")
+	}
 	set := make(map[int]bool, len(statuses))
 	for _, status := range statuses {
 		set[status] = true

@@ -22,6 +22,9 @@ contract's property names, bounds and reference targets as separate data; advanc
 contracts connect their required shared operators. Programs and descriptor data
 are shared across operations and named clients when equivalent. The generic schema
 interpreter is retained for explicitly imported arbitrary-schema helpers.
+Bare references and single-key scalar descriptors stay in their existing owner
+to avoid adding a data file and import for a very small contract. Preparation
+caches the shared algorithms instead of regenerating them for each contract.
 
 Buffered JSON APIs with schema-based path, query and header parameters automatically use
 a smaller HTTP implementation. Query serializers are generated only when a

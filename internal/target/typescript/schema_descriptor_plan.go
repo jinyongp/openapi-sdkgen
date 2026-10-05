@@ -12,6 +12,13 @@ import (
 
 // Descriptor sharing retains complete semantic data, including reference names.
 // Algorithm sharing is independent and cannot erase contract-specific values.
+func compactSchemaDescriptor(node *schemaplan.Node) bool {
+	if len(node.Fields) == 0 || len(node.Fields) == 1 && (node.Fields[0].Name == "reference" || node.Fields[0].Name == "types" || node.Fields[0].Name == "boolean") {
+		return true
+	}
+	return false
+}
+
 func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode wirePropertiesMode, binding *schemaProgramBinding) (*schemaRuntimeModule, error) {
 	// Both descriptor constructors preserve the same exact identity mapping.
 	// A shared owner chooses one representation for every importing surface.
@@ -20,7 +27,7 @@ func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode w
 	if identity == "" || runtime.owners[node] == nil && runtime.descriptorUses[identity] < 2 {
 		return nil, nil
 	}
-	key := fmt.Sprintf("descriptor:%d:%s", mode, identity)
+	key := identity
 	if module, exists := runtime.descriptorModules[key]; exists {
 		return module, nil
 	}

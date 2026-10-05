@@ -156,7 +156,7 @@ func (wire *wireRenderContext) emitSchemaDescriptor(node *schemaplan.Node) (stri
 		if shared != nil {
 			return wire.importDescriptor(shared), nil
 		}
-		if descriptor, exists := module.descriptors[wire.properties]; exists {
+		if descriptor := module.descriptors[wire.properties]; descriptor != "" {
 			wire.usesProperties = wire.usesProperties || module.properties[wire.properties]
 			if wire.programImports == nil {
 				wire.programImports = make(map[string]schemaProgramImport)

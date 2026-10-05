@@ -21,9 +21,9 @@ type schemaRuntimeModule struct {
 type schemaProgramBinding struct {
 	*schemaRuntimeModule
 	programs    map[*schemaplan.Node]*schemaRuntimeModule
-	descriptors map[wirePropertiesMode]string
-	properties  map[wirePropertiesMode]bool
-	imports     map[wirePropertiesMode]map[string]schemaProgramImport
+	descriptors [wirePropertiesConstructed + 1]string
+	properties  [wirePropertiesConstructed + 1]bool
+	imports     [wirePropertiesConstructed + 1]map[string]schemaProgramImport
 }
 type schemaRuntimePlan struct {
 	views             bool
@@ -37,6 +37,7 @@ type schemaRuntimePlan struct {
 	descriptorKeys    map[*schemaplan.Node]string
 	descriptorUses    map[string]int
 	descriptorModules map[string]*schemaRuntimeModule
+	algorithms        map[string]*schemaRuntimeModule
 }
 type schemaProgramImport struct {
 	alias string
@@ -45,7 +46,7 @@ type schemaProgramImport struct {
 }
 
 func newSchemaRuntimePlan() *schemaRuntimePlan {
-	return &schemaRuntimePlan{nodes: make(map[string]*schemaplan.Node), contracts: make(map[string]*schemaplan.Node), modules: make(map[string]*schemaRuntimeModule), owners: make(map[*schemaplan.Node]*schemaProgramBinding), descriptorKeys: make(map[*schemaplan.Node]string), descriptorUses: make(map[string]int), descriptorModules: make(map[string]*schemaRuntimeModule)}
+	return &schemaRuntimePlan{nodes: make(map[string]*schemaplan.Node), contracts: make(map[string]*schemaplan.Node), modules: make(map[string]*schemaRuntimeModule), owners: make(map[*schemaplan.Node]*schemaProgramBinding), descriptorKeys: make(map[*schemaplan.Node]string), descriptorUses: make(map[string]int), descriptorModules: make(map[string]*schemaRuntimeModule), algorithms: make(map[string]*schemaRuntimeModule)}
 }
 
 func schemaSemanticKey(value any, direction projection, format, legacy, ignore bool) (string, error) {
@@ -53,8 +54,28 @@ func schemaSemanticKey(value any, direction projection, format, legacy, ignore b
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(append([]byte(fmt.Sprintf("%s:%t:%t:%t:", direction, format, legacy, ignore)), data...))
-	return base64.RawURLEncoding.EncodeToString(sum[:]), nil
+	return schemaSemanticDataKey(data, direction, format, legacy, ignore), nil
+}
+
+func schemaSemanticDataKey(data []byte, direction projection, format, legacy, ignore bool) string {
+	flags := byte(0)
+	if format {
+		flags |= 1
+	}
+	if legacy {
+		flags |= 2
+	}
+	if ignore {
+		flags |= 4
+	}
+	encoded := make([]byte, len(direction)+3+len(data))
+	copy(encoded, direction)
+	encoded[len(direction)] = ':'
+	encoded[len(direction)+1] = '0' + flags
+	encoded[len(direction)+2] = ':'
+	copy(encoded[len(direction)+3:], data)
+	sum := sha256.Sum256(encoded)
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
 func (runtime *schemaRuntimePlan) lower(value any, direction projection, format, legacy, ignore bool, observer schemaplan.Observer) (*schemaplan.Node, error) {
@@ -87,37 +108,51 @@ func (runtime *schemaRuntimePlan) lower(value any, direction projection, format,
 		node.Fields = append(node.Fields, schemaplan.Field{Name: "ignoreContentMediaType", Value: schemaplan.Literal{Data: true}})
 	}
 	policy := schemaemit.ProgramPolicy(node, schemaemit.ProgramOptions{Annotations: runtime.annotations, Views: runtime.views})
-	semanticKey, err := schemaSemanticKey(node, projection("shared"), policy.Annotations, policy.Views, ignore)
+	nodeData, err := json.Marshal(node)
 	if err != nil {
 		return nil, err
 	}
+	semanticKey := schemaSemanticDataKey(nodeData, projection("shared"), policy.Annotations, policy.Views, ignore)
 	if canonical, exists := runtime.contracts[semanticKey]; exists {
 		runtime.nodes[key] = canonical
-		runtime.descriptorUses[runtime.descriptorKeys[canonical]]++
+		if identity := runtime.descriptorKeys[canonical]; identity != "" {
+			runtime.descriptorUses[identity]++
+		}
 		return canonical, nil
 	}
 	runtime.nodes[key] = node
 	runtime.contracts[semanticKey] = node
-	nodes, slots := schemaemit.ProgramSlots(node)
-	modules := make([]*schemaRuntimeModule, len(nodes))
-	for index, child := range nodes {
-		module, err := runtime.prepareProgram(child, policy)
+	programs := make(map[*schemaplan.Node]*schemaRuntimeModule)
+	schemaemit.VisitProgramNodes(node, func(child *schemaplan.Node) {
 		if err != nil {
-			return nil, err
+			return
 		}
-		modules[index] = module
-	}
-	programs := make(map[*schemaplan.Node]*schemaRuntimeModule, len(slots))
-	for child, slot := range slots {
-		programs[child] = modules[slot]
-		identity, err := schemaSemanticKey(child, projection("descriptor"), runtime.annotations, runtime.views, false)
+		var module *schemaRuntimeModule
+		module, err = runtime.prepareProgram(child, policy)
 		if err != nil {
-			return nil, err
+			return
 		}
-		runtime.descriptorKeys[child] = identity
-		runtime.descriptorUses[identity]++
+		programs[child] = module
+		// Bare references and single-key scalar descriptors are cheaper in the
+		// existing owner than an additional data file, import and manifest entry.
+		if compactSchemaDescriptor(child) {
+			return
+		}
+		var identity string
+		if child == node {
+			identity = schemaSemanticDataKey(nodeData, projection("descriptor"), runtime.annotations, runtime.views, false)
+		} else {
+			identity, err = schemaSemanticKey(child, projection("descriptor"), runtime.annotations, runtime.views, false)
+		}
+		if err == nil {
+			runtime.descriptorKeys[child] = identity
+			runtime.descriptorUses[identity]++
+		}
+	})
+	if err != nil {
+		return nil, err
 	}
-	runtime.owners[node] = &schemaProgramBinding{schemaRuntimeModule: programs[node], programs: programs, descriptors: make(map[wirePropertiesMode]string), properties: make(map[wirePropertiesMode]bool), imports: make(map[wirePropertiesMode]map[string]schemaProgramImport)}
+	runtime.owners[node] = &schemaProgramBinding{schemaRuntimeModule: programs[node], programs: programs}
 	return node, nil
 }
 
@@ -126,6 +161,10 @@ func (runtime *schemaRuntimePlan) lower(value any, direction projection, format,
 func (runtime *schemaRuntimePlan) prepareProgram(node *schemaplan.Node, policy schemaemit.ProgramOptions) (*schemaRuntimeModule, error) {
 	policy.Nodes = []*schemaplan.Node{node}
 	policy = schemaemit.ProgramPolicy(node, policy)
+	shape := schemaemit.AlgorithmIdentity(node, policy)
+	if module, exists := runtime.algorithms[shape]; exists {
+		return module, nil
+	}
 	const modulePath = "internal/schema-programs/shared/schema.ts"
 	from := func(target string) string {
 		value, err := relativeModuleSpecifier(modulePath, target)
@@ -142,10 +181,12 @@ func (runtime *schemaRuntimePlan) prepareProgram(node *schemaplan.Node, policy s
 	sum := sha256.Sum256(source)
 	algorithmKey := base64.RawURLEncoding.EncodeToString(sum[:])
 	if module, exists := runtime.modules[algorithmKey]; exists {
+		runtime.algorithms[shape] = module
 		return module, nil
 	}
 	module := &schemaRuntimeModule{path: "internal/schema-programs/shared/schema_" + algorithmKey + ".ts", alias: "__sdkgen_P" + strings.ReplaceAll(algorithmKey, "-", "$"), node: node, source: source}
 	runtime.modules[algorithmKey] = module
+	runtime.algorithms[shape] = module
 	module.dependencies = schemaemit.ProgramDependencies(node, policy)
 	return module, nil
 }

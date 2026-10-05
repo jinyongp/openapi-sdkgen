@@ -3,7 +3,45 @@ package emit
 import (
 	"encoding/json"
 	"openapi-sdkgen/internal/target/typescript/schema/plan"
+	"strconv"
+	"strings"
 )
+
+// AlgorithmIdentity describes only the local decisions that Programs emits.
+// Child contracts and literal constraints are read from the owning descriptor.
+func AlgorithmIdentity(node *plan.Node, options ProgramOptions) string {
+	var result strings.Builder
+	if options.Annotations {
+		result.WriteByte('A')
+	}
+	if options.Views {
+		result.WriteByte('V')
+	}
+	for _, field := range node.Fields {
+		result.WriteByte(0)
+		result.WriteString(field.Name)
+		switch value := field.Value.(type) {
+		case plan.Child:
+			result.WriteByte('C')
+		case plan.Literal:
+			result.WriteByte('L')
+			if field.Name == "types" {
+				for _, kind := range value.Data.([]string) {
+					result.WriteString(strconv.Itoa(len(kind)))
+					result.WriteByte(':')
+					result.WriteString(kind)
+				}
+			} else if field.Name == "boolean" || field.Name == "additionalProperties" {
+				data, err := json.Marshal(value.Data)
+				if err != nil {
+					panic(err) // Lower has validated these literals.
+				}
+				result.Write(data)
+			}
+		}
+	}
+	return result.String()
+}
 
 // Reference dispatch reads its target from the owning WireSchema. The target
 // name belongs to that descriptor, while the execution algorithm is shared.

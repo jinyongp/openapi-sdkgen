@@ -52,6 +52,11 @@ func programNodes(root *plan.Node, options ProgramOptions) []*plan.Node {
 	return ProgramNodes(root)
 }
 
+// VisitProgramNodes visits descriptor nodes without rebuilding recursive identities.
+func VisitProgramNodes(root *plan.Node, consume func(*plan.Node)) {
+	walkProgramNodes(root, consume)
+}
+
 func ProgramSlots(root *plan.Node) ([]*plan.Node, map[*plan.Node]int) {
 	var nodes []*plan.Node
 	slots := make(map[*plan.Node]int)
