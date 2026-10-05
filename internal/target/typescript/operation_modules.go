@@ -212,7 +212,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 	fmt.Fprintf(&output, "import type { WireSchemas } from %s\n", quoteTS(runtimeCodecs))
 	fmt.Fprintf(&output, "import type { APIError, TransportError } from %s\n", quoteTS(runtimeErrors))
-	fmt.Fprintf(&output, "import type { HTTPErrorFor, HTTPErrorIdentity } from %s\n", quoteTS(runtimeHTTPError))
+	httpErrorImports := "HTTPErrorFor, HTTPErrorIdentity"
+	if strings.Contains(bodySource, "HTTPStatusRange<") || strings.Contains(httpErrorType, "HTTPStatusRange<") {
+		httpErrorImports += ", HTTPStatusRange"
+	}
+	fmt.Fprintf(&output, "import type { %s } from %s\n", httpErrorImports, quoteTS(runtimeHTTPError))
 	fmt.Fprintf(&output, "import type { BinaryBody, OperationStream, RawResponseFor, RequestOptions, StreamSource } from %s\n", quoteTS(runtimeRequest))
 	fmt.Fprintf(&output, "import type { OperationTypeIdentity, RouteTypeIdentity } from %s\n", quoteTS(runtimeIdentity))
 	fmt.Fprintf(&output, "import type { OperationPublicType, OperationResourceRawCapability } from %s\n", quoteTS(contractTypes))

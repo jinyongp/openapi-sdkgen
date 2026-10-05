@@ -1,5 +1,12 @@
 import { APIError, isRecord } from "../../shared/runtime-support.js";
 
+type HTTPStatusDigit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+/** Exact integer HTTP statuses within the declared hundred classes. */
+export type HTTPStatusRange<Hundred extends 1 | 2 | 3 | 4 | 5> =
+  `${Hundred}${HTTPStatusDigit}${HTTPStatusDigit}` extends `${infer Status extends number}`
+    ? Status
+    : never;
+
 type ErrorEnvelope<Data> = Data extends { readonly error: infer Envelope }
   ? Envelope extends object
     ? Envelope

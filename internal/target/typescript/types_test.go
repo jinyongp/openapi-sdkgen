@@ -181,7 +181,7 @@ func TestOperationOutputTypesIncludeDefaultResponses(t *testing.T) {
 		t.Fatalf("output = %q, %v", output, err)
 	}
 	raw, err := operationRawResponseType(document, operation)
-	if err != nil || !strings.Contains(raw, "RawResponseFor<200 | 201") || !strings.Contains(raw, `"id"?: string`) {
+	if err != nil || !strings.Contains(raw, "RawResponseFor<HTTPStatusRange<2>") || !strings.Contains(raw, `"id"?: string`) {
 		t.Fatalf("raw = %q, %v", raw, err)
 	}
 }

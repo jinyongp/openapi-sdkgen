@@ -205,9 +205,42 @@ func responseMediaRangeCovers(covering, candidate string) bool {
 }
 
 func responseStatusUnion(statuses []int) string {
-	values := make([]string, len(statuses))
-	for index, status := range statuses {
-		values[index] = strconv.Itoa(status)
+	set := make(map[int]bool, len(statuses))
+	for _, status := range statuses {
+		set[status] = true
+	}
+	var values, complete []string
+	for hundred := 1; hundred <= 5; hundred++ {
+		var present, missing []string
+		for status := hundred * 100; status < (hundred+1)*100; status++ {
+			if set[status] {
+				present = append(present, strconv.Itoa(status))
+			} else {
+				missing = append(missing, strconv.Itoa(status))
+			}
+		}
+		if len(present) == 0 {
+			continue
+		}
+		if len(missing) == 0 {
+			complete = append(complete, strconv.Itoa(hundred))
+			continue
+		}
+		literal := strings.Join(present, " | ")
+		rangeType := "Exclude<HTTPStatusRange<" + strconv.Itoa(hundred) + ">, " + strings.Join(missing, " | ") + ">"
+		if len(rangeType) < len(literal) {
+			values = append(values, rangeType)
+		} else {
+			values = append(values, literal)
+		}
+	}
+	if len(complete) > 0 {
+		values = append(values, "HTTPStatusRange<"+strings.Join(complete, " | ")+">")
+	}
+	for _, status := range statuses {
+		if status < 100 || status >= 600 {
+			values = append(values, strconv.Itoa(status))
+		}
 	}
 	if len(values) == 0 {
 		return "never"

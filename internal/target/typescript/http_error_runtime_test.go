@@ -64,6 +64,15 @@ func TestDeclaredHTTPErrorGuardRuntimeAndTypes(t *testing.T) {
 		t.Fatal(err)
 	}
 	probe := `import {createClient,isOperationHTTPError,isErrorCode,type APIError,type HTTPErrorFor,type OperationHTTPError,type ErrorCode} from './index.js';
+import type {HTTPStatusRange} from './internal/runtime/http/response/http-errors.js';
+export const firstRangeStatus: HTTPStatusRange<4> = 400;
+export const lastRangeStatus: HTTPStatusRange<4> = 499;
+// @ts-expect-error status below the declared class
+export const belowRangeStatus: HTTPStatusRange<4> = 399;
+// @ts-expect-error status above the declared class
+export const aboveRangeStatus: HTTPStatusRange<4> = 500;
+// @ts-expect-error shadowed exact response is excluded from the range
+export const excludedStatus: Exclude<HTTPStatusRange<4>,400> = 400;
 const api: ReturnType<typeof createClient> = createClient({baseURL:'https://api.test'});
 export function basic(error: unknown): void {
   if (isOperationHTTPError(error,api.$operations.basic)) {

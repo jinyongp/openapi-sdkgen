@@ -15,7 +15,7 @@ func operationLocalIdentifiers(module operationModulePlan, item ManifestOperatio
 		"ContractSchemas", "Errors", "createPaginator", "PaginateInput", "mergeLinkInput", "resolveLinkInput",
 		"LinkInvocation", "RequiredLinkInvocation", "APIError", "RouteKey", "RequestInputs", "Input", "ResourceInput",
 		"Options", "Output", "Error", "RawResponse", "BaseCall", "RawCall", "ResourceBaseCall", "ResourceRawCall",
-		"HTTPError", "HTTPErrorFor", "HTTPErrorIdentity",
+		"HTTPError", "HTTPErrorFor", "HTTPErrorIdentity", "HTTPStatusRange",
 		"Pagination", "Links", "Stream", "ResourceStream", "ExactCall", "ResourceCall", "Contract", "LinkTargets", "LinkInvoker", "invoke",
 		"bindBase", "bindPagination", "bindLinks", "bindStream", "request", "inputSchemas", "outputSchemas",
 		"base", "input", "requestOptions", "response", "invocation", "targets", "__sdkgen_Properties",
