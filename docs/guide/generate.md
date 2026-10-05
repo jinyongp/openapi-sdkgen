@@ -122,6 +122,17 @@ generation. The matching project-config key is
 Exit status reports the result: zero means the requested check succeeded; a
 non-zero status reports generation diagnostics, drift, or an operational error.
 
+Unexpected internal failures print the failing stage and a sanitized cause to
+stderr, followed by the path to a local `.tmp/runs/internal-error-*/diagnostic.json`
+report. The report contains the generator version and a bounded error chain;
+it does not copy the input document, arguments, or environment. URL credentials,
+queries and fragments, recognized credential fields, and known secret environment
+values are removed before display and storage. The report directory and file use
+owner-only permissions on systems that support them. If saving the report fails,
+stderr still shows the original cause and the storage error. Internal failure
+messages are plain text, including when `--diagnostics-format json` is selected;
+that option controls the structured generation diagnostics.
+
 ## Choose the input source
 
 [`--input`](../reference/cli.md#input-source-options) accepts a local JSON/YAML file, a `file://` URL, an HTTP(S) URL, or

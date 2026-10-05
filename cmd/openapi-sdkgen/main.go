@@ -130,9 +130,7 @@ var defaultGenerationRuntime = generationRuntime{
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		if !errors.Is(err, errReportedDiagnostics) {
-			fmt.Fprintf(standardError, "openapi-sdkgen: %v\n", err)
-		}
+		reportCLIError(standardError, err, filepath.Join(".tmp", "runs"), os.Environ())
 		os.Exit(1)
 	}
 }

@@ -613,7 +613,7 @@ func TestGenerateWritesTypeScriptSourceTree(t *testing.T) {
 }
 
 func TestGenerateReportsPreflightOnceAndClassifiesInternalFailures(t *testing.T) {
-	const internalDetail = "extension-process-secret"
+	const internalDetail = "execution plan references missing component SyntheticItem; token=synthetic-secret"
 	warning := diagnostic.Diagnostic{
 		Severity: diagnostic.SeverityWarning,
 		Code:     "SDKGEN-W900",
@@ -702,6 +702,21 @@ func TestGenerateReportsPreflightOnceAndClassifiesInternalFailures(t *testing.T)
 				if !strings.Contains(report.String(), value.Code) {
 					t.Fatalf("report missing %s:\n%s", value.Code, report.String())
 				}
+			}
+			// The process boundary renders the cause separately from input
+			// diagnostics, without losing the original classification or wrapping.
+			before := report.String()
+			reportCLIError(&report, err, filepath.Join(t.TempDir(), "runs"), nil)
+			var internal *internalGenerationError
+			if errors.As(err, &internal) {
+				if !strings.Contains(report.String(), "cause: execution plan references missing component SyntheticItem") {
+					t.Fatalf("missing actionable internal cause: %s", report.String())
+				}
+				if strings.Contains(report.String(), "synthetic-secret") {
+					t.Fatalf("credential leaked: %s", report.String())
+				}
+			} else if before != report.String() {
+				t.Fatalf("reported input diagnostics were duplicated: %s", report.String())
 			}
 		})
 	}
