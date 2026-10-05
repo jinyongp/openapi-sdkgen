@@ -59,6 +59,27 @@ named-client program sharing. The optional captured source tree builds a before
 generator under the same toolchain. Three generation trials and one compiler
 trial report time and peak RSS; they do not impose size or timing thresholds.
 
+`devtools run provider-size:perf OUTPUT BASELINE_BINARY CURRENT_BINARY MANIFEST`
+compares pinned local OpenAPI documents against a released generator. It measures
+full generation and one/two API consumers using static `loadOperations` references,
+root selection, and named-client selection. Every deployed minified JS chunk and
+its gzip size count toward the comparison; native ESM checks the exact API set
+without sending requests. This optional command fails when either JS or gzip
+exceeds the baseline by more than 5%; ordinary CI has no byte-size gate.
+
+The JSON manifest has a `providers` array with `name`, `input`, and `sha256`.
+Optional `excludedRoutes` entries contain `route` and `reason` for known input
+omissions; both generators must expose the same remaining routes. Input fixes
+and exclusions must be disclosed separately. An optional `baselineFull` path
+reuses an independently verified baseline SDK; omit it for a fresh generation.
+Reports include input and binary hashes, the bundler version, all chunk totals,
+TypeScript file counts, and total generated-tree bytes including metadata.
+Outputs, generated SDKs and logs use owner-only permissions. Set `private: true`
+at the manifest root to keep detailed failures and provider names out of command
+output. Confidential input, SDKs, logs and reports belong in ignored local storage;
+publish only the public-provider results. Use a fresh output directory when
+changing inputs or binaries.
+
 Use `--help` to check arguments, side effects, and output paths. `--verbose`
 requests full redacted output for one invocation and warns on stderr before
 work starts. Prefer the default command for routine work.

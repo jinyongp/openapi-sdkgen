@@ -6,6 +6,9 @@ exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\
 [commands."schema-programs:perf"]
 exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/perf/schema-programs.sh']
 
+[commands."provider-size:perf"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/perf/provider-size.sh']
+
 # Local commands select this worktree and its toolchain. CI prepares the
 # toolchain and calls the same scripts directly. Each name is COMMAND:TARGET; the operation comes first.
 

@@ -17,16 +17,18 @@ parameters, schema references, and private Link targets all contribute to this
 decision. Schema validation remains enabled for every declared constraint.
 
 The generator also emits validation and DTO transformation for each prepared
-schema contract. Ordinary JSON uses direct type, bound, length and property
-checks; advanced contracts connect their required shared operators. Equivalent
-contracts share programs across operations and named clients. The generic schema
+schema contract. Ordinary JSON shares validation algorithms while retaining each
+contract's property names, bounds and reference targets as separate data; advanced
+contracts connect their required shared operators. Programs and descriptor data
+are shared across operations and named clients when equivalent. The generic schema
 interpreter is retained for explicitly imported arbitrary-schema helpers.
 
-Buffered JSON APIs with schema-based path and query parameters automatically use
+Buffered JSON APIs with schema-based path, query and header parameters automatically use
 a smaller HTTP implementation. Query serializers are generated only when a
-contract declares query parameters. Content-based parameters, typed header or
-cookie parameters, response headers, multiple request body representations, and
-advanced media or framing retain the general implementation. Both paths share
+contract declares query parameters. Content-based parameters, cookie parameters,
+response headers, multiple request body representations, and advanced media retain
+the general implementation. General buffered requests also omit response-stream
+handling when no operation requires framing or streaming. These paths share
 the same schema validators, server selection, raw responses, error provenance,
 cancellation, and security handling. No lightweight setting is required.
 
@@ -45,7 +47,8 @@ schemas; generated callback and webhook routers use their own feature sets.
 Adding that add-on does not change the client artifacts or pull those generic
 helpers into a browser client bundle.
 
-See the [small API measurement](./selection-benchmarks.md#small-api-runtime)
+See the [released-provider comparison](./selection-benchmarks.md#released-providers)
+for the v10 baseline and all deployed chunks, and the [small API measurement](./selection-benchmarks.md#small-api-runtime)
 for the default entry's source and bundle sizes and a reproducible command.
 
 ## Generate only the APIs you need {#generation}

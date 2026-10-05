@@ -5,9 +5,66 @@ Choose an entry point to control what the application imports and deploys.
 These are separate decisions: a small application bundle can come from a large
 generated SDK, and a small initial import can still require many deployment files.
 
-## Small API runtime cost {#small-api-runtime}
+## Released-provider comparison {#released-providers}
 
-The current development generator automatically selects runtime handlers from
+The October 5, 2026 recovery snapshot is compared with the released **v10.1.1**
+generator on pinned official documents. Every provider has seven comparisons:
+full generation, static `loadOperations` for one and two APIs, root `[selection]`
+for one and two APIs, and named client selection for one and two APIs.
+**All 35 comparisons reduce both deployed JS and gzip.** The largest remaining
+JS ratio is 74.5% of v10; the largest gzip ratio is 98.4%.
+
+Full-client results below sum every deployed chunk. Values are bytes, before → after.
+
+| Input | Deployed JS | Deployed gzip | Generated tree bytes | TypeScript files |
+| --- | ---: | ---: | ---: | ---: |
+| Stripe GA | 3,182,786 → 1,725,211 | 299,802 → 231,153 | 40,578,789 → 46,132,101 | 5,558 → 9,190 |
+| Stripe v1 | 2,862,026 → 1,588,323 | 274,878 → 212,891 | 38,431,729 → 43,383,186 | 5,205 → 8,385 |
+| GitHub | 2,516,853 → 1,874,515 | 217,123 → 190,386 | 32,835,540 → 38,602,744 | 8,005 → 10,231 |
+| Twilio | 702,794 → 505,572 | 55,383 → 45,330 | 6,187,188 → 7,098,400 | 1,309 → 1,780 |
+| Cloudflare corrected control | 10,981,908 → 7,238,022 | 719,760 → 708,106 | 104,350,156 → 130,788,041 | 26,587 → 41,047 |
+
+Generated trees still grow by roughly 13–25% in these full cases. They include
+type-only files and generator metadata, so source cost and bundle cost remain
+separate measurements. Shared algorithms and descriptor data remove duplicated
+executable validators; the additional module boundaries do not imply a smaller
+generated tree or faster type checking.
+
+Cloudflare's original pinned document has four unresolved discriminator mappings.
+It must produce `SDKGEN-E120`, rather than an internal failure. Its size comparison
+uses a separate control that corrects only those four mapping names. Both versions
+expose the same 3,642 routes: one legacy hidden route and four routes with undeclared
+security schemes are excluded and recorded explicitly. The other inputs are unchanged.
+
+<a :href="withBase('/benchmarks/provider-release-results.json')">Raw public results</a>
+include every surface, source counts, official input URLs/revisions/hashes, the
+Cloudflare corrections and omissions, and both generator binary hashes. The current
+binary hash starts with `e4b2575d0c93`; this is a development snapshot, not v11.0.0.
+Conditions: Node.js 24.21.0, Rolldown 1.2.6, browser ESM, tree shaking and minification;
+each deployed chunk is gzip-compressed at level 6 and then summed. The browser bundles
+are imported in Node.js and their exact API route sets checked without network calls.
+These checks measure size and construction, not provider response behavior or timing.
+
+Reproduce with local pinned inputs, the released v10.1.1 binary and a development
+binary. A manifest lists `providers` with `name`, absolute `input` and `sha256`;
+`excludedRoutes`, when needed, lists each `route` and `reason`. Apply the recorded
+Cloudflare corrections to a separate copy before measuring.
+
+```sh
+devtools run provider-size:perf .tmp/provider-comparison /absolute/v10-generator /absolute/current-generator /absolute/providers.json
+```
+
+This optional command checks JS and gzip against a 5% increase limit, validates
+input hashes, and preserves diagnostics. It requires a fresh output directory
+after changing a binary or input. An optional `baselineFull` may reuse an independently
+verified v10 full SDK; all selected SDKs are generated separately. Set manifest
+`"private": true` for local confidential comparisons:
+SDKs, logs and reports stay in an owner-only directory and detailed failure output
+is suppressed. Only public-input results are included in the report above.
+
+## Earlier small API runtime cost {#small-api-runtime}
+
+The October 4 development snapshot automatically selects runtime handlers from
 the generated APIs. This sample has three JSON APIs with Bearer authentication,
 object/array validation, string-length and object-property constraints. All four bundles perform the
 same `getItem` request and check the URL, credentials, and returned DTO with
