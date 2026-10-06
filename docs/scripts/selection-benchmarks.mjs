@@ -74,15 +74,15 @@ const labels = {
   ko: {
     full: "전체 SDK",
     all: "모든 API 선택",
-    selected: "일반 selection",
-    named: "named selection",
-    combined: "selection + named",
-    selection: "일반 selection",
-    "named-selection": "named selection",
-    "full-static": "전체 + 정적 loader",
-    "selected-static": "selection + 정적 loader",
-    "full-lookup": "전체 + 동적 lookup",
-    "selected-lookup": "selection + 동적 lookup",
+    selected: "API 선택",
+    named: "이름 있는 클라이언트",
+    combined: "API 선택 + 이름 있는 클라이언트",
+    selection: "API 선택",
+    "named-selection": "이름 있는 클라이언트",
+    "full-static": "전체 SDK · 정적 로딩",
+    "selected-static": "API 선택 · 정적 로딩",
+    "full-lookup": "전체 SDK · 동적 조회",
+    "selected-lookup": "API 선택 · 동적 조회",
   },
 };
 const charts = [
@@ -119,7 +119,7 @@ const charts = [
     id: "bundle-ready",
     unit: "KiB",
     en: "JS loaded to ready",
-    ko: "준비까지 읽은 JS",
+    ko: "호출 준비까지 로드한 JS",
     rows: summary.bundles.map((row) => ({ id: row.name, value: row.loaded.ready.bytes / 1024 })),
   },
   {
@@ -132,8 +132,8 @@ const charts = [
   {
     id: "bundle-brotli",
     unit: "KiB",
-    en: "Deployed Brotli",
-    ko: "배포 Brotli",
+    en: "Brotli-compressed size",
+    ko: "Brotli 압축 크기",
     rows: summary.bundles.map((row) => ({ id: row.name, value: row.deployed.brotliBytes / 1024 })),
   },
   {
@@ -170,12 +170,23 @@ for (const locale of ["en", "ko"])
       new Intl.NumberFormat(locale, { maximumFractionDigits: chart.unit === "s" ? 3 : 2 }).format(
         value,
       );
-    const height = rows.length * 54 + 100;
+    const height = rows.length * 36 + 100;
     const title = `${chart[locale]} (${chart.unit})`;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="${height}" viewBox="0 0 720 ${height}" role="img" aria-label="${escape(title)}"><title>${escape(title)}</title><rect width="720" height="${height}" fill="white"/><g font-family="system-ui,sans-serif" font-size="14" fill="#172033"><text x="12" y="26" font-size="19" font-weight="600">${escape(title)}</text><text x="12" y="48" font-size="11">${locale === "ko" ? "API 1,000개 중 10개 · 중앙값, 선은 최소–최대" : "10 of 1,000 APIs · medians, whiskers show min–max"}</text><g transform="translate(0 56)"><line x1="228" y1="12" x2="228" y2="${rows.length * 54 + 12}" stroke="#cad0d9"/>${bars.map((bar) => `<g><title>${escape(bar.label)}: ${number(bar.value)} ${chart.unit}</title><text x="12" y="${bar.y + bar.height / 2 + 4}">${escape(bar.label)}</text><rect x="${bar.x}" y="${bar.y + bar.height * 0.2}" width="${bar.width}" height="${bar.height * 0.6}" rx="3" fill="#4169b8"/>${bar.low === undefined ? "" : `<line x1="${bar.x + (bar.width * bar.low) / bar.value}" x2="${bar.x + (bar.width * bar.high) / bar.value}" y1="${bar.y + bar.height / 2}" y2="${bar.y + bar.height / 2}" stroke="#172033" stroke-width="2"/>`}<text x="712" y="${bar.y + bar.height / 2 + 4}" text-anchor="end">${number(bar.value)}</text></g>`).join("")}<text x="228" y="${rows.length * 54 + 35}" font-size="11">0 ${chart.unit}</text></g></g></svg>\n`;
+    const maximum = Math.max(...rows.map((row) => row.high ?? row.value)) * 1.08;
+    const axis = [0, maximum / 2, maximum].map((value) => {
+      const x = 228 + 396 * value / maximum;
+      const anchor = value === 0 ? "start" : value === maximum ? "end" : "middle";
+      return `<line x1="${x}" y1="12" x2="${x}" y2="${rows.length * 36 + 12}" stroke="#cad0d9"/><text x="${x}" y="${rows.length * 36 + 35}" text-anchor="${anchor}" font-size="11">${number(value)} ${chart.unit}</text>`;
+    }).join("");
+    const barMarkup = bars.map((bar) => {
+      const center = bar.y + bar.height / 2;
+      const whisker = bar.low === undefined ? "" : `<line x1="${bar.x + bar.width * bar.low / bar.value}" x2="${bar.x + bar.width * bar.high / bar.value}" y1="${center}" y2="${center}" stroke="#172033" stroke-width="1.5"/>`;
+      return `<g><title>${escape(bar.label)}: ${number(bar.value)} ${chart.unit}</title><text x="12" y="${center + 4}">${escape(bar.label)}</text><rect x="${bar.x}" y="${center - 6}" width="${bar.width}" height="12" rx="2" fill="#0f766e"/>${whisker}<text x="712" y="${center + 4}" text-anchor="end">${number(bar.value)} ${chart.unit}</text></g>`;
+    }).join("");
+    const unitSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="${height}" viewBox="0 0 720 ${height}" role="img" aria-label="${escape(title)}"><title>${escape(title)}</title><rect width="720" height="${height}" fill="white"/><g font-family="system-ui,sans-serif" font-size="12" fill="#172033"><text x="12" y="26" font-size="16" font-weight="600">${escape(title)}</text><text x="12" y="48" font-size="11">${locale === "ko" ? "API 1,000개 중 10개 · 중앙값, 선은 최소–최대" : "10 of 1,000 APIs · medians, whiskers show min–max"}</text><g transform="translate(0 56)">${axis}${barMarkup}</g></g></svg>\n`;
     const measuredSvg = rows.some((row) => row.low !== undefined)
-      ? svg
-      : svg
+      ? unitSvg
+      : unitSvg
           .replace("medians, whiskers show min–max", "lower is smaller")
           .replace("중앙값, 선은 최소–최대", "낮을수록 작음");
     fs.writeFileSync(path.join(directory, `${chart.id}-${locale}.svg`), measuredSvg);

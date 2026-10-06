@@ -25,9 +25,9 @@ const metrics: readonly Metric[] =
         { id: "memory", label: ko ? "최대 메모리" : "Peak memory", unit: "MiB" },
       ]
     : [
-        { id: "ready", label: ko ? "준비까지 읽은 JS" : "JS loaded to ready", unit: "KiB" },
+        { id: "ready", label: ko ? "호출 준비까지 로드한 JS" : "JS loaded to ready", unit: "KiB" },
         { id: "deployed", label: ko ? "전체 배포 JS" : "All deployed JS", unit: "KiB" },
-        { id: "brotli", label: ko ? "배포 Brotli" : "Deployed Brotli", unit: "KiB" },
+        { id: "brotli", label: ko ? "Brotli 압축 크기" : "Brotli-compressed size", unit: "KiB" },
         { id: "readyMS", label: ko ? "준비 시간" : "Time to ready", unit: "ms" },
       ];
 const selected: Ref<string> = ref(metrics[0]!.id);
@@ -38,15 +38,15 @@ const labels: Readonly<Record<string, string>> = ko
   ? {
       full: "전체 SDK",
       all: "모든 API 선택",
-      selected: "일반 selection",
-      named: "named selection",
-      combined: "selection + named",
-      selection: "일반 selection",
-      "named-selection": "named selection",
-      "full-static": "전체 + 정적 loader",
-      "selected-static": "selection + 정적 loader",
-      "full-lookup": "전체 + 동적 lookup",
-      "selected-lookup": "selection + 동적 lookup",
+      selected: "API 선택",
+      named: "이름 있는 클라이언트",
+      combined: "API 선택 + 이름 있는 클라이언트",
+      selection: "API 선택",
+      "named-selection": "이름 있는 클라이언트",
+      "full-static": "전체 SDK · 정적 로딩",
+      "selected-static": "API 선택 · 정적 로딩",
+      "full-lookup": "전체 SDK · 동적 조회",
+      "selected-lookup": "API 선택 · 동적 조회",
     }
   : {
       full: "Full SDK",
@@ -100,6 +100,15 @@ const rows: ComputedRef<readonly BenchmarkDatum[]> = computed((): readonly Bench
 const bars: ComputedRef<readonly BenchmarkBar[]> = computed((): readonly BenchmarkBar[] =>
   benchmarkBars(rows.value, 720),
 );
+const maximum: ComputedRef<number> = computed((): number =>
+  Math.max(...rows.value.map((row: BenchmarkDatum): number => row.high ?? row.value)) * 1.08,
+);
+const ticks: ComputedRef<readonly number[]> = computed((): readonly number[] =>
+  [0, maximum.value / 2, maximum.value],
+);
+const timed: ComputedRef<boolean> = computed((): boolean =>
+  rows.value.some((row: BenchmarkDatum): boolean => row.low !== undefined),
+);
 const exportName: ComputedRef<string> = computed((): string => {
   const names: Readonly<Record<string, string>> =
     props.group === "generation"
@@ -135,34 +144,37 @@ function range(row: BenchmarkDatum): string {
         :aria-pressed="selected === item.id"
         @click="selected = item.id"
       >
-        {{ item.label }}
+        {{ item.label }} <span class="control-unit">({{ item.unit }})</span>
       </button>
     </div>
     <p class="chart-caption">
-      {{ metric.label }} · {{ metric.unit }} ·
       {{
-        ko
-          ? "낮을수록 작거나 빠름. 시간 막대는 중앙값, 선은 최소–최대."
-          : "Lower is smaller or faster. Time bars show medians; whiskers show min–max."
+        timed
+          ? (ko ? "짧을수록 빠릅니다. 막대는 중앙값, 가로선은 최소–최대 시간입니다." : "Shorter is faster. Bars show medians; lines show minimum–maximum times.")
+          : (ko ? "짧을수록 용량이 작습니다." : "Shorter means a smaller size.")
       }}
+      {{ metric.unit === "KiB" ? (ko ? "1 KiB = 1,024바이트." : "1 KiB = 1,024 bytes.") : metric.unit === "MiB" ? (ko ? "1 MiB = 1,024 KiB." : "1 MiB = 1,024 KiB.") : metric.unit === "ms" ? (ko ? "1 ms = 0.001초." : "1 ms = 0.001 seconds.") : (ko ? "s는 초 단위입니다." : "s denotes seconds.") }}
     </p>
     <div class="chart-scroll" tabindex="0" role="region" :aria-label="metric.label">
       <svg
-        :viewBox="`0 0 720 ${rows.length * 54 + 44}`"
+        :viewBox="`0 0 720 ${rows.length * 36 + 44}`"
         role="img"
         :aria-label="`${metric.label}: ${rows.map((row) => `${row.label} ${number(row.value)} ${metric.unit}`).join('; ')}`"
       >
         <title>{{ metric.label }}</title>
-        <line x1="228" y1="12" x2="228" :y2="rows.length * 54 + 12" class="axis" />
+        <g v-for="tick in ticks" :key="tick">
+          <line :x1="228 + 396 * tick / maximum" y1="12" :x2="228 + 396 * tick / maximum" :y2="rows.length * 36 + 12" class="axis" />
+          <text :x="228 + 396 * tick / maximum" :y="rows.length * 36 + 35" :text-anchor="tick === 0 ? 'start' : tick === maximum ? 'end' : 'middle'" class="origin">{{ number(tick) }} {{ metric.unit }}</text>
+        </g>
         <g v-for="bar in bars" :key="bar.id">
           <title>{{ bar.label }}: {{ number(bar.value) }} {{ metric.unit }} {{ range(bar) }}</title>
           <text x="12" :y="bar.y + bar.height / 2 + 4" class="row-label">{{ bar.label }}</text>
           <rect
             :x="bar.x"
-            :y="bar.y + bar.height * 0.2"
+            :y="bar.y + bar.height / 2 - 6"
             :width="bar.width"
-            :height="bar.height * 0.6"
-            rx="3"
+            height="12"
+            rx="2"
             class="bar"
           />
           <line
@@ -174,10 +186,9 @@ function range(row: BenchmarkDatum): string {
             class="whisker"
           />
           <text x="712" :y="bar.y + bar.height / 2 + 4" text-anchor="end" class="value">
-            {{ number(bar.value) }}
+            {{ number(bar.value) }} {{ metric.unit }}
           </text>
         </g>
-        <text x="228" :y="rows.length * 54 + 35" class="origin">0 {{ metric.unit }}</text>
       </svg>
     </div>
     <details>
@@ -186,15 +197,15 @@ function range(row: BenchmarkDatum): string {
         <thead>
           <tr>
             <th scope="col">{{ ko ? "방식" : "Method" }}</th>
-            <th scope="col">{{ metric.unit }}</th>
-            <th scope="col">{{ ko ? "최소–최대" : "Min–max" }}</th>
+            <th scope="col">{{ timed ? (ko ? "중앙값" : "Median") : metric.label }} ({{ metric.unit }})</th>
+            <th v-if="timed" scope="col">{{ ko ? "최소–최대" : "Min–max" }} ({{ metric.unit }})</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id">
             <th scope="row">{{ row.label }}</th>
             <td>{{ number(row.value) }}</td>
-            <td>{{ range(row) || "—" }}</td>
+            <td v-if="timed">{{ range(row) }}</td>
           </tr>
         </tbody>
       </table>
@@ -249,6 +260,7 @@ function range(row: BenchmarkDatum): string {
 svg {
   display: block;
   width: 100%;
+  max-width: 720px;
   min-width: 600px;
   font-family: var(--vp-font-family-base);
 }
@@ -260,11 +272,11 @@ svg {
 }
 .whisker {
   stroke: var(--vp-c-text-1);
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 text {
   fill: var(--vp-c-text-1);
-  font-size: 14px;
+  font-size: 12px;
 }
 .value {
   font-variant-numeric: tabular-nums;

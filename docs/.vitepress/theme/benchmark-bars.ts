@@ -60,7 +60,7 @@ export function benchmarkBars(
     ],
   });
   const projection: ReturnType<typeof createChartProjection> = createChartProjection(definition, {
-    viewport: { width, height: data.length * 54 + 44 },
+    viewport: { width, height: data.length * 36 + 44 },
     insets: { left: 228, right: 96, top: 12, bottom: 32 },
   });
   const source: Map<string, BenchmarkDatum> = new Map(
