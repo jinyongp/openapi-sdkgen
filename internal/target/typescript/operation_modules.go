@@ -106,11 +106,11 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	operationName := operationLocalTypePrefix
 	inputType := "never"
 	if len(item.InputSections) > 0 {
-		inputType = operationName + "Input"
+		inputType = operationInputTypeName(operation.OperationID, operation.Method, operation.Path)
 	}
 	resourceInputType := inputType
 	if len(item.PathParameterOrder) > 0 {
-		resourceInputType = operationName + "ResourceInput"
+		resourceInputType = strings.TrimSuffix(operationInputTypeName(operation.OperationID, operation.Method, operation.Path), "Input") + "ResourceInput"
 	}
 	resourceCallType := "never"
 	if item.Visibility == "public" && resourceReachable {

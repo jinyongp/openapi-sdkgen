@@ -85,17 +85,21 @@ import {
   createClient,
   type Client,
   type ComponentOutput,
+  type OperationInput,
 } from "./generated/api/clients/catalog/index.js";
 
 type Product = ComponentOutput<"Product">;
-type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
+type GetProductInput = OperationInput<Client["$routes"]["GET /products/{id}"]>;
 type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
 ```
 
 `ComponentInput`은 모델의 요청 표현, `ComponentOutput`은 응답 표현입니다. 다른
 클라이언트에서만 쓰는 구성 요소 이름은 포함되지 않으며, 이 클라이언트의 API에서
 쓰지 않는 방향의 표현은 `never`입니다. 해당 메서드의 정확한 호출 타입은
-`Parameters`와 `ReturnType`으로 추출할 수 있습니다.
+`Parameters`와 `ReturnType`으로 추출할 수 있습니다. 입력을 생략할 수 있는
+메서드는 전송 options만 전달하는 호출도 허용하므로 `Parameters<Method>[0]`에
+options 타입도 포함됩니다. 생성된 입력만 필요하면 `OperationInput` 또는
+`RouteInput`을 사용합니다.
 
 ## 응답 본문 타입
 
@@ -138,7 +142,7 @@ type UpdateInput = OperationInput<typeof updateTodo>;
 type UpdateBody = OperationBody<typeof updateTodo>;
 ```
 
-`OperationInput`은 메서드에 전달하는 전체 인자입니다. `OperationBody`는 요청
+`OperationInput`은 메서드에 전달하는 생성된 입력 전체입니다. `OperationBody`는 요청
 본문입니다. 리소스 트리 메서드의 입력에는 선택자로 이미 바인딩된 값을 뺀
 나머지 항목이 들어갑니다.
 

@@ -163,13 +163,13 @@ func TestSourceArtifactsProjectEnvironmentControlledHeadersAsOptionalClientInput
 			}{
 				{"GET /managed-only", []string{
 					"readonly headerParams?: __sdkgen_HeaderInput | undefined",
-					`(input?: OperationPublicType<Input>, options?: Options)`,
+					`...args: [options?: Options &`,
 					`readonly raw: (RawCall & RouteTypeIdentity<"GET /managed-only">)`,
 				}},
 				{"POST /oauth", []string{
 					"readonly headerParams?: __sdkgen_HeaderInput | undefined",
 					"readonly body: __sdkgen_BodyInput",
-					`(input: OperationPublicType<Input>, options?: Options)`,
+					`(input: OAUTHInput, options?: Options)`,
 				}},
 				{operationRouteKey(findOperation(document, "override")), []string{
 					"readonly headerParams: __sdkgen_HeaderInput",

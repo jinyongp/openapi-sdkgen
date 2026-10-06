@@ -86,10 +86,11 @@ import {
   createClient,
   type Client,
   type ComponentOutput,
+  type OperationInput,
 } from "./generated/api/clients/catalog/index.js";
 
 type Product = ComponentOutput<"Product">;
-type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
+type GetProductInput = OperationInput<Client["$routes"]["GET /products/{id}"]>;
 type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
 ```
 
@@ -97,7 +98,9 @@ type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}
 `ComponentOutput` its response representation. A component name used solely by
 another client is absent; a representation unused by this client's APIs is
 `never`. Use `Parameters` and `ReturnType` on this client's methods to extract
-their exact call types.
+their exact call types. For optional-input methods, `Parameters<Method>[0]`
+also includes transport options because they can be passed as the only argument.
+Use `OperationInput` or `RouteInput` when you need only the generated input.
 
 ## Response body types
 
@@ -141,7 +144,7 @@ type UpdateInput = OperationInput<typeof updateTodo>;
 type UpdateBody = OperationBody<typeof updateTodo>;
 ```
 
-`OperationInput` is the complete argument accepted by the method. `OperationBody` is
+`OperationInput` is the complete generated input accepted by the method. `OperationBody` is
 its request body. A resource-tree method includes the arguments that remain after
 its selectors have been applied.
 

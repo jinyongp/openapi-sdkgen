@@ -15,7 +15,7 @@ func TestRequestInputSectionRejectsUnknownSection(t *testing.T) {
 	}
 }
 
-func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
+func TestOptionalInputCallsEmitArgumentTuples(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{
   "openapi": "3.1.0",
   "info": {"title": "Optional calls", "version": "1"},
@@ -50,8 +50,7 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	optionalName := operationLocalTypePrefix
 	optionalCall := interfaceBody("GET /optional", optionalName+"Call")
 	for _, expected := range []string{
-		`(options?: Options)`,
-		`(input?: OperationPublicType<Input>, options?: Options)`,
+		`...args: [options?: Options & { readonly [K in keyof OptionalInput]?: never } | undefined] | [input?: OptionalInput | undefined, options?: Options | undefined]`,
 		`readonly raw: (RawCall & RouteTypeIdentity<"GET /optional">)`,
 	} {
 		if !strings.Contains(optionalCall, expected) {
@@ -60,8 +59,7 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	}
 	optionalRawCall := interfaceBody("GET /optional", optionalName+"RawCall")
 	for _, expected := range []string{
-		`(options?: Options)`,
-		`(input?: OperationPublicType<Input>, options?: Options)`,
+		`...args: [options?: Options & { readonly [K in keyof OptionalInput]?: never } | undefined] | [input?: OptionalInput | undefined, options?: Options | undefined]`,
 	} {
 		if !strings.Contains(optionalRawCall, expected) {
 			t.Fatalf("optional raw call missing %q:\n%s", expected, optionalRawCall)
@@ -92,7 +90,7 @@ func TestOptionalInputCallsEmitOptionsOnlyOverloads(t *testing.T) {
 	}
 	deleteResourceCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceCall")
 	deleteResourceRawCall := interfaceBody("DELETE /accounts/{accountID}/phone", deleteName+"ResourceRawCall")
-	if !strings.Contains(deleteResourceCall, `(options?: Options)`) || !strings.Contains(deleteResourceRawCall, `(options?: Options)`) {
+	if !strings.Contains(deleteResourceCall, `[options?: Options &`) || !strings.Contains(deleteResourceRawCall, `[options?: Options &`) {
 		t.Fatalf("optional resource call missing options-only overload:\n%s", deleteResourceCall)
 	}
 }

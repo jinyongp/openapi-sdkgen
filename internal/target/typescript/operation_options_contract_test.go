@@ -82,9 +82,10 @@ const file=process.argv[1]+'/consumer.ts';
 const program=ts.createProgram([file],{strict:true,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,target:ts.ScriptTarget.ES2022,noEmit:true});
 const diagnostics=program.getSemanticDiagnostics(program.getSourceFile(file));
 assert.equal(diagnostics.length,1);
-assert.equal(diagnostics[0].code,2769);
+assert.equal(diagnostics[0].code,2345);
 const message=ts.flattenDiagnosticMessageText(diagnostics[0].messageText,'\n');
-assert.ok(/options\?: (?:[A-Za-z_$][A-Za-z0-9_$]*Options|Options)(?: \| undefined)?\)/.test(message),message);
+assert.ok(message.includes('options?:') && message.includes('Options'),message);
+assert.ok(!message.includes('No overload matches') && !message.includes('Promise<'),message);
 assert.ok(message.includes('bogus'),message);
 `
 	if output, err := exec.Command("node", "--input-type=module", "--eval", script, source, compiler).CombinedOutput(); err != nil {

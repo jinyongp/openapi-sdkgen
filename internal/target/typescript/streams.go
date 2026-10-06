@@ -93,7 +93,7 @@ func streamOptionsType(stream generatedStream) string {
 
 func streamFunctionType(document *ir.Document, stream generatedStream) (string, error) {
 	_ = document
-	inputType := operationSlotType(operationRouteKey(stream.Operation), "input")
+	inputType := operationInputTypeName(stream.Operation.OperationID, stream.Operation.Method, stream.Operation.Path)
 	return streamFunctionTypeForInput(stream, inputType, len(stream.Plan.InputSections) > 0, stream.Plan.prepared.inputRequired), nil
 }
 
@@ -103,31 +103,16 @@ func resourceStreamFunctionType(document *ir.Document, stream generatedStream) (
 		return streamFunctionType(document, stream)
 	}
 	hasInput := stream.Plan.InputSections.hasInput(true)
-	inputType := operationSlotType(operationRouteKey(stream.Operation), "resourceInput")
+	inputType := strings.TrimSuffix(operationInputTypeName(stream.Operation.OperationID, stream.Operation.Method, stream.Operation.Path), "Input") + "ResourceInput"
 	return streamFunctionTypeForInput(stream, inputType, hasInput, stream.Plan.prepared.resourceInputRequired), nil
 }
 
 func streamFunctionTypeForInput(stream generatedStream, inputType string, hasInput, inputRequired bool) string {
 	optionsType := streamOptionsType(stream)
-	optionMarker := "?"
-	if stream.Plan.optionsRequired {
-		optionMarker = ""
-	}
 	if !hasInput {
-		return "(options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
+		inputType = "never"
 	}
-	if !inputRequired {
-		optionsOnly := "(options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
-		inputMarker := ""
-		if optionMarker == "?" {
-			inputMarker = "?"
-		} else {
-			inputType += " | undefined"
-		}
-		inputCall := "(input" + inputMarker + ": " + inputType + ", options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
-		return "(" + optionsOnly + ") & (" + inputCall + ")"
-	}
-	return "(input: " + inputType + ", options" + optionMarker + ": " + optionsType + ") => OperationStream<" + stream.ItemType + ">"
+	return "(" + operationCallParameters(inputType, hasInput && !inputRequired, optionsType, !stream.Plan.optionsRequired) + ") => OperationStream<" + stream.ItemType + ">"
 }
 
 func operationRequiresOptions(document *ir.Document, operation ir.Operation) (bool, error) {

@@ -329,12 +329,13 @@ describe("generated client QuickInfo", () => {
   });
 
   it.each([
-    ["contract.$operations.createTask(", "OperationPublicType<Input>"],
-    ['contract.projects("project-1").tasks.create(', "OperationPublicType<ResourceInput>"],
+    ["contract.$operations.createTask(", "CreateTaskInput"],
+    ['contract.projects("project-1").tasks.create(', "CreateTaskResourceInput"],
   ])("keeps %s signature help public", async (expression, expected) => {
     const info = await signatureInfo(expression);
 
     expect(info).toContain(expected);
+    expect(info).not.toContain("OperationPublicType<");
     expect(info).not.toContain("__sdkgen_");
   });
 

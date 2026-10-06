@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -11,6 +12,44 @@ import (
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/compiler/naming"
 )
+
+func operationInputTypeName(id, method, path string) string {
+	if id == "" {
+		id = method + " " + path
+	}
+	name, err := naming.Public(id)
+	if err != nil {
+		name = "Operation"
+	}
+	name += "Input"
+	for slices.Contains(operationFixedIdentifiers, name) {
+		name = strings.TrimSuffix(name, "Input") + "OperationInput"
+	}
+	return name
+}
+
+// Options-only calls exclude input keys so a mixed argument cannot silently
+// select the transport branch. Keep the input tuple last for useful diagnostics.
+func operationCallParameters(inputType string, inputOptional bool, optionsType string, optionsOptional bool) string {
+	marker := ""
+	if optionsOptional {
+		marker = "?"
+	}
+	if inputType == "never" {
+		return "options" + marker + ": " + optionsType
+	}
+	if !inputOptional {
+		return "input: " + inputType + ", options" + marker + ": " + optionsType
+	}
+	inputMarker := marker
+	inputValue := inputType + " | undefined"
+	optionsOnly := optionsType + " & { readonly [K in keyof " + inputType + "]?: never }"
+	if optionsOptional {
+		optionsType += " | undefined"
+		optionsOnly += " | undefined"
+	}
+	return "...args: [options" + marker + ": " + optionsOnly + "] | [input" + inputMarker + ": " + inputValue + ", options" + marker + ": " + optionsType + "]"
+}
 
 func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation ir.Operation, item ManifestOperation) error {
 	operationName := operationLocalTypePrefix
@@ -60,7 +99,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 	}
 	if len(item.InputSections) > 0 {
 		fmt.Fprintf(output, "/** Complete input for `%s` (`%s %s`). */\n", operation.OperationID, operation.Method, operation.Path)
-		fmt.Fprintf(output, "interface %sInput {\n", operationName)
+		fmt.Fprintf(output, "interface %s {\n", operationInputTypeName(operation.OperationID, operation.Method, operation.Path))
 		for _, section := range item.InputSections {
 			descriptor, err := requestInputSection(section)
 			if err != nil {
@@ -84,10 +123,10 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 	if len(item.PathParameterOrder) > 0 {
 		resourceInput := "never"
 		if item.InputSections.hasInput(true) {
-			resourceInput = "Omit<" + operationName + "Input, \"path\">"
+			resourceInput = "Omit<" + operationInputTypeName(operation.OperationID, operation.Method, operation.Path) + ", \"path\">"
 		}
 		fmt.Fprintf(output, "/** Input remaining after the resource path is bound for `%s`. */\n", operation.OperationID)
-		fmt.Fprintf(output, "type %sResourceInput = %s\n\n", operationName, resourceInput)
+		fmt.Fprintf(output, "type %sResourceInput = %s\n\n", strings.TrimSuffix(operationInputTypeName(operation.OperationID, operation.Method, operation.Path), "Input"), resourceInput)
 	}
 
 	outputType := item.renderOutput(typeRenderContract)
@@ -111,7 +150,7 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 	quotedRoute := quoteTS(routeKey)
 	inputType := "never"
 	if len(item.InputSections) > 0 {
-		inputType = "RouteInput<" + quotedRoute + ">"
+		inputType = operationInputTypeName(operation.OperationID, operation.Method, operation.Path)
 	}
 	buffered, err := operationHasBufferedSuccess(document, operation)
 	if err != nil {
@@ -129,7 +168,7 @@ func emitOperationCallTypes(output *bytes.Buffer, document *ir.Document, operati
 		emitResourceOperationJSDoc(output, "", item)
 		resourceInput := inputType
 		if len(item.PathParameterOrder) > 0 {
-			resourceInput = "RouteResourceInput<" + quotedRoute + ">"
+			resourceInput = strings.TrimSuffix(operationInputTypeName(operation.OperationID, operation.Method, operation.Path), "Input") + "ResourceInput"
 			if !item.InputSections.hasInput(true) {
 				resourceInput = "never"
 			}
@@ -202,14 +241,6 @@ func emitOperationRawCallInterface(output *bytes.Buffer, operation ir.Operation,
 }
 
 func emitRawCallSignature(output *bytes.Buffer, inputType string, inputOptional bool, optionsType, resultType string, optionsOptional bool) {
-	optional := ""
-	if optionsOptional {
-		optional = "?"
-	}
-	if inputOptional {
-		output.WriteString("  /** Sends the request with transport options and no generated operation input. */\n")
-		fmt.Fprintf(output, "  (options%s: %s): Promise<%s>\n", optional, optionsType, resultType)
-	}
 	output.WriteString("  /**\n")
 	output.WriteString("   * Sends the request and returns the decoded body with HTTP response metadata.\n")
 	output.WriteString("   *\n")
@@ -219,28 +250,10 @@ func emitRawCallSignature(output *bytes.Buffer, inputType string, inputOptional 
 	output.WriteString("   * @param options Per-request transport options.\n")
 	output.WriteString("   * @returns Decoded response body with HTTP metadata.\n")
 	output.WriteString("   */\n")
-	if inputType == "never" {
-		fmt.Fprintf(output, "  (options%s: %s): Promise<%s>\n", optional, optionsType, resultType)
-		return
-	}
-	inputMarker := ""
-	if inputOptional && optionsOptional {
-		inputMarker = "?"
-	} else if inputOptional {
-		inputType += " | undefined"
-	}
-	fmt.Fprintf(output, "  (input%s: %s, options%s: %s): Promise<%s>\n", inputMarker, inputType, optional, optionsType, resultType)
+	fmt.Fprintf(output, "  (%s): Promise<%s>\n", operationCallParameters(inputType, inputOptional, optionsType, optionsOptional), resultType)
 }
 
 func emitCallSignature(output *bytes.Buffer, inputType string, inputOptional bool, optionsType, resultType string, optionsOptional bool) {
-	optional := ""
-	if optionsOptional {
-		optional = "?"
-	}
-	if inputOptional {
-		output.WriteString("  /** Sends the request with transport options and no generated operation input. */\n")
-		fmt.Fprintf(output, "  (options%s: %s): Promise<%s>\n", optional, optionsType, resultType)
-	}
 	output.WriteString("  /**\n")
 	output.WriteString("   * Sends the request and returns the decoded response body.\n")
 	output.WriteString("   *\n")
@@ -250,17 +263,7 @@ func emitCallSignature(output *bytes.Buffer, inputType string, inputOptional boo
 	output.WriteString("   * @param options Per-request transport options.\n")
 	output.WriteString("   * @returns Decoded response body.\n")
 	output.WriteString("   */\n")
-	if inputType == "never" {
-		fmt.Fprintf(output, "  (options%s: %s): Promise<%s>\n", optional, optionsType, resultType)
-		return
-	}
-	inputMarker := ""
-	if inputOptional && optionsOptional {
-		inputMarker = "?"
-	} else if inputOptional {
-		inputType += " | undefined"
-	}
-	fmt.Fprintf(output, "  (input%s: %s, options%s: %s): Promise<%s>\n", inputMarker, inputType, optional, optionsType, resultType)
+	fmt.Fprintf(output, "  (%s): Promise<%s>\n", operationCallParameters(inputType, inputOptional, optionsType, optionsOptional), resultType)
 }
 
 func operationInputRequired(document *ir.Document, operation ir.Operation, inputSections operationInputSectionList, omitPath bool) (bool, error) {

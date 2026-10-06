@@ -93,8 +93,8 @@ func TestOperationModuleTypechecksRecursiveBodyInput(t *testing.T) {
 	}
 	operationSource := operationArtifactSource(t, artifacts, "PUT /bulk")
 	for _, expected := range []string{
-		"interface __sdkgen_Input {",
-		"export type Input = __sdkgen_Input",
+		"interface PutBulkInput {",
+		"export type Input = PutBulkInput",
 		"export type Output = __sdkgen_Output",
 		"export type BaseCall = __sdkgen_Call",
 		"export type ExactCall =",
