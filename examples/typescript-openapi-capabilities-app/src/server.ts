@@ -184,9 +184,13 @@ const apiServer = createServer(async (request, response) => {
   }
 
   if (request.method === "POST" && url.pathname === "/v1/payloads/multipart") {
-    const contentType = request.headers["content-type"] ?? "";
-    const body = (await readBody(request)).toString("utf8");
-    if (!contentType.startsWith("multipart/form-data;") || !body.includes("attachment.txt") || !body.includes("file contents")) {
+    const contentType: string = request.headers["content-type"] ?? "";
+    const body: Uint8Array<ArrayBuffer> = new Uint8Array(await readBody(request));
+    const form: FormData = await new Request("http://localhost/upload", {
+      method: "POST", headers: { "content-type": contentType }, body,
+    }).formData();
+    const file: FormDataEntryValue | null = form.get("file");
+    if (!(file instanceof File) || form.get("name") !== "attachment.bin" || file.name !== "attachment.bin" || file.type !== "application/octet-stream" || new Uint8Array(await file.arrayBuffer()).join(",") !== "0,127,255") {
       writeJSON(response, 400, { error: "unexpected multipart payload" });
       return;
     }

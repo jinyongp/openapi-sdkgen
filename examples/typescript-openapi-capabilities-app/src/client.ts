@@ -69,7 +69,10 @@ assert(invalid.details?.name === "must not be empty", "validation details change
 // Each generated request-body codec travels over the same ordinary client API.
 await api.$operations.submitForm({ body: { name: "form item", tag: ["one", "two"] } });
 await api.$operations.uploadAttachment({
-  body: { name: "attachment.txt", file: "file contents" },
+  body: {
+    name: "attachment.bin",
+    file: new File([new Uint8Array([0, 127, 255])], "attachment.bin", { type: "application/octet-stream" }),
+  },
 });
 const text = await api.$operations.echoText({ body: "hello" });
 assert(text === "echo:hello", "text response decoder changed");
