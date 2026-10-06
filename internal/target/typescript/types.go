@@ -9,6 +9,7 @@ import (
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/openapiwalk"
+	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
 type projection string
@@ -340,6 +341,13 @@ func schemaType(document *ir.Document, value any, direction projection) (string,
 }
 
 func schemaTypeForScope(document *ir.Document, value any, direction projection, scope typeRenderScope) (string, error) {
+	if input, ok := value.(schemaplan.BinaryInput); ok {
+		result := "BinaryBody | string"
+		if input.Nullable {
+			result += " | null"
+		}
+		return result, nil
+	}
 	if boolean, ok := value.(bool); ok {
 		if boolean {
 			return "unknown", nil

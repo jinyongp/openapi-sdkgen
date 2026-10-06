@@ -546,14 +546,14 @@ func requestBodyIRMediaValueTypeForScope(document *ir.Document, media ir.MediaTy
 	if media.Stream.IsStreaming() {
 		variants := make([]string, 0, 2)
 		if media.Schema != nil && media.Schema != false {
-			completeType, err := schemaTypeForScope(document, media.Schema, projectionInput, scope)
+			completeType, err := schemaTypeForScope(document, multipartInputSchema(document, media.ContentType, media.Schema, media.Raw), projectionInput, scope)
 			if err != nil {
 				return "", err
 			}
 			variants = append(variants, completeType)
 		}
 		if media.ItemSchema != nil {
-			itemType, err := schemaTypeForScope(document, media.ItemSchema, projectionInput, scope)
+			itemType, err := schemaTypeForScope(document, multipartItemInputSchema(document, media.ContentType, media.ItemSchema, media.Raw["itemEncoding"]), projectionInput, scope)
 			if err != nil {
 				return "", err
 			}
@@ -577,7 +577,7 @@ func requestBodyIRMediaValueTypeForScope(document *ir.Document, media ir.MediaTy
 	if isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 		return "BinaryBody", nil
 	}
-	return schemaTypeForScope(document, media.Schema, projectionInput, scope)
+	return schemaTypeForScope(document, multipartInputSchema(document, media.ContentType, media.Schema, media.Raw), projectionInput, scope)
 }
 
 func requestBodyTypeForScope(document *ir.Document, body map[string]any, scope typeRenderScope) (string, error) {

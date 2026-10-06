@@ -1,6 +1,21 @@
 // Package plan owns normalized schema semantics independently of TypeScript output.
 package plan
 
+import "encoding/json"
+
+// BinaryInput is a compiler-owned projection for a raw multipart part. Its
+// source schema remains unchanged for other media occurrences.
+type BinaryInput struct {
+	Schema      map[string]any
+	ContentType string
+	Nullable    bool
+}
+
+// An array cannot be a source schema, keeping projected cache keys distinct.
+func (input BinaryInput) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]any{"multipart-binary-input", input.Schema, input.ContentType, input.Nullable})
+}
+
 type Projection string
 
 const (

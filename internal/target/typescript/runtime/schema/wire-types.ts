@@ -1,5 +1,8 @@
 /** Minimal recursive schema used for runtime wire-name transformation. */
 export interface WireSchema {
+  readonly binaryInput?: boolean;
+  readonly binaryContentType?: string;
+  readonly binaryNullable?: boolean;
   /** Compiler-owned executable contract. Arbitrary-schema compatibility helpers ignore it. */
   readonly program?: SchemaProgram;
   /** Boolean-schema acceptance. `false` rejects every value. */

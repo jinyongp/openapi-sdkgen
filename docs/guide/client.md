@@ -136,6 +136,24 @@ await api.$operations.uploadTodoAttachment({
 Use a content type declared by the operation. Custom media codecs are selected by
 the same media type.
 
+## Upload a multipart file
+
+Raw file parts accept `File`, `Blob`, `ArrayBuffer`, `ArrayBufferView`, or a text
+string. Strings are encoded as UTF-8. A `File` carries its filename; byte views
+send only their selected byte range. Base64-encoded schema values remain strings.
+
+For an operation whose multipart body declares a `file` property:
+
+```ts
+await api.$operations.uploadAttachment({
+  body: { file: new File([new Uint8Array([0, 127, 255])], "attachment.bin") },
+});
+```
+
+An Encoding Object's `contentType` takes precedence over the part's
+`contentMediaType`. Raw file parts default to `application/octet-stream`.
+The same schema used in a JSON body keeps its JSON input type.
+
 ## Follow OpenAPI Links
 
 An OpenAPI Link describes a follow-up operation using values from a response.

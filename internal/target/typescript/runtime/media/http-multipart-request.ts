@@ -95,13 +95,18 @@ export function createMultipartRequestServices(
       const definition: WireEncodingDefinition | undefined =
         prefixEncoding?.[index] ?? itemEncoding;
       const itemSchema: WireSchema = schema?.prefixItems?.[index] ?? schema?.items ?? {};
+      const binary: WireSchema | undefined = multipartBinarySchema(itemSchema, value, schemas);
       const selectedContentType: string = resolveMultipartContentType(
-        definition?.contentType,
+        definition?.contentType ?? binary?.binaryContentType,
         suppliedContentTypes?.[String(index)],
         defaultMultipartContentType(itemSchema),
         value,
       );
-      const { body, contentType: partContentType }: MultipartPartValue = await multipartPartValue(
+      const {
+        body,
+        contentType: partContentType,
+        filename,
+      }: MultipartPartValue = await multipartPartValue(
         value,
         selectedContentType,
         itemSchema,
@@ -114,7 +119,7 @@ export function createMultipartRequestServices(
         definition,
         suppliedHeaders?.[String(index)],
         partContentType,
-        undefined,
+        filename,
         schemas,
         codecs,
       );
@@ -148,7 +153,8 @@ export function createMultipartRequestServices(
           const frameEncoding: WireEncodingDefinition | undefined =
             options.prefixEncoding?.[index] ?? options.itemEncoding;
           const selectedContentType: string = resolveMultipartContentType(
-            frameEncoding?.contentType,
+            frameEncoding?.contentType ??
+              multipartBinarySchema(frameSchema, value, options.schemas)?.binaryContentType,
             options.suppliedContentTypes?.[String(index)],
             defaultMultipartContentType(frameSchema),
             value,
@@ -171,7 +177,7 @@ export function createMultipartRequestServices(
             frameEncoding,
             options.suppliedHeaders?.[String(index)],
             part.contentType,
-            undefined,
+            part.filename,
             options.schemas,
             options.codecs,
           );
@@ -199,6 +205,7 @@ export function createMultipartRequestServices(
   }
 
   function defaultMultipartContentType(schema: WireSchema): string {
+    if (schema.binaryInput === true) return schema.binaryContentType ?? "application/octet-stream";
     const types: readonly string[] = schema.types ?? [];
     if (types.includes("object") || types.includes("array")) return "application/json";
     if (types.includes("string"))
@@ -261,16 +268,51 @@ export function createMultipartRequestServices(
     codecs: ReadonlyMap<string, MediaCodec<unknown>>,
     selected: string | undefined,
   ): Promise<MultipartPartValue> {
+    const binary: WireSchema | undefined = multipartBinarySchema(schema, value, schemas);
     const contentType: string | undefined =
-      definition?.contentType === undefined && selected === undefined
+      definition?.contentType === undefined && selected === undefined && binary === undefined
         ? undefined
         : resolveMultipartContentType(
-            definition?.contentType,
+            definition?.contentType ?? binary?.binaryContentType,
             selected,
             defaultMultipartContentType(schema),
             value,
           );
     return multipartPartValue(value, contentType, schema, definition, schemas, codecs);
+  }
+
+  function multipartBinarySchema(
+    schema: WireSchema,
+    value: unknown,
+    schemas: WireSchemas,
+    seen: ReadonlySet<WireSchema> = new Set(),
+  ): WireSchema | undefined {
+    if (seen.has(schema)) return undefined;
+    if (schema.binaryInput === true) return schema;
+    const nestedSeen: Set<WireSchema> = new Set(seen);
+    nestedSeen.add(schema);
+    const branches: WireSchema[] = [
+      ...(schema.allOf ?? []),
+      ...(schema.anyOf ?? []),
+      ...(schema.oneOf ?? []),
+    ];
+    if (schema.reference !== undefined && schemas[schema.reference] !== undefined)
+      branches.push(schemas[schema.reference]!);
+    for (const branch of branches) {
+      try {
+        wire.validateWireValue(value, branch, schemas, "encode");
+      } catch {
+        continue;
+      }
+      const binary: WireSchema | undefined = multipartBinarySchema(
+        branch,
+        value,
+        schemas,
+        nestedSeen,
+      );
+      if (binary !== undefined) return binary;
+    }
+    return undefined;
   }
 
   async function encodeMultipartForm(
@@ -422,6 +464,9 @@ export function createMultipartRequestServices(
       bytes.set(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
       return { body: bytes.buffer, contentType: declaredContentType ?? "application/octet-stream" };
     }
+    if (typeof value === "string" && multipartBinarySchema(schema, value, schemas) !== undefined) {
+      return { body: value, contentType: declaredContentType ?? "application/octet-stream" };
+    }
     if (declaredContentType !== undefined && requiresMultipartPartCodec(declaredContentType)) {
       const codec: MediaCodec<unknown> | undefined = codecs.get(
         normalizeMediaType(declaredContentType),
@@ -511,7 +556,9 @@ export function createMultipartRequestServices(
     }
     const lines: string[] =
       name === undefined
-        ? []
+        ? filename === undefined || headers.has("content-disposition")
+          ? []
+          : [`Content-Disposition: attachment; filename="${escapeMultipartToken(filename)}"`]
         : [
             `Content-Disposition: form-data; name="${escapeMultipartToken(name)}"${filename === undefined ? "" : `; filename="${escapeMultipartToken(filename)}"`}`,
           ];

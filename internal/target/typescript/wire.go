@@ -268,7 +268,7 @@ func (wire *wireRenderContext) operationRequestWireBodies(document *ir.Document,
 		}
 		if schemaIsFalse || !isBinaryMediaForDocument(document, media.ContentType, schemaObject) {
 			var err error
-			descriptor, err = wire.wireMediaSchemaDescriptorForDocument(document, media.Schema, projectionInput, media.ContentType)
+			descriptor, err = wire.wireMediaSchemaDescriptorForDocument(document, multipartInputSchema(document, media.ContentType, media.Schema, media.Raw), projectionInput, media.ContentType)
 			if err != nil {
 				return "", false, err
 			}
@@ -284,7 +284,7 @@ func (wire *wireRenderContext) operationRequestWireBodies(document *ir.Document,
 			entry += ", streamFraming: " + quoteTS(string(media.Stream.Framing))
 		}
 		if _, exists := media.Raw["itemSchema"]; exists {
-			itemDescriptor, err := wire.wireSchemaDescriptorForDocument(document, media.ItemSchema, projectionInput)
+			itemDescriptor, err := wire.wireSchemaDescriptorForDocument(document, multipartItemInputSchema(document, media.ContentType, media.ItemSchema, media.Raw["itemEncoding"]), projectionInput)
 			if err != nil {
 				return "", false, err
 			}

@@ -262,6 +262,13 @@ func (writer *programWriter) validation(node *plan.Node) {
 		writer.line("const evaluation: Evaluation = emptyEvaluation")
 	}
 	writer.line("if (_value === undefined) return evaluation")
+	if has(node, "binaryInput") {
+		nullable := ""
+		if has(node, "binaryNullable") {
+			nullable = " || _value === null"
+		}
+		writer.line("if (!(typeof _value === 'string' || _value instanceof Blob || _value instanceof ArrayBuffer || ArrayBuffer.isView(_value)%s)) throw new TypeError('expected binary body or text string')", nullable)
+	}
 	if has(node, "reference", "dynamicReference", "allOf", "anyOf", "oneOf", "not", "if", "contentSchema") || typeAllows(node, "array") && has(node, "contains", "uniqueItems", "items", "prefixItems", "unevaluatedItems") || typeAllows(node, "object") && (has(node, "properties", "patternProperties", "dependentRequired", "dependentSchemas", "propertyNames", "unevaluatedProperties") || schemaChild(node, "additionalProperties")) {
 		writer.scope(node)
 	}
@@ -607,6 +614,9 @@ func ProgramDependencies(root *plan.Node, options ProgramOptions) []string {
 }
 
 func typeAllows(node *plan.Node, wanted string) bool {
+	if has(node, "binaryInput") {
+		return wanted == "string"
+	}
 	value, exists := node.Get("types").(plan.Literal)
 	if !exists {
 		return true

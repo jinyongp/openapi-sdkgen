@@ -137,6 +137,24 @@ await api.$operations.uploadTodoAttachment({
 선택한 콘텐츠 타입은 해당 API가 선언한 값이어야 합니다. 사용자 정의
 미디어 코덱도 선언된 미디어 타입을 기준으로 선택합니다.
 
+## 멀티파트 파일 업로드
+
+원시 파일 파트는 `File`, `Blob`, `ArrayBuffer`, `ArrayBufferView`, 텍스트 문자열을
+받습니다. 문자열은 UTF-8로 인코딩합니다. `File`은 파일명을 함께 보내고, 바이트 뷰는
+선택한 바이트 범위만 보냅니다. base64로 인코딩된 스키마 값은 문자열로 유지됩니다.
+
+멀티파트 본문에 `file` 속성이 선언된 API라면:
+
+```ts
+await api.$operations.uploadAttachment({
+  body: { file: new File([new Uint8Array([0, 127, 255])], "attachment.bin") },
+});
+```
+
+인코딩 객체의 `contentType`이 파트의 `contentMediaType`보다 우선합니다.
+원시 파일 파트의 기본 미디어 타입은 `application/octet-stream`입니다.
+같은 스키마를 JSON 본문에서 사용하면 JSON 입력 타입을 유지합니다.
+
 <span id="openapi-links"></span>
 
 ## OpenAPI Link 따라가기

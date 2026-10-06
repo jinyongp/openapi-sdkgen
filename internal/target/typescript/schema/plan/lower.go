@@ -18,6 +18,18 @@ func RequiresFormatAssertion(value any) bool {
 
 // Lower performs projection, dialect and reference decisions exactly once.
 func Lower(value any, options Options) (*Node, error) {
+	if input, ok := value.(BinaryInput); ok {
+		schema := binaryInputAssertions(input.Schema)
+		node, err := Lower(schema, options)
+		if err != nil {
+			return nil, err
+		}
+		node.Fields = append(node.Fields, Field{Name: "binaryInput", Value: Literal{true}}, Field{Name: "binaryContentType", Value: Literal{input.ContentType}})
+		if input.Nullable {
+			node.Fields = append(node.Fields, Field{Name: "binaryNullable", Value: Literal{true}})
+		}
+		return node, nil
+	}
 	node := &Node{}
 	add := func(name string, value Value, feature string) {
 		node.Fields = append(node.Fields, Field{Name: name, Value: value})
@@ -376,6 +388,41 @@ func Lower(value any, options Options) (*Node, error) {
 		}
 	}
 	return node, nil
+}
+
+func binaryInputAssertions(schema map[string]any) map[string]any {
+	result := schema
+	for _, name := range []string{"nullable", "contentMediaType"} {
+		result = without(result, name)
+	}
+	if format, _ := schema["format"].(string); format == "binary" {
+		result = without(result, "format")
+	}
+	if encoding, _ := schema["contentEncoding"].(string); encoding == "binary" {
+		result = without(result, "contentEncoding")
+	}
+	if kind, _ := schema["type"].(string); kind == "string" {
+		result = without(result, "type")
+	}
+	if kinds, ok := schema["type"].([]any); ok {
+		stringsOnly := true
+		for _, kind := range kinds {
+			stringsOnly = stringsOnly && (kind == "string" || kind == "null")
+		}
+		if stringsOnly {
+			result = without(result, "type")
+		}
+	}
+	if branches, ok := schema["allOf"].([]any); ok {
+		projected := append([]any(nil), branches...)
+		for index, branch := range branches {
+			if child, ok := branch.(map[string]any); ok {
+				projected[index] = binaryInputAssertions(child)
+			}
+		}
+		result["allOf"] = projected
+	}
+	return result
 }
 
 func without(schema map[string]any, omitted string) map[string]any {
