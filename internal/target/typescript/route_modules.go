@@ -160,7 +160,7 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	output.WriteString("/** Generated input remaining after resource path binding for one exact route. */\n")
 	output.WriteString("export type RouteResourceInput<Route extends keyof Routes> = PublicType<Routes[Route][\"resourceInput\"]>\n\n")
 	output.WriteString("/** Per-request transport options for one exact route. */\n")
-	output.WriteString("export type RouteOptions<Route extends keyof Routes> = PublicType<Routes[Route][\"options\"]>\n\n")
+	output.WriteString("export type RouteOptions<Route extends keyof Routes> = Routes[Route][\"options\"]\n\n")
 	output.WriteString("/** Decoded successful output for one exact route. */\n")
 	output.WriteString("export type RouteOutput<Route extends keyof Routes> = PublicType<Routes[Route][\"output\"]>\n\n")
 	output.WriteString("/** Successful raw response union for one exact route. */\n")

@@ -318,14 +318,20 @@ func emitOperationParameterJSDoc(output *bytes.Buffer, document *ir.Document, in
 }
 
 func emitOperationOptions(output *bytes.Buffer, operationName string, operation ir.Operation, item ManifestOperation) error {
-	parts := []string{`Omit<RequestOptions, "accept">`}
+	fmt.Fprintf(output, "/**\n * Per-request transport options for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
+	if boolValue(operation.Raw, "deprecated") {
+		output.WriteString(" * @deprecated This operation is deprecated.\n")
+	}
+	output.WriteString(" */\n")
+	fmt.Fprintf(output, "interface %sOptions extends Omit<RequestOptions, \"accept\"> {\n", operationName)
 	mediaTypes := item.mediaTypes
 	if len(mediaTypes) > 1 {
 		quoted := make([]string, 0, len(mediaTypes))
 		for _, mediaType := range mediaTypes {
 			quoted = append(quoted, quoteTS(mediaType))
 		}
-		parts = append(parts, "{\n  /** Requested successful response media type. */\n  readonly accept?: "+strings.Join(quoted, " | ")+" | undefined\n}")
+		output.WriteString("  /** Requested successful response media type. */\n")
+		fmt.Fprintf(output, "  readonly accept?: %s | undefined\n", strings.Join(quoted, " | "))
 	}
 	requirements, hasSecurity := item.security, item.hasSecurity
 	if hasSecurity && len(requirements) > 1 {
@@ -333,14 +339,10 @@ func emitOperationOptions(output *bytes.Buffer, operationName string, operation 
 		for _, requirement := range requirements {
 			ids = append(ids, quoteTS(requirement.id))
 		}
-		parts = append(parts, "{\n  /** OpenAPI security requirement selected for this request. */\n  readonly securityRequirement: "+strings.Join(ids, " | ")+"\n}")
+		output.WriteString("  /** OpenAPI security requirement selected for this request. */\n")
+		fmt.Fprintf(output, "  readonly securityRequirement: %s\n", strings.Join(ids, " | "))
 	}
-	fmt.Fprintf(output, "/**\n * Per-request transport options for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
-	if boolValue(operation.Raw, "deprecated") {
-		output.WriteString(" * @deprecated This operation is deprecated.\n")
-	}
-	output.WriteString(" */\n")
-	fmt.Fprintf(output, "type %sOptions = %s\n\n", operationName, strings.Join(parts, " & "))
+	output.WriteString("}\n\n")
 	return nil
 }
 

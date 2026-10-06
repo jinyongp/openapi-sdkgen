@@ -13,7 +13,7 @@ type operationHelperType struct {
 var operationHelperTypes = map[string]operationHelperType{
 	"RouteInput":            {slot: "Input", kind: "public"},
 	"RouteResourceInput":    {slot: "ResourceInput", kind: "public"},
-	"RouteOptions":          {slot: "Options", kind: "public"},
+	"RouteOptions":          {slot: "Options", kind: "contract"},
 	"RouteOutput":           {slot: "Output", kind: "public"},
 	"RouteRawResponse":      {slot: "RawResponse", kind: "public"},
 	"OperationRawCall":      {slot: "RawCall", kind: "identity"},
@@ -116,6 +116,8 @@ func localizeOperationHelperTypes(source string, module operationModulePlan, pla
 		}
 		var replacement string
 		switch helper.kind {
+		case "contract":
+			replacement = contract
 		case "public":
 			replacement = "OperationPublicType<" + contract + ">"
 		case "resource":

@@ -516,7 +516,7 @@ func TestSourceArtifactsGenerateNestedResourceTree(t *testing.T) {
 		`readonly error: PublicType<Routes[Route]["error"]>`,
 		`export type RouteInput<Route extends keyof Routes> = PublicType<Routes[Route]["input"]>`,
 		`export type RouteResourceInput<Route extends keyof Routes> = PublicType<Routes[Route]["resourceInput"]>`,
-		`export type RouteOptions<Route extends keyof Routes> = PublicType<Routes[Route]["options"]>`,
+		`export type RouteOptions<Route extends keyof Routes> = Routes[Route]["options"]`,
 		`export type RouteOutput<Route extends keyof Routes> = PublicType<Routes[Route]["output"]>`,
 		`export type RouteStreamItem<Route extends keyof Routes> = StreamItemOf<Routes[Route]["stream"]>`,
 		`export type RouteRawResponse<Route extends keyof Routes> = PublicType<Routes[Route]["rawResponse"]>`,

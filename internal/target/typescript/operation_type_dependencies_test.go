@@ -12,7 +12,8 @@ func TestOperationTypeHelpersUseLocalContracts(t *testing.T) {
 	}
 	for _, test := range []struct{ source, want string }{
 		{`RouteInput<"GET /one">`, `OperationPublicType<Input>`},
-		{`RouteOptions<RouteKey>`, `OperationPublicType<Options>`},
+		{`RouteOptions<RouteKey>`, `Options`},
+		{`RouteOptions<"GET /two">`, `import("../two/get.js").Options`},
 		{`RouteOutput<"GET /two">`, `OperationPublicType<import("../two/get.js").Output>`},
 		{`RouteRawResponse<RouteKey>`, `OperationPublicType<RawResponse>`},
 		{`RouteResourceInput<RouteKey>`, `OperationPublicType<ResourceInput>`},
