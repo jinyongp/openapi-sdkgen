@@ -17,18 +17,14 @@ hero:
       link: /ko/reference/compatibility
 
 features:
-  - icon: ◇
-    title: OpenAPI 3.x 입력
-    details: 문서에 선언된 버전에 맞춰 OpenAPI 3.0, 3.1, 3.2 기능을 해석합니다.
-  - icon: ↗
-    title: 생성 대상 선택
-    details: 생성할 코드의 언어와 기능을 결정하는 대상을 명시적으로 선택합니다.
-  - icon: 🧩
-    title: 애플리케이션이 소유하는 결과물
-    details: 생성된 SDK 소스를 애플리케이션이 관리하는 출력 디렉터리에 저장합니다.
-  - icon: ✓
-    title: 생성과 검증
-    details: 사용된 기능을 안전하게 표현할 수 없으면 생성을 중단합니다. <code>--check</code>로 파일을 바꾸지 않고 생성 가능 여부를 확인할 수 있습니다.
+  - title: OpenAPI 3.0·3.1·3.2 지원
+    details: 세 버전의 OpenAPI 문서에서 TypeScript SDK를 생성합니다.
+  - title: 요청·응답과 스트리밍까지
+    details: JSON과 XML, 파일 전송부터 SSE와 NDJSON 스트리밍까지 처리합니다.
+  - title: 타입 검사와 실제 데이터 검증
+    details: 호출 코드의 타입을 검사하고, 주고받는 데이터도 API 문서에 맞춰 검증합니다.
+  - title: Link·웹훅·콜백 연동
+    details: 응답에 이어지는 API 호출과 웹훅·콜백 수신에 필요한 코드를 생성합니다.
 ---
 
 ## TypeScript SDK 생성하기

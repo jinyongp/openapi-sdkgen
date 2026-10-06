@@ -47,10 +47,6 @@
   text-align: center;
 }
 
-.VPFeature .icon {
-  margin-inline: auto;
-}
-
 .VPFeature .details {
   text-wrap: pretty;
 }

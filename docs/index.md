@@ -17,18 +17,14 @@ hero:
       link: /reference/compatibility
 
 features:
-  - icon: ◇
-    title: OpenAPI 3.x input
-    details: Interpret OpenAPI 3.0, 3.1, and 3.2 according to the version declared by the document.
-  - icon: ↗
-    title: Explicit generation targets
-    details: Select the output target explicitly. The target determines the generated output language.
-  - icon: 🧩
-    title: Application-owned output
-    details: Write generated SDK source to an output directory managed by the application.
-  - icon: ✓
-    title: Generate and check
-    details: Stop when the selected target cannot represent a used feature safely, and use --check to verify generation without rewriting files.
+  - title: OpenAPI 3.0, 3.1, and 3.2
+    details: Generate TypeScript SDKs from all three OpenAPI version lines.
+  - title: Requests, responses, and streams
+    details: Handle JSON, XML, and file transfers alongside SSE and NDJSON streams.
+  - title: Type checking and data validation
+    details: Type-check your API calls and validate exchanged data against the API document.
+  - title: Links, Webhooks, and Callbacks
+    details: Generate code for follow-up API calls and for receiving Webhooks and Callbacks.
 ---
 
 ## Current target: TypeScript
