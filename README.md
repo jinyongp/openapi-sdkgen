@@ -18,7 +18,8 @@ Generate a client from a Node-based project:
 pnpm dlx openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
-  --output ./src/generated/api
+  --output ./src/generated/api \
+  --incremental
 ```
 
 Import the generated client and call your API:
@@ -39,17 +40,8 @@ Vite, Next.js, Nuxt, and similar bundlers resolve the generated directory to
 its `index.ts` entry. Applications that run compiled Node ESM directly should
 import `./generated/api/index.js`.
 
-The default command creates a new output directory. For later runs, add
-`--incremental` to update only changed generated files while preserving
-unchanged file identities and timestamps:
-
-```sh
-pnpm dlx openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --output ./src/generated/api \
-  --incremental
-```
+Run the same command again to update only changed generated files while
+preserving unchanged file identities and timestamps.
 
 Incremental generation uses the manifest created on the first run. It verifies
 managed file hashes before replacement and preserves files outside the manifest. When a self-contained local OpenAPI file and the generation settings
