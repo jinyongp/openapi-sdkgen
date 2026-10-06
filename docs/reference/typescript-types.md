@@ -29,7 +29,7 @@ code, and optional metadata.
 
 ## Typecheck generated source {#source-checking}
 
-Starting in the next release, use `--typecheck` to check the generated
+Use `--typecheck` to check the generated
 SDK's implementation with your application's compiler:
 
 ```sh
@@ -76,7 +76,7 @@ entry, use the [named client types](#named-clients) described below.
 
 ## Types for a named client {#named-clients}
 
-In the next release, each named entry exports a concrete `Client` and the
+Each named entry exports a concrete `Client` and the
 component types required by its selected APIs and Link helpers. Import these
 types from the same entry as `createClient`. For a catalog API using the
 `Product` component:

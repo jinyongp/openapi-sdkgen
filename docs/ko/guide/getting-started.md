@@ -90,13 +90,14 @@ components:
 
 ## 3. 애플리케이션 소스 안에 생성
 
-최초 실행에서는 새 출력 디렉터리를 지정합니다.
+최초 생성과 이후 갱신에 같은 명령을 사용합니다.
 
 ```sh
 pnpm exec openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
-  --output ./src/generated/api
+  --output ./src/generated/api \
+  --incremental
 ```
 
 생성된 디렉터리는 클라이언트, 타입, 실행 코드를 포함한 일반 애플리케이션
@@ -104,8 +105,8 @@ pnpm exec openapi-sdkgen generate \
 TypeScript 5.7.3 이상과 `ES2022`·`DOM` 라이브러리를 사용합니다. 자세한 요구 사항과
 지원 버전은 [컴파일러 지원](../reference/typescript-types.md#컴파일러-지원)에서 확인할 수 있습니다.
 
-생성기가 소유한 파일은 CLI로 다시 생성합니다. OpenAPI 문서가 바뀌어 같은
-디렉터리를 갱신할 때는 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes)을 사용합니다. 안전한 재생성과 CI
+`--incremental`은 출력 디렉터리가 없으면 새로 만들고, 이후에는 같은 관리
+디렉터리를 안전하게 갱신합니다. 생성기가 소유한 파일은 CLI로 다시 생성합니다. 안전한 재생성과 CI
 검증 흐름은 [SDK 생성과 검증](./generate.md)에서 설명합니다.
 
 ## 4. 클라이언트 만들기

@@ -1,9 +1,5 @@
 # Generate a client for each feature
 
-::: info Next release
-Named client generation is available in the source for the next release.
-:::
-
 When different pages use different parts of an API, assign each page's APIs to a
 named client. Each client gets its own import path and exposes only its assigned
 API methods and types. Runtime code, operation implementations, and required

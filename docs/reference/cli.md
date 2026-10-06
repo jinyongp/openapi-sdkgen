@@ -98,7 +98,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
-| `--typecheck` | Enable consumer type checks of generated TypeScript source by removing `@ts-nocheck`; default `false`. Available in the next release |
+| `--typecheck` | Enable consumer type checks of generated TypeScript source by removing `@ts-nocheck`; default `false` |
 | `--with <addon>` | Enable `metadata` or `server` artifacts; repeatable |
 | `--operation <operationId>` | Generate an exact operation ID; repeatable |
 | `--route <METHOD /path>` | Generate an exact method/path template; repeatable |
@@ -152,8 +152,8 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `addons` | repeatable `--with` |
 | `selection.operations` | repeatable `--operation` |
 | `selection.routes` | repeatable `--route` |
-| `clients.<name>.selection.operations` | Config-only named client operation IDs (next release) |
-| `clients.<name>.selection.routes` | Config-only named client routes (next release) |
+| `clients.<name>.selection.operations` | Config-only named client operation IDs |
+| `clients.<name>.selection.routes` | Config-only named client routes |
 | `incremental` | `--incremental` |
 | `typescript.typecheck` | `--typecheck`; applies to all generated TypeScript files |
 | `diagnostics_format` | `--diagnostics-format` |
@@ -219,7 +219,7 @@ remain in effect. A CLI `--route` list replaces only `selection.routes`.
 See [Generate only the APIs you need](../guide/selective-client.md#generation)
 for Link dependencies, server support, and updating a generated SDK.
 
-### Named clients (next release) {#named-clients}
+### Named clients {#named-clients}
 
 Use `[clients.<name>.selection]` to assign APIs to `clients/<name>/index.ts`:
 

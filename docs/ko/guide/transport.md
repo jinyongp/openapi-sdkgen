@@ -20,6 +20,12 @@ const api = createClient({
 
 로그인, 토큰 갱신, 인증 정보 저장은 애플리케이션에서 관리합니다.
 
+`authorization`과 `headers.Authorization`은 일반적인 요청 기본값입니다.
+`security: []`가 선언된 API에도 전송하며, 기본 URL의 출처로 전송 범위를
+제한하지 않습니다. API별 서버가 다른 출처를 사용할 수도 있습니다. 선언된 인증
+요구 사항이나 최종 출처에 따라 인증 정보를 선택하려면 클라이언트를 나누거나
+`securityProvider`를 사용하세요.
+
 <span id="여러-openapi-security-대안-중-선택"></span>
 
 ## 여러 OpenAPI 인증 대안 중 선택
@@ -60,6 +66,9 @@ SDK가 자동 선택합니다. 빈 인증 요구 사항이 다른 대안과 함�
 const api = createClient({
   baseURL: "https://api.example.test",
   securityProvider: async ({ operation, requirement, origin }) => {
+    if (origin !== "https://api.example.test") {
+      throw new Error("허용하지 않은 API 출처입니다");
+    }
     if (requirement.id === "serviceAuth") {
       return {
         serviceAuth: {
@@ -82,6 +91,11 @@ const api = createClient({
 `securityProvider`는 호출할 API 정보인 `operation`, 선택된 인증 요구 사항인
 `requirement`, 요청할 출처인 `origin`을 받습니다. 클라이언트는 반환된 인증 정보의
 형태를 검사하고 OpenAPI에 선언된 위치에 적용합니다.
+
+선택된 인증 요구 사항이 비어 있지 않고 기존 인증 정보로 충족되지 않을 때 제공자를
+호출합니다. 익명 API나 클라이언트·요청의 인증 정보로 이미 충족된 요구 사항에서는
+호출하지 않습니다. 제공자의 인증 정보를 보내도 되는 출처는 제공자에서 판단하세요.
+제공자의 출처 검사는 다른 옵션이나 헤더로 전달한 인증 정보에는 적용되지 않습니다.
 
 API 키, HTTP Basic/Bearer, OAuth2, OpenID Connect, mTLS를 지원합니다. OAuth
 로그인 화면, 토큰 갱신, 영구 인증 정보 저장은 호스트 애플리케이션의

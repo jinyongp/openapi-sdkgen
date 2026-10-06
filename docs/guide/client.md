@@ -66,6 +66,21 @@ const todos = await api.$operations.listTodos({
 });
 ```
 
+## Name an input outside the call
+
+Use the generated input helpers when preparing a request in a separate function
+or variable. They preserve the operation's required fields and literal choices:
+
+```ts
+import type { OperationInput, RouteInput } from "./generated/api";
+
+type CreateTodoInput = OperationInput<typeof api.$operations.createTodo>;
+type CreateTodoBody = RouteInput<"POST /todos">["body"];
+const body: CreateTodoBody = { title: "Write documentation" };
+const input: CreateTodoInput = { body };
+await api.$operations.createTodo(input);
+```
+
 ## Read status and headers with `.raw()`
 
 A normal call returns the generated successful output value. Use [`.raw()`](../reference/client-api.md#raw) when
@@ -263,6 +278,19 @@ selected declaration; use `error.response.headers` for the actual response heade
 `OperationHTTPError<typeof method>` extracts this declared union. Existing
 `APIError<Code, Details>` and `isErrorCode` calls remain available, including codes
 that are not declared in the document.
+
+For `getTodo` declaring a JSON `404` body with a string `message`:
+
+```ts
+import { isOperationHTTPError } from "./generated/api";
+
+try {
+  await api.$operations.getTodo({ path: { todoID: "todo-1" } });
+} catch (error: unknown) {
+  if (!isOperationHTTPError(error, api.$operations.getTodo)) throw error;
+  if (error.status === 404) console.log(error.data.message);
+}
+```
 
 ## Where to go next
 

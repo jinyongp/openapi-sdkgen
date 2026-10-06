@@ -6,7 +6,7 @@ TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 
 | 경로 | 용도 |
 | --- | --- |
 | `./generated/api` | API 호출, 생성 타입, 오류, Link, 스트림 |
-| `./generated/api/clients/<name>/index.js` | 설정한 클라이언트의 API와 타입. 다음 릴리스 |
+| `./generated/api/clients/<name>/index.js` | 설정한 클라이언트의 API와 타입 |
 | `./generated/api/metadata` | OpenAPI 버전과 선택적으로 포함한 원문 확인 |
 
 웹훅·콜백을 수신하는 모듈의 경로는

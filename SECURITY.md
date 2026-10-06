@@ -11,8 +11,8 @@ Security fixes are provided only for the latest stable release of
 | Older stable releases | Not supported |
 | Prereleases | Not supported |
 
-As of September 23, 2026, the latest stable release is `v8.0.0`. When a newer
-stable release is published, it becomes the supported release and the previous
+The [latest stable GitHub release](https://github.com/jinyongp/openapi-sdkgen/releases/latest)
+is the supported release. When a newer stable release is published, the previous
 stable release leaves security support.
 
 Users should reproduce suspected security issues against the latest stable

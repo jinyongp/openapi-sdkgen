@@ -99,7 +99,7 @@ openapi-sdkgen generate [options]
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 생성 파일 검증 |
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 매니페스트에 기록된 출력 갱신 |
-| `--typecheck` | 생성 소스의 `@ts-nocheck`를 제거해 애플리케이션에서 타입 검사. 기본값은 `false`이며 다음 릴리스부터 지원 |
+| `--typecheck` | 생성 소스의 `@ts-nocheck`를 제거해 애플리케이션에서 타입 검사. 기본값은 `false` |
 | `--with <addon>` | `metadata` 또는 `server` 추가. 반복 가능 |
 | `--operation <operationId>` | 정확한 API 식별자로 생성할 API 지정. 반복 가능 |
 | `--route <METHOD /path>` | 정확한 메서드·경로로 생성할 API 지정. 반복 가능 |
@@ -155,8 +155,8 @@ openapi-sdkgen generate --config ./openapi-sdkgen.toml
 | `addons` | 반복 가능한 `--with` |
 | `selection.operations` | 반복 가능한 `--operation` |
 | `selection.routes` | 반복 가능한 `--route` |
-| `clients.<name>.selection.operations` | 설정 파일 전용 클라이언트 API 식별자 목록. 다음 릴리스 |
-| `clients.<name>.selection.routes` | 설정 파일 전용 클라이언트 경로 목록. 다음 릴리스 |
+| `clients.<name>.selection.operations` | 설정 파일 전용 클라이언트 API 식별자 목록 |
+| `clients.<name>.selection.routes` | 설정 파일 전용 클라이언트 경로 목록 |
 | `incremental` | `--incremental` |
 | `typescript.typecheck` | `--typecheck`. 생성된 모든 TypeScript 파일에 적용 |
 | `diagnostics_format` | `--diagnostics-format` |
@@ -223,7 +223,7 @@ CLI의 `--operation` 목록은 `selection.operations`만 대체하고 설정 파
 Link 의존 코드, 서버 지원, 기존 SDK 갱신 방법은
 [필요한 API만 생성하기](../guide/selective-client.md#generation)에서 설명합니다.
 
-### 이름 있는 클라이언트 (다음 릴리스) {#named-clients}
+### 이름 있는 클라이언트 {#named-clients}
 
 `[clients.<name>.selection]`으로 `clients/<name>/index.ts`에 API를 배정합니다.
 

@@ -89,13 +89,14 @@ the request and response shapes that will become TypeScript types.
 
 ## 3. Generate into your application source
 
-Choose a new directory for the first generation:
+Use the same command for the first generation and later updates:
 
 ```sh
 pnpm exec openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
-  --output ./src/generated/api
+  --output ./src/generated/api \
+  --incremental
 ```
 
 The generated directory contains normal application source, including the source
@@ -104,8 +105,8 @@ rest of the application. Use TypeScript 5.7.3 or later with the ES2022 and DOM
 libraries. See [compiler support](../reference/typescript-types.md#compiler-support)
 for compiler requirements and supported versions.
 
-Regenerate generator-owned files through the CLI. When the OpenAPI document
-changes, use [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) to update the same managed directory safely. See
+`--incremental` creates a new managed directory when it is absent and safely
+updates it on later runs. Regenerate generator-owned files through the CLI. See
 [Generate and verify an SDK](./generate.md) for regeneration and CI workflows.
 
 ## 4. Create the client

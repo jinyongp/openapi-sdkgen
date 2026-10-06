@@ -17,6 +17,12 @@ const api = createClient({
 
 Applications handle login, token refresh, and credential storage.
 
+`authorization` and `headers.Authorization` are ordinary request defaults. They
+are sent even when an operation declares `security: []`, and are not restricted
+to the configured base URL's origin. An operation server can use another origin.
+Use separate clients or `securityProvider` when credentials depend on the
+operation's declared security or final origin.
+
 ## Choose among OpenAPI security alternatives
 
 OpenAPI can declare several Security Requirement Objects for one operation. If
@@ -53,6 +59,9 @@ selected requirement.
 const api = createClient({
   baseURL: "https://api.example.test",
   securityProvider: async ({ operation, requirement, origin }) => {
+    if (origin !== "https://api.example.test") {
+      throw new Error("Untrusted API origin");
+    }
     if (requirement.id === "serviceAuth") {
       return {
         serviceAuth: {
@@ -75,6 +84,12 @@ const api = createClient({
 The provider receives the final operation, selected requirement, and origin.
 The client validates returned credential shapes and applies them to the declared
 OpenAPI security scheme.
+
+The provider runs when the selected non-empty security requirement is not already
+satisfied by available credentials. Anonymous operations and requirements already
+satisfied by client or request credentials skip it. Decide which origins may
+receive provider credentials inside the provider. Its origin check does not apply
+to credentials supplied through other options or headers.
 
 Generated clients support API keys, HTTP Basic and Bearer authentication,
 OAuth2, OpenID Connect, and mTLS. OAuth/login UX, token refresh, and persistent

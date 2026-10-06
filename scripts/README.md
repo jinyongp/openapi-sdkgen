@@ -87,3 +87,13 @@ work starts. Prefer the default command for routine work.
 CI suite boundaries follow execution cost and dependencies rather than directory
 count. Each suite runs its necessary checks once. Mutable outputs belong to one
 execution; only prepared artifacts with matching inputs can be shared for reads.
+
+## Release documentation review
+
+Before publication, compare the public CLI help and generated exports with the
+English and Korean guides and references. Confirm that released features are
+described as available, examples use working first-run and repeat-run commands,
+and migration guidance matches the released behavior. Review time-sensitive
+support claims and link to the current release instead of maintaining a fixed
+"latest version" in policy pages. This is a semantic review, not a literal-text
+test gate.

@@ -88,6 +88,19 @@ openapi-sdkgen generate \
 충돌하면 실패합니다. 한 번의 실행에서는 [`--check`](../reference/cli.md#fresh-incremental-and-check-modes)와 [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) 중 하나를
 선택합니다.
 
+## 생성 소스 관리 방식 선택
+
+관리 SDK 디렉터리를 OpenAPI 문서와 함께 커밋할 수 있습니다. 생성기 버전을
+고정하고 로컬에서는 `--incremental`로 갱신합니다. CI에서는 위의 출력 디렉터리를
+지정한 `--check` 명령으로 최신 상태를 확인한 뒤 애플리케이션을 컴파일합니다.
+생성 매니페스트도 파일과 함께 보관하세요.
+
+빌드 전에 SDK를 생성하고 출력 디렉터리를 버전 관리에서 제외하는 방법도 있습니다.
+OpenAPI 입력과 생성 설정을 커밋하고 생성기 버전을 고정한 뒤, 깨끗한 체크아웃에서도
+TypeScript 컴파일 전에 생성 명령을 실행합니다. `--incremental`은 최초 빌드와
+반복 빌드에 모두 사용할 수 있습니다. 출력 디렉터리를 생략한 `--check`는 입력의
+생성 가능 여부를 검사하며, 아직 생성하지 않은 파일과 비교하지는 않습니다.
+
 <span id="ci와-도구에서-diagnostics-사용"></span>
 
 ## CI와 도구에서 진단 사용

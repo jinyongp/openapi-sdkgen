@@ -6,7 +6,7 @@ use `./generated/api`.
 | Import path | Use it for |
 | --- | --- |
 | `./generated/api` | API calls, generated types, errors, Links, and streams |
-| `./generated/api/clients/<name>/index.js` | A configured client's selected APIs and types (next release) |
+| `./generated/api/clients/<name>/index.js` | A configured client's selected APIs and types |
 | `./generated/api/metadata` | OpenAPI version and optional source document |
 
 For inbound Webhook and Callback imports, see

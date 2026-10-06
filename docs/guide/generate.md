@@ -88,6 +88,20 @@ The check fails on generated content/path drift, a changed generation
 fingerprint, edited or missing owned files, an invalid manifest, or a conflict
 with an unmanaged path. Choose either [`--check`](../reference/cli.md#fresh-incremental-and-check-modes) or [`--incremental`](../reference/cli.md#fresh-incremental-and-check-modes) for a run.
 
+## Choose where generated source lives
+
+You can commit the managed SDK directory alongside the OpenAPI document. Pin the
+generator version, regenerate locally with `--incremental`, and run the
+output-aware `--check` command above in CI before compiling the application.
+Keep the generated manifest with its files.
+
+Alternatively, generate the SDK before the application build and leave that
+output directory out of version control. Commit the OpenAPI input and generator
+configuration, pin the generator version, and run generation before TypeScript
+compilation in a clean checkout. `--incremental` works for both the first build
+and later builds. A check with no output directory verifies that the input can
+generate; it does not compare files that have not been generated yet.
+
 ## Use diagnostics in CI and tools
 
 Human-readable diagnostics are the default. Tooling can request the stable,

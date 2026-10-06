@@ -68,6 +68,21 @@ const todos = await api.$operations.listTodos({
 });
 ```
 
+## 호출 밖에서 입력 타입 지정
+
+요청을 별도 함수나 변수에서 준비할 때 생성된 입력 헬퍼를 사용하세요.
+API가 요구하는 필드와 리터럴 선택지를 그대로 확인할 수 있습니다.
+
+```ts
+import type { OperationInput, RouteInput } from "./generated/api";
+
+type CreateTodoInput = OperationInput<typeof api.$operations.createTodo>;
+type CreateTodoBody = RouteInput<"POST /todos">["body"];
+const body: CreateTodoBody = { title: "문서 작성" };
+const input: CreateTodoInput = { body };
+await api.$operations.createTodo(input);
+```
+
 <span id="raw-로-status와-header-확인"></span>
 
 ## `.raw()`로 상태 코드와 헤더 확인
@@ -269,6 +284,19 @@ HTTP 오류 계약에 남고 일반 호출·raw·스트림·pagination의 결과
 `error.response.headers`에서 확인합니다. `OperationHTTPError<typeof method>`로
 이 오류 타입을 추출할 수도 있습니다. 기존 `APIError<Code, Details>`와 `isErrorCode`는
 문서에 없는 코드를 포함해 계속 사용할 수 있습니다.
+
+`getTodo`가 문자열 `message`를 가진 JSON `404` 본문을 선언했다면:
+
+```ts
+import { isOperationHTTPError } from "./generated/api";
+
+try {
+  await api.$operations.getTodo({ path: { todoID: "todo-1" } });
+} catch (error: unknown) {
+  if (!isOperationHTTPError(error, api.$operations.getTodo)) throw error;
+  if (error.status === 404) console.log(error.data.message);
+}
+```
 
 ## 다음 문서
 
