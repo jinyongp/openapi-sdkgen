@@ -143,3 +143,27 @@ The shared `aliases` fixture exercises repeated schema imports, distinct Unicode
 and normalization-sensitive names, input/output projection replay, resource
 builders and a module combining Links and streaming. Source checks select the
 owning artifact and imported target rather than assuming SDK-global private names.
+
+## Generated private bindings
+
+Each emitted file collects exact type/value import targets and protected declarations
+before freezing its local identifier plan. Shared descriptor imports use
+`__sdkgen_d_d0` and program imports use `__sdkgen_p_d0`; ordinals are deterministic
+base36 values that skip reserved names. The module path and export form a structured
+identity, so repeated imports reuse one binding and distinct exports stay distinct.
+Schema preparation caches semantic nodes and dependency targets. Operation, schema,
+projection, shared descriptor, callback and webhook emitters resolve bindings with
+their own file owner. Receiving definitions share the final receiving file's plan.
+Content-addressed paths hash the final module body before its generated header.
+
+Link status leaf function names retain their existing reflection contract. Readable
+fixed helpers, example path-variable fallback and the aggregate allocator's lossless
+collision fallback keep their existing spelling. Content hashes in filenames identify
+module content and are independent of local import names.
+
+Owner isolation and receiving contract regressions are covered by
+`TestSchemaDescriptorAliasesAreOwnedByEachFile` and
+`TestServerSharedAliasesRetainEachReceivingContract`. The receiving fixture also
+runs through every supported compiler's declaration consumer matrix. Use
+`devtools run test:dev -run '^(TestLocal.*|TestAggregate.*|TestSchemaProgramsShare.*|TestSchemaDescriptorAliasesAreOwnedByEachFile|TestServerSharedAliasesRetainEachReceivingContract|TestLinkGroups.*)$'`
+for scoped checks and `devtools run ci:dev all` for final integration.

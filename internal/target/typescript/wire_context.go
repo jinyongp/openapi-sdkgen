@@ -21,7 +21,7 @@ type wireRenderContext struct {
 	schemaPrograms *schemaRuntimePlan
 	names          *localIdentifierPlan
 	collectOnly    bool
-	programImports map[string]schemaProgramImport
+	programImports map[localIdentifierKey]schemaProgramImport
 	properties     wirePropertiesMode
 	usesProperties bool
 	semanticOnly   bool

@@ -33,6 +33,9 @@ func TestRuntimeFeatureDeclarationMatrixRegression(t *testing.T) {
 	if err := json.Unmarshal(data, &catalog); err != nil {
 		t.Fatal(err)
 	}
+	catalog.Fixtures = append(catalog.Fixtures, runtimeMatrixFixture{
+		Name: "schema-aliases", Group: "server", Input: "runtime-features/server/schema-aliases.json", Addons: []string{"server"},
+	})
 	registry, err := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 	if err != nil {
 		t.Fatal(err)

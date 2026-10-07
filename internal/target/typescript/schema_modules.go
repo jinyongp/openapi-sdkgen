@@ -86,7 +86,7 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 	var projections renderedSchemaProjections
 	var err error
 	if schema.publicProjection {
-		projections, err = renderSchemaProjectionsWithNames(document, plan, schema, value, names)
+		projections, err = renderSchemaProjections(document, plan, schema, value, names)
 		if err != nil {
 			return nil, fmt.Errorf("component %s projections: %w", schema.name, err)
 		}
@@ -158,11 +158,7 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 	return output.Bytes(), nil
 }
 
-func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, directions ...projection) (renderedSchemaProjections, error) {
-	return renderSchemaProjectionsWithNames(document, plan, schema, value, newLocalIdentifierPlan(schema.path), directions...)
-}
-
-func renderSchemaProjectionsWithNames(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, names *localIdentifierPlan, directions ...projection) (renderedSchemaProjections, error) {
+func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, names *localIdentifierPlan, directions ...projection) (renderedSchemaProjections, error) {
 	if len(directions) == 0 {
 		directions = []projection{projectionInput, projectionOutput}
 	}

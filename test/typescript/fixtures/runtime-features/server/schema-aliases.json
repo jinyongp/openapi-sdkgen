@@ -24,9 +24,7 @@
                     "required": true,
                     "schema": {
                       "type": "string",
-                      "enum": [
-                        "number"
-                      ]
+                      "enum": ["number"]
                     }
                   }
                 ],
@@ -36,9 +34,7 @@
                     "application/json": {
                       "schema": {
                         "type": "object",
-                        "required": [
-                          "value"
-                        ],
+                        "required": ["value"],
                         "properties": {
                           "value": {
                             "type": "integer",
@@ -57,9 +53,7 @@
                       "application/json": {
                         "schema": {
                           "type": "object",
-                          "required": [
-                            "value"
-                          ],
+                          "required": ["value"],
                           "properties": {
                             "value": {
                               "type": "integer",
@@ -91,9 +85,7 @@
                 "required": true,
                 "schema": {
                   "type": "string",
-                  "enum": [
-                    "text"
-                  ]
+                  "enum": ["text"]
                 }
               }
             ],
@@ -103,9 +95,7 @@
                 "application/json": {
                   "schema": {
                     "type": "object",
-                    "required": [
-                      "value"
-                    ],
+                    "required": ["value"],
                     "properties": {
                       "value": {
                         "type": "string",
@@ -124,9 +114,7 @@
                   "application/json": {
                     "schema": {
                       "type": "object",
-                      "required": [
-                        "value"
-                      ],
+                      "required": ["value"],
                       "properties": {
                         "value": {
                           "type": "string",
@@ -154,9 +142,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": [
-                "number"
-              ]
+              "enum": ["number"]
             }
           }
         ],
@@ -166,9 +152,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "value"
-                ],
+                "required": ["value"],
                 "properties": {
                   "value": {
                     "type": "integer",
@@ -187,9 +171,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "value"
-                  ],
+                  "required": ["value"],
                   "properties": {
                     "value": {
                       "type": "integer",
@@ -213,9 +195,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": [
-                "text"
-              ]
+              "enum": ["text"]
             }
           }
         ],
@@ -225,9 +205,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "value"
-                ],
+                "required": ["value"],
                 "properties": {
                   "value": {
                     "type": "string",
@@ -246,9 +224,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "value"
-                  ],
+                  "required": ["value"],
                   "properties": {
                     "value": {
                       "type": "string",

@@ -76,3 +76,35 @@ func TestSchemaDescriptorAliasesAreOwnedByEachFile(t *testing.T) {
 		t.Fatal("repeated/reversed owners mutated the prepared schema cache")
 	}
 }
+
+func TestSchemaImportRequiresFrozenOwnerAndExactExport(t *testing.T) {
+	wire := newWireRenderContext(wirePropertiesLiteral)
+	dependency := schemaProgramImport{path: "shared.ts", name: "program0"}
+	if _, err := wire.schemaImportName(dependency); err == nil {
+		t.Fatal("ownerless schema import resolved")
+	}
+	wire.names = newLocalIdentifierPlan("owner.ts")
+	if _, err := wire.schemaImportName(dependency); err == nil {
+		t.Fatal("schema import resolved before freeze")
+	}
+	wire.collectOnly = true
+	for _, name := range []string{"program0", "program1", "schema"} {
+		if err := wire.collectSchemaImport(schemaProgramImport{path: "shared.ts", name: name}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(wire.programImports) != 3 {
+		t.Fatal("distinct exports collapsed in the dependency map")
+	}
+	if err := wire.names.freeze(); err != nil {
+		t.Fatal(err)
+	}
+	wire.collectOnly = false
+	if _, err := wire.schemaImportName(schemaProgramImport{path: "shared.ts", name: "missing"}); err == nil {
+		t.Fatal("unprepared export resolved")
+	}
+	wire.collectOnly = true
+	if err := wire.collectSchemaImport(dependency); err == nil {
+		t.Fatal("late value import request accepted")
+	}
+}

@@ -49,7 +49,7 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 			return nil, err
 		}
 	}
-	projections, err := renderSchemaProjectionsWithNames(document, plan, projected, value, names, direction)
+	projections, err := renderSchemaProjections(document, plan, projected, value, names, direction)
 	if err != nil {
 		return nil, err
 	}

@@ -83,9 +83,9 @@ func (wire *wireRenderContext) renderDescriptor(plan *schemaDescriptorPlan) (str
 
 func (wire *wireRenderContext) collectSchemaImport(dependency schemaProgramImport) error {
 	if wire.programImports == nil {
-		wire.programImports = make(map[string]schemaProgramImport)
+		wire.programImports = make(map[localIdentifierKey]schemaProgramImport)
 	}
-	wire.programImports[dependency.path+"\x00"+dependency.name] = dependency
+	wire.programImports[schemaValueIdentifierKey(dependency.path, dependency.name)] = dependency
 	if wire.names != nil && wire.collectOnly {
 		return wire.names.request(schemaValueIdentifierKey(dependency.path, dependency.name))
 	}

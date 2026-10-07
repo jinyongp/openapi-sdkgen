@@ -196,11 +196,16 @@ func (runtime *schemaRuntimePlan) moduleFor(node *schemaplan.Node) (*schemaProgr
 
 func (wire *wireRenderContext) programImportSource(artifact string) (string, error) {
 	var result string
-	paths := make([]string, 0, len(wire.programImports))
+	paths := make([]localIdentifierKey, 0, len(wire.programImports))
 	for key := range wire.programImports {
 		paths = append(paths, key)
 	}
-	sort.Strings(paths)
+	sort.Slice(paths, func(i, j int) bool {
+		if paths[i].identity != paths[j].identity {
+			return paths[i].identity < paths[j].identity
+		}
+		return paths[i].qualifier < paths[j].qualifier
+	})
 	for _, target := range paths {
 		dependency := wire.programImports[target]
 		specifier, err := relativeModuleSpecifier(artifact, dependency.path)
