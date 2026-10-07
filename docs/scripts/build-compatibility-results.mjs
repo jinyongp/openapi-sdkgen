@@ -159,11 +159,11 @@ export function publishCompatibilityDocuments(directory, outputDirectory) {
   }
 }
 
-export function readGraphSelection(directory, reportName = "graph-selected-results.json", selectionName = "microsoft-graph-beta") {
-  const report = JSON.parse(readFileSync(resolve(directory, reportName)));
+export function readGraphSelection(directory, reportName = "graph-selected-results.json", selectionName = "microsoft-graph-beta", evidence = {}) {
+  const report = evidence.report ?? JSON.parse(readFileSync(resolve(directory, reportName)));
   const manifestBytes = readFileSync(resolve(directory, "regression.json"));
   const manifest = JSON.parse(manifestBytes);
-  const baseline = JSON.parse(readFileSync(resolve(directory, "graph-full-baseline.json")));
+  const baseline = evidence.baseline ?? JSON.parse(readFileSync(resolve(directory, "graph-full-baseline.json")));
   const full = baseline.document;
   if (baseline.schemaVersion !== 1 || baseline.manifestSha256 !== sha256(manifestBytes) ||
       !/^[a-f0-9]{64}$/.test(baseline.sourceReportSha256) ||
@@ -202,7 +202,7 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
       !Number.isFinite(selected.generation.durationMillis) || selected.generation.durationMillis <= 0 ||
       !/^[a-f0-9]{40}$/.test(report.measurement?.sourceCommit) || report.measurement.sourceDirty !== false ||
       report.overall.documents !== 0 || report.overall.selectedDocuments !== 1 ||
-      report.overall.selectedSuccessfulDocuments !== (historicalVerification ? 1 : 0)) {
+      (report.overall.selectedSuccessfulDocuments ?? 0) !== (historicalVerification ? 1 : 0)) {
     throw new Error("Graph selection provenance or verification mismatch");
   }
   const routes = selection.routes, dependencies = selection.dependencyRoutes;
@@ -216,6 +216,31 @@ export function readGraphSelection(directory, reportName = "graph-selected-resul
     throw new Error("Graph selection membership mismatch");
   }
   return { full, selected, measurement: report.measurement, resources: report.resources, sourceUrl: entry.sourceUrl, ciRunUrl: report.ciRunUrl };
+}
+
+export function readGraphCIMeasurements(directory, ci) {
+  const full = ci.reports["graph-full"];
+  const selected = ci.reports["graph-selected"];
+  if (!full && !selected) return readGraphSelection(directory, "graph-selected-ci-results.json");
+  if (!full || !selected) throw new Error("Graph CI measurements require both generation scopes");
+  const item = full.report.documents?.[0];
+  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const entry = JSON.parse(manifestBytes).corpora.find(item => item.id === "microsoft-graph-beta");
+  if (full.report.schemaVersion !== 2 || full.report.manifestSha256 !== sha256(manifestBytes) ||
+      full.report.documents.length !== 1 || item?.inputSha256 !== entry.sha256 ||
+      item.input !== entry.input || item.cohort !== entry.cohort || item.openapiVersion !== entry.openapiVersion ||
+      ![undefined, "full"].includes(item.generationScope) || item.generationSelection != null ||
+      !item.discoveryComplete || item.diagnostics.errors !== 0 || item.typecheck.status !== "not-run" ||
+      item.documentSuccess !== false || item.capabilityAdjustedSuccess !== false ||
+      JSON.stringify(item.generationAddons) !== "[]" || !item.operationRetention.available ||
+      item.operationRetention.omitted !== 0 || item.operationEmission.count !== item.operationRetention.total) {
+    throw new Error("Graph full CI generation provenance or status mismatch");
+  }
+  return readGraphSelection(directory, "graph-selected-ci-results.json", "microsoft-graph-beta", {
+    report: { ...selected.report, ciRunUrl: ci.provenance.runUrl },
+    baseline: { schemaVersion: 1, manifestSha256: full.report.manifestSha256,
+      sourceReportSha256: sha256(full.bytes), measurement: full.report.measurement, document: item },
+  });
 }
 
 export function readMetadataComparison(directory) {
@@ -383,11 +408,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     corpus.measurement = { ...corpus.measurement, provider: ci.provenance.provider,
       runner: ci.provenance.runner, runUrl: ci.provenance.runUrl };
   }
-  const selection = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
+  const selection = readGraphCIMeasurements(sourceDirectory, ci);
   if (!/^https:\/\/github\.com\/jinyongp\/openapi-sdkgen\/actions\/runs\/\d+$/.test(selection.ciRunUrl)) {
     throw new Error("Graph selection has no GitHub Actions provenance");
   }
-  const graph = { selected: selection.selected, sourceUrl: selection.sourceUrl,
+  const graph = { selected: selection.selected, full: ci.reports["graph-full"] ? selection.full : undefined, sourceUrl: selection.sourceUrl,
     measurement: selection.measurement, ciRunUrl: selection.ciRunUrl };
   const generatedDirectory = resolve(docsDirectory, ".vitepress/generated");
   const publicDirectory = resolve(docsDirectory, "public/compatibility-results");
@@ -402,9 +427,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     copyFileSync(resolve(sourceDirectory, `${id}.json`), resolve(publicDirectory, `${id}.json`));
     writeFileSync(resolve(publicDirectory, `${id}-results.json`), ci.reports[id].bytes);
   }
-  const graphReport = JSON.parse(readFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json")));
+  const graphReport = ci.reports["graph-selected"]?.report ?? JSON.parse(readFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json")));
   delete graphReport.measurement.cpu;
   writeFileSync(resolve(publicDirectory, "graph-selected-ci-results.json"), `${JSON.stringify(graphReport, null, 2)}\n`);
+  if (ci.reports["graph-full"]) writeFileSync(resolve(publicDirectory, "graph-full-ci-results.json"), ci.reports["graph-full"].bytes);
   publishCompatibilityDocuments(sourceDirectory, publicDirectory);
   console.log(`Compatibility results: ${corpusNames.length} verified GitHub Actions reports prepared.`);
 }

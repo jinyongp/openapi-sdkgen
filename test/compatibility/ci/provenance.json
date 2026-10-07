@@ -2,13 +2,15 @@
   "schemaVersion": 1,
   "provider": "github-actions",
   "verification": "passed",
-  "runUrl": "https://github.com/jinyongp/openapi-sdkgen/actions/runs/36902560677",
-  "sourceCommit": "a7cb6745169ce87a253283b2304786eb5c07c69f",
-  "runner": "ubuntu-latest",
+  "runUrl": "https://github.com/jinyongp/openapi-sdkgen/actions/runs/37557702054",
+  "sourceCommit": "1253c068bdba723819978f0d576fc7b98931c96c",
+  "runner": "ubuntu-24.04",
   "reports": {
-    "regression": "23e669634fe5dd72898f8582adb5c85ef39f29a164f3ddb71b4f6a01e4b98fe9",
-    "holdout": "0bff019aec783bde37ea46d23e9ca04e7963b860c5b0a00c40fc3815c5ecbbdf",
-    "production32": "c5070c94dfabed3e52e456685d39c2d2aaee4f0ad5c70034e1a888e1a2e30902",
-    "modern": "183103e4d199120423057fc41957392adcab6b981f34fb445a881707f136e506"
+    "regression": "1832f2f8dfb2b6aacfad9d72ada57ce65c2bbbe6ca5d026876140aae8ed02228",
+    "holdout": "3e1e854eec6cd2a5d0c3021a4ab1e747c12b3b5316e3117c98f465986ea89087",
+    "production32": "56c56be993b59ecc3155199f3f47cf82f3bf9ca12c01115b13c420e130066430",
+    "modern": "b3640809b0fa2c9d4501d6af6f0fb06c56c5f3a5d878de2374ade31724477ec6",
+    "graph-full": "91e76b6b77bdc175583c46523eea768191567012ef50dac6a884dee004e9d373",
+    "graph-selected": "e1b9c6ddc29ad5c5434a93e6a0ea208fa813a2ce2b0b92e957afcfe1202bbfbd"
   }
 }

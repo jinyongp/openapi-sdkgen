@@ -29,8 +29,8 @@ See [Receive Webhooks and Callbacks](../guide/server.md).
 
 Choose which APIs to generate to include their calls and required dependencies
 in the SDK. As an example, we selected nine user, group, and drive APIs from
-Microsoft Graph beta. The table shows the selected SDK's generation results
-from a recorded Actions run.
+Microsoft Graph beta. The table compares full and selected generation from
+the same Actions run. Typechecking is excluded for Microsoft Graph.
 
 <GraphSelection />
 

@@ -27,7 +27,8 @@ GitHub Actions에서 측정한 결과입니다. 표에서 측정한 실행을 �
 
 생성할 API를 지정하면 필요한 호출과 의존 코드만 SDK에 포함됩니다.
 Microsoft Graph beta를 예로, 사용자·그룹·드라이브 API 9개를 선택해 측정했습니다.
-아래 표는 Actions에서 측정한 선택 SDK의 생성 결과입니다.
+아래 표는 같은 Actions 실행에서 측정한 전체·선택 생성 결과입니다.
+Microsoft Graph의 타입 검사는 제외했습니다.
 
 <GraphSelection locale="ko" />
 

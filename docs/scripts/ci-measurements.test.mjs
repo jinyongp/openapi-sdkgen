@@ -64,11 +64,45 @@ test("CI snapshots reject altered reports and invalid run provenance", t => {
 });
 
 test("published CI snapshots also pass document and input integrity validation", async () => {
-  const { readCompatibilityResults } = await import("./build-compatibility-results.mjs");
+  const { readCompatibilityResults, readGraphCIMeasurements } = await import("./build-compatibility-results.mjs");
   const source = resolve(import.meta.dirname, "../../test/compatibility");
   const directory = resolve(source, "ci");
   const ci = readCIMeasurements(directory);
   const data = readCompatibilityResults(source, { reportDirectory: directory, compressed: true });
   assert.equal(data.length, corpusNames.length);
   assert.ok(data.every(corpus => corpus.measurement.sourceCommit === ci.provenance.sourceCommit));
+  if (ci.reports["graph-full"]) {
+    const graph = readGraphCIMeasurements(source, ci);
+    assert.equal(graph.measurement.sourceCommit, ci.provenance.sourceCommit);
+    assert.equal(graph.full.typecheck.status, "not-run");
+    assert.equal(graph.selected.typecheck.status, "not-run");
+  }
+});
+
+test("Graph CI publication binds both scopes to the pinned input and skips verification", async () => {
+  const { readGraphCIMeasurements } = await import("./build-compatibility-results.mjs");
+  const directory = resolve(import.meta.dirname, "../../test/compatibility");
+  const full = JSON.parse(readFileSync(resolve(directory, "regression-results.json")));
+  const baseline = JSON.parse(readFileSync(resolve(directory, "graph-full-baseline.json")));
+  const item = full.documents.find(item => item.id === "microsoft-graph-beta");
+  Object.assign(item, baseline.document, { generationAddons: [], documentSuccess: false,
+    capabilityAdjustedSuccess: false, typecheck: { status: "not-run" } });
+  full.documents = [item];
+  const selected = JSON.parse(readFileSync(resolve(directory, "graph-selected-results.json")));
+  const ci = { provenance: { runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: {
+    "graph-full": { report: full, bytes: Buffer.from(JSON.stringify(full)) },
+    "graph-selected": { report: selected, bytes: Buffer.from(JSON.stringify(selected)) },
+  } };
+  const result = readGraphCIMeasurements(directory, ci);
+  assert.equal(result.selected.operationEmission.count, 9);
+  assert.equal(result.full.operationEmission.count, item.operationRetention.total);
+  assert.equal(result.ciRunUrl, ci.provenance.runUrl);
+  for (const change of [item => { item.inputSha256 = "wrong"; },
+    item => { item.typecheck.status = "pass"; }, item => { item.documentSuccess = true; }]) {
+    const invalid = structuredClone(ci);
+    change(invalid.reports["graph-full"].report.documents[0]);
+    assert.throws(() => readGraphCIMeasurements(directory, invalid), /Graph full CI/);
+  }
+  const missing = { ...ci, reports: { "graph-selected": ci.reports["graph-selected"] } };
+  assert.throws(() => readGraphCIMeasurements(directory, missing), /both generation scopes/);
 });
