@@ -2,6 +2,8 @@ package typescript
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -20,6 +22,18 @@ func TestSchemaDescriptorAliasesAreOwnedByEachFile(t *testing.T) {
 	}
 	if err := runtime.freeze(); err != nil {
 		t.Fatal(err)
+	}
+	for _, module := range runtime.modules {
+		sum := sha256.Sum256(module.source)
+		key := base64.RawURLEncoding.EncodeToString(sum[:])
+		if !strings.HasSuffix(module.path, "schema_"+key+".ts") {
+			t.Fatalf("content address differs from module body: %s", module.path)
+		}
+		if strings.HasPrefix(module.path, "internal/schema-descriptors/") {
+			if !strings.Contains(string(module.source), "program0 as __sdkgen_p_d0") || strings.Contains(string(module.source), "program0 as __sdkgen_P") {
+				t.Fatalf("shared descriptor imports bypass its owner: %s", module.source)
+			}
+		}
 	}
 	before := schemaProgramsSnapshot(t, runtime)
 	render := func(owner string, reserved ...string) string {

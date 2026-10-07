@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
 	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
@@ -34,36 +33,24 @@ func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode w
 		return nil, fmt.Errorf("unprepared shared schema descriptor")
 	}
 	module := &schemaRuntimeModule{path: "internal/schema-descriptors/shared/schema.ts", node: node}
+	names := newLocalIdentifierPlan(module.path)
+	if err := names.reserve("WireSchema", "schema", "__sdkgen_Properties"); err != nil {
+		return nil, err
+	}
+	descriptor, err := runtime.prepareDescriptor(node, mode, binding)
+	if err != nil {
+		return nil, err
+	}
 	wire := newWireRenderContext(mode)
-	wire.programImports = make(map[string]schemaProgramImport)
-	expression, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{
-		Literal: schemaDescriptorLiteral,
-		Program: func(child *schemaplan.Node) (string, error) {
-			program, exists := binding.programs[child]
-			if !exists {
-				return "", fmt.Errorf("unprepared shared descriptor program")
-			}
-			dependency := schemaProgramImport{path: program.path, name: "program0"}
-			if err := wire.collectSchemaImport(dependency); err != nil {
-				return "", err
-			}
-			return wire.schemaImportName(dependency)
-		},
-		Reference: func(child *schemaplan.Node) (string, error) {
-			shared, err := runtime.sharedDescriptor(child, mode, binding)
-			if err != nil || shared == nil {
-				return "", err
-			}
-			return wire.importDescriptor(shared)
-		},
-		Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
-			properties := make([]runtimeProperty, 0, len(entries))
-			for _, entry := range entries {
-				properties = append(properties, runtimeProperty{key: entry.Name, value: entry.Expression})
-			}
-			return wire.propertyExpression(properties)
-		},
-	})
+	wire.names, wire.collectOnly = names, true
+	if _, err := wire.renderDescriptor(descriptor); err != nil {
+		return nil, err
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	wire.collectOnly = false
+	expression, err := wire.renderDescriptor(descriptor)
 	if err != nil {
 		return nil, err
 	}
