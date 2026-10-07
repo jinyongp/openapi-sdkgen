@@ -46,14 +46,10 @@ Vite, Next.js, Nuxt, and similar bundlers resolve the generated directory to
 its `index.ts` entry. Applications that run compiled Node ESM directly should
 import `./generated/api/index.js`.
 
-Run the same command again to update only changed generated files while
-preserving unchanged file identities and timestamps.
-
-Incremental generation uses the manifest created on the first run. It verifies
-managed file hashes before replacement and preserves files outside the manifest. When a self-contained local OpenAPI file and the generation settings
-are unchanged, it also skips compilation and source emission. Inputs from
-stdin, HTTP(S), external `$ref` files, and schema extensions continue through
-the full validation and generation path.
+After changing the document, run the same command to update the SDK.
+`--incremental` updates managed files and preserves other files in the output
+directory. See [Generate and verify](docs/guide/generate.md) for update and
+conflict handling.
 
 ## Install
 

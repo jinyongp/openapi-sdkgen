@@ -16,8 +16,7 @@ caller easiest to understand.
 This page uses the same Todo document as [Getting started](./getting-started.md).
 Apply each call example to `src/demo.ts`, using the client configured there.
 Use the configuration below with a real API server, or retain the starter's mock
-`fetch` to try calls without a server. This document has no `completed` query or
-single-item lookup; add those operations and parameters before regenerating.
+`fetch` to try calls without a server.
 
 ## Configure a client
 
