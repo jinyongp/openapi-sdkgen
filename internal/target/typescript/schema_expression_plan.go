@@ -17,6 +17,11 @@ type schemaDescriptorPlan struct {
 	properties bool
 }
 
+type operationSchemaPlan struct {
+	definition string
+	nodes      []*schemaplan.Node
+}
+
 func (runtime *schemaRuntimePlan) prepareDescriptor(node *schemaplan.Node, mode wirePropertiesMode, binding *schemaProgramBinding) (*schemaDescriptorPlan, error) {
 	result := &schemaDescriptorPlan{node: node, programs: binding.programs, references: make(map[*schemaplan.Node]*schemaRuntimeModule), imports: make(map[string]schemaProgramImport)}
 	_, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{
@@ -82,13 +87,16 @@ func (wire *wireRenderContext) renderDescriptor(plan *schemaDescriptorPlan) (str
 }
 
 func (wire *wireRenderContext) collectSchemaImport(dependency schemaProgramImport) error {
+	if wire.collectOnly {
+		if wire.names != nil {
+			return wire.names.request(schemaValueIdentifierKey(dependency.path, dependency.name))
+		}
+		return nil
+	}
 	if wire.programImports == nil {
 		wire.programImports = make(map[localIdentifierKey]schemaProgramImport)
 	}
 	wire.programImports[schemaValueIdentifierKey(dependency.path, dependency.name)] = dependency
-	if wire.names != nil && wire.collectOnly {
-		return wire.names.request(schemaValueIdentifierKey(dependency.path, dependency.name))
-	}
 	return nil
 }
 

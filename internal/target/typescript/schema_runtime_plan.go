@@ -272,13 +272,17 @@ func prepareSchemaRuntimePlan(source *sourcePlan) error {
 				}
 			}
 		}
+		owner.modules.operationSchemas = make(map[string]operationSchemaPlan, len(owner.manifest.Operations))
 		for _, item := range owner.manifest.Operations {
 			wire := newWireRenderContext(wirePropertiesConstructed)
 			wire.semanticOnly = true
+			wire.trackSchemas = true
 			wire.schemaPrograms = runtime
-			if _, err := wire.operationDefinition(source.document, item.compiled, item); err != nil {
+			definition, err := wire.operationDefinition(source.document, item.compiled, item)
+			if err != nil {
 				return err
 			}
+			owner.modules.operationSchemas[manifestRouteKey(item)] = operationSchemaPlan{definition: definition, nodes: wire.schemaNodes}
 		}
 	}
 	return runtime.freeze()

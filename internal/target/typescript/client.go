@@ -1343,14 +1343,26 @@ func (wire *wireRenderContext) operationDefinition(document *ir.Document, irOper
 				return "", err
 			}
 		}
-		if _, _, err := wire.operationRequestWireBodies(document, irOperation); err != nil {
+		_, hasRequestBodies, err := wire.operationRequestWireBodies(document, irOperation)
+		if err != nil {
 			return "", err
 		}
-		if _, _, err := wire.operationResponseWireBodies(document, irOperation); err != nil {
+		_, hasResponseBodies, err := wire.operationResponseWireBodies(document, irOperation)
+		if err != nil {
 			return "", err
 		}
 		if _, _, err := operationSecurityDefinition(document, irOperation); err != nil {
 			return "", err
+		}
+		if wire.trackSchemas {
+			var fields []string
+			if len(operation.prepared.clientParameters) > 0 || hasRequestBodies {
+				fields = append(fields, "inputSchemas: inputSchemas")
+			}
+			if hasResponseBodies {
+				fields = append(fields, "outputSchemas: outputSchemas")
+			}
+			return "{ " + strings.Join(fields, ", ") + " }", nil
 		}
 		return "{}", nil
 	}

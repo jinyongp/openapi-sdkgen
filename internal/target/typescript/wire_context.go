@@ -3,6 +3,8 @@ package typescript
 import (
 	"fmt"
 	"strings"
+
+	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
 type wirePropertiesMode uint8
@@ -21,6 +23,8 @@ type wireRenderContext struct {
 	schemaPrograms *schemaRuntimePlan
 	names          *localIdentifierPlan
 	collectOnly    bool
+	trackSchemas   bool
+	schemaNodes    []*schemaplan.Node
 	programImports map[localIdentifierKey]schemaProgramImport
 	properties     wirePropertiesMode
 	usesProperties bool

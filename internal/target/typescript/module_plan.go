@@ -13,6 +13,7 @@ type semanticModulePlan struct {
 	resourceExecutions        map[string]operationExecutionPlan
 	resourceLinks             []generatedLink
 	schemaPrograms            *schemaRuntimePlan
+	operationSchemas          map[string]operationSchemaPlan
 	runtimeComposition        runtimeComposition
 	schemas                   []schemaModulePlan
 	operations                []operationModulePlan

@@ -136,6 +136,9 @@ func (wire *wireRenderContext) lowerSchemaDescriptor(value any, direction projec
 	if err != nil {
 		return "", err
 	}
+	if wire.trackSchemas {
+		wire.schemaNodes = append(wire.schemaNodes, node)
+	}
 	if wire.semanticOnly {
 		return "{}", nil
 	}

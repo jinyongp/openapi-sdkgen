@@ -93,13 +93,21 @@ func TestSchemaImportRequiresFrozenOwnerAndExactExport(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if len(wire.programImports) != 3 {
+	if len(wire.names.requests) != 3 {
 		t.Fatal("distinct exports collapsed in the dependency map")
 	}
 	if err := wire.names.freeze(); err != nil {
 		t.Fatal(err)
 	}
 	wire.collectOnly = false
+	for _, name := range []string{"program0", "program1", "schema"} {
+		if err := wire.collectSchemaImport(schemaProgramImport{path: "shared.ts", name: name}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(wire.programImports) != 3 {
+		t.Fatal("distinct exports collapsed during emission")
+	}
 	if _, err := wire.schemaImportName(schemaProgramImport{path: "shared.ts", name: "missing"}); err == nil {
 		t.Fatal("unprepared export resolved")
 	}

@@ -182,9 +182,23 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 
 	wire := newWireRenderContext(wirePropertiesConstructed)
 	wire.schemaPrograms, wire.names, wire.collectOnly = plan.schemaPrograms, names, true
-	definition, err := wire.operationDefinition(document, operation, item)
-	if err != nil {
-		return nil, err
+	var definition string
+	if plan.schemaPrograms != nil {
+		prepared, exists := plan.operationSchemas[module.routeKey]
+		if !exists {
+			return nil, fmt.Errorf("operation %q has no prepared schema uses", module.routeKey)
+		}
+		definition = prepared.definition
+		for _, node := range prepared.nodes {
+			if _, err := wire.emitSchemaDescriptor(node); err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		definition, err = wire.operationDefinition(document, operation, item)
+		if err != nil {
+			return nil, err
+		}
 	}
 	definition, err = localizeOperationTypeSource(definition, module, plan)
 	if err != nil {
@@ -343,28 +357,44 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	definitionParts = append(definitionParts, output.String())
-	collected := qualifyOperationSchemaContractReferences(strings.Join(definitionParts, definition))
-	if _, err := collectOperationSchemaReferences(collected, module, plan, schemaIndex, names); err != nil {
+	for index, part := range definitionParts {
+		definitionParts[index] = qualifyOperationSchemaContractReferences(part)
+	}
+	definition = qualifyOperationSchemaContractReferences(definition)
+	collected := strings.Join(definitionParts, definition)
+	references, err := collectOperationSchemaReferences(collected, module, plan, schemaIndex, names)
+	if err != nil {
 		return nil, err
 	}
 	if err := names.freeze(); err != nil {
 		return nil, err
 	}
 	wire.collectOnly = false
-	definition, err = wire.operationDefinition(document, operation, item)
+	wire.programImports = nil
+	renderedDefinition, err := wire.operationDefinition(document, operation, item)
 	if err != nil {
 		return nil, err
 	}
-	definition, err = localizeOperationTypeSource(definition, module, plan)
+	renderedDefinition, err = localizeOperationTypeSource(renderedDefinition, module, plan)
 	if err != nil {
 		return nil, err
 	}
-	localized := qualifyOperationSchemaContractReferences(strings.Join(definitionParts, definition))
-	references, err := collectOperationSchemaReferences(localized, module, plan, schemaIndex, names)
-	if err != nil {
-		return nil, err
+	renderedDefinition = qualifyOperationSchemaContractReferences(renderedDefinition)
+	// These are explicit expression slots in the source writer. Type references
+	// are resolved once, without replacing marker strings or schema binding text.
+	offset := 0
+	for _, part := range definitionParts[:len(definitionParts)-1] {
+		offset += len(part)
+		for _, reference := range references.occurrences {
+			if reference.start < offset+len(definition) && reference.end > offset {
+				return nil, fmt.Errorf("operation %q definition overlaps a type reference", module.routeKey)
+			}
+		}
+		references.occurrences = append(references.occurrences, operationSchemaReference{start: offset, end: offset + len(definition), replacement: renderedDefinition})
+		offset += len(definition)
 	}
-	localized, err = resolveOperationSchemaReferences(localized, module, plan, schemaIndex, names, references)
+	sort.Slice(references.occurrences, func(i, j int) bool { return references.occurrences[i].start < references.occurrences[j].start })
+	localized, err := resolveOperationSchemaReferences(collected, module, plan, schemaIndex, names, references)
 	if err != nil {
 		return nil, err
 	}
