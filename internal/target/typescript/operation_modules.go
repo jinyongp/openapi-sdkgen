@@ -394,15 +394,15 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		offset += len(definition)
 	}
 	sort.Slice(references.occurrences, func(i, j int) bool { return references.occurrences[i].start < references.occurrences[j].start })
-	localized, err := resolveOperationSchemaReferences(collected, module, plan, schemaIndex, names, references)
-	if err != nil {
-		return nil, err
-	}
 	programImports, err := wire.programImportSource(module.path)
 	if err != nil {
 		return nil, err
 	}
-	localized = programImports + localized
+	references.valueImports = programImports
+	localized, err := resolveOperationSchemaReferences(collected, module, plan, schemaIndex, names, references)
+	if err != nil {
+		return nil, err
+	}
 	result := []byte(localized)
 	if linksType != "never" {
 		// The Link factory's types are exact operation slots. It introduces no
@@ -498,12 +498,13 @@ func emitOperationLinkFactory(document *ir.Document, plan *semanticModulePlan, m
 	return output.Bytes(), nil
 }
 
+var operationSchemaContractReplacer = strings.NewReplacer(
+	"Contract.ComponentInput<", "ContractSchemas.ComponentInput<",
+	"Contract.ComponentOutput<", "ContractSchemas.ComponentOutput<",
+)
+
 func qualifyOperationSchemaContractReferences(source string) string {
-	replacer := strings.NewReplacer(
-		"Contract.ComponentInput<", "ContractSchemas.ComponentInput<",
-		"Contract.ComponentOutput<", "ContractSchemas.ComponentOutput<",
-	)
-	return replacer.Replace(source)
+	return operationSchemaContractReplacer.Replace(source)
 }
 
 func publicCapabilityType(field string) string {
@@ -680,9 +681,10 @@ func collectOperationSchemaReferences(source string, module operationModulePlan,
 }
 
 type operationSchemaReferences struct {
-	occurrences []operationSchemaReference
-	counts      map[operationSchemaReferenceKey]int
-	keys        []operationSchemaReferenceKey
+	occurrences  []operationSchemaReference
+	counts       map[operationSchemaReferenceKey]int
+	keys         []operationSchemaReferenceKey
+	valueImports string
 }
 
 func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan) (string, error) {
@@ -717,21 +719,26 @@ func resolveOperationSchemaReferences(source string, module operationModulePlan,
 		}
 		replacements[key] = replacement
 	}
-	var output strings.Builder
-	output.Grow(len(source))
-	cursor := 0
-	for _, occurrence := range occurrences {
-		output.WriteString(source[cursor:occurrence.start])
-		replacement := occurrence.replacement
-		if replacement == "" {
+	size := len(source) + len(references.valueImports)
+	for index := range occurrences {
+		occurrence := &occurrences[index]
+		if occurrence.replacement == "" {
 			key := operationSchemaReferenceKey{name: occurrence.name, export: occurrence.export}
 			var exists bool
-			replacement, exists = replacements[key]
+			occurrence.replacement, exists = replacements[key]
 			if !exists {
 				return "", fmt.Errorf("operation %q has no planned schema reference for %q projection %q", module.routeKey, key.name, key.export)
 			}
 		}
-		output.WriteString(replacement)
+		size += len(occurrence.replacement) - (occurrence.end - occurrence.start)
+	}
+	var output strings.Builder
+	output.Grow(size)
+	output.WriteString(references.valueImports)
+	cursor := 0
+	for _, occurrence := range occurrences {
+		output.WriteString(source[cursor:occurrence.start])
+		output.WriteString(occurrence.replacement)
 		cursor = occurrence.end
 	}
 	output.WriteString(source[cursor:])

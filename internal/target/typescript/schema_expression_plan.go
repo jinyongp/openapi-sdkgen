@@ -2,6 +2,7 @@ package typescript
 
 import (
 	"fmt"
+	"strings"
 
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
 	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
@@ -10,11 +11,12 @@ import (
 // This cache owns semantic nodes and exact dependencies, never an importing
 // file's bindings. Shared references stop traversal in preparation and emission.
 type schemaDescriptorPlan struct {
-	node       *schemaplan.Node
-	programs   map[*schemaplan.Node]*schemaRuntimeModule
-	references map[*schemaplan.Node]*schemaRuntimeModule
-	imports    map[string]schemaProgramImport
-	properties bool
+	node          *schemaplan.Node
+	programs      map[*schemaplan.Node]*schemaRuntimeModule
+	references    map[*schemaplan.Node]*schemaRuntimeModule
+	imports       map[string]schemaProgramImport
+	properties    bool
+	literalPrefix string
 }
 
 type operationSchemaPlan struct {
@@ -24,6 +26,22 @@ type operationSchemaPlan struct {
 
 func (runtime *schemaRuntimePlan) prepareDescriptor(node *schemaplan.Node, mode wirePropertiesMode, binding *schemaProgramBinding) (*schemaDescriptorPlan, error) {
 	result := &schemaDescriptorPlan{node: node, programs: binding.programs, references: make(map[*schemaplan.Node]*schemaRuntimeModule), imports: make(map[string]schemaProgramImport)}
+	if compactSchemaDescriptor(node) {
+		program, exists := binding.programs[node]
+		if !exists {
+			return nil, fmt.Errorf("unprepared descriptor program")
+		}
+		literal, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{Literal: schemaDescriptorLiteral})
+		if err != nil {
+			return nil, err
+		}
+		result.literalPrefix = "{ program: "
+		if literal != "{}" {
+			result.literalPrefix = strings.TrimSuffix(literal, " }") + ", program: "
+		}
+		result.imports[program.path] = schemaProgramImport{path: program.path, name: "program0"}
+		return result, nil
+	}
 	_, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{
 		Literal: schemaDescriptorLiteral,
 		Program: func(child *schemaplan.Node) (string, error) {
@@ -60,6 +78,14 @@ func (wire *wireRenderContext) renderDescriptor(plan *schemaDescriptorPlan) (str
 	wire.usesProperties = wire.usesProperties || plan.properties
 	if wire.collectOnly {
 		return "{}", nil
+	}
+	if plan.literalPrefix != "" {
+		program := plan.programs[plan.node]
+		name, err := wire.schemaImportName(schemaProgramImport{path: program.path, name: "program0"})
+		if err != nil {
+			return "", err
+		}
+		return plan.literalPrefix + name + " }", nil
 	}
 	return schemaemit.Descriptor(plan.node, schemaemit.DescriptorOptions{
 		Literal: schemaDescriptorLiteral,
