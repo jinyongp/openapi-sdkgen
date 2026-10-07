@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
+import { corpusNames, readCIMeasurements } from "./ci-measurements.mjs";
 
-export const corpusNames = ["regression", "holdout", "production32", "modern"];
+export { corpusNames };
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const documentPath = (entry) => `documents/${encodeURIComponent(entry.id)}/${encodeURIComponent(basename(entry.input))}`;
@@ -20,10 +22,11 @@ function upstreamDocumentUrl(manifest, entry) {
   return url.href;
 }
 
-export function readCompatibilityResults(directory) {
+export function readCompatibilityResults(directory, { reportDirectory = directory, compressed = false } = {}) {
   return corpusNames.map((id) => {
     const manifestBytes = readFileSync(resolve(directory, `${id}.json`));
-    const reportBytes = readFileSync(resolve(directory, `${id}-results.json`));
+    const storedReport = readFileSync(resolve(reportDirectory, `${id}-results.json${compressed ? ".gz" : ""}`));
+    const reportBytes = compressed ? gunzipSync(storedReport) : storedReport;
     const manifest = JSON.parse(manifestBytes);
     const report = JSON.parse(reportBytes);
     const fail = (message) => { throw new Error(`${id}: ${message}`); };
@@ -95,11 +98,13 @@ export function readCompatibilityResults(directory) {
 
     const overall = report.overall;
     const emission = overall.operationEmission;
-    const sum = (field) => documents.reduce((total, document) => total + document.operationEmission[field], 0);
-    if (overall.documents !== documents.length ||
-        overall.successfulDocuments !== documents.filter((document) => document.documentSuccess).length ||
-        overall.capabilityAdjustedDocuments !== documents.filter((document) => document.capabilityAdjustedSuccess).length ||
-        emission.availableDocuments !== documents.filter((document) => document.operationEmission.available).length ||
+    const counted = overall.documents === documents.length ? documents
+      : documents.filter(document => document.id !== "microsoft-graph-beta");
+    const sum = (field) => counted.reduce((total, document) => total + document.operationEmission[field], 0);
+    if (overall.documents !== counted.length ||
+        overall.successfulDocuments !== counted.filter((document) => document.documentSuccess).length ||
+        overall.capabilityAdjustedDocuments !== counted.filter((document) => document.capabilityAdjustedSuccess).length ||
+        emission.availableDocuments !== counted.filter((document) => document.operationEmission.available).length ||
         ["count", "operationOmissions", "helperOmissions"].some((field) => emission[field] !== sum(field))) {
       fail("summary does not match document results");
     }
@@ -371,35 +376,35 @@ export function readInspectMeasurements(directory) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const docsDirectory = fileURLToPath(new URL("..", import.meta.url));
   const sourceDirectory = resolve(docsDirectory, "../test/compatibility");
-  const data = readCompatibilityResults(sourceDirectory);
-  const inspect = readInspectMeasurements(sourceDirectory);
-  const quality = readRuntimeQuality(sourceDirectory);
-  const graph = readGraphSelection(sourceDirectory);
-  graph.ci = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
-  graph.metadata = readGraphSelection(sourceDirectory, "graph-metadata-results.json");
-  graph.comparison = readMetadataComparison(sourceDirectory);
-  graph.count = readGraphSelection(sourceDirectory, "graph-count-results.json", "microsoft-graph-count");
-  graph.countMetadata = readGraphSelection(sourceDirectory, "graph-count-metadata-results.json", "microsoft-graph-count");
+  const ciDirectory = resolve(sourceDirectory, "ci");
+  const ci = readCIMeasurements(ciDirectory);
+  const data = readCompatibilityResults(sourceDirectory, { reportDirectory: ciDirectory, compressed: true });
+  for (const corpus of data) {
+    corpus.measurement = { ...corpus.measurement, provider: ci.provenance.provider,
+      runner: ci.provenance.runner, runUrl: ci.provenance.runUrl };
+  }
+  const selection = readGraphSelection(sourceDirectory, "graph-selected-ci-results.json");
+  if (!/^https:\/\/github\.com\/jinyongp\/openapi-sdkgen\/actions\/runs\/\d+$/.test(selection.ciRunUrl)) {
+    throw new Error("Graph selection has no GitHub Actions provenance");
+  }
+  const graph = { selected: selection.selected, sourceUrl: selection.sourceUrl,
+    measurement: selection.measurement, ciRunUrl: selection.ciRunUrl };
   const generatedDirectory = resolve(docsDirectory, ".vitepress/generated");
   const publicDirectory = resolve(docsDirectory, "public/compatibility-results");
+  rmSync(generatedDirectory, { recursive: true, force: true });
+  rmSync(publicDirectory, { recursive: true, force: true });
   mkdirSync(generatedDirectory, { recursive: true });
   mkdirSync(publicDirectory, { recursive: true });
   writeFileSync(resolve(generatedDirectory, "compatibility-results.json"), `${JSON.stringify(data, null, 2)}\n`);
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
-  writeFileSync(resolve(generatedDirectory, "inspect-measurements.json"), `${JSON.stringify(inspect, null, 2)}\n`);
-  writeFileSync(resolve(generatedDirectory, "runtime-quality.json"), `${JSON.stringify(quality, null, 2)}\n`);
-  copyFileSync(resolve(sourceDirectory, "runtime-quality-results.json"), resolve(publicDirectory, "runtime-quality-results.json"));
-  copyFileSync(resolve(sourceDirectory, "inspect-results.json"), resolve(publicDirectory, "inspect-results.json"));
-  copyFileSync(resolve(sourceDirectory, "graph-selected-results.json"), resolve(publicDirectory, "graph-selected-results.json"));
-  copyFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json"), resolve(publicDirectory, "graph-selected-ci-results.json"));
-  for (const name of ["graph-full-baseline.json", "graph-metadata-results.json", "metadata-comparison-results.json", "graph-count-results.json", "graph-count-metadata-results.json"]) {
-    copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
-  }
+  writeFileSync(resolve(publicDirectory, "provenance.json"), `${JSON.stringify(ci.provenance, null, 2)}\n`);
   for (const id of corpusNames) {
-    for (const name of [`${id}.json`, `${id}-results.json`]) {
-      copyFileSync(resolve(sourceDirectory, name), resolve(publicDirectory, name));
-    }
+    copyFileSync(resolve(sourceDirectory, `${id}.json`), resolve(publicDirectory, `${id}.json`));
+    writeFileSync(resolve(publicDirectory, `${id}-results.json`), ci.reports[id].bytes);
   }
+  const graphReport = JSON.parse(readFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json")));
+  delete graphReport.measurement.cpu;
+  writeFileSync(resolve(publicDirectory, "graph-selected-ci-results.json"), `${JSON.stringify(graphReport, null, 2)}\n`);
   publishCompatibilityDocuments(sourceDirectory, publicDirectory);
-  console.log(`Compatibility results: ${corpusNames.length} verified reports; summaries and original JSON prepared.`);
+  console.log(`Compatibility results: ${corpusNames.length} verified GitHub Actions reports prepared.`);
 }

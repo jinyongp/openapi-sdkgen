@@ -7,7 +7,7 @@ import { benchmarkBars } from "../.vitepress/theme/benchmark-bars.ts";
 
 const directory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../public/benchmarks",
+  "../../test/perf/documentation-results",
 );
 const summary = JSON.parse(fs.readFileSync(path.join(directory, "selection-results.json")));
 const raw = JSON.parse(

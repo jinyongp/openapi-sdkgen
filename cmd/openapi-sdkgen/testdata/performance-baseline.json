@@ -273,7 +273,6 @@
     "commit": "13e088e69659906392357a78d87ca3743aa9a5f7",
     "goVersion": "go version go1.27.1 linux/amd64",
     "platform": "linux/amd64",
-    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
     "method": "Median of five warmed independent 1x runs of the unmodified reference commit; historical targets and regression tolerances unchanged.",
     "workloadSourceSHA256": "1e970361a05da7e0a91caaa63e70d5114b92f87e0b7289fac4fb7099be0a0a7a",
     "workloads": {

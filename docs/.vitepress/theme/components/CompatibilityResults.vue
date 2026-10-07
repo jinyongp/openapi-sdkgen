@@ -59,7 +59,7 @@ const duration = (milliseconds) => {
   ) + ` ${seconds ? labels.seconds : "ms"}`;
 };
 const environmentKey = (measurement) => JSON.stringify([
-  measurement?.cpu, measurement?.os, measurement?.architecture, measurement?.samples,
+  measurement?.provider, measurement?.runner, measurement?.runUrl, measurement?.samples,
 ]);
 const measurement = results.every((corpus) => corpus.measurement && environmentKey(corpus.measurement) === environmentKey(results[0].measurement))
   ? results[0].measurement : null;
@@ -98,7 +98,9 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
     </table>
     </div>
     <p v-if="!evidence && measurement" class="results-environment">
-      {{ labels.environment }}: {{ measurement.cpu || measurement.architecture }} · {{ measurement.os }} ·
+      {{ locale === "ko" ? "마지막 측정" : "Last measured" }}: {{ measuredDate(measurement) }} ·
+      {{ locale === "ko" ? "버전" : "Version" }}: <code>{{ measuredVersion(measurement) }}</code><br />
+      {{ labels.environment }}: <a :href="measurement.runUrl">GitHub Actions</a> · {{ measurement.runner }} ·
       {{ locale === "ko" ? `문서별 ${measurement.samples}회 측정` : `${measurement.samples} measurement per document` }}
     </p>
     <template v-if="evidence">

@@ -513,7 +513,6 @@
     "samples": 1,
     "os": "linux",
     "architecture": "amd64",
-    "cpu": "AMD EPYC 9V74 80-Core Processor",
     "goVersion": "go1.27.0"
   },
   "resources": {

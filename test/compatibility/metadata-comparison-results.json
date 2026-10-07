@@ -29,7 +29,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [],
@@ -108,7 +107,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [
@@ -200,7 +198,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [],
@@ -263,7 +260,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [
@@ -347,7 +343,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [],
@@ -426,7 +421,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [
@@ -526,7 +520,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [],
@@ -605,7 +598,6 @@
           "samples": 1,
           "os": "linux",
           "architecture": "amd64",
-          "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
           "goVersion": "go1.27.1"
         },
         "generationAddons": [

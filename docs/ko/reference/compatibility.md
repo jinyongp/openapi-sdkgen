@@ -2,7 +2,8 @@
 
 OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
 
-마지막 측정: **2026년 10월 2일** · 측정 버전: **개발 버전 `14f2718+`**
+GitHub Actions에서 측정한 결과입니다. 표에서 측정한 실행을 확인할 수 있으며,
+결과와 함께 [실행 정보](/compatibility-results/provenance.json)를 내려받을 수 있습니다.
 
 ## SDK 생성 결과
 
@@ -26,24 +27,12 @@ OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
 
 생성할 API를 지정하면 필요한 호출과 의존 코드만 SDK에 포함됩니다.
 Microsoft Graph beta를 예로, 사용자·그룹·드라이브 API 9개를 선택해 측정했습니다.
-아래 표에서 같은 문서의 전체 생성 결과와 비교할 수 있습니다.
-
-GitHub·Stripe도 API를 선택해 원문 포함 여부에 따른 용량을 비교했습니다.
-원문이 필요한 경우와 다음 메이저 버전의 생성 설정은
-[OpenAPI 원문 포함](./cli.md#metadata-addon)을 참고하세요.
+아래 표는 Actions에서 측정한 선택 SDK의 생성 결과입니다.
 
 <GraphSelection locale="ko" />
 
 [API 선택 설정](../guide/selective-client.md#generation)으로 애플리케이션에 필요한
 부분을 생성할 수 있습니다. 아래 문서별 결과는 전체 API 생성 기준입니다.
-
-## 생성 소스와 스트리밍 측정 {#runtime-quality}
-
-현재 개발 버전에서는 생성된 구현 코드에도
-[엄격한 TypeScript 검사 설정](./typescript-types.md#source-checking)을 적용할 수 있습니다.
-전체 SDK 소스·선언 파일과 잘게 나뉜 SSE 이벤트의 호출 비용을 측정했습니다.
-
-<RuntimeQuality locale="ko" />
 
 ## 어떤 문서를 확인했나
 

@@ -9,10 +9,10 @@
   },
   "scripts": {
     "playground:build": "node ./scripts/build-playground.mjs",
-    "docs:validate": "node ./scripts/selection-benchmarks.mjs && node ./scripts/validate-locales.mjs && node ./scripts/build-compatibility-results.mjs",
-    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/compatibility-results.test.mjs",
+    "docs:validate": "node ./scripts/validate-locales.mjs && node ./scripts/build-compatibility-results.mjs",
+    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/compatibility-results.test.mjs ./scripts/ci-measurements.test.mjs",
     "docs:dev": "node ./scripts/validate-locales.mjs && node ./scripts/build-compatibility-results.mjs && node ./scripts/build-playground.mjs && vitepress dev .",
-    "docs:build": "node ./scripts/selection-benchmarks.mjs && node ./scripts/validate-locales.mjs && node ./scripts/build-compatibility-results.mjs && node ./scripts/build-playground.mjs && vitepress build .",
+    "docs:build": "node ./scripts/validate-locales.mjs && node ./scripts/build-compatibility-results.mjs && node ./scripts/build-playground.mjs && vitepress build .",
     "docs:preview": "vitepress preview ."
   },
   "devDependencies": {

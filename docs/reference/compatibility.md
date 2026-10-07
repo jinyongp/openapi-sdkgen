@@ -3,7 +3,8 @@
 These results show SDK generation and TypeScript typechecking for each OpenAPI
 document.
 
-Last measured: **October 2, 2026** · Generator: **development version `14f2718+`**
+Results are extracted from GitHub Actions. The tables link to the measured runs;
+download the [run provenance](/compatibility-results/provenance.json) alongside the results.
 
 ## SDK generation results
 
@@ -28,25 +29,13 @@ See [Receive Webhooks and Callbacks](../guide/server.md).
 
 Choose which APIs to generate to include their calls and required dependencies
 in the SDK. As an example, we selected nine user, group, and drive APIs from
-Microsoft Graph beta. The table compares this selection with full generation
-from the same document.
-
-The comparison also covers selected GitHub and Stripe APIs, with and without
-the original OpenAPI document. See [source metadata](./cli.md#metadata-addon)
-for when to include it and the next major release's generation settings.
+Microsoft Graph beta. The table shows the selected SDK's generation results
+from a recorded Actions run.
 
 <GraphSelection />
 
 Use [API selection](../guide/selective-client.md#generation) to generate the
 subset your application needs. The document results below show full API generation.
-
-## Generated source and streaming measurements {#runtime-quality}
-
-The development version supports checking generated implementation code with
-[strict TypeScript options](./typescript-types.md#source-checking). These
-measurements cover complete SDK source, declaration output, and fragmented SSE calls.
-
-<RuntimeQuality />
 
 ## Documents covered
 

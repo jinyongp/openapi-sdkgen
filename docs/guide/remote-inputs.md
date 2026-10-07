@@ -105,4 +105,3 @@ and port). Redirects must stay on that origin, so use the final canonical root
 URL rather than relying on a cross-origin redirect. Authentication configured
 for the root URL is scoped to the same boundary. Cross-origin remote references
 remain separately authorized through `--allow-remote-ref`.
-

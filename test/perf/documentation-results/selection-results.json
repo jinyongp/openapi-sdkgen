@@ -8,11 +8,8 @@
   "generatorSHA256": "3f0e290c6f63c7c39f35f9a532cca090094c76349907017da0ba0acb9f74b3fe",
   "inputSHA256": "e3a4cd51d15c9573e79d55d75c89ec36371abba22f72d86f1ccd5024119d1ad8",
   "environment": {
-    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
     "os": "Linux",
-    "release": "6.18.33.2-microsoft-standard-WSL2",
     "architecture": "x64",
-    "totalMemoryBytes": 16281919488,
     "go": "go version go1.27.1 linux/amd64"
   },
   "routes": [

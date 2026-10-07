@@ -77,6 +77,11 @@ async function createFixture() {
   await cp(resolve(docsRoot, "public/examples"), resolve(fixture, "public/examples"), {
     recursive: true,
   });
+  await mkdir(resolve(fixture, "public/compatibility-results"), { recursive: true });
+  await cp(
+    resolve(docsRoot, "../test/compatibility/ci/provenance.json"),
+    resolve(fixture, "public/compatibility-results/provenance.json"),
+  );
   for (const name of ["index.md", "playground.md"]) {
     await cp(resolve(docsRoot, name), resolve(fixture, name));
     await cp(resolve(docsRoot, "ko", name), resolve(fixture, "ko", name));

@@ -7,9 +7,7 @@
   "node": "v24.21.0",
   "environment": {
     "os": "linux",
-    "architecture": "x64",
-    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
-    "totalMemoryBytes": 16281919488
+    "architecture": "x64"
   },
   "strictCompilerOptions": {
     "strict": true,
