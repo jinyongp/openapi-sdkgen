@@ -19,6 +19,8 @@ const (
 type wireRenderContext struct {
 	componentNames map[projection]map[string]bool
 	schemaPrograms *schemaRuntimePlan
+	names          *localIdentifierPlan
+	collectOnly    bool
 	programImports map[string]schemaProgramImport
 	properties     wirePropertiesMode
 	usesProperties bool

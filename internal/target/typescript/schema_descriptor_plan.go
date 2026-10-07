@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"strings"
 
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
 	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
@@ -44,15 +43,18 @@ func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode w
 			if !exists {
 				return "", fmt.Errorf("unprepared shared descriptor program")
 			}
-			wire.programImports[program.path] = schemaProgramImport{path: program.path, alias: program.alias}
-			return program.alias + "_program0", nil
+			dependency := schemaProgramImport{path: program.path, name: "program0"}
+			if err := wire.collectSchemaImport(dependency); err != nil {
+				return "", err
+			}
+			return wire.schemaImportName(dependency)
 		},
 		Reference: func(child *schemaplan.Node) (string, error) {
 			shared, err := runtime.sharedDescriptor(child, mode, binding)
 			if err != nil || shared == nil {
 				return "", err
 			}
-			return wire.importDescriptor(shared), nil
+			return wire.importDescriptor(shared)
 		},
 		Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
 			properties := make([]runtimeProperty, 0, len(entries))
@@ -87,7 +89,6 @@ func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode w
 	sum := sha256.Sum256(module.source)
 	contentKey := base64.RawURLEncoding.EncodeToString(sum[:])
 	module.path = "internal/schema-descriptors/shared/schema_" + contentKey + ".ts"
-	module.alias = "__sdkgen_D" + strings.ReplaceAll(contentKey, "-", "$")
 	// The same semantic contract may have different dependency layouts in
 	// client and server plans. Only byte-identical emitted data shares a file.
 	if existing, exists := runtime.modules["descriptor:"+contentKey]; exists {
@@ -99,10 +100,13 @@ func (runtime *schemaRuntimePlan) sharedDescriptor(node *schemaplan.Node, mode w
 	return module, nil
 }
 
-func (wire *wireRenderContext) importDescriptor(module *schemaRuntimeModule) string {
-	if wire.programImports == nil {
-		wire.programImports = make(map[string]schemaProgramImport)
+func (wire *wireRenderContext) importDescriptor(module *schemaRuntimeModule) (string, error) {
+	dependency := schemaProgramImport{path: module.path, name: "schema"}
+	if err := wire.collectSchemaImport(dependency); err != nil {
+		return "", err
 	}
-	wire.programImports[module.path] = schemaProgramImport{path: module.path, alias: module.alias, name: "schema"}
-	return module.alias + "_schema"
+	if wire.collectOnly {
+		return "{}", nil
+	}
+	return wire.schemaImportName(dependency)
 }

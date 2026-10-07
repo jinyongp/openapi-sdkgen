@@ -162,7 +162,23 @@ func schemaProgramsSnapshot(t *testing.T, programs *schemaRuntimePlan) []byte {
 		if err != nil {
 			t.Fatal(err)
 		}
-		descriptors[identity] = binding.descriptors
+		var rendered [wirePropertiesConstructed + 1]string
+		for mode, plan := range binding.descriptors {
+			if plan == nil {
+				continue
+			}
+			wire := newWireRenderContext(wirePropertiesMode(mode))
+			expression, err := wire.renderDescriptor(plan)
+			if err != nil {
+				t.Fatal(err)
+			}
+			imports, err := wire.programImportSource("snapshot.ts")
+			if err != nil {
+				t.Fatal(err)
+			}
+			rendered[mode] = imports + expression
+		}
+		descriptors[identity] = rendered
 	}
 	data, err := json.Marshal(struct {
 		Nodes       int

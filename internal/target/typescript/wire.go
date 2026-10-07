@@ -154,53 +154,30 @@ func (wire *wireRenderContext) emitSchemaDescriptor(node *schemaplan.Node) (stri
 			return "", err
 		}
 		if shared != nil {
-			return wire.importDescriptor(shared), nil
+			return wire.importDescriptor(shared)
 		}
-		if descriptor := module.descriptors[wire.properties]; descriptor != "" {
-			wire.usesProperties = wire.usesProperties || module.properties[wire.properties]
-			if wire.programImports == nil {
-				wire.programImports = make(map[string]schemaProgramImport)
-			}
-			for path, dependency := range module.imports[wire.properties] {
-				wire.programImports[path] = dependency
-			}
-			return descriptor, nil
+		if descriptor := module.descriptors[wire.properties]; descriptor != nil {
+			return wire.renderDescriptor(descriptor)
 		}
 		if wire.schemaPrograms.sealed {
 			return "", fmt.Errorf("unprepared schema descriptor mode %d", wire.properties)
 		}
-	}
-	program, err := wire.programExpression(node)
-	if err != nil {
-		return "", err
-	}
-	usesProperties := false
-	descriptor, err := schemaemit.Descriptor(node, schemaemit.DescriptorOptions{Program: program, Literal: schemaDescriptorLiteral, Reference: func(child *schemaplan.Node) (string, error) {
-		if wire.schemaPrograms == nil {
-			return "", nil
-		}
-		shared, err := wire.schemaPrograms.sharedDescriptor(child, wire.properties, module)
-		if err != nil || shared == nil {
+		descriptor, err := wire.schemaPrograms.prepareDescriptor(node, wire.properties, module)
+		if err != nil {
 			return "", err
 		}
-		return wire.importDescriptor(shared), nil
-	}, Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
-		usesProperties = true
+		module.descriptors[wire.properties] = descriptor
+		return wire.renderDescriptor(descriptor)
+
+	}
+	return schemaemit.Descriptor(node, schemaemit.DescriptorOptions{Literal: schemaDescriptorLiteral, Properties: func(entries []schemaemit.PropertyExpression) (string, error) {
 		properties := make([]runtimeProperty, 0, len(entries))
 		for _, entry := range entries {
 			properties = append(properties, runtimeProperty{key: entry.Name, value: entry.Expression})
 		}
 		return wire.propertyExpression(properties)
 	}})
-	if err == nil && module != nil {
-		module.descriptors[wire.properties] = descriptor
-		module.properties[wire.properties] = usesProperties
-		module.imports[wire.properties] = make(map[string]schemaProgramImport, len(wire.programImports))
-		for path, dependency := range wire.programImports {
-			module.imports[wire.properties][path] = dependency
-		}
-	}
-	return descriptor, err
+
 }
 
 func schemaDescriptorLiteral(value any) (string, error) {

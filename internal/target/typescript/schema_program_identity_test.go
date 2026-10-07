@@ -131,7 +131,8 @@ func TestSchemaProgramsShareMediaViewsAndFreezeDeterministically(t *testing.T) {
 
 func sharedDescriptorSource(runtime *schemaRuntimePlan, expression string) string {
 	for _, module := range runtime.modules {
-		if expression == module.alias+"_schema" {
+		expected, _ := newWireRenderContext(wirePropertiesLiteral).schemaImportName(schemaProgramImport{path: module.path, name: "schema"})
+		if expression == expected {
 			return string(module.source)
 		}
 	}

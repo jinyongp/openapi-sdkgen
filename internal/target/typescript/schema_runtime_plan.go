@@ -13,7 +13,6 @@ import (
 
 type schemaRuntimeModule struct {
 	path         string
-	alias        string
 	node         *schemaplan.Node
 	source       []byte
 	dependencies []string
@@ -21,9 +20,7 @@ type schemaRuntimeModule struct {
 type schemaProgramBinding struct {
 	*schemaRuntimeModule
 	programs    map[*schemaplan.Node]*schemaRuntimeModule
-	descriptors [wirePropertiesConstructed + 1]string
-	properties  [wirePropertiesConstructed + 1]bool
-	imports     [wirePropertiesConstructed + 1]map[string]schemaProgramImport
+	descriptors [wirePropertiesConstructed + 1]*schemaDescriptorPlan
 }
 type schemaRuntimePlan struct {
 	views             bool
@@ -40,9 +37,8 @@ type schemaRuntimePlan struct {
 	algorithms        map[string]*schemaRuntimeModule
 }
 type schemaProgramImport struct {
-	alias string
-	path  string
-	name  string
+	path string
+	name string
 }
 
 func newSchemaRuntimePlan() *schemaRuntimePlan {
@@ -184,7 +180,7 @@ func (runtime *schemaRuntimePlan) prepareProgram(node *schemaplan.Node, policy s
 		runtime.algorithms[shape] = module
 		return module, nil
 	}
-	module := &schemaRuntimeModule{path: "internal/schema-programs/shared/schema_" + algorithmKey + ".ts", alias: "__sdkgen_P" + strings.ReplaceAll(algorithmKey, "-", "$"), node: node, source: source}
+	module := &schemaRuntimeModule{path: "internal/schema-programs/shared/schema_" + algorithmKey + ".ts", node: node, source: source}
 	runtime.modules[algorithmKey] = module
 	runtime.algorithms[shape] = module
 	module.dependencies = schemaemit.ProgramDependencies(node, policy)
@@ -198,29 +194,6 @@ func (runtime *schemaRuntimePlan) moduleFor(node *schemaplan.Node) (*schemaProgr
 	return nil, fmt.Errorf("unprepared schema program identity")
 }
 
-func (wire *wireRenderContext) programExpression(node *schemaplan.Node) (func(*schemaplan.Node) (string, error), error) {
-	if wire.schemaPrograms == nil {
-		return nil, nil
-	}
-	module, err := wire.schemaPrograms.moduleFor(node)
-	if err != nil {
-		return nil, err
-	}
-	if wire.programImports == nil {
-		wire.programImports = make(map[string]schemaProgramImport)
-	}
-	for _, program := range module.programs {
-		wire.programImports[program.path] = schemaProgramImport{alias: program.alias, path: program.path}
-	}
-	return func(child *schemaplan.Node) (string, error) {
-		program, exists := module.programs[child]
-		if !exists {
-			return "", fmt.Errorf("unprepared schema program slot")
-		}
-		return program.alias + "_program0", nil
-	}, nil
-}
-
 func (wire *wireRenderContext) programImportSource(artifact string) (string, error) {
 	var result string
 	paths := make([]string, 0, len(wire.programImports))
@@ -230,15 +203,15 @@ func (wire *wireRenderContext) programImportSource(artifact string) (string, err
 	sort.Strings(paths)
 	for _, target := range paths {
 		dependency := wire.programImports[target]
-		specifier, err := relativeModuleSpecifier(artifact, target)
+		specifier, err := relativeModuleSpecifier(artifact, dependency.path)
 		if err != nil {
 			return "", err
 		}
-		name := dependency.name
-		if name == "" {
-			name = "program0"
+		alias, err := wire.schemaImportName(dependency)
+		if err != nil {
+			return "", err
 		}
-		result += fmt.Sprintf("import { %s as %s_%s } from %s\n", name, dependency.alias, name, quoteTS(specifier))
+		result += fmt.Sprintf("import { %s as %s } from %s\n", dependency.name, alias, quoteTS(specifier))
 	}
 	return result, nil
 }
@@ -308,17 +281,21 @@ func prepareSchemaRuntimePlan(source *sourcePlan) error {
 
 func (runtime *schemaRuntimePlan) freeze() error {
 	for node, binding := range runtime.owners {
+		if shared, err := runtime.sharedDescriptor(node, wirePropertiesConstructed, binding); err != nil {
+			return err
+		} else if shared != nil {
+			continue
+		}
 		for _, mode := range []wirePropertiesMode{wirePropertiesLiteral, wirePropertiesConstructed} {
-			if mode == wirePropertiesConstructed && !binding.properties[wirePropertiesLiteral] {
+			if mode == wirePropertiesConstructed && !binding.descriptors[wirePropertiesLiteral].properties {
 				binding.descriptors[mode] = binding.descriptors[wirePropertiesLiteral]
-				binding.imports[mode] = binding.imports[wirePropertiesLiteral]
 				continue
 			}
-			wire := newWireRenderContext(mode)
-			wire.schemaPrograms = runtime
-			if _, err := wire.emitSchemaDescriptor(node); err != nil {
+			plan, err := runtime.prepareDescriptor(node, mode, binding)
+			if err != nil {
 				return err
 			}
+			binding.descriptors[mode] = plan
 		}
 	}
 	runtime.sealed = true
