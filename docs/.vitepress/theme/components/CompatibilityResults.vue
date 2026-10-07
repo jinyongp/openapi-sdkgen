@@ -86,7 +86,9 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
       <caption>{{ labels.caption }}</caption>
       <colgroup>
         <col class="results-name-column" />
-        <col span="4" />
+        <col />
+        <col class="results-options-column" />
+        <col span="2" />
       </colgroup>
       <thead>
         <tr>
@@ -104,10 +106,10 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
             <span>{{ documentCount(corpus.documents) }} · {{ labels[corpus.id][1] }}</span>
           </th>
           <td>{{ successCount(corpus.adjustedSuccess, corpus.documents) }}</td>
-          <td>
+          <td class="results-options">
             <template v-if="serverDocuments(corpus).length">
-              {{ serverDescription(corpus) }}<br />
-              <template v-if="locale !== 'ko'">{{ labels.tested }} </template><code>--with server</code><template v-if="locale === 'ko'">{{ labels.tested }}</template>
+              <span class="results-options-line">{{ serverDescription(corpus) }}</span>
+              <span class="results-options-line"><template v-if="locale !== 'ko'">{{ labels.tested }} </template><code>--with server</code><template v-if="locale === 'ko'">{{ labels.tested }}</template></span>
             </template>
             <template v-else>{{ labels.default }}</template>
           </td>
@@ -169,13 +171,16 @@ table { font-size: 14px; font-variant-numeric: tabular-nums; }
 caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-table-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
 .results-table-scroll:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
-.results-summary { display: table; width: 100%; min-width: 36rem; table-layout: fixed; }
-.results-summary .results-name-column { width: 38%; }
+.results-summary { display: table; width: 100%; min-width: 48rem; table-layout: auto; }
+.results-summary .results-name-column { width: 30%; }
+.results-summary .results-options-column { width: 18rem; }
 .results-summary :is(th, td) { min-width: 0; }
 .results-summary th { white-space: normal; word-break: keep-all; }
 .results-summary tbody th { text-align: left; }
 .results-summary tbody th span { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--vp-c-text-2); }
 .results-summary td { text-align: right; white-space: normal; word-break: keep-all; }
+.results-summary .results-options { text-align: left; }
+.results-options-line { display: block; white-space: nowrap; }
 .results-evidence { border-bottom: 1px solid var(--vp-c-divider); padding: 16px 0; }
 .results-evidence summary { cursor: pointer; font-weight: 600; }
 .results-evidence summary:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 4px; }
@@ -183,7 +188,6 @@ caption { text-align: left; color: var(--vp-c-text-2); padding-bottom: 12px; }
 .results-downloads { display: flex; flex-wrap: wrap; gap: 8px 24px; }
 .results-environment { font-size: 13px; color: var(--vp-c-text-2); }
 @media (max-width: 639px) {
-  .results-summary { min-width: 32rem; }
   .results-summary :is(th, td) { padding: 8px; }
 }
 </style>
