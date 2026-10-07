@@ -10,7 +10,8 @@ const props = defineProps({
 const copy = {
   en: {
     caption: "Documents with successful SDK generation and typechecking",
-    input: "Document set", result: "Generation and typechecking", options: "Required options", default: "Default options", adjusted: "Required options applied", emitted: "Generated API calls",
+    input: "Document set", result: "Generation and typechecking", options: "Options tested", default: "Default options", adjusted: "Required options applied", emitted: "Generated API calls",
+    webhookFeature: "Webhooks", callbackFeature: "Callbacks", tested: "tested with",
     docs: "documents", pass: "Succeeded", server: "Use --with server", fail: "Failed",
     generatedOnly: "Generated · typecheck not passed",
     document: "Document", version: "OpenAPI", report: "Results JSON", manifest: "Input manifest",
@@ -24,7 +25,8 @@ const copy = {
   },
   ko: {
     caption: "SDK 생성과 타입 검사에 성공한 문서 수",
-    input: "문서 모음", result: "생성·타입 검사", options: "필요한 생성 옵션", default: "기본 옵션", adjusted: "필요한 옵션 적용", emitted: "생성된 호출 API 수",
+    input: "문서 모음", result: "생성·타입 검사", options: "검증한 생성 옵션", default: "기본 옵션", adjusted: "필요한 옵션 적용", emitted: "생성된 호출 API 수",
+    webhookFeature: "웹훅", callbackFeature: "콜백", tested: "로 검증",
     docs: "개 문서", pass: "성공", server: "--with server 필요", fail: "실패",
     generatedOnly: "생성 성공 · 타입 검사 미통과",
     document: "문서", version: "OpenAPI", report: "결과 JSON", manifest: "입력 목록 JSON",
@@ -45,8 +47,18 @@ const documentCount = (count) => number(count) + (props.locale === "ko" ? "" : "
 const successCount = (count, total) => props.locale === "ko"
   ? `${number(total)}개 중 ${number(count)}개 성공`
   : `${number(count)} of ${number(total)} succeeded`;
-const serverCount = (corpus) => corpus.results.filter((document) =>
-  !document.defaultSuccess && document.adjustedSuccess && document.serverGenerated).length;
+const serverDocuments = (corpus) => corpus.results.filter((document) =>
+  !document.defaultSuccess && document.adjustedSuccess && document.serverGenerated);
+const serverDescription = (corpus) => {
+  const documents = serverDocuments(corpus);
+  const features = [
+    documents.some((document) => document.receiving.includes("document.webhooks")) ? labels.webhookFeature : null,
+    documents.some((document) => document.receiving.includes("operation.callbacks")) ? labels.callbackFeature : null,
+  ].filter(Boolean).join(props.locale === "ko" ? "·" : " and ");
+  return props.locale === "ko"
+    ? `${features} 포함 문서 ${number(documents.length)}개:`
+    : `${number(documents.length)} documents with ${features}:`;
+};
 const status = (document) => document.defaultSuccess ? labels.pass : document.clientGenerated ? labels.generatedOnly
   : document.serverGenerated ? labels.server : labels.fail;
 const adjustedStatus = (document) => document.adjustedSuccess ? labels.pass
@@ -93,9 +105,9 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
           </th>
           <td>{{ successCount(corpus.adjustedSuccess, corpus.documents) }}</td>
           <td>
-            <template v-if="serverCount(corpus)">
-              <code>--with server</code><br />
-              {{ locale === "ko" ? `${number(serverCount(corpus))}개 문서에 필요` : `Required for ${number(serverCount(corpus))} documents` }}
+            <template v-if="serverDocuments(corpus).length">
+              {{ serverDescription(corpus) }}<br />
+              <template v-if="locale !== 'ko'">{{ labels.tested }} </template><code>--with server</code><template v-if="locale === 'ko'">{{ labels.tested }}</template>
             </template>
             <template v-else>{{ labels.default }}</template>
           </td>
