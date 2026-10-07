@@ -181,7 +181,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	wire := newWireRenderContext(wirePropertiesConstructed)
-	wire.schemaPrograms = plan.schemaPrograms
+	wire.schemaPrograms, wire.names, wire.collectOnly = plan.schemaPrograms, names, true
 	definition, err := wire.operationDefinition(document, operation, item)
 	if err != nil {
 		return nil, err
@@ -192,11 +192,7 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 	}
 
 	var output strings.Builder
-	programImports, err := wire.programImportSource(module.path)
-	if err != nil {
-		return nil, err
-	}
-	output.WriteString(programImports)
+	var definitionParts []string
 	output.Grow(len(bodySource) + 4096)
 	bindingImports := bindingName + ", type BufferedRequestFunction"
 	if wire.usesProperties {
@@ -305,7 +301,10 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		outputSchemas = "_outputSchemas"
 	}
 	fmt.Fprintf(&output, "export function bindBase(request: BufferedRequestFunction, %s?: WireSchemas, %s?: WireSchemas): BaseCall {\n", inputSchemas, outputSchemas)
-	fmt.Fprintf(&output, "  return %s(request, %s) as BaseCall\n", bindingName, definition)
+	fmt.Fprintf(&output, "  return %s(request, ", bindingName)
+	definitionParts = append(definitionParts, output.String())
+	output.Reset()
+	output.WriteString(") as BaseCall\n")
 	output.WriteString("}\n")
 
 	if operation.PaginationPlan != nil {
@@ -336,15 +335,44 @@ func emitOperationLeaf(document *ir.Document, plan *semanticModulePlan, module o
 		output.WriteString("\n/** Creates this operation's streaming capability. */\n")
 		fmt.Fprintf(&output, "export function bindStream(request: RequestFunction, %s?: WireSchemas, %s?: WireSchemas): Stream {\n", inputSchemas, outputSchemas)
 		fmt.Fprintf(&output, "  type StreamItem = %s\n", streamItemType)
-		fmt.Fprintf(&output, "  return bindStreamOperation<Input, StreamItem, Options>(request, %s, %t, %t, %s) as Stream\n", definition, hasInput, inputOptional, defaultAccept)
+		output.WriteString("  return bindStreamOperation<Input, StreamItem, Options>(request, ")
+		definitionParts = append(definitionParts, output.String())
+		output.Reset()
+		fmt.Fprintf(&output, ", %t, %t, %s) as Stream\n", hasInput, inputOptional, defaultAccept)
 		output.WriteString("}\n")
 	}
 
-	localized := qualifyOperationSchemaContractReferences(output.String())
-	localized, err = localizeOperationSchemaReferences(localized, module, plan, schemaIndex, names)
+	definitionParts = append(definitionParts, output.String())
+	collected := qualifyOperationSchemaContractReferences(strings.Join(definitionParts, definition))
+	if _, err := collectOperationSchemaReferences(collected, module, plan, schemaIndex, names); err != nil {
+		return nil, err
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	wire.collectOnly = false
+	definition, err = wire.operationDefinition(document, operation, item)
 	if err != nil {
 		return nil, err
 	}
+	definition, err = localizeOperationTypeSource(definition, module, plan)
+	if err != nil {
+		return nil, err
+	}
+	localized := qualifyOperationSchemaContractReferences(strings.Join(definitionParts, definition))
+	references, err := collectOperationSchemaReferences(localized, module, plan, schemaIndex, names)
+	if err != nil {
+		return nil, err
+	}
+	localized, err = resolveOperationSchemaReferences(localized, module, plan, schemaIndex, names, references)
+	if err != nil {
+		return nil, err
+	}
+	programImports, err := wire.programImportSource(module.path)
+	if err != nil {
+		return nil, err
+	}
+	localized = programImports + localized
 	result := []byte(localized)
 	if linksType != "never" {
 		// The Link factory's types are exact operation slots. It introduces no
@@ -608,7 +636,12 @@ func collectOperationSchemaReferences(source string, module operationModulePlan,
 		}
 		path = plan.schemaProjectionPath(key.name, projection(strings.ToLower(key.export)))
 		if counts[key] > 1 {
-			if err := names.request(typeImportIdentifierKey(path, key.export)); err != nil {
+			key := typeImportIdentifierKey(path, key.export)
+			if names.frozen {
+				if _, err := names.resolve(key); err != nil {
+					return operationSchemaReferences{}, err
+				}
+			} else if err := names.request(key); err != nil {
 				return operationSchemaReferences{}, err
 			}
 		}

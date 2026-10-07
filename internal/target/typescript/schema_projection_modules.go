@@ -41,7 +41,15 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 	value := componentSchemaValue(document, schema.name)
 	projected := schema
 	projected.path = artifact
-	projections, err := renderSchemaProjections(document, plan, projected, value, direction)
+	names := newLocalIdentifierPlan(artifact)
+	wire := newWireRenderContext(wirePropertiesLiteral)
+	wire.schemaPrograms, wire.names, wire.collectOnly = plan.schemaPrograms, names, true
+	if usedWire {
+		if _, err := wire.wireSchemaDescriptorForDocument(document, value, direction); err != nil {
+			return nil, err
+		}
+	}
+	projections, err := renderSchemaProjectionsWithNames(document, plan, projected, value, names, direction)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +72,7 @@ func emitSchemaProjectionLeaf(document *ir.Document, plan *semanticModulePlan, s
 	emitSchemaProjectionJSDoc(&output, export+" projection.", schemaIsAlwaysDeprecated(document, value))
 	fmt.Fprintf(&output, "export type %s = %s\n", export, typeSource)
 	if usedWire {
-		wire := newWireRenderContext(wirePropertiesLiteral)
-		wire.schemaPrograms = plan.schemaPrograms
+		wire.collectOnly = false
 		descriptor, err := wire.wireSchemaDescriptorForDocument(document, value, direction)
 		if err != nil {
 			return nil, err

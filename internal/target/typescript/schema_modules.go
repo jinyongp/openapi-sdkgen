@@ -72,16 +72,33 @@ func emitSchemaArtifactsWithRegistriesTo(document *ir.Document, plan, index, reg
 
 func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan) ([]byte, error) {
 	value := componentSchemaValue(document, schema.name)
+	names := newLocalIdentifierPlan(schema.path)
+	wire := newWireRenderContext(wirePropertiesLiteral)
+	wire.schemaPrograms, wire.names, wire.collectOnly = plan.schemaPrograms, names, true
+	for _, direction := range []projection{projectionInput, projectionOutput} {
+		if direction == projectionInput && !schema.inputWire || direction == projectionOutput && !schema.outputWire {
+			continue
+		}
+		if _, err := wire.wireSchemaDescriptorForDocument(document, value, direction); err != nil {
+			return nil, err
+		}
+	}
 	var projections renderedSchemaProjections
 	var err error
 	if schema.publicProjection {
-		projections, err = renderSchemaProjections(document, plan, schema, value)
+		projections, err = renderSchemaProjectionsWithNames(document, plan, schema, value, names)
 		if err != nil {
 			return nil, fmt.Errorf("component %s projections: %w", schema.name, err)
 		}
+	} else {
+		if err := names.reserve("Input", "Output", "WireSchema", "WireProperty", "inputWireSchema", "outputWireSchema"); err != nil {
+			return nil, err
+		}
+		if err := names.freeze(); err != nil {
+			return nil, err
+		}
 	}
-	wire := newWireRenderContext(wirePropertiesLiteral)
-	wire.schemaPrograms = plan.schemaPrograms
+	wire.collectOnly = false
 	inputDescriptor := ""
 	if schema.inputWire {
 		inputDescriptor, err = wire.wireSchemaDescriptorForDocument(document, value, projectionInput)
@@ -142,10 +159,13 @@ func emitSchemaLeaf(document *ir.Document, plan *semanticModulePlan, schema sche
 }
 
 func renderSchemaProjections(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, directions ...projection) (renderedSchemaProjections, error) {
+	return renderSchemaProjectionsWithNames(document, plan, schema, value, newLocalIdentifierPlan(schema.path), directions...)
+}
+
+func renderSchemaProjectionsWithNames(document *ir.Document, plan *semanticModulePlan, schema schemaModulePlan, value any, names *localIdentifierPlan, directions ...projection) (renderedSchemaProjections, error) {
 	if len(directions) == 0 {
 		directions = []projection{projectionInput, projectionOutput}
 	}
-	names := newLocalIdentifierPlan(schema.path)
 	if err := names.reserve("Input", "Output", "WireSchema", "WireProperty", "inputWireSchema", "outputWireSchema"); err != nil {
 		return renderedSchemaProjections{}, err
 	}
