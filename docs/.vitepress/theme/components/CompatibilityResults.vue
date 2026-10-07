@@ -109,7 +109,7 @@ const measurement = results.every((corpus) => corpus.measurement && environmentK
           <td class="results-options">
             <template v-if="serverDocuments(corpus).length">
               <span class="results-options-line">{{ serverDescription(corpus) }}</span>
-              <span class="results-options-line"><template v-if="locale !== 'ko'">{{ labels.tested }} </template><code>--with server</code><template v-if="locale === 'ko'">{{ labels.tested }}</template></span>
+              <span class="results-options-line"><template v-if="locale !== 'ko'">{{ labels.tested + " " }}</template><code>--with server</code><template v-if="locale === 'ko'">{{ labels.tested }}</template></span>
             </template>
             <template v-else>{{ labels.default }}</template>
           </td>
