@@ -8,8 +8,12 @@ case "$suite" in
     echo 'ci.sh [all|go|typescript-runtime|typescript-tools|compiler VERSION]: independent checks. Installs no tools; writes disposable build/test artifacts. all runs suites sequentially.' >&2
     exit 0 ;;
   go)
-    for check in fmt-check vet mod-tidy-check mod-verify test; do bash "$ROOT/scripts/dev/go.sh" "$check"; done ;;
-  typescript-runtime) bash "$ROOT/scripts/verification/typescript.sh" test ;;
+    for check in fmt-check vet mod-tidy-check mod-verify; do bash "$ROOT/scripts/dev/go.sh" "$check"; done
+    # The complete emitted runtime matrix runs once in the runtime suite.
+    bash "$ROOT/scripts/dev/go.sh" test -skip '^TestRuntimeFeatureNativeMatrixRegression$' ;;
+  typescript-runtime)
+    bash "$ROOT/scripts/verification/typescript.sh" test
+    bash "$ROOT/scripts/dev/go.sh" test -run '^TestRuntimeFeatureNativeMatrixRegression$' ;;
   typescript-tools)
     bash "$ROOT/scripts/dev/typescript.sh" fmt-check
     bash "$ROOT/scripts/dev/typescript.sh" lint
