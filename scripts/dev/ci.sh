@@ -9,8 +9,8 @@ case "$suite" in
     exit 0 ;;
   go)
     for check in fmt-check vet mod-tidy-check mod-verify; do bash "$ROOT/scripts/dev/go.sh" "$check"; done
-    # The complete emitted runtime matrix runs once in the runtime suite.
-    bash "$ROOT/scripts/dev/go.sh" test -skip '^TestRuntimeFeatureNativeMatrixRegression$' ;;
+    # Runtime and declaration matrices run in their dedicated suites.
+    bash "$ROOT/scripts/dev/go.sh" test -skip '^TestRuntimeFeature(Native|Declaration)MatrixRegression$' ;;
   typescript-runtime)
     bash "$ROOT/scripts/verification/typescript.sh" test
     bash "$ROOT/scripts/dev/go.sh" test -run '^TestRuntimeFeatureNativeMatrixRegression$' ;;

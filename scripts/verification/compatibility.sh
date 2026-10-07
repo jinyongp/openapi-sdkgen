@@ -31,5 +31,6 @@ for version in "${versions[@]}"; do
   SDKGEN_GENERATE_CHECK_MODULE_PROFILE=bundler run_step "TypeScript $version Bundler" check_sdk test/fixtures/generation-selection.json typescript -- --operation getTask --with metadata
   SDKGEN_GENERATE_CHECK_MODULE_PROFILE=commonjs SDKGEN_GENERATE_CHECK_CHECKING_PROFILE=relaxed run_step "TypeScript $version CommonJS consumer" check_sdk test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
   SDKGEN_GENERATE_CHECK_CHECKING_PROFILE=isolated run_step "TypeScript $version isolated declarations" check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --with server
+  bash "$ROOT/scripts/dev/go.sh" test -run "^TestRuntimeFeatureDeclarationMatrixRegression$/^${package}$"
   script_note "ok TypeScript $version consumer compatibility"
 done

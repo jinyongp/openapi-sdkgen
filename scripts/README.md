@@ -89,8 +89,10 @@ count. Each suite runs its necessary checks once. Mutable outputs belong to one
 execution; only prepared artifacts with matching inputs can be shared for reads.
 The Go suite runs source checks and Go tests. The TypeScript runtime suite owns
 the complete emitted runtime matrix (`TestRuntimeFeatureNativeMatrixRegression`),
-so that matrix is excluded from the Go suite and executed once alongside runtime
-conformance checks. `test:dev` still runs every Go test.
+so that matrix runs once alongside runtime conformance checks. Each compiler job
+runs its version of the strict source and declaration consumer matrix
+(`TestRuntimeFeatureDeclarationMatrixRegression`). Both matrices are excluded
+from the Go suite. `test:dev` still runs every Go test across all compilers.
 
 ## Release documentation review
 
