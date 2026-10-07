@@ -147,6 +147,24 @@ func TestMergeBenchmarkReportsRejectsIncompleteOrInconsistentResults(t *testing.
 			shards[0].Measurement = &measurement
 			return shards
 		},
+		"source revision": func(shards []benchmarkReport) []benchmarkReport {
+			measurement := *shards[0].Measurement
+			measurement.SourceCommit = "different"
+			shards[0].Measurement = &measurement
+			return shards
+		},
+		"dirty source": func(shards []benchmarkReport) []benchmarkReport {
+			measurement := *shards[0].Measurement
+			measurement.SourceDirty = !measurement.SourceDirty
+			shards[0].Measurement = &measurement
+			return shards
+		},
+		"individual source": func(shards []benchmarkReport) []benchmarkReport {
+			measurement := *shards[0].Measurement
+			measurement.SourceCommit = "different"
+			shards[0].DocumentMeasurements = map[string]*benchmarkMeasurement{shards[0].Documents[0].ID: &measurement}
+			return shards
+		},
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {

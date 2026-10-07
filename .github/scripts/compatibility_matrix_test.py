@@ -36,10 +36,11 @@ class CompatibilityMatrixTests(unittest.TestCase):
 
     def test_every_registered_document_is_selected_once(self):
         jobs = document_matrix(ROOT)["include"]
-        expected = {(name, item["id"]) for name in CORPORA for item in self.load(name)["corpora"] if typecheck_candidate(item["id"])}
-        self.assertEqual({(job["corpus"], job["document"]) for job in jobs}, expected)
+        expected = {(name, item["id"], scope) for name in CORPORA for item in self.load(name)["corpora"]
+                    for scope in (("full",) if typecheck_candidate(item["id"]) else ("full", "selected"))}
+        self.assertEqual({(job["corpus"], job["document"], job["scope"]) for job in jobs}, expected)
         self.assertEqual(len(jobs), len(expected))
-        self.assertNotIn("microsoft-graph-beta", {job["document"] for job in jobs})
+        self.assertTrue(all(job["typecheck"] == typecheck_candidate(job["document"]) for job in jobs))
 
     def test_existing_client_and_server_evidence_keeps_its_outcome(self):
         for name in CORPORA:

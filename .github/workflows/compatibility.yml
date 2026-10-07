@@ -102,7 +102,7 @@ jobs:
           retention-days: 7
 
   documents:
-    name: Verify ${{ matrix.corpus }} / ${{ matrix.document }}
+    name: Measure ${{ matrix.corpus }} / ${{ matrix.document }} / ${{ matrix.scope }}
     needs: [plan, prepare]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -114,6 +114,7 @@ jobs:
       COMPATIBILITY_CORPUS: ${{ matrix.corpus }}
       COMPATIBILITY_DOCUMENT: ${{ matrix.document }}
       COMPATIBILITY_ARTIFACT: ${{ matrix.artifact }}
+      COMPATIBILITY_SCOPE: ${{ matrix.scope }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -141,16 +142,21 @@ jobs:
           mkdir -p .tmp/compatibility-ci
           { free -h; df -h .; } | tee .tmp/compatibility-ci/runner.txt
       - name: Install TypeScript dependencies
+        if: matrix.typecheck
         run: bash scripts/dev/typescript.sh install
       - name: Generate SDKs and verify every generated module
         id: benchmark
         timeout-minutes: 90
         shell: bash
         run: |
+          compatibility_selection=""
+          if [[ "$COMPATIBILITY_SCOPE" == selected ]]; then
+            compatibility_selection="test/compatibility/selections/$COMPATIBILITY_DOCUMENT.toml"
+          fi
           /usr/bin/time -v -o .tmp/compatibility-ci/resources.txt \
             bash scripts/compatibility/benchmark.sh "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
-            .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" &
+            .tmp/compatibility-ci/report.json 60m "$COMPATIBILITY_DOCUMENT" "$compatibility_selection" &
           compatibility_process=$!
           python3 -B -u .github/scripts/compatibility_observer.py \
             --root-pid "$compatibility_process" --typescript-root test/typescript \
@@ -159,18 +165,25 @@ jobs:
           trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
           wait "$compatibility_process"
       - name: Require a verified supported SDK profile
-        if: always() && steps.benchmark.outcome != 'skipped'
+        if: always() && steps.benchmark.outcome != 'skipped' && matrix.typecheck
         shell: bash
         run: |
           python3 -B .github/scripts/compatibility_gate.py \
             --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
             --report .tmp/compatibility-ci/report.json --document "$COMPATIBILITY_DOCUMENT" \
             --resources-directory .tmp/compatibility-ci --selection-directory test/compatibility/selections
+      - name: Require complete generation-only measurements
+        if: always() && steps.benchmark.outcome != 'skipped' && !matrix.typecheck
+        run: |
+          python3 -B .github/scripts/compatibility_generation_gate.py \
+            --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            --report .tmp/compatibility-ci/report.json --scope "$COMPATIBILITY_SCOPE" \
+            --resources-directory .tmp/compatibility-ci
       - name: Upload measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: document-shard-${{ matrix.corpus }}-${{ matrix.document }}
+          name: ${{ matrix.typecheck && format('document-shard-{0}-{1}', matrix.corpus, matrix.document) || format('graph-shard-{0}', matrix.scope) }}
           path: |
             .tmp/compatibility-ci/
             .tmp/runs/
@@ -189,6 +202,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
       - name: Download document measurements
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -212,6 +229,34 @@ jobs:
             fi
           done
           exit "$compatibility_failed"
+      - name: Download generation-only measurements
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: graph-shard-*
+          path: .tmp/graph-shards
+      - name: Verify generation-only measurements
+        run: |
+          for scope in full selected; do
+            python3 -B .github/scripts/compatibility_generation_gate.py \
+              --manifest test/compatibility/regression.json \
+              --report ".tmp/graph-shards/graph-shard-$scope/compatibility-ci/report.json" --scope "$scope"
+            cp ".tmp/graph-shards/graph-shard-$scope/compatibility-ci/report.json" ".tmp/compatibility-ci/graph-$scope-results.json"
+          done
+      - name: Extract public measurement results
+        env:
+          MEASUREMENT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          MEASUREMENT_COMMIT: ${{ github.sha }}
+        run: |
+          node docs/scripts/ci-measurements.mjs export \
+            --input .tmp/compatibility-ci --output .tmp/compatibility-public \
+            --run-url "$MEASUREMENT_RUN_URL" --source-commit "$MEASUREMENT_COMMIT" \
+            --runner ubuntu-24.04
+      - name: Upload public measurement results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: public-compatibility-measurements
+          path: .tmp/compatibility-public/
+          retention-days: 30
       - name: Upload combined measurement and diagnostics
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

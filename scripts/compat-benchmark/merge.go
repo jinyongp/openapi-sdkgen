@@ -101,6 +101,9 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 			merged.Documents = append(merged.Documents, document)
 			measurement := *shard.Measurement
 			if individual := shard.DocumentMeasurements[document.ID]; individual != nil {
+				if individual.SourceCommit != measurement.SourceCommit || individual.SourceDirty != measurement.SourceDirty {
+					return fmt.Errorf("document %q measurement uses a different source revision or worktree state", document.ID)
+				}
 				measurement = *individual
 			}
 			merged.DocumentMeasurements[document.ID] = &measurement
@@ -136,6 +139,9 @@ func mergeMeasurement(report *benchmarkReport, measurement *benchmarkMeasurement
 	combined := report.Measurement
 	if combined.OS != measurement.OS || combined.Architecture != measurement.Architecture || combined.GoVersion != measurement.GoVersion || combined.TypeScriptVersion != measurement.TypeScriptVersion {
 		return fmt.Errorf("shards use different platforms or compiler versions")
+	}
+	if combined.SourceCommit != measurement.SourceCommit || combined.SourceDirty != measurement.SourceDirty {
+		return fmt.Errorf("shards use different source revisions or worktree states")
 	}
 	if combined.CPU != measurement.CPU {
 		combined.CPU = ""
