@@ -540,9 +540,9 @@ type operationSchemaReferenceKey struct {
 	export string
 }
 
-func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan) (string, error) {
+func collectOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan) (operationSchemaReferences, error) {
 	if names == nil || names.owner != module.path {
-		return "", fmt.Errorf("operation %q requires its artifact identifier owner", module.routeKey)
+		return operationSchemaReferences{}, fmt.Errorf("operation %q requires its artifact identifier owner", module.routeKey)
 	}
 	const namespace = "ContractSchemas"
 	const referencePrefix = namespace + ".Component"
@@ -604,18 +604,37 @@ func localizeOperationSchemaReferences(source string, module operationModulePlan
 	for _, key := range keys {
 		path, exists := plan.schemaByName[key.name]
 		if !exists || path == "" {
-			return "", fmt.Errorf("operation %q has no planned %s projection for component %q", module.routeKey, key.export, key.name)
+			return operationSchemaReferences{}, fmt.Errorf("operation %q has no planned %s projection for component %q", module.routeKey, key.export, key.name)
 		}
 		path = plan.schemaProjectionPath(key.name, projection(strings.ToLower(key.export)))
 		if counts[key] > 1 {
 			if err := names.request(typeImportIdentifierKey(path, key.export)); err != nil {
-				return "", err
+				return operationSchemaReferences{}, err
 			}
 		}
+	}
+	return operationSchemaReferences{occurrences: occurrences, counts: counts, keys: keys}, nil
+}
+
+type operationSchemaReferences struct {
+	occurrences []operationSchemaReference
+	counts      map[operationSchemaReferenceKey]int
+	keys        []operationSchemaReferenceKey
+}
+
+func localizeOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan) (string, error) {
+	references, err := collectOperationSchemaReferences(source, module, plan, schemaIndexSpecifier, names)
+	if err != nil {
+		return "", err
 	}
 	if err := names.freeze(); err != nil {
 		return "", err
 	}
+	return resolveOperationSchemaReferences(source, module, plan, schemaIndexSpecifier, names, references)
+}
+
+func resolveOperationSchemaReferences(source string, module operationModulePlan, plan *semanticModulePlan, schemaIndexSpecifier string, names *localIdentifierPlan, references operationSchemaReferences) (string, error) {
+	occurrences, counts, keys := references.occurrences, references.counts, references.keys
 	imports := make([]string, 0)
 	replacements := make(map[operationSchemaReferenceKey]string, len(counts))
 	for _, key := range keys {

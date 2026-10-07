@@ -320,6 +320,17 @@ type typeReferenceTarget struct {
 }
 
 func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses []typeReferenceUse, names *localIdentifierPlan) ([]plannedTypeReference, error) {
+	result, err := collectTypeReferences(plan, currentArtifact, uses, names)
+	if err != nil {
+		return nil, err
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	return resolveTypeReferences(result, names)
+}
+
+func collectTypeReferences(plan *semanticModulePlan, currentArtifact string, uses []typeReferenceUse, names *localIdentifierPlan) ([]plannedTypeReference, error) {
 	if names == nil || names.owner != currentArtifact {
 		return nil, fmt.Errorf("type references for %q require the same artifact's identifier plan", currentArtifact)
 	}
@@ -350,9 +361,10 @@ func planTypeReferences(plan *semanticModulePlan, currentArtifact string, uses [
 		}
 		result = append(result, plannedTypeReference{key: use.key, modulePath: use.modulePath, specifier: specifier, exportName: use.exportName, inline: inline})
 	}
-	if err := names.freeze(); err != nil {
-		return nil, err
-	}
+	return result, nil
+}
+
+func resolveTypeReferences(result []plannedTypeReference, names *localIdentifierPlan) ([]plannedTypeReference, error) {
 	for index := range result {
 		reference := &result[index]
 		if !reference.inline {

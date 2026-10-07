@@ -132,6 +132,25 @@ func TestLocalIdentifierPlansDoNotShareState(t *testing.T) {
 	}
 }
 
+func TestLocalValueImportsShareReservationsAndPreserveExports(t *testing.T) {
+	keys := []localIdentifierKey{
+		schemaValueIdentifierKey("shared.ts", "schema"),
+		schemaValueIdentifierKey("shared.ts", "program0"),
+		schemaValueIdentifierKey("shared.ts", "program1"),
+		typeImportIdentifierKey("shared.ts", "Input"),
+		linkGroupIdentifierKey(generatedLinkGroup{Name: "link"}),
+	}
+	got := resolveLocalTestNames(t, "owner.ts", keys, "__sdkgen_d_d0", "__sdkgen_p_d0")
+	if got[keys[0]] != "__sdkgen_d_d1" || got[keys[1]] != "__sdkgen_p_d1" || got[keys[2]] == got[keys[1]] {
+		t.Fatalf("incorrect value import allocation: %#v", got)
+	}
+	for _, key := range []localIdentifierKey{schemaValueIdentifierKey("", "schema"), schemaValueIdentifierKey("x.ts", "")} {
+		if err := newLocalIdentifierPlan("owner.ts").request(key); err == nil {
+			t.Fatal("incomplete value import accepted")
+		}
+	}
+}
+
 func TestLocalIdentifierPlanLargeSetIsUnique(t *testing.T) {
 	if testing.Short() {
 		t.Skip("100k local bindings")

@@ -17,9 +17,11 @@ type localIdentifierKey struct {
 type localIdentifierRole string
 
 const (
-	localTypeImport      localIdentifierRole = "t"
-	localResourceBuilder localIdentifierRole = "r"
-	localLinkGroup       localIdentifierRole = "l"
+	localTypeImport       localIdentifierRole = "t"
+	localResourceBuilder  localIdentifierRole = "r"
+	localLinkGroup        localIdentifierRole = "l"
+	localDescriptorImport localIdentifierRole = "d"
+	localProgramImport    localIdentifierRole = "p"
 )
 
 // localIdentifierPlan is owned by one emitted module, including its nested
@@ -62,11 +64,23 @@ func (plan *localIdentifierPlan) request(key localIdentifierKey) error {
 	}
 	switch key.role {
 	case localTypeImport, localResourceBuilder, localLinkGroup:
+	case localDescriptorImport, localProgramImport:
+		if key.identity == "" || key.qualifier == "" {
+			return fmt.Errorf("private identifiers for %q: incomplete value import", plan.owner)
+		}
 	default:
 		return fmt.Errorf("private identifiers for %q: unsupported local role %q", plan.owner, key.role)
 	}
 	plan.requests[key] = struct{}{}
 	return nil
+}
+
+func schemaValueIdentifierKey(modulePath, exportName string) localIdentifierKey {
+	role := localProgramImport
+	if exportName == "schema" {
+		role = localDescriptorImport
+	}
+	return localIdentifierKey{role: role, identity: modulePath, qualifier: exportName}
 }
 
 func (plan *localIdentifierPlan) requireCollecting() error {
