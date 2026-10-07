@@ -27,11 +27,11 @@ func TestSchemaProgramsShareDispatchAndPreserveReferenceTargets(t *testing.T) {
 		wire := newWireRenderContext(wirePropertiesConstructed)
 		wire.schemaPrograms = runtime
 		value := map[string]any{"type": "object", "properties": map[string]any{"value": map[string]any{"$ref": "#/components/schemas/" + target}}}
-		descriptor, err := wire.wireSchemaDescriptor(value, projectionOutput)
+		descriptor, err := renderOwnedSchemaForTest(t, wire, func() (string, error) { return wire.wireSchemaDescriptor(value, projectionOutput) })
 		if err != nil {
 			t.Fatal(err)
 		}
-		descriptor = sharedDescriptorSource(runtime, descriptor)
+		descriptor = sharedDescriptorSource(wire, runtime, descriptor)
 		if !strings.Contains(descriptor, "reference: "+quoteTS(target)) {
 			t.Fatalf("shared algorithm changed the %s contract: %s", target, descriptor)
 		}
@@ -64,11 +64,11 @@ func TestSchemaProgramsShareAlgorithmsAcrossDifferentContractData(t *testing.T) 
 	for index, root := range roots {
 		wire := newWireRenderContext(wirePropertiesLiteral)
 		wire.schemaPrograms = runtime
-		descriptor, err := wire.emitSchemaDescriptor(root)
+		descriptor, err := renderOwnedSchemaForTest(t, wire, func() (string, error) { return wire.emitSchemaDescriptor(root) })
 		if err != nil {
 			t.Fatal(err)
 		}
-		descriptor = sharedDescriptorSource(runtime, descriptor)
+		descriptor = sharedDescriptorSource(wire, runtime, descriptor)
 		name := []string{"first", "second"}[index]
 		if !strings.Contains(descriptor, "required: ["+quoteTS(name)+"]") || !strings.Contains(descriptor, "minimum: "+[]string{"1", "2"}[index]) {
 			t.Fatalf("contract-specific data changed: %s", descriptor)
@@ -103,7 +103,7 @@ func TestSchemaProgramsShareMediaViewsAndFreezeDeterministically(t *testing.T) {
 		for _, value := range values {
 			wire := newWireRenderContext(wirePropertiesLiteral)
 			wire.schemaPrograms = runtime
-			if _, err := wire.wireSchemaDescriptor(value, projectionOutput); err != nil {
+			if _, err := renderOwnedSchemaForTest(t, wire, func() (string, error) { return wire.wireSchemaDescriptor(value, projectionOutput) }); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -129,12 +129,33 @@ func TestSchemaProgramsShareMediaViewsAndFreezeDeterministically(t *testing.T) {
 	}
 }
 
-func sharedDescriptorSource(runtime *schemaRuntimePlan, expression string) string {
-	for _, module := range runtime.modules {
-		expected, _ := newWireRenderContext(wirePropertiesLiteral).schemaImportName(schemaProgramImport{path: module.path, name: "schema"})
-		if expression == expected {
-			return string(module.source)
+func sharedDescriptorSource(wire *wireRenderContext, runtime *schemaRuntimePlan, expression string) string {
+	for _, dependency := range wire.programImports {
+		if dependency.name != "schema" {
+			continue
+		}
+		expected, err := wire.schemaImportName(dependency)
+		if err != nil || expected != expression {
+			continue
+		}
+		for _, module := range runtime.modules {
+			if module.path == dependency.path {
+				return string(module.source)
+			}
 		}
 	}
 	return expression
+}
+
+func renderOwnedSchemaForTest(t *testing.T, wire *wireRenderContext, render func() (string, error)) (string, error) {
+	t.Helper()
+	wire.names, wire.collectOnly = newLocalIdentifierPlan("test-owner.ts"), true
+	if _, err := render(); err != nil {
+		return "", err
+	}
+	if err := wire.names.freeze(); err != nil {
+		return "", err
+	}
+	wire.collectOnly = false
+	return render()
 }

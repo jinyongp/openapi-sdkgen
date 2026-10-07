@@ -168,7 +168,7 @@ func schemaProgramsSnapshot(t *testing.T, programs *schemaRuntimePlan) []byte {
 				continue
 			}
 			wire := newWireRenderContext(wirePropertiesMode(mode))
-			expression, err := wire.renderDescriptor(plan)
+			expression, err := renderOwnedSchemaForTest(t, wire, func() (string, error) { return wire.renderDescriptor(plan) })
 			if err != nil {
 				t.Fatal(err)
 			}

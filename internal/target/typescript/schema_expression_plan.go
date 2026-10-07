@@ -2,8 +2,6 @@ package typescript
 
 import (
 	"fmt"
-	"path"
-	"strings"
 
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
 	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
@@ -95,14 +93,5 @@ func (wire *wireRenderContext) collectSchemaImport(dependency schemaProgramImpor
 }
 
 func (wire *wireRenderContext) schemaImportName(dependency schemaProgramImport) (string, error) {
-	if wire.names != nil {
-		return wire.names.resolve(schemaValueIdentifierKey(dependency.path, dependency.name))
-	}
-	// Transitional adapter for consumers migrated in the following work units.
-	key := strings.TrimSuffix(strings.TrimPrefix(path.Base(dependency.path), "schema_"), ".ts")
-	prefix := "P"
-	if dependency.name == "schema" {
-		prefix = "D"
-	}
-	return "__sdkgen_" + prefix + strings.ReplaceAll(key, "-", "$") + "_" + dependency.name, nil
+	return wire.names.resolve(schemaValueIdentifierKey(dependency.path, dependency.name))
 }

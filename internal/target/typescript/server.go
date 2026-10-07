@@ -10,7 +10,7 @@ import (
 )
 
 type webhookDefinition struct {
-	programImports     map[string]schemaProgramImport
+	schemaSource       inboundDefinitionSource
 	runtimeFacts       executionSchemaFacts
 	name               string
 	property           string
@@ -31,7 +31,7 @@ type webhookDefinition struct {
 }
 
 type callbackDefinition struct {
-	programImports     map[string]schemaProgramImport
+	schemaSource       inboundDefinitionSource
 	runtimeFacts       executionSchemaFacts
 	name               string
 	sourceRouteKey     string
@@ -194,6 +194,7 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 				wire := newWireRenderContext(wirePropertiesConstructed)
 				if len(programs) > 0 {
 					wire.schemaPrograms = programs[0]
+					wire.collectOnly = true
 				}
 				facts := executionSchemaFacts{}
 				wire.execution = &facts
@@ -221,7 +222,7 @@ func collectCallbackMapDiagnostics(document *ir.Document, values map[string]any,
 					name: appendOpenAPIPointer(path, name), sourceRouteKey: sourceRouteKey, sourceOperationID: sourceOperationID, componentName: componentName, callbackName: name,
 					expression: expression, operationID: operationID, method: method,
 					bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType,
-					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, programImports: wire.programImports,
+					responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, schemaSource: inboundDefinitionSource{pathItem: resolvedPathItem, operation: operation, path: operationPath},
 				})
 			}
 		}
@@ -498,16 +499,44 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition, progra
 	wire := newWireRenderContext(wirePropertiesConstructed)
 	if len(programs) > 0 && programs[0] != nil {
 		wire.schemaPrograms = programs[0]
+		wire.collectOnly = true
 		wire.componentNames = programs[0].kindComponents["callback"]
 	}
-	wire.programImports = make(map[string]schemaProgramImport)
-	for _, definition := range callbacks {
-		for target, dependency := range definition.programImports {
-			wire.programImports[target] = dependency
-		}
+	names, err := newServerValueIdentifierPlan("server/callbacks.ts")
+	if err != nil {
+		return nil, err
 	}
 	for _, definition := range callbacks {
-		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
+		if err := names.reserve(definition.typeName, definition.typeName+"Context", definition.typeName+"Response", definition.definitionSymbol, definition.definitionSymbol+"Handlers", definition.definitionSymbol+"PathParameters"); err != nil {
+			return nil, err
+		}
+		if err := names.reserve(definition.endpointSymbol); err != nil {
+			return nil, err
+		}
+	}
+	wire.names, wire.collectOnly = names, true
+	for _, definition := range callbacks {
+		if _, err := renderInboundDefinition(wire, document, definition.schemaSource); err != nil {
+			return nil, err
+		}
+	}
+	var collectedComponents bytes.Buffer
+	if err := wire.emitWireComponents(&collectedComponents, document, "inputWireSchemas", projectionInput); err != nil {
+		return nil, err
+	}
+	if err := wire.emitWireComponents(&collectedComponents, document, "outputSchemas", projectionOutput); err != nil {
+		return nil, err
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	wire.collectOnly = false
+	for index := range callbacks {
+		rendered, err := renderInboundDefinition(wire, document, callbacks[index].schemaSource)
+		if err != nil {
+			return nil, err
+		}
+		callbacks[index].parameters, callbacks[index].bodyPlans, callbacks[index].responsePlan = rendered.parameters, rendered.body.plans, rendered.responsePlan
 	}
 	var wireComponents bytes.Buffer
 	if err := wire.emitWireComponents(&wireComponents, document, "inputWireSchemas", projectionInput); err != nil {
@@ -724,6 +753,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		wire := newWireRenderContext(wirePropertiesConstructed)
 		if len(programs) > 0 {
 			wire.schemaPrograms = programs[0]
+			wire.collectOnly = true
 		}
 		facts := executionSchemaFacts{}
 		wire.execution = &facts
@@ -754,7 +784,7 @@ func collectWebhookDiagnostics(document *ir.Document, name string, item map[stri
 		methodName := method
 		result = append(result, webhookDefinition{
 			name: name, property: name, operationID: operationID,
-			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, programImports: wire.programImports,
+			method: methodName, bodyType: body.typeName, hasBody: body.hasBody, bodyRequired: body.required, bodyPlans: body.plans, parameters: parameters, paramsType: paramsType, responseType: responseType, responsePlan: responsePlan, security: security, usesWireProperties: wire.usesProperties, runtimeFacts: facts, schemaSource: inboundDefinitionSource{pathItem: resolvedItem, operation: operation, path: operationPath},
 		})
 	}
 	return result, failures
@@ -1089,14 +1119,38 @@ func emitWebhooks(document *ir.Document, webhooks []webhookDefinition, programs 
 		wire.schemaPrograms = programs[0]
 		wire.componentNames = programs[0].kindComponents["webhook"]
 	}
-	wire.programImports = make(map[string]schemaProgramImport)
-	for _, definition := range webhooks {
-		for target, dependency := range definition.programImports {
-			wire.programImports[target] = dependency
-		}
+	names, err := newServerValueIdentifierPlan("server/webhooks.ts")
+	if err != nil {
+		return nil, err
 	}
 	for _, definition := range webhooks {
-		wire.usesProperties = wire.usesProperties || definition.usesWireProperties
+		if err := names.reserve(definition.typeName, definition.typeName+"Context", definition.typeName+"Response", definition.definitionSymbol, definition.definitionSymbol+"Handlers", definition.definitionSymbol+"PathParameters"); err != nil {
+			return nil, err
+		}
+	}
+	wire.names, wire.collectOnly = names, true
+	for _, definition := range webhooks {
+		if _, err := renderInboundDefinition(wire, document, definition.schemaSource); err != nil {
+			return nil, err
+		}
+	}
+	var collectedComponents bytes.Buffer
+	if err := wire.emitWireComponents(&collectedComponents, document, "inputWireSchemas", projectionInput); err != nil {
+		return nil, err
+	}
+	if err := wire.emitWireComponents(&collectedComponents, document, "outputSchemas", projectionOutput); err != nil {
+		return nil, err
+	}
+	if err := names.freeze(); err != nil {
+		return nil, err
+	}
+	wire.collectOnly = false
+	for index := range webhooks {
+		rendered, err := renderInboundDefinition(wire, document, webhooks[index].schemaSource)
+		if err != nil {
+			return nil, err
+		}
+		webhooks[index].parameters, webhooks[index].bodyPlans, webhooks[index].responsePlan = rendered.parameters, rendered.body.plans, rendered.responsePlan
 	}
 	var wireComponents bytes.Buffer
 	if err := wire.emitWireComponents(&wireComponents, document, "inputWireSchemas", projectionInput); err != nil {
