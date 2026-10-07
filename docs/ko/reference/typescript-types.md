@@ -1,9 +1,18 @@
 # 생성된 TypeScript 타입
 
+이 페이지의 코드는 API 형태를 설명하는 예시입니다. API 이름·매개변수·미디어·인증은
+사용하는 명세에서 생성됩니다. [시작하기](../guide/getting-started.md)의 작은 Todo 명세에는
+아래 확장 기능이 모두 포함되어 있지 않습니다.
+
 생성된 SDK의 기본 진입점은 요청, 응답, 구성 요소, 열거형 타입을 제공합니다.
 
 생성된 클라이언트의 호출 방법은
 [생성된 클라이언트 API](./client-api.md)에서 확인할 수 있습니다.
+
+Todo 타입 예제에는 [확장 Todo 명세](/examples/todo-types.json)를 사용하세요.
+`completed`·`limit` 쿼리, `getTodo`, `updateTodo`, `TodoStatus` 열거형이 들어 있습니다.
+클라이언트별 타입은 [별도 명세](/examples/named-clients.json)와
+[기능별 클라이언트 가이드](../guide/named-clients.md)의 설정을 사용합니다.
 
 <span id="컴파일러-지원"></span>
 
@@ -13,9 +22,9 @@
 `DOM.Iterable` 라이브러리가 필요합니다. 애플리케이션의 기존 TypeScript
 컴파일러와 번들러로 함께 빌드합니다.
 
-지원 확인 버전: **5.7.3, 5.9.3, 6.0.3, 7.0.2**.
+아래 설정은 TypeScript **5.7.3, 5.9.3, 6.0.3, 7.0.2**로 확인했습니다.
 
-현재 개발 버전은 아래 모듈 설정에서 `strict`와 `isolatedDeclarations`를 각각
+생성된 SDK는 아래 모듈 설정에서 `strict`와 `isolatedDeclarations`를 각각
 켜거나 끌 수 있습니다.
 
 | 모듈 형식 | `module` / `moduleResolution` | 설정 |
@@ -52,16 +61,6 @@ typecheck = true
 API 타입과 런타임 동작은 같습니다. 루트 SDK, 클라이언트별 코드, 서버 코드,
 메타데이터에 함께 적용되며, 기존 출력의 설정은 `--incremental`로 바꿀 수 있습니다.
 
-현재 개발 버전은 위 모듈 설정에서 생성 소스와 선언 파일의
-타입 검사를 통과합니다. `strict`, `exactOptionalPropertyTypes`,
-`noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`,
-`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`,
-`noImplicitOverride`, `noFallthroughCasesInSwitch`를 함께 지원합니다.
-ESM 설정에서는 `verbatimModuleSyntax`도 켤 수 있습니다. 모든 설정에서
-`isolatedModules`, 라이브러리 타입 검사, 도달할 수 없는 코드·미사용 레이블 검사를
-적용할 수 있습니다.
-측정한 SDK별 결과는 [호환성 검증 결과](./compatibility.md)에서 확인할 수 있습니다.
-
 ## 타입 기준 선택
 
 아래 표는 루트 SDK에서 타입을 추출하는 기준을 설명합니다. 설정한 클라이언트 진입점에서는
@@ -85,11 +84,10 @@ import {
   createClient,
   type Client,
   type ComponentOutput,
-  type OperationInput,
 } from "./generated/api/clients/catalog/index.js";
 
 type Product = ComponentOutput<"Product">;
-type GetProductInput = OperationInput<Client["$routes"]["GET /products/{id}"]>;
+type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
 type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
 ```
 
@@ -98,25 +96,17 @@ type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}
 쓰지 않는 방향의 표현은 `never`입니다. 해당 메서드의 정확한 호출 타입은
 `Parameters`와 `ReturnType`으로 추출할 수 있습니다. 입력을 생략할 수 있는
 메서드는 전송 options만 전달하는 호출도 허용하므로 `Parameters<Method>[0]`에
-options 타입도 포함됩니다. 생성된 입력만 필요하면 `OperationInput` 또는
-`RouteInput`을 사용합니다.
+options 타입도 포함됩니다. 아래의 `Operation*`·`Route*` 도우미는 루트 SDK에서
+제공하며, 클라이언트별 진입점은 선택한 클라이언트와 구성 요소 계약을 제공합니다.
 
-## 응답 본문 타입
+## 응답 본문 타입 {#response-body-types}
 
-디코딩한 응답 DTO는 중첩 객체, 배열, 튜플, 맵까지 수정 가능한 타입으로 생성합니다.
-일반 반환값, `raw.data`, HTTP 오류 본문, 스트림·페이지네이션 항목, 서버 핸들러의
-응답 본문에 같은 출력 계약을 적용합니다. 입력 타입은 읽기 전용 값도 계속 받습니다.
-리터럴 제약과 OpenAPI의 `readOnly`·`writeOnly`에 따른 입출력 필드 구분도 유지하며,
-응답 메타데이터와 열거형 목록에는 기존 읽기 전용 계약을 적용합니다.
+응답 객체와 배열은 수정할 수 있습니다. 값을 바꿔도 로컬 데이터만 변경되며,
+요청을 보내거나 서버에 저장하지는 않습니다.
 
-기존 서버 핸들러나 모의 응답이 읽기 전용 배열을 반환했다면 수정 가능한 출력 계약에
-맞는 배열을 반환해야 합니다. DTO를 편집하면 로컬 객체와 공유 참조의 값이 바뀌며
-API에 자동으로 저장되지는 않습니다. 자세한 내용은
-[응답 데이터 편집](../guide/client.md#변환된-응답-객체-사용)을 참고하세요.
-
-`OperationHTTPError<typeof method>`는 해당 메서드에 선언된 HTTP 오류 타입을
-추출합니다. 잡은 오류가 `unknown`이면
-[`isOperationHTTPError`](./client-api.md#오류-처리)로 이 타입에 맞는지 확인합니다.
+입력 타입은 읽기 전용 값도 받습니다. OpenAPI의 `readOnly` 필드는 요청 타입에서,
+`writeOnly` 필드는 응답 타입에서 제외합니다. `readOnly`가 반환된 필드의 수정을
+막는 것은 아닙니다.
 
 ## 생성된 메서드에서 추출
 
@@ -137,7 +127,7 @@ const api = createClient({
 const listTodos = api.$operations.listTodos;
 type TodoFilters = OperationQuery<typeof listTodos>;
 
-const updateTodo = api.todos("todo-1").update;
+const updateTodo = api.todos("todo-1").patch;
 type UpdateInput = OperationInput<typeof updateTodo>;
 type UpdateBody = OperationBody<typeof updateTodo>;
 ```
@@ -220,6 +210,7 @@ type Limit = OperationParameter<"listTodos", "query", "limit">;
 ## 구성 요소 타입
 
 `components.schemas`에 선언된 스키마에는 `ComponentInput`과 `ComponentOutput`을 사용합니다.
+생성한 API와 그 의존성에서 필요한 구성 요소만 포함합니다.
 
 ```ts
 import type { ComponentInput, ComponentOutput } from "./generated/api";
@@ -242,7 +233,15 @@ components:
     TodoStatus:
       type: string
       enum: [TODO, DONE]
+    Todo:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/TodoStatus"
 ```
+
+문서에 이 선언을 합치고 확장 Todo 예제처럼 API 스키마에서 `Todo`를 사용하세요.
+사용하지 않는 구성 요소 열거형은 생성하지 않습니다.
 
 ```ts
 import { Enums, isEnumValue, type EnumValue } from "./generated/api/enums";

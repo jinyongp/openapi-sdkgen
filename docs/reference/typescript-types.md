@@ -1,9 +1,19 @@
 # Generated TypeScript types
 
+Code on this page illustrates API shapes. Operation names, parameters, media,
+and security come from your own contract. The small Todo contract in
+[Getting started](../guide/getting-started.md) does not include every feature below.
+
 The generated SDK exports request, response, component, and enum types from its main
 entry point.
 
 See [Generated client API](./client-api.md) for calling the generated client.
+
+For the Todo type examples, generate from the
+[extended Todo document](/examples/todo-types.json). It includes `completed` and
+`limit` queries, `getTodo`, `updateTodo`, and the `TodoStatus` enum. Named-client
+types use the separate [named-client document](/examples/named-clients.json)
+and configuration from [its guide](../guide/named-clients.md).
 
 ## Compiler support
 
@@ -11,9 +21,10 @@ Generated client and server source requires **TypeScript 5.7.3 or later** with
 `ES2022`, `DOM`, and `DOM.Iterable` libraries. Compile it with your application's
 existing TypeScript compiler and bundler.
 
-Verified compiler versions: **5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
+The matrix below was verified with TypeScript
+**5.7.3, 5.9.3, 6.0.3, and 7.0.2**.
 
-The development version supports these module configurations with `strict`
+The generated SDK supports these module configurations with `strict`
 enabled or disabled, and with or without `isolatedDeclarations`:
 
 | Module format | `module` / `moduleResolution` | Settings |
@@ -52,16 +63,6 @@ retain the same API types and runtime behavior. The setting applies to the
 root SDK, named clients, server code, and metadata together. Use `--incremental`
 to change it in an existing managed output directory.
 
-The development version passes source and declaration checks with the module
-configurations above, `strict`, `exactOptionalPropertyTypes`,
-`noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`,
-`noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`,
-`noImplicitOverride`, and `noFallthroughCasesInSwitch`.
-The ESM configurations also support `verbatimModuleSyntax`. All configurations
-support `isolatedModules`, with library checking enabled and unreachable code
-and unused labels disallowed.
-See [compatibility results](./compatibility.md) for measured SDKs.
-
 ## Choose a type source
 
 The tables below describe the root SDK's type helpers. For a configured client
@@ -86,11 +87,10 @@ import {
   createClient,
   type Client,
   type ComponentOutput,
-  type OperationInput,
 } from "./generated/api/clients/catalog/index.js";
 
 type Product = ComponentOutput<"Product">;
-type GetProductInput = OperationInput<Client["$routes"]["GET /products/{id}"]>;
+type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
 type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
 ```
 
@@ -100,25 +100,17 @@ another client is absent; a representation unused by this client's APIs is
 `never`. Use `Parameters` and `ReturnType` on this client's methods to extract
 their exact call types. For optional-input methods, `Parameters<Method>[0]`
 also includes transport options because they can be passed as the only argument.
-Use `OperationInput` or `RouteInput` when you need only the generated input.
+The `Operation*` and `Route*` helpers below belong to the root SDK; named entries
+export their selected client and component contracts.
 
 ## Response body types
 
-Decoded response DTOs are mutable, including nested objects, arrays, tuples,
-and maps. The same output contract applies to ordinary results, `raw.data`,
-HTTP error bodies, stream and pagination items, and server handler responses.
-Input types still accept readonly values. Literal constraints and OpenAPI
-`readOnly`/`writeOnly` projections remain in effect; response metadata and enum
-catalogs keep their readonly contracts.
+Response objects and arrays are mutable. Editing them changes only local data;
+it does not send a request or save changes on the server.
 
-An existing server handler or mock returning a readonly array must return a
-mutable array for a mutable output contract. Editing a DTO changes the local
-object and any shared references, without saving to the API. See
-[editing decoded data](../guide/client.md#work-with-decoded-response-objects).
-
-`OperationHTTPError<typeof method>` extracts the method's declared HTTP failure
-union. Use [`isOperationHTTPError`](./client-api.md#errors) to narrow an unknown
-caught value to that union.
+Input types accept readonly values. OpenAPI `readOnly` properties are omitted
+from request types, and `writeOnly` properties are omitted from response types.
+`readOnly` does not make a returned field immutable.
 
 ## Extract from a generated method
 
@@ -139,7 +131,7 @@ const api = createClient({
 const listTodos = api.$operations.listTodos;
 type TodoFilters = OperationQuery<typeof listTodos>;
 
-const updateTodo = api.todos("todo-1").update;
+const updateTodo = api.todos("todo-1").patch;
 type UpdateInput = OperationInput<typeof updateTodo>;
 type UpdateBody = OperationBody<typeof updateTodo>;
 ```
@@ -217,6 +209,7 @@ section.
 ## Component types
 
 Use component helpers for schemas declared in `components.schemas`.
+Only components needed by generated APIs and their dependencies are included.
 
 ```ts
 import type { ComponentInput, ComponentOutput } from "./generated/api";
@@ -238,7 +231,15 @@ components:
     TodoStatus:
       type: string
       enum: [TODO, DONE]
+    Todo:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/TodoStatus"
 ```
+
+Merge these declarations into the document and use `Todo` in an API schema, as
+in the extended Todo example. An unused component enum is not generated.
 
 ```ts
 import { Enums, isEnumValue, type EnumValue } from "./generated/api/enums";

@@ -1,5 +1,10 @@
 # Streaming API
 
+Code on this page illustrates API shapes. Operation names, parameters, media,
+and security come from your own contract. The small Todo contract in
+[Getting started](../guide/getting-started.md) does not include every feature below.
+
+
 This page is the lookup reference for generated sequential-media APIs. For a
 task-oriented walkthrough, see
 [Authentication, transport, and streams](../guide/transport.md).
@@ -218,18 +223,17 @@ const api = createClient({
 
 Keys are normalized media types.
 
-### Regeneration migration
+<span id="regeneration-migration"></span>
 
-This change shipped in generator v9.0.0. Regenerated SSE clients
-use Event objects by default. Consumers that previously received parsed JSON
-payloads can configure `jsonSSEAdapter` above to retain their application schema,
-or declare an Event schema and parse its `data` explicitly. Request callers send
-Event objects by default; the same adapter retains JSON payload encoding.
+### SSE values and raw responses
 
-Sequential `.raw()` calls, including schema-only responses, now leave the body
+SSE clients use Event objects by default. To consume JSON payloads directly,
+configure `jsonSSEAdapter` above or parse the Event object's `data` explicitly.
+Request callers send Event objects by default; the same adapter encodes JSON payloads.
+
+Sequential `.raw()` calls, including schema-only responses, leave the body
 unconsumed and expose `undefined` in `data`. Read `raw.response` for bytes, or use
-the ordinary buffered call for the decoded value. Already generated SDK source
-keeps its behavior until regeneration.
+the ordinary buffered call for the decoded value.
 
 ### RequestOptions.streamCodec
 

@@ -8,52 +8,13 @@
 타입을 생성하므로 애플리케이션에서 선택을 바꿀 때 SDK를 다시 생성할 필요는 없습니다.
 생성 파일 자체를 줄이려면 생성할 API를 설정에서 지정하세요.
 
-## API에 필요한 실행 코드만 생성하기
-
-생성기는 생성 대상 API에 필요한 실행 코드를 함께 선택합니다. JSON만 사용하는
-문서에서는 XML, multipart, SSE 처리 코드와 사용하지 않는 인증·형식 검사 코드를
-생성하지 않습니다. 요청·응답 본문뿐 아니라 헤더, 매개변수, 스키마 참조, 비공개
-Link 대상까지 확인하며, 선언된 스키마 제약의 검증은 그대로 유지합니다.
-
-스키마 계약에 맞는 검증·DTO 변환 코드도 생성합니다. 일반 JSON은 검증 알고리즘을
-공유하고 계약별 속성 이름, 범위, 참조 대상은 별도 데이터로 유지합니다.
-고급 계약은 필요한 공통 연산을 연결합니다. 같은 프로그램과 계약 데이터는 API와
-이름 있는 클라이언트 사이에서 공유합니다.
-임의 스키마를 처리하는 범용 해석기는 해당 helper를 명시적으로 가져오는 경로에
-유지합니다.
-단독 참조나 키 하나로 표현되는 단순 타입 계약은 기존 소유 파일에 둡니다.
-작은 데이터마다 별도 파일과 import를 추가하는 비용을 피하기 위해서입니다.
-생성 준비 단계에서도 공유 알고리즘을 캐시해 계약마다 같은 코드를 다시 만들지 않습니다.
-
-일반 JSON API는 경로·쿼리·헤더 매개변수의 스키마를 처리하는 작은 HTTP 구현을 자동으로
-사용합니다. 쿼리 직렬화 코드는 계약에 쿼리 매개변수가 있을 때만 생성합니다.
-콘텐츠 방식의 매개변수, 쿠키 매개변수와 응답 헤더, 여러 요청 본문 표현, 고급
-미디어가 필요하면 범용 구현을 사용합니다. 범용 구현도 프레이밍이나 스트리밍이
-필요하지 않은 요청에서는 응답 스트림 처리를 제외합니다. 이 경로들은
-같은 스키마 검증, 서버 선택, 원본 응답, 오류 판별, 취소·인증 처리를 공유합니다.
-별도의 경량화 설정은 필요하지 않습니다.
-
-일반 루트 클라이언트에는 소속 API들이 필요한 기능의 합집합을 연결합니다.
-이름 있는 진입점과 준비한 API에는 각각 필요한 기능을 연결하므로, 같은 SDK에 XML
-API가 있어도 JSON API를 준비할 때 XML 코드가 따라오지 않을 수 있습니다.
-`[selection]`을 쓰면 선택하지 않은 API와 그 API에만 필요한 실행 파일을 생성 단계에서
-제외합니다. 별도로 실행 기능 목록을 관리할 필요는 없습니다.
-
-계약에 따라 더 많은 코드가 필요한 경우도 있습니다. multipart 파트는 수신한
-`Content-Type`에 따라 XML 처리가 필요할 수 있고, 스키마의 콘텐츠 규칙이나 동적
-참조는 바깥쪽 JSON 표현 외의 처리 코드도 요구할 수 있습니다. 일반 JSON 본문의
-스키마에 XML 메타데이터가 있다는 이유만으로 XML 코덱을 포함하지는 않습니다.
-`--with server`의 범용 서버 helper는 지원하는 임의 스키마를 처리할 수 있도록
-전체 기능을 유지하며, 생성된 콜백·웹훅 라우터에는 각각 필요한 기능을 연결합니다.
-이 부가 기능을 켜도 클라이언트 생성물은 바뀌지 않고 범용 서버 helper가 브라우저
-클라이언트 번들에 포함되지 않습니다.
-
-v10과 전체 배포 청크를 비교한 결과는
-[공개 Provider 릴리스 비교](./selection-benchmarks.md#released-providers)에서 확인하세요.
-기본 진입점의 소스·번들 크기와 재현 명령은
-[작은 API의 실행 코드 비용](./selection-benchmarks.md#small-api-runtime)에서 확인하세요.
+<span id="runtime-features"></span>
 
 ## 필요한 API만 생성하기 {#generation}
+
+이 페이지의 예제를 실행하려면 [Task 예제 명세](/examples/task-selection.json)를
+별도 프로젝트의 `openapi.yaml`로 저장하세요. 설치·ESM 설정은 시작하기를 따릅니다.
+파일 확장자가 `.yaml`이어도 JSON 입력을 읽을 수 있습니다.
 
 기능마다 다른 API 목록을 별도 모듈 경로에 배정하려면
 [기능별 클라이언트 생성](./named-clients.md)을 사용하세요. 아래 선택은 루트 SDK와
@@ -71,7 +32,7 @@ output = "./src/generated/api"
 
 [selection]
 operations = ["listTasks"]
-routes = ["GET /tasks/{task-id}"]
+routes = ["GET /health"]
 ```
 
 이 파일로 `openapi-sdkgen generate --config ./openapi-sdkgen.toml`을 실행하면
@@ -104,16 +65,19 @@ routes = ["GET /tasks/{task-id}"]
 CLI에서는 `--operation`과 `--route`를 반복해서 지정할 수 있습니다.
 문법과 설정 덮어쓰기 규칙은 [CLI 레퍼런스](../reference/cli.md#api-selection)를 참고하세요.
 
-아래 예제는 `GET /tasks`에 `operationId: listTasks`가 있고, `GET /health`에는
+아래 예제는 `GET /tasks`에 `operationId: listTasks`와 선택적 정수 쿼리 `limit`이 있고, `GET /health`에는
 API 식별자가 없는 문서를 기준으로 합니다. 먼저 [SDK 생성과 검증](./generate.md)에
 따라 SDK를 생성하세요. 브라우저에 직접 제공할 때는 생성된 TypeScript를 ESM
 JavaScript로 컴파일해야 합니다.
 
+`tsconfig.json`의 `"include": ["src/**/*.ts"]`처럼 생성된 `.ts` 파일 전체를
+컴파일 대상으로 지정하세요. 네임스페이스 조회는 모듈을 동적으로 불러오므로
+소비자 진입점만 컴파일하면 필요한 파일이 모두 출력되지 않습니다.
+
 ## 코드를 준비한 뒤 클라이언트 구성하기 {#prepare}
 
-생성 소스, 배포 파일, 압축 용량, 준비 시간은
-[선택 방식별 비용 비교](./selection-benchmarks.md)에서 확인할 수 있습니다.
-정적 operation import와 동적 lookup은 배포 비용이 다릅니다.
+[선택 방식 고르기](./selection-benchmarks.md)에서 생성 단계의 선택, 정적 가져오기,
+동적 조회의 차이를 확인할 수 있습니다.
 
 ```ts
 import {
@@ -173,6 +137,7 @@ import {
 import tasks from "./tasks.operations.js";
 
 const api = createClient({
+  baseURL: "https://api.example.test/v1",
   operations: await loadOperations([tasks, routes["GET /health"]]),
 });
 await api.$operations.listTasks({ query: { limit: 20 } });
@@ -208,6 +173,7 @@ await api.$operations.listTasks({ query: { limit: 20 } });
 const candidates = [operations.listTasks, routes["GET /health"]];
 const selection = candidates.filter(() => Math.random() > 0.5);
 const dynamic = createClient({
+  baseURL: "https://api.example.test/v1",
   operations: await loadOperations(selection),
 });
 
@@ -232,7 +198,7 @@ const taskRoutes = Object.entries(allRoutes)
   .map(([, operation]) => operation);
 
 const preparedTasks = await loadOperations(taskRoutes);
-const api = createClient({ operations: preparedTasks });
+const api = createClient({ baseURL: "https://api.example.test/v1", operations: preparedTasks });
 await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
@@ -289,15 +255,12 @@ ESM 모듈을 직접 제공할 때는 컴파일된 생성 디렉터리 전체를
 허용해야 하며, 다른 출처의 모듈을 불러올 때는 CORS 응답도 필요합니다.
 
 생성 버전마다 다른 자산 URL로 배포하고, 기존 페이지가 사용할 수 있는 동안은 이전
-자산을 유지합니다. 일부 파일만 새 생성 버전으로 덮어쓰지 마세요. 로더가 생성 버전과
-프로토콜 호환성을 확인하지만, 이 검사는 인증이나 신뢰할 수 있는 스크립트 호스팅을
-대신하지 않습니다.
+자산을 유지합니다. 일부 파일만 새 생성 버전으로 덮어쓰지 마세요.
 
 선택형 진입점의 `OperationPreparationError`에는 `stage`가 있습니다. 값은 `INPUT`,
 `MODULE_LOAD`, `IDENTITY`, `BINDING`이며 가능한 경우 원래 `cause`도 보존합니다.
 모듈 로딩 실패만으로 HTTP 상태나 CSP·오프라인·파일 누락을 항상 구별할 수는
-없으므로 브라우저의 네트워크 진단을 함께 확인하세요. 애플리케이션 접근자의 예외를
-안전성 판정 오류로 바꾸지는 않습니다.
+없으므로 브라우저의 네트워크 진단을 함께 확인하세요.
 
 첫 준비, 추가 기능 준비, 첫 후속 호출, 재방문을 나눠 측정하세요. 공통 코드는
 재사용되지만 대부분의 API를 선택하면 모듈 조회와 로딩 비용 때문에 전체

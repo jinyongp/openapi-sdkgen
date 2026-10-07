@@ -7,9 +7,15 @@ release includes the `typescript` target.
 
 ## Quick start: TypeScript
 
+For a complete example with a local response and expected output, follow
+[Getting started](https://jinyongp.dev/openapi-sdkgen/guide/getting-started.html).
+The commands below assume Node.js 22+, an existing `openapi.yaml`, and an API
+server whose URL and operations match that contract.
+
 The TypeScript target generates the client, types, and source runtime inside your
 application. Your existing TypeScript toolchain compiles them with the rest of the
-project. Generated source requires TypeScript 5.7.3 or later; see the
+project. SDK generation does not require a TypeScript installation. For type
+checking, use TypeScript 5.7.3 or later; see the
 [compiler support contract](docs/reference/typescript-types.md#compiler-support).
 
 Generate a client from a Node-based project:
@@ -51,12 +57,11 @@ the full validation and generation path.
 
 ## Install
 
-The npm launcher requires Node.js 22 or newer; this does
-not impose a Node 22 requirement on generated SDK source. The package keeps a
-single launcher for macOS, Linux, and Windows on arm64 and x64. On first
-execution it downloads the matching archive from the exact same-version
-immutable GitHub Release, verifies its SHA-256 digest, safely extracts the
-declared executable, and caches the verified artifact for later offline runs.
+The npm launcher requires Node.js 22 or newer; this does not impose a Node 22
+requirement on generated SDK source. On first execution it downloads and verifies
+the matching native executable from the same-version GitHub Release. The first
+run needs network access; later runs reuse the cache and can work offline.
+Go is not required. macOS, Linux, and Windows on arm64 and x64 are supported.
 
 ```sh
 pnpm dlx openapi-sdkgen generate --help
@@ -108,7 +113,7 @@ points alongside the main client entry.
 ## Documentation
 
 Full guides and reference documentation:
-[jinyongp.github.io/openapi-sdkgen](https://jinyongp.github.io/openapi-sdkgen/).
+[jinyongp.dev/openapi-sdkgen](https://jinyongp.dev/openapi-sdkgen/).
 
 - [Getting started](docs/guide/getting-started.md)
 - [Generating an SDK](docs/guide/generate.md)

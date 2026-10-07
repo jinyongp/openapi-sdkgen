@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -127,7 +127,15 @@ async function validateMarkdownPage(errors, docsRoot, page, publicFiles) {
     if (withoutFragment.startsWith("/")) {
       const route = normalizeSiteRoute(withoutFragment);
       if (!publicDocRoutes.includes(route)) {
-        errors.push(`${page.display} links to missing documentation route ${destination}`);
+        const publicRoot = resolve(docsRoot, "public");
+        const assetPath = withoutFragment.replace(/^\/openapi-sdkgen\//, "/");
+        const asset = resolve(publicRoot, `.${assetPath}`);
+        const assetInfo = isWithin(publicRoot, asset)
+          ? await stat(asset).catch(() => undefined)
+          : undefined;
+        if (!assetInfo?.isFile()) {
+          errors.push(`${page.display} links to missing documentation route ${destination}`);
+        }
       }
       continue;
     }

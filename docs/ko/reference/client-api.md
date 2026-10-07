@@ -1,5 +1,9 @@
 # 생성된 클라이언트 API
 
+이 페이지의 코드는 API 형태를 설명하는 예시입니다. API 이름·매개변수·미디어·인증은
+사용하는 명세에서 생성됩니다. [시작하기](../guide/getting-started.md)의 작은 Todo 명세에는
+아래 확장 기능이 모두 포함되어 있지 않습니다.
+
 TypeScript SDK는 용도에 따라 가져올 경로가 나뉩니다. 일반 API 호출은
 `./generated/api`를 사용합니다.
 
@@ -101,24 +105,19 @@ OpenAPI 문서의 API에서 생성됩니다. `RequestOptions`는 호출 단위 �
 
 ```ts
 const todo = await api.todos.create({
-  body: { title: "문서 작성" },
+  body: { title: "Write documentation" },
 });
 ```
 
-여러 API가 하나의 경로 선택자를 공유하더라도 공개 선택자 입력 타입이
-같으면 리소스 메서드를 유지합니다. 스키마 제약과 경로 직렬화는 각
-API에 그대로 남으므로 리소스 값을 바인딩한다고 계약을 합치거나 느슨하게
-만들지 않습니다. 선택자 타입 자체가 호환되지 않으면 리소스 호출 방식만 생략하고
-정확한 `$operations` / `$routes` 호출은 유지하며 `SDKGEN-W513`을 보고합니다.
+이름이나 경로 선택자 타입의 충돌로 리소스 메서드를 만들 수 없으면
+`SDKGEN-W513`을 보고합니다. 해당 API는 `$operations`나 `$routes`로 호출하세요.
 
 ### `$routes`
 
 HTTP 메서드와 OpenAPI 경로를 기준으로 호출합니다.
 
 ```ts
-const todos = await api.$routes["GET /todos"]({
-  query: { limit: 20 },
-});
+const todos = await api.$routes["GET /todos"]();
 ```
 
 ### `$operations`
@@ -126,9 +125,7 @@ const todos = await api.$routes["GET /todos"]({
 OpenAPI에 선언된 `operationId`로 호출합니다.
 
 ```ts
-const todos = await api.$operations["listTodos"]({
-  query: { limit: 20 },
-});
+const todos = await api.$operations["listTodos"]();
 ```
 
 ### `.raw()`
@@ -138,8 +135,8 @@ const todos = await api.$operations["listTodos"]({
 `Response`를 반환합니다.
 
 ```ts
-const result = await api.$operations.getTodo.raw({
-  path: { todoID: "todo-1" },
+const result = await api.$operations.createTodo.raw({
+  body: { title: "Write documentation" },
 });
 
 result.status;
@@ -150,6 +147,18 @@ result.response;
 일반 호출에서는 응답 본문이 이미 소비됩니다. 선언된 스트리밍
 응답에서 소비되지 않은 본문이 필요하면 별도의 `.raw()` 요청을 사용합니다.
 
+#### 성공 응답의 상태와 미디어 타입
+
+raw 응답의 상태 타입은 성공 범위인 `200`~`299`로 제한됩니다. 같은 미디어에
+`200: Item`, `default: Problem`이 선언되어 있으면 `status === 200`일 때
+본문이 `Item`으로 좁혀집니다. `202`에서는 여전히 `Problem`을 반환할 수 있습니다.
+같은 미디어의 `2XX` 선언이 있으면 모든 성공 상태를 담당하므로 `default` 본문은
+HTTP 오류 계약에 남고 일반 호출·raw·스트림·페이지 조회의 결과 타입에서는 빠집니다.
+
+미디어가 다르거나 와일드카드 또는 본문 없는 응답이 선언된 경우에는 실제로 선택될
+수 있는 분기를 유지합니다. raw의 `contentType`은 정규화된 실제 응답 헤더 값입니다.
+와일드카드 선언에는 문자열이나 템플릿 리터럴 타입을 사용합니다.
+
 <span id="security-requirement"></span>
 
 ## 인증 요구 사항
@@ -158,13 +167,13 @@ API에 OpenAPI 인증 대안이 여러 개라면 생성된 요청 옵션이
 `securityRequirement`를 요구합니다. 인증 요구 사항이 하나이면 자동 선택되며, 빈
 인증 요구 사항이 다른 대안과 함께 있으면 `"anonymous"`로 표현됩니다.
 
-Todo API가 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
+[인증 가이드](../guide/transport.md)의 `userAuth`와 `serviceAuth` 스키마를
+`createTodo`에 추가했다면:
 
 ```ts
-await api.$operations.updateTodo(
+await api.$operations.createTodo(
   {
-    path: { todoID: "todo-1" },
-    body: { completed: true },
+    body: { title: "Write documentation" },
   },
   {
     securityRequirement: "userAuth",
@@ -187,32 +196,24 @@ await api.$operations.updateTodo(
 
 ## Link
 
-`$links`는 OpenAPI Link 객체에 따라 다음 API를 호출하는 함수를 제공합니다.
-원본 응답 정보를 사용해 런타임 표현식을 해석하고, 후속 호출의 입력 타입도 검사합니다.
+`$links`는 OpenAPI Link에서 생성한 후속 호출입니다. 원래 호출의 `.raw()` 결과를
+전달하면 응답 값을 다음 요청에 사용할 수 있습니다.
+예제는 [OpenAPI Link로 후속 호출하기](../guide/files-links-streams.md#openapi-links)를 참고하세요.
 
-다른 문서를 가리키는 `operationRef`는 대상 API를 `$ref`로 이미 불러온 경우에
-지원합니다. 원래 경로를 유지해야 하며, 대상의 원문 위치가 하나로 정해져야 합니다.
-예를 들어 `operationRef: ./target.json#/paths/~1items/get`을 사용하려면
-`$ref: ./target.json#/paths/~1items`로 `GET /items`를 `/items`에 포함하세요.
-대상이 없거나 경로가 달라졌거나 같은 원문이 여러 경로에 연결되어 모호하면
-`SDKGEN-W509`를 보고하고 해당 후속 호출 함수를 생략합니다.
-
-Link 해석에는 입력 문서의 참조 허용 목록·잠금 파일·오프라인 캐시 정책이
-적용됩니다. Link만 `target.json`을 가리키는 경우에는 추가 문서 요청 없이
-`SDKGEN-W509`를 보고합니다. 이 조건은 허용된 참조를 통해 읽은 문서 범위에서
-후속 호출을 생성하기 위한 경계입니다.
-
-후속 호출은 대상 API·경로·문서의 서버 설정 또는 Link에 명시된 서버를 기본 URL로
-사용합니다. 상속한 상대 서버 URL은 대상 문서의 HTTP URL을 기준으로 해석합니다.
-
-전체 예시는 [OpenAPI Link 따라가기](../guide/client.md#openapi-links)를
-참고하세요.
+외부 `operationRef`의 대상은 `$ref`로 불러오고 원래 API 경로에 연결해야 합니다.
+Link만 선언하면 외부 문서를 불러오지 않습니다. 예를 들어
+`operationRef: ./target.json#/paths/~1items/get`은
+`$ref: ./target.json#/paths/~1items`로 Path Item을 `/items`에 연결했을 때 해석할 수 있습니다.
+대상을 찾을 수 없거나 여러 대상이 겹치면 `SDKGEN-W509`로 알리고 해당 도우미를
+생략합니다. 요청 주소는 대상의 서버 설정 또는 Link에 지정한 서버를 사용합니다.
 
 ## 스트리밍
 
 생성된 순차형 미디어 API, 시작·종료 동작, 사용자 정의 프로토콜·어댑터,
 요청 데이터 공급, 프레임 크기 제한은 전용 [스트리밍 API](./streaming.md) 레퍼런스에
 정리되어 있습니다.
+
+<span id="errors"></span>
 
 ## 오류 처리
 
@@ -237,17 +238,30 @@ import {
 `SECURITY_REQUIREMENT_INVALID`를 사용합니다. 인증 정보 획득 및 적용 오류는
 `SECURITY_CREDENTIALS_REQUIRED`와 `SECURITY_CREDENTIALS_INVALID`를 사용합니다.
 
-오퍼레이션 가드는 일반 호출, raw 호출, 스트리밍 호출, 경로가 바인딩된 리소스
-메서드에 사용할 수 있습니다. 현재 본문을 다시 검증하므로 직접 만든 오류,
-다른 오퍼레이션의 오류, 전송 오류, 잘못되었거나 변조된 본문은 통과하지 못합니다.
-`contentType`은 선택된 선언 값이며 실제 헤더는 `error.response`에서 확인합니다.
+`isOperationHTTPError`는 지정한 API에서 발생한 선언된 HTTP 오류를 확인합니다.
+raw·스트리밍 호출에도 사용할 수 있으며 전송 오류에는 일치하지 않습니다.
 `OperationHTTPError<typeof method>`로 같은 오류 타입을 추출할 수 있습니다.
-루트·클라이언트별·선택형 진입점에서 이 함수와 타입을 제공합니다.
-기존 `APIError<Code, Details>`도 계속 사용할 수 있고 `Status`, `Data` 타입 인자를
-추가하면 더 정확한 HTTP 오류를 표현할 수 있습니다. 사용 방법은
-[오퍼레이션의 HTTP 오류 타입 좁히기](../guide/client.md#오퍼레이션의-http-오류-타입-좁히기)를 참고하세요.
 
+### 선언된 HTTP 오류 좁히기 {#declared-http-errors}
+
+아래 예제에는 `todoID` 경로 매개변수와 JSON `404` 응답의 문자열 `message`를
+선언한 `getTodo`가 필요합니다. 시작하기 명세에는 없는 API이므로 추가하고 다시
+생성한 뒤 사용하세요.
+[확장 Todo 예제 명세](/examples/todo-types.json)에 해당 선언이 들어 있습니다.
+
+```ts
+import { isOperationHTTPError } from "./generated/api";
+
+try {
+  await api.$operations.getTodo({ path: { todoID: "todo-1" } });
+} catch (error: unknown) {
+  if (!isOperationHTTPError(error, api.$operations.getTodo)) throw error;
+  if (error.status === 404) console.log(error.data.message);
+}
+```
 <span id="openapi-메타데이터"></span>
+
+<span id="metadata-migration"></span>
 
 ## OpenAPI 메타데이터
 
@@ -278,10 +292,3 @@ API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다.
 담은 `generationSelection`을 제공합니다. 이름 있는 클라이언트를 설정하면
 클라이언트별 API 구성을 담은 `generationClients`도 제공합니다. 두 값 모두
 `--with metadata`를 지정했을 때만 포함됩니다.
-
-### SDK 재생성 시 이전 방법 {#metadata-migration}
-
-다음 메이저 버전부터는 `--with metadata`를 지정하면 SDK에 원문이 포함됩니다.
-`openapi.document`, `generationSelection`, `generationClients`를 사용하는 코드는
-재생성 전에 이 옵션을 추가하거나 설정
-파일에 `addons = ["metadata"]`를 넣으세요. 이미 생성한 SDK가 제공하는 API는 유지됩니다.

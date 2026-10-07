@@ -1,5 +1,9 @@
 # Generated client API
 
+Code on this page illustrates API shapes. Operation names, parameters, media,
+and security come from your own contract. The small Todo contract in
+[Getting started](../guide/getting-started.md) does not include every feature below.
+
 The TypeScript SDK provides import paths for different tasks. Most applications
 use `./generated/api`.
 
@@ -102,12 +106,8 @@ const todo = await api.todos.create({
 });
 ```
 
-When multiple operations share one path selector, the resource method is retained
-when their public selector input type is the same. Operation-specific schema
-constraints and path serialization remain attached to each terminal operation;
-binding the resource value does not merge or weaken those contracts. If selector
-types are incompatible, the resource shortcut is omitted, exact `$operations` /
-`$routes` calls remain available, and generation reports `SDKGEN-W513`.
+If a naming or selector-type conflict prevents a resource method, generation
+reports `SDKGEN-W513`. Call the operation through `$operations` or `$routes`.
 
 ### `$routes`
 
@@ -115,9 +115,7 @@ Call an API by its HTTP method and OpenAPI path. This also works when no
 `operationId` is declared.
 
 ```ts
-const todos = await api.$routes["GET /todos"]({
-  query: { limit: 20 },
-});
+const todos = await api.$routes["GET /todos"]();
 ```
 
 ### `$operations`
@@ -125,9 +123,7 @@ const todos = await api.$routes["GET /todos"]({
 Call an API by its declared `operationId`.
 
 ```ts
-const todos = await api.$operations["listTodos"]({
-  query: { limit: 20 },
-});
+const todos = await api.$operations["listTodos"]();
 ```
 
 ### `.raw()`
@@ -137,8 +133,8 @@ body together with status, response headers, request metadata, selected content
 type, and the original Fetch `Response`.
 
 ```ts
-const result = await api.$operations.getTodo.raw({
-  path: { todoID: "todo-1" },
+const result = await api.$operations.createTodo.raw({
+  body: { title: "Write documentation" },
 });
 
 result.status;
@@ -149,6 +145,18 @@ result.response;
 The Fetch body is normally already consumed by decoded calls. For declared
 streaming responses, a separate `.raw()` request preserves the unconsumed body.
 
+#### Status and media in successful responses
+
+Raw responses use the successful status range `200`–`299`. With same-media
+`200: Item` and `default: Problem`, `status === 200` narrows the body to `Item`,
+while `202` can still return `Problem`. A same-media `2XX` response covers every
+successful status, so `default` stays in the HTTP error contract and does not
+broaden ordinary, raw, streaming, or pagination results.
+
+Different media, wildcard ranges, and bodyless declarations remain distinct
+where they can still be selected. Raw `contentType` is the normalized concrete
+response header. Wildcard declarations use a string or template literal type.
+
 ## Security requirements
 
 When an operation has several OpenAPI security alternatives, the generated
@@ -156,13 +164,13 @@ request options require `securityRequirement`. With one requirement, the SDK
 selects it automatically. An empty requirement uses the ID `"anonymous"` when
 it participates in a choice.
 
-For a Todo operation that accepts `userAuth` or `serviceAuth`:
+For `createTodo` extended with the `userAuth` and `serviceAuth` schemes from
+the [authentication guide](../guide/transport.md):
 
 ```ts
-await api.$operations.updateTodo(
+await api.$operations.createTodo(
   {
-    path: { todoID: "todo-1" },
-    body: { completed: true },
+    body: { title: "Write documentation" },
   },
   {
     securityRequirement: "userAuth",
@@ -184,31 +192,16 @@ sent. See [Request headers](../guide/transport.md#pass-declared-request-headers)
 
 ## Links
 
-External `operationRef` targets can generate helpers when a `$ref` has already
-mounted the target operation in the compiled document closure with its original
-path template. Resolution uses
-the Link's source document and the target's exact source pointer. The target's
-operation/path/document server (or an explicit Link server) supplies its base
-URL. Relative inherited servers resolve against the target document's HTTP URL.
-Unresolved targets, relocated paths, and targets mounted more than once produce capability-scoped
-`SDKGEN-W509`; the source response and sibling helpers remain available. Link
-resolution performs no additional fetch and keeps the compiler's allowlist,
-lock, and offline cache policy.
+`$links` contains follow-up calls generated from OpenAPI Link Objects. Pass the
+source's `.raw()` result to carry its response values into the next request.
+See [Follow OpenAPI Links](../guide/files-links-streams.md#follow-openapi-links).
 
-This is a trust boundary: declaring a Link grants no permission to load another
-document. For example, `operationRef: ./target.json#/paths/~1items/get` can resolve
-when a Path Item `$ref: ./target.json#/paths/~1items` has already loaded and mounted
-`GET /items` at `/items`. If only the Link names `target.json`, the generator does
-not fetch it, even when its origin is allowlisted. It emits `SDKGEN-W509` and
-omits that helper. Make the target part of the declared `$ref` closure to enable
-it; a network allowlist alone does not satisfy this condition.
-
-`$links` contains typed follow-up calls generated from OpenAPI Link Objects.
-Each helper carries the source response context needed to resolve Link runtime
-expressions.
-
-See [Follow OpenAPI Links](../guide/client.md#follow-openapi-links) for a
-complete example.
+An external `operationRef` needs its target loaded through a `$ref` and mounted
+at its original API path. A Link alone does not load an external document.
+For example, `operationRef: ./target.json#/paths/~1items/get` can resolve when
+`$ref: ./target.json#/paths/~1items` mounts the Path Item at `/items`.
+Unresolved or ambiguous targets produce `SDKGEN-W509` and omit that helper.
+The target's server or an explicit Link server supplies the request URL.
 
 ## Streaming
 
@@ -239,14 +232,29 @@ Security selection uses `SECURITY_REQUIREMENT_REQUIRED` and
 `SECURITY_REQUIREMENT_INVALID`. Credential acquisition and application use
 `SECURITY_CREDENTIALS_REQUIRED` and `SECURITY_CREDENTIALS_INVALID`.
 
-The operation guard accepts ordinary, raw, streaming, and bound resource methods.
-It revalidates the current body and rejects constructed errors, another operation's
-errors, transport failures, and invalid or modified bodies. Its `contentType`
-is the selected declaration; the actual header is on `error.response`.
-`OperationHTTPError<typeof method>` extracts the same union. The root, named,
-and selective entries export this helper and type. Existing `APIError<Code, Details>`
-uses remain compatible; additional `Status` and `Data` type arguments describe
-more precise HTTP failures. See [declared HTTP errors](../guide/client.md#narrow-declared-http-errors).
+`isOperationHTTPError` matches declared HTTP errors from the specified operation,
+including raw and streaming calls. It does not match transport failures.
+Use `OperationHTTPError<typeof method>` to extract the same error type.
+
+### Narrow declared HTTP errors {#declared-http-errors}
+
+This example needs `getTodo` with a `todoID` path parameter and a JSON `404`
+response containing a string `message`. Add it to the starter document and
+regenerate before using this code.
+The [extended Todo example](/examples/todo-types.json) includes that contract.
+
+```ts
+import { isOperationHTTPError } from "./generated/api";
+
+try {
+  await api.$operations.getTodo({ path: { todoID: "todo-1" } });
+} catch (error: unknown) {
+  if (!isOperationHTTPError(error, api.$operations.getTodo)) throw error;
+  if (error.status === 404) console.log(error.data.message);
+}
+```
+
+<span id="metadata-migration"></span>
 
 ## OpenAPI metadata
 
@@ -278,11 +286,3 @@ With a root selection, the metadata module also exports `generationSelection`
 (public routes and private Link dependencies). With named clients, it exports
 `generationClients` (each client's assignment). Both records require
 `--with metadata`.
-
-### Regeneration migration {#metadata-migration}
-
-In the next major release, SDK regeneration includes the source document when
-`--with metadata` is enabled. If your code reads `openapi.document`,
-`generationSelection`, or `generationClients`, add this option or
-`addons = ["metadata"]` to your configuration before regenerating.
-Existing generated SDKs retain their exports.

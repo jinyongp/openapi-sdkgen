@@ -24,7 +24,6 @@ openapi-sdkgen inspect [options]
 
 API 목록을 조회하고 필터링하거나, 선택 생성에 쓸 경로를 출력합니다.
 사용 흐름은 [생성할 API 찾기](../guide/inspect.md)를 참고하세요.
-v10.0.0부터 제공되는 명령입니다.
 
 | 옵션 | 의미 |
 | --- | --- |
@@ -103,8 +102,8 @@ openapi-sdkgen generate [options]
 | `--with <addon>` | `metadata` 또는 `server` 추가. 반복 가능 |
 | `--operation <operationId>` | 정확한 API 식별자로 생성할 API 지정. 반복 가능 |
 | `--route <METHOD /path>` | 정확한 메서드·경로로 생성할 API 지정. 반복 가능 |
-| `--diagnostics-format human|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
-| `--diagnostic-mode fail-fast|collect` | `fail-fast`는 생성을 막는 오류에서 중단. `collect`는 확인 가능한 나머지 문제도 수집 |
+| `--diagnostics-format human\|json` | 사람이 읽는 진단 또는 버전이 있는 JSON 진단 선택 |
+| `--diagnostic-mode fail-fast\|collect` | `fail-fast`는 생성을 막는 오류에서 중단. `collect`는 확인 가능한 나머지 문제도 수집 |
 | `--fail-on-resource-omission` | 생성된 API의 리소스 메서드가 생략되면 경고 대신 실패 |
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
@@ -121,24 +120,7 @@ openapi-sdkgen generate [options]
 source = "./openapi.yaml"
 target = "typescript"
 output = "./src/generated/api"
-addons = ["server"]
 incremental = true
-diagnostics_format = "human"
-diagnostic_mode = "fail-fast"
-fail_on_resource_omission = true
-
-[input]
-tls_ca_file = "./certs/internal-ca.pem"
-
-[input.headers_from_env]
-Authorization = "OPENAPI_TOKEN"
-
-[references]
-allow = ["https://schemas.example.com"]
-lock = "./openapi.refs.lock"
-
-[schema]
-extensions = ["./schema-extensions/example.json"]
 ```
 
 ```sh
@@ -236,7 +218,7 @@ operations = ["listOrders", "createOrder"]
 지원합니다. 입력 문서·생성 대상·출력·추가 기능은 공유합니다. 루트 `[selection]`과
 CLI 선택 덮어쓰기는 별도로 적용합니다. 루트 `[selection]`을 생략하면 이름 있는
 클라이언트들의 선택을 합쳐 루트에 제공합니다. 선택한 API와 필요한 Link 의존성만
-생성하고 공통 구현은 공유합니다. 이름은 영문 소문자로 시작하고 소문자·숫자·하이픈으로 구성한 64자 이내의
+생성합니다. 이름은 영문 소문자로 시작하고 소문자·숫자·하이픈으로 구성한 64자 이내의
 이름을 사용합니다. Windows 장치 이름은 예약되어 있습니다. 모듈 사용, 후속 호출, 갱신 예제는
 [기능별 클라이언트 생성](../guide/named-clients.md)을 참고하세요.
 
@@ -318,6 +300,18 @@ SDK 생성을 중단합니다. 기본값은 `fail-fast`입니다.
 진단 보고서는 표준 오류에 기록되며, 생성 파일은 요청한 경우에만 출력
 디렉터리에 기록됩니다.
 
+리소스 메서드의 이름이나 타입이 충돌해 해당 메서드를 제공할 수 없으면
+`SDKGEN-W513`을 보고합니다. API는 `$operations`와 `$routes`로 계속 호출할 수 있습니다.
+CI에서 리소스 메서드 생략을 실패로 처리하려면 `--fail-on-resource-omission`을
+사용하세요. 프로젝트 설정에서는 `fail_on_resource_omission = true`를 사용합니다.
+
+### 내부 오류 보고
+
+예상하지 못한 오류가 발생하면 stderr에 원인과 진단 보고서 경로를 출력합니다.
+보고서가 생성됐다면 버그를 신고할 때 함께 첨부하세요.
+`--diagnostics-format json`은 생성 진단의 형식을 지정하며, 예상하지 못한 내부
+오류 메시지는 일반 텍스트로 출력됩니다.
+
 <span id="input-source-options"></span>
 
 ## 입력 소스 옵션
@@ -327,16 +321,16 @@ SDK 생성을 중단합니다. 기본값은 `fail-fast`입니다.
 다음 입력을 사용할 수 있습니다.
 
 ```sh
-# 로컬 파일
+# Local file
 openapi-sdkgen generate --input ./openapi.yaml --target typescript --check
 
-# 파일 URL
+# file URL
 openapi-sdkgen generate --input file:///workspace/openapi.yaml --target typescript --check
 
 # HTTP(S) URL
 openapi-sdkgen generate --input https://api.example.test/openapi.yaml --target typescript --check
 
-# 표준 입력
+# stdin
 cat ./openapi.yaml | openapi-sdkgen generate --input - --target typescript --check
 ```
 
@@ -410,7 +404,7 @@ openapi-sdkgen generate --input ./openapi.yaml --target typescript \
 
 설정 파일에서는 `addons = ["metadata"]`로 지정합니다. 서버 핸들러도 함께
 생성하려면 `addons = ["server", "metadata"]`를 사용하거나 두 옵션을 각각
-`--with`로 지정하세요. 생성되는 값과 다음 메이저 버전의 이전 방법은
+`--with`로 지정하세요. 생성되는 값은
 [OpenAPI 메타데이터](./client-api.md#openapi-메타데이터)를 참고하세요.
 
 <span id="typescript-server-add-on"></span>

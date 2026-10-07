@@ -1,5 +1,10 @@
 # OpenAPI x-* extensions
 
+Code on this page illustrates API shapes. Operation names, parameters, media,
+and security come from your own contract. The small Todo contract in
+[Getting started](../guide/getting-started.md) does not include every feature below.
+
+
 Standard OpenAPI is enough to generate an SDK. The `x-*` fields on this page
 are optional openapi-sdkgen conveniences layered on top of the ordinary OpenAPI
 contract.

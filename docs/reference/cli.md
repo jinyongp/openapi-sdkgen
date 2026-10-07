@@ -23,7 +23,7 @@ openapi-sdkgen inspect [options]
 ```
 
 List APIs, filter their declarations, or export routes for selected generation.
-See [Find APIs](../guide/inspect.md) for the workflow. Available starting with v10.0.0.
+See [Find APIs](../guide/inspect.md) for the workflow.
 
 | Option | Meaning |
 | --- | --- |
@@ -102,8 +102,8 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--with <addon>` | Enable `metadata` or `server` artifacts; repeatable |
 | `--operation <operationId>` | Generate an exact operation ID; repeatable |
 | `--route <METHOD /path>` | Generate an exact method/path template; repeatable |
-| `--diagnostics-format human|json` | Select human-readable or versioned JSON diagnostics |
-| `--diagnostic-mode fail-fast|collect` | `fail-fast` stops on blocking errors; `collect` reports additional issues where checks remain possible |
+| `--diagnostics-format human\|json` | Select human-readable or versioned JSON diagnostics |
+| `--diagnostic-mode fail-fast\|collect` | `fail-fast` stops on blocking errors; `collect` reports additional issues where checks remain possible |
 | `--fail-on-resource-omission` | Fail instead of warning when a generated operation loses its TypeScript resource API capability |
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
@@ -118,24 +118,7 @@ settings:
 source = "./openapi.yaml"
 target = "typescript"
 output = "./src/generated/api"
-addons = ["server"]
 incremental = true
-diagnostics_format = "human"
-diagnostic_mode = "fail-fast"
-fail_on_resource_omission = true
-
-[input]
-tls_ca_file = "./certs/internal-ca.pem"
-
-[input.headers_from_env]
-Authorization = "OPENAPI_TOKEN"
-
-[references]
-allow = ["https://schemas.example.com"]
-lock = "./openapi.refs.lock"
-
-[schema]
-extensions = ["./schema-extensions/example.json"]
 ```
 
 ```sh
@@ -309,6 +292,18 @@ impact. `scope: document` with `effect: block` stops SDK generation.
 Diagnostic reports are written to stderr; generated artifacts are written to the
 output directory.
 
+If a resource method cannot be exposed because names or types collide, generation
+reports `SDKGEN-W513`. The operation remains available through `$operations` and
+`$routes`. Use `--fail-on-resource-omission` in CI to fail on this loss of a resource
+shortcut; the project-config key is `fail_on_resource_omission = true`.
+
+### Internal failures
+
+Unexpected failures print a cause and, when available, a diagnostic report path
+to stderr. Include that report when reporting a generator bug.
+`--diagnostics-format json` controls generation diagnostics; unexpected internal
+failure messages remain plain text.
+
 ## Input source options
 
 ### `--input <source>`
@@ -400,8 +395,7 @@ openapi-sdkgen generate --input ./openapi.yaml --target typescript \
 
 For a configuration file, set `addons = ["metadata"]`. To also generate server
 handlers, use `addons = ["server", "metadata"]` or repeat `--with` for both.
-See [OpenAPI metadata and migration](./client-api.md#openapi-metadata) for the
-exports and the next major release's regeneration change.
+See [OpenAPI metadata](./client-api.md#openapi-metadata) for the generated exports.
 
 ## TypeScript server add-on
 

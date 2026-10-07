@@ -32,6 +32,10 @@ components:
 
 ## 매니페스트 작성
 
+이 가이드는 스키마 확장 프로토콜을 구현한 어휘 컴파일러가 이미 있다고 가정합니다.
+예시 실행 파일은 제공하지 않습니다. 일반 OpenAPI 스키마나 SDK `x-*` 설정에는
+실행 파일 확장이 필요하지 않습니다.
+
 버전 1 JSON 매니페스트에 처리할 어휘와 실행 파일을 등록합니다.
 
 ```json
@@ -51,6 +55,10 @@ components:
 `command`는 매니페스트 기준 상대 경로를 사용할 수 있습니다. 해석된 경로는 실행
 가능한 일반 파일이어야 합니다. `sha256`은 실행 파일 내용과 일치해야 하며,
 프로그램이 바뀌면 새 해시를 다시 신뢰해야 합니다.
+
+Linux에서는 `sha256sum ./bin/todo-schema-extension`을 실행하고 출력된 해시로
+`<sha256-of-the-executable>`을 바꾸세요. 매니페스트는 `bin` 디렉터리 옆에
+`todo-schema-extension.json`으로 저장합니다.
 
 실행 파일은 버전이 있는 JSON-RPC 스키마 확장 프로토콜을 사용합니다. 자신이
 처리하는 어휘를 선언하고, 해당 스키마를 TypeScript 생성기가 이해할 수
@@ -106,8 +114,6 @@ openapi-sdkgen generate \
 무결성 잠금 파일은 실행 파일 식별자를 고정하며, 확장은 생성 프로세스와 같은
 권한으로 실행됩니다.
 
-생성 진단에는 스키마 확장 프로토콜이 정의한 결과만 반영됩니다.
-생성된 SDK에는 변환된 스키마 의미가 포함됩니다.
 
 [`x-pagination`](../reference/extensions.md#x-pagination),
 [`x-sdk-visibility`](../reference/extensions.md#x-sdk-visibility) 같은 일반 SDK

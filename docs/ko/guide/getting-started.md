@@ -1,34 +1,61 @@
 # 시작하기
 
-[`openapi-sdkgen`](../reference/cli.md)은 OpenAPI 3.x 문서에서 애플리케이션이 소유하는 TypeScript
-클라이언트 소스를 생성합니다. 이 가이드에서는 작은 Todo API를 정의하고 SDK를
-애플리케이션 소스 안에 생성한 뒤 첫 요청까지 호출합니다.
+작은 Todo 명세에서 SDK를 생성합니다. 원하는 경우 호출 코드를 실행해 모의 응답도
+읽어 볼 수 있습니다. 별도 API 서버 없이 끝까지 실행할 수 있습니다. 실제 서버 연결은
+마지막 단계에서 설명합니다.
 
-## 1. CLI 설치
+## 1. 실행 환경과 프로젝트 준비
 
-애플리케이션 저장소에서는 CLI를 개발 의존성으로 설치하면 다른 개발 도구와 함께
-생성기 버전도 고정할 수 있습니다.
+Node.js **22 이상**과 `pnpm`이 필요합니다. Node.js 조건은 npm CLI 실행기에
+적용됩니다. SDK 생성에는 TypeScript 설치가 필요하지 않습니다. 생성된 소스는
+프로젝트에서 쓰는 빌드 도구로 빌드하세요. 아래 선택 단계에서는 별도 컴파일러로
+호출 코드를 확인하는 방법을 보여 줍니다.
+
+빈 디렉터리에서 시작합니다.
+
+```sh
+mkdir sdkgen-todo
+cd sdkgen-todo
+```
+
+다음 내용을 `package.json`으로 저장합니다.
+
+```json
+{
+  "private": true,
+  "type": "module"
+}
+```
+
+### npm
+
+CLI를 프로젝트의 개발 의존성으로 설치합니다.
 
 ```sh
 pnpm add -D openapi-sdkgen
 pnpm exec openapi-sdkgen --version
 ```
 
-이 페이지의 명령은 `pnpm exec openapi-sdkgen`을 기준으로 설명합니다. Homebrew나
-GitHub Release 실행 파일로 설치했다면 앞의 `pnpm exec` 없이
-`openapi-sdkgen`을 사용하면 됩니다.
+### Homebrew
 
-일회성 실행에는 `pnpm dlx openapi-sdkgen ...`을 사용할 수 있습니다.
-
-macOS와 Linux에서는 Homebrew로 설치할 수도 있습니다.
+macOS와 Linux에서는 Homebrew로 설치할 수 있습니다.
 
 ```sh
 brew install jinyongp/tap/openapi-sdkgen
 ```
 
-## 2. Todo OpenAPI 문서 만들기
+### 실행 파일 다운로드
 
-다음 내용을 `openapi.yaml`로 저장합니다.
+[GitHub Releases](https://github.com/jinyongp/openapi-sdkgen/releases)에서 운영체제에
+맞는 실행 파일을 받아 `PATH`에 추가합니다.
+
+Homebrew나 다운로드한 실행 파일을 사용하면 아래 생성 명령에서 `pnpm exec`을
+빼고 `openapi-sdkgen`을 직접 실행하세요. 두 방법은 CLI 실행에 Node.js가 필요하지
+않지만, 아래 선택 단계에서 애플리케이션을 실행할 때는 Node.js를 사용합니다.
+
+## 2. Todo 명세 저장
+
+다음 내용을 `openapi.yaml`로 저장합니다. 목록 조회와 생성, 두 API만 정의합니다.
 
 ```yaml
 openapi: 3.2.0
@@ -85,12 +112,7 @@ components:
           type: boolean
 ```
 
-두 API에 안정적인 `operationId`를 주고, 요청과 응답 스키마를 선언했습니다.
-이 정보가 생성된 TypeScript 타입과 클라이언트 API의 기준이 됩니다.
-
-## 3. 애플리케이션 소스 안에 생성
-
-최초 생성과 이후 갱신에 같은 명령을 사용합니다.
+## 3. SDK 생성
 
 ```sh
 pnpm exec openapi-sdkgen generate \
@@ -100,61 +122,78 @@ pnpm exec openapi-sdkgen generate \
   --incremental
 ```
 
-생성된 디렉터리는 클라이언트, 타입, 실행 코드를 포함한 일반 애플리케이션
-소스입니다. 기존 TypeScript 컴파일러나 번들러가 나머지 코드와 함께 빌드합니다.
-TypeScript 5.7.3 이상과 `ES2022`·`DOM` 라이브러리를 사용합니다. 자세한 요구 사항과
-지원 버전은 [컴파일러 지원](../reference/typescript-types.md#컴파일러-지원)에서 확인할 수 있습니다.
+`src/generated/api/index.ts`를 비롯한 클라이언트 소스와 타입이 생성되면 성공입니다.
+`--incremental`은 처음에는 디렉터리를 만들고 이후에는 안전하게 갱신합니다.
+생성 파일은 CLI로 다시 생성하세요. 자세한 갱신 조건은
+[SDK 생성과 검증](./generate.md)에 있습니다.
 
-`--incremental`은 출력 디렉터리가 없으면 새로 만들고, 이후에는 같은 관리
-디렉터리를 안전하게 갱신합니다. 생성기가 소유한 파일은 CLI로 다시 생성합니다. 안전한 재생성과 CI
-검증 흐름은 [SDK 생성과 검증](./generate.md)에서 설명합니다.
+## 4. 선택: 모의 응답으로 호출 확인
 
-## 4. 클라이언트 만들기
+SDK 생성은 3단계에서 완료됩니다. 호출도 확인하려면 프로젝트의 기존 TypeScript
+환경을 사용하세요. 컴파일러가 없는 빈 프로젝트라면 아래 타입 검사와 컴파일을
+위해 선택적으로 설치할 수 있습니다.
 
-[`createClient`](../reference/client-api.md#createclient)로 생성된 클라이언트를
-만듭니다.
-
-```ts
-import { createClient } from "./generated/api";
-
-const api = createClient({
-  baseURL: "https://api.example.test/v1",
-});
+```sh
+pnpm add -D typescript
 ```
 
-OpenAPI 문서에 사용할 수 있는 서버 객체가 선언되어 있다면 [`baseURL`](../reference/client-api.md#clientoptions)을
-생략할 때 그 서버 정의를 사용합니다.
-
-::: details 컴파일된 코드를 Node ESM으로 실행할 때
-
-Vite, Next.js, Nuxt 같은 번들러는 생성 디렉터리의 진입점을 찾습니다. Node
-ESM으로 컴파일된 코드를 실행할 때는 `index.js` 파일을 명시합니다.
+다음 내용을 `src/demo.ts`로 저장합니다. `fetch`에 지정한 함수가 생성에는 `201`,
+목록 조회에는 `200` 응답을 돌려줍니다. 이 예제는 요청 생성과 응답 해석을 확인하며,
+데이터를 저장하거나 실제 네트워크 요청을 보내지는 않습니다.
 
 ```ts
 import { createClient } from "./generated/api/index.js";
-```
-:::
 
-## 5. Todo API 호출
-
-일반 애플리케이션 코드에서는 리소스 메서드가 짧고 읽기 쉽습니다.
-
-```ts
-const created = await api.todos.create({
-  body: { title: "문서 작성" },
+const todo = {
+  id: "todo-1",
+  title: "Write documentation",
+  completed: false,
+};
+async function mockFetch(
+  _input: RequestInfo | URL,
+  init?: RequestInit,
+) {
+  if (init?.method === "POST") return Response.json(todo, { status: 201 });
+  return Response.json({ items: [todo] }, { status: 200 });
+}
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: mockFetch,
 });
 
+const created = await api.todos.create({
+  body: { title: "Write documentation" },
+});
 const todos = await api.todos.list();
+console.log(created.title);
+console.log(todos.items.length);
 ```
 
-모든 API는 HTTP 메서드·경로로도 호출할 수 있고, `operationId`가 있으면
-[`$operations`](../reference/client-api.md#operations)에서도 사용할 수 있습니다.
+타입 검사와 컴파일 후 실행합니다. `ES2022`, `DOM`, `DOM.Iterable`은 생성된
+코드가 사용하는 표준 API의 타입을 제공합니다.
 
-```ts
-await api.$routes["GET /todos"]();
-await api.$operations.listTodos();
+```sh
+pnpm exec tsc --strict --target ES2022 \
+  --module NodeNext --moduleResolution NodeNext \
+  --lib ES2022,DOM,DOM.Iterable --outDir dist src/demo.ts
+node dist/demo.js
 ```
 
-다음으로 [SDK 생성과 검증](./generate.md)에서 증분 생성, [`--check`](../reference/cli.md#fresh-incremental-and-check-modes), 인증이
-필요한 입력, 원격 참조를 확인하세요. 응답, Link, 스트림 등 생성된 호출 API는
-[생성된 클라이언트 사용](./client.md)에서 이어서 설명합니다.
+기대 출력:
+
+```text
+Write documentation
+1
+```
+
+이 출력까지 확인했다면 SDK 생성, 호출 코드 타입 검사, 모의 응답 해석을 완료했습니다.
+
+## 5. 실제 API 연결과 다음 작업
+
+실제 호출에는 이 명세의 `GET /todos`, `POST /todos`를 구현한 서버가 필요합니다.
+`baseURL`을 그 서버의 API 기본 주소로 바꾸고 `fetch: mockFetch`를 제거하세요.
+`api.example.test`는 예시 주소입니다. 생성기는 API 서버를 실행하지 않습니다.
+
+- 호출 방식과 오류 처리: [생성된 클라이언트 사용](./client.md)
+- 명세 변경 후 갱신과 CI 검사: [SDK 생성과 검증](./generate.md)
+- 토큰과 요청 시간 제한 설정: [인증·전송·스트림](./transport.md)

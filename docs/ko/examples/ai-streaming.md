@@ -79,31 +79,55 @@ paths:
 
 <span id="_2-server-api-내부에서-ai-sdk-사용"></span>
 
-## 2. 서버: API 내부에서 AI SDK 사용
+## 2. 서버: AI 구현 연결
 
 서버는 AI SDK를 내부 구현에 사용할 수 있으며 SDK 사용 애플리케이션에 해당 의존성을
 노출하지 않습니다. `src/model.ts`는 애플리케이션이 관리하는 모델 제공자
 설정입니다.
 
+이 절은 서버 연동 코드입니다. `ai`와 모델 제공자 패키지를 설치하고
+`src/model.ts`에서 설정한 `model`을 내보내야 합니다. HTTP 서버에서 `/generate`의
+`POST` 요청을 `handleGenerate`로 연결하세요. 클라이언트만 확인할 때는 4절의 모의 응답을 사용합니다.
+
+ESM 프로젝트(`"type": "module"`)를 사용합니다. Node 서버에는 `@types/node`,
+AI SDK 타입 의존성에는 `@types/json-schema`가 필요할 수 있습니다. 인증 정보와
+모델 설정은 선택한 제공자의 설치 안내를 따르세요.
+
 ```ts
 // ai-service/src/server.ts
 import { streamText } from "ai";
-import { model } from "./model";
+import { model } from "./model.js";
 
-export async function handleGenerate(request: Request): Promise<Response> {
-  const { prompt } = await request.json() as { prompt: string };
-  const result = streamText({ model, prompt });
+export async function handleGenerate(request: Request) {
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+  if (typeof input !== "object" || input === null ||
+      !("prompt" in input) || typeof input.prompt !== "string") {
+    return new Response("Expected a prompt string", { status: 400 });
+  }
+  const result = streamText({
+    model, prompt: input.prompt, abortSignal: request.signal,
+    onError: ({ error }) => { console.error(error); },
+  });
   const encoder = new TextEncoder();
 
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
-      for await (const text of result.textStream) {
-        const event = { type: "text-delta", text };
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-        );
+      try {
+        for await (const text of result.textStream) {
+          const event = { type: "text-delta", text };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+          );
+        }
+        controller.close();
+      } catch (error: unknown) {
+        controller.error(error);
       }
-      controller.close();
     },
   });
 
@@ -132,9 +156,13 @@ AI SDK의 `streamText()`는 새로 생성된 텍스트 조각을 `textStream`으
 
 사용 애플리케이션 저장소는 OpenAPI 명세와 openapi-sdkgen만 필요합니다.
 
+별도 소비자 프로젝트에서 [시작하기](../guide/getting-started.md)의 설치·ESM
+설정을 준비하고 1절의 명세를 `openapi.yaml`로 저장하세요. 기존 출력이 있으면
+생성 명령에 `--incremental`을 추가합니다.
+
 ```sh
 pnpm exec openapi-sdkgen generate \
-  --input https://api.example.test/openapi.yaml \
+  --input ./openapi.yaml \
   --target typescript \
   --output ./src/generated/api
 ```
@@ -148,26 +176,48 @@ pnpm exec openapi-sdkgen generate \
 
 ```ts
 // sdk-consumer/src/client.ts
-import { createClient } from "./generated/api";
+import { createClient } from "./generated/api/index.js";
+
+interface TextDelta {
+  readonly type: "text-delta";
+  readonly text: string;
+}
 
 const api = createClient({
   baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    'data: {"type":"text-delta","text":"Hello"}\n\n' +
+    'data: {"type":"text-delta","text":"world"}\n\n',
+    { headers: { "content-type": "text/event-stream" } },
+  ),
 });
 
 const stream = api.$operations.generate.stream({
   body: {
-    prompt: "릴리스 노트를 요약해줘.",
+    prompt: "Summarize the release notes.",
   },
 });
 
 for await (const event of stream) {
-  const payload = JSON.parse(event.data) as { type: "text-delta"; text: string };
-  process.stdout.write(payload.text);
+  const payload = JSON.parse(event.data) as TextDelta;
+  console.log(payload.text);
 }
 ```
 
-사용 애플리케이션은 `ai`나 모델 제공자 패키지를 가져오지 않습니다. 생성된
-SDK 명세와 타입이 지정된 이벤트를 사용하는 애플리케이션 코드만 필요합니다.
+프로젝트의 기존 빌드 도구로 실행하거나, 설치된 TypeScript 컴파일러로 아래와 같이
+확인할 수 있습니다. SDK 생성에는 컴파일러 설치가 필요하지 않습니다.
+
+```sh
+pnpm exec tsc --strict --target ES2022 --module NodeNext --moduleResolution NodeNext \
+  --lib ES2022,DOM,DOM.Iterable --outDir dist src/client.ts
+node dist/client.js
+```
+
+출력은 두 줄의 `Hello`, `world`입니다. 모의 SSE 응답으로 생성·타입 검사·스트림
+소비를 확인하며 AI 제공자를 호출하지 않습니다. 실제 서비스를 호출하려면 `fetch`를
+제거하고 `baseURL`을 서버 주소로 바꾸세요. 서버 프레임워크와 모델 설정은 별도로 필요합니다.
+
+
 
 <span id="sse-기본-mapping"></span>
 
@@ -182,8 +232,6 @@ JSON 데이터 직접 반환, 이름에 따른 이벤트 분기, 종료 표시, 
 SDK는 어댑터 결과에 애플리케이션 스키마를 적용합니다. 스트리밍 레퍼런스에서
 명시적 JSON 호환 어댑터 예제를 확인할 수 있습니다.
 
-서버가 AI 모델 제공자를 변경해도 생성된 클라이언트는 제공자별 의존성을
-가질 필요가 없습니다.
 
 프로토콜/어댑터 계약은 [스트리밍 API](../reference/streaming.md), 버전별 기능은
 [OpenAPI 지원 범위](../reference/capabilities.md)를 참고하세요.

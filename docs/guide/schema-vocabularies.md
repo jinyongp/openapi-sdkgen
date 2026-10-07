@@ -31,6 +31,10 @@ schema semantics.
 
 ## Create a manifest
 
+This guide assumes you already have a vocabulary compiler implementing the
+schema-extension protocol. The sample executable is not included. For ordinary
+OpenAPI schemas or SDK `x-*` options, no executable extension is needed.
+
 Register one or more vocabulary compilers in a version 1 JSON manifest:
 
 ```json
@@ -50,6 +54,10 @@ Register one or more vocabulary compilers in a version 1 JSON manifest:
 `command` may be relative to the manifest and resolves to an executable regular
 file. `sha256` matches the executable content. When the executable changes, update
 the trusted digest.
+
+For example, run `sha256sum ./bin/todo-schema-extension` on Linux and replace
+`<sha256-of-the-executable>` with the reported digest. Save the manifest as
+`todo-schema-extension.json` alongside the `bin` directory.
 
 The executable speaks the versioned JSON-RPC schema-extension protocol. It
 declares the vocabularies it handles and lowers matching schemas to a standard
@@ -103,8 +111,6 @@ Register executables you trust to run on the machine performing generation.
 The manifest and integrity lock pin the executable identity. Register trusted code
 because the extension runs with the permissions of the generation process.
 
-Generation diagnostics use the supported schema-extension protocol result. Arbitrary
-extension process output stays outside application diagnostics.
 
 For ordinary SDK-specific `x-*` fields such as
 [`x-pagination`](../reference/extensions.md#x-pagination) and

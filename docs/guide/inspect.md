@@ -1,8 +1,7 @@
 # Find APIs before generating an SDK
 
 Use `inspect` to browse an OpenAPI document, find operation IDs and routes, and
-copy the APIs you need into your generation configuration. This command is
-available starting with v10.0.0.
+copy the APIs you need into your generation configuration.
 
 ## Browse and filter {#browse}
 
@@ -134,11 +133,3 @@ Standard output contains the chosen result format; diagnostics go to standard
 error. Use `--diagnostics-format json` when a script also needs structured
 diagnostics. All flags and JSON fields are covered in the
 [CLI reference](../reference/cli.md#inspect).
-
-## Measured lookup times {#measurements}
-
-The table compares API lookup with full TypeScript call analysis using locally
-stored documents. Times are medians of three runs per provider and five runs
-for the small example. Memory shows the highest process RSS across those runs.
-
-<InspectMeasurements />

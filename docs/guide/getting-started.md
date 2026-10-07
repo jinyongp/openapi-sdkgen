@@ -1,33 +1,62 @@
 # Getting started
 
-[`openapi-sdkgen`](../reference/cli.md) generates application-owned TypeScript client source from an
-OpenAPI 3.x document. This guide starts with a small Todo API, generates the SDK
-into your application, and makes the first request.
+Generate an SDK from a small Todo document, then optionally run a call with a mock
+response. You can complete every step without an API server. The final step
+explains how to connect your own server.
 
-## 1. Install the CLI
+## 1. Prepare the environment and project
 
-For an application repository, installing the CLI as a development dependency
-keeps the generator version reproducible with the rest of the project:
+You need **Node.js 22 or later** and `pnpm`. The Node.js requirement applies to
+the npm CLI launcher. SDK generation does not require a TypeScript installation.
+Use your existing application toolchain to build the generated source; the optional
+call example below shows a standalone compiler setup.
+
+Start in an empty directory:
+
+```sh
+mkdir sdkgen-todo
+cd sdkgen-todo
+```
+
+Save this as `package.json`:
+
+```json
+{
+  "private": true,
+  "type": "module"
+}
+```
+
+### npm
+
+Install the CLI as a development dependency:
 
 ```sh
 pnpm add -D openapi-sdkgen
 pnpm exec openapi-sdkgen --version
 ```
 
-The commands below use `pnpm exec openapi-sdkgen`. Homebrew and GitHub Release
-installations can invoke `openapi-sdkgen` directly.
+### Homebrew
 
-For a one-off trial, run `pnpm dlx openapi-sdkgen ...`.
-
-On macOS or Linux, Homebrew is another installation option:
+On macOS or Linux, you can install through Homebrew:
 
 ```sh
 brew install jinyongp/tap/openapi-sdkgen
 ```
 
-## 2. Create a Todo OpenAPI document
+### Download an executable
 
-Save this as `openapi.yaml`:
+Download the executable for your platform from
+[GitHub Releases](https://github.com/jinyongp/openapi-sdkgen/releases) and put it
+on your `PATH`.
+
+With Homebrew or a downloaded executable, use `openapi-sdkgen` directly in the
+generation commands below. These CLI installations do not require Node.js;
+the optional call example uses Node.js to run the application.
+
+## 2. Save the Todo document
+
+Save this as `openapi.yaml`. It defines just two operations: list and create.
 
 ```yaml
 openapi: 3.2.0
@@ -84,12 +113,7 @@ components:
           type: boolean
 ```
 
-The document gives the two operations stable `operationId` values and declares
-the request and response shapes that will become TypeScript types.
-
-## 3. Generate into your application source
-
-Use the same command for the first generation and later updates:
+## 3. Generate the SDK
 
 ```sh
 pnpm exec openapi-sdkgen generate \
@@ -99,64 +123,79 @@ pnpm exec openapi-sdkgen generate \
   --incremental
 ```
 
-The generated directory contains normal application source, including the source
-runtime. Your existing TypeScript compiler or bundler builds it together with the
-rest of the application. Use TypeScript 5.7.3 or later with the ES2022 and DOM
-libraries. See [compiler support](../reference/typescript-types.md#compiler-support)
-for compiler requirements and supported versions.
+Generation succeeds when client source and types, including
+`src/generated/api/index.ts`, appear. `--incremental` creates the directory on the
+first run and safely updates it later. Regenerate generated files through the CLI.
+See [Generate and verify](./generate.md) for update conditions.
 
-`--incremental` creates a new managed directory when it is absent and safely
-updates it on later runs. Regenerate generator-owned files through the CLI. See
-[Generate and verify an SDK](./generate.md) for regeneration and CI workflows.
+## 4. Optional: verify calls with mock responses
 
-## 4. Create the client
+SDK generation is complete at step 3. To try a call, use your application's
+existing TypeScript setup. For an empty project without a compiler, optionally
+install one for the type-checking and compilation commands below:
 
-Create the generated client with
-[`createClient`](../reference/client-api.md#createclient):
-
-```ts
-import { createClient } from "./generated/api";
-
-const api = createClient({
-  baseURL: "https://api.example.test/v1",
-});
+```sh
+pnpm add -D typescript
 ```
 
-When the OpenAPI document declares usable Server Objects, omitting [`baseURL`](../reference/client-api.md#clientoptions) lets
-the generated client use those server definitions.
-
-::: details Running compiled output directly with Node ESM
-
-Vite, Next.js, Nuxt, and similar bundlers resolve the generated directory entry.
-For compiled output executed directly with Node ESM, import the explicit `index.js`
-file:
+Save this as `src/demo.ts`. The supplied `fetch` function returns `201` for creation
+and `200` for listing. This checks request construction and response decoding;
+the mock does not store data or send a network request.
 
 ```ts
 import { createClient } from "./generated/api/index.js";
-```
-:::
 
-## 5. Call the Todo API
+const todo = {
+  id: "todo-1",
+  title: "Write documentation",
+  completed: false,
+};
+async function mockFetch(
+  _input: RequestInfo | URL,
+  init?: RequestInit,
+) {
+  if (init?.method === "POST") return Response.json(todo, { status: 201 });
+  return Response.json({ items: [todo] }, { status: 200 });
+}
+const api = createClient({
+  baseURL: "https://api.example.test",
+  fetch: mockFetch,
+});
 
-[Resource methods](../reference/client-api.md#resource-methods) are the shortest interface for normal application code:
-
-```ts
 const created = await api.todos.create({
   body: { title: "Write documentation" },
 });
-
 const todos = await api.todos.list();
+console.log(created.title);
+console.log(todos.items.length);
 ```
 
-Every operation is also available through its exact HTTP route, and operations
-with an `operationId` are available through [`$operations`](../reference/client-api.md#operations):
+Type-check, compile, and run. `ES2022`, `DOM`, and `DOM.Iterable` provide types for
+the standard APIs used by the generated source.
 
-```ts
-await api.$routes["GET /todos"]();
-await api.$operations.listTodos();
+```sh
+pnpm exec tsc --strict --target ES2022 \
+  --module NodeNext --moduleResolution NodeNext \
+  --lib ES2022,DOM,DOM.Iterable --outDir dist src/demo.ts
+node dist/demo.js
 ```
 
-Continue with [Generate and verify an SDK](./generate.md) to learn about
-incremental generation, [`--check`](../reference/cli.md#fresh-incremental-and-check-modes), authenticated inputs, and remote references.
-Then see [Use the generated client](./client.md) for responses, Links, streams,
-and other call surfaces.
+Expected output:
+
+```text
+Write documentation
+1
+```
+
+Once you see this output, you have generated the SDK, type-checked the calls, and
+decoded mock responses.
+
+## 5. Connect a real API and continue
+
+Real calls need a server implementing this document's `GET /todos` and `POST /todos`.
+Replace `baseURL` with that server's API base address and remove `fetch: mockFetch`.
+`api.example.test` is a placeholder; the generator does not start an API server.
+
+- Call surfaces and error handling: [Use the generated client](./client.md)
+- Updates after document changes and CI checks: [Generate and verify](./generate.md)
+- Tokens and timeouts: [Authentication, transport, and streams](./transport.md)

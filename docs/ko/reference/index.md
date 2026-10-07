@@ -14,14 +14,3 @@ API, 옵션, 타입, OpenAPI 기능을 찾아볼 수 있는 문서입니다. 처
 | OpenAPI 3.0/3.1/3.2 지원 범위와 버전별 동작 | [OpenAPI 지원 범위](./capabilities.md) |
 | SDK 생성 성공 수와 문서별 결과 | [호환성 검증 결과](./compatibility.md) |
 | `x-pagination`, `x-envelope`, `x-sort`, 공개 범위, 오류 분류 | [OpenAPI `x-*` 확장](./extensions.md) |
-
-## 공개 API 경계
-
-**클라이언트 API**는 SDK를 사용하는 애플리케이션이 외부로 보내는 요청을
-다룹니다. **서버 API**는 `--with server`로 생성하며, 웹훅과 콜백을 수신하는
-데 사용합니다. 요청을 보내거나 받을 때 연속 데이터를 처리하는 방법은
-**스트리밍 API**에서 함께 설명합니다.
-
-OpenAPI 기능 지원 여부와 생성된 TypeScript API의 사용법은 각각 설명합니다.
-“OpenAPI 3.1에서도 가능한가?” 같은 질문은 [OpenAPI 지원 범위](./capabilities.md),
-TypeScript에서 어떻게 사용하는지는 위 API 레퍼런스에서 확인할 수 있습니다.

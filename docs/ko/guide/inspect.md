@@ -1,7 +1,7 @@
 # 생성할 API 찾기
 
 `inspect`로 OpenAPI 문서의 API 목록을 살펴보고, 필요한 API 식별자(`operationId`)와 경로를
-찾아 생성 설정에 옮길 수 있습니다. v10.0.0부터 사용할 수 있는 명령입니다.
+찾아 생성 설정에 옮길 수 있습니다.
 
 ## 목록 조회와 필터링 {#browse}
 
@@ -128,11 +128,3 @@ API 식별자가 선언되지 않았다면 `null`입니다. TypeScript 분석을
 표준 출력에는 선택한 형식의 결과가, 표준 오류에는 진단이 나옵니다. 진단도 JSON으로
 처리하려면 `--diagnostics-format json`을 지정하세요. 전체 옵션과 JSON 필드는
 [CLI 레퍼런스](../reference/cli.md#inspect)에서 확인할 수 있습니다.
-
-## 조회 시간 측정 {#measurements}
-
-로컬에 저장한 문서로 API 목록 조회와 전체 TypeScript 호출 경로 분석을 비교했습니다.
-시간은 제공자별 3회, 작은 예제는 5회 측정한 중앙값입니다. 메모리는 각 측정에서
-사용한 프로세스 메모리(RSS)의 최댓값입니다.
-
-<InspectMeasurements locale="ko" />

@@ -1,5 +1,9 @@
 # 생성된 서버 API
 
+이 페이지의 코드는 API 형태를 설명하는 예시입니다. API 이름·매개변수·미디어·인증은
+사용하는 명세에서 생성됩니다. [시작하기](../guide/getting-started.md)의 작은 Todo 명세에는
+아래 확장 기능이 모두 포함되어 있지 않습니다.
+
 TypeScript 서버 확장은 `--with server`로 생성합니다. OpenAPI 웹훅과
 콜백을 수신하기 위한 Fetch 기반 진입점을 제공합니다. HTTP 서버 리스너,
 프레임워크 연결, 경로 연결, 인증 정책은 애플리케이션이 담당합니다.
@@ -15,12 +19,6 @@ TypeScript 서버 확장은 `--with server`로 생성합니다. OpenAPI 웹훅�
 | `./generated/api/server/webhooks` | 웹훅 라우터와 생성된 웹훅 처리 함수 타입 |
 | `./generated/api/server/callbacks` | 콜백 엔드포인트와 생성된 콜백 처리 함수 타입 |
 | `./generated/api/server/runtime` | 지원하는 임의 스키마를 처리하는 범용 수신 디코딩·검증·응답 함수 |
-
-생성된 라우터는 각각 필요한 코덱을 사용합니다. 범용 실행 함수를 직접 가져오면
-전체 코덱이 포함되며 기존 함수 시그니처는 유지됩니다.
-자세한 내용은 [실행 코드 선택](../guide/selective-client.md#api에-필요한-실행-코드만-생성하기)을 참고하세요.
-
-<span id="webhook"></span>
 
 ## 웹훅
 
@@ -111,7 +109,7 @@ const callbacks = createCallbackHandlers({
 ```ts
 interface CallbackHandlerOptions {
   readonly pathParams?: {
-    // 생성된 콜백별 경로 매개변수 값
+    // generated callback-specific path parameter values
   };
   readonly authenticate?: Authenticate;
   readonly codecs?: Readonly<Record<string, MediaCodec<unknown>>>;
@@ -131,6 +129,11 @@ interface CallbackHandlerOptions {
 요청을 거부할 때 `Response`를 반환할 수 있습니다.
 
 HTTP 서버와 프레임워크의 인증·세션 시스템은 애플리케이션에서 구성합니다.
+
+`authenticate`는 인증이 필요한 API에서만 호출합니다. `security: []`나 빈 대안
+`{}`로 익명 접근을 허용하면 생략하며, 인증이 필요한 API에 함수가 없으면 `401`을
+반환합니다. 명세의 인증 선언과 기대 응답은
+[실행 가능한 웹훅 예제](../examples/webhook-server.md)에서 확인하세요.
 
 <span id="framework-연결"></span>
 

@@ -22,11 +22,12 @@ and authentication policy.
 The same OpenAPI schemas used by the client are used to parse and validate
 inbound requests before typed values reach your handlers.
 
-Generated routers connect only the runtime features required by their inbound
-contracts. The `server/runtime` helper entry still supports arbitrary supported
-schemas and includes the full codec set. A JSON-only router does not import
-that generic helper implementation. The server add-on leaves client artifacts
-unchanged, so importing the client does not load inbound codecs.
+Adding server code preserves the client usage shown in the basic guide.
+
+The starter Todo contract has no inbound operations. The Webhook snippets
+below use the contract from the [Webhook example](../examples/webhook-server.md).
+Callbacks and streams require the separate declarations described in their
+sections. Start by checking the example's `204`, `401`, and `400` responses.
 
 ## Receive a Todo Webhook
 
@@ -51,6 +52,9 @@ const handlers: WebhookHandlers = {
 
 Map the Webhook name to the application path that receives it:
 
+For the secured example contract, also supply `authenticate` as shown in the
+next section. Without it, the router returns `401` before invoking the handler.
+
 ```ts
 const router = createWebhookRouter(handlers, {
   routes: {
@@ -70,7 +74,8 @@ Authentication of incoming Webhooks is a host responsibility. If the OpenAPI
 inbound operation is secured, provide an authenticator that verifies the
 request before the body reaches the application handler.
 
-For a signature-style Todo webhook:
+For the example's header API key, load `expectedToken` from your application
+secret store. Keep the example's OpenAPI `security` declaration:
 
 ```ts
 const router = createWebhookRouter(handlers, {
@@ -78,7 +83,7 @@ const router = createWebhookRouter(handlers, {
     todoCompleted: "/webhooks/todos/completed",
   },
   authenticate: ({ request }) =>
-    request.headers.get("x-todo-signature") === expectedSignature
+    request.headers.get("x-webhook-token") === expectedToken
       ? undefined
       : new Response("Unauthorized", { status: 401 }),
 });
@@ -87,6 +92,9 @@ const router = createWebhookRouter(handlers, {
 Generated code interprets the declared OpenAPI security requirements and
 credential locations. The application handles identity, authorization policy,
 secret lookup, and signature verification.
+
+`authenticate` runs only for operations requiring authentication. Operations
+with `security: []` or an empty `{}` alternative allow anonymous access and skip it.
 
 Malformed input is rejected before your handler receives a typed value.
 
@@ -166,36 +174,15 @@ the same [`StreamCodec`](../reference/streaming.md#streamcodec) model as the out
 Built-in SSE validates Event objects against the declared `itemSchema` and
 preserves string `data`. JSON application payloads use an explicit
 [`StreamAdapter`](../reference/streaming.md#streamadapter) to parse/stringify
-that field. This adapter also selects named `todo` events while reusing the
-built-in SSE protocol:
+that field.
+
+Use the [stream adapter reference](../reference/streaming.md#streamadapter)
+to implement the application-owned `todoAdapter` used below.
 
 ```ts
-import type {
-  ServerSentEvent,
-  StreamAdapter,
-} from "./generated/api";
-
-const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      if (event.event !== "todo") continue;
-      yield JSON.parse(event.data) as TodoEvent;
-    }
-  },
-  async *encode(items) {
-    for await (const item of items) {
-      yield { event: "todo", data: JSON.stringify(item) };
-    }
-  },
-};
-
 const router = createWebhookRouter(handlers, {
-  routes: {
-    todoCompleted: "/webhooks/todos/completed",
-  },
-  streamCodecs: {
-    "text/event-stream": { adapter: todoAdapter },
-  },
+  routes: { todoCompleted: "/webhooks/todos/completed" },
+  streamCodecs: { "text/event-stream": { adapter: todoAdapter } },
   maxStreamFrameBytes: 256 * 1024,
 });
 ```
@@ -205,23 +192,6 @@ before it reaches the handler. Use [`StreamProtocol`](../reference/streaming.md#
 sequential media type needs its own byte framing. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes) limits
 one wire frame before adaptation. The same [`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs) and frame-limit
 options are available to [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers).
-
-## Generated server artifacts
-
-The server artifact set owns OpenAPI-specific decoding, validation, typed
-handler contracts, and Fetch-native request/response handling.
-
-## Application responsibilities
-
-The application owns:
-
-- the HTTP listener and framework integration;
-- public route configuration;
-- authentication, identity, and authorization;
-- secrets and credential storage;
-- retries or delivery semantics outside the OpenAPI request contract.
-
-For OpenAPI documents limited to outbound calls, use the base client artifact set.
 
 See [OpenAPI support](../reference/capabilities.md) for version-specific Webhook
 and Callback support, [Generated server API](../reference/server-api.md) for the

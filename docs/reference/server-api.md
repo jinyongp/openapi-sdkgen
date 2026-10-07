@@ -1,5 +1,9 @@
 # Generated server API
 
+Code on this page illustrates API shapes. Operation names, parameters, media,
+and security come from your own contract. The small Todo contract in
+[Getting started](../guide/getting-started.md) does not include every feature below.
+
 The TypeScript server add-on is generated with `--with server`. It provides
 Fetch-native entry points for receiving OpenAPI Webhooks and Callbacks. The
 application still owns the HTTP listener, framework integration, route mounting,
@@ -15,10 +19,6 @@ For a guided setup, see
 | `./generated/api/server/webhooks` | Webhook router and generated Webhook handler types |
 | `./generated/api/server/callbacks` | Callback endpoints and generated Callback handler types |
 | `./generated/api/server/runtime` | Generic inbound decoding, validation, and response helpers for arbitrary supported schemas |
-
-Generated routers use their own required codec set. Importing the generic
-runtime helpers explicitly retains the full codec set; their function signatures
-remain compatible. See [runtime selection](../guide/selective-client.md#runtime-features-follow-the-generated-apis).
 
 ## Webhooks
 
@@ -128,6 +128,12 @@ verified and can return a `Response` to reject the request.
 
 The generated code does not create a network listener and does not choose a
 framework authentication/session system.
+
+The authenticator runs only when the operation requires security and does not
+allow anonymous access. `security: []` or a `{}` alternative skips it. A secured
+operation without `authenticate` returns `401`. See the
+[runnable Webhook example](../examples/webhook-server.md) for the matching
+security declaration and expected responses.
 
 ## Framework integration
 

@@ -72,30 +72,57 @@ paths:
 `itemSchema` describes the standard SSE Event object. Its `data` string contains
 a text-delta payload, validated by `contentSchema` before the client yields it.
 
-## 2. Server: use the AI SDK behind the API
+<span id="_2-server-use-the-ai-sdk-behind-the-api"></span>
+
+## 2. Server: connect your AI implementation
 
 The server can use the AI SDK internally without exposing that dependency to SDK
 consumers. `src/model.ts` is application-owned provider configuration.
 
+This section is integration code. Install `ai` and your provider package,
+export a configured `model` from `src/model.ts`, and route `POST /generate`
+to `handleGenerate` in your HTTP host. To test only the consumer, use the
+mock response in step 4.
+
+Use an ESM project (`"type": "module"`). Node servers also need `@types/node`;
+AI SDK type dependencies may require `@types/json-schema`. Follow your chosen
+provider's installation instructions for credentials and model configuration.
+
 ```ts
 // ai-service/src/server.ts
 import { streamText } from "ai";
-import { model } from "./model";
+import { model } from "./model.js";
 
-export async function handleGenerate(request: Request): Promise<Response> {
-  const { prompt } = await request.json() as { prompt: string };
-  const result = streamText({ model, prompt });
+export async function handleGenerate(request: Request) {
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+  if (typeof input !== "object" || input === null ||
+      !("prompt" in input) || typeof input.prompt !== "string") {
+    return new Response("Expected a prompt string", { status: 400 });
+  }
+  const result = streamText({
+    model, prompt: input.prompt, abortSignal: request.signal,
+    onError: ({ error }) => { console.error(error); },
+  });
   const encoder = new TextEncoder();
 
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
-      for await (const text of result.textStream) {
-        const event = { type: "text-delta", text };
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-        );
+      try {
+        for await (const text of result.textStream) {
+          const event = { type: "text-delta", text };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+          );
+        }
+        controller.close();
+      } catch (error: unknown) {
+        controller.error(error);
       }
-      controller.close();
     },
   });
 
@@ -123,9 +150,13 @@ for the AI-side streaming API used by the server.
 
 The consumer repository only needs the OpenAPI contract and openapi-sdkgen:
 
+In a separate consumer project, use the installation and ESM setup from
+[Getting started](../guide/getting-started.md) and save step 1 as `openapi.yaml`.
+Add `--incremental` to the command when updating an existing generated directory.
+
 ```sh
 pnpm exec openapi-sdkgen generate \
-  --input https://api.example.test/openapi.yaml \
+  --input ./openapi.yaml \
   --target typescript \
   --output ./src/generated/api
 ```
@@ -137,10 +168,20 @@ It preserves `data` as a string and validates the declared embedded JSON shape.
 
 ```ts
 // sdk-consumer/src/client.ts
-import { createClient } from "./generated/api";
+import { createClient } from "./generated/api/index.js";
+
+interface TextDelta {
+  readonly type: "text-delta";
+  readonly text: string;
+}
 
 const api = createClient({
   baseURL: "https://api.example.test",
+  fetch: async () => new Response(
+    'data: {"type":"text-delta","text":"Hello"}\n\n' +
+    'data: {"type":"text-delta","text":"world"}\n\n',
+    { headers: { "content-type": "text/event-stream" } },
+  ),
 });
 
 const stream = api.$operations.generate.stream({
@@ -150,14 +191,26 @@ const stream = api.$operations.generate.stream({
 });
 
 for await (const event of stream) {
-  const payload = JSON.parse(event.data) as { type: "text-delta"; text: string };
-  process.stdout.write(payload.text);
+  const payload = JSON.parse(event.data) as TextDelta;
+  console.log(payload.text);
 }
 ```
 
-The consumer does not import `ai` or a model provider package. Its dependencies
-are the generated SDK contract and whatever application code consumes the typed
-events.
+Run with your application's existing build tool, or use an installed TypeScript
+compiler for this standalone check. Compiler installation is optional for SDK generation.
+
+```sh
+pnpm exec tsc --strict --target ES2022 --module NodeNext --moduleResolution NodeNext \
+  --lib ES2022,DOM,DOM.Iterable --outDir dist src/client.ts
+node dist/client.js
+```
+
+Expected output is `Hello` and `world` on separate lines. The mock SSE response
+checks generation, compilation, and stream consumption without a model call.
+For the real service, remove `fetch` and replace `baseURL` with its address.
+The server framework and model configuration must be supplied separately.
+
+
 
 ## Default SSE mapping
 
@@ -170,8 +223,6 @@ such as direct JSON payload output, named-event routing, terminal markers, or
 frame aggregation. Adapter output is validated against the SDK application
 schema. The streaming reference includes an explicit JSON compatibility adapter.
 
-The server remains free to change AI providers, and the generated client stays
-free of provider-specific dependencies.
 
 See [Streaming API](../reference/streaming.md) for the protocol/adapter contract
 and [OpenAPI support](../reference/capabilities.md) for version-specific

@@ -8,53 +8,14 @@ of its TypeScript types, so changing the application's selection does not
 require regenerating the SDK. To reduce the generated files themselves, choose
 the APIs during generation as described below.
 
-## Runtime features follow the generated APIs
-
-The generator includes runtime handlers required by the generated API set.
-A JSON-only document does not generate XML, multipart, SSE, or unrelated security
-and asserted-format handlers. Request bodies, response bodies, headers,
-parameters, schema references, and private Link targets all contribute to this
-decision. Schema validation remains enabled for every declared constraint.
-
-The generator also emits validation and DTO transformation for each prepared
-schema contract. Ordinary JSON shares validation algorithms while retaining each
-contract's property names, bounds and reference targets as separate data; advanced
-contracts connect their required shared operators. Programs and descriptor data
-are shared across operations and named clients when equivalent. The generic schema
-interpreter is retained for explicitly imported arbitrary-schema helpers.
-Bare references and single-key scalar descriptors stay in their existing owner
-to avoid adding a data file and import for a very small contract. Preparation
-caches the shared algorithms instead of regenerating them for each contract.
-
-Buffered JSON APIs with schema-based path, query and header parameters automatically use
-a smaller HTTP implementation. Query serializers are generated only when a
-contract declares query parameters. Content-based parameters, cookie parameters,
-response headers, multiple request body representations, and advanced media retain
-the general implementation. General buffered requests also omit response-stream
-handling when no operation requires framing or streaming. These paths share
-the same schema validators, server selection, raw responses, error provenance,
-cancellation, and security handling. No lightweight setting is required.
-
-The regular root client uses the union of its APIs' requirements. Named entries
-and prepared operations use their own requirements, so a JSON operation can avoid
-XML code even when another operation in the SDK needs it. `[selection]` also
-removes unselected operations and their exclusive runtime files at generation
-time. There is no separate list of runtime features to maintain.
-
-Some contracts intentionally retain more code: multipart parts may select XML
-through their incoming `Content-Type`, and schema content or dynamic references
-may require handlers beyond the outer JSON representation. XML schema metadata
-alone does not require an XML codec for an ordinary JSON body. With
-`--with server`, generic server helpers retain support for arbitrary supported
-schemas; generated callback and webhook routers use their own feature sets.
-Adding that add-on does not change the client artifacts or pull those generic
-helpers into a browser client bundle.
-
-See the [released-provider comparison](./selection-benchmarks.md#released-providers)
-for the v10 baseline and all deployed chunks, and the [small API measurement](./selection-benchmarks.md#small-api-runtime)
-for the default entry's source and bundle sizes and a reproducible command.
+<span id="runtime-features-follow-the-generated-apis"></span>
 
 ## Generate only the APIs you need {#generation}
+
+To try the examples on this page, save the
+[Task example document](/examples/task-selection.json) as `openapi.yaml` in a
+separate project with the installation and ESM setup from Getting started.
+JSON is accepted regardless of the filename extension.
 
 To assign different API sets to separate import paths, use
 [clients for each feature](./named-clients.md). The selection below controls the
@@ -73,7 +34,7 @@ output = "./src/generated/api"
 
 [selection]
 operations = ["listTasks"]
-routes = ["GET /tasks/{task-id}"]
+routes = ["GET /health"]
 ```
 
 Run `openapi-sdkgen generate --config ./openapi-sdkgen.toml` with this file.
@@ -107,16 +68,18 @@ against the requested set without changing it.
 The CLI also accepts repeatable `--operation` and `--route` flags. See the
 [CLI reference](../reference/cli.md#api-selection) for overrides and syntax.
 
-The examples below assume a document with `GET /tasks` (`operationId: listTasks`)
+The examples below assume a document with `GET /tasks` (`operationId: listTasks`, optional integer query `limit`)
 and `GET /health` (no operation ID). Generate the SDK as described in
 [Generate and verify](./generate.md). Compile the generated TypeScript to ESM
 JavaScript before serving it directly to a browser.
+Include all generated `.ts` files in your compiler input, for example with
+`"include": ["src/**/*.ts"]` in `tsconfig.json`. Namespace lookups load modules
+dynamically, so compiling only a consumer entry does not emit the complete tree.
 
 ## Prepare code, then configure a client {#prepare}
 
-For generated source, deployed chunks, compressed bytes, and preparation time,
-see [Compare selection costs](./selection-benchmarks.md). Static operation imports
-and dynamic lookups have different deployment costs.
+See [Choose a selection method](./selection-benchmarks.md) to compare generation,
+static imports, and dynamic lookups.
 
 ```ts
 import {
@@ -176,6 +139,7 @@ import {
 import tasks from "./tasks.operations.js";
 
 const api = createClient({
+  baseURL: "https://api.example.test/v1",
   operations: await loadOperations([tasks, routes["GET /health"]]),
 });
 await api.$operations.listTasks({ query: { limit: 20 } });
@@ -210,6 +174,7 @@ methods are optional and must be checked before use:
 const candidates = [operations.listTasks, routes["GET /health"]];
 const selection = candidates.filter(() => Math.random() > 0.5);
 const dynamic = createClient({
+  baseURL: "https://api.example.test/v1",
   operations: await loadOperations(selection),
 });
 
@@ -235,7 +200,7 @@ const taskRoutes = Object.entries(allRoutes)
   .map(([, operation]) => operation);
 
 const preparedTasks = await loadOperations(taskRoutes);
-const api = createClient({ operations: preparedTasks });
+const api = createClient({ baseURL: "https://api.example.test/v1", operations: preparedTasks });
 await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
@@ -298,16 +263,13 @@ CORS responses.
 
 Deploy each generated revision under a versioned asset URL and retain the old
 revision while existing pages can still use it. Do not replace individual files
-in place with a different generated revision. The loader checks generation and
-protocol compatibility, but those checks are not authentication or a substitute
-for trusted script hosting.
+in place with a different generated revision.
 
 `OperationPreparationError` from the selective entry exposes `stage` (`INPUT`,
 `MODULE_LOAD`, `IDENTITY`, or `BINDING`) and retains the original cause when one
 is available. A native import failure does not always reveal an HTTP status or
 whether the cause was CSP, offline access, or a missing file; use the browser's
-network diagnostics. Application getter exceptions are not converted into a
-claim about their safety.
+network diagnostics.
 
 Measure initial preparation, subsequent feature preparation, the first Link
 invocation, and repeat visits separately. Shared code is reused, but a selection

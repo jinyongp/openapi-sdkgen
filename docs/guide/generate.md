@@ -7,6 +7,9 @@ Use it in CI, an editor, or a pre-commit task.
 Examples below use [`openapi-sdkgen`](../reference/cli.md) directly. If the CLI is installed as a
 project dependency, prefix the command with `pnpm exec`.
 
+If you already completed Getting started, go straight to
+[regeneration](#regenerate-an-existing-sdk). Use fresh generation only for a new output directory.
+
 ## Create a fresh generated directory
 
 The normal command creates a new managed output directory:
@@ -24,12 +27,6 @@ OpenAPI version information. Fresh generation creates a new output directory.
 Generated source belongs to the application repository. Regenerate generator-owned
 files through the CLI; managed-output validation detects manual edits. Generation
 publishes the output atomically after the full operation succeeds.
-
-To also export the original document for documentation tools or custom scripts,
-add [`--with metadata`](../reference/cli.md#metadata-addon). This includes the
-whole entry document, even when generating selected APIs. See
-[metadata migration](../reference/client-api.md#metadata-migration) before
-regenerating code that reads `openapi.document` with the next major release.
 
 ## Regenerate an existing SDK
 
@@ -54,9 +51,6 @@ An incremental run:
 - stops if an owned generated file was edited, the manifest is invalid, a new
   generated path conflicts with an unmanaged file, or another writer holds the
   output lock.
-
-For a self-contained local input whose generation fingerprint still matches,
-an unchanged incremental run can also skip compilation and emission.
 
 ## Check generation
 
@@ -102,173 +96,24 @@ compilation in a clean checkout. `--incremental` works for both the first build
 and later builds. A check with no output directory verifies that the input can
 generate; it does not compare files that have not been generated yet.
 
-## Use diagnostics in CI and tools
+## Check the CI result
 
-Human-readable diagnostics are the default. Tooling can request the stable,
-versioned JSON report through [`--diagnostics-format`](../reference/cli.md#diagnostics):
+A successful check exits with `0`; generation failures or file drift exit non-zero.
+`--check` does not compile TypeScript or call your API. Run the application's type
+checks and tests after generation validation.
 
-```sh
-openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --check \
-  --diagnostics-format json 2> diagnostics.json
-```
+Use `--diagnostic-mode collect` to see several issues in one run. Add
+`--diagnostics-format json` only when a CI tool needs to parse diagnostics.
+See the [CLI diagnostics reference](../reference/cli.md#diagnostics) for the format
+and failure-reporting contracts.
 
-The report contains `schemaVersion`, severity counts, and diagnostics with issue
-locations, messages, and stable `id` values. The current JSON contract is
-`schemaVersion: 4`. Tooling that persists or parses diagnostic JSON should branch
-on `schemaVersion`. Diagnostic source names
-are sanitized before rendering; URL credentials, queries, and fragments are
-removed from the report.
+## Other inputs and optional features
 
-Use `--diagnostic-mode collect` to inventory independent issues in one run.
-Collection continues with the checks that remain possible. Blocking diagnostics
-produce a non-zero exit and stop SDK generation. The default is `fail-fast`.
+| Task | Next page |
+| --- | --- |
+| URLs, stdin, document credentials, remote reference locks | [Remote documents and references](./remote-inputs.md) |
+| Add Webhook or Callback receivers | [Receive Webhooks and Callbacks](./server.md) |
+| Export the original OpenAPI document | [Metadata option](../reference/cli.md#metadata-addon) |
+| Handle custom JSON Schema vocabularies | [Schema vocabularies](./schema-vocabularies.md) |
 
-When an operation remains generated but loses only its TypeScript resource API
-shortcut because resource members collide, generation reports
-`SDKGEN-W513` and keeps the exact `$operations` / `$routes` surface. Use
-`--fail-on-resource-omission` in CI when that capability loss should block
-generation. The matching project-config key is
-`fail_on_resource_omission = true`.
-
-Exit status reports the result: zero means the requested check succeeded; a
-non-zero status reports generation diagnostics, drift, or an operational error.
-
-Unexpected internal failures print the failing stage and a sanitized cause to
-stderr, followed by the path to a local `.tmp/runs/internal-error-*/diagnostic.json`
-report. The report contains the generator version and a bounded error chain;
-it does not copy the input document, arguments, or environment. URL credentials,
-queries and fragments, recognized credential fields, and known secret environment
-values are removed before display and storage. The report directory and file use
-owner-only permissions on systems that support them. If saving the report fails,
-stderr still shows the original cause and the storage error. Internal failure
-messages are plain text, including when `--diagnostics-format json` is selected;
-that option controls the structured generation diagnostics.
-
-## Choose the input source
-
-[`--input`](../reference/cli.md#input-source-options) accepts a local JSON/YAML file, a `file://` URL, an HTTP(S) URL, or
-`-` for stdin.
-
-```sh
-# Local file
-openapi-sdkgen generate --input ./openapi.yaml --target typescript --check
-
-# Development server
-openapi-sdkgen generate \
-  --input http://localhost:4010/openapi.json \
-  --target typescript \
-  --check
-
-# Standard input
-curl https://api.example.test/openapi.yaml | \
-  openapi-sdkgen generate \
-    --input - \
-    --input-base https://api.example.test/openapi.yaml \
-    --target typescript \
-    --check
-```
-
-[`--input-base`](../reference/cli.md#input-source-options) supplies the location used to resolve relative references from
-stdin. File and URL inputs already have their own base location.
-
-## Read a protected OpenAPI URL
-
-Pass protected input credentials through environment variables. This keeps secret
-values out of command-line arguments. [`--http-header-env`](../reference/cli.md#authenticated-http-s-input) maps a request header to the name of an environment variable,
-and the generator reads its value internally:
-
-```sh
-export OPENAPI_TOKEN='Bearer example-token'
-
-openapi-sdkgen generate \
-  --input https://api.internal.example/openapi.yaml \
-  --http-header-env Authorization=OPENAPI_TOKEN \
-  --target typescript \
-  --check
-```
-
-`Authorization=OPENAPI_TOKEN` means “read the `OPENAPI_TOKEN` environment
-variable.” `$OPENAPI_TOKEN` and `${OPENAPI_TOKEN}` are shell-expansion forms;
-this option expects the environment-variable name itself.
-
-For a one-command environment assignment:
-
-```sh
-OPENAPI_TOKEN='Bearer example-token' \
-  openapi-sdkgen generate \
-    --input https://api.internal.example/openapi.yaml \
-    --http-header-env Authorization=OPENAPI_TOKEN \
-    --target typescript \
-    --check
-```
-
-The environment variable contains the complete header value, including `Bearer`
-when the scheme requires it. Header mappings may be repeated and require an
-`https://` root input; plaintext `http://` inputs are rejected before a request
-is opened. The CLI also rejects transport-controlled headers such as `Host`,
-`Cookie`, and `Proxy-Authorization`.
-
-For mTLS or a private CA, use [`--tls-client-cert`, `--tls-client-key`, and `--tls-ca-file`](../reference/cli.md#authenticated-http-s-input). Provide the client certificate and key together. Mapped headers, client certificates, and private CA settings are scoped to the root
-OpenAPI origin. Only same-origin requests receive them.
-
-## Use remote `$ref` values reproducibly
-
-Root OpenAPI URL loading and cross-origin `$ref` fetching use separate controls.
-Cross-origin remote references require an explicit allowlist.
-
-On the first run, use [`--allow-remote-ref`](../reference/cli.md#remote-ref-options) for each exact HTTPS origin and [`--update-ref-lock`](../reference/cli.md#remote-ref-options) to update the integrity lock:
-
-```sh
-openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --allow-remote-ref https://schemas.example.test \
-  --update-ref-lock \
-  --output ./src/generated/api
-```
-
-For a local root file, the default lock path is
-`<input>.openapi-sdkgen.lock`. Later runs omit [`--update-ref-lock`](../reference/cli.md#remote-ref-options) and verify
-remote content against the lock before generation continues.
-
-[`--offline`](../reference/cli.md#remote-ref-options) resolves references only from the locked local cache and performs no
-network fetches. Use [`--ref-lock <path>`](../reference/cli.md#remote-ref-options) when you need an explicit lock
-location, including URL/stdin workflows that cannot derive one from a local
-input filename.
-
-The root OpenAPI URL is trusted only at its exact original origin (scheme, host,
-and port). Redirects must stay on that origin, so use the final canonical root
-URL rather than relying on a cross-origin redirect. Authentication configured
-for the root URL is scoped to the same boundary. Cross-origin remote references
-remain separately authorized through `--allow-remote-ref`.
-
-## Generate inbound Webhook and Callback code
-
-The base TypeScript target generates an outbound client. For Webhooks or Callbacks
-that your application receives, add the optional server artifact set:
-
-```sh
-openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --with server \
-  --output ./src/generated/api
-```
-
-[`--with server`](../reference/cli.md#typescript-server-add-on) adds Fetch-native handler/router entry points. Your application
-connects them to its HTTP listener, framework, routes, and deployment environment. See [Receive Webhooks and Callbacks](./server.md).
-
-For documents limited to outbound operations, use the base client artifact set.
-
-## Required custom JSON Schema vocabularies
-
-A document that declares a required custom JSON Schema vocabulary needs a trusted
-local [`--schema-extension`](../reference/cli.md#schema-extensions). OpenAPI `x-*` fields configure SDK convenience features.
-
-See [Custom JSON Schema vocabularies](./schema-vocabularies.md) for extension
-configuration, executable verification, and permissions.
-
-For a compact lookup of every flag, see the [CLI reference](../reference/cli.md).
+Once the SDK is ready, continue with [client usage](./client.md) for calls and error handling.

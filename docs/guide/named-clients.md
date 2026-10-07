@@ -2,10 +2,13 @@
 
 When different pages use different parts of an API, assign each page's APIs to a
 named client. Each client gets its own import path and exposes only its assigned
-API methods and types. Runtime code, operation implementations, and required
-models are shared between clients, including APIs selected by several clients.
+API methods and types.
 
 ## Assign APIs to clients
+
+Try the [named-client example document](/examples/named-clients.json) in a
+separate project. Save it as `openapi.yaml` and use the installation and ESM
+setup from Getting started. JSON content is accepted with this filename.
 
 This example assumes an OpenAPI document with `listOrders`, `createOrder`, and
 `GET /products/{id}`. All clients use the same input document and generation
@@ -78,8 +81,8 @@ combine pages into one chunk also combine their dependencies.
 
 ## Root SDK and generation scope
 
-See [Compare selection costs](./selection-benchmarks.md) for generation and
-deployment measurements against the root entry and `loadOperations`.
+See [Choose a selection method](./selection-benchmarks.md) to compare named
+clients, root selection, and `loadOperations`.
 
 Without a root selection, the root SDK exposes the union of the named clients' selections. Assign each API once in its named client configuration:
 
@@ -90,7 +93,9 @@ Without a root selection, the root SDK exposes the union of the named clients' s
 | Named clients without `[selection]` | The root SDK exposes their selected API union |
 | Neither named clients nor `[selection]` | The root SDK exposes the full document |
 
-Generation includes only APIs selected by the root or named clients and their required Link dependencies. Shared implementations are generated once; each named entry exposes its own selection. An ordinary `[selection]` without named clients follows the same generation rule.
+Generation includes APIs selected by the root or named clients and their required
+Link dependencies. An ordinary `[selection]` without named clients follows the
+same generation rule.
 
 For example, add `[selection]` with `operations = ["listOrders"]` if the root SDK
 should expose only order listing. The catalog client still exposes its selected

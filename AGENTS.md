@@ -42,10 +42,21 @@ and reuse it, or derive a view with indexed, mapped, or utility types. Avoid
 copying its fields into another declaration; separate public schema identities
 keep their own contracts.
 
+Documentation usage examples rely on inferred return and variable types. Explicit
+types belong in examples that teach type APIs or require an input contract.
+TypeScript installation is optional for SDK generation; show compiler setup only
+with optional type-checking steps.
+Public documentation focuses on product usage, choices, constraints, and
+troubleshooting. Keep internal development commands, worktree paths, implementation
+history, and test-suite bookkeeping in internal development documentation.
+Public benchmark results come from GitHub Actions and link to the measured run.
+Keep personal machine specifications out of prose, downloads, and build assets.
+
 ## Documentation
 
 Korean documentation uses natural Korean for general concepts in prose, headings,
-navigation, tables, example comments, and page UI. Exact code identifiers,
+navigation, tables, and page UI. Code blocks, including comments, sample values,
+and expected output, use the same English examples in every locale. Exact code identifiers,
 commands, and literal values use inline code; product and standard names keep
 their official spelling. Review each Korean page as native writing.
 

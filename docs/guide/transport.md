@@ -3,6 +3,15 @@
 The generated client uses Fetch as its transport boundary. Most applications configure a base URL and credentials. Configure a custom transport for runtime-specific capabilities such as a cookie jar,
 access to restricted response headers, or mutual TLS.
 
+The ordinary authorization, cookie, and cancellation examples use the
+[Getting started](./getting-started.md) contract. Import `createClient` from
+`./generated/api/index.js`. Security alternatives and declared headers require
+the contract additions shown in their sections.
+
+Each contract addition is an independent variation of the original starter
+document. Use your actual token and server address for network calls.
+
+
 ## Provide ordinary Bearer credentials
 
 When one Bearer credential is enough for the operation, pass the complete
@@ -30,13 +39,32 @@ more than one effective requirement is available, the generated request options
 require [`securityRequirement`](../reference/client-api.md#security-requirements) so the application chooses which alternative it
 is satisfying.
 
-For a Todo update operation that accepts either `userAuth` or `serviceAuth`:
+For `createTodo`, add these fields to the starter contract and regenerate with
+`--incremental`. Keep its existing request and response schemas:
+
+```yaml
+# Merge securitySchemes into components, and security into /todos POST.
+components:
+  securitySchemes:
+    userAuth:
+      type: http
+      scheme: bearer
+    serviceAuth:
+      type: apiKey
+      in: header
+      name: x-service-token
+paths:
+  /todos:
+    post:
+      security:
+        - userAuth: []
+        - serviceAuth: []
+```
 
 ```ts
-await api.$operations.updateTodo(
+await api.$operations.createTodo(
   {
-    path: { todoID: "todo-1" },
-    body: { completed: true },
+    body: { title: "Write documentation" },
   },
   {
     securityRequirement: "userAuth",
@@ -55,6 +83,9 @@ ID `"anonymous"` when it participates in a choice.
 Use [`securityProvider`](../reference/client-api.md#clientoptions) when credentials are acquired dynamically for the
 selected requirement.
 
+`getTodoServiceToken` and `getTodoUserToken` are application-owned token lookup
+functions that you must supply. This example uses the two schemes above.
+
 ```ts
 const api = createClient({
   baseURL: "https://api.example.test",
@@ -64,7 +95,7 @@ const api = createClient({
     }
     if (requirement.id === "serviceAuth") {
       return {
-        serviceAuth: {
+        [requirement.id]: {
           kind: "api-key",
           value: await getTodoServiceToken(operation, origin),
         },
@@ -72,7 +103,7 @@ const api = createClient({
     }
 
     return {
-      userAuth: {
+      [requirement.id]: {
         kind: "http-bearer",
         token: await getTodoUserToken(operation, origin),
       },
@@ -116,12 +147,22 @@ capability.
 
 Headers declared as OpenAPI parameters are generated under [`headerParams`](../reference/client-api.md#request-headers).
 
+Add this `parameters` field to `/todos` → `post` in the starter contract and regenerate:
+
+```yaml
+parameters:
+  - name: Idempotency-Key
+    in: header
+    required: true
+    schema:
+      type: string
+```
+
 ```ts
 await api.$operations.createTodo({
-  headerParams: { "Idempotency-Key": requestID },
+  headerParams: { "Idempotency-Key": "request-1" },
   body: {
     title: "Write documentation",
-    callbackUrl: "https://app.example.test/todo-status",
   },
 });
 ```
@@ -134,33 +175,25 @@ and `Sec-*`, including whether caller-provided values can be applied.
 [`ClientOptions.transport`](../reference/client-api.md#clientoptions) supplies a Fetch-compatible function and its supported capabilities.
 
 ```ts
+import { createClient } from "./generated/api/index.js";
+
+async function loggingFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const response = await fetch(input, init);
+  console.log(response.status);
+  return response;
+}
+
 const api = createClient({
   baseURL: "https://api.example.test",
-  transport: {
-    fetch: undiciFetch,
-    capabilities: {
-      cookieJar: true,
-      readableResponseHeaders: ["set-cookie"],
-      mutualTLS: true,
-    },
-  },
+  transport: { fetch: loggingFetch },
 });
 ```
 
-Environment-specific request behavior can also live in the transport:
+`capabilities.cookieJar`, `readableResponseHeaders`, and `mutualTLS` describe
+features already implemented by the transport. Setting them does not install a
+cookie jar or configure client certificates. Configure those features in the
+host transport first.
 
-```ts
-const api = createClient({
-  baseURL: "https://api.example.test",
-  transport: {
-    async fetch(input, init = {}) {
-      const headers = new Headers(init.headers);
-      headers.set("Origin", trustedOrigin);
-      return fetch(input, { ...init, headers });
-    },
-  },
-});
-```
 
 ## Cancel a request or set a timeout
 
@@ -170,7 +203,7 @@ const api = createClient({
 const controller = new AbortController();
 
 const todos = await api.todos.list(
-  { query: { completed: false } },
+  {},
   { signal: controller.signal, timeoutMS: 5_000 },
 );
 ```
@@ -201,40 +234,10 @@ one wire frame, record, or multipart part before application adaptation.
 
 ### Adapt a built-in protocol
 
-Built-in SSE returns Event objects and preserves `data` as a string. Use
-[`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter) to parse
-JSON application payloads and stringify them when encoding. This adapter also
-routes only named `todo` events while reusing the SSE parser:
-
-```ts
-import type { ServerSentEvent, StreamAdapter } from "./generated/api";
-
-const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      if (event.event !== "todo") continue;
-      yield JSON.parse(event.data) as TodoEvent;
-    }
-  },
-  async *encode(items) {
-    for await (const item of items) {
-      yield { event: "todo", data: JSON.stringify(item) };
-    }
-  },
-};
-
-const api = createClient({
-  baseURL,
-  streamCodecs: {
-    "text/event-stream": { adapter: todoAdapter },
-  },
-});
-```
-
-A request can override the client media-type default with
-[`streamCodec`](../reference/streaming.md#requestoptions-streamcodec).
-Adapter output is validated and projected through the operation's declared
-`itemSchema`.
+Built-in SSE preserves `data` as a string. Use the
+[stream adapter example](../reference/streaming.md#streamadapter) to convert JSON
+or select named events. Set `streamCodec` for one request or `streamCodecs`
+for the entire client.
 
 ### Define custom framing
 

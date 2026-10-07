@@ -14,7 +14,7 @@ const codeThemeValues = codeThemes.map((theme) => theme.value);
 const translations = {
   en: {
     heading: "SDK Playground",
-    description: "Load an OpenAPI document and inspect generated source in your browser.",
+    description: "Choose an example to inspect generated types and methods. This playground generates source; it does not call your API.",
     target: "Target",
     examples: "OpenAPI samples",
     yourDocument: "Your document",
@@ -40,7 +40,7 @@ const translations = {
     authPrivacy: "Credentials stay in memory only and are cleared when you change documents or reload the page. Authenticated redirects are blocked.",
     localNetwork: "Allow local network access",
     localNetworkHelp: "May show a browser permission prompt. The source server must still allow CORS.",
-    privacy: "Files stay in this browser. URL loading requires CORS access.",
+    privacy: "Files stay in this browser. URL loading requires CORS. Use a self-contained document; external references and CLI add-ons require local generation.",
     generatedFiles: "Generated files",
     generatedCode: "Generated code",
     colorTheme: "Color theme",
@@ -67,7 +67,7 @@ const translations = {
   },
   ko: {
     heading: "SDK 플레이그라운드",
-    description: "OpenAPI 문서를 불러와 브라우저에서 생성된 소스를 확인하세요.",
+    description: "예제를 선택해 생성된 타입과 메서드를 확인하세요. 플레이그라운드는 소스를 생성하며 API를 호출하지 않습니다.",
     target: "대상",
     examples: "OpenAPI 예제",
     yourDocument: "내 문서",
@@ -93,7 +93,7 @@ const translations = {
     authPrivacy: "인증 정보는 메모리에만 유지되며 문서를 변경하거나 페이지를 새로고침하면 제거됩니다. 인증 요청의 리디렉션은 차단됩니다.",
     localNetwork: "로컬 네트워크 접근 허용",
     localNetworkHelp: "브라우저 권한 요청이 표시될 수 있습니다. 원본 서버의 CORS 허용도 필요합니다.",
-    privacy: "파일은 이 브라우저 안에서만 처리됩니다. URL은 CORS 접근을 허용해야 합니다.",
+    privacy: "파일은 이 브라우저 안에서만 처리됩니다. URL은 CORS 접근이 필요합니다. 외부 참조 없는 문서를 사용하세요. 외부 참조와 CLI 확장은 로컬에서 생성합니다.",
     generatedFiles: "생성된 파일",
     generatedCode: "생성된 코드",
     colorTheme: "색상 테마",

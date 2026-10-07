@@ -1,8 +1,10 @@
 # OpenAPI support
 
 openapi-sdkgen reads OpenAPI 3.0.x, 3.1.x, and 3.2.x documents and interprets
-features according to the version declared by the document. Generation is fail-closed: when the selected TypeScript target cannot represent a
-used feature safely, the command reports the OpenAPI location and stops.
+features according to the version declared by the document. Unsupported declarations produce diagnostics with their OpenAPI location.
+Document-wide errors stop generation; problems scoped to an operation or call
+surface can omit that scope while generating the supported remainder. See
+[diagnostics](./cli.md#diagnostics) for omission effects and CI failure controls.
 
 This page summarizes the main public capability groups. For generation
 workflows and flags, use the [CLI reference](./cli.md).
@@ -39,13 +41,6 @@ The TypeScript target generates types and executable client behavior for:
 Operations can be called through generated resource methods, exact
 `"METHOD /path"` routes, or `operationId` values. See
 [Use the generated client](../guide/client.md).
-
-XML object unions preserve the declared branch constraints and property mappings.
-Multipart encodes each part with its declared media codec, including JSON string
-quoting, asynchronous custom encoders, and per-part headers. Header schemas are
-validated as a whole, including composed object and scalar/array alternatives.
-Generated runtime handlers follow these contracts and their schema dependencies;
-see [runtime feature selection](../guide/selective-client.md#runtime-features-follow-the-generated-apis).
 
 ## Servers and security
 
@@ -103,29 +98,12 @@ conveniences. Custom JSON Schema vocabulary extensions handle schema semantics.
 
 See [OpenAPI x-* extensions](./extensions.md).
 
-## Feature coverage
+## Generation errors and omitted features
 
-The project maintains executable feature evidence for supported OpenAPI
-versions. The documentation site focuses on how to use supported behavior;
-generation diagnostics determine compatibility for a particular document and
-installed version.
-
-Compatibility is scope-aware. A warning with `effect: omit-operation` or
-`effect: omit-capability` means that complete surface is intentionally absent
-while the remaining safe SDK may still be generated. A diagnostic with
-`effect: block` prevents the selected target from being emitted.
-
-For example, a path-template/path-Parameter name mismatch is reported as
-`COMP-PARAM-005` and omits only the malformed operation. In OAS 3.0/3.1, an
-explicit operation Security Requirement that names an undeclared scheme is
-`COMP-SEC-001` and is also operation-scoped; the same defect at root security
-is document-blocking. sdkgen never renames path parameters or invents security
-schemes to recover these inputs. OAS 3.2 Security Requirement keys first match
-exact component names, then resolve same-document URI fragments and local
-Security Scheme aliases. Credentials still use the resolved component name.
-Malformed escapes, missing or non-security targets, reference cycles, and
-external Security Scheme URI targets are rejected; URI resolution does not
-fetch another document.
+Diagnostics identify unsupported declarations and their document locations.
+`effect: block` stops generation. `effect: omit-operation` removes an affected
+API, and `effect: omit-capability` removes an affected helper while allowing
+the rest of the SDK to generate. See [diagnostics](./cli.md#diagnostics).
 
 ## Compatibility evidence
 

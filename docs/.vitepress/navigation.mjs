@@ -26,8 +26,16 @@ const sidebarGroups = [
         labels: { en: "Generate and verify", ko: "SDK 생성과 검증" },
       },
       {
+        route: "/guide/remote-inputs",
+        labels: { en: "Remote documents and references", ko: "원격 명세와 참조" },
+      },
+      {
         route: "/guide/client",
         labels: { en: "Call your API", ko: "클라이언트로 API 호출" },
+      },
+      {
+        route: "/guide/files-links-streams",
+        labels: { en: "Files, Links, and streams", ko: "파일·Link·스트림" },
       },
       {
         route: "/guide/named-clients",
@@ -39,7 +47,7 @@ const sidebarGroups = [
       },
       {
         route: "/guide/selection-benchmarks",
-        labels: { en: "Compare selection costs", ko: "선택 방식별 비용 비교" },
+        labels: { en: "Choose a selection method", ko: "선택 방식 고르기" },
       },
       {
         route: "/guide/transport",

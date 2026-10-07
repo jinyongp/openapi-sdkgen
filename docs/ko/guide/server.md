@@ -22,13 +22,11 @@ openapi-sdkgen generate \
 클라이언트와 같은 OpenAPI 스키마를 사용해 수신 요청을 파싱하고 검증한 뒤
 타입이 지정된 값을 처리 함수에 전달합니다.
 
-생성된 라우터에는 수신 계약에 필요한 실행 기능만 연결합니다.
-`server/runtime`의 범용 helper는 지원하는 임의 스키마를 처리할 수 있도록 전체
-코덱을 유지합니다. JSON만 받는 라우터에서는 이 범용 구현을 가져오지 않습니다.
-서버 부가 기능을 켜도 클라이언트 생성물은 바뀌지 않으므로 클라이언트를 가져온다고
-수신용 코덱이 함께 로드되지는 않습니다.
+서버 코드를 추가해도 클라이언트 사용법은 같습니다.
 
-<span id="todo-webhook-수신"></span>
+시작하기의 Todo 명세에는 수신 계약이 없습니다. 아래 웹훅 코드는
+[웹훅 수신 예제](../examples/webhook-server.md)의 명세를 사용합니다. 콜백과 스트림은
+각 절에 설명한 별도 선언이 필요합니다. 처음에는 예제의 `204`·`401`·`400` 응답부터 확인하세요.
 
 ## Todo 웹훅 수신
 
@@ -65,6 +63,8 @@ const response = await router.fetch(request);
 
 프레임워크 어댑터는 들어온 요청을 Fetch `Request`로 바꾸고
 `router.fetch(request)`를 호출한 뒤 결과 Fetch `Response`를 반환하면 됩니다.
+예제 명세에는 인증이 선언되어 있으므로 다음 절의 `authenticate`도 지정해야 합니다.
+생략하면 처리 함수를 호출하기 전에 `401`을 반환합니다.
 
 <span id="inbound-요청-인증"></span>
 
@@ -74,7 +74,8 @@ const response = await router.fetch(request);
 API에 인증이 선언돼 있다면 본문을 처리 함수에 넘기기 전에 요청을
 검증하는 인증 함수를 제공합니다.
 
-Todo 웹훅에 서명을 확인한다고 가정하면:
+웹훅 예제의 헤더 API 키를 검사한다면 `expectedToken`을 애플리케이션의 비밀
+저장소에서 가져오세요. 예제 명세의 `security` 선언도 함께 사용합니다.
 
 ```ts
 const router = createWebhookRouter(handlers, {
@@ -82,7 +83,7 @@ const router = createWebhookRouter(handlers, {
     todoCompleted: "/webhooks/todos/completed",
   },
   authenticate: ({ request }) =>
-    request.headers.get("x-todo-signature") === expectedSignature
+    request.headers.get("x-webhook-token") === expectedToken
       ? undefined
       : new Response("Unauthorized", { status: 401 }),
 });
@@ -91,6 +92,9 @@ const router = createWebhookRouter(handlers, {
 생성 코드는 선언된 OpenAPI 인증 요구 사항과 인증 정보 위치를 해석합니다.
 애플리케이션은 사용자 식별, 접근 권한 정책, 비밀 값 조회, 서명 검증을
 담당합니다.
+
+`authenticate`는 인증이 필요한 API에서만 호출합니다. `security: []` 또는 빈
+인증 대안 `{}`로 익명 접근을 허용하면 호출하지 않습니다.
 
 잘못된 수신 입력은 타입이 지정된 값으로 처리 함수에 전달되기 전에 거부됩니다.
 
@@ -177,36 +181,14 @@ OpenAPI 3.2 수신 본문에 `itemSchema`가 있으면 생성된 처리 함수�
 기본 SSE는 선언된 `itemSchema`로 이벤트 객체를 검증하며 `data`를 문자열로
 보존합니다. JSON 애플리케이션 데이터는 해당 필드를 파싱하고 문자열로 변환하는
 명시적 [`StreamAdapter`](../reference/streaming.md#streamadapter)를 사용합니다.
-아래 어댑터는 기본 SSE 프로토콜을 재사용하면서 이름이 `todo`인 이벤트도
-선택합니다.
+
+어댑터의 타입과 구현은 [스트림 어댑터 레퍼런스](../reference/streaming.md#streamadapter)를
+참고하세요. 아래 `todoAdapter`는 그 방식으로 만든 애플리케이션 값 변환기입니다.
 
 ```ts
-import type {
-  ServerSentEvent,
-  StreamAdapter,
-} from "./generated/api";
-
-const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      if (event.event !== "todo") continue;
-      yield JSON.parse(event.data) as TodoEvent;
-    }
-  },
-  async *encode(items) {
-    for await (const item of items) {
-      yield { event: "todo", data: JSON.stringify(item) };
-    }
-  },
-};
-
 const router = createWebhookRouter(handlers, {
-  routes: {
-    todoCompleted: "/webhooks/todos/completed",
-  },
-  streamCodecs: {
-    "text/event-stream": { adapter: todoAdapter },
-  },
+  routes: { todoCompleted: "/webhooks/todos/completed" },
+  streamCodecs: { "text/event-stream": { adapter: todoAdapter } },
   maxStreamFrameBytes: 256 * 1024,
 });
 ```
@@ -216,26 +198,6 @@ const router = createWebhookRouter(handlers, {
 필요하면 [`StreamProtocol`](../reference/streaming.md#streamprotocol)을 사용합니다. [`maxStreamFrameBytes`](../reference/streaming.md#maxstreamframebytes)는 어댑터
 적용 전의 전송 프레임 하나를 제한합니다. [`createCallbackHandlers`](../reference/server-api.md#createcallbackhandlers)도 같은
 [`streamCodecs`](../reference/streaming.md#clientoptions-streamcodecs)와 프레임 크기 제한 옵션을 제공합니다.
-
-<span id="generated-server-artifact"></span>
-
-## 생성된 서버 코드의 역할
-
-서버 코드는 OpenAPI에 따른 디코딩, 검증, 타입이 지정된 처리 함수
-계약, Fetch 기반 요청·응답 처리를 담당합니다.
-
-## 애플리케이션 책임
-
-애플리케이션은 다음 항목을 담당합니다.
-
-- HTTP 서버 리스너와 프레임워크 연결
-- 공개 경로 설정
-- 인증, 사용자 식별, 접근 권한 관리
-- 비밀 값과 인증 정보 저장
-- OpenAPI 요청 명세에 포함되지 않은 재시도·전달 정책
-
-OpenAPI 문서가 외부 호출 API만 설명한다면 기본 클라이언트 코드를
-사용합니다.
 
 버전별 웹훅/콜백 지원 범위는 [OpenAPI 지원 범위](../reference/capabilities.md),
 생성된 수신 API는 [생성된 서버 API](../reference/server-api.md), 수신

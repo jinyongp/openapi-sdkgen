@@ -6,6 +6,14 @@
 
 <span id="일반-bearer-credential-전달"></span>
 
+아래 일반 인증·쿠키·취소 예제는 [시작하기](./getting-started.md)의 명세를
+사용합니다. 코드에서 `createClient`는 `./generated/api/index.js`에서 가져오세요.
+인증 대안과 선언된 헤더 예제는 해당 절의 명세 확장이 필요합니다.
+
+각 절의 명세 확장은 원래 시작 명세에 각각 적용하는 독립 예시입니다.
+실제 요청에서는 토큰과 서버 주소를 애플리케이션의 값으로 바꾸세요.
+
+
 ## 일반 Bearer 인증 정보 전달
 
 API에 하나의 Bearer 인증 정보만 필요하다면 완성된 `Authorization` 헤더
@@ -35,13 +43,32 @@ OpenAPI는 하나의 API에 여러 인증 요구 사항 객체를 선언할 수
 [`securityRequirement`](../reference/client-api.md#security-requirement)를 요구하며, 애플리케이션이 어느 대안을 충족할지
 선택합니다.
 
-Todo 수정 API가 `userAuth`와 `serviceAuth` 중 하나를 허용한다면:
+시작 명세의 `createTodo`에 아래 필드를 추가하고 `--incremental`로 다시 생성합니다.
+기존 요청·응답 스키마는 유지하세요.
+
+```yaml
+# Merge securitySchemes into components, and security into /todos POST.
+components:
+  securitySchemes:
+    userAuth:
+      type: http
+      scheme: bearer
+    serviceAuth:
+      type: apiKey
+      in: header
+      name: x-service-token
+paths:
+  /todos:
+    post:
+      security:
+        - userAuth: []
+        - serviceAuth: []
+```
 
 ```ts
-await api.$operations.updateTodo(
+await api.$operations.createTodo(
   {
-    path: { todoID: "todo-1" },
-    body: { completed: true },
+    body: { title: "Write documentation" },
   },
   {
     securityRequirement: "userAuth",
@@ -62,16 +89,19 @@ SDK가 자동 선택합니다. 빈 인증 요구 사항이 다른 대안과 함�
 선택된 인증 요구 사항에 맞춰 인증 정보를 동적으로 가져와야 한다면
 [`securityProvider`](../reference/client-api.md#clientoptions)를 사용합니다.
 
+`getTodoServiceToken`과 `getTodoUserToken`은 애플리케이션이 구현하는 토큰 조회
+함수입니다. 아래 예제는 앞 절의 두 인증 스키마를 사용하며 이 함수를 별도로 제공해야 합니다.
+
 ```ts
 const api = createClient({
   baseURL: "https://api.example.test",
   securityProvider: async ({ operation, requirement, origin }) => {
     if (origin !== "https://api.example.test") {
-      throw new Error("허용하지 않은 API 출처입니다");
+      throw new Error("Untrusted API origin");
     }
     if (requirement.id === "serviceAuth") {
       return {
-        serviceAuth: {
+        [requirement.id]: {
           kind: "api-key",
           value: await getTodoServiceToken(operation, origin),
         },
@@ -79,7 +109,7 @@ const api = createClient({
     }
 
     return {
-      userAuth: {
+      [requirement.id]: {
         kind: "http-bearer",
         token: await getTodoUserToken(operation, origin),
       },
@@ -128,12 +158,22 @@ const api = createClient({
 
 OpenAPI 매개변수로 선언된 헤더는 [`headerParams`](../reference/client-api.md#request-headers)에 생성됩니다.
 
+시작 명세의 `/todos` → `post`에 아래 `parameters`를 추가하고 다시 생성하세요.
+
+```yaml
+parameters:
+  - name: Idempotency-Key
+    in: header
+    required: true
+    schema:
+      type: string
+```
+
 ```ts
 await api.$operations.createTodo({
-  headerParams: { "Idempotency-Key": requestID },
+  headerParams: { "Idempotency-Key": "request-1" },
   body: {
-    title: "문서 작성",
-    callbackUrl: "https://app.example.test/todo-status",
+    title: "Write documentation",
   },
 });
 ```
@@ -148,33 +188,23 @@ await api.$operations.createTodo({
 [`ClientOptions.transport`](../reference/client-api.md#clientoptions)는 Fetch와 호환되는 함수와 지원하는 추가 기능을 제공합니다.
 
 ```ts
+import { createClient } from "./generated/api/index.js";
+
+async function loggingFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const response = await fetch(input, init);
+  console.log(response.status);
+  return response;
+}
+
 const api = createClient({
   baseURL: "https://api.example.test",
-  transport: {
-    fetch: undiciFetch,
-    capabilities: {
-      cookieJar: true,
-      readableResponseHeaders: ["set-cookie"],
-      mutualTLS: true,
-    },
-  },
+  transport: { fetch: loggingFetch },
 });
 ```
 
-실행 환경에 특화된 요청 동작도 전송 구현에 둘 수 있습니다.
-
-```ts
-const api = createClient({
-  baseURL: "https://api.example.test",
-  transport: {
-    async fetch(input, init = {}) {
-      const headers = new Headers(init.headers);
-      headers.set("Origin", trustedOrigin);
-      return fetch(input, { ...init, headers });
-    },
-  },
-});
-```
+`capabilities.cookieJar`, `readableResponseHeaders`, `mutualTLS`은 전송 구현이
+이미 제공하는 기능을 알리는 설정입니다. 값을 지정하는 것만으로 쿠키 저장소나
+클라이언트 인증서가 구성되지는 않습니다. 해당 기능은 호스트 전송 구현에서 먼저 준비하세요.
 
 <span id="요청-취소와-timeout"></span>
 
@@ -186,7 +216,7 @@ const api = createClient({
 const controller = new AbortController();
 
 const todos = await api.todos.list(
-  { query: { completed: false } },
+  {},
   { signal: controller.signal, timeoutMS: 5_000 },
 );
 ```
@@ -220,44 +250,11 @@ OpenAPI 3.2에서는 `itemSchema`로 각 항목의 타입을 지정해 순차적
 
 ### 기본 프로토콜에 어댑터 적용
 
-기본 SSE는 이벤트 객체를 반환하고 `data`를 문자열로 보존합니다.
-JSON 애플리케이션 데이터를 파싱하고 인코딩할 때 문자열로 변환하려면
-[`StreamAdapter<Frame, Item>`](../reference/streaming.md#streamadapter)를
-지정합니다. 아래 어댑터는 기본 SSE 파서를 재사용하면서 이름이 `todo`인 이벤트도
-선택합니다.
-
-```ts
-import type { ServerSentEvent, StreamAdapter } from "./generated/api";
-
-const todoAdapter: StreamAdapter<ServerSentEvent, TodoEvent> = {
-  async *decode(events) {
-    for await (const event of events) {
-      if (event.event !== "todo") continue;
-      yield JSON.parse(event.data) as TodoEvent;
-    }
-  },
-  async *encode(items) {
-    for await (const item of items) {
-      yield { event: "todo", data: JSON.stringify(item) };
-    }
-  },
-};
-
-const api = createClient({
-  baseURL,
-  streamCodecs: {
-    "text/event-stream": { adapter: todoAdapter },
-  },
-});
-```
-
-한 번의 요청에서 클라이언트 미디어 타입 기본값을 바꾸려면
-[`streamCodec`](../reference/streaming.md#requestoptions-streamcodec)을
-사용합니다. 어댑터 결과는 API의 `itemSchema`로 검증한 뒤 생성된 타입에 맞게
-변환합니다.
+기본 SSE의 `data`는 문자열입니다. JSON 값 변환이나 이름별 이벤트 선택이 필요하면
+[스트림 어댑터 예제](../reference/streaming.md#streamadapter)를 사용하세요.
+한 요청의 설정을 바꾸려면 `streamCodec`, 클라이언트 전체에는 `streamCodecs`를 지정합니다.
 
 <span id="사용자-정의-framing"></span>
-
 ### 사용자 정의 프레임 처리
 
 사용자 정의 순차형 미디어의 프레임 구분 규칙을 구현하려면

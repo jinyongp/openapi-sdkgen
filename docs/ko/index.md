@@ -4,7 +4,7 @@ layout: home
 hero:
   name: openapi-sdkgen
   text: OpenAPI에서 SDK 소스 생성
-  tagline: OpenAPI 3.0, 3.1, 3.2 문서로 애플리케이션에서 사용할 SDK 소스를 생성합니다. 현재 버전은 TypeScript 코드 생성을 지원합니다.
+  tagline: OpenAPI 3.0, 3.1, 3.2 문서로 애플리케이션에서 사용할 SDK 소스를 생성합니다. 생성한 TypeScript 코드를 애플리케이션 소스로 관리합니다.
   actions:
     - theme: brand
       text: 시작하기
@@ -27,38 +27,16 @@ features:
     details: 응답에 이어지는 API 호출과 웹훅·콜백 수신에 필요한 코드를 생성합니다.
 ---
 
-## TypeScript SDK 생성하기
+## 명세에서 호출까지
 
-현재 버전은 TypeScript 코드 생성을 지원합니다. 다음처럼 `--target typescript`를
-지정하면 SDK 소스를 만들 수 있습니다.
+명세를 저장하고 SDK를 생성한 뒤 애플리케이션에서 불러옵니다. API 서버는 별도로
+준비합니다. [시작하기](./guide/getting-started.md)는 서버 없이 모의 응답으로 첫 호출을
+확인할 수 있는 완결된 예제입니다.
 
-```sh
-openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --output ./src/generated/api
-```
-
-출력 디렉터리에는 클라이언트, 요청·응답 타입, 실행 코드가 생성됩니다.
-생성된 클라이언트는 일반 TypeScript 모듈처럼 불러와 사용할 수 있습니다.
-
-```ts
-import { createClient } from "./generated/api";
-
-const api = createClient({
-  baseURL: "https://api.example.test/v1",
-});
-
-const todo = await api.todos.create({
-  body: { title: "문서 작성" },
-});
-```
-
-현재 TypeScript 사용 흐름은 [시작하기](./guide/getting-started.md)에서 확인할 수
-있습니다. 생성과 CI 검증은 [SDK 생성과 검증](./guide/generate.md),
-기능별 지원 범위는 [OpenAPI 지원 범위](./reference/capabilities.md)를
-참고하세요.
-
-현재 버전에서 제공하는 API와 연동 예제는
-[레퍼런스](./reference/index.md)와 [예제](./examples/index.md)에 정리되어
-있습니다.
+| 하려는 작업 | 읽을 문서 |
+| --- | --- |
+| 처음 생성하고 결과 실행하기 | [시작하기](./guide/getting-started.md) |
+| 명세 변경을 반영하고 CI에서 검사하기 | [SDK 생성과 검증](./guide/generate.md) |
+| 요청을 보내고 응답·오류 처리하기 | [클라이언트 사용](./guide/client.md) |
+| 파일·스트림·웹훅 연동하기 | [사용 예제](./examples/index.md) |
+| 특정 옵션과 지원 조건 찾기 | [레퍼런스](./reference/index.md) |
