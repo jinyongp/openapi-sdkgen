@@ -96,6 +96,14 @@ from the Go suite. `test:dev` still runs every Go test across all compilers.
 
 ## Release documentation review
 
+Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.
+`release/series.sh` sets the first version and the ancestry boundary; version
+selection ignores tags on or before that boundary while retaining all historical
+tags. Subsequent releases use ordinary SemVer bumps within the new series.
+Homebrew keeps `version_scheme: 1` in its product spec so existing installations
+recognize the new series as an upgrade. Stable npm releases explicitly publish
+to `latest`, and stable GitHub Releases are marked latest.
+
 Before publication, compare the public CLI help and generated exports with the
 English and Korean guides and references. Confirm that released features are
 described as available, examples use working first-run and repeat-run commands,

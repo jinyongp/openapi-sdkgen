@@ -209,6 +209,36 @@ fi
 assert_contains "$output" "Release requires a clean working tree"
 [[ "$(git -C "$repository" rev-parse HEAD)" == "$clean_head" ]] || fail "dirty tree caused preparation"
 
+# Restart numbering without replacing historical tags, then keep ordinary bumps.
+git -C "$repository" restore -- README.md
+git -C "$repository" tag -a v11.0.4 -m v11.0.4
+cp "$ROOT/scripts/release/series.sh" "$repository/scripts/release/series.sh"
+git -C "$repository" add scripts/release/series.sh
+git -C "$repository" commit -m "chore: restart release numbering" >/dev/null
+git -C "$repository" push --follow-tags origin main >/dev/null
+output="$(run_release --since v11.0.4 --dry-run)"
+assert_contains "$output" "Tag          v1.2.0"
+output="$(run_release --since v11.0.4 --dry-run patch)"
+assert_contains "$output" "Tag          v1.2.0"
+if output="$(run_release --since v11.0.4 --dry-run v1.1.2 2>&1)"; then
+  fail "accepted a version below the new series first release"
+fi
+assert_contains "$output" "Tag must be at least v1.2.0"
+output="$(run_release --since v11.0.4 --dry-run v1.2.0-rc.1)"
+assert_contains "$output" "Release checks passed. No tag or push was created."
+output="$(run_release --since v11.0.4 --yes v1.2.0)"
+assert_contains "$output" "created and pushed tag v1.2.0"
+git -C "$repository" rev-parse --verify refs/tags/v11.0.4 >/dev/null || fail "lost historical tag"
+git -C "$repository" commit --allow-empty -m "fix: new series update" >/dev/null
+git -C "$repository" push origin main >/dev/null
+output="$(run_release --since v1.2.0 --dry-run patch)"
+assert_contains "$output" "Last stable tag v1.2.0"
+assert_contains "$output" "Tag          v1.2.1"
+if output="$(run_release --since v1.2.0 --dry-run v1.2.0 2>&1)"; then
+  fail "accepted an existing version in the new series"
+fi
+assert_contains "$output" "Tag must be newer than reachable tag v1.2.0"
+
 # Execute the workflow's retry step with real checksums and a mocked release API.
 assets_step="$test_root/assets-step.sh"
 python3 - "$ROOT/.github/workflows/release.yml" "$assets_step" <<'PY'

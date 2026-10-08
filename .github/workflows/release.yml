@@ -81,6 +81,16 @@ jobs:
           fetch-depth: 0
       - name: Verify immutable tag target
         run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
+      - name: Select stable npm dist-tag
+        if: ${{ !contains(needs.validate-release.outputs.tag, '-') }}
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const path = "npm/package.json";
+          const manifest = JSON.parse(readFileSync(path, "utf8"));
+          manifest.publishConfig = { ...manifest.publishConfig, tag: "latest" };
+          writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+          JS
       - name: Publish npm package through Releaseway
         id: npm
         uses: releaseway/npm-actions@269fbdeac83fed2df2880915726ed91edbe1bbdd # v0.4.0
@@ -95,7 +105,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [validate-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@4bbfa6aafc92a6cb8e823a51d54a6573237e0a76 # v0.2.0
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@e64441c78495e1511140ae328e5601a448189056 # v0.3.0
     permissions:
       contents: read
     with:
@@ -167,6 +177,7 @@ jobs:
           tag: ${{ needs.validate-release.outputs.tag }}
           commit: ${{ needs.validate-release.outputs.commit }}
           prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
+          latest: ${{ contains(needs.validate-release.outputs.tag, '-') && 'false' || 'true' }}
           notes: standard
           upload-concurrency: "4"
           assets: |

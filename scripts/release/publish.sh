@@ -17,6 +17,11 @@ cd "$ROOT"
 . "${SCRIPT_DIR}/../lib/ui.sh"
 source "${SCRIPT_DIR}/../lib/commands.sh"
 set -- "${SCRIPT_ARGS[@]}"
+RELEASE_BASE_TAG=""
+RELEASE_FIRST_TAG="v0.1.0"
+if [[ -f "$SCRIPT_DIR/series.sh" ]]; then
+  source "$SCRIPT_DIR/series.sh"
+fi
 
 hide_cursor() {
   if [ -t 2 ] && [ "$CURSOR_HIDDEN" -eq 0 ]; then
@@ -157,18 +162,26 @@ semver_is_greater() {
   done
 }
 
+release_tags() {
+  local args=(--merged HEAD --list 'v*' --sort=-v:refname)
+  if [[ -n "$RELEASE_BASE_TAG" ]]; then
+    args+=(--no-merged "${RELEASE_BASE_TAG}^{commit}")
+  fi
+  git tag "${args[@]}"
+}
+
 get_latest_tag() {
   local latest="" candidate
   while IFS= read -r candidate; do
     [[ "$candidate" =~ $TAG_REGEX ]] || continue
     validate_prerelease "$candidate"
     if [[ -z "$latest" ]] || semver_is_greater "$candidate" "$latest"; then latest="$candidate"; fi
-  done < <(git tag --merged HEAD --list 'v*')
+  done < <(release_tags)
   printf '%s\n' "$latest"
 }
 
 get_latest_stable_tag() {
-  git tag --merged HEAD --list 'v*' --sort=-v:refname | while IFS= read -r candidate; do
+  release_tags | while IFS= read -r candidate; do
     if [[ "$candidate" =~ $STABLE_TAG_REGEX ]]; then printf '%s\n' "$candidate"; return; fi
   done
 }
@@ -737,6 +750,18 @@ if ! sync_tags; then
   ui_error "Failed to fetch tags from origin; aborting to avoid releasing from stale local tags."
   exit 1
 fi
+if [[ ! "$RELEASE_FIRST_TAG" =~ $STABLE_TAG_REGEX ]]; then
+  ui_error "Release series first tag must be stable SemVer: $RELEASE_FIRST_TAG"
+  exit 1
+fi
+if [[ -n "$RELEASE_BASE_TAG" ]] && {
+  [[ ! "$RELEASE_BASE_TAG" =~ $STABLE_TAG_REGEX ]] ||
+  ! git rev-parse --verify "refs/tags/${RELEASE_BASE_TAG}^{commit}" >/dev/null 2>&1 ||
+  ! git merge-base --is-ancestor "${RELEASE_BASE_TAG}^{commit}" HEAD;
+}; then
+  ui_error "Release series base must be an existing stable tag reachable from HEAD: $RELEASE_BASE_TAG"
+  exit 1
+fi
 if ! git show-ref --verify --quiet refs/remotes/origin/main || ! git merge-base --is-ancestor origin/main HEAD; then
   ui_error "local main is behind or diverged from origin/main."
   exit 1
@@ -769,7 +794,7 @@ LATEST_RELEASE_TAG="$(get_latest_tag || true)"
 if [ -n "$LATEST_TAG" ]; then
   RANGE="${LATEST_TAG}..HEAD"
 else
-  RANGE="HEAD"
+  RANGE="$(commit_range_since "$RELEASE_BASE_TAG")"
 fi
 
 ui_section "Release base"
@@ -795,8 +820,8 @@ PATCH_TAG=""
 if [ -z "$TAG_INPUT" ]; then
   if [ -z "$LATEST_RELEASE_TAG" ]; then
     ui_section "First release"
-    ui_kv "Tag" "v0.1.0"
-    PATCH_TAG="v0.1.0"
+    ui_kv "Tag" "$RELEASE_FIRST_TAG"
+    PATCH_TAG="$RELEASE_FIRST_TAG"
   elif [[ "$LATEST_RELEASE_TAG" == *-* ]]; then
     PATCH_TAG="${LATEST_RELEASE_TAG%%-*}"
     ui_section "Prerelease promotion"
@@ -822,7 +847,7 @@ fi
 ui_section "Release notes base"
 if [ -n "$LATEST_PUBLISHED_TAG" ]; then
   ui_kv "Last published release" "$LATEST_PUBLISHED_TAG"
-  if [ "$LATEST_PUBLISHED_TAG" != "$LATEST_TAG" ]; then
+  if [ -n "$LATEST_TAG" ] && [ "$LATEST_PUBLISHED_TAG" != "$LATEST_TAG" ]; then
     ui_kv "Latest tag" "${LATEST_TAG} (unpublished; included below)"
   fi
 else
@@ -839,7 +864,7 @@ fi
 case "$TAG_INPUT" in
   patch|minor|major)
     if [ -z "$LATEST_RELEASE_TAG" ]; then
-      PATCH_TAG="v0.1.0"
+      PATCH_TAG="$RELEASE_FIRST_TAG"
     else
       read -r MAJOR MINOR PATCH <<<"$(semver_from_tag "$LATEST_RELEASE_TAG")"
     PATCH_TAG="$(next_version "$MAJOR" "$MINOR" "$PATCH" "$TAG_INPUT")"
@@ -859,6 +884,11 @@ case "$TAG_INPUT" in
     PATCH_TAG="$TAG_INPUT"
     ;;
 esac
+
+if semver_is_greater "$RELEASE_FIRST_TAG" "${PATCH_TAG%%-*}"; then
+  ui_error "Tag must be at least $RELEASE_FIRST_TAG in the current release series: $PATCH_TAG"
+  exit 1
+fi
 
 if [ -n "${TAG_INPUT}" ] && [ "${TAG_INPUT}" != "${PATCH_TAG}" ]; then
   ui_section "Resolved version"
