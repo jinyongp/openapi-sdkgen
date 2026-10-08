@@ -11,3 +11,4 @@ minimumReleaseAgeExclude:
   - '@shikijs/themes@4.4.3'
   - '@shikijs/types@4.4.3'
   - shiki@4.4.3
+  - '@lucide/vue@1.53.0'

@@ -10,15 +10,17 @@
   "scripts": {
     "playground:build": "node ./scripts/build-playground.mjs",
     "docs:validate": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-locales.mjs",
-    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/compatibility-results.test.mjs ./scripts/ci-measurements.test.mjs",
+    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/compatibility-results.test.mjs ./scripts/ci-measurements.test.mjs ./scripts/playground-download.test.mjs",
     "docs:dev": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-locales.mjs && node ./scripts/build-playground.mjs && vitepress dev .",
     "docs:build": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-locales.mjs && node ./scripts/build-playground.mjs && vitepress build .",
     "docs:preview": "vitepress preview ."
   },
   "devDependencies": {
+    "@lucide/vue": "1.53.0",
     "@sectile/chart": "0.15.6",
     "@shikijs/langs": "^4.4.3",
     "@shikijs/themes": "^4.4.3",
+    "fflate": "0.8.3",
     "shiki": "^4.4.3",
     "vitepress": "^1.6.4"
   }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { Check, Copy, FolderDown } from "@lucide/vue";
 import { useData } from "vitepress";
 import CodeViewer from "./CodeViewer.vue";
 import FileTree from "./FileTree.vue";
@@ -8,13 +9,14 @@ import { codeThemes, type CodeTheme } from "../playground/highlight";
 import { readPlaygroundPreferences, writePlaygroundPreferences } from "../playground/preferences";
 import { buildArtifactTree, findArtifact } from "../playground/tree";
 import { generate, type GeneratedArtifact } from "../playground/wasm";
+import { archiveArtifacts, downloadBlob } from "../playground/download";
 
 const maximumInputBytes = 64 * 1024 * 1024;
 const codeThemeValues = codeThemes.map((theme) => theme.value);
 const translations = {
   en: {
     heading: "SDK Playground",
-    description: "Choose an example to inspect generated types and methods. This playground generates source; it does not call your API.",
+    description: "Generate an SDK from an OpenAPI document and inspect the generated types and methods.",
     target: "Target",
     examples: "OpenAPI samples",
     yourDocument: "Your document",
@@ -45,6 +47,12 @@ const translations = {
     generatedCode: "Generated code",
     colorTheme: "Color theme",
     change: "Change",
+    downloadAll: "Download all (ZIP)",
+    copyFile: "Copy file",
+    copied: "Copied",
+    exporting: "Preparing ZIP…",
+    exportError: "Could not export generated files. Try again.",
+    copyError: "Could not copy this file. Download it instead.",
     generating: "Generating SDK…",
     firstRun: "First run loads the generator into your browser.",
     stopped: "Generation stopped",
@@ -67,7 +75,7 @@ const translations = {
   },
   ko: {
     heading: "SDK 플레이그라운드",
-    description: "예제를 선택해 생성된 타입과 메서드를 확인하세요. 플레이그라운드는 소스를 생성하며 API를 호출하지 않습니다.",
+    description: "OpenAPI 문서로 SDK를 생성하고, 생성된 타입과 메서드를 확인하세요.",
     target: "대상",
     examples: "OpenAPI 예제",
     yourDocument: "내 문서",
@@ -98,6 +106,12 @@ const translations = {
     generatedCode: "생성된 코드",
     colorTheme: "색상 테마",
     change: "변경",
+    downloadAll: "전체 ZIP 다운로드",
+    copyFile: "파일 복사",
+    copied: "복사됨",
+    exporting: "ZIP 준비 중…",
+    exportError: "생성된 파일을 내보내지 못했습니다. 다시 시도하세요.",
+    copyError: "파일을 복사하지 못했습니다. 파일 다운로드를 사용하세요.",
     generating: "SDK 생성 중…",
     firstRun: "처음 실행할 때 브라우저에 생성기를 불러옵니다.",
     stopped: "생성 중단",
@@ -142,11 +156,18 @@ const error = ref("");
 const loading = ref(false);
 const dragging = ref(false);
 const fileInput = ref<HTMLInputElement>();
+const exporting = ref<boolean>(false);
+const copiedPath = ref<string>("");
+const actionError = ref<string>("");
+let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
 const selectedArtifact = computed(() => findArtifact(artifacts.value, selectedPath.value));
 const selectedLineCount = computed(() => selectedArtifact.value?.content.split("\n").length ?? 0);
 const lineCountLabel = computed(() => lang.value === "ko-KR" ? `${selectedLineCount.value}줄` : `${selectedLineCount.value} lines`);
 const loaded = computed(() => artifacts.value.length > 0);
+const fileCountLabel = computed<string>((): string => lang.value === "ko-KR"
+  ? `${artifacts.value.length}개 파일`
+  : `${artifacts.value.length} files`);
 const tree = computed(() => buildArtifactTree(artifacts.value));
 let preferencesReady = false;
 
@@ -168,6 +189,44 @@ watch([colorTheme, expandedPaths], () => {
     expandedPaths: expandedPaths.value,
   });
 });
+
+watch(selectedPath, (): void => {
+  copiedPath.value = "";
+  actionError.value = "";
+});
+
+onBeforeUnmount((): void => {
+  if (copyTimer !== undefined) clearTimeout(copyTimer);
+});
+
+async function downloadAll(): Promise<void> {
+  if (exporting.value || !loaded.value) return;
+  exporting.value = true;
+  actionError.value = "";
+  try {
+    const archive: Uint8Array<ArrayBuffer> = await archiveArtifacts(artifacts.value);
+    downloadBlob(new Blob([archive], { type: "application/zip" }), "openapi-sdkgen-typescript.zip");
+  } catch {
+    actionError.value = copy.value.exportError;
+  } finally {
+    exporting.value = false;
+  }
+}
+
+async function copyFile(): Promise<void> {
+  const artifact: GeneratedArtifact | undefined = selectedArtifact.value;
+  if (!artifact) return;
+  actionError.value = "";
+  try {
+    await navigator.clipboard.writeText(artifact.content);
+    if (selectedPath.value !== artifact.path) return;
+    copiedPath.value = artifact.path;
+    if (copyTimer !== undefined) clearTimeout(copyTimer);
+    copyTimer = setTimeout((): void => { copiedPath.value = ""; }, 2000);
+  } catch {
+    actionError.value = copy.value.copyError;
+  }
+}
 
 function preferenceStorage(): Storage | undefined {
   try {
@@ -265,16 +324,20 @@ async function runGeneration(contents: string, label: string) {
 }
 
 async function loadFile(file?: File) {
-  if (!file) return;
+  if (!file || loading.value) return;
+  loading.value = true;
   try {
     validateSize(file.size);
     await runGeneration(await file.text(), file.name);
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : String(cause);
+  } finally {
+    loading.value = false;
   }
 }
 
 async function loadURL() {
+  if (loading.value) return;
   resetMessages();
   let parsed: URL;
   try {
@@ -334,6 +397,7 @@ function exampleDescription(example: PlaygroundExample): string {
 }
 
 async function loadExample(example: PlaygroundExample) {
+  if (loading.value) return;
   const locationURL = new URL(window.location.href);
   locationURL.searchParams.set("example", example.id);
   window.history.replaceState({}, "", locationURL);
@@ -345,6 +409,7 @@ async function loadExample(example: PlaygroundExample) {
 }
 
 function startOver() {
+  if (exporting.value) return;
   const locationURL = new URL(window.location.href);
   locationURL.searchParams.delete("example");
   window.history.replaceState({}, "", locationURL);
@@ -353,6 +418,8 @@ function startOver() {
   selectedPath.value = "";
   diagnostics.value = "";
   error.value = "";
+  actionError.value = "";
+  copiedPath.value = "";
   url.value = "";
   authenticationMode.value = "none";
   bearerToken.value = "";
@@ -375,7 +442,6 @@ function toggleDirectory(path: string) {
   <main class="sdk-playground">
     <header class="playground-heading">
       <div>
-        <p class="eyebrow">OPENAPI SDKGEN</p>
         <h1>{{ copy.heading }}</h1>
         <p>{{ copy.description }}</p>
       </div>
@@ -413,6 +479,7 @@ function toggleDirectory(path: string) {
             class="drop-zone"
             :class="{ dragging }"
             type="button"
+            :disabled="loading"
             @click="fileInput?.click()"
             @dragenter.prevent="dragging = true"
             @dragover.prevent
@@ -493,9 +560,9 @@ function toggleDirectory(path: string) {
               <span class="field-label">{{ copy.generatedFiles }}</span>
               <strong :title="sourceLabel">{{ sourceLabel }}</strong>
             </div>
-            <button type="button" @click="startOver">{{ copy.change }}</button>
+            <button type="button" :disabled="exporting" @click="startOver">{{ copy.change }}</button>
           </div>
-          <div class="target-summary"><span>{{ copy.target }}</span><strong>TypeScript</strong></div>
+          <div class="target-summary"><span>{{ fileCountLabel }}</span><strong>TypeScript</strong></div>
           <nav class="tree-scroll" :aria-label="copy.generatedFiles">
             <FileTree
               :expanded-paths="expandedPaths"
@@ -521,7 +588,7 @@ function toggleDirectory(path: string) {
         </div>
         <template v-else-if="selectedArtifact">
           <header class="code-header">
-            <div class="file-title"><span class="file-dot"></span><strong>{{ selectedArtifact.path }}</strong></div>
+            <div class="file-title"><span class="file-dot"></span><strong :title="selectedArtifact.path">{{ selectedArtifact.path }}</strong></div>
             <div class="code-meta">
               <span>{{ lineCountLabel }}</span>
               <label class="theme-picker">
@@ -532,9 +599,22 @@ function toggleDirectory(path: string) {
                   </option>
                 </select>
               </label>
+              <button class="code-action" type="button" :title="copiedPath === selectedPath ? copy.copied : copy.copyFile" :aria-label="copiedPath === selectedPath ? copy.copied : copy.copyFile" @click="copyFile">
+                <Check v-if="copiedPath === selectedPath" :size="16" aria-hidden="true" />
+                <Copy v-else :size="16" aria-hidden="true" />
+              </button>
+              <button class="download-all" type="button" :disabled="exporting" :aria-busy="exporting" @click="downloadAll">
+                <FolderDown :size="16" aria-hidden="true" />
+                {{ exporting ? copy.exporting : copy.downloadAll }}
+              </button>
             </div>
           </header>
-          <div v-if="diagnostics" class="diagnostic-banner" :title="diagnostics">{{ copy.warning }}</div>
+          <p v-if="actionError" class="action-error" role="alert">{{ actionError }}</p>
+          <span class="visually-hidden" role="status">{{ copiedPath ? copy.copied : '' }}</span>
+          <details v-if="diagnostics" class="diagnostic-banner">
+            <summary>{{ copy.warning }}</summary>
+            <pre>{{ diagnostics }}</pre>
+          </details>
           <CodeViewer
             :content="selectedArtifact.content"
             :path="selectedArtifact.path"
@@ -562,9 +642,8 @@ function toggleDirectory(path: string) {
 }
 
 .playground-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
-.playground-heading h1 { margin: 2px 0 6px; border: 0; font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -0.035em; }
+.playground-heading h1 { margin: 2px 0 6px; border: 0; font-size: 32px; line-height: 1.15; letter-spacing: 0; }
 .playground-heading p { margin: 0; color: var(--vp-c-text-2); }
-.playground-heading .eyebrow { color: var(--vp-c-brand-1); font-size: 12px; font-weight: 750; letter-spacing: .14em; }
 .workbench { display: grid; height: min(680px, calc(100dvh - 220px)); max-height: calc(100dvh - 96px); grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--vp-c-divider); border-radius: 16px; background: var(--vp-c-bg); box-shadow: 0 22px 65px rgba(15, 23, 42, .08); }
 .source-panel { display: flex; min-height: 0; overflow: hidden; flex-direction: column; border-right: 1px solid var(--vp-c-divider); background: color-mix(in srgb, var(--vp-c-bg-soft) 70%, var(--vp-c-bg)); }
 .source-controls { overflow: auto; padding: 26px; }
@@ -583,6 +662,7 @@ select { padding: 0 12px; }
 .source-separator { margin-top: 24px; }
 .drop-zone { display: flex; width: 100%; min-height: 185px; align-items: center; justify-content: center; flex-direction: column; gap: 6px; border: 1.5px dashed var(--vp-c-divider); border-radius: 12px; color: var(--vp-c-text-2); background: var(--vp-c-bg); cursor: pointer; transition: .15s ease; }
 .drop-zone:hover, .drop-zone.dragging { border-color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 6%, var(--vp-c-bg)); }
+.drop-zone:disabled { opacity: .55; cursor: wait; }
 .drop-zone strong { color: var(--vp-c-text-1); font-size: 14px; }
 .drop-zone span:last-child { font-size: 12px; }
 .upload-icon { display: grid; width: 38px; height: 38px; margin-bottom: 5px; place-items: center; border-radius: 10px; color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent); font-size: 21px; }
@@ -614,16 +694,25 @@ select { padding: 0 12px; }
 .tree-header button { padding: 7px 10px; color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent); font-size: 12px; }
 .target-summary { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--vp-c-divider); color: var(--vp-c-text-3); font-size: 12px; }
 .target-summary strong { color: var(--vp-c-text-2); }
+.download-all { display: flex; min-height: 32px; padding: 6px 10px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #41b8aa; border-radius: 6px; background: #155e56; color: #f0fdfa; font-size: 12px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.download-all:hover { background: #197267; }
+.download-all:disabled, .tree-header button:disabled { opacity: .55; cursor: wait; }
+.download-all:focus-visible, .code-action:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
 .tree-scroll { min-height: 0; flex: 1; padding: 12px 10px; overflow-x: hidden; overflow-y: auto; }
 
 .code-panel { display: flex; min-width: 0; min-height: 0; overflow: hidden; flex-direction: column; background: #0d1117; color: #d1d7e0; }
-.code-header { display: flex; min-height: 52px; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid #252b35; background: #111720; font-size: 12px; }
+.code-header { display: flex; min-height: 52px; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 18px; border-bottom: 1px solid #252b35; background: #111720; font-size: 12px; }
 .file-title, .code-meta { display: flex; min-width: 0; align-items: center; gap: 9px; }
 .file-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .code-meta { flex: 0 0 auto; color: #788391; }
 .theme-picker select { width: auto; height: 30px; padding: 0 28px 0 9px; border-color: #303844; border-radius: 7px; color: #c9d1d9; background-color: #161d27; font-size: 11px; }
+.code-action { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border: 1px solid #303844; border-radius: 6px; color: #c9d1d9; background: #161d27; cursor: pointer; }
+.code-action:hover { border-color: #788391; background: #252b35; }
+.action-error { margin: 0; padding: 8px 18px; color: #f1b8c0; background: #1c1418; font-size: 12px; }
 .file-dot { width: 8px; height: 8px; border-radius: 50%; background: #3178c6; box-shadow: 0 0 0 4px rgba(49, 120, 198, .13); }
 .diagnostic-banner { padding: 8px 18px; color: #f8d477; border-bottom: 1px solid #4e4529; background: #272516; font-size: 12px; }
+.diagnostic-banner summary { cursor: pointer; }
+.diagnostic-banner pre { max-height: 160px; overflow: auto; margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .empty-code { display: flex; min-height: 0; flex: 1; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #778291; text-align: center; }
 .empty-code strong { color: #c8d0da; font-size: 15px; }
 .empty-code > span:last-child { max-width: 360px; font-size: 12px; }
@@ -644,5 +733,14 @@ select { padding: 0 12px; }
   .code-panel { height: min(600px, calc(100dvh - 96px)); min-height: 440px; }
   .code-header { padding: 0 12px; }
   .code-meta { gap: 6px; }
+}
+@media (max-width: 520px) {
+  .code-header { align-items: stretch; flex-direction: column; }
+  .file-title { min-height: 20px; }
+  .code-meta { justify-content: flex-end; flex-wrap: wrap; }
+  .code-meta > span { margin-right: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
 }
 </style>
