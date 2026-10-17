@@ -349,17 +349,22 @@ scripts; it does not install devtools. Suites avoid repeated preparation and
 full cross-product compiler checks. Coverage reports remain opt-in without
 fixed percentage gates. Runner jobs use `ubuntu-24.04`.
 
-`devtools run publish:release` requires clean `main`, validates its existing HEAD,
-then atomically pushes `main` and the annotated tag. Dry runs perform the checks
-without editing files, creating commits, or publishing. Checks cannot change
-HEAD or leave the working tree dirty. A failed push removes only the local tag
-created by that attempt; `--resume` dispatches the existing tag's workflow.
+`devtools run publish:release` requests a checked release plan for remote `main`.
+`--yes` enables preparation and publication; `--prerelease rc` selects a prerelease
+channel. `--resume TAG` dispatches the workflow at that tag. Local source is not
+pushed. The workflow runs product checks before Releaseway prepares a deterministic
+marker commit and atomically pushes the branch and lightweight tag. Version-series
+and latest policy live in `.github/releaseway.yml`; npm channels live in
+`.github/npm/packages.yml`. A saved plan supports retries without overwriting refs.
 Releaseway standard generates GitHub release notes. Breaking changes and
 migration instructions can be added there, and retries preserve published
-release bodies. There is no mandatory changelog file or preparation commit.
+release bodies. There is no mandatory changelog file.
+
+Release preparation uses checkout's default `GITHUB_TOKEN` credentials with
+`contents: write`. Repository branch and tag rules still apply to preparation.
 
 `devtools run check:dev` also exercises runnable examples and release cross-builds
-for macOS, Linux, and Windows. Release and npm distribution safety simulations
+for macOS, Linux, and Windows. Release dispatch and npm distribution checks
 run in the verification-tools suite. Performance and corpus benchmarks remain
 separate explicit commands.
 

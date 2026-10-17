@@ -3,10 +3,12 @@ schema: 1
 version:
   source: git-tag
   prefix: v
-  prerelease-tag: next
 
 publish:
   mode: direct
+  channels:
+    stable: latest
+    prerelease: next
 
 packages:
   openapi-sdkgen:

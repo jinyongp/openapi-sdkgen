@@ -184,14 +184,8 @@ CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
 exec = ['bash', 'scripts/release/cross-build.sh']
 
 [commands."publish:release"]
-exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/release/publish.sh']
+exec = ['bash', 'scripts/release/publish.sh']
 inject = true
-serve = ["todo-api", "widget-api", "capabilities-api", "capabilities-webhook"]
-[commands."publish:release".bind]
-TODO_API_PORT = { port = "todo-api" }
-WIDGET_API_PORT = { port = "widget-api" }
-CAPABILITIES_API_PORT = { port = "capabilities-api" }
-CAPABILITIES_WEBHOOK_PORT = { port = "capabilities-webhook" }
 
 [commands."test:release"]
 exec = ['bash', 'scripts/release/test.sh']

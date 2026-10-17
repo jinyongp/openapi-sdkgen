@@ -97,12 +97,23 @@ from the Go suite. `test:dev` still runs every Go test across all compilers.
 ## Release documentation review
 
 Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.
-`release/series.sh` sets the first version and the ancestry boundary; version
-selection ignores tags on or before that boundary while retaining all historical
-tags. Subsequent releases use ordinary SemVer bumps within the new series.
+`.github/releaseway.yml` declares the first version and ancestry boundary.
+Releaseway selects versions within that series while retaining historical tags.
+Conventional Commits determine subsequent SemVer bumps.
 Homebrew keeps `version_scheme: 1` in its product spec so existing installations
 recognize the new series as an upgrade. Stable npm releases explicitly publish
-to `latest`, and stable GitHub Releases are marked latest.
+to `latest`, prereleases publish to `next`, and GitHub uses `current-series` latest
+selection. npm channels live in `.github/npm/packages.yml`.
+
+`devtools run publish:release` requests a checked release plan for remote `main`.
+Add `--yes` to prepare and publish, or `--prerelease rc` to select a prerelease
+channel. `--resume TAG` dispatches at the existing tag so npm provenance remains
+bound to that commit. Releaseway owns version calculation, marker commits,
+lightweight tags, atomic pushes and retry validation. Product checks run before
+preparation. The workflow preserves the plan as an artifact even when a push fails;
+rerunning the same source resumes preparation. Local edits and commits are not
+pushed by the dispatch command. Bump policy is configured in
+`.github/releaseway.yml`; release notes use Releaseway standard.
 
 Before publication, compare the public CLI help and generated exports with the
 English and Korean guides and references. Confirm that released features are

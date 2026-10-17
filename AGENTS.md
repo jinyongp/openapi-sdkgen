@@ -75,13 +75,15 @@ before using it. Stop the returned execution when finished.
 ## Release
 
 ```txt
-devtools run publish:release [--dry-run|-n] [--yes|-y] [--since TAG] [--resume TAG] [patch|minor|major|vX.Y.Z[-prerelease]]
+devtools run publish:release [--dry-run|-n | --yes|-y] [--prerelease ID] [--resume TAG]
 ```
 
-Release requires clean `main`, validates the existing HEAD, and atomically pushes
-`main` and an annotated tag. Dry runs validate without editing files, creating
-commits or publishing. Failed checks preserve HEAD; failed pushes remove the
-local tag created by that attempt. `--resume` dispatches the existing tag's workflow.
+The command requests a checked release plan for remote `main`; `--yes` prepares
+and publishes. Local edits and commits are not pushed. Product checks run before
+Releaseway creates a marker commit and atomically pushes `main` and a lightweight
+tag. `.github/releaseway.yml` owns version-series and bump policy. Plans are saved
+as workflow artifacts; rerunning the same source resumes preparation.
+`--resume` dispatches the workflow at the existing tag for exact npm provenance.
 Releaseway standard generates GitHub release notes. Add breaking-change and
 migration explanations there; retries preserve published release bodies.
 

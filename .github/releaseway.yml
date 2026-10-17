@@ -1,0 +1,8 @@
+schema: 1
+branch: main
+tag-prefix: v
+bump: auto
+series:
+  base-tag: v11.0.4
+  start-version: 1.2.0
+latest: current-series

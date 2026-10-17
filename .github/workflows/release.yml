@@ -1,5 +1,5 @@
 name: release
-run-name: Release ${{ inputs.tag || github.ref_name }}
+run-name: Release ${{ github.ref_type == 'tag' && github.ref_name || inputs.mode }}
 
 on:
   push:
@@ -7,9 +7,18 @@ on:
       - "v*"
   workflow_dispatch:
     inputs:
+      mode:
+        description: Plan the next release or prepare and publish it.
+        type: choice
+        options: [plan, release]
+        default: plan
+      prerelease-id:
+        description: Optional prerelease channel, such as rc or beta.
+        required: false
+        type: string
       tag:
-        description: Existing annotated SemVer tag to resume.
-        required: true
+        description: Existing release tag; dispatch with the same tag as the workflow ref.
+        required: false
         type: string
 
 concurrency:
@@ -17,59 +26,63 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate-release:
-    name: Validate release tag
+  prepare-release:
+    name: Check and prepare release
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    if: (github.ref == 'refs/heads/main' || github.ref_type == 'tag') && (!inputs.tag || github.ref == format('refs/tags/{0}', inputs.tag))
     permissions:
-      contents: read
+      contents: write
     outputs:
-      tag: ${{ steps.release.outputs.tag }}
-      ref: ${{ steps.release.outputs.ref }}
-      version: ${{ steps.release.outputs.version }}
-      commit: ${{ steps.release.outputs.commit }}
+      tag: ${{ steps.release.outputs.tag || steps.existing.outputs.tag }}
+      version: ${{ steps.release.outputs.version || steps.existing.outputs.version }}
+      commit: ${{ steps.release.outputs.commit || steps.existing.outputs.commit }}
+      release-commit: ${{ steps.release.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
           fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Check product before changing release refs
+        run: bash scripts/release/check.sh
+      - id: existing
+        if: github.ref_type == 'tag'
+        uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
+        with:
+          mode: ${{ contains(github.ref_name, '-') && 'tag' || 'resolve' }}
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
       - id: release
-        env:
-          TAG: ${{ inputs.tag || github.ref_name }}
-        run: |
-          set -euo pipefail
-          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+)(\.[0-9A-Za-z-]+)*)?$'
-          if ! [[ "$TAG" =~ $semver ]]; then
-            echo "release tag must be SemVer: $TAG" >&2
-            exit 1
-          fi
-          if [[ "$TAG" == *-* ]]; then
-            IFS=. read -r -a prerelease_identifiers <<<"${TAG#*-}"
-            for identifier in "${prerelease_identifiers[@]}"; do
-              if [[ "$identifier" =~ ^0[0-9]+$ ]]; then
-                echo "release tag has an invalid numeric prerelease identifier: $TAG" >&2
-                exit 1
-              fi
-            done
-          fi
-          git fetch --force origin main "refs/tags/$TAG:refs/tags/$TAG"
-          if [[ "$(git cat-file -t "refs/tags/$TAG")" != "tag" ]]; then
-            echo "release tag must be annotated: $TAG" >&2
-            exit 1
-          fi
-          if ! git merge-base --is-ancestor "${TAG}^{commit}" origin/main; then
-            echo "release tag must point to a commit merged into main: $TAG" >&2
-            exit 1
-          fi
-          {
-            echo "tag=$TAG"
-            echo "ref=refs/tags/$TAG"
-            echo "version=${TAG#v}"
-            echo "commit=$(git rev-parse "${TAG}^{commit}")"
-          } >> "$GITHUB_OUTPUT"
+        if: github.ref_type != 'tag'
+        uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
+        with:
+          mode: ${{ inputs.mode == 'release' && 'prepare' || 'plan' }}
+          prerelease-id: ${{ inputs.prerelease-id }}
+      - name: Preserve release plan
+        if: always() && steps.release.outputs.plan-path != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-plan
+          path: ${{ steps.release.outputs.plan-path }}
+          retention-days: 7
+      - name: Preserve check diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-check-diagnostics
+          path: .tmp/runs/
+          include-hidden-files: true
+          retention-days: 7
 
   publish-npm:
     name: Publish npm package
-    needs: [validate-release, publish-github-release]
+    needs: [prepare-release, publish-github-release]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -77,63 +90,52 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.validate-release.outputs.ref }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Verify immutable tag target
-        run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
-      - name: Select stable npm dist-tag
-        if: ${{ !contains(needs.validate-release.outputs.tag, '-') }}
-        run: |
-          node --input-type=module <<'JS'
-          import { readFileSync, writeFileSync } from "node:fs";
-          const path = "npm/package.json";
-          const manifest = JSON.parse(readFileSync(path, "utf8"));
-          manifest.publishConfig = { ...manifest.publishConfig, tag: "latest" };
-          writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
-          JS
       - name: Publish npm package through Releaseway
         id: npm
         uses: releaseway/npm-actions@680948414bbe6bfe64e94f776c3514ad44f3dd69 # v0.5.1
+        with:
+          release-commit: ${{ needs.prepare-release.outputs.release-commit }}
 
   verify-npm-release:
     name: Verify npm distribution
-    needs: [validate-release, publish-npm]
+    needs: [prepare-release, publish-npm]
     uses: ./.github/workflows/npm-smoke.yml
     with:
-      version: ${{ needs.validate-release.outputs.version }}
+      version: ${{ needs.prepare-release.outputs.version }}
 
   publish-homebrew:
     name: Publish Homebrew formula
-    needs: [validate-release, publish-github-release]
+    needs: [prepare-release, publish-github-release]
     uses: releaseway/homebrew-actions/.github/workflows/publish.yml@5e6570fec2e5d16ad61868877da3a175fac99479 # v0.3.5
     permissions:
       contents: read
     with:
       tap-repository: jinyongp/homebrew-tap
-      commit: ${{ needs.validate-release.outputs.commit }}
-      version: ${{ needs.validate-release.outputs.version }}
+      commit: ${{ needs.prepare-release.outputs.commit }}
+      version: ${{ needs.prepare-release.outputs.version }}
     secrets:
       tap_deploy_key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
 
   publish-github-release:
     name: Publish GitHub Release
-    needs: validate-release
+    needs: prepare-release
+    if: github.event_name == 'push' || inputs.mode == 'release' || inputs.tag != ''
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.validate-release.outputs.ref }}
+          ref: ${{ needs.prepare-release.outputs.commit }}
           fetch-depth: 0
-      - name: Verify immutable tag target
-        run: test "$(git rev-parse HEAD)" = "${{ needs.validate-release.outputs.commit }}"
       - name: Reuse published immutable assets on retry
         id: assets
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.validate-release.outputs.tag }}
-          VERSION: ${{ needs.validate-release.outputs.version }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
+          VERSION: ${{ needs.prepare-release.outputs.version }}
         run: |
           set -euo pipefail
           release_json="$RUNNER_TEMP/published-release.json"
@@ -174,13 +176,13 @@ jobs:
       - name: Publish immutable GitHub Release
         uses: releaseway/actions@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
         with:
-          tag: ${{ needs.validate-release.outputs.tag }}
-          commit: ${{ needs.validate-release.outputs.commit }}
-          prerelease: ${{ contains(needs.validate-release.outputs.tag, '-') && 'true' || 'false' }}
-          latest: ${{ contains(needs.validate-release.outputs.tag, '-') && 'false' || 'true' }}
+          tag: ${{ needs.prepare-release.outputs.tag }}
+          commit: ${{ needs.prepare-release.outputs.commit }}
+          prerelease: ${{ contains(needs.prepare-release.outputs.tag, '-') && 'true' || 'false' }}
+          latest: current-series
           notes: standard
           upload-concurrency: "4"
           assets: |
             dist/checksums.txt
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.tar.gz
-            dist/openapi-sdkgen_${{ needs.validate-release.outputs.version }}_*.zip
+            dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.tar.gz
+            dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.zip
