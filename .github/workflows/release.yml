@@ -93,7 +93,7 @@ jobs:
           JS
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@269fbdeac83fed2df2880915726ed91edbe1bbdd # v0.4.0
+        uses: releaseway/npm-actions@680948414bbe6bfe64e94f776c3514ad44f3dd69 # v0.5.1
 
   verify-npm-release:
     name: Verify npm distribution
@@ -105,7 +105,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [validate-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@e64441c78495e1511140ae328e5601a448189056 # v0.3.0
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@5e6570fec2e5d16ad61868877da3a175fac99479 # v0.3.5
     permissions:
       contents: read
     with:
@@ -172,7 +172,7 @@ jobs:
           version: "v2.17.0"
           args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@c054f2de3448e79e5d854155e701e13ad31a520c # v0.3.1
+        uses: releaseway/actions@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
         with:
           tag: ${{ needs.validate-release.outputs.tag }}
           commit: ${{ needs.validate-release.outputs.commit }}

@@ -56,7 +56,7 @@ jobs:
         id: restore
         if: steps.artifact.outputs.artifact-id != ''
         continue-on-error: true
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.artifact.outputs.artifact-id }}
           run-id: ${{ steps.artifact.outputs.source-run }}
@@ -82,7 +82,7 @@ jobs:
             ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS"
       - name: Save fresh corpus for this and later runs
         if: steps.verified.outputs.reused != 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.artifact }}
           path: .tmp/compatibility-corpora/${{ matrix.corpus }}/
@@ -94,7 +94,7 @@ jobs:
         run: python3 -B .github/scripts/compatibility_artifact.py summary "$COMPATIBILITY_CORPUS"
       - name: Upload preparation diagnostics
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: corpus-preparation-${{ matrix.corpus }}
           path: .tmp/runs/
@@ -122,7 +122,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           package-manager-cache: false
@@ -130,7 +130,7 @@ jobs:
         id: artifact
         run: python3 -B .github/scripts/compatibility_artifact.py find "$COMPATIBILITY_ARTIFACT" --required
       - name: Download verified corpus
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.artifact.outputs.artifact-id }}
           run-id: ${{ steps.artifact.outputs.source-run }}
@@ -181,7 +181,7 @@ jobs:
             --resources-directory .tmp/compatibility-ci
       - name: Upload measurement and diagnostics
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.typecheck && format('document-shard-{0}-{1}', matrix.corpus, matrix.document) || format('graph-shard-{0}', matrix.scope) }}
           path: |
@@ -202,12 +202,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
           package-manager-cache: false
       - name: Download document measurements
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: document-shard-*
           path: .tmp/compatibility-shards
@@ -230,7 +230,7 @@ jobs:
           done
           exit "$compatibility_failed"
       - name: Download generation-only measurements
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: graph-shard-*
           path: .tmp/graph-shards
@@ -252,14 +252,14 @@ jobs:
             --run-url "$MEASUREMENT_RUN_URL" --source-commit "$MEASUREMENT_COMMIT" \
             --runner ubuntu-24.04
       - name: Upload public measurement results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: public-compatibility-measurements
           path: .tmp/compatibility-public/
           retention-days: 30
       - name: Upload combined measurement and diagnostics
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: full-corpus-compatibility
           path: |
