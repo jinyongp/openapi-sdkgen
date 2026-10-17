@@ -25,6 +25,9 @@ check_sdk() { bash "$ROOT/scripts/generate/check.sh" "$@"; }
 for version in "${versions[@]}"; do
   case "$version" in 5.7.3) package=typescript-5-7;; 5.9.3) package=typescript-5-9;; 6.0.3) package=typescript-6;; 7.0.2) package=typescript;; esac
   export SDKGEN_COMPAT_TSC_PATH="$TYPESCRIPT_ROOT/node_modules/$package/lib/tsc.js"
+  for typecheck in false true; do
+    run_step "TypeScript $version wildcard body (typecheck=$typecheck)" check_sdk test/fixtures/wildcard-request-body.json typescript -- --typecheck="$typecheck"
+  done
   run_step "TypeScript $version server/metadata" check_sdk test/fixtures/support-gaps/oas32-normative.json typescript -- --with server --with metadata --typecheck=true
   run_step "TypeScript $version named/selected Link SDK" check_sdk test/fixtures/generation-selection.json typescript -- --config "$ROOT/test/fixtures/named-clients-linked.toml" --operation getTask --with metadata
   run_step "TypeScript $version named errors" check_sdk test/fixtures/named-clients-errors.json typescript -- --config "$ROOT/test/fixtures/named-clients-errors.toml"
