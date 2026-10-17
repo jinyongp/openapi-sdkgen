@@ -7,8 +7,8 @@ if [[ "${1:-}" == --help || "${2:-}" == --help ]]; then
   exit 0
 fi
 
-GOVULNCHECK_VERSION="v1.8.0"
-OSV_SCANNER_VERSION="v2.6.0"
+GOVULNCHECK_VERSION="v1.9.0"
+OSV_SCANNER_VERSION="v2.7.0"
 
 work_root="$(mktemp -d "$ROOT/.tmp/vuln.XXXXXX")"
 cleanup() {

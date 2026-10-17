@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "22.23.2"
+          node-version: "22.23.3"
           package-manager-cache: false
       - name: Execute published npm launcher from a cold native cache
         env:

@@ -165,11 +165,11 @@ jobs:
         if: steps.assets.outputs.build == 'true'
         with:
           go-version-file: go.mod
-      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+      - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         if: steps.assets.outputs.build == 'true'
         with:
           distribution: goreleaser
-          version: "v2.17.0"
+          version: "v2.18.3"
           args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
         uses: releaseway/actions@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
