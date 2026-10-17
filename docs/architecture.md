@@ -349,16 +349,22 @@ scripts; it does not install devtools. Suites avoid repeated preparation and
 full cross-product compiler checks. Coverage reports remain opt-in without
 fixed percentage gates. Runner jobs use `ubuntu-24.04`.
 
-`devtools run publish:release` requests a checked release plan for remote `main`.
+`devtools run publish:release` requests a version plan for remote `main`
+without running product checks.
 `--yes` enables preparation and publication; `--prerelease rc` selects a prerelease
 channel. `--resume TAG` dispatches the workflow at that tag. Local source is not
-pushed. The workflow runs product checks before Releaseway prepares a deterministic
+pushed. Publication requires the latest successful `main` push CI for the exact source
+SHA and waits for CI that is still running. Failed or missing CI blocks publication.
+Release builds and example clients run before Releaseway prepares a deterministic
 marker commit and atomically pushes the branch and lightweight tag. Version-series
 and latest policy live in `.github/releaseway.yml`; npm channels live in
 `.github/npm/packages.yml`. A saved plan supports retries without overwriting refs.
 Releaseway standard generates GitHub release notes. Breaking changes and
 migration instructions can be added there, and retries preserve published
 release bodies. There is no mandatory changelog file.
+
+Retries at an unchanged Releaseway marker reuse its sole parent's CI after
+verifying identical source trees. Other commits require their own CI.
 
 Release preparation uses checkout's default `GITHUB_TOKEN` credentials with
 `contents: write`. Repository branch and tag rules still apply to preparation.

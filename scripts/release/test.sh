@@ -8,6 +8,7 @@ if [[ "${1:-}" == --help ]]; then
 fi
 if [[ "${SDKGEN_RELEASE_FIXTURE_CHILD:-0}" != 1 ]]; then
   run_step 'release workflow dispatch tests' env SDKGEN_RELEASE_FIXTURE_CHILD=1 bash "$ROOT/scripts/release/test.sh" "$@"
+  run_step 'release CI reuse tests' python3 -B "$ROOT/.github/scripts/release_ci_test.py"
   exit 0
 fi
 

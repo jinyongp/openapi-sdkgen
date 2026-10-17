@@ -11,7 +11,7 @@ while (($#)); do
   case "$1" in
     --help|-h)
       printf '%s\n' 'publish.sh [--dry-run | --yes] [--prerelease ID] [--resume TAG]' \
-        'Requests the Releaseway workflow for remote main. Defaults to a checked release plan; --yes prepares and publishes. --resume runs the workflow at an existing tag. Local edits and commits are not pushed.' >&2
+        'Requests the Releaseway workflow for remote main. Defaults to a version plan without product checks; --yes reuses successful source CI, checks delivery, and publishes. --resume runs the workflow at an existing tag. Local edits and commits are not pushed.' >&2
       exit 0 ;;
     --dry-run|-n) dry_run=1 ;;
     --yes|-y) mode=release ;;

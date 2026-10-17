@@ -105,12 +105,16 @@ recognize the new series as an upgrade. Stable npm releases explicitly publish
 to `latest`, prereleases publish to `next`, and GitHub uses `current-series` latest
 selection. npm channels live in `.github/npm/packages.yml`.
 
-`devtools run publish:release` requests a checked release plan for remote `main`.
+`devtools run publish:release` requests a version plan for remote `main`
+without running product checks.
 Add `--yes` to prepare and publish, or `--prerelease rc` to select a prerelease
 channel. `--resume TAG` dispatches at the existing tag so npm provenance remains
 bound to that commit. Releaseway owns version calculation, marker commits,
-lightweight tags, atomic pushes and retry validation. Product checks run before
-preparation. The workflow preserves the plan as an artifact even when a push fails;
+lightweight tags, atomic pushes and retry validation. Publication waits for the
+latest successful push CI for the exact source, then runs release cross-builds
+and example clients. The full product suites are not repeated. An unchanged
+Releaseway marker reuses CI from its verified, identical-tree parent. The workflow
+preserves the plan as an artifact even when a push fails;
 rerunning the same source resumes preparation. Local edits and commits are not
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.

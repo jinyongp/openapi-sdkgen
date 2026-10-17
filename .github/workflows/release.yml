@@ -1,5 +1,8 @@
-name: release
-run-name: Release ${{ github.ref_type == 'tag' && github.ref_name || inputs.mode }}
+name: Release
+run-name: >-
+  ${{ inputs.tag != '' && format('Resume release {0}', inputs.tag)
+      || github.ref_type == 'tag' && format('Publish release {0}', github.ref_name)
+      || format('{0} {1} release from {2}', inputs.mode == 'release' && 'Publish' || 'Plan', inputs.prerelease-id || 'stable', github.ref_name) }}
 
 on:
   push:
@@ -27,12 +30,13 @@ concurrency:
 
 jobs:
   prepare-release:
-    name: Check and prepare release
+    name: Plan or prepare release
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     if: (github.ref == 'refs/heads/main' || github.ref_type == 'tag') && (!inputs.tag || github.ref == format('refs/tags/{0}', inputs.tag))
     permissions:
       contents: write
+      actions: read
     outputs:
       tag: ${{ steps.release.outputs.tag || steps.existing.outputs.tag }}
       version: ${{ steps.release.outputs.version || steps.existing.outputs.version }}
@@ -42,15 +46,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-      - name: Check product before changing release refs
-        run: bash scripts/release/check.sh
       - id: existing
         if: github.ref_type == 'tag'
         uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
@@ -58,6 +53,23 @@ jobs:
           mode: ${{ contains(github.ref_name, '-') && 'tag' || 'resolve' }}
           tag: ${{ github.ref_name }}
           commit: ${{ github.sha }}
+      - name: Reuse successful CI for the release source
+        if: github.event_name == 'push' || inputs.mode == 'release' || inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B .github/scripts/release_ci.py
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: github.event_name == 'push' || inputs.mode == 'release' || inputs.tag != ''
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: github.event_name == 'push' || inputs.mode == 'release' || inputs.tag != ''
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Check release builds and examples
+        if: github.event_name == 'push' || inputs.mode == 'release' || inputs.tag != ''
+        run: bash scripts/release/check.sh
       - id: release
         if: github.ref_type != 'tag'
         uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
