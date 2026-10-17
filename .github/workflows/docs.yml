@@ -1,5 +1,4 @@
-name: docs
-run-name: Docs ${{ github.ref_name }}
+name: Documentation
 
 on:
   push:
