@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -31,9 +31,13 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
+// Go's downloaded toolchain stores this asset read-only. Replace the old copy
+// so repeated builds also work when its source permissions were preserved.
+const wasmExecPath = resolve(outputDirectory, "wasm_exec.js");
+rmSync(wasmExecPath, { force: true });
 copyFileSync(
   resolve(goRoot.stdout.trim(), "lib", "wasm", "wasm_exec.js"),
-  resolve(outputDirectory, "wasm_exec.js"),
+  wasmExecPath,
 );
 copyFileSync(
   resolve(docsDirectory, "scripts", "playground-worker.js"),
