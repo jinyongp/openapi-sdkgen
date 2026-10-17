@@ -177,7 +177,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		fmt.Fprintf(&output, "  readonly %s: %s\n", name, typeName)
 	}
 	if paginated, ok := paginatedResourceNodeOperation(module.node); ok {
-		fmt.Fprintf(&output, "  /** Lazily iterates every item from exact operation `%s` pagination. */\n", sanitizeComment(paginated.OperationID))
+		writeJSDoc(&output, "  ", jsDocInline, fmt.Sprintf("Lazily iterates every item from exact operation `%s` pagination.", paginated.OperationID))
 		fmt.Fprintf(&output, "  readonly paginate: PaginateCall<%s>\n", quoteTS(manifestRouteKey(paginated)))
 	}
 	if module.node.parameterChild != nil {
@@ -192,7 +192,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  /** Selects one resource by the `%s` path parameter. */\n", sanitizeComment(parameter.Name))
+		writeJSDoc(&output, "  ", jsDocInline, fmt.Sprintf("Selects one resource by the `%s` path parameter.", parameter.Name))
 		fmt.Fprintf(&output, "  (%s: %s): import(%s).Surface\n", parameter.Binding, parameterType, quoteTS(specifier))
 	}
 	output.WriteString("}\n\n")
@@ -428,7 +428,7 @@ func emitResourceEntryJSDoc(output *bytes.Buffer, indent, name string, operation
 		emitResourceOperationJSDoc(output, indent, operation)
 		return
 	}
-	fmt.Fprintf(output, "%s/** Nested resource path segment `%s`. */\n", indent, sanitizeComment(name))
+	writeJSDoc(output, indent, jsDocInline, fmt.Sprintf("Nested resource path segment `%s`.", name))
 }
 
 func emitResourceIndex(plan *semanticModulePlan, rootPath string) ([]byte, error) {

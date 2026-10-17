@@ -94,11 +94,11 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 		if bodyDescription == "" {
 			bodyDescription = "Request body for `" + operation.OperationID + "` (`" + operation.Method + " " + operation.Path + "`)."
 		}
-		fmt.Fprintf(output, "/**\n * %s\n *\n * Type: %s\n */\n", sanitizeComment(bodyDescription), jsDocTypeReference(bodyType))
+		writeJSDoc(output, "", jsDocBlock, bodyDescription, "", "Type: "+jsDocTypeReference(bodyType))
 		fmt.Fprintf(output, "type %sBodyInput = %s\n\n", operationName, bodyType)
 	}
 	if len(item.InputSections) > 0 {
-		fmt.Fprintf(output, "/** Complete input for `%s` (`%s %s`). */\n", operation.OperationID, operation.Method, operation.Path)
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Complete input for `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path))
 		fmt.Fprintf(output, "interface %s {\n", operationInputTypeName(operation.OperationID, operation.Method, operation.Path))
 		for _, section := range item.InputSections {
 			descriptor, err := requestInputSection(section)
@@ -115,7 +115,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 			} else {
 				valueType += " | undefined"
 			}
-			fmt.Fprintf(output, "  /** Generated %s input. See %s. */\n", string(section), jsDocTypeReference(inputType))
+			writeJSDoc(output, "  ", jsDocInline, fmt.Sprintf("Generated %s input. See %s.", section, jsDocTypeReference(inputType)))
 			fmt.Fprintf(output, "  readonly %s%s: %s\n", property, optional, valueType)
 		}
 		output.WriteString("}\n\n")
@@ -125,7 +125,7 @@ func emitOperationTypes(output *bytes.Buffer, document *ir.Document, operation i
 		if item.InputSections.hasInput(true) {
 			resourceInput = "Omit<" + operationInputTypeName(operation.OperationID, operation.Method, operation.Path) + ", \"path\">"
 		}
-		fmt.Fprintf(output, "/** Input remaining after the resource path is bound for `%s`. */\n", operation.OperationID)
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Input remaining after the resource path is bound for `%s`.", operation.OperationID))
 		fmt.Fprintf(output, "type %sResourceInput = %s\n\n", strings.TrimSuffix(operationInputTypeName(operation.OperationID, operation.Method, operation.Path), "Input"), resourceInput)
 	}
 
@@ -284,7 +284,7 @@ func emitParameterType(output *bytes.Buffer, document *ir.Document, operation ir
 
 func emitPreparedParameterType(output *bytes.Buffer, document *ir.Document, operation ir.Operation, typeName, location string, parameters []operationParameter) error {
 	locationLabel := strings.ToUpper(location[:1]) + location[1:]
-	fmt.Fprintf(output, "/** %s parameters for `%s` (`%s %s`). */\n", locationLabel, operation.OperationID, operation.Method, operation.Path)
+	writeJSDoc(output, "", jsDocInline, fmt.Sprintf("%s parameters for `%s` (`%s %s`).", locationLabel, operation.OperationID, operation.Method, operation.Path))
 	fmt.Fprintf(output, "interface %s {\n", typeName)
 	for _, parameter := range parameters {
 		valueType, err := schemaTypeForScope(document, parameter.Schema, projectionInput, typeRenderContract)
@@ -317,15 +317,15 @@ func emitOperationParameterJSDoc(output *bytes.Buffer, document *ir.Document, in
 	if parameter.Deprecated {
 		documentation["deprecated"] = true
 	}
-	emitSchemaValueJSDoc(output, document, indent, documentation, locationLabel+" parameter `"+sanitizeComment(parameter.Name)+"`.")
+	emitSchemaValueJSDoc(output, document, indent, documentation, locationLabel+" parameter `"+parameter.Name+"`.")
 }
 
 func emitOperationOptions(output *bytes.Buffer, operationName string, operation ir.Operation, item ManifestOperation) error {
-	fmt.Fprintf(output, "/**\n * Per-request transport options for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
+	lines := []string{fmt.Sprintf("Per-request transport options for `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path)}
 	if boolValue(operation.Raw, "deprecated") {
-		output.WriteString(" * @deprecated This operation is deprecated.\n")
+		lines = append(lines, "@deprecated This operation is deprecated.")
 	}
-	output.WriteString(" */\n")
+	writeJSDoc(output, "", jsDocBlock, lines...)
 	fmt.Fprintf(output, "interface %sOptions extends Omit<RequestOptions, \"accept\"> {\n", operationName)
 	mediaTypes := item.mediaTypes
 	if len(mediaTypes) > 1 {
@@ -397,7 +397,7 @@ func responseMediaTypes(responses []ir.Response) []string {
 }
 
 func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation ir.Operation) error {
-	fmt.Fprintf(output, "/**\n * Status- and media-aware raw response for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
+	lines := []string{fmt.Sprintf("Status- and media-aware raw response for `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path)}
 	responses, err := operationResponses(document, operation)
 	if err != nil {
 		return err
@@ -409,22 +409,18 @@ func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation
 		}
 	}
 	if len(successful) > 0 {
-		output.WriteString(" *\n * Successful responses:\n")
+		lines = append(lines, "", "Successful responses:")
 	}
 	for _, response := range successful {
+		description := ""
+		if response.Description != "" {
+			description = " — " + response.Description
+		}
 		if len(response.Content) == 0 {
-			fmt.Fprintf(output, " * - `%s`", response.Status)
-			if response.Description != "" {
-				fmt.Fprintf(output, " — %s", sanitizeComment(response.Description))
-			}
-			output.WriteString("\n")
+			lines = append(lines, fmt.Sprintf("- `%s`%s", response.Status, description))
 		} else {
 			for _, media := range response.Content {
-				fmt.Fprintf(output, " * - `%s %s`", response.Status, sanitizeComment(media.ContentType))
-				if response.Description != "" {
-					fmt.Fprintf(output, " — %s", sanitizeComment(response.Description))
-				}
-				output.WriteString("\n")
+				lines = append(lines, fmt.Sprintf("- `%s %s`%s", response.Status, media.ContentType, description))
 			}
 		}
 		headers, _ := response.Raw["headers"].(map[string]any)
@@ -440,17 +436,17 @@ func emitRawResponseJSDoc(output *bytes.Buffer, document *ir.Document, operation
 				return err
 			}
 			headerDescription, _ := resolvedHeader["description"].(string)
-			fmt.Fprintf(output, " *   - Header `%s`", sanitizeComment(name))
+			line := fmt.Sprintf("  - Header `%s`", name)
 			if headerDescription != "" {
-				fmt.Fprintf(output, " — %s", sanitizeComment(headerDescription))
+				line += " — " + headerDescription
 			}
-			output.WriteString("\n")
+			lines = append(lines, line)
 		}
 	}
 	if boolValue(operation.Raw, "deprecated") {
-		output.WriteString(" *\n * @deprecated This operation is deprecated.\n")
+		lines = append(lines, "", "@deprecated This operation is deprecated.")
 	}
-	output.WriteString(" */\n")
+	writeJSDoc(output, "", jsDocBlock, lines...)
 	return nil
 }
 
@@ -467,7 +463,7 @@ func emitQueryTypes(output *bytes.Buffer, document *ir.Document, operation ir.Op
 	parts := make([]string, 0, 3)
 	if len(filters) > 0 {
 		filterType := operationName + "FilterInput"
-		fmt.Fprintf(output, "/** Filter query parameters for `%s` (`%s %s`). */\n", operation.OperationID, operation.Method, operation.Path)
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Filter query parameters for `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path))
 		fmt.Fprintf(output, "type %s = {\n", filterType)
 		for _, parameter := range filters {
 			valueType, err := schemaTypeForScope(document, parameter.Schema, projectionInput, typeRenderContract)
@@ -495,7 +491,7 @@ func emitQueryTypes(output *bytes.Buffer, document *ir.Document, operation ir.Op
 		for _, value := range parameter.Sort.Values {
 			members = append(members, "{ readonly field: "+quoteTS(value.Field)+"; readonly direction: "+quoteTS(value.Direction)+" }")
 		}
-		fmt.Fprintf(output, "/** Structured sort expression for exact query parameter `%s`. */\n", sanitizeComment(parameter.Name))
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Structured sort expression for exact query parameter `%s`.", parameter.Name))
 		fmt.Fprintf(output, "type %s = %s\n\n", sortType, strings.Join(members, " | "))
 		optional := "?"
 		valueType := "readonly " + sortType + "[]"
@@ -512,13 +508,13 @@ func emitQueryTypes(output *bytes.Buffer, document *ir.Document, operation ir.Op
 		}
 		return nil
 	}
-	fmt.Fprintf(output, "/**\n * Complete query input for `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
+	lines := []string{fmt.Sprintf("Complete query input for `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path)}
 	for _, parameter := range parameters {
 		if parameter.Description != "" {
-			fmt.Fprintf(output, " * - `%s`: %s\n", parameter.Property, sanitizeComment(parameter.Description))
+			lines = append(lines, fmt.Sprintf("- `%s`: %s", parameter.Property, parameter.Description))
 		}
 	}
-	output.WriteString(" */\n")
+	writeJSDoc(output, "", jsDocBlock, lines...)
 	fmt.Fprintf(output, "type %sQueryInput = %s\n\n", operationName, strings.Join(parts, " & "))
 	return nil
 }
@@ -1542,16 +1538,16 @@ func effectiveOperationServers(document *ir.Document, operation ir.Operation) ([
 }
 
 func emitOutputJSDoc(output *bytes.Buffer, operation ir.Operation, item ManifestOperation, outputType string) {
-	fmt.Fprintf(output, "/**\n * Output of `%s` (`%s %s`).\n", operation.OperationID, operation.Method, operation.Path)
+	lines := []string{fmt.Sprintf("Output of `%s` (`%s %s`).", operation.OperationID, operation.Method, operation.Path), ""}
 	if regexp.MustCompile(`^Contract\.[A-Za-z_$][A-Za-z0-9_$]*$`).MatchString(outputType) {
-		fmt.Fprintf(output, " *\n * Schema: {@link %s}.\n", outputType)
+		lines = append(lines, fmt.Sprintf("Schema: {@link %s}.", outputType))
 	} else {
-		fmt.Fprintf(output, " *\n * Type: %s.\n", jsDocTypeReference(outputType))
+		lines = append(lines, "Type: "+jsDocTypeReference(outputType)+".")
 	}
 	if item.Deprecated {
-		output.WriteString(" *\n * @deprecated This operation is deprecated.\n")
+		lines = append(lines, "", "@deprecated This operation is deprecated.")
 	}
-	output.WriteString(" */\n")
+	writeJSDoc(output, "", jsDocBlock, lines...)
 }
 
 func jsDocTypeReference(typeName string) string {
@@ -1587,23 +1583,20 @@ func emitOperationEntryJSDoc(output *bytes.Buffer, indent string, operation Mani
 	if comment == "" {
 		comment = manifestRouteKey(operation)
 	}
-	fmt.Fprintf(output, "%s/**\n", indent)
-	fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(comment))
+	lines := []string{comment}
 	if operation.Description != "" {
-		fmt.Fprintf(output, "%s *\n", indent)
-		fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(operation.Description))
+		lines = append(lines, "", operation.Description)
 	}
-	fmt.Fprintf(output, "%s *\n", indent)
+	lines = append(lines, "")
 	if operation.OperationID != "" {
-		fmt.Fprintf(output, "%s * Operation ID: `%s`. HTTP: `%s %s`.\n", indent, operation.OperationID, operation.Method, operation.Path)
+		lines = append(lines, fmt.Sprintf("Operation ID: `%s`. HTTP: `%s %s`.", operation.OperationID, operation.Method, operation.Path))
 	} else {
-		fmt.Fprintf(output, "%s * HTTP: `%s %s`.\n", indent, operation.Method, operation.Path)
+		lines = append(lines, fmt.Sprintf("HTTP: `%s %s`.", operation.Method, operation.Path))
 	}
 	if operation.Deprecated {
-		fmt.Fprintf(output, "%s *\n", indent)
-		fmt.Fprintf(output, "%s * @deprecated This operation is deprecated.\n", indent)
+		lines = append(lines, "", "@deprecated This operation is deprecated.")
 	}
-	fmt.Fprintf(output, "%s */\n", indent)
+	writeJSDoc(output, indent, jsDocBlock, lines...)
 }
 
 func emitOperationJSDoc(output *bytes.Buffer, indent string, operation ManifestOperation) {
@@ -1619,27 +1612,20 @@ func emitOperationCallJSDoc(output *bytes.Buffer, indent string, operation Manif
 	if comment == "" {
 		comment = manifestRouteKey(operation)
 	}
-	fmt.Fprintf(output, "%s/**\n", indent)
-	fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(comment))
+	lines := []string{comment}
 	if operation.Description != "" {
-		fmt.Fprintf(output, "%s *\n", indent)
-		fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(operation.Description))
+		lines = append(lines, "", operation.Description)
 	}
-	fmt.Fprintf(output, "%s *\n", indent)
+	lines = append(lines, "")
 	if operation.OperationID != "" {
-		fmt.Fprintf(output, "%s * Operation ID: `%s`.\n", indent, operation.OperationID)
+		lines = append(lines, fmt.Sprintf("Operation ID: `%s`.", operation.OperationID))
 	}
 	if includeHTTP {
-		fmt.Fprintf(output, "%s * HTTP: `%s %s`.\n", indent, operation.Method, operation.Path)
+		lines = append(lines, fmt.Sprintf("HTTP: `%s %s`.", operation.Method, operation.Path))
 	}
 	if operation.Deprecated {
-		fmt.Fprintf(output, "%s *\n", indent)
-		fmt.Fprintf(output, "%s * @deprecated This operation is deprecated.\n", indent)
+		lines = append(lines, "", "@deprecated This operation is deprecated.")
 	}
-	fmt.Fprintf(output, "%s *\n", indent)
-	fmt.Fprintf(output, "%s * @example\n", indent)
-	fmt.Fprintf(output, "%s * ```ts\n", indent)
-	fmt.Fprintf(output, "%s * await %s\n", indent, operation.CallExpression)
-	fmt.Fprintf(output, "%s * ```\n", indent)
-	fmt.Fprintf(output, "%s */\n", indent)
+	lines = append(lines, "", "@example", "```ts", "await "+operation.CallExpression, "```")
+	writeJSDoc(output, indent, jsDocBlock, lines...)
 }

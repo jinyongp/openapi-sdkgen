@@ -1,0 +1,15 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Wildcard repro", "version": "1.0.0" },
+  "paths": {
+    "/proxy": {
+      "post": {
+        "operationId": "postProxy",
+        "requestBody": {
+          "content": { "*/*": { "schema": {} } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

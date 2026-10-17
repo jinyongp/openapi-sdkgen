@@ -154,37 +154,35 @@ function __sdkgen_enumValueEquals(left: unknown, right: unknown, seen: WeakMap<o
 }
 
 func emitEnumComponentJSDoc(output *bytes.Buffer, plan enumValuesPlan) {
+	summary := fmt.Sprintf("Values declared by OpenAPI component `%s`.", plan.name)
 	if !plan.deprecated {
-		fmt.Fprintf(output, "  /** Values declared by OpenAPI component `%s`. */\n", sanitizeComment(plan.name))
+		writeJSDoc(output, "  ", jsDocInline, summary)
 		return
 	}
-	fmt.Fprintf(output, "  /**\n   * Values declared by OpenAPI component `%s`.\n", sanitizeComment(plan.name))
-	output.WriteString("   * @deprecated This OpenAPI enum is deprecated.\n")
-	output.WriteString("   */\n")
+	writeJSDoc(output, "  ", jsDocBlock, summary, "@deprecated This OpenAPI enum is deprecated.")
 }
 
 func emitEnumMemberJSDoc(output *bytes.Buffer, member string, documentation enumMemberDocumentation) {
 	if documentation.title == "" && documentation.description == "" && !documentation.deprecated {
-		fmt.Fprintf(output, "    /** Exact string value `%s`. */\n", sanitizeComment(member))
+		writeJSDoc(output, "    ", jsDocInline, fmt.Sprintf("Exact string value `%s`.", member))
 		return
 	}
-	output.WriteString("    /**\n")
+	var lines []string
 	if documentation.title != "" {
-		fmt.Fprintf(output, "     * %s\n", sanitizeComment(documentation.title))
+		lines = append(lines, documentation.title)
 	} else if documentation.description == "" {
-		fmt.Fprintf(output, "     * Exact string value `%s`.\n", sanitizeComment(member))
+		lines = append(lines, fmt.Sprintf("Exact string value `%s`.", member))
 	}
 	if documentation.description != "" {
 		if documentation.title != "" {
-			output.WriteString("     *\n")
+			lines = append(lines, "")
 		}
-		fmt.Fprintf(output, "     * %s\n", sanitizeComment(documentation.description))
+		lines = append(lines, documentation.description)
 	}
 	if documentation.deprecated {
-		output.WriteString("     *\n")
-		output.WriteString("     * @deprecated This OpenAPI enum value is deprecated.\n")
+		lines = append(lines, "", "@deprecated This OpenAPI enum value is deprecated.")
 	}
-	output.WriteString("     */\n")
+	writeJSDoc(output, "    ", jsDocBlock, lines...)
 }
 
 func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {

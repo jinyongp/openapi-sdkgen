@@ -288,31 +288,31 @@ func emitSchemaValueJSDoc(output *bytes.Buffer, document *ir.Document, indent st
 	format, _ := schema["format"].(string)
 	defaultValue, hasDefault := schema["default"]
 	deprecated := schemaIsAlwaysDeprecated(document, schema)
-	fmt.Fprintf(output, "%s/**\n", indent)
+	var lines []string
 	if description != "" {
-		fmt.Fprintf(output, "%s * %s\n", indent, sanitizeComment(description))
+		lines = append(lines, description)
 	} else {
-		fmt.Fprintf(output, "%s * %s\n", indent, fallback)
+		lines = append(lines, fallback)
 	}
 	if format != "" {
-		fmt.Fprintf(output, "%s * Format: `%s`.\n", indent, sanitizeComment(format))
+		lines = append(lines, fmt.Sprintf("Format: `%s`.", format))
 	}
 	if boolValue(schema, "readOnly") {
-		fmt.Fprintf(output, "%s * Present in responses; omitted from generated input projections.\n", indent)
+		lines = append(lines, "Present in responses; omitted from generated input projections.")
 	}
 	if boolValue(schema, "writeOnly") {
-		fmt.Fprintf(output, "%s * Accepted in requests; omitted from generated output projections.\n", indent)
+		lines = append(lines, "Accepted in requests; omitted from generated output projections.")
 	}
 	if hasDefault {
-		fmt.Fprintf(output, "%s * @default %s\n", indent, literalTS(defaultValue))
+		lines = append(lines, "@default "+literalTS(defaultValue))
 	}
 	if deprecated {
-		fmt.Fprintf(output, "%s * @deprecated This OpenAPI value is deprecated.\n", indent)
+		lines = append(lines, "@deprecated This OpenAPI value is deprecated.")
 	}
 	if constraints := schemaConstraintSummary(schema); constraints != "" {
-		fmt.Fprintf(output, "%s * Constraints: %s.\n", indent, constraints)
+		lines = append(lines, "Constraints: "+constraints+".")
 	}
-	fmt.Fprintf(output, "%s */\n", indent)
+	writeJSDoc(output, indent, jsDocBlock, lines...)
 }
 
 // schemaConstraintSummary keeps validation-only Schema Object keywords visible
@@ -330,7 +330,7 @@ func schemaConstraintSummary(schema map[string]any) string {
 	items := make([]string, 0, len(keys))
 	for _, key := range keys {
 		if value, ok := schema[key]; ok {
-			items = append(items, "`"+key+"="+sanitizeComment(literalTS(value))+"`")
+			items = append(items, "`"+key+"="+literalTS(value)+"`")
 		}
 	}
 	return strings.Join(items, ", ")
@@ -646,7 +646,7 @@ func objectTypeForScope(document *ir.Document, schema map[string]any, direction 
 			}
 		}
 		propertyIndexTypes = append(propertyIndexTypes, propertyType)
-		emitSchemaValueJSDoc(&output, document, "  ", propertySchema, "OpenAPI property `"+sanitizeComment(wireName)+"`.")
+		emitSchemaValueJSDoc(&output, document, "  ", propertySchema, "OpenAPI property `"+wireName+"`.")
 		fmt.Fprintf(&output, "  %s%s%s: %s\n", projectionReadonly(direction), propertyName, optional, propertyType)
 	}
 	output.WriteString("}")
@@ -1306,8 +1306,4 @@ func literalTS(value any) string {
 func quoteTS(value string) string {
 	data, _ := json.Marshal(value)
 	return string(data)
-}
-
-func sanitizeComment(value string) string {
-	return strings.ReplaceAll(strings.Join(strings.Fields(value), " "), "*/", "* /")
 }

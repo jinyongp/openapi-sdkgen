@@ -59,7 +59,7 @@ func emitErrors(document *ir.Document) ([]byte, error) {
 			if description == "" {
 				description = "Details carried by `" + contract.Code + "`."
 			}
-			fmt.Fprintf(&output, "  /** %s */\n", sanitizeComment(description))
+			writeJSDoc(&output, "  ", jsDocInline, description)
 			fmt.Fprintf(&output, "  readonly %s: %s\n", quoteTS(contract.Code), strings.Join(contract.Details, " | "))
 		}
 		output.WriteString("}\n")

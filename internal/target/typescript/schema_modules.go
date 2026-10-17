@@ -17,10 +17,10 @@ type renderedSchemaProjections struct {
 
 func emitSchemaProjectionJSDoc(output *bytes.Buffer, summary string, deprecated bool) {
 	if !deprecated {
-		fmt.Fprintf(output, "/** %s */\n", summary)
+		writeJSDoc(output, "", jsDocInline, summary)
 		return
 	}
-	fmt.Fprintf(output, "/**\n * %s\n * @deprecated This OpenAPI schema is deprecated.\n */\n", summary)
+	writeJSDoc(output, "", jsDocBlock, summary, "@deprecated This OpenAPI schema is deprecated.")
 }
 
 func emitSchemaArtifactsTo(document *ir.Document, plan *semanticModulePlan, write func(Artifact) error) ([]byte, error) {
@@ -304,9 +304,9 @@ func emitSchemaIndex(document *ir.Document, plan *semanticModulePlan) ([]byte, e
 		}
 		value := componentSchemaValue(document, schema.name)
 		if object, ok := value.(map[string]any); ok {
-			emitSchemaValueJSDoc(&output, document, "  ", object, "OpenAPI component `"+sanitizeComment(schema.name)+"`.")
+			emitSchemaValueJSDoc(&output, document, "  ", object, "OpenAPI component `"+schema.name+"`.")
 		} else {
-			fmt.Fprintf(&output, "  /** OpenAPI component `%s`. */\n", sanitizeComment(schema.name))
+			writeJSDoc(&output, "  ", jsDocInline, fmt.Sprintf("OpenAPI component `%s`.", schema.name))
 		}
 		inputSpecifier, err := plan.relativeModuleSpecifier(plan.fixed["schema-index"], plan.schemaProjectionPath(schema.name, projectionInput))
 		if err != nil {

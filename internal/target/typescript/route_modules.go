@@ -86,7 +86,7 @@ func emitRouteInputs(manifest Manifest, plan *semanticModulePlan) ([]byte, error
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  /** Request sections for `%s`. */\n", sanitizeComment(route))
+		writeJSDoc(&output, "  ", jsDocInline, fmt.Sprintf("Request sections for `%s`.", route))
 		fmt.Fprintf(&output, "  readonly %s: import(%s).RequestInputs\n", quoteTS(route), quoteTS(specifier))
 	}
 	output.WriteString("}\n")
@@ -280,9 +280,9 @@ func emitRequestSectionHelpers(output *bytes.Buffer) {
 	output.WriteString("type SelectedOperationSection<Source extends OperationSource, Section extends PropertyKey> =\n")
 	output.WriteString("  Section extends keyof SelectedOperationSections<Source> ? SelectedOperationSections<Source>[Section] : never\n\n")
 	for _, descriptor := range requestInputSectionDescriptors {
-		fmt.Fprintf(output, "/** Generated %s request section for one exact route. */\n", descriptor.sectionKey)
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Generated %s request section for one exact route.", descriptor.sectionKey))
 		fmt.Fprintf(output, "export type Route%s<Route extends RouteSourceForSection<%s>> = PublicType<SelectedRouteSection<Route, %s>>\n\n", descriptor.publicHelperSuffix, quoteTS(descriptor.sectionKey), quoteTS(descriptor.sectionKey))
-		fmt.Fprintf(output, "/** Generated %s request section selected by operation ID or generated method type. */\n", descriptor.sectionKey)
+		writeJSDoc(output, "", jsDocInline, fmt.Sprintf("Generated %s request section selected by operation ID or generated method type.", descriptor.sectionKey))
 		fmt.Fprintf(output, "export type Operation%s<Source extends OperationSourceForSection<%s>> = PublicType<SelectedOperationSection<Source, %s>>\n\n", descriptor.publicHelperSuffix, quoteTS(descriptor.sectionKey), quoteTS(descriptor.sectionKey))
 	}
 	parameterLocations := make([]string, 0, len(requestInputSectionDescriptors)-1)

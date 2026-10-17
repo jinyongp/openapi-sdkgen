@@ -578,7 +578,7 @@ func emitCallbacks(document *ir.Document, callbacks []callbackDefinition, progra
 	operationTree := buildCallbackTree(callbacks, false, false)
 	componentTree := buildCallbackTree(callbacks, true, false)
 	for _, callback := range callbacks {
-		fmt.Fprintf(&output, "/** Host-owned Callback endpoint for URL expression %s. No route is generated. */\n", quoteTS(callback.expression))
+		writeJSDoc(&output, "", jsDocInline, fmt.Sprintf("Host-owned Callback endpoint for URL expression %s. No route is generated.", quoteTS(callback.expression)))
 		fmt.Fprintf(&output, "interface %sContext extends InboundRequestContext {\n  readonly params: %s\n", callback.typeName, callback.paramsType)
 		if callback.hasBody {
 			fmt.Fprintf(&output, "  readonly body: %s\n", callback.bodyType)
