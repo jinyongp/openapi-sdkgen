@@ -98,7 +98,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
-| `--typecheck` | Enable consumer type checks of generated TypeScript source by removing `@ts-nocheck`; default `false` |
+| `--typecheck` | Remove `@ts-nocheck` so your compiler can check generated TypeScript; does not run `tsc`. Default `false` |
 | `--with <addon>` | Enable `metadata` or `server` artifacts; repeatable |
 | `--operation <operationId>` | Generate an exact operation ID; repeatable |
 | `--route <METHOD /path>` | Generate an exact method/path template; repeatable |

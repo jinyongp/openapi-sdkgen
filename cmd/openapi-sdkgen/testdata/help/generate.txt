@@ -16,8 +16,8 @@ Generation:
                                   managed output
   --check                         Validate generation without writing output
   --incremental                   Update a manifest-owned output directory
-  --typecheck                     Enable consumer type checks of generated TypeScript
-                                  source (default false)
+  --typecheck                     Remove @ts-nocheck for your compiler; does not run tsc
+                                  (default false)
   --with <addon>                  Add generated artifacts (available: metadata, server)
                                   (repeatable)
   --operation <id>                Generate an exact OpenAPI operationId; combine with

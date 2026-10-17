@@ -48,6 +48,11 @@ openapi-sdkgen generate --input ./openapi.yaml --target typescript \
   --output ./src/generated/api --typecheck
 ```
 
+이 옵션은 `tsc`를 실행하지 않습니다. 생성 후에는 설치된 컴파일러와 프로젝트
+설정으로 `tsc --noEmit` 등 애플리케이션의 타입 검사 명령을 실행하세요.
+생성에 성공해도 출력된 TypeScript의 컴파일 성공까지 보장하지는 않습니다.
+SDK 생성에는 TypeScript를 설치하지 않아도 됩니다.
+
 반복해서 생성한다면 TOML 설정 파일에 같은 값을 지정하세요.
 
 ```toml

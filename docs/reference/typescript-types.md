@@ -48,6 +48,11 @@ openapi-sdkgen generate --input ./openapi.yaml --target typescript \
   --output ./src/generated/api --typecheck
 ```
 
+This flag does not run `tsc`. After generation, run your application's type-check
+command, such as `tsc --noEmit`, using your installed compiler and project
+configuration. Successful generation alone does not confirm that the emitted
+TypeScript compiles. SDK generation does not require a TypeScript installation.
+
 For repeated generation, put the same choice in your TOML configuration:
 
 ```toml

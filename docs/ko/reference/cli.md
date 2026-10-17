@@ -98,7 +98,7 @@ openapi-sdkgen generate [options]
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 생성 파일 검증 |
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 매니페스트에 기록된 출력 갱신 |
-| `--typecheck` | 생성 소스의 `@ts-nocheck`를 제거해 애플리케이션에서 타입 검사. 기본값은 `false` |
+| `--typecheck` | 애플리케이션의 컴파일러가 생성 소스를 검사하도록 `@ts-nocheck` 제거. `tsc`를 실행하지 않음. 기본값은 `false` |
 | `--with <addon>` | `metadata` 또는 `server` 추가. 반복 가능 |
 | `--operation <operationId>` | 정확한 API 식별자로 생성할 API 지정. 반복 가능 |
 | `--route <METHOD /path>` | 정확한 메서드·경로로 생성할 API 지정. 반복 가능 |

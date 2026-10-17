@@ -477,7 +477,7 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		Name: "incremental", Summary: "Update a manifest-owned output directory",
 	}, false)
 	values.typeCheck = flags.Bool(generationGroup, helpOption{
-		Name: "typecheck", Summary: "Enable consumer type checks of generated TypeScript source (default false)",
+		Name: "typecheck", Summary: "Remove @ts-nocheck for your compiler; does not run tsc (default false)",
 	}, false)
 	flags.Var(generationGroup, helpOption{
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",
