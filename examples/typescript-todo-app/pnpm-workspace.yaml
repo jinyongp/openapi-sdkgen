@@ -1,0 +1,2 @@
+# Keep example dependencies and their lockfile independent of the root workspace.
+packages: []
