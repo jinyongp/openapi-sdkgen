@@ -1,7 +1,7 @@
 allowBuilds:
   esbuild: true
 overrides:
-  vite: 6.4.3
+  vite: 6.4.4
 minimumReleaseAgeExclude:
   - '@shikijs/core@4.4.3'
   - '@shikijs/engine-javascript@4.4.3'
@@ -11,4 +11,4 @@ minimumReleaseAgeExclude:
   - '@shikijs/themes@4.4.3'
   - '@shikijs/types@4.4.3'
   - shiki@4.4.3
-  - '@lucide/vue@1.53.0'
+  - '@lucide/vue@1.53.0 || 1.59.0'

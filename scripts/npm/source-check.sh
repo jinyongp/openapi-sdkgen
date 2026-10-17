@@ -8,7 +8,7 @@ if [[ "${1:-}" == --help ]]; then
   exit 0
 fi
 require_system_node
-PNPM_VERSION="12.4.1"
+PNPM_VERSION="12.14.0"
 package_dir="$ROOT/npm"
 node - "$package_dir/package.json" <<'NODE'
 const fs = require("node:fs");

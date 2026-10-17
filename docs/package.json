@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
-  "packageManager": "pnpm@12.4.1",
+  "packageManager": "pnpm@12.14.0",
   "engines": {
     "node": "24.x"
   },
@@ -16,12 +16,12 @@
     "docs:preview": "vitepress preview ."
   },
   "devDependencies": {
-    "@lucide/vue": "1.53.0",
-    "@sectile/chart": "0.15.6",
-    "@shikijs/langs": "^4.4.3",
-    "@shikijs/themes": "^4.4.3",
+    "@lucide/vue": "1.59.0",
+    "@sectile/chart": "0.15.7",
+    "@shikijs/langs": "^4.5.0",
+    "@shikijs/themes": "^4.5.0",
     "fflate": "0.8.3",
-    "shiki": "^4.4.3",
+    "shiki": "^4.5.0",
     "vitepress": "^1.6.4"
   }
 }

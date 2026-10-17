@@ -11,5 +11,5 @@ rm -rf "$directory/src/generated/capabilities-sdk"
   --with server \
   --with metadata \
   --output "$directory/src/generated/capabilities-sdk"
-corepack pnpm@12.4.1 --dir "$directory" install --frozen-lockfile
-corepack pnpm@12.4.1 --dir "$directory" run build
+corepack pnpm@12.14.0 --dir "$directory" install --frozen-lockfile
+corepack pnpm@12.14.0 --dir "$directory" run build
