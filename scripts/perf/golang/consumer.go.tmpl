@@ -1,0 +1,6 @@
+package main
+import("context";"fmt";"io";"net/http";"strings";"example.test/goperf/api/types";ENTRY_IMPORTS)
+type memoryTransport struct{}
+func(memoryTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(memoryTransport)Do(*http.Request,types.TransportOptions)(*http.Response,error){return &http.Response{StatusCode:200,Header:http.Header{"Content-Type":{"application/json"}},Body:io.NopCloser(strings.NewReader(`{"id":"one","title":"Measured todo"}`))},nil}
+func main(){ctx:=context.Background();ENTRY_BODY;fmt.Println("consumer completed")}

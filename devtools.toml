@@ -282,3 +282,6 @@ exec = ["bash", "scripts/examples/example-go.sh"]
 
 [commands."golang:verify"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/golang.sh"]
+
+[commands."golang:perf"]
+exec = ["bash", "scripts/perf/golang.sh"]

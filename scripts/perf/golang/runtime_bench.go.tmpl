@@ -1,0 +1,589 @@
+package api_test
+
+import (
+	"bytes"
+	"compress/flate"
+	"compress/gzip"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	api "example.test/goperf/api"
+	"example.test/goperf/api/internal/schema"
+	"example.test/goperf/api/internal/transport"
+	"example.test/goperf/api/models"
+	"example.test/goperf/api/types"
+	"github.com/andybalholm/brotli"
+	"github.com/klauspost/compress/zstd"
+)
+
+const todoJSON = `{"id":"one","title":"Measured todo"}`
+
+type memoryTransport struct {
+	body         string
+	status       int
+	media        string
+	checkAuth    bool
+	open, closed atomic.Int64
+}
+
+func (t *memoryTransport) Capabilities() types.TransportCapabilities {
+	return types.TransportCapabilities{ResponseBody: types.Encoded}
+}
+func (t *memoryTransport) Do(r *http.Request, _ types.TransportOptions) (*http.Response, error) {
+	if t.checkAuth && r.Header.Get("Authorization") != "Bearer measured-token" {
+		return nil, fmt.Errorf("missing provider credential")
+	}
+	if r.Body != nil {
+		if _, err := io.Copy(io.Discard, r.Body); err != nil {
+			return nil, err
+		}
+		r.Body.Close()
+	}
+	t.open.Add(1)
+	return &http.Response{StatusCode: t.status, Header: http.Header{"Content-Type": {t.media}}, Body: &countedBody{Reader: strings.NewReader(t.body), onClose: func() { t.closed.Add(1) }}}, nil
+}
+
+type countedBody struct {
+	io.Reader
+	onClose func()
+	once    sync.Once
+	reads   int
+}
+
+func (b *countedBody) Read(p []byte) (int, error) { b.reads++; return b.Reader.Read(p) }
+func (b *countedBody) Close() error               { b.once.Do(b.onClose); return nil }
+func client(b testing.TB, t *memoryTransport) *api.Client {
+	b.Helper()
+	c, err := api.NewClient(api.ClientOptions{BaseURL: "https://example.test", Transport: t, Codecs: measuredCodecs(t.checkAuth), SecurityProvider: func(context.Context, types.SecurityCredentialContext) (types.SecurityCredentials, error) {
+		return types.SecurityCredentials{"bearer": {Kind: "http-bearer", Token: "measured-token"}}, nil
+	}})
+	if err != nil {
+		b.Fatal(err)
+	}
+	return c
+}
+func measuredCodecs(enabled bool) map[string]types.MediaCodec {
+	if !enabled {
+		return nil
+	}
+	return map[string]types.MediaCodec{"application/json": {Decode: func(_ context.Context, response *http.Response, _ types.MediaContext) (types.Value, error) {
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return types.Value{}, err
+		}
+		return types.ParseValue(body)
+	}}}
+}
+func assertClosed(b testing.TB, t *memoryTransport) {
+	b.Helper()
+	if t.open.Load() != t.closed.Load() {
+		b.Fatalf("response leak %d/%d", t.open.Load(), t.closed.Load())
+	}
+}
+
+func BenchmarkSmallJSON(b *testing.B) {
+	for _, mode := range []string{"http-json", "do", "raw", "error"} {
+		b.Run(mode, func(b *testing.B) {
+			t := &memoryTransport{body: todoJSON, status: 200, media: "application/json"}
+			if mode == "error" {
+				t.status = 500
+			}
+			c := client(b, t)
+			ctx := context.Background()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				switch mode {
+				case "http-json":
+					req, err := http.NewRequestWithContext(ctx, "GET", "https://example.test/todo", nil)
+					if err != nil {
+						b.Fatal(err)
+					}
+					r, err := t.Do(req, types.TransportOptions{})
+					if err != nil {
+						b.Fatal(err)
+					}
+					var value struct{ ID, Title string }
+					decoder := json.NewDecoder(r.Body)
+					decoder.DisallowUnknownFields()
+					err = decoder.Decode(&value)
+					r.Body.Close()
+					if err != nil || value.ID != "one" || value.Title != "Measured todo" {
+						b.Fatal(value, err)
+					}
+				case "do":
+					v, err := c.Operations.Todo().Do(ctx)
+					if err != nil {
+						b.Fatal(err)
+					}
+					_ = v
+				case "raw":
+					v, err := c.Operations.Todo().Raw(ctx)
+					if err != nil {
+						b.Fatal(err)
+					}
+					_ = v
+				case "error":
+					_, err := c.Operations.Todo().Do(ctx)
+					if err == nil {
+						b.Fatal("error response accepted")
+					}
+				}
+			}
+			b.StopTimer()
+			assertClosed(b, t)
+		})
+	}
+}
+
+func BenchmarkLargeJSON(b *testing.B) {
+	for _, size := range []int{1024, 1 << 20, 16 << 20} {
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			prefix := `{"text":"`
+			suffix := `","choice":1,"next":{"text":"nested","choice":"branch"},"extra":"value"}`
+			data := []byte(prefix + strings.Repeat("x", size-len(prefix)-len(suffix)) + suffix)
+			ctx := context.Background()
+			b.SetBytes(int64(len(data)))
+			b.ReportAllocs()
+			var before, after runtime.MemStats
+			runtime.ReadMemStats(&before)
+			b.ResetTimer()
+			for b.Loop() {
+				v, err := types.ParseValue(data)
+				if err != nil {
+					b.Fatal(err)
+				}
+				dto, err := models.DecodeNodeInput(ctx, v)
+				if err != nil {
+					b.Fatal(err)
+				}
+				encoded, err := models.EncodeNodeInput(ctx, dto)
+				if err != nil || !encoded.Equal(v) {
+					b.Fatal(err)
+				}
+			}
+			b.StopTimer()
+			runtime.ReadMemStats(&after)
+			b.ReportMetric(float64(after.NumGC-before.NumGC)/float64(b.N), "GC/op")
+		})
+	}
+}
+func BenchmarkXML(b *testing.B) {
+	t := &memoryTransport{body: `<p:record xmlns:p="urn:perf" id="7"><value>text</value></p:record>`, status: 200, media: "application/xml"}
+	c := client(b, t)
+	ctx := context.Background()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for b.Loop() {
+		if _, err := c.Operations.XML().Do(ctx); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+	assertClosed(b, t)
+}
+
+type zeroReader struct {
+	remaining int64
+	read      *atomic.Int64
+	closed    *atomic.Int64
+}
+
+func (r *zeroReader) Read(p []byte) (int, error) {
+	if r.remaining == 0 {
+		return 0, io.EOF
+	}
+	n := min(int64(len(p)), r.remaining)
+	clear(p[:n])
+	r.remaining -= n
+	r.read.Add(n)
+	return int(n), nil
+}
+func (r *zeroReader) Close() error {
+	if r.closed != nil {
+		r.closed.Add(1)
+	}
+	return nil
+}
+func BenchmarkMultipart(b *testing.B) {
+	for _, size := range []int64{1 << 20, 64 << 20} {
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			t := &memoryTransport{status: 204, media: "application/json"}
+			c := client(b, t)
+			ctx := context.Background()
+			b.ReportAllocs()
+			b.SetBytes(size)
+			b.ResetTimer()
+			for b.Loop() {
+				var read, closed atomic.Int64
+				binary := types.BinaryFromReader(&zeroReader{remaining: size, read: &read, closed: &closed}, types.BinaryMetadata{Size: types.Some(size)})
+				call := c.Operations.Upload(api.UploadInput{Body: api.UploadBody{File: binary}})
+				if read.Load() != 0 {
+					b.Fatal("source read during call construction")
+				}
+				if _, err := call.Do(ctx); err != nil {
+					b.Fatal(err)
+				}
+				if read.Load() != size || closed.Load() != 1 {
+					b.Fatal(read.Load(), closed.Load())
+				}
+			}
+			b.StopTimer()
+			assertClosed(b, t)
+		})
+	}
+}
+
+func coding(b testing.TB, payload []byte, name string) []byte {
+	b.Helper()
+	var out bytes.Buffer
+	var w io.WriteCloser
+	switch name {
+	case "gzip":
+		w = gzip.NewWriter(&out)
+	case "deflate":
+		var err error
+		w, err = flate.NewWriter(&out, flate.DefaultCompression)
+		if err != nil {
+			b.Fatal(err)
+		}
+	case "br":
+		w = brotli.NewWriter(&out)
+	case "zstd":
+		var err error
+		w, err = zstd.NewWriter(&out, zstd.WithEncoderConcurrency(1))
+		if err != nil {
+			b.Fatal(err)
+		}
+	case "chain":
+		return coding(b, coding(b, payload, "gzip"), "br")
+	}
+	if _, err := w.Write(payload); err != nil {
+		b.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		b.Fatal(err)
+	}
+	return out.Bytes()
+}
+func BenchmarkCompression(b *testing.B) {
+	for _, size := range []int{1024, 1 << 20, 16 << 20} {
+		for _, name := range []string{"gzip", "deflate", "br", "zstd", "chain"} {
+			b.Run(fmt.Sprintf("%s/%d", name, size), func(b *testing.B) {
+				payload := bytes.Repeat([]byte("x"), size)
+				encoded := coding(b, payload, name)
+				header := name
+				if name == "chain" {
+					header = "gzip, br"
+				}
+				ctx := context.Background()
+				var first int64
+				b.ReportAllocs()
+				b.SetBytes(int64(size))
+				b.ResetTimer()
+				for b.Loop() {
+					closed := 0
+					body := &countedBody{Reader: bytes.NewReader(encoded), onClose: func() { closed++ }}
+					start := time.Now()
+					r, lease, err := transport.NewResponseBody(ctx, &http.Response{StatusCode: 200, Header: http.Header{"Content-Encoding": {header}}, Body: body}, "GET", types.Encoded)
+					if err != nil {
+						b.Fatal(err)
+					}
+					if body.reads != 0 {
+						b.Fatal("eager decoder")
+					}
+					var p [1]byte
+					if _, err := io.ReadFull(r.Body, p[:]); err != nil {
+						b.Fatal(err)
+					}
+					first += time.Since(start).Nanoseconds()
+					n, err := io.Copy(io.Discard, r.Body)
+					lease.Close()
+					if err != nil || n+1 != int64(size) || closed != 1 {
+						b.Fatal(n, err, closed)
+					}
+				}
+				b.StopTimer()
+				b.ReportMetric(float64(first)/float64(b.N), "first-byte-ns/op")
+			})
+		}
+	}
+}
+
+type framesReader struct {
+	remaining int
+	offset    int
+	chunk     int
+}
+
+func (r *framesReader) Read(p []byte) (int, error) {
+	if r.remaining == 0 {
+		return 0, io.EOF
+	}
+	frame := todoJSON + "\n"
+	n := min(len(p), r.chunk, len(frame)-r.offset)
+	copy(p, frame[r.offset:r.offset+n])
+	r.offset += n
+	if r.offset == len(frame) {
+		r.offset = 0
+		r.remaining--
+	}
+	return n, nil
+}
+func (r *framesReader) Close() error { return nil }
+
+type frameTransport struct {
+	count, chunk   int
+	opened, closed atomic.Int64
+}
+
+func (t *frameTransport) Capabilities() types.TransportCapabilities {
+	return types.TransportCapabilities{ResponseBody: types.Encoded}
+}
+func (t *frameTransport) Do(request *http.Request, _ types.TransportOptions) (*http.Response, error) {
+	if request.Method != "GET" || request.URL.Path != "/events" || request.Header.Get("Accept") != "application/x-ndjson" {
+		return nil, fmt.Errorf("unexpected stream request")
+	}
+	t.opened.Add(1)
+	return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"application/x-ndjson"}}, Body: &countedBody{Reader: &framesReader{remaining: t.count, chunk: t.chunk}, onClose: func() { t.closed.Add(1) }}}, nil
+}
+func frameClient(b testing.TB, transport *frameTransport) *api.Client {
+	b.Helper()
+	c, err := api.NewClient(api.ClientOptions{BaseURL: "https://example.test", Transport: transport})
+	if err != nil {
+		b.Fatal(err)
+	}
+	return c
+}
+func BenchmarkStream(b *testing.B) {
+	for _, count := range []int{1000, 100000} {
+		for _, chunk := range []int{7, 4096} {
+			for _, slow := range []bool{false, true} {
+				b.Run(fmt.Sprintf("%d/chunk%d/slow%t", count, chunk, slow), func(b *testing.B) {
+					ctx := context.Background()
+					transport := &frameTransport{count: count, chunk: chunk}
+					c := frameClient(b, transport)
+					var first, total int64
+					b.ReportAllocs()
+					b.SetBytes(int64(count * len(todoJSON)))
+					b.ResetTimer()
+					for b.Loop() {
+						start := time.Now()
+						source := c.Operations.Events().WithOptions(types.RequestOptions{MaxStreamFrameBytes: types.Some(1024)}).Stream(ctx)
+						n := 0
+						for source.Next() {
+							if n == 0 {
+								first += time.Since(start).Nanoseconds()
+							}
+							item := source.Item()
+							if item.ID != "one" || item.Title != "Measured todo" {
+								b.Fatal("bad typed item", item)
+							}
+							n++
+							if slow && n%1000 == 0 {
+								time.Sleep(time.Microsecond)
+							}
+						}
+						total += time.Since(start).Nanoseconds()
+						if err := source.Err(); err != nil || n != count {
+							b.Fatal(n, err)
+						}
+						if err := source.Close(); err != nil {
+							b.Fatal(err)
+						}
+					}
+					b.StopTimer()
+					if transport.opened.Load() != transport.closed.Load() {
+						b.Fatal("stream response leak", transport.opened.Load(), transport.closed.Load())
+					}
+					b.ReportMetric(float64(first)/float64(b.N), "first-item-ns/op")
+					b.ReportMetric(float64(count*b.N)*1e9/float64(total), "items/s")
+				})
+			}
+		}
+	}
+}
+
+func BenchmarkRegex(b *testing.B) {
+	for _, sample := range []struct{ name, pattern, input string }{{"ascii", "^[a-z]+$", "sdkgen"}, {"unicode", `^\p{L}+$`, "한글"}, {"lookaround", "a(?=b)", "ab"}, {"backreference", `^(\w+)-\1$`, "go-go"}, {"complexity", "^(a+)+$", strings.Repeat("a", 32) + "!"}} {
+		b.Run(sample.name, func(b *testing.B) {
+			b.Run("compile", func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					if _, err := schema.PreparePattern(sample.pattern); err != nil {
+						b.Fatal(err)
+					}
+				}
+			})
+			p, err := schema.PreparePattern(sample.pattern)
+			if err != nil {
+				b.Fatal(err)
+			}
+			b.Run("execute", func(b *testing.B) {
+				b.ReportAllocs()
+				ctx := context.Background()
+				for b.Loop() {
+					ok, err := p.Match(ctx, sample.input)
+					if sample.name == "complexity" {
+						if err == nil {
+							b.Fatal("execution limit lost")
+						}
+					} else if err != nil || !ok {
+						b.Fatal(ok, err)
+					}
+				}
+			})
+		})
+	}
+}
+func BenchmarkConcurrent(b *testing.B) {
+	for _, workers := range []int{1, 8, 64} {
+		b.Run(fmt.Sprint(workers), func(b *testing.B) {
+			t := &memoryTransport{body: todoJSON, status: 200, media: "application/json", checkAuth: true}
+			c := client(b, t)
+			ctx := context.Background()
+			var latency atomic.Int64
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				var wg sync.WaitGroup
+				for range workers {
+					wg.Go(func() {
+						start := time.Now()
+						_, err := c.Operations.Secure().Do(ctx)
+						latency.Add(time.Since(start).Nanoseconds())
+						if err != nil {
+							b.Error(err)
+						}
+					})
+				}
+				wg.Wait()
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(latency.Load())/float64(b.N*workers), "latency-ns/call")
+			b.ReportMetric(float64(b.N*workers)/b.Elapsed().Seconds(), "calls/s")
+			assertClosed(b, t)
+		})
+	}
+}
+
+// Forced GC is used only in this diagnostic test, never in timed benchmarks.
+// Sample within consumption, after releasing the current item, so live retention
+// is separate from total allocations and from the authored source's fixed state.
+func TestStreamLiveHeap(t *testing.T) {
+	t.Run("schema-validation-enabled", func(t *testing.T) {
+		transport := &memoryTransport{body: "{\"id\":\"one\"}\n", status: 200, media: "application/x-ndjson"}
+		source := client(t, transport).Operations.Events().Stream(context.Background())
+		if source.Next() || source.Err() == nil {
+			t.Fatal("invalid item bypassed generated schema validation")
+		}
+		if err := source.Close(); err != nil {
+			t.Fatal(err)
+		}
+		assertClosed(t, transport)
+	})
+	for _, count := range []int{1000, 100000} {
+		transport := &frameTransport{count: count, chunk: 7}
+		c := frameClient(t, transport)
+		ctx := context.Background()
+		runtime.GC()
+		var before, peak runtime.MemStats
+		runtime.ReadMemStats(&before)
+		source := c.Operations.Events().WithOptions(types.RequestOptions{MaxStreamFrameBytes: types.Some(1024)}).Stream(ctx)
+		n := 0
+		for source.Next() {
+			item := source.Item()
+			if item.ID != "one" || item.Title != "Measured todo" {
+				t.Fatal("bad typed item", item)
+			}
+			n++
+			if n%1000 == 0 {
+				runtime.GC()
+				var sample runtime.MemStats
+				runtime.ReadMemStats(&sample)
+				peak.HeapAlloc = max(peak.HeapAlloc, sample.HeapAlloc)
+			}
+		}
+		if err := source.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if n != count || source.Err() != nil || transport.opened.Load() != transport.closed.Load() {
+			t.Fatal(n, source.Err(), transport.opened.Load(), transport.closed.Load())
+		}
+		t.Logf("typedFrames=%d baseline=%d peakLiveHeap=%d delta=%d", count, before.HeapAlloc, peak.HeapAlloc, int64(peak.HeapAlloc)-int64(before.HeapAlloc))
+	}
+}
+
+func TestCompressionLiveHeap(t *testing.T) {
+	for _, size := range []int{1024, 1 << 20, 16 << 20} {
+		for _, name := range []string{"gzip", "deflate", "br", "zstd", "chain"} {
+			payload := bytes.Repeat([]byte("x"), size)
+			encoded := coding(t, payload, name)
+			header := name
+			if name == "chain" {
+				header = "gzip, br"
+			}
+			runtime.GC()
+			var before, active runtime.MemStats
+			runtime.ReadMemStats(&before)
+			closed := 0
+			body := &countedBody{Reader: bytes.NewReader(encoded), onClose: func() { closed++ }}
+			r, lease, err := transport.NewResponseBody(context.Background(), &http.Response{StatusCode: 200, Header: http.Header{"Content-Encoding": {header}}, Body: body}, "GET", types.Encoded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var first [1]byte
+			if _, err := io.ReadFull(r.Body, first[:]); err != nil {
+				t.Fatal(err)
+			}
+			runtime.GC()
+			runtime.ReadMemStats(&active)
+			n, err := io.Copy(io.Discard, r.Body)
+			lease.Close()
+			if err != nil || n+1 != int64(size) || closed != 1 {
+				t.Fatal(n, err, closed)
+			}
+			t.Logf("coding=%s decodedBytes=%d encodedBytes=%d baseline=%d decoderLiveHeap=%d delta=%d", name, size, len(encoded), before.HeapAlloc, active.HeapAlloc, int64(active.HeapAlloc)-int64(before.HeapAlloc))
+			runtime.KeepAlive(payload)
+		}
+	}
+}
+
+func TestLargeJSONLiveHeapAndGC(t *testing.T) {
+	for _, size := range []int{1024, 1 << 20, 16 << 20} {
+		prefix := `{"text":"`
+		suffix := `","choice":1,"next":{"text":"nested","choice":"branch"},"extra":"value"}`
+		data := []byte(prefix + strings.Repeat("x", size-len(prefix)-len(suffix)) + suffix)
+		runtime.GC()
+		var before, active runtime.MemStats
+		runtime.ReadMemStats(&before)
+		value, err := types.ParseValue(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		dto, err := models.DecodeNodeInput(context.Background(), value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := models.EncodeNodeInput(context.Background(), dto)
+		if err != nil || !encoded.Equal(value) {
+			t.Fatal(err)
+		}
+		runtime.GC()
+		runtime.ReadMemStats(&active)
+		t.Logf("jsonBytes=%d baseline=%d liveHeap=%d delta=%d GCIncludingForced=%d", len(data), before.HeapAlloc, active.HeapAlloc, int64(active.HeapAlloc)-int64(before.HeapAlloc), active.NumGC-before.NumGC)
+		runtime.KeepAlive(data)
+		runtime.KeepAlive(value)
+		runtime.KeepAlive(dto)
+		runtime.KeepAlive(encoded)
+	}
+}
