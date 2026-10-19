@@ -67,3 +67,17 @@ CLI·client·types·streaming·server 참조 24개 페이지를 추가했다. �
 리뷰: template/runtime와 public namespace·옵션·모델 codec·metadata·static/dynamic 선택,
 파일/stream close·취소·수신 오류 및 CLI 호출자를 확인했다. 변환 중 CLI target 표가 오염된 것을
 수정하고 Go 전용 분석 필드로 보완했다. 전체 페이지·링크·검색 검사는 W06/W08에서 완성한다.
+
+## W06 — Go 예제·지원·호환성·확장
+
+Go 홈·예제 3개·Playground 진입·지원·호환성·확장으로 나머지 16개 페이지를 완성했다.
+Go SSE용 최소 명세를 추가했다. 공개 Go 제공자 CI 측정이 없는 상태를 정확히 알리고 TS 표를
+Go 근거로 재사용하지 않는다. 두 타깃의 공개 문서는 정식 출시 계약으로 작성했다.
+
+검증: 112개 실제 페이지/내부 링크, `validate-sdk-content.mjs --all`의 EN/KO 전체 코드 일치·
+출시 문구·Go consumer API 검사, `build:docs` 통과. `verify-go-docs.mjs`는 첫 호출·SSE·웹훅의
+실제 전체 코드 블록 3개를 각각 생성·컴파일·실행하고 출력과 대조한다. 모두 통과했다.
+리뷰: 28개 주제×4 조합, 입력별 기능 분리, SSE 종료/close/Err, 로컬 웹훅 상태,
+공개 측정 근거와 구현 지원 계약의 구분, 확장 YAML/Go API를 대조했다.
+존재하지 않는 공통 Sort 타입 표기를 실제 생성 모델의 Field/Direction 설명으로 수정했다.
+Go 선택 개방은 Playground와 legacy가 완성되는 W08에서 한다.
