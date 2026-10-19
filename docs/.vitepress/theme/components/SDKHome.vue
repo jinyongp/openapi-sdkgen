@@ -35,7 +35,8 @@ function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "
       <pre><code>curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh | sh</code></pre>
       <p>Windows PowerShell</p>
       <pre><code>irm https://jinyongp.dev/openapi-sdkgen/install.ps1 | iex</code></pre>
-      <p>{{ korean ? '안내된 설치 경로를 필요에 따라' : 'Add the printed installation directory to' }} <code>PATH</code>{{ korean ? '에 추가한 뒤' : ' if needed, then run' }} <code>openapi-sdkgen --version</code>{{ korean ? '으로 확인하세요.' : '.' }}</p>
+      <p v-if="korean"><code>PATH</code> 설정 명령이 나오면 실행한 뒤 <code>openapi-sdkgen --version</code>으로 확인하세요.</p>
+      <p v-else>If prompted, run the printed <code>PATH</code> command, then run <code>openapi-sdkgen --version</code>.</p>
       <details>
         <summary>{{ korean ? '다른 설치 방법' : 'Other installation methods' }}</summary>
         <p><a href="https://github.com/jinyongp/openapi-sdkgen/releases">{{ korean ? '실행 파일 직접 다운로드' : 'Download an executable' }}</a></p>

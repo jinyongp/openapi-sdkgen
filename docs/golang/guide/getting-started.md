@@ -29,7 +29,7 @@ Windows PowerShell:
 irm https://jinyongp.dev/openapi-sdkgen/install.ps1 | iex
 ```
 
-Add the printed installation directory to `PATH` if needed, then run
+If prompted, run the printed `PATH` command, then run
 `openapi-sdkgen --version`.
 
 ::: details Version, location and other installation methods

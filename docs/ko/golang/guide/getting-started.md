@@ -28,7 +28,7 @@ Windows PowerShell:
 irm https://jinyongp.dev/openapi-sdkgen/install.ps1 | iex
 ```
 
-안내된 설치 경로를 필요에 따라 `PATH`에 추가한 뒤 `openapi-sdkgen --version`으로 확인하세요.
+`PATH` 설정 명령이 나오면 실행한 뒤 `openapi-sdkgen --version`으로 확인하세요.
 
 ::: details 버전·설치 경로 지정과 다른 설치 방법
 
