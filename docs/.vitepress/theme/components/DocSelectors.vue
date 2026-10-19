@@ -51,13 +51,13 @@ watch((): SDKTarget | null => context.value.sdk, (sdk: SDKTarget | null): void =
 
 <template>
   <div class="doc-selectors" :data-doc-selectors="placement">
-    <label :for="`sdk-${placement}`">SDK
+    <label :for="`sdk-${placement}`"><span class="selector-label">SDK</span>
       <select :id="`sdk-${placement}`" :value="context.sdk ?? ''" :aria-describedby="hintID" @change="selectSDK">
-        <option v-if="!context.sdk" value="" disabled>{{ korean ? '선택' : 'Choose' }}</option>
+        <option v-if="!context.sdk" value="" disabled>{{ korean ? 'SDK 선택' : 'Choose SDK' }}</option>
         <option v-for="sdk in targets" :key="sdk" :value="sdk">{{ sdk === 'golang' ? 'Go' : 'TypeScript' }}</option>
       </select>
     </label>
-    <label :for="`locale-${placement}`">{{ korean ? '표시 언어' : 'Language' }}
+    <label :for="`locale-${placement}`"><span class="selector-label">{{ korean ? '표시 언어' : 'Language' }}</span>
       <select :id="`locale-${placement}`" :value="context.locale" :aria-describedby="hintID" @change="selectLocale">
         <option value="en">English</option><option value="ko">한국어</option>
       </select>
@@ -69,9 +69,9 @@ watch((): SDKTarget | null => context.value.sdk, (sdk: SDKTarget | null): void =
 <style scoped>
 .doc-selectors { display:flex; gap:12px; align-items:center; padding:8px 12px; flex-wrap:wrap; }
 label { display:flex; align-items:center; gap:6px; font-size:12px; }
-select { max-width:100%; background:var(--vp-c-bg-soft); border:1px solid var(--vp-c-divider); border-radius:6px; padding:4px 8px; color:var(--vp-c-text-1); font:inherit; appearance:auto; }
+select { max-width:100%; background:var(--vp-c-bg-soft); border:1px solid var(--vp-c-divider); border-radius:6px; min-height:32px; padding:4px 8px; line-height:22px; color:var(--vp-c-text-1); font:inherit; appearance:auto; }
 select:focus-visible { outline:2px solid var(--vp-c-brand-1); outline-offset:3px; }
 .selection-hint { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 [data-doc-selectors="desktop"] { display:none; }
-@media (min-width: 960px) { [data-doc-selectors="desktop"] { display:flex; flex:0 0 auto; flex-wrap:nowrap; gap:10px; padding-block:2px; } [data-doc-selectors="desktop"] label { display:grid; gap:0; line-height:1.4; } [data-doc-selectors="mobile"] { display:none; } }
+@media (min-width: 960px) { [data-doc-selectors="desktop"] { display:flex; flex:0 0 auto; flex-wrap:nowrap; gap:10px; padding-block:2px; } [data-doc-selectors="desktop"] .selector-label { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; } [data-doc-selectors="mobile"] { display:none; } }
 </style>
