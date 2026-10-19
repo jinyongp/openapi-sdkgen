@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -13,9 +15,11 @@ func TestGoModulePath(t *testing.T) {
 	}{
 		{"ordinary", "module example.test/app\n\ngo 1.27.0\n", "example.test/app"},
 		{"quoted", "// module fake.test/comment\r\nmodule \"example.test/app/v2\" // comment\r\n", "example.test/app/v2"},
-		{"raw quoted", "module `example.test/app`", "example.test/app"},
+		{"attached comment", "module example.test/app// comment with an unmatched \" quote\n", "example.test/app"},
+		{"attached block comment", "module (// comment\nexample.test/app// comment\n)// comment\n", "example.test/app"},
+		{"raw quoted", "module `example.test/app`", ""},
 		{"block", "module ( // comment\n\t\"example.test/app\"\n)\nrequire (\n module v1.0.0\n)\n", "example.test/app"},
-		{"quoted keyword", "\"module\" example.test/app", "example.test/app"},
+		{"quoted keyword", "\"module\" example.test/app", ""},
 		{"missing", "go 1.27.0\n", ""},
 		{"empty", "module\n", ""},
 		{"empty block", "module (\n)\n", ""},
@@ -34,6 +38,46 @@ func TestGoModulePath(t *testing.T) {
 				}
 			} else if err != nil || actual != test.want {
 				t.Fatalf("got %q, %v; want %q", actual, err, test.want)
+			}
+		})
+	}
+}
+
+func TestGoModulePathMatchesGoTool(t *testing.T) {
+	goTool, err := exec.LookPath("go")
+	if err != nil {
+		t.Skip("Go toolchain unavailable for module syntax comparison")
+	}
+	t.Setenv("GOTOOLCHAIN", "local")
+	t.Setenv("GOWORK", "off")
+	t.Setenv("GOPROXY", "off")
+	for _, source := range []string{
+		"module example.test/app// comment with an unmatched \" quote\n",
+		"module (\n\"example.test/app\"\n)\n",
+		"module `example.test/app`\n",
+		"\"module\" example.test/app\n",
+	} {
+		t.Run(source, func(t *testing.T) {
+			file := filepath.Join(t.TempDir(), "go.mod")
+			if err := os.WriteFile(file, []byte(source), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			output, toolErr := exec.Command(goTool, "mod", "edit", "-json", file).CombinedOutput()
+			actual, parseErr := goModulePath(source)
+			if toolErr != nil {
+				if parseErr == nil {
+					t.Fatalf("accepted a module directive rejected by Go: %q; Go: %s", actual, output)
+				}
+				return
+			}
+			var expected struct {
+				Module struct{ Path string }
+			}
+			if err := json.Unmarshal(output, &expected); err != nil {
+				t.Fatal(err)
+			}
+			if parseErr != nil || actual != expected.Module.Path {
+				t.Fatalf("got %q, %v; Go resolves %q", actual, parseErr, expected.Module.Path)
 			}
 		})
 	}
@@ -104,6 +148,53 @@ func TestGoImportPathUsesPhysicalOutputModule(t *testing.T) {
 	actual, err := resolveGoImportPath(filepath.Join(link, "internal", "api"), "", false)
 	if err != nil || actual != "example.test/destination/internal/api" {
 		t.Fatalf("used lexical module instead of output module: %q, %v", actual, err)
+	}
+	deep := filepath.Join(root, "destination", "deep")
+	if err := os.Mkdir(deep, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	deepLink := filepath.Join(root, "source", "deep-alias")
+	if err := os.Symlink(deep, deepLink); err != nil {
+		t.Fatal(err)
+	}
+	// Joining with filepath.Join would erase the symlink-sensitive parent segment.
+	suffix := string(filepath.Separator) + ".." + string(filepath.Separator) + "sdk"
+	for _, output := range []string{deepLink + suffix, deepLink + suffix + string(filepath.Separator)} {
+		actual, err := resolveGoImportPath(output, "", false)
+		if err != nil || actual != "example.test/destination/sdk" {
+			t.Fatalf("resolved %q using the wrong module: %q, %v", output, actual, err)
+		}
+	}
+	t.Chdir(filepath.Join(root, "source"))
+	actual, err = resolveGoImportPath("deep-alias"+suffix, "", false)
+	if err != nil || actual != "example.test/destination/sdk" {
+		t.Fatalf("relative symlink parent resolved incorrectly: %q, %v", actual, err)
+	}
+	previous := version
+	version = "10.0.0-physical-go-test"
+	t.Cleanup(func() { version = previous })
+	input := filepath.Join(root, "input.json")
+	if err := os.WriteFile(input, []byte(goHealthInput), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"--input", input, "--output", deepLink + suffix, "--target", "golang"}
+	if err := generate(args); err != nil {
+		t.Fatal(err)
+	}
+	for _, extra := range [][]string{{"--check"}, {"--incremental"}, {"--check", "--go-import-path", "example.test/destination/sdk"}} {
+		if err := generate(append(append([]string{}, args...), extra...)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	outputLink := filepath.Join(root, "output-alias")
+	if err := os.Symlink(filepath.Join(root, "destination", "sdk"), outputLink); err != nil {
+		t.Fatal(err)
+	}
+	for _, extra := range [][]string{{}, {"--check"}, {"--incremental"}} {
+		args := []string{"--input", input, "--output", outputLink, "--target", "golang"}
+		if err := generate(append(args, extra...)); err == nil || !strings.Contains(err.Error(), "must not be a symlink") {
+			t.Fatalf("output root symlink was not rejected: %v", err)
+		}
 	}
 }
 

@@ -44,7 +44,8 @@ Run the same command to update the SDK when the contract changes.
 
 ## Call the API {#call}
 
-Import the generated package as `api "example.com/consumer/internal/api"`.
+For module `example.com/consumer`, import the generated package as
+`api "example.com/consumer/internal/api"`. Use your own module path as the prefix.
 Inside a function, send a request as follows. Supply a `ctx context.Context` and
 set `baseURL` to your API server's address.
 

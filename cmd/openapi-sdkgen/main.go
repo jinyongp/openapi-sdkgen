@@ -340,6 +340,18 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if err := generator.ValidateTargetOptions(target, options); err != nil {
 		return err
 	}
+	if target.Name() == "golang" && *values.output != "" {
+		// Discovery and publication must use the same physical destination, even
+		// when a symlink precedes '..'. Keep a symlink at the output root intact
+		// so the existing publication checks reject it.
+		if info, err := os.Lstat(*values.output); err != nil || info.Mode()&os.ModeSymlink == 0 {
+			output, err := physicalGoOutputPath(*values.output)
+			if err != nil {
+				return generateUsageError(err.Error())
+			}
+			*values.output = output
+		}
+	}
 	if !*values.check {
 		if err := preflightOutput(*values.output, *values.incremental); err != nil {
 			return err

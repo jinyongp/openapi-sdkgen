@@ -43,7 +43,8 @@ openapi-sdkgen generate \
 
 ## 애플리케이션에서 호출 {#call}
 
-생성된 패키지를 `api "example.com/consumer/internal/api"`로 가져옵니다.
+모듈이 `example.com/consumer`라면 `api "example.com/consumer/internal/api"`로 가져옵니다.
+자신의 모듈 경로를 접두사로 사용하세요.
 다음은 함수 안에서 요청을 보내는 코드입니다. `ctx`는 호출자가 제공하는 `context.Context`이며,
 `baseURL`에는 실제 API 서버 주소를 지정하세요.
 

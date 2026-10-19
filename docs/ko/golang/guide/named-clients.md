@@ -19,6 +19,9 @@ routes = ["GET /products/{id}"]
 openapi-sdkgen generate --config ./openapi-sdkgen.toml
 ```
 
+아래 import 경로는 모듈이 `example.com/consumer`인 경우입니다.
+이 접두사는 자신의 `go.mod`에 있는 `module` 값으로 바꾸세요.
+
 `example.com/consumer/internal/api/clients/orders` 또는
 `example.com/consumer/internal/api/clients/catalog`를 import하고 해당 패키지의
 `ClientOptions`로 `NewClient`를 구성하세요. 루트처럼 `context.Context`로 호출합니다.

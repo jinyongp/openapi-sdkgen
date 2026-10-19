@@ -19,6 +19,9 @@ routes = ["GET /products/{id}"]
 openapi-sdkgen generate --config ./openapi-sdkgen.toml
 ```
 
+The import paths below assume your module is `example.com/consumer`.
+Replace that prefix with the `module` value in your `go.mod`.
+
 Import `example.com/consumer/internal/api/clients/orders` or
 `example.com/consumer/internal/api/clients/catalog` and use `NewClient` with that package's
 `ClientOptions`. Calls use `context.Context` like the root client.
