@@ -16,6 +16,8 @@ Todo 타입 예제에는 [확장 Todo 명세](/examples/todo-types.json)를 사�
 
 <span id="컴파일러-지원"></span>
 
+<span id="compiler-support"></span>
+
 ## 컴파일러 지원
 
 생성된 클라이언트와 서버 소스에는 **TypeScript 5.7.3 이상**과 `ES2022`, `DOM`,

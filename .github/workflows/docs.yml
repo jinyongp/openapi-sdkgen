@@ -81,6 +81,8 @@ jobs:
           test "$RELEASE_REF" = "v$RELEASE_VERSION"
           test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
           test "$(git rev-parse "$RELEASE_REF^{commit}")" = "$RELEASE_COMMIT"
+      - name: Install existing TypeScript verification tooling
+        run: bash scripts/dev/typescript.sh install
       - name: Install documentation dependencies
         env:
           CI: "true"

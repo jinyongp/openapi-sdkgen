@@ -1,5 +1,5 @@
 ---
-title: SDK Playground
+title: TypeScript SDK Playground
 layout: page
 aside: false
 sidebar: false

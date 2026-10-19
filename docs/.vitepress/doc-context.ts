@@ -1,13 +1,9 @@
 import { docsBase, documentationScopes, sdkPath, topics as catalogTopics } from "./docs-catalog.mjs";
 
-export type SDKTarget = "typescript" | "golang";
-export type DisplayLocale = "en" | "ko";
-export interface DocContext { readonly sdk: SDKTarget | null; readonly locale: DisplayLocale; readonly topic: string; }
-export interface DocDestination { readonly path: string; readonly fallback: boolean; }
+import type { SDKTarget, DisplayLocale, DocContext, DocDestination, DocTopic, DocScope } from "./doc-contracts";
+export type { SDKTarget, DisplayLocale, DocContext, DocDestination, DocTopic, DocScope } from "./doc-contracts";
 import type { PreferenceStorage } from "./theme/playground/preferences.ts";
 export type { PreferenceStorage } from "./theme/playground/preferences.ts";
-interface DocTopic { readonly id: string; readonly suffix: string; readonly targets: readonly SDKTarget[]; }
-interface DocScope { readonly key: string; readonly sdk: SDKTarget | null; readonly locale: DisplayLocale; }
 const topics: readonly DocTopic[] = catalogTopics;
 const scopes: readonly DocScope[] = documentationScopes;
 const sdkPreferenceKey: string = "openapi-sdkgen.docs.sdk.v1";

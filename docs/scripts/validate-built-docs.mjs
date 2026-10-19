@@ -16,6 +16,16 @@ for(const sdk of sdkTargets)for(const locale of displayLocales)for(const topic o
  assert.ok(source.includes(`rel="canonical" href="${publicURL(route)}"`),route);
  for(const language of displayLocales)assert.ok(source.includes(`hreflang="${language}" href="${publicURL(sdkPath(sdk,language,topic.id))}"`),route);
 }
+const linkErrors=[];
+for(const [route,source] of contents) for(const match of source.matchAll(/\bhref="([^"]+)"/g)) {
+ const destination=new URL(match[1].replaceAll("&amp;","&"),publicURL(route));
+ if(destination.origin!==new URL(publicURL(route)).origin||!destination.pathname.startsWith(docsBase))continue;
+ const target=decodeURIComponent(destination.pathname).replace(docsBase,"/").replace(/\.html$/,"");
+ if(!contents.has(target))continue;
+ let fragment;try{fragment=decodeURIComponent(destination.hash.slice(1));}catch{linkErrors.push(`${route}: malformed ${match[1]}`);continue;}
+ if(fragment&&!(await html(target)).includes(`id="${fragment}"`))linkErrors.push(`${route}: missing fragment ${match[1]}`);
+}
+assert.deepEqual(linkErrors,[],"SDK links must reach existing sections");
 let anchors=0;
 for(const entry of legacyRoutes){
  const source=await html(entry.route);

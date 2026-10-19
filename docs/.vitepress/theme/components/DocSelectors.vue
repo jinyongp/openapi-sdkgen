@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, watch, type ComputedRef } from "vue";
 import { useRoute, useRouter } from "vitepress";
-import { invalidateSession, playgroundSession } from "../playground/session";
+import { invalidateSession, playgroundSession, preserveContextNavigation, refreshSessionNavigation } from "../playground/session";
 import { publishedTargets } from "../../docs-catalog.mjs";
 import { contextDestination, isSDKTarget, parseDocContext, withDocsBase, writeSDKPreference, type DocContext, type DisplayLocale, type SDKTarget } from "../../doc-context";
 
@@ -26,8 +26,10 @@ async function navigate(sdk: SDKTarget | null, locale: DisplayLocale): Promise<v
   query.delete("target");
   if (sdk === "typescript") { query.delete("go-import-path"); query.delete("go-package"); }
   const suffix: string = query.size ? `?${query.toString()}` : "";
+  if (current.topic === "playground") preserveContextNavigation(withDocsBase(destination));
   await router.go(`${withDocsBase(destination)}${suffix}`);
   await nextTick();
+  if (current.topic === "playground") refreshSessionNavigation();
   if (current.topic === "playground" && props.placement === "mobile") {
     const menu: HTMLButtonElement | null = document.querySelector(".VPNavBarHamburger");
     if (menu?.getAttribute("aria-expanded") !== "true") menu?.click();

@@ -154,9 +154,11 @@ both WASM targets and checks every exported ZIP path/byte. Playground verificati
 requires installed docs dependencies and does not execute a generated consumer.
 
 
-`devtools run verify:docs` follows `build:docs` and checks the rendered SDK scopes,
+`devtools run verify:docs` follows `build:docs` and checks TypeScript/Vue setup source, rendered SDK scopes,
 historical anchors, search indexes, documentation tool contracts and the actual Go
-first-call/SSE/webhook code blocks. It uses disposable modules and local HTTP servers.
+first-call/SSE/webhook code blocks. It uses disposable modules and local HTTP servers. Install the existing verification
+tooling first with `devtools run ts-install:dev`; this requirement is for docs development,
+not SDK generation. Vue templates are compiled by the static build and exercised through browser flows.
 
 Release checks include the Go example. Published native, npm (three operating systems)
 and stable Homebrew distributions also generate and run a Go consumer through

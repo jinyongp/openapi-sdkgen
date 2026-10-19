@@ -32,6 +32,8 @@ A failure after headers aborts the response and reaches `OnError`; it cannot rep
 already sent status. Keep input sources alive until the response finishes when echoing input.
 The SDK closes the lease after sending.
 
+Import the generated `server/runtime` package as `runtime` and the generated `types` package for the normalized-schema example below.
+
 `server/runtime.CompileSchema` is the separate generic path for normalized schemas and a
 definition map. It accepts `types`, `reference`, `constValue` and other normalized keywords,
 not raw JSON Schema `type` or `$ref`. It never fetches URLs or executes schema extensions:

@@ -145,7 +145,7 @@ const translations = {
 } as const;
 
 import { parseDocContext, type SDKTarget } from "../../doc-context";
-import { playgroundSession, sessionActive, activateSession, scheduleSessionWork, currentEpoch, invalidateSession, isCurrent, beginFetch, clearCredentials, leaveSession, type AuthenticationMode } from "../playground/session";
+import { playgroundSession, sessionActive, activateSession, scheduleSessionWork, consumeContextNavigation, registerSessionNavigation, currentEpoch, invalidateSession, isCurrent, beginFetch, clearCredentials, leaveSession, type AuthenticationMode } from "../playground/session";
 import { readSDKOptions, writeSDKOptions } from "../playground/options";
 const { lang } = useData();
 const route: ReturnType<typeof useRoute> = useRoute();
@@ -153,6 +153,7 @@ const copy = computed(() => lang.value === "ko-KR" ? translations.ko : translati
 const { target, generatedTarget, goImportPath, goPackage, serverAddon, metadataAddon, colorTheme, expandedPaths, url, localNetworkAccess, authenticationMode, bearerToken, apiKeyHeader, apiKeyValue, basicUsername, basicPassword, sourceLabel, artifacts, selectedPath, diagnostics, error, loading, dragging, exporting, copiedPath, actionError, source, exampleID } = playgroundSession;
 const ready: Ref<boolean> = ref(false);
 const fileInput: Ref<HTMLInputElement | undefined> = ref<HTMLInputElement>();
+let unregisterNavigation: (() => void) | undefined;
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
 const selectedArtifact = computed(() => findArtifact(artifacts.value, selectedPath.value));
@@ -165,7 +166,10 @@ const fileCountLabel = computed<string>((): string => lang.value === "ko-KR"
 const tree = computed(() => buildArtifactTree(artifacts.value));
 let preferencesReady = false;
 
-onMounted((): void => {
+function initializeSession(): void {
+  preferencesReady = false;
+  const previousOptions: string = JSON.stringify([goImportPath.value, goPackage.value, serverAddon.value, metadataAddon.value]);
+  const preserveOptions: boolean = consumeContextNavigation(window.location.href);
   const parameters: URLSearchParams = new URLSearchParams(window.location.search);
   const nextTarget: SDKTarget = parseDocContext(route.path)?.sdk ?? (parameters.get("target") === "golang" ? "golang" : "typescript");
   const changed: boolean = target.value !== nextTarget;
@@ -174,8 +178,8 @@ onMounted((): void => {
   const preferences = readPlaygroundPreferences(preferenceStorage(), codeThemeValues, nextTarget);
   if (preferences.codeTheme) colorTheme.value = preferences.codeTheme;
   expandedPaths.value = new Set(preferences.expandedPaths);
-  if (changed || !wasActive) {
-    const options = readSDKOptions(preferenceStorage(), nextTarget, wasActive ? new URLSearchParams() : parameters);
+  if (changed || !wasActive || !preserveOptions) {
+    const options = readSDKOptions(preferenceStorage(), nextTarget, wasActive && preserveOptions ? new URLSearchParams() : parameters);
     goImportPath.value = options.goImportPath; goPackage.value = options.goPackage;
     serverAddon.value = options.server; metadataAddon.value = options.metadata;
   }
@@ -187,8 +191,10 @@ onMounted((): void => {
   activateSession(); preferencesReady = true; ready.value = true;
   const example: PlaygroundExample | undefined = playgroundExamples.find((candidate: PlaygroundExample): boolean => candidate.id === parameters.get("example"));
   if (example && (!wasActive || exampleID.value !== example.id)) void loadExample(example);
-  else if (source.value && (changed || !artifacts.value.length && !loading.value)) void runGeneration(source.value, sourceLabel.value);
-});
+  else if (source.value && (changed || previousOptions !== JSON.stringify([goImportPath.value, goPackage.value, serverAddon.value, metadataAddon.value]) || !artifacts.value.length && !loading.value)) void runGeneration(source.value, sourceLabel.value);
+}
+function restoreHistory(): void { if (parseDocContext(window.location.href)?.sdk === target.value) initializeSession(); }
+onMounted((): void => { initializeSession(); unregisterNavigation = registerSessionNavigation(initializeSession); window.addEventListener("popstate", restoreHistory); });
 
 watch([colorTheme, expandedPaths], () => {
   if (!preferencesReady) return;
@@ -206,6 +212,8 @@ watch(selectedPath, (): void => {
 
 onBeforeUnmount((): void => {
   if (copyTimer !== undefined) clearTimeout(copyTimer);
+  window.removeEventListener("popstate", restoreHistory);
+  unregisterNavigation?.();
   if (parseDocContext(route.path)?.topic !== "playground") leaveSession();
 });
 
@@ -228,17 +236,18 @@ async function downloadAll(): Promise<void> {
 }
 
 async function copyFile(): Promise<void> {
+  const token: number = currentEpoch();
   const artifact: GeneratedArtifact | undefined = selectedArtifact.value;
   if (!artifact) return;
   actionError.value = "";
   try {
     await navigator.clipboard.writeText(artifact.content);
-    if (selectedPath.value !== artifact.path) return;
+    if (!isCurrent(token) || selectedPath.value !== artifact.path) return;
     copiedPath.value = artifact.path;
     if (copyTimer !== undefined) clearTimeout(copyTimer);
     copyTimer = setTimeout((): void => { copiedPath.value = ""; }, 2000);
   } catch {
-    actionError.value = copy.value.copyError;
+    if (isCurrent(token)) actionError.value = copy.value.copyError;
   }
 }
 
@@ -342,7 +351,7 @@ async function runGeneration(contents: string, label: string): Promise<void> {
   writeSDKOptions(preferenceStorage(), selectedTarget, { goImportPath: goImportPath.value, goPackage: goPackage.value, server: serverAddon.value, metadata: metadataAddon.value });
   try {
     validateSize(new TextEncoder().encode(contents).byteLength);
-    if (selectedTarget === "golang" && (!goImportPath.value.trim() || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(goPackage.value))) throw new Error(lang.value === "ko-KR" ? "Go 패키지 경로와 유효한 패키지 이름을 입력하세요." : "Enter a Go import path and a valid package name.");
+    if (selectedTarget === "golang" && !goImportPath.value.trim()) throw new Error(lang.value === "ko-KR" ? "Go 패키지 경로를 입력하세요." : "Enter a Go import path.");
     const addons: string[] = [];
     if (serverAddon.value) addons.push("server"); if (metadataAddon.value) addons.push("metadata");
     const result: GenerationResult = await generate(contents, selectedTarget, { addons, ...(selectedTarget === "golang" ? { goImportPath: goImportPath.value, goPackage: goPackage.value } : {}) });
@@ -510,9 +519,9 @@ function toggleDirectory(path: string) {
           <p class="field-label">SDK · {{ target === 'golang' ? 'Go' : 'TypeScript' }}</p>
           <template v-if="target === 'golang'">
             <label class="field-label" for="playground-go-import-path">{{ copy.goImportPath }}</label>
-            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!goImportPath.trim()" spellcheck="false" />
+            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!goImportPath.trim() || !!error && /Go import path|--go-import-path/.test(error)" spellcheck="false" />
             <label class="field-label" for="playground-go-package">{{ copy.goPackage }}</label>
-            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(goPackage)" spellcheck="false" />
+            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!!error && /invalid Go package/.test(error)" spellcheck="false" />
           </template>
           <label><input v-model="serverAddon" type="checkbox" :disabled="!ready" /> {{ copy.serverAddon }}</label>
           <label><input v-model="metadataAddon" type="checkbox" :disabled="!ready" /> {{ copy.metadataAddon }}</label>
@@ -709,6 +718,8 @@ function toggleDirectory(path: string) {
 }
 
 .playground-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.playground-heading > div { min-width: 0; max-width: 100%; }
+.playground-heading h1, .playground-heading p { overflow-wrap: anywhere; }
 .playground-heading h1 { margin: 2px 0 6px; border: 0; font-size: 32px; line-height: 1.15; letter-spacing: 0; }
 .playground-heading p { margin: 0; color: var(--vp-c-text-2); }
 .workbench { display: grid; height: min(680px, calc(100dvh - 220px)); max-height: calc(100dvh - 96px); grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--vp-c-divider); border-radius: 16px; background: var(--vp-c-bg); box-shadow: 0 22px 65px rgba(15, 23, 42, .08); }
@@ -735,7 +746,7 @@ select { padding: 0 12px; }
 .drop-zone strong { color: var(--vp-c-text-1); font-size: 14px; }
 .drop-zone span:last-child { font-size: 12px; }
 .upload-icon { display: grid; width: 38px; height: 38px; margin-bottom: 5px; place-items: center; border-radius: 10px; color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent); font-size: 21px; }
-.separator { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; color: var(--vp-c-text-3); font-size: 11px; text-transform: uppercase; }
+.separator { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; color: var(--vp-c-text-2); font-size: 11px; text-transform: uppercase; }
 .separator::before, .separator::after { content: ""; flex: 1; height: 1px; background: var(--vp-c-divider); }
 .url-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .url-form input { padding: 0 11px; min-width: 0; font-size: 13px; }
@@ -745,7 +756,7 @@ select { padding: 0 12px; }
 .auth-fields { display: grid; gap: 12px; padding: 13px 12px; }
 .auth-fields label { display: grid; gap: 6px; color: var(--vp-c-text-2); font-size: 11px; font-weight: 650; }
 .auth-fields input { padding: 0 11px; min-width: 0; font-size: 13px; font-weight: 400; }
-.auth-help { margin: 0; color: var(--vp-c-text-3); font-size: 10.5px; line-height: 1.45; }
+.auth-help { margin: 0; color: var(--vp-c-text-2); font-size: 10.5px; line-height: 1.45; }
 .url-form button, .tree-header button { border: 0; border-radius: 9px; font-weight: 700; cursor: pointer; }
 .url-form button { padding: 0 15px; color: white; background: var(--vp-c-brand-1); }
 .url-form button:disabled { opacity: .5; cursor: not-allowed; }
@@ -753,15 +764,15 @@ select { padding: 0 12px; }
 .network-option input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--vp-c-brand-1); }
 .network-option span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
 .network-option strong { color: var(--vp-c-text-1); font-size: 12px; font-weight: 650; }
-.network-option small { color: var(--vp-c-text-3); font-size: 10.5px; line-height: 1.45; }
-.privacy-note { margin: 12px 0 0; color: var(--vp-c-text-3); font-size: 11px; line-height: 1.5; }
+.network-option small { color: var(--vp-c-text-2); font-size: 10.5px; line-height: 1.45; }
+.privacy-note { margin: 12px 0 0; color: var(--vp-c-text-2); font-size: 11px; line-height: 1.5; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
 .tree-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 20px 16px; border-bottom: 1px solid var(--vp-c-divider); }
 .tree-header .field-label { margin: 0 0 3px; }
 .tree-header strong { display: block; max-width: 210px; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .tree-header button { padding: 7px 10px; color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 10%, transparent); font-size: 12px; }
-.target-summary { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--vp-c-divider); color: var(--vp-c-text-3); font-size: 12px; }
+.target-summary { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--vp-c-divider); color: var(--vp-c-text-2); font-size: 12px; }
 .target-summary strong { color: var(--vp-c-text-2); }
 .download-all { display: flex; min-height: 32px; padding: 6px 10px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #41b8aa; border-radius: 6px; background: #155e56; color: #f0fdfa; font-size: 12px; font-weight: 650; white-space: nowrap; cursor: pointer; }
 .download-all:hover { background: #197267; }

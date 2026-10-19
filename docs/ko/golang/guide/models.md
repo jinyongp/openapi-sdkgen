@@ -1,5 +1,8 @@
 # 모델과 검증
 
+아래 예제는 [첫 Go SDK](./getting-started.md)를 이어서 사용합니다. 생성 루트의
+`example.com/consumer/internal/api/types`를 `types`로 import하세요. `api`와 `client`는 그 SDK를 가리킵니다.
+
 <span id="타입이-있는-호출과-값의-존재-여부"></span>
 
 

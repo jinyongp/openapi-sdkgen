@@ -5,7 +5,7 @@ The unqualified `state`, `conditions`, and `evidence` fields retain their TypeSc
 meaning. `targetStates.golang` is the complete Go state/condition/evidence profile;
 its absence would be an unsupported documentation gap, not inherited TypeScript support.
 The tables below retain the TypeScript view. Go accepts valid HTTP token methods
-without Fetch-only omissions; see [the Go guide](guide/golang.md) for consumer APIs
+without Fetch-only omissions; see [the Go guide](golang/index.md) for consumer APIs
 and runtime boundaries.
 
 

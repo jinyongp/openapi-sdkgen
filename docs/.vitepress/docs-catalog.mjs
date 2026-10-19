@@ -1,9 +1,12 @@
 // Route metadata shared by navigation, context controls and validators.
+/** @type {readonly import("./doc-contracts").SDKTarget[]} */
 export const sdkTargets = Object.freeze(["typescript", "golang"]);
+/** @type {readonly import("./doc-contracts").DisplayLocale[]} */
 export const displayLocales = Object.freeze(["en", "ko"]);
 export const docsBase = "/openapi-sdkgen/";
 // Both SDKs ship together with this documentation.
 export const publishedTargets = sdkTargets;
+/** @type {readonly import("./doc-contracts").DocTopic[]} */
 export const topics = Object.freeze([
   {
     "id": "home",
@@ -379,6 +382,7 @@ export function sdkPath(sdk, locale, topicID = "home") {
 }
 
 // More specific prefixes must precede their containing locale.
+/** @type {readonly import("./doc-contracts").DocScope[]} */
 export const documentationScopes = Object.freeze([
   { key: "ko/typescript", sdk: "typescript", locale: "ko" },
   { key: "ko/golang", sdk: "golang", locale: "ko" },

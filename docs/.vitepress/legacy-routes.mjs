@@ -1,4 +1,5 @@
 // Historical public links, captured before the SDK documentation migration.
+/** @type {readonly import("./doc-contracts").LegacyEntry[]} */
 export const legacyRoutes = Object.freeze([
   {
     "route": "/examples/",

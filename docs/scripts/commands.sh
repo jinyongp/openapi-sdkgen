@@ -15,6 +15,7 @@ case "$command" in
   validate) run_step 'Documentation validation' pnpm_docs run docs:validate "$@" ;;
   build) run_step 'Documentation build' pnpm_docs run docs:build "$@" ;;
   verify)
+    run_step 'Documentation TypeScript' node "$ROOT/docs/scripts/typecheck-docs.mjs"
     run_step 'Built documentation contracts' node "$ROOT/docs/scripts/validate-built-docs.mjs"
     run_step 'Go documentation examples' node "$ROOT/docs/scripts/verify-go-docs.mjs"
     run_step 'Documentation tool tests' pnpm_docs run docs:validate:test

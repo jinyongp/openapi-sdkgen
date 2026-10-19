@@ -1,5 +1,8 @@
 # Models and validation
 
+The examples continue [First Go SDK](./getting-started.md). Import `types` from your generated root
+(`example.com/consumer/internal/api/types`); `api` and `client` refer to that generated SDK.
+
 <span id="typed-calls-and-presence"></span>
 
 

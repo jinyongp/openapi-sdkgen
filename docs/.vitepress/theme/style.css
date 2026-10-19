@@ -109,3 +109,10 @@ html[lang="ko-KR"] .VPHome .vp-doc > h2:first-of-type + p {
   .VPNavBarSearch .DocSearch-Button-Keys { display: none; }
   .VPNavBarSearch .DocSearch-Button { min-width: 32px; padding: 0 8px; background: transparent; }
 }
+
+@media (max-width: 959px) {
+  .VPNavBarTitle { min-width: 0; max-width: calc(100vw - 144px); }
+  .VPNavBarTitle .title { min-width: 0; max-width: 100%; overflow: hidden; }
+  .VPNavBarTitle .title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.vp-doc { overflow-wrap: anywhere; }

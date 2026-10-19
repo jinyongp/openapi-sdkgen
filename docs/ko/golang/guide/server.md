@@ -31,6 +31,8 @@ mux.Handle("/hooks/created", handler)
 헤더를 보낸 뒤 실패하면 응답을 중단하고 `OnError`로 알리며 이미 보낸 상태를 바꿀 수 없습니다.
 입력 데이터 소스를 응답에 사용하면 송신 종료까지 유지해야 하며 이후 SDK가 정리합니다.
 
+아래 정규화 스키마 예제에서는 생성된 `server/runtime` 패키지를 `runtime`으로, 생성된 `types` 패키지를 `types`로 import하세요.
+
 `server/runtime.CompileSchema`는 정규화 스키마와 정의 map을 받는 별도 범용 경로입니다.
 `types`, `reference`, `constValue` 같은 정규화 키워드를 받으며 원래 JSON Schema의 `type`,
 `$ref`는 받지 않습니다. URL을 가져오거나 스키마 확장을 실행하지 않습니다.

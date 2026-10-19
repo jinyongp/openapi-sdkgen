@@ -1,0 +1,182 @@
+{
+  "date": "2026-10-19",
+  "workstream": "99aa653a-a193-4fce-82b0-5d8d9aaf73ca",
+  "basis": "Final implementation commit is recorded by the W10 devtools validation basis. No application changes followed these checks.",
+  "structure": {
+    "sdkPages": 112,
+    "neutralHomes": 2,
+    "legacyPages": 52,
+    "historicalAnchors": 430,
+    "searchPagesPerSDKLocale": 27,
+    "playgroundIndexed": false
+  },
+  "commands": [
+    {
+      "command": "devtools run validate:docs",
+      "result": "pass"
+    },
+    {
+      "command": "devtools run build:docs",
+      "result": "pass"
+    },
+    {
+      "command": "devtools run verify:docs",
+      "result": "pass",
+      "covers": [
+        "25 TypeScript modules including Vue setup scripts",
+        "canonical/hreflang and existing sections",
+        "actual search documentIds",
+        "first Go HTTP call, SSE and webhook markdown compiled and executed",
+        "documentation tool tests"
+      ]
+    },
+    {
+      "command": "devtools run playground:verify",
+      "result": "pass",
+      "covers": [
+        "actual WASM TypeScript and Go",
+        "server and metadata addons",
+        "ZIP path and byte identity"
+      ]
+    },
+    {
+      "command": "devtools run go:example",
+      "result": "pass"
+    },
+    {
+      "command": "devtools run -- bash scripts/release/check.sh",
+      "result": "pass",
+      "covers": [
+        "six platform cross-builds",
+        "Todo, advanced and capabilities TypeScript applications",
+        "Go application"
+      ]
+    },
+    {
+      "command": "devtools run -- bash /tmp/docs-release-smoke.sh",
+      "result": "pass",
+      "covers": [
+        "local candidate version 0.0.0",
+        "distribution Go generation",
+        "actual local HTTP result"
+      ]
+    },
+    {
+      "command": "devtools run -- go run github.com/rhysd/actionlint/cmd/actionlint@latest -color",
+      "result": "pass"
+    },
+    {
+      "command": "devtools run -- node plans/docs-sdk-selection/routing-search-probe.mjs",
+      "result": "pass"
+    }
+  ],
+  "browser": {
+    "engine": "Chromium via project-host browser tools",
+    "legacyRedirects": 52,
+    "searchResults": {
+      "en/typescript": 16,
+      "ko/typescript": 16,
+      "en/golang": 7,
+      "ko/golang": 7
+    },
+    "todoFilesWithoutAddons": {
+      "typescript": 110,
+      "golang": 65
+    },
+    "journeys": [
+      "all four SDK/locale scopes: first SDK, switch, history, search and actual generation",
+      "uploaded source retained during locale and SDK changes",
+      "four repeated immediate TS-Go-TS round trips",
+      "retired Worker error ignored",
+      "active Worker failure displayed; retry succeeded",
+      "abort-ignoring late fetch discarded",
+      "ZIP started immediately before SDK switch discarded",
+      "late clipboard failure discarded",
+      "historical Go URL and no-JS fallback",
+      "root preference offers continuation without redirect",
+      "blocked storage navigation",
+      "URL SDK wins conflicting target query",
+      "unrecognized/private query fields removed",
+      "Go package history one-two-back-one restored",
+      "Unicode Go package accepted; main rejected and recovered",
+      "authentication retained across locale and cleared after leaving Playground"
+    ],
+    "regressionSource": "browser-regression.js",
+    "accessibility": {
+      "widthsCSSPixels": [
+        320,
+        960,
+        1024,
+        1280
+      ],
+      "textScale": {
+        "scale": 2,
+        "method": "computed text font sizes and pixel line heights doubled",
+        "locales": [
+          "en",
+          "ko"
+        ],
+        "viewportCSSPixels": 320,
+        "pageScrollWidthCSSPixels": 320
+      },
+      "zoomEquivalent": {
+        "viewportCSSPixels": 320,
+        "devicePixelRatio": 4,
+        "pageScrollWidthCSSPixels": 320,
+        "method": "1280 physical-pixel width at 4x DPR; native browser zoom controls were not exercised"
+      },
+      "keyboard": [
+        "native SDK Home/Enter changes SDK",
+        "mobile SDK focus restored",
+        "file list uses native list/buttons and visible focus",
+        "search Escape and result links"
+      ],
+      "contrast": {
+        "method": "computed foreground/background with alpha compositing; helper text only",
+        "light": {
+          "privacy": 5.34,
+          "authentication": 5.62,
+          "generation": 10.39
+        },
+        "dark": {
+          "privacy": 5.72,
+          "authentication": 5.99,
+          "generation": 12.23
+        }
+      },
+      "screenReader": "Browser accessibility labels/states inspected. No interactive screen reader available; no full WCAG conformance claim."
+    }
+  },
+  "review": {
+    "status": "complete",
+    "areas": [
+      "information architecture and 28-topic parity",
+      "EN/KO prose and identical code",
+      "TypeScript and Go consumer contracts",
+      "route, legacy, metadata and search",
+      "Playground source/options/async lifecycle",
+      "responsive, keyboard and accessible status",
+      "README and installer entry points",
+      "release gating, exact tag identity and retry boundaries",
+      "verification tooling and old callers"
+    ],
+    "fixes": [
+      "catalog literal types and canonical contracts",
+      "Korean section links and Unicode anchors",
+      "960px selector wrapping",
+      "200 percent text header/title overflow",
+      "Go file icon and list semantics",
+      "Unicode Go option acceptance",
+      "browser history option restoration",
+      "reused-page repeated SDK switch regeneration",
+      "stale clipboard state",
+      "Go Playground title and independent layout"
+    ],
+    "remainingImplementationFindings": []
+  },
+  "releaseBoundary": {
+    "implementation": "prepared and locally verified",
+    "externalChecks": "Published native/npm/Homebrew smoke and Pages publication run in release CI after publication; not executed against external distributions in this task.",
+    "identity": "Same tag, version and commit required for package checks and docs/WASM artifact; release.json is emitted by CI."
+  }
+}

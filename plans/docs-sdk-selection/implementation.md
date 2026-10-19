@@ -134,3 +134,35 @@ TS CLI에서 Go 옵션을 제외해 선택한 SDK 설명만 보이도록 했다.
 줄바꿈을 고쳤고, 실제 모바일 키보드 Home/Enter SDK 전환 뒤 sdk-mobile 포커스 복원도 확인했다.
 입력 없는 SDK 전환의 공유 query가 이전 옵션을 남기는 문제와 숨긴 mobile select 포커스를 수정했다.
 생성 상태/SDK·파일 수는 live status로 제공한다. 전체 재검토와 확대/색상/저장소 최종 점검은 W10에서 한다.
+
+## W10 — 전체 최종 리뷰와 완료
+
+모든 요청 영역을 다시 검토하고 영향받은 호출자·검사도 재확인했다.
+옛 탐색 구현을 제거하고 보존한 probe는 historical catalog를 읽게 했다. 내부 개발 문서의 Go
+진입 링크도 정식 경로로 바꿨다. catalog/context/locale/legacy 타입은 공통 계약으로 통합했다.
+기존 TypeScript 6 compiler API와 Vue 공식 macro 타입으로 25개 TS/Vue setup 모듈을 검사한다.
+검사 도구를 새 의존성 없이 기존 검증 toolchain에 연결했고 docs CI가 이를 준비한다.
+
+최종 수정: 한국어 실제 section 링크 9곳, Go 파일 아이콘·목록 의미, 200% 텍스트에서 header/제목
+넘침, Go package의 Unicode 허용, history의 이전 옵션 복원, 같은 페이지가 재사용되는 반복 SDK
+전환의 결과 유실, 늦은 복사 실패의 새 화면 오염, Go Playground의 제목·독립 레이아웃을 고쳤다.
+반복 전환 문제는 첫 왕복 이후 같은 component를 재사용할 때 재현했다. 전환 완료 시 현재
+Playground의 세션 동기화를 호출하고, unmount 정리는 handler identity를 검사하도록 수정했다.
+저장한 `browser-regression.js`를 실제 브라우저에서 실행해 원문 유지·즉시 왕복 4회·이전 Worker
+오류·늦은 fetch·ZIP 폐기를 확인했다. 현재 Worker 오류 뒤 재시도와 늦은 clipboard 실패도 별도 확인했다.
+
+검증: `validate:docs`, `build:docs`, `verify:docs`, `playground:verify`, `go:example`,
+release check(6개 플랫폼 빌드와 TS 3개/Go 예제), 로컬 candidate 배포 smoke, actionlint,
+scope/search probe 통과. 마지막 빌드와 같은 코드에서 타입·HTML·검색·실제 Go 문서 예제·도구 검사를 통과했다.
+네 scope의 시작/전환/history/검색/Playground 실제 생성, 52개 과거 경로, 430개 앵커,
+blocked storage·명시 경로 우선·no-JS·인증 수명·공유 query도 확인했다.
+각 Playground의 제목·SDK·생성 결과와 sidebar 없음도 네 조합에서 확인했다.
+
+화면/접근성: 320/960/1024/1280 CSS px, EN/KO computed text 200%와 4x DPR의 320 CSS px
+확대 상당 화면에서 전체 가로 넘침이 없었다. 모바일 native 키보드 전환 후 SDK 포커스 복원을
+확인했고 파일 목록은 native list/button으로 구성했다. 라이트/다크 도움말 세 역할의 측정 대비는
+최소 5.34/5.72였다. 접근성 label/state는 브라우저에서 확인했으나 실제 AT 실행 환경은 없었다.
+확대 검증 방법·수치와 AT/전체 WCAG 판정의 한계는 `final-verification.json`에 분리해 기록했다.
+
+전체 영역의 리뷰를 완료했고 남은 구현 결함은 없다. 실제 외부 배포판 검증과 게시 작업은
+승인된 경계대로 release CI 단계다. 단위별 커밋과 devtools 검증 basis/record에 최종 Git 상태를 남긴다.

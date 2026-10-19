@@ -1,5 +1,8 @@
 # 필요한 API 선택
 
+[Todo 명세](/examples/golang-todo.json)와 [모듈 설정](./getting-started.md)을 사용합니다.
+코드는 `ctx context.Context`를 사용할 수 있고 `error`를 반환하는 함수 안에서 실행하세요.
+
 정적 참조로 선택해도 구체적인 작업 타입을 유지합니다.
 
 ```go

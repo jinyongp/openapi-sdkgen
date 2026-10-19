@@ -1,6 +1,6 @@
 import type { PreferenceStorage } from "./preferences";
-import type { SDKOptions } from "./session";
 import type { SDKTarget } from "../../doc-context";
+export interface SDKOptions { goImportPath: string; goPackage: string; server: boolean; metadata: boolean; }
 const defaults: SDKOptions = { goImportPath: "example.com/consumer/internal/api", goPackage: "api", server: false, metadata: false };
 export function readSDKOptions(storage: PreferenceStorage | undefined, sdk: SDKTarget, query: URLSearchParams): SDKOptions {
   let saved: Partial<SDKOptions> = {};

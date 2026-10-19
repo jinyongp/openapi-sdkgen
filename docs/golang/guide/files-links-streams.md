@@ -1,5 +1,9 @@
 # Files, Links and streams
 
+Continue [calls and errors](./client.md) with the [Todo document](/examples/golang-todo.json).
+Run snippets inside a function with `ctx context.Context` and an `error` return; `client` and `call`
+are the configured client and CreateTodo call. Import `types` from your generated root when needed.
+
 <span id="streams-files-and-custom-codecs"></span>
 
 

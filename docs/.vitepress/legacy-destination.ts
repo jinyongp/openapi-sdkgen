@@ -1,5 +1,5 @@
 import { legacyRoutes } from "./legacy-routes.mjs";
-interface LegacyEntry { readonly route: string; readonly destination: string; readonly anchors: readonly string[]; readonly fragments: Readonly<Record<string, string>>; }
+import type { LegacyEntry } from "./doc-contracts";
 const entries: readonly LegacyEntry[] = legacyRoutes;
 export function legacyDestination(route: string, href: string): string {
   const entry: LegacyEntry | undefined = entries.find((candidate: LegacyEntry): boolean => candidate.route === route);

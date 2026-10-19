@@ -411,13 +411,15 @@ openapi-sdkgen generate --input ./openapi.yaml --target golang --go-import-path 
 설정 파일에서는 `addons = ["metadata"]`로 지정합니다. 서버 핸들러도 함께
 생성하려면 `addons = ["server", "metadata"]`를 사용하거나 두 옵션을 각각
 `--with`로 지정하세요. 생성되는 값은
-[OpenAPI 메타데이터](./client-api.md#openapi-메타데이터)를 참고하세요.
+[OpenAPI 메타데이터](./client-api.md#openapi-metadata)를 참고하세요.
 
 
 
 ## Go 서버 확장
 
 `--with server`는 `net/http` 웹훅·콜백 처리기를 생성합니다. 리스너는 애플리케이션이 관리합니다. [서버 API](./server-api.md)를 확인하세요.
+
+<span id="remote-ref-options"></span>
 
 ## 원격 `$ref` 옵션
 

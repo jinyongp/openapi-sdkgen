@@ -2,38 +2,32 @@
 import OverflowMarquee from "./OverflowMarquee.vue";
 import type { TreeNode } from "../playground/tree";
 
-const props = withDefaults(defineProps<{
-  depth?: number;
-  expandedPaths: ReadonlySet<string>;
-  nodes: TreeNode[];
-  selectedPath?: string;
-}>(), {
-  depth: 0,
-});
+interface FileTreeProps {
+  readonly depth?: number;
+  readonly expandedPaths: ReadonlySet<string>;
+  readonly nodes: TreeNode[];
+  readonly selectedPath?: string;
+}
+interface FileTreeEvents { select: [path: string]; toggle: [path: string]; }
+const props: Readonly<Required<Pick<FileTreeProps, "depth">> & Omit<FileTreeProps, "depth">> = withDefaults(defineProps<FileTreeProps>(), { depth: 0 });
+defineEmits<FileTreeEvents>();
 
-defineEmits<{
-  select: [path: string];
-  toggle: [path: string];
-}>();
-
-function isExpanded(path: string) {
+function isExpanded(path: string): boolean {
   return props.expandedPaths.has(path);
 }
 </script>
 
 <template>
-  <ul class="file-tree" :class="{ 'file-tree-nested': depth > 0 }" :role="depth === 0 ? 'tree' : 'group'">
+  <ul class="file-tree" :class="{ 'file-tree-nested': depth > 0 }">
     <li
       v-for="node in nodes"
       :key="node.path"
       class="tree-item"
-      role="treeitem"
-      :aria-expanded="node.type === 'directory' ? isExpanded(node.path) : undefined"
-      :aria-selected="node.type === 'file' ? node.path === selectedPath : undefined"
     >
       <button
         v-if="node.type === 'directory'"
         class="tree-row tree-directory"
+        :aria-expanded="isExpanded(node.path)"
         type="button"
         @click="$emit('toggle', node.path)"
       >
@@ -47,11 +41,12 @@ function isExpanded(path: string) {
       <button
         v-else
         class="tree-row tree-file"
+        :aria-current="node.path === selectedPath ? 'true' : undefined"
         :class="{ selected: node.path === selectedPath }"
         type="button"
         @click="$emit('select', node.path)"
       >
-        <span class="tree-file-icon" aria-hidden="true">TS</span>
+        <span class="tree-file-icon" aria-hidden="true">{{ node.name.endsWith(".go") ? "Go" : node.name.endsWith(".ts") ? "TS" : "{}" }}</span>
         <OverflowMarquee :text="node.name" />
       </button>
       <FileTree

@@ -1,5 +1,9 @@
 # 파일·Link·스트림
 
+[Todo 명세](/examples/golang-todo.json)로 [호출과 오류](./client.md)를 이어서 사용합니다.
+코드는 `ctx context.Context`를 사용할 수 있고 `error`를 반환하는 함수 안에서 실행하세요.
+`client`는 구성한 클라이언트, `call`은 CreateTodo 호출입니다. 필요하면 생성 루트의 `types`를 import하세요.
+
 <span id="스트림·파일·사용자-코덱"></span>
 
 

@@ -3,7 +3,6 @@ import { cancelGeneration, type GeneratedArtifact } from "./wasm";
 import type { CodeTheme } from "./highlight";
 import type { SDKTarget } from "../../doc-context";
 export type AuthenticationMode = "none" | "bearer" | "api-key" | "basic" | "cookies";
-export interface SDKOptions { goImportPath: string; goPackage: string; server: boolean; metadata: boolean; }
 const target: Ref<SDKTarget> = ref("typescript");
 const generatedTarget: Ref<string> = ref("typescript");
 const goImportPath: Ref<string> = ref("example.com/consumer/internal/api");
@@ -86,3 +85,15 @@ export function clearCredentials(): void {
 export function leaveSession(): void { invalidateSession(); clearCredentials(); url.value = ""; sessionActive = false; }
 
 export function scheduleSessionWork(work: () => void): void { scheduled = setTimeout((): void => { scheduled = undefined; work(); }, 300); }
+
+let contextNavigation: string | undefined;
+function navigationPath(href: string): string { return new URL(href, "https://docs.invalid").pathname.replace(/\.html$/, "").replace(/\/$/, ""); }
+export function preserveContextNavigation(href: string): void { contextNavigation = navigationPath(href); }
+export function consumeContextNavigation(href: string): boolean { const preserve: boolean = contextNavigation === navigationPath(href); contextNavigation = undefined; return preserve; }
+
+let navigationHandler: (() => void) | undefined;
+export function registerSessionNavigation(handler: () => void): () => void {
+  navigationHandler = handler;
+  return (): void => { if (navigationHandler === handler) navigationHandler = undefined; };
+}
+export function refreshSessionNavigation(): void { navigationHandler?.(); }
