@@ -50,10 +50,8 @@ response/source lease when exhausted, canceled, or explicitly closed; close it w
 
 ## Handle errors
 
-A missing import path is a generation error. A missing dependency is resolved in your own
-module; generation does not install it. For incremental output, keep the managed manifest
-with the directory. Inspect `types.APIError` using `errors.As` and stable error codes; error
-text omits private request/response data:
+Import the generated `types` package and use `errors.As` to recognize SDK errors.
+Use their stable codes for application error handling.
 
 ```go
 var failure *types.APIError

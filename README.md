@@ -1,65 +1,53 @@
 # openapi-sdkgen
 
-Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
+Generate TypeScript or Go SDK source from OpenAPI 3.0, 3.1 and 3.2 documents.
+Use the generated clients, models and validation code inside your application.
 
-Choose `typescript` or `golang` to generate the client, models and runtime source inside
-your application. The native generator needs no Node.js or Go installation to generate source.
-Generated SDKs use your application's toolchain and need no extra runtime packages.
+[Documentation](https://jinyongp.dev/openapi-sdkgen/) ·
+[Runnable examples](https://jinyongp.dev/openapi-sdkgen/typescript/examples/)
 
-| SDK | Requirements to use generated source | Start here |
-| --- | --- | --- |
-| TypeScript | Your JS runtime/bundler; optional TypeScript 5.7.3+ checking | [First TypeScript SDK](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started.html) |
-| Go | Go 1.27+ and your Go module | [First Go SDK](https://jinyongp.dev/openapi-sdkgen/golang/guide/getting-started.html) |
+## Install
+
+```sh
+brew install jinyongp/tap/openapi-sdkgen
+```
+
+Or use `npm install -g openapi-sdkgen` with Node.js 22+.
+[Native executables](https://github.com/jinyongp/openapi-sdkgen/releases) are also available.
 
 ## Quick start: TypeScript
 
-For a complete example with a local response and expected output, follow
-[Getting started](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started.html).
-The commands below assume Node.js 22+, an existing `openapi.yaml`, and an API
-server whose URL and operations match that contract.
-
-The TypeScript target generates the client, types, and source runtime inside your
-application. Your existing TypeScript toolchain compiles them with the rest of the
-project. SDK generation does not require a TypeScript installation. For type
-checking, use TypeScript 5.7.3 or later; see the
-[compiler support contract](docs/typescript/reference/types.md#compiler-support).
-
-Generate a client from a Node-based project:
+Generate from your `openapi.yaml`:
 
 ```sh
-pnpm dlx openapi-sdkgen generate \
+openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
   --output ./src/generated/api \
   --incremental
 ```
 
-Import the generated client and call your API:
+Import the generated source and call an operation defined in your contract.
+For a Todo API, use the following with your server's `baseURL`:
 
 ```ts
-import { createClient } from "./generated/api";
+import { createClient } from "./generated/api/index.js";
 
-const api = createClient({
-  baseURL: "https://api.example.com",
-});
-
+const api = createClient({ baseURL: "https://api.example.com" });
 const todo = await api.todos.create({
-  body: { title: "Ship the SDK" },
+  body: { title: "Write documentation" },
 });
 ```
 
-Vite, Next.js, Nuxt, and similar bundlers resolve the generated directory to
-its `index.ts` entry. Applications that run compiled Node ESM directly should
-import `./generated/api/index.js`.
+Build the SDK with your application's toolchain. Bundlers such as Vite and
+Next.js also accept the directory import `./generated/api`.
 
-After changing the document, run the same command to update the SDK.
-`--incremental` updates managed files and preserves other files in the output
-directory. See [Generate and verify](docs/typescript/guide/generate.md) for update and
-conflict handling.
+[Getting started](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started) ·
+[Download the Todo application](https://jinyongp.dev/openapi-sdkgen/downloads/typescript-todo-app.zip)
 
 ## Quick start: Go
 
-In your Go module, generate from your own `openapi.yaml`:
+Generate inside your Go module:
 
 ```sh
 openapi-sdkgen generate \
@@ -70,77 +58,27 @@ openapi-sdkgen generate \
   --incremental
 ```
 
-Match the import path to your module. The root package defaults to `api`; generated source
-includes no `go.mod` or `go.sum` and uses only the Go standard library.
-[First Go SDK](docs/golang/guide/getting-started.md) includes a complete local mock call and expected output.
-[Go examples](docs/golang/examples/index.md) cover SSE, Links, selection and `net/http` webhooks.
-Go's linker removes unreachable code; generation selection can also reduce source and compile work.
+Match `--go-import-path` to your module and output directory. Import the generated
+package and build it with Go 1.27+.
 
-## Install
+[Getting started](https://jinyongp.dev/openapi-sdkgen/golang/guide/getting-started) ·
+[Download the Todo application](https://jinyongp.dev/openapi-sdkgen/downloads/golang-todo-app.zip)
 
-The npm launcher requires Node.js 22 or newer; this does not impose a Node 22
-requirement on generated SDK source. On first execution it downloads and verifies
-the matching native executable from the same-version GitHub Release. The first
-run needs network access; later runs reuse the cache and can work offline.
-Go is not required. macOS, Linux, and Windows on arm64 and x64 are supported.
+## Update the SDK
 
-```sh
-pnpm dlx openapi-sdkgen generate --help
-```
+Run the same command after changing your OpenAPI document. `--incremental`
+updates generated files and preserves files you added. Use `--check --output`
+in CI to detect stale generated source.
 
-Homebrew:
-
-```sh
-brew install jinyongp/tap/openapi-sdkgen
-```
-
-Precompiled binaries are also available from
-[GitHub Releases](https://github.com/jinyongp/openapi-sdkgen/releases).
-
-## Input sources
-
-`--input` accepts:
-
-- a local JSON or YAML file
-- a `file://` URL
-- an HTTP(S) URL
-- `-` for stdin
-
-For example, generate from a local OpenAPI server:
-
-```sh
-openapi-sdkgen generate \
-  --input http://localhost:4010/openapi.json \
-  --target typescript \
-  --output ./src/generated/api
-```
-
-## TypeScript webhooks and callbacks
-
-Client source is generated by default. Add Fetch-native Webhook and Callback
-contracts when your application receives inbound OpenAPI operations:
-
-```sh
-openapi-sdkgen generate \
-  --input ./openapi.yaml \
-  --target typescript \
-  --with server \
-  --output ./src/generated/api
-```
-
-The server add-on creates `server/webhooks.ts` and `server/callbacks.ts` entry
-points alongside the main client entry.
+For webhook and callback receivers, add `--with server`. Input can be a local
+JSON/YAML file, an HTTP(S) URL, a `file://` URL or `-` for stdin.
 
 ## Documentation
 
-Full guides and reference documentation:
-[jinyongp.dev/openapi-sdkgen](https://jinyongp.dev/openapi-sdkgen/).
-
-- [TypeScript documentation](docs/typescript/index.md)
-- [Go documentation](docs/golang/index.md)
-- [Playground](https://jinyongp.dev/openapi-sdkgen/)
-
-Choose SDK and display language independently on the documentation site.
+- [TypeScript guides](https://jinyongp.dev/openapi-sdkgen/typescript/)
+- [Go guides](https://jinyongp.dev/openapi-sdkgen/golang/)
+- [TypeScript examples](https://jinyongp.dev/openapi-sdkgen/typescript/examples/)
+- [Go examples](https://jinyongp.dev/openapi-sdkgen/golang/examples/)
 
 ## License
 

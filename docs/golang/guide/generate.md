@@ -1,13 +1,14 @@
 # Generate and verify
 
 The generator emits Go source into your application. Start with [First Go SDK](./getting-started.md)
-for module setup and a working request.
+for module setup and a working request. The commands below use its Todo contract,
+which includes a webhook and needs `--with server`. Omit the addon for contracts without inbound operations.
 
 ## Fresh output
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server
 ```
 
 The output includes operation models, clients, shared HTTP/schema source and the requested addons.
@@ -17,7 +18,7 @@ Your module owns `go.mod` and `go.sum`. Generated source uses only the standard 
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --incremental
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --incremental
 ```
 
 <!--@include: ../../_shared/en/managed-output.md -->
@@ -26,7 +27,7 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --check
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --check
 go test ./...
 ```
 
@@ -41,6 +42,7 @@ It does not compile Go or contact your API.
 source = "./openapi.json"
 target = "golang"
 output = "./internal/api"
+addons = ["server"]
 
 [golang]
 import_path = "example.com/consumer/internal/api"

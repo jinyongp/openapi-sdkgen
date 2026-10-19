@@ -7,8 +7,7 @@
 ## 클라이언트에 API 배정하기
 
 [클라이언트별 예제 명세](/examples/named-clients.json)를 별도 프로젝트의
-`openapi.yaml`로 저장하면 아래 설정을 실행할 수 있습니다. 설치·ESM 설정은
-시작하기를 따르세요. `.yaml` 확장자로 저장한 JSON 입력도 읽을 수 있습니다.
+`openapi.yaml`로 저장해 아래 설정을 사용하세요. JSON·YAML 모두 입력으로 사용할 수 있습니다.
 
 아래 예제는 `listOrders`, `createOrder`, `GET /products/{id}`가 있는 OpenAPI
 문서를 사용합니다. 모든 클라이언트는 입력 문서 하나와 생성 설정을 공유합니다.

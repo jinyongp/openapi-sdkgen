@@ -15,20 +15,26 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+## Authentication
+
 Required authentication uses `Options.Authenticate`. Parameters are decoded before this
 hook; it receives original security requirements/candidates, five parameter groups, context,
 and an HTTP metadata snapshot with `http.NoBody`. A nil rejection continues; a rejection
 returns its status/headers/source. Anonymous alternatives skip the hook. Missing authentication
-returns401; a hook error returns500. `CloneBody(ctx)` returns an independent reader for
+returns 401; a hook error returns 500. `CloneBody(ctx)` returns an independent reader for
 bounded complete input; the caller closes the clone. Incremental input cannot be cloned.
 
-Complete input defaults to8 MiB, with413 on overflow. Incremental frames default to1 MiB,
-with400 on overflow; the aggregate stream has no complete-body cap. Override the limits with
+## Request bounds and response handling
+
+Complete input defaults to 8 MiB, with 413 on overflow. Incremental frames default to 1 MiB,
+with 400 on overflow; the aggregate stream has no complete-body cap. Override the limits with
 `MaxBodyBytes` and `MaxStreamFrameBytes`. HTTP/1 duplex requires a writer that supports
 `EnableFullDuplex`, and streaming needs flush support. HTTP/2 uses native multiplexing.
 A failure after headers aborts the response and reaches `OnError`; it cannot replace the
 already sent status. Keep input sources alive until the response finishes when echoing input.
 The SDK closes the lease after sending.
+
+## Dynamic schema validation
 
 Import the generated `server/runtime` package as `runtime` and the generated `types` package for the normalized-schema example below.
 

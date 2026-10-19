@@ -13,10 +13,8 @@
 세 호출 방식은 같은 API를 사용합니다. 호출하는 코드에서 가장
 이해하기 쉬운 방식을 선택하면 됩니다.
 
-이 페이지는 [시작하기](/ko/typescript/guide/getting-started)의 Todo 명세를 그대로 사용합니다.
-각 호출 예제는 `src/demo.ts`에서 설정한 클라이언트로 실행합니다.
-실제 API 서버가 준비됐다면 아래 설정을 사용하세요. 서버 없이 확인하려면
-시작하기의 모의 `fetch` 설정을 유지하세요.
+아래는 [Todo 명세](https://github.com/jinyongp/openapi-sdkgen/blob/main/examples/typescript-todo-app/openapi.json)로 생성한 SDK의 사용 예입니다.
+로컬 서버와 함께 실행하려면 [Todo 예제 ZIP](/downloads/typescript-todo-app.zip)을 내려받으세요.
 
 ## 클라이언트 설정
 

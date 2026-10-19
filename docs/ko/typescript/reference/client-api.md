@@ -292,3 +292,75 @@ API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다.
 담은 `generationSelection`을 제공합니다. 이름 있는 클라이언트를 설정하면
 클라이언트별 API 구성을 담은 `generationClients`도 제공합니다. 두 값 모두
 `--with metadata`를 지정했을 때만 포함됩니다.
+
+## 선택형 클라이언트 입력 {#selection-input}
+
+중첩된 배열과 객체도 그대로 전달할 수 있으므로, 기능별 배열을 전개 문법(`...`)으로
+풀어 쓸 필요가 없습니다. 위 예제의 기본 내보내기 대신 이름을 지정해 내보낸 배열도
+사용할 수 있습니다. 모듈에서 내보낸 값이 모두 API 선택 값이라면 모듈 네임스페이스
+객체도 전달할 수 있습니다.
+
+선택 목록에는 API 참조, 배열, 선택 값으로 구성한 객체를 넣습니다. 객체에서는 직접
+소유한 문자열 키의 속성을, 배열에서는 각 인덱스의 값을 읽습니다. 접근자도 실행되며,
+그 결과는 한 번의 준비 과정에서 재사용하고 발생한 예외는 호출자에게 전달합니다.
+같은 목록을 여러 그룹에서 재사용할 수 있지만, 자기 자신을 참조하는 등 순환 구조가
+있으면 오류가 발생합니다.
+
+모듈 전체를 전달할 때는 선택 목록만 내보내도록 구성하세요. 비동기로 구한 목록은
+애플리케이션에서 먼저 `await`한 뒤 전달합니다. `loadOperations`가 받는 값은 API
+참조와 배열·객체이며, 함수 실행이나 `Promise` 처리, 임의의 반복 가능한 객체 순회는
+애플리케이션에서 수행합니다.
+
+선택형 진입점의 `OperationPreparationError`에는 `stage`가 있습니다. 값은 `INPUT`,
+`MODULE_LOAD`, `IDENTITY`, `BINDING`이며 가능한 경우 원래 `cause`도 보존합니다.
+모듈 로딩 실패만으로 HTTP 상태나 CSP·오프라인·파일 누락을 항상 구별할 수는
+없으므로 브라우저의 네트워크 진단을 함께 확인하세요.
+
+## 경로 열거 {#selection-enumeration}
+
+기본 참조 객체에는 모든 API 이름의 실행 시점 목록이 들어 있지 않습니다.
+열거하거나 필터링해야 한다면 이름만 제공하는 별도 진입점을 사용합니다.
+
+```ts
+import { routes as allRoutes } from "./generated/api/selective/all.js";
+import {
+  createClient,
+  loadOperations,
+} from "./generated/api/selective/index.js";
+
+const taskRoutes = Object.entries(allRoutes)
+  .filter(([route]) => route.startsWith("GET /tasks"))
+  .map(([, operation]) => operation);
+
+const preparedTasks = await loadOperations(taskRoutes);
+const api = createClient({
+  baseURL: "https://api.example.test/v1",
+  operations: preparedTasks,
+});
+await api.$operations.listTasks?.({ query: { limit: 20 } });
+```
+
+`all.js`를 사용하면 이름 목록의 전송 비용이 추가되지만 모든 API 구현을 가져오지는
+않습니다. 이렇게 계산한 선택의 후보 메서드는 여전히 선택적입니다. 작은 기본 참조
+객체를 열거하거나 그 객체에서 전체 목록의 포함 여부를 확인하는 대신 이 진입점을
+사용하세요.
+
+## 계산된 선택의 타입 {#computed-selection}
+
+실행 중 필터링으로 계산한 배열은 특정 API가 포함된다고 보장할 수 없습니다.
+이때 후보 메서드는 선택적 속성이므로 존재를 확인한 뒤 호출합니다.
+
+```ts
+const candidates = [operations.listTasks, routes["GET /health"]];
+const selection = candidates.filter(() => Math.random() > 0.5);
+const dynamic = createClient({
+  baseURL: "https://api.example.test/v1",
+  operations: await loadOperations(selection),
+});
+
+await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
+```
+
+고정된 목록이라면 선언할 때 튜플 타입을 유지하세요. 이미 일반 배열로 넓어진 타입은
+나중에 함수에 전달한다고 원래 정보가 복원되지 않습니다. 타입은 접근자의 내부 동작이나
+사용자가 작성한 타입 단언의 진실성까지 증명하지는 않습니다.

@@ -1,22 +1,33 @@
 # 첫 Go SDK 만들기
 
 <span id="go-sdk-생성과-사용"></span>
+<span id="raw-응답과-link"></span>
+<span id="문제-해결"></span>
+<span id="보안과-전송"></span>
 <span id="사용자-모듈에-생성하기"></span>
+<span id="선택-방식과-컴파일-비용"></span>
+<span id="스트림·파일·사용자-코덱"></span>
+<span id="웹훅과-콜백"></span>
+<span id="타입이-있는-호출과-값의-존재-여부"></span>
+<span id="생성된-소스의-의존성-설치"></span>
 
+OpenAPI 명세에서 Go 소스를 생성하고 모듈에서 불러옵니다. 생성된 코드를 빌드하려면
+Go 1.27 이상이 필요합니다. 실행 가능한 전체 코드는 [Go Todo 예제 ZIP](/downloads/golang-todo-app.zip)에 있습니다.
 
-실행 파일로 소스를 생성한 뒤 **Go 1.27 이상**인 사용자 모듈에서 컴파일하고 실행합니다.
-Homebrew·npm으로 CLI를 설치하거나 [Releases](https://github.com/jinyongp/openapi-sdkgen/releases)에서
-실행 파일을 내려받으세요.
+## CLI 설치 {#install}
 
 ```sh
 brew install jinyongp/tap/openapi-sdkgen
-# Alternative: npm install -g openapi-sdkgen
-openapi-sdkgen --version
-go mod init example.com/consumer
 ```
 
-[Todo 명세](/examples/golang-todo.json)를 `openapi.json`으로 저장하세요.
-웹훅이 포함된 명세이므로 `server` 확장을 켭니다.
+npm으로 설치하려면 `npm install -g openapi-sdkgen`을 사용하세요.
+[실행 파일](https://github.com/jinyongp/openapi-sdkgen/releases)을 직접 받아도 됩니다.
+
+## SDK 생성 {#generate}
+
+기존 Go 모듈에서 [Todo 명세](/examples/golang-todo.json)를 `openapi.json`으로 저장합니다.
+이 명세에는 웹훅이 있어 `--with server`를 함께 지정합니다.
+아래는 모듈 이름이 `example.com/consumer`인 경우입니다.
 
 ```sh
 openapi-sdkgen generate \
@@ -28,66 +39,32 @@ openapi-sdkgen generate \
   --incremental
 ```
 
-`--go-import-path`는 모듈과 출력 디렉터리에 맞춰 지정해야 합니다. 루트 패키지 기본 이름은
-`api`입니다. 생성기는 `go.mod`를 쓰지 않으며 의존성은 애플리케이션이 관리합니다.
-실행 파일로 생성할 때는 Go·Node.js가 필요하지 않습니다. npm 실행기는 Node.js가 필요합니다.
+`--go-import-path`는 모듈 이름과 출력 디렉터리에 맞춰 바꾸세요.
+명세가 바뀌면 같은 명령으로 갱신할 수 있습니다.
 
-<span id="생성된-소스의-의존성-설치"></span>
+## 애플리케이션에서 호출 {#call}
 
-## 로컬 모의 서버에 첫 요청 보내기
-
-아래 코드를 `main.go`로 저장하세요. 로컬 서버에서 타입이 있는 호출을 한 번 실행하고 서버를 닫습니다.
+생성된 패키지를 `api "example.com/consumer/internal/api"`로 가져옵니다.
+다음은 함수 안에서 요청을 보내는 코드입니다. `ctx`는 호출자가 제공하는 `context.Context`이며,
+`baseURL`에는 실제 API 서버 주소를 지정하세요.
 
 ```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"time"
-
-	api "example.com/consumer/internal/api"
-)
-
-func main() {
-	if err := run(); err != nil {
-		panic(err)
-	}
+client, err := api.NewClient(api.ClientOptions{BaseURL: "http://localhost:8080"})
+if err != nil {
+	return err
 }
 
-func run() error {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, `{"id":"todo-1","title":"Ship the SDK"}`)
-	}))
-	defer server.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	client, err := api.NewClient(api.ClientOptions{BaseURL: server.URL})
-	if err != nil {
-		return err
-	}
-	todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
-		Body: api.CreateTodoBody{Title: "Ship the SDK"},
-	}).Do(ctx)
-	if err != nil {
-		return err
-	}
-	fmt.Println(todo.ID, todo.Title)
-	return nil
+todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
+	Body: api.CreateTodoBody{Title: "Ship the SDK"},
+}).Do(ctx)
+if err != nil {
+	return err
 }
+fmt.Printf("Created %s: %s\n", todo.ID, todo.Title)
 ```
 
-```sh
-go run .
-```
-
-```text
-todo-1 Ship the SDK
-```
+`todo`에서 생성된 항목의 `ID`, `Title`을 읽을 수 있습니다.
+서버를 준비하지 않고 실행해보려면 위의 예제 ZIP을 사용하세요.
+로컬 서버, 모듈 설정, 생성 명령과 실행 방법이 포함되어 있습니다.
 
 [호출과 오류](./client.md), [모델](./models.md), [재생성](./generate.md)을 이어서 확인하세요.
-[전체 Go 예제](../examples/index.md)에는 스트림과 웹훅도 포함돼 있습니다.

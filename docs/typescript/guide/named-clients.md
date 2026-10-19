@@ -7,8 +7,7 @@ API methods and types.
 ## Assign APIs to clients
 
 Try the [named-client example document](/examples/named-clients.json) in a
-separate project. Save it as `openapi.yaml` and use the installation and ESM
-setup from Getting started. JSON content is accepted with this filename.
+project. Save it as `openapi.yaml`; JSON and YAML are both accepted.
 
 This example assumes an OpenAPI document with `listOrders`, `createOrder`, and
 `GET /products/{id}`. All clients use the same input document and generation

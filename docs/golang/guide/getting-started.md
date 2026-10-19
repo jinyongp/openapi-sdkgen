@@ -2,21 +2,33 @@
 
 <span id="generate-and-use-a-go-sdk"></span>
 <span id="generate-into-your-module"></span>
+<span id="install-the-generated-dependencies"></span>
+<span id="raw-responses-and-links"></span>
+<span id="security-and-transport"></span>
+<span id="selection-and-compilation-cost"></span>
+<span id="streams-files-and-custom-codecs"></span>
+<span id="troubleshooting"></span>
+<span id="typed-calls-and-presence"></span>
+<span id="webhooks-and-callbacks"></span>
 
+Generate Go source from OpenAPI and import it into your module. Building the
+SDK requires Go 1.27+. [Download the Go Todo example](/downloads/golang-todo-app.zip)
+for a complete runnable application.
 
-Generate source with the native executable, then compile and run it in your own **Go 1.27+** module.
-Install the CLI with Homebrew or npm, or download the native executable from
-[Releases](https://github.com/jinyongp/openapi-sdkgen/releases):
+## Install the CLI {#install}
 
 ```sh
 brew install jinyongp/tap/openapi-sdkgen
-# Alternative: npm install -g openapi-sdkgen
-openapi-sdkgen --version
-go mod init example.com/consumer
 ```
 
-Save the [Todo document](/examples/golang-todo.json) as `openapi.json`.
-The document includes a webhook, so this command enables the `server` addon.
+For npm, use `npm install -g openapi-sdkgen`. You can also download a
+[native executable](https://github.com/jinyongp/openapi-sdkgen/releases).
+
+## Generate the SDK {#generate}
+
+In your Go module, save the [Todo contract](/examples/golang-todo.json) as `openapi.json`.
+The contract includes a webhook, so enable `--with server`.
+This command assumes the module is named `example.com/consumer`:
 
 ```sh
 openapi-sdkgen generate \
@@ -28,66 +40,32 @@ openapi-sdkgen generate \
   --incremental
 ```
 
-`--go-import-path` must match your module and output directory. The generated root package
-is `api` by default. The generator writes no `go.mod`; your application owns its dependencies.
-The native executable needs no Go or Node.js to generate source. The npm launcher needs Node.js.
+Match `--go-import-path` to your module and output directory. Run the same command
+to update the SDK when the contract changes.
 
-<span id="install-the-generated-dependencies"></span>
+## Call the API {#call}
 
-## Run a first request against a local mock
-
-Save this as `main.go`. It owns a local server and closes it after one typed call.
+Import the generated package as `api "example.com/consumer/internal/api"`.
+Inside a function, send a request as follows. Supply a `ctx context.Context` and
+set `baseURL` to your API server's address.
 
 ```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"time"
-
-	api "example.com/consumer/internal/api"
-)
-
-func main() {
-	if err := run(); err != nil {
-		panic(err)
-	}
+client, err := api.NewClient(api.ClientOptions{BaseURL: "http://localhost:8080"})
+if err != nil {
+	return err
 }
 
-func run() error {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprint(w, `{"id":"todo-1","title":"Ship the SDK"}`)
-	}))
-	defer server.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	client, err := api.NewClient(api.ClientOptions{BaseURL: server.URL})
-	if err != nil {
-		return err
-	}
-	todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
-		Body: api.CreateTodoBody{Title: "Ship the SDK"},
-	}).Do(ctx)
-	if err != nil {
-		return err
-	}
-	fmt.Println(todo.ID, todo.Title)
-	return nil
+todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
+	Body: api.CreateTodoBody{Title: "Ship the SDK"},
+}).Do(ctx)
+if err != nil {
+	return err
 }
+fmt.Printf("Created %s: %s\n", todo.ID, todo.Title)
 ```
 
-```sh
-go run .
-```
+Read the created item's `ID` and `Title` from `todo`. To run without preparing an
+API server, use the example ZIP above. It includes the local server, Go module,
+generation command and run instructions.
 
-```text
-todo-1 Ship the SDK
-```
-
-Continue with [calls and errors](./client.md), [models](./models.md), and
-[regeneration](./generate.md). The [complete Go example](../examples/index.md) includes streams and webhooks.
+Continue with [calls and errors](./client.md), [models](./models.md), and [regeneration](./generate.md).

@@ -24,10 +24,10 @@ inbound requests before typed values reach your handlers.
 
 Adding server code preserves the client usage shown in the basic guide.
 
-The starter Todo contract has no inbound operations. The Webhook snippets
+For a runnable receiver, [download the webhook example](/downloads/typescript-webhook-app.zip). The Webhook snippets
 below use the contract from the [Webhook example](/typescript/examples/webhook-server).
 Callbacks and streams require the separate declarations described in their
-sections. Start by checking the example's `204`, `401`, and `400` responses.
+sections.
 
 ## Receive a Todo Webhook
 

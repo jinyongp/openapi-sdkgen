@@ -1,28 +1,33 @@
 # Examples
 
-Try an AI streaming client or receive a Webhook. Use the
-[Playground](/typescript/playground) when you want to experiment with a small OpenAPI
-document and inspect generated source immediately.
+<span id="choose-an-example-by-task"></span>
+<span id="ai-streaming-api"></span>
+Download complete applications as ZIP files. Each includes a README with setup and
+run instructions. The documentation shows the key code and usage conditions.
 
-## Choose an example by task
+## Todo API
 
-| What to try | Example and setup |
-| --- | --- |
-| Generation through a first response | [Getting started](/typescript/guide/getting-started): Node.js and pnpm; mock responses included |
-| File transfers and follow-up calls | [Files, Links, and streams](/typescript/guide/files-links-streams): feature-specific document and API server |
-| Receive AI output incrementally | [AI streaming](/typescript/examples/ai-streaming): local mock SSE; model and server setup for a real service |
-| Receive external requests | [Webhook receiver](/typescript/examples/webhook-server): local Fetch requests; HTTP host for deployment |
+Create and list items against a local HTTP server.
+[Download ZIP](/downloads/typescript-todo-app.zip) · [Usage overview](../guide/getting-started.md)
 
-The AI streaming and webhook examples include a local check with expected output. Follow Getting started
-for the shared installation and ESM setup, then adapt the integration to your application.
+## AI streaming
 
-## AI streaming API
-
-[AI streaming](/typescript/examples/ai-streaming) generates a client from a streaming contract
-and reads SSE events. Try the mock response locally, then connect an AI service.
+Read SSE through a generated client, without an external model.
+[Download ZIP](/downloads/typescript-ai-streaming-app.zip) · [Key code](./ai-streaming.md)
 
 ## Webhook receiver
 
-[Receive an OpenAPI Webhook](/typescript/examples/webhook-server) shows the opposite direction:
-OpenAPI 3.1 describes an inbound Webhook, [`--with server`](/typescript/reference/cli#with-server) generates its typed
-Fetch router, and the host application owns route mounting and authentication.
+Connect a generated receiver and exercise authentication and input validation.
+[Download ZIP](/downloads/typescript-webhook-app.zip) · [Key code](./webhook-server.md)
+
+## Authentication, pagination and files
+
+Use tokens, path/query/header parameters, pagination, raw responses and binary uploads.
+[Download ZIP](/downloads/typescript-advanced-app.zip) · [Browse source](https://github.com/jinyongp/openapi-sdkgen/tree/main/examples/typescript-advanced-app)
+
+## OpenAPI capability example
+
+Use multiple HTTP methods, media types, webhooks and callbacks in one application.
+[Download ZIP](/downloads/typescript-openapi-capabilities-app.zip) · [Browse source](https://github.com/jinyongp/openapi-sdkgen/tree/main/examples/typescript-openapi-capabilities-app)
+
+To preview generation from a small contract without installing the CLI, use the [Playground](../playground.md).

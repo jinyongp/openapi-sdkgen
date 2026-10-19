@@ -24,9 +24,8 @@ openapi-sdkgen generate \
 
 서버 코드를 추가해도 클라이언트 사용법은 같습니다.
 
-시작하기의 Todo 명세에는 수신 계약이 없습니다. 아래 웹훅 코드는
-[웹훅 수신 예제](/ko/typescript/examples/webhook-server)의 명세를 사용합니다. 콜백과 스트림은
-각 절에 설명한 별도 선언이 필요합니다. 처음에는 예제의 `204`·`401`·`400` 응답부터 확인하세요.
+[웹훅 예제 ZIP](/downloads/typescript-webhook-app.zip)에 명세와 실행 코드가 있습니다.
+콜백과 스트림은 각 절에 설명한 선언을 사용합니다.
 
 ## Todo 웹훅 수신
 

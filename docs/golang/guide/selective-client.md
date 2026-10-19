@@ -3,6 +3,7 @@
 Use the [Todo document](/examples/golang-todo.json) and [module setup](./getting-started.md).
 The snippet runs in a function with `ctx context.Context` and an `error` return.
 
+The Todo contract includes a webhook, so generate with `--with server`.
 Static references preserve concrete operation types:
 
 ```go
@@ -42,7 +43,7 @@ compilation separately, using the same input and selection for each comparison.
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api \
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server \
   --operation getTodo
 ```
 

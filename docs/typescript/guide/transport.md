@@ -213,24 +213,9 @@ stream calls where applicable.
 
 ## Streaming behavior
 
-openapi-sdkgen supports OpenAPI 3.0.x, 3.1.x, and 3.2.x. A normal `schema`
-can describe the complete buffered value for known sequential content types on
-all supported version lines. OpenAPI 3.2 `itemSchema` adds typed incremental
-input and output.
-
-See [Streaming API](/typescript/reference/streaming#openapi-version-support) for the
-exact version and media-type contract.
-
-An operation with `itemSchema` exposes `.stream()` and returns an
-[`OperationStream<T>`](/typescript/reference/streaming#operationstream). Incremental
-request bodies accept
-[`StreamSource<T>`](/typescript/reference/streaming#streaming-request-bodies), so
-callers can provide an `AsyncIterable<T>` or a Web `ReadableStream<T>`.
-When a sequential Media Type Object declares both `schema` and `itemSchema`,
-the generated request type accepts both complete and incremental inputs.
-
-[`maxStreamFrameBytes`](/typescript/reference/streaming#maxstreamframebytes) limits
-one wire frame, record, or multipart part before application adaptation.
+Use `.stream()` for responses declared with OpenAPI 3.2 `itemSchema`.
+See [version support](../reference/streaming.md#openapi-version-support) for its
+difference from complete `schema` values, and the [streaming example](../examples/ai-streaming.md) for calls.
 
 ### Adapt a built-in protocol
 

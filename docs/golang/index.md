@@ -1,12 +1,10 @@
 # Go SDKs from OpenAPI
 
-Generate typed application source for OpenAPI 3.0, 3.1 and 3.2. Your Go module owns dependency
-versions, transport and server lifetime. The native generator needs no Go installation;
-SDK compilation and consumption require Go 1.27+.
+Generate clients, models and inbound handlers from OpenAPI 3.0, 3.1 and 3.2.
+Build the generated source with your application's Go module. Go 1.27+ is required.
 
-- [Create your first SDK](/golang/guide/getting-started): generate, compile and call a local mock.
-- [Generate and verify](/golang/guide/generate): managed updates, configuration and CI.
-- [Calls and errors](/golang/guide/client), [models](/golang/guide/models), [streams](/golang/guide/files-links-streams).
-- [Selection and build cost](/golang/guide/selection-cost): generation scope, imports and linker behavior.
-- [Examples](/golang/examples/) and [API reference](/golang/reference/).
-- [Try source generation in the Playground](/golang/playground).
+- [Getting started](./guide/getting-started.md): generation and a first call
+- [Download runnable examples](./examples/index.md): local servers, streams and webhooks
+- [Calls and errors](./guide/client.md), [models](./guide/models.md), [files, Links and streams](./guide/files-links-streams.md)
+- [Regeneration](./guide/generate.md), [selection and build cost](./guide/selection-cost.md)
+- [Reference](./reference/index.md), [Playground](./playground.md)

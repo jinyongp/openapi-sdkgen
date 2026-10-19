@@ -1,12 +1,16 @@
 # Go 예제
 
-| 작업 | 예제 | 명세 |
-| --- | --- | --- |
-| 타입이 있는 첫 HTTP 호출 | [첫 SDK](../guide/getting-started.md) | [Todo](/examples/golang-todo.json) |
-| SSE로 AI 출력 받기 | [AI 스트림](./ai-streaming.md) | [Generation API](/examples/golang-ai-stream.json) |
-| 타입이 있는 HTTP 수신 | [웹훅 수신](./webhook-server.md) | [Todo](/examples/golang-todo.json) |
-| 기능별 이름 있는 클라이언트 | [이름 있는 클라이언트](../guide/named-clients.md) | [주문/카탈로그](/examples/named-clients.json) |
+전체 실행 코드는 ZIP으로 내려받을 수 있습니다. 각 ZIP의 README에 생성과 실행 방법이 있습니다.
 
-[전체 Go Todo 애플리케이션](https://github.com/jinyongp/openapi-sdkgen/tree/main/examples/golang-todo-app)은
-로컬 서버에서 raw 응답·Link·리소스·NDJSON·정적 선택·웹훅을 실행합니다.
-각 예제는 자원을 정리하고 실행 시간에 제한을 둡니다. 영어·한국어의 코드는 같습니다.
+## Todo API와 웹훅
+
+로컬 서버에서 API 호출, raw 응답, Link, 리소스 경로, NDJSON, 선택형 호출과 웹훅을 실행합니다.
+[예제 ZIP](/downloads/golang-todo-app.zip) · [첫 호출](../guide/getting-started.md) · [웹훅 코드](./webhook-server.md)
+
+## AI 응답 스트리밍
+
+로컬 SSE 서버에서 이벤트를 읽습니다. 외부 모델이나 API 키는 필요하지 않습니다.
+[예제 ZIP](/downloads/golang-ai-streaming-app.zip) · [핵심 코드](./ai-streaming.md)
+
+기능별 클라이언트는 [이름 있는 클라이언트](../guide/named-clients.md),
+취소와 스트림 정리는 [스트리밍 API](../reference/streaming.md)를 참고하세요.

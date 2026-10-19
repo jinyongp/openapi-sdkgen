@@ -1,9 +1,22 @@
 # Troubleshooting
 
-A missing import path is a generation error. A missing dependency is resolved in your own
-module; generation does not install it. For incremental output, keep the managed manifest
-with the directory. Inspect `types.APIError` using `errors.As` and stable error codes; error
-text omits private request/response data:
+
+
+## Generation fails
+
+Read the diagnostic code, location and hint. Use `--diagnostic-mode collect` to see more issues.
+Check `--go-import-path`, schema/media support and [remote reference settings](./remote-inputs.md).
+For output conflicts, see [regeneration](./generate.md).
+
+## Imports or builds fail
+
+Match `--go-import-path` to your `go.mod` module name and output directory.
+`--check` verifies generation; run `go test ./...` to check the Go build separately.
+[Download the Todo example](/downloads/golang-todo-app.zip) for a complete module setup.
+
+## A request or stream fails
+
+Inspect errors from the generated `types` package with `errors.As`:
 
 ```go
 var failure *types.APIError
@@ -12,14 +25,5 @@ if errors.As(err, &failure) {
 }
 ```
 
-XML supports the documented namespace/attribute/CDATA/wrapped and typed composition paths.
-Arbitrary additional-property and positional prefix-item XML mappings retain the existing
-mapping limits; select JSON or an explicit codec when XML cannot express the schema.
-Use the [Go Todo example](https://github.com/jinyongp/openapi-sdkgen/tree/main/examples/golang-todo-app)
-for the complete import set, local server and executable error/cleanup handling.
-
-## Locate a generation failure
-
-Use `--diagnostic-mode collect` and read the diagnostic code, location and hint. Check
-`--go-import-path`, unsupported schema/media mappings and [remote reference permissions](./remote-inputs.md).
-`--check` verifies generation and managed output; run `go test ./...` separately.
+Check [authentication and transport](./transport.md), and close streams when stopping early.
+See [OpenAPI support](../reference/capabilities.md) for XML mapping limits.

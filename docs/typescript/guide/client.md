@@ -13,10 +13,8 @@ operation:
 All three surfaces call the same OpenAPI operations. Choose the one that makes the
 caller easiest to understand.
 
-This page uses the same Todo document as [Getting started](/typescript/guide/getting-started).
-Apply each call example to `src/demo.ts`, using the client configured there.
-Use the configuration below with a real API server, or retain the starter's mock
-`fetch` to try calls without a server.
+These snippets use the [Todo contract](https://github.com/jinyongp/openapi-sdkgen/blob/main/examples/typescript-todo-app/openapi.json).
+[Download the Todo application](/downloads/typescript-todo-app.zip) to run it with a local server.
 
 ## Configure a client
 

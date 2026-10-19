@@ -5,7 +5,7 @@ import { contextDestination, withDocsBase, type SDKTarget } from "../../doc-cont
 const { lang } = useData();
 const korean: ComputedRef<boolean> = computed((): boolean => lang.value === "ko-KR");
 const targets: readonly SDKTarget[] = ["typescript", "golang"];
-function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "reference"): string {
+function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "reference" | "examples"): string {
   return withDocsBase(contextDestination({ sdk: null, locale: korean.value ? "ko" : "en", topic }, sdk, korean.value ? "ko" : "en").path);
 }
 </script>
@@ -39,12 +39,13 @@ function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "
 
     <section id="start" class="start" aria-labelledby="start-title">
       <h2 id="start-title">{{ korean ? '문서와 플레이그라운드' : 'Documentation and Playground' }}</h2>
-      <p>{{ korean ? '시작 가이드에서 SDK를 생성하고 첫 요청을 실행해보세요. 플레이그라운드에서는 설치 없이 생성된 소스를 확인할 수 있습니다.' : 'Follow a getting started guide to generate an SDK and run your first request. Preview the generated source in the Playground without installing the CLI.' }}</p>
+      <p>{{ korean ? '가이드에서 생성 방법과 호출 코드를 확인하세요. 전체 실행 코드는 예제에서 내려받을 수 있습니다.' : 'Read the guides for generation and API calls, or download a complete runnable example.' }}</p>
       <div class="language-links">
         <div v-for="sdk in targets" :key="sdk" class="language-row">
           <h3>{{ sdk === 'golang' ? 'Go' : 'TypeScript' }}</h3>
           <div class="links">
             <a :href="destination(sdk, 'getting-started')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} ${korean ? '시작 가이드' : 'getting started'}`">{{ korean ? '시작 가이드' : 'Get started' }}</a>
+            <a :href="destination(sdk, 'examples')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} ${korean ? '예제' : 'examples'}`">{{ korean ? '예제' : 'Examples' }}</a>
             <a :href="destination(sdk, 'playground')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} Playground`">{{ korean ? '플레이그라운드' : 'Playground' }}</a>
             <a :href="destination(sdk, 'reference')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} ${korean ? '레퍼런스' : 'reference'}`">{{ korean ? '레퍼런스' : 'Reference' }}</a>
           </div>
@@ -56,7 +57,6 @@ function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "
 
 <style scoped>
 .product-home { max-width:960px; padding:64px 32px 80px; margin:auto; }
-:global(.dark .product-home) { --vp-c-brand-1:#5eead4; --vp-c-brand-2:#99f6e4; }
 .introduction { padding-bottom:36px; }
 h1 { font-size:clamp(32px,5vw,48px); line-height:1.2; font-weight:700; letter-spacing:-.03em; }
 .description { margin-top:16px; font-size:24px; line-height:1.5; font-weight:500; }

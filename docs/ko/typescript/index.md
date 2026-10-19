@@ -27,16 +27,14 @@ features:
     details: 응답에 이어지는 API 호출과 웹훅·콜백 수신에 필요한 코드를 생성합니다.
 ---
 
-## 명세에서 호출까지
+## 문서에서 사용 흐름 확인하기
 
-명세를 저장하고 SDK를 생성한 뒤 애플리케이션에서 불러옵니다. API 서버는 별도로
-준비합니다. [시작하기](/ko/typescript/guide/getting-started)는 서버 없이 모의 응답으로 첫 호출을
-확인할 수 있는 완결된 예제입니다.
+명세로 SDK를 생성하고 애플리케이션에서 불러오는 방법은 [시작하기](./guide/getting-started.md)에 있습니다.
+실행할 코드는 [예제 모음](./examples/index.md)에서 내려받으세요.
 
-| 하려는 작업 | 읽을 문서 |
-| --- | --- |
-| 처음 생성하고 결과 실행하기 | [시작하기](/ko/typescript/guide/getting-started) |
-| 명세 변경을 반영하고 CI에서 검사하기 | [SDK 생성과 검증](/ko/typescript/guide/generate) |
-| 요청을 보내고 응답·오류 처리하기 | [클라이언트 사용](/ko/typescript/guide/client) |
-| 파일·스트림·웹훅 연동하기 | [사용 예제](/ko/typescript/examples/) |
-| 특정 옵션과 지원 조건 찾기 | [레퍼런스](/ko/typescript/reference/) |
+- [클라이언트 호출과 오류 처리](./guide/client.md)
+- [명세 변경 후 재생성](./guide/generate.md)
+- [인증과 전송](./guide/transport.md)
+- [CLI·타입·옵션 레퍼런스](./reference/index.md)
+
+<span id="명세에서-호출까지"></span>

@@ -1,73 +1,30 @@
-# SSE로 AI 스트림 받기
+# AI 응답 스트리밍
 
-서버가 모델 제공자의 의존성을 관리하고 HTTP 계약을 공개합니다. Go 소비자는 생성된 SDK와
-Go 표준 라이브러리만 사용하며 모델 제공자를 import하지 않습니다.
-[Generation API 명세](/examples/golang-ai-stream.json)를 `openapi.json`으로 저장하고
-[모듈 설정](../guide/getting-started.md)을 한 뒤 생성하세요.
 
-```sh
-openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api
-```
+SSE 이벤트를 하나씩 읽고 처리합니다. [전체 예제 ZIP](/downloads/golang-ai-streaming-app.zip)에는
+명세, Go 모듈, 로컬 서버와 실행 코드가 들어 있습니다. 모델이나 API 키 없이 실행할 수 있습니다.
 
-아래 전체 `main.go`는 로컬 SSE 모의 서버를 사용합니다. 실제 provider를 연결할 때는 처리기를
-서버 쪽 AI 구현으로 바꾸세요. 선언된 SSE 항목에는 필수 문자열 `data`가 있습니다.
+## 스트림 읽기 {#consume}
+
+[Generation API 명세](/examples/golang-ai-stream.json)에서 SDK를 생성하고 클라이언트를 준비합니다.
+다음 코드는 함수 안에서 실행하며 `ctx`는 호출자가 제공하는 `context.Context`입니다.
 
 ```go
-package main
+events := client.Operations.Generate(api.GenerateInput{
+	Body: api.GenerateBody{Prompt: "Summarize the release notes."},
+}).Stream(ctx)
+defer events.Close()
 
-import (
-	"context"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"time"
-
-	api "example.com/consumer/internal/api"
-)
-
-func main() {
-	if err := run(); err != nil {
-		panic(err)
-	}
+for events.Next() {
+	fmt.Println(events.Item().Data)
 }
-
-func run() error {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprint(w, "data: hello\n\n")
-		w.(http.Flusher).Flush()
-	}))
-	defer server.Close()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	client, err := api.NewClient(api.ClientOptions{BaseURL: server.URL})
-	if err != nil {
-		return err
-	}
-	events := client.Operations.Generate(api.GenerateInput{
-		Body: api.GenerateBody{Prompt: "Say hello"},
-	}).Stream(ctx)
-	defer events.Close()
-	for events.Next() {
-		fmt.Println(events.Item().Data)
-	}
-	if err := events.Err(); err != nil {
-		return err
-	}
-	return nil
+if err := events.Err(); err != nil {
+	return err
 }
 ```
 
-```sh
-go run .
-```
+이 명세의 SSE 이벤트는 `Data` 문자열을 반환합니다. 조기에 중단해도 스트림이 닫히도록
+`defer events.Close()`를 유지하고, 반복이 끝나면 `Err()`를 확인하세요.
 
-```text
-hello
-```
-
-중간에 소비를 멈출 때도 `defer events.Close()`를 유지하고 순회 뒤 `Err()`를 확인하세요.
-context 취소는 교환을 중단합니다. `MaxStreamFrameBytes`는 전체 모델 출력이 아니라 한 프레임을
-제한합니다. 구조화된 SSE 데이터 검증에는 `contentMediaType`·`contentSchema`를 추가하세요.
-사용자 어댑터와 입력 스트림은 [스트림 API](../reference/streaming.md)를 확인하세요.
+실제 AI 서비스에 연결하려면 클라이언트의 서버 주소를 바꾸세요. 모델과 공급자 설정은 서버에서 관리합니다.
+취소, 프레임 크기 제한과 JSON 이벤트 변환은 [스트리밍 API](../reference/streaming.md)를 참고하세요.

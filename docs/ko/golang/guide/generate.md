@@ -1,13 +1,14 @@
 # 생성과 검증
 
 생성기는 애플리케이션 안에 Go 소스를 만듭니다. 모듈 설정과 첫 요청은
-[첫 Go SDK](./getting-started.md)에서 시작하세요.
+[첫 Go SDK](./getting-started.md)에서 시작하세요. 아래 명령은 웹훅이 포함된 Todo 명세를 사용하므로
+`--with server`를 지정합니다. 수신 계약이 없는 명세에서는 생략할 수 있습니다.
 
 ## 새 출력 만들기
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server
 ```
 
 출력에는 작업별 모델·클라이언트·공통 HTTP/스키마 소스와 요청한 확장이 포함됩니다.
@@ -17,7 +18,7 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --incremental
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --incremental
 ```
 
 <!--@include: ../../_shared/ko/managed-output.md -->
@@ -26,7 +27,7 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --check
+  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --check
 go test ./...
 ```
 
@@ -40,6 +41,7 @@ go test ./...
 source = "./openapi.json"
 target = "golang"
 output = "./internal/api"
+addons = ["server"]
 
 [golang]
 import_path = "example.com/consumer/internal/api"

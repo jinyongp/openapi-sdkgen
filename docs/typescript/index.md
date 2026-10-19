@@ -27,16 +27,14 @@ features:
     details: Generate code for follow-up API calls and for receiving Webhooks and Callbacks.
 ---
 
-## From document to API call
+## Read the usage flow
 
-Save your document, generate an SDK, and import it into your application. Prepare
-the API server separately. [Getting started](/typescript/guide/getting-started) is a complete
-example that verifies a first call with mock responses and needs no server.
+[Getting started](./guide/getting-started.md) shows generation and application calls.
+[Download a complete example](./examples/index.md) when you want to run the code.
 
-| Task | Page |
-| --- | --- |
-| Generate and run your first SDK | [Getting started](/typescript/guide/getting-started) |
-| Apply document changes and check them in CI | [Generate and verify](/typescript/guide/generate) |
-| Send requests and handle responses and failures | [Client usage](/typescript/guide/client) |
-| Integrate files, streams, or Webhooks | [Examples](/typescript/examples/) |
-| Look up options and support conditions | [Reference](/typescript/reference/) |
+- [Client calls and errors](./guide/client.md)
+- [Regenerate after contract changes](./guide/generate.md)
+- [Authentication and transport](./guide/transport.md)
+- [CLI, types and options](./reference/index.md)
+
+<span id="from-document-to-api-call"></span>

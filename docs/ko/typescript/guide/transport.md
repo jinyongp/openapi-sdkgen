@@ -226,25 +226,9 @@ const todos = await api.todos.list(
 
 ## 스트리밍 동작
 
-openapi-sdkgen은 OpenAPI 3.0.x, 3.1.x, 3.2.x를 모두 지원합니다. 지원하는 순차형
-콘텐츠 타입은 모든 버전에서 `schema`로 전체 데이터를 모은 값을 표현할 수 있습니다.
-OpenAPI 3.2에서는 `itemSchema`로 각 항목의 타입을 지정해 순차적으로 보내거나
-받을 수 있습니다.
-
-정확한 버전 및 미디어 타입 계약은
-[스트리밍 API](/ko/typescript/reference/streaming#openapi-version-support)를 참고하세요.
-
-`itemSchema`가 있는 API에는 `.stream()`이 추가되고
-[`OperationStream<T>`](/ko/typescript/reference/streaming#operationstream)을 반환합니다.
-항목별로 보내는 요청 본문은
-[`StreamSource<T>`](/ko/typescript/reference/streaming#streaming-request-body)를
-사용하므로 `AsyncIterable<T>`와 웹의 `ReadableStream<T>`을 모두 전달할 수
-있습니다. 순차형 미디어 타입 객체에 `schema`와 `itemSchema`가 함께
-있으면 생성된 요청 타입이 전체 값과 항목별 스트림을 모두 받습니다.
-
-[`maxStreamFrameBytes`](/ko/typescript/reference/streaming#maxstreamframebytes)는
-애플리케이션 값으로 변환하기 전의 전송 프레임, 레코드, 멀티파트의 각 부분 하나의 크기를
-제한합니다.
+OpenAPI 3.2의 `itemSchema`로 선언한 응답은 `.stream()`으로 읽습니다.
+전체 값을 받는 `schema`와의 차이는 [버전별 지원](../reference/streaming.md#openapi-version-support),
+호출 코드는 [스트리밍 예제](../examples/ai-streaming.md)에서 확인하세요.
 
 <span id="기본-protocol에-adapter-적용"></span>
 

@@ -286,3 +286,75 @@ With a root selection, the metadata module also exports `generationSelection`
 (public routes and private Link dependencies). With named clients, it exports
 `generationClients` (each client's assignment). Both records require
 `--with metadata`.
+
+## Selective client inputs {#selection-input}
+
+Nested arrays and objects are composed by value, so spreading a feature array is
+unnecessary. Named array exports and module namespaces also work when their
+exported values are selections. Groups use their own string-keyed properties;
+array selections use their indexed elements. Getters are read normally, and the
+values obtained are reused throughout that preparation. Getter effects belong
+to application code, and thrown errors are preserved.
+
+A selection must contain operation references, arrays, or groups of selections.
+Do not mix unrelated metadata or functions into a feature module passed as a
+selection. Await asynchronous configuration yourself before passing its result;
+the loader does not invoke functions, await promises, or consume arbitrary
+iterables on your behalf. Cyclic containers are invalid, while reusing the same
+feature in several groups is supported.
+
+`OperationPreparationError` from the selective entry exposes `stage` (`INPUT`,
+`MODULE_LOAD`, `IDENTITY`, or `BINDING`) and retains the original cause when one
+is available. A native import failure does not always reveal an HTTP status or
+whether the cause was CSP, offline access, or a missing file; use the browser's
+network diagnostics.
+
+## Route enumeration {#selection-enumeration}
+
+The default reference objects do not carry a runtime list of every operation.
+Import the opt-in names-only entry for enumeration and filtering:
+
+```ts
+import { routes as allRoutes } from "./generated/api/selective/all.js";
+import {
+  createClient,
+  loadOperations,
+} from "./generated/api/selective/index.js";
+
+const taskRoutes = Object.entries(allRoutes)
+  .filter(([route]) => route.startsWith("GET /tasks"))
+  .map(([, operation]) => operation);
+
+const preparedTasks = await loadOperations(taskRoutes);
+const api = createClient({
+  baseURL: "https://api.example.test/v1",
+  operations: preparedTasks,
+});
+await api.$operations.listTasks?.({ query: { limit: 20 } });
+```
+
+`all.js` adds the names to the downloaded code, but does not import every
+operation implementation. Computed selections still have optional candidate
+methods. Use this entry rather than enumerating or testing membership on the
+small default reference objects.
+
+## Computed selection types {#computed-selection}
+
+A runtime filter cannot guarantee that an operation is present. Its candidate
+methods are optional and must be checked before use:
+
+```ts
+const candidates = [operations.listTasks, routes["GET /health"]];
+const selection = candidates.filter(() => Math.random() > 0.5);
+const dynamic = createClient({
+  baseURL: "https://api.example.test/v1",
+  operations: await loadOperations(selection),
+});
+
+await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
+```
+
+Keep an array as a tuple at its declaration when its membership is fixed. Passing
+an already widened array later does not restore information that TypeScript has
+lost. Types do not prove the behavior of a getter or the truth of a user-written
+type assertion.

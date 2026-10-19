@@ -8,6 +8,11 @@
   --vp-home-hero-image-filter: blur(42px);
 }
 
+.dark {
+  --vp-c-brand-1: #5eead4;
+  --vp-c-brand-2: #99f6e4;
+}
+
 .VPHomeHero .container {
   display: block;
 }
