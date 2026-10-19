@@ -175,6 +175,11 @@ entry packages. Computed `LookupOperation`/`LookupRoute` selection initializes i
 lazily and returns a dynamic operation with `types.Value` or `types.NativeInput` inputs.
 No fixed binary-size or build-speed improvement is promised.
 
+Generation selection reduces emitted source, but the input document still needs to be
+parsed and analyzed. Generation memory therefore need not fall in proportion to the
+number of selected operations. For large specifications, measure generation and SDK
+compilation separately, using the same input and selection for each comparison.
+
 ## Security and transport
 
 Use `ClientOptions.SecurityProvider` to return credentials for the declared scheme identities.
