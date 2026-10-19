@@ -1,5 +1,9 @@
 # 첫 Go SDK 만들기
 
+<span id="go-sdk-생성과-사용"></span>
+<span id="사용자-모듈에-생성하기"></span>
+
+
 실행 파일로 소스를 생성한 뒤 **Go 1.27 이상**인 사용자 모듈에서 컴파일하고 실행합니다.
 Homebrew·npm으로 CLI를 설치하거나 [Releases](https://github.com/jinyongp/openapi-sdkgen/releases)에서
 실행 파일을 내려받으세요.

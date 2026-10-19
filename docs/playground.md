@@ -1,10 +1,14 @@
 ---
-title: SDK Playground
-layout: page
-aside: false
+search: false
 sidebar: false
 editLink: false
 lastUpdated: false
 ---
 
-<Playground />
+# This page has moved
+
+[Open documentation](/typescript/playground)
+
+[Go documentation](/golang/playground)
+
+<LegacyRedirect route="/playground" />

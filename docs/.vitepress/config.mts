@@ -1,9 +1,10 @@
-import { defineConfig, type DefaultTheme, type LocaleConfig } from "vitepress";
+import { defineConfig, type DefaultTheme, type PageData, type LocaleConfig } from "vitepress";
 import type { DisplayLocale, SDKTarget } from "./doc-context";
 interface DocumentationScope { readonly key: string; readonly locale: DisplayLocale; readonly sdk: SDKTarget | null; }
 
 import { buildDocsNavigation, buildSDKNavigation } from "./navigation.mjs";
 
+import { pageMetadata } from "./metadata.mjs";
 import { documentationScopes } from "./docs-catalog.mjs";
 
 const socialLinks: DefaultTheme.SocialLink[] = [
@@ -88,12 +89,13 @@ export default defineConfig({
     "architecture.md",
     "_shared/**",
   ],
+  transformPageData(pageData: PageData): void { pageData.frontmatter.head = [...(pageData.frontmatter.head ?? []), ...pageMetadata(pageData.relativePath)]; },
   lastUpdated: true,
   themeConfig: englishTheme,
   locales: Object.fromEntries(documentationScopes.map((scope: DocumentationScope): [string, LocaleConfig<DefaultTheme.Config>[string]] => [scope.key, {
     label: "",
     lang: scope.locale === "ko" ? "ko-KR" : "en-US",
     link: scope.key === "root" ? "/" : `/${scope.key}/`,
-    themeConfig: { ...(scope.locale === "ko" ? koreanTheme : englishTheme), ...(scope.sdk ? buildSDKNavigation(scope.locale, scope.sdk) : {}) },
+    themeConfig: { ...(scope.locale === "ko" ? koreanTheme : englishTheme), ...(scope.sdk ? buildSDKNavigation(scope.locale, scope.sdk) : { nav: [], sidebar: [] }) },
   }])),
 });

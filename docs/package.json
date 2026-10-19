@@ -9,10 +9,10 @@
   },
   "scripts": {
     "playground:build": "node ./scripts/build-playground.mjs",
-    "docs:validate": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-feature-manifest.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-doc-context.mjs",
-    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/playground-options.test.mjs ./scripts/doc-context.test.mjs ./scripts/compatibility-results.test.mjs ./scripts/ci-measurements.test.mjs ./scripts/playground-download.test.mjs",
-    "docs:dev": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-doc-context.mjs && node ./scripts/build-playground.mjs && vitepress dev .",
-    "docs:build": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-feature-manifest.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-doc-context.mjs && node ./scripts/build-playground.mjs && vitepress build .",
+    "docs:validate": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-feature-manifest.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-sdk-content.mjs && node ./scripts/build-doc-metadata.mjs",
+    "docs:validate:test": "node ./scripts/validate-locales-test.mjs && node --test ./scripts/legacy-destination.test.mjs ./scripts/playground-options.test.mjs ./scripts/doc-context.test.mjs ./scripts/compatibility-results.test.mjs ./scripts/ci-measurements.test.mjs ./scripts/playground-download.test.mjs",
+    "docs:dev": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-sdk-content.mjs && node ./scripts/build-doc-metadata.mjs && node ./scripts/build-playground.mjs && vitepress dev .",
+    "docs:build": "node ./scripts/build-compatibility-results.mjs && node ./scripts/validate-feature-manifest.mjs && node ./scripts/validate-locales.mjs && node ./scripts/validate-sdk-content.mjs && node ./scripts/build-doc-metadata.mjs && node ./scripts/build-playground.mjs && vitepress build .",
     "docs:preview": "vitepress preview .",
     "playground:test": "node ./scripts/build-playground.mjs && node --test ./scripts/playground-wasm.test.mjs"
   },

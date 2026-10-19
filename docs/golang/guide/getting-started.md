@@ -1,5 +1,9 @@
 # First Go SDK
 
+<span id="generate-and-use-a-go-sdk"></span>
+<span id="generate-into-your-module"></span>
+
+
 Generate source with the native executable, then compile and run it in your own **Go 1.27+** module.
 Install the CLI with Homebrew or npm, or download the native executable from
 [Releases](https://github.com/jinyongp/openapi-sdkgen/releases):

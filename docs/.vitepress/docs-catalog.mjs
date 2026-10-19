@@ -2,8 +2,8 @@
 export const sdkTargets = Object.freeze(["typescript", "golang"]);
 export const displayLocales = Object.freeze(["en", "ko"]);
 export const docsBase = "/openapi-sdkgen/";
-// Expand to both SDKs only after the Go content and compatibility routes pass.
-export const publishedTargets = Object.freeze(["typescript"]);
+// Both SDKs ship together with this documentation.
+export const publishedTargets = sdkTargets;
 export const topics = Object.freeze([
   {
     "id": "home",

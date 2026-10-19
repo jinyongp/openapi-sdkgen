@@ -1,96 +1,22 @@
-import { appendFile, cp, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { cp, mkdtemp, rm, writeFile, appendFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
+import { resolve } from "node:path";
 import { validateLocaleStructure } from "./validate-locales.mjs";
-
-const scriptsDirectory = dirname(fileURLToPath(import.meta.url));
-const docsRoot = resolve(scriptsDirectory, "..");
-
-const validFixture = await createFixture();
-try {
-  await validateLocaleStructure({ docsRoot: validFixture });
-} finally {
-  await rm(validFixture, { recursive: true, force: true });
+const root = resolve(import.meta.dirname, "..");
+async function fixture(mutate, expected) {
+ const directory=await mkdtemp(resolve(tmpdir(),"sdk-docs-"));
+ try {
+  for (const path of ["typescript","golang","ko","guide","examples","reference","index.md","playground.md","public"]) await cp(resolve(root,path),resolve(directory,path),{recursive:true});
+  if (mutate) await mutate(directory);
+  if (expected) await assert.rejects(validateLocaleStructure({docsRoot:directory}),expected);
+  else await validateLocaleStructure({docsRoot:directory});
+ } finally {await rm(directory,{recursive:true,force:true});}
 }
-
-await expectFailure(
-  "missing Korean counterpart",
-  async (fixture) => {
-    await rm(resolve(fixture, "ko/guide/client.md"));
-  },
-  "Korean pages is missing /guide/client",
-);
-
-await expectFailure(
-  "undeclared paired page",
-  async (fixture) => {
-    await writeFile(resolve(fixture, "guide/extra.md"), "# Extra\n");
-    await writeFile(resolve(fixture, "ko/guide/extra.md"), "# 추가\n");
-  },
-  "English pages has undeclared route /guide/extra",
-);
-
-await expectFailure(
-  "broken internal Markdown link",
-  async (fixture) => {
-    await appendFile(resolve(fixture, "guide/client.md"), "\n[Broken](./missing.md)\n");
-  },
-  "guide/client.md links to missing public documentation page ./missing.md",
-);
-
-await expectFailure(
-  "missing downloadable document",
-  async (fixture) => {
-    await rm(resolve(fixture, "public/examples/task-selection.json"));
-  },
-  "guide/selective-client.md links to missing documentation route /examples/task-selection.json",
-);
-
-console.log("ok documentation locale validator self-tests");
-
-async function expectFailure(name, mutate, expected) {
-  const fixture = await createFixture();
-  try {
-    await mutate(fixture);
-    let error;
-    try {
-      await validateLocaleStructure({ docsRoot: fixture });
-    } catch (cause) {
-      error = cause;
-    }
-    if (!(error instanceof Error) || !error.message.includes(expected)) {
-      throw new Error(
-        `${name}: expected validation failure containing ${JSON.stringify(expected)}, got ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  } finally {
-    await rm(fixture, { recursive: true, force: true });
-  }
-}
-
-async function createFixture() {
-  const fixture = await mkdtemp(resolve(tmpdir(), "openapi-sdkgen-docs-locale-"));
-  await mkdir(resolve(fixture, "ko"), { recursive: true });
-  await mkdir(resolve(fixture, "public"), { recursive: true });
-  await cp(resolve(docsRoot, "public/examples"), resolve(fixture, "public/examples"), {
-    recursive: true,
-  });
-  await mkdir(resolve(fixture, "public/compatibility-results"), { recursive: true });
-  await cp(
-    resolve(docsRoot, "../test/compatibility/ci/provenance.json"),
-    resolve(fixture, "public/compatibility-results/provenance.json"),
-  );
-  for (const name of ["index.md", "playground.md"]) {
-    await cp(resolve(docsRoot, name), resolve(fixture, name));
-    await cp(resolve(docsRoot, "ko", name), resolve(fixture, "ko", name));
-  }
-  for (const directory of ["guide", "examples", "reference"]) {
-    await cp(resolve(docsRoot, directory), resolve(fixture, directory), { recursive: true });
-    await cp(resolve(docsRoot, "ko", directory), resolve(fixture, "ko", directory), {
-      recursive: true,
-    });
-  }
-  return fixture;
-}
+test("all SDK scopes and historical routes are present",()=>fixture());
+test("missing Korean SDK counterpart fails",()=>fixture(dir=>rm(resolve(dir,"ko/golang/guide/client.md")),/client/));
+test("undeclared SDK page fails",()=>fixture(dir=>writeFile(resolve(dir,"typescript/guide/extra.md"),"# Extra"),/Undeclared/));
+test("broken SDK link fails",()=>fixture(dir=>appendFile(resolve(dir,"golang/guide/client.md"),"\n[Broken](./missing.md)\n"),/missing link/));
+test("missing public download fails",()=>fixture(dir=>rm(resolve(dir,"public/examples/golang-todo.json")),/missing link/));
+test("legacy pages must opt out of search",()=>fixture(dir=>writeFile(resolve(dir,"guide/client.md"),"# Old page"),/Invalid historical/));

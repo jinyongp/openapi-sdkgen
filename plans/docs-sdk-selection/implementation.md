@@ -100,3 +100,19 @@ fetch abort·Worker 종료·instance identity·success/catch/finally epoch·ZIP 
 다운로드/복사·tree 호출자와 인증 삭제를 확인했다. 초기 옵션 watcher 중복 실행, source가 없는
 느린 fetch의 SDK 전환 취소, 저장 함수 SDK 인자 누락을 고치고 재검증했다.
 최종 4 scope 공개 상태와 모바일/키보드 전체 점검은 W08/W09/W10에서 수행한다.
+
+## W08 — 전체 경로·검색·사이트 metadata 전환
+
+SDK 112개·중립 홈 2개·호환 페이지 52개로 전환하고 두 SDK를 개방했다. 정적 호환 링크와
+client replace, noindex/search 제외/canonical, 옛 430개 heading alias와 Go 분할 16절을 보존했다.
+중립 홈은 선택 카드와 마지막 SDK 이어보기를 제공하며 강제 이동하지 않는다.
+canonical/hreflang/sitemap은 SDK와 표시 언어를 catalog로 대응시킨다.
+
+검증: `build:docs`, `validate-built-docs.mjs`의 114 canonical HTML·52 legacy·430 anchors·
+실제 검색 documentIds 검사 통과. 각 SDK scope는 Playground를 제외한 27개 본문만 검색한다.
+legacy/query/한글 앵커 및 검증기 결함 탐지 9건 통과. 브라우저에서 52개 옛 경로를 모두 열어
+정식 목적지로 이동함을 확인했다. 네 scope에서 API명을 검색해 자기 scope 결과만 나오는 것도
+확인했다(TS 16개, Go 7개 결과). source partial과 호환 페이지는 검색에 없다.
+리뷰: 각 SDK/locale 경로와 정적 HTML lang, base·.html·query·fragment·no-JS 링크,
+검색 모달 scope·배포 metadata·중립 홈·검증 호출자를 확인했다. 한글 수동 alias의 NFC/NFD 혼합과
+정적 replace의 .html 생략을 수정해 재검증했다. 호환 Playground는 no-JS에서 양쪽 SDK 링크를 제공한다.

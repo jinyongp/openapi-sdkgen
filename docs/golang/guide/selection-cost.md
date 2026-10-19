@@ -1,5 +1,8 @@
 # Selection and build cost
 
+<span id="selection-and-compilation-cost"></span>
+
+
 Go's linker removes unreachable code. Imported package initialization can remain, and the compiler
 still processes imported packages. JavaScript tree-shaking and browser download chunk sizes are not
 Go build settings. Choose the smallest suitable surface:

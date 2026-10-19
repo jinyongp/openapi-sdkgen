@@ -1,5 +1,8 @@
 # Models and validation
 
+<span id="typed-calls-and-presence"></span>
+
+
 Required members use their generated type. Optional members use `types.Optional[T]`:
 `types.Some(value)` is present, the zero value is absent. A nullable value uses
 `types.Nullable[T]`; null and absence remain distinct. `types.Value` is an immutable JSON

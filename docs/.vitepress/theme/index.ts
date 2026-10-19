@@ -1,4 +1,6 @@
 import type { Theme } from "vitepress";
+import SDKHome from "./components/SDKHome.vue";
+import LegacyRedirect from "./components/LegacyRedirect.vue";
 import Layout from "./Layout.vue";
 import DefaultTheme from "vitepress/theme";
 import Playground from "./components/Playground.vue";
@@ -11,6 +13,8 @@ export default {
   Layout,
   enhanceApp({ app }): void {
     app.component("Playground", Playground);
+    app.component("SDKHome", SDKHome);
+    app.component("LegacyRedirect", LegacyRedirect);
     app.component("CompatibilityResults", CompatibilityResults);
     app.component("GraphSelection", GraphSelection);
   },

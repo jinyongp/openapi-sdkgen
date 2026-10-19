@@ -1,10 +1,14 @@
 ---
-title: SDK 플레이그라운드
-layout: page
-aside: false
+search: false
 sidebar: false
 editLink: false
 lastUpdated: false
 ---
 
-<Playground />
+# 이 문서는 이동했습니다
+
+[문서 열기](/ko/typescript/playground)
+
+[Go 문서 열기](/ko/golang/playground)
+
+<LegacyRedirect route="/ko/playground" />

@@ -1,5 +1,8 @@
 # Files, Links and streams
 
+<span id="streams-files-and-custom-codecs"></span>
+
+
 `Raw` retains status, headers and the full decoded value. Declared variant accessors such
 as `As201JSON()` return a typed value and a boolean. Use the original raw response to follow
 a Link; the generated Link resolves inputs and validates the target before a later execution.
