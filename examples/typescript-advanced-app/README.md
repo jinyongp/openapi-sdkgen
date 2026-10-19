@@ -1,8 +1,9 @@
 # TypeScript Advanced App
 
-Full source-mode consumer example. It generates the client into `src/generated/widget-sdk/`, then the app compiles and imports it with a relative path. No generated package install or build step.
+Use a generated client for authorization, pagination, file uploads and error handling
+against a local Widget API. The SDK is generated into `src/generated/widget-sdk/`.
 
-Install the `openapi-sdkgen` CLI, Node 22 or newer, and pnpm 10 or newer. The example calls `openapi-sdkgen` from `PATH`, as a normal application repository would.
+Install the `openapi-sdkgen` CLI, Node.js 24, pnpm 12 and Bash. The example calls `openapi-sdkgen` from `PATH`, as a normal application repository would.
 
 ## Covered behavior
 
@@ -18,7 +19,7 @@ Install the `openapi-sdkgen` CLI, Node 22 or newer, and pnpm 10 or newer. The ex
 ## Run
 
 ```sh
-./setup.sh
+bash ./setup.sh
 
 # terminal 1
 pnpm run server

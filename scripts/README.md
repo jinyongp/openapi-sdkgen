@@ -162,8 +162,10 @@ fragments. Markdown prose, shell commands, TOML and literal output are left unch
 builds run the same check, so the documentation CI rejects unformatted code examples.
 
 `devtools run verify:docs` follows `build:docs` and checks TypeScript/Vue setup source, rendered SDK scopes,
-historical anchors, search indexes, documentation tool contracts and the actual Go
-first-call/SSE/webhook code blocks. It uses disposable modules and local HTTP servers. Install the existing verification
+historical anchors, search indexes and documentation tool contracts. It unpacks all
+seven example ZIPs from the built site, generates and compiles their SDKs, and runs
+the consumers with local servers or local Fetch responses. Go consumers use empty
+module caches with the network disabled. Install the existing verification
 tooling first with `devtools run ts-install:dev`; this requirement is for docs development,
 not SDK generation. Vue templates are compiled by the static build and exercised through browser flows.
 
@@ -175,3 +177,10 @@ production deployment. The reusable docs workflow checks the tag/commit/version 
 builds its WASM and pages at that commit, recording `release.json` in the artifact.
 On a docs-only failure, rerun the failed release jobs at the same tag; successful
 package publication jobs and immutable assets are reused by the existing release flow.
+
+Downloadable examples are assembled from the explicit source inventory in
+`docs/scripts/build-example-downloads.mjs`. Documentation validation, development
+and builds create the ignored `docs/public/downloads/` archives. Each ZIP includes
+its own README, contract, toolchain configuration, source and license; generated
+SDKs, installed dependencies and local output are excluded. Keep runnable setup
+and verification in example files, and keep public guides focused on key calls.

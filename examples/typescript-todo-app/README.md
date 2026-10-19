@@ -1,55 +1,37 @@
-# TypeScript Todo App
+# TypeScript Todo application
 
-This is a complete consumer example: generate TypeScript source from `openapi.json` into the app's `src/generated/todo-sdk/` directory, then call it over real HTTP. `src/server.ts` is a tiny local Todo API; `src/client.ts` is a separate SDK consumer process. No credentials or external network service required.
+Generate an SDK, create a Todo over HTTP and list the stored items. The example
+includes a local API server and a separate SDK consumer.
 
 ## Run
 
-Install the `openapi-sdkgen` CLI, Node 22 or newer, and pnpm 10 or newer. The example treats `openapi-sdkgen` as an externally installed command on `PATH`, exactly as an application repository would.
-
-Generate the client source and build the app:
+You need the `openapi-sdkgen` CLI on `PATH`, Node.js 24, pnpm 12 and Bash.
+From this directory:
 
 ```sh
-./setup.sh
+bash ./setup.sh
 ```
 
-`setup.sh` deliberately generates a fresh `src/generated/todo-sdk/` directory, then installs and builds the app. The generated source is compiled by the application's normal TypeScript build; no SDK package, symlink, or second build is involved.
-
-Run the separate processes in two terminals:
+Then run the server and client in separate terminals:
 
 ```sh
-# terminal 1
+# Terminal 1
 pnpm run server
 
-# terminal 2
+# Terminal 2
 TODO_API_BASE_URL=http://127.0.0.1:18787/v1 pnpm run client
 ```
 
-## Manual flow
+The client prints the created Todo and the list containing it as JSON.
+Stop the server when finished.
 
-```sh
-openapi-sdkgen generate \
-  --input openapi.json \
-  --target typescript \
-  --output src/generated/todo-sdk
-pnpm install
-pnpm run build
+## Files
 
-# terminal 1
-TODO_API_PORT=18787 pnpm run server
+- `openapi.json`: the API contract.
+- `src/server.ts`: the local API, including creation, storage and filtering.
+- `src/client.ts`: calls the generated SDK and checks the returned data.
+- `setup.sh`: generates `src/generated/todo-sdk/`, installs dependencies and builds.
 
-# terminal 2
-TODO_API_BASE_URL=http://127.0.0.1:18787/v1 pnpm run client
-```
-
-`src/client.ts` imports the generated source through a relative path. This
-example runs its compiled output directly in Node ESM, so the explicit `.js`
-suffix and `/index.js` entry are intentional. A normal Vite, Next.js, or Nuxt
-application can import the generated directory as `./generated/todo-sdk`.
-
-```ts
-import { createClient } from "./generated/todo-sdk/index.js";
-
-const api = createClient({ baseURL });
-const created = await api.todos.create({ body: { title: "Write docs" } });
-const listed = await api.todos.list({ query: { completed: false } });
-```
+Set `SDKGEN_BIN` when running `setup.sh` to choose another generator executable.
+After editing the contract, rerun setup. Generated SDK source is compiled together
+with the application.

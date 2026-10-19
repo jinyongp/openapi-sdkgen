@@ -4,7 +4,7 @@ Run typed inputs, `Raw`, a response Link, resource paths, an incremental stream,
 static selection, and a webhook against temporary local HTTP servers. No external
 API server or Node.js installation is needed.
 
-You need Go 1.27+ and a Go-enabled `openapi-sdkgen` executable on your `PATH`.
+You need Go 1.27+, Bash and the `openapi-sdkgen` CLI on your `PATH`.
 From this directory:
 
 ```sh

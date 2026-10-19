@@ -19,7 +19,7 @@ case "$command" in
   verify)
     run_step 'Documentation TypeScript' node "$ROOT/docs/scripts/typecheck-docs.mjs"
     run_step 'Built documentation contracts' node "$ROOT/docs/scripts/validate-built-docs.mjs"
-    run_step 'Go documentation examples' node "$ROOT/docs/scripts/verify-go-docs.mjs"
+    run_step 'Downloaded example consumers' node "$ROOT/docs/scripts/verify-example-downloads.mjs"
     run_step 'Documentation tool tests' pnpm_docs run docs:validate:test
     ;;
   dev|preview)

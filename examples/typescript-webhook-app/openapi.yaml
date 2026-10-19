@@ -1,0 +1,34 @@
+openapi: 3.1.1
+info:
+  title: Todo Webhooks
+  version: 1.0.0
+
+paths: {}
+
+webhooks:
+  todoCompleted:
+    post:
+      security:
+        - webhookAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [todoID, completed]
+              properties:
+                todoID:
+                  type: string
+                completed:
+                  type: boolean
+      responses:
+        "204":
+          description: Accepted
+
+components:
+  securitySchemes:
+    webhookAuth:
+      type: apiKey
+      in: header
+      name: x-webhook-token

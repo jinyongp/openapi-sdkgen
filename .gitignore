@@ -12,3 +12,5 @@ coverage
 /docs/public/playground/
 /docs/public/compatibility-results/
 /docs/.vitepress/generated/
+
+/docs/public/downloads/

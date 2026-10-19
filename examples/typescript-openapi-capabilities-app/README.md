@@ -1,15 +1,8 @@
 # TypeScript OpenAPI Capability Showcase
 
-This is a full source-mode application, not a test fixture. It generates a
-TypeScript client and the optional inbound server contracts from
-[`openapi.json`](openapi.json), compiles both as ordinary application source,
-then exercises them against local HTTP servers.
-
-It intentionally uses OpenAPI 3.2 because that is the newest supported line:
-the document includes the 3.2-only `query` operation and an
-`additionalOperations` entry. The CLI also accepts 3.0.x and 3.1.x documents;
-the version-specific parsing and output checks live in the repository
-conformance suite.
+Generate a TypeScript SDK and inbound handlers from `openapi.json`, then use them
+against local HTTP servers. The OpenAPI 3.2 contract covers multiple methods,
+parameter encodings, media types, webhooks and callbacks.
 
 ## Covered generated behavior
 
@@ -26,17 +19,16 @@ conformance suite.
 - Cursor pagination, explicit `openapi` metadata, root Webhook routing with
   host-owned authentication, and host-bound Fetch Callback endpoints.
 
-This does not claim that every valid OpenAPI grammar construct has a runtime
-implementation. Unsupported constructs fail generation with a feature-path
-diagnostic; see the repository [capability matrix](../../docs/openapi-feature-matrix.md).
+See [OpenAPI support](https://jinyongp.dev/openapi-sdkgen/typescript/reference/capabilities)
+for supported behavior and mapping limits.
 
 ## Run
 
-Install `openapi-sdkgen`, Node 22+, and pnpm 10+. The CLI is resolved from
+Install `openapi-sdkgen`, Node.js 24, pnpm 12 and Bash. The CLI is resolved from
 `PATH`, exactly as it would be in a normal application repository.
 
 ```sh
-./setup.sh
+bash ./setup.sh
 
 # terminal 1
 pnpm run server

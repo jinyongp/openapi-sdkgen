@@ -20,9 +20,7 @@ else
 fi
 scratch="$(mktemp -d "$ROOT/.tmp/go-distribution-smoke.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
-cp "$ROOT/examples/golang-todo-app/go.mod" "$scratch/"
-sed -i.bak 's|example.com/sdkgen-go-example|example.com/consumer|' "$scratch/go.mod"
-awk '/^```go$/{copy=1;next} /^```$/{if(copy)exit} copy {print}' "$ROOT/docs/golang/guide/getting-started.md" > "$scratch/main.go"
+cp "$ROOT/examples/golang-todo-app/"{go.mod,main.go,openapi.json} "$scratch/"
 
 verify_version() {
   local actual
@@ -34,8 +32,8 @@ verify_version() {
 verify_call() {
   local actual
   actual="$(GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off CGO_ENABLED=0 GOMODCACHE="$scratch/module-cache" go -C "$scratch" run -mod=readonly .)" || return
-  [[ "$actual" == 'todo-1 Ship the SDK' ]] || { script_error "Unexpected Go call result: $actual"; return 1; }
+  [[ "$actual" == $'created: 201\nlinked: todo-1 Ship the SDK\nresource: todo-1\nevent: Ship the SDK\nselected: todo-1\nwebhook: todo-1' ]] || { script_error "Unexpected Go call result: $actual"; return 1; }
 }
 run_step 'distribution version' verify_version
-run_step 'distribution Go generation' "${launcher[@]}" generate --input "$ROOT/docs/public/examples/golang-todo.json" --target golang --go-import-path example.com/consumer/internal/api --output "$scratch/internal/api" --with server
+run_step 'distribution Go generation' "${launcher[@]}" generate --input "$scratch/openapi.json" --target golang --go-import-path example.com/sdkgen-go-example/generated/api --output "$scratch/generated/api" --with server
 run_step 'distribution Go SDK local call' verify_call
