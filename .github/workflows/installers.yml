@@ -1,0 +1,35 @@
+name: Installers
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  posix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: bash scripts/install/test.sh
+
+  windows:
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test Windows PowerShell 5.1 installer
+        shell: powershell
+        run: '& ./scripts/install/install.test.ps1'
+      - name: Test PowerShell 7 installer
+        shell: pwsh
+        run: '& ./scripts/install/install.test.ps1'

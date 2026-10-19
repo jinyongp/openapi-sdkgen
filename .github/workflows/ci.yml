@@ -15,6 +15,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  installers:
+    uses: ./.github/workflows/installers.yml
+
   suites:
     name: ${{ matrix.suite }}
     runs-on: ubuntu-24.04
@@ -82,7 +85,7 @@ jobs:
 
   validate:
     name: Validate source
-    needs: [suites, compilers]
+    needs: [suites, compilers, installers]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 1
@@ -91,8 +94,9 @@ jobs:
         env:
           SUITES_RESULT: ${{ needs.suites.result }}
           COMPILERS_RESULT: ${{ needs.compilers.result }}
+          INSTALLERS_RESULT: ${{ needs.installers.result }}
         run: |
-          if [[ "$SUITES_RESULT" != success || "$COMPILERS_RESULT" != success ]]; then
-            printf 'validation failed: suites=%s compilers=%s\n' "$SUITES_RESULT" "$COMPILERS_RESULT" >&2
+          if [[ "$SUITES_RESULT" != success || "$COMPILERS_RESULT" != success || "$INSTALLERS_RESULT" != success ]]; then
+            printf 'validation failed: suites=%s compilers=%s installers=%s\n' "$SUITES_RESULT" "$COMPILERS_RESULT" "$INSTALLERS_RESULT" >&2
             exit 1
           fi
