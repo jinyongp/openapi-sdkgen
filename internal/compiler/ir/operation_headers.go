@@ -18,6 +18,10 @@ type OperationHeader struct {
 // ReadOperationHeaders uses the compiler's method set and additional-operation
 // shape checks without constructing the full HTTP intermediate representation.
 func ReadOperationHeaders(path string, item map[string]any, version openapidoc.VersionLine) ([]OperationHeader, error) {
+	return readOperationHeadersAt(path, item, version, "#"+jsonPointer("paths", path))
+}
+
+func readOperationHeadersAt(path string, item map[string]any, version openapidoc.VersionLine, pointer string) ([]OperationHeader, error) {
 	var headers []OperationHeader
 	for _, method := range standardMethods {
 		value, exists := item[method]
@@ -31,7 +35,7 @@ func ReadOperationHeaders(path string, item map[string]any, version openapidoc.V
 		if method == "query" && version != openapidoc.Version32 {
 			return nil, fmt.Errorf("query method requires OpenAPI 3.2")
 		}
-		headers = append(headers, OperationHeader{strings.ToUpper(method), "#" + jsonPointer("paths", path, method), operation})
+		headers = append(headers, OperationHeader{strings.ToUpper(method), pointer + "/" + method, operation})
 	}
 	value, exists := item["additionalOperations"]
 	if !exists {
@@ -54,7 +58,7 @@ func ReadOperationHeaders(path string, item map[string]any, version openapidoc.V
 		if err != nil {
 			return nil, err
 		}
-		headers = append(headers, OperationHeader{method, "#" + jsonPointer("paths", path, "additionalOperations", method), operation})
+		headers = append(headers, OperationHeader{method, pointer + "/additionalOperations/" + strings.ReplaceAll(strings.ReplaceAll(method, "~", "~0"), "/", "~1"), operation})
 	}
 	return headers, nil
 }

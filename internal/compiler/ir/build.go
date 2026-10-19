@@ -332,9 +332,13 @@ func jsonPointerToken(token string) (string, error) {
 }
 
 func buildOperation(document map[string]any, path, method, pointer string, pathItemRaw, raw map[string]any) (Operation, error) {
+	return buildOperationAt(document, path, method, pointer, "#"+jsonPointer("paths", path), pathItemRaw, raw)
+}
+
+func buildOperationAt(document map[string]any, path, method, pointer, pathItemPointer string, pathItemRaw, raw map[string]any) (Operation, error) {
 	operationPointer := "#" + pointer
 	pathParameterOrder := templateParameters(path)
-	parameters, err := readOperationParameters(document, pathItemRaw, raw, "#"+jsonPointer("paths", path), operationPointer, pathParameterOrder)
+	parameters, err := readOperationParameters(document, pathItemRaw, raw, pathItemPointer, operationPointer, pathParameterOrder)
 	if err != nil {
 		return Operation{}, err
 	}
