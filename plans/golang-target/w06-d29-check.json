@@ -1,0 +1,59 @@
+{
+  "unit": "w06",
+  "purpose": "Dedicated independent revalidation after D29 invalidated previous workstream definition signatures. No task mutation performed by this check.",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-code.json",
+  "source_manifest_sha256": "f2b45cdc483661d029e320b301f727c52b784717f882a0eba1ad39664ef77098",
+  "source_files": 1307,
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/target/golang",
+    "-run",
+    "^(TestGeneratedStreamCodecContextOwnership|TestGeneratedStreamHandleLifetime|TestGeneratedNativeJSONAndSSEProtocols|TestGeneratedSequentialMultipartProtocol|TestGeneratedNativeStreamHTTP|TestGeneratedStreamingRequestSources|TestGeneratedStreamResponseMedia|TestGeneratedMultipartResponsePartContracts|TestGeneratedRecursiveMultipartResponse|TestGeneratedUntypedSequentialRaw|TestGeneratedHTTPDependencyBoundaries)$",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T05:08:14.818881+00:00",
+  "finished_at": "2026-10-18T05:08:41.106373+00:00",
+  "exit_code": 0,
+  "expected_cases": [
+    "TestGeneratedStreamCodecContextOwnership",
+    "TestGeneratedStreamHandleLifetime",
+    "TestGeneratedNativeJSONAndSSEProtocols",
+    "TestGeneratedSequentialMultipartProtocol",
+    "TestGeneratedNativeStreamHTTP",
+    "TestGeneratedStreamingRequestSources",
+    "TestGeneratedStreamResponseMedia",
+    "TestGeneratedMultipartResponsePartContracts",
+    "TestGeneratedRecursiveMultipartResponse",
+    "TestGeneratedUntypedSequentialRaw",
+    "TestGeneratedHTTPDependencyBoundaries"
+  ],
+  "passed_cases": [
+    "TestGeneratedHTTPDependencyBoundaries",
+    "TestGeneratedUntypedSequentialRaw",
+    "TestGeneratedStreamCodecContextOwnership",
+    "TestGeneratedStreamHandleLifetime",
+    "TestGeneratedNativeStreamHTTP",
+    "TestGeneratedSequentialMultipartProtocol",
+    "TestGeneratedNativeJSONAndSSEProtocols",
+    "TestGeneratedStreamingRequestSources",
+    "TestGeneratedStreamResponseMedia",
+    "TestGeneratedMultipartResponsePartContracts",
+    "TestGeneratedRecursiveMultipartResponse"
+  ],
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 25.496
+    }
+  ],
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w06-d29-test.stdout",
+  "raw_stdout_sha256": "e54de4f8a10e1303c0c04a173325c46141402f0a078bc1fc4907716eb134a6eb",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w06-d29-test.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

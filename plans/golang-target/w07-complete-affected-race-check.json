@@ -1,0 +1,44 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "-race",
+    "./internal/target/golang",
+    "-run",
+    "TestGeneratedPagination|TestGeneratedPaginationItemVariants|TestGeneratedLink",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T14:04:18.869031042+09:00",
+  "finished_at": "2026-10-18T14:04:40.209140021+09:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-code.json",
+  "source_manifest_sha256": "f2b45cdc483661d029e320b301f727c52b784717f882a0eba1ad39664ef77098",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w07-link-pagination-after.stdout",
+  "raw_stdout_sha256": "ed4e7459094fe652c552fc4f67b69135f429b644cb63ba31cad7d9c8013d1f05",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w07-link-pagination-after.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 21.34
+    }
+  ],
+  "passed_tests": [
+    "TestGeneratedLinkNativeBodies",
+    "TestGeneratedLinkPresenceAndPointers",
+    "TestGeneratedLinkStatusGroups",
+    "TestGeneratedLinkStreamTargets",
+    "TestGeneratedLinkCalls",
+    "TestGeneratedPagination",
+    "TestGeneratedPaginationItemVariants"
+  ],
+  "changed_source_files_since_full_suite": [
+    "internal/target/golang/pagination_test.go",
+    "internal/target/golang/templates/operation-pagination.go.tmpl"
+  ]
+}

@@ -1,0 +1,258 @@
+{
+  "unit": "W05",
+  "definition": "D27",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-code.json",
+  "source_manifest_sha256": "4adb9c923fa8c128578151012bbb058e23699bd80ae293e8e7e0b723236caf3d",
+  "source_files": 1228,
+  "checks": {
+    "race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 1.014
+        },
+        {
+          "package": "openapi-sdkgen/internal/generator",
+          "action": "pass",
+          "elapsed": 1.019
+        },
+        {
+          "package": "openapi-sdkgen/internal/output",
+          "action": "pass",
+          "elapsed": 2.108
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 7.441
+        },
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 184.659
+        }
+      ]
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-vet-check.json",
+      "exit_code": 0,
+      "package_results": []
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-fmt-check.json",
+      "exit_code": 0,
+      "package_results": []
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-mod-check.json",
+      "exit_code": 0,
+      "package_results": []
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-diff-check.json",
+      "exit_code": 0,
+      "package_results": []
+    },
+    "typescript": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-final-typescript-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/typescript",
+          "action": "pass",
+          "elapsed": 61.83
+        }
+      ]
+    },
+    "common": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-final-common-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 0.005
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler/compatibility",
+          "action": "pass",
+          "elapsed": 0.004
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler/openapi",
+          "action": "pass",
+          "elapsed": 0.004
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler",
+          "action": "pass",
+          "elapsed": 0.008
+        }
+      ]
+    }
+  },
+  "shared_check_reuse": "All non-Go-target source hashes are unchanged since TypeScript/common execution; final Go target checks cover the later nested-option fix.",
+  "features": [
+    {
+      "id": "oas30.schema.xml",
+      "passed_cases": [
+        "TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+        "TestGeneratedXMLNodeTypesNamespacesAndNames",
+        "TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+        "TestGeneratedXMLHTTPCompositionAndReferences",
+        "TestGeneratedXMLParametersAndHeaders",
+        "TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+      ]
+    },
+    {
+      "id": "jsonschema.xml",
+      "passed_cases": [
+        "TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+        "TestGeneratedXMLNodeTypesNamespacesAndNames",
+        "TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+        "TestGeneratedXMLHTTPCompositionAndReferences",
+        "TestGeneratedXMLParametersAndHeaders",
+        "TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts",
+        "TestGeneratedXMLContentSchema"
+      ]
+    },
+    {
+      "id": "requestBody.media.form-urlencoded",
+      "passed_cases": [
+        "TestGeneratedURLFormBodies",
+        "TestGeneratedFormAndNullableMultipartAcrossVersions"
+      ]
+    },
+    {
+      "id": "requestBody.media.multipart",
+      "passed_cases": [
+        "TestGeneratedMultipartHTTPAndSourceLifetime",
+        "TestGeneratedPositionalAndNestedMultipart",
+        "TestGeneratedMultipartBinaryAlternativeMediaSelection",
+        "TestGeneratedOptionSelectedNestedMultipartDefaults",
+        "TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+        "TestGeneratedOpenMultipartValuesKeepJSONStrict",
+        "TestGeneratedMultipartUnionTupleAndNullableParts"
+      ]
+    },
+    {
+      "id": "requestBody.encoding",
+      "passed_cases": [
+        "TestGeneratedMultipartHTTPAndSourceLifetime",
+        "TestGeneratedPositionalAndNestedMultipart",
+        "TestGeneratedMultipartBinaryAlternativeMediaSelection",
+        "TestGeneratedOptionSelectedNestedMultipartDefaults",
+        "TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+        "TestGeneratedOpenMultipartValuesKeepJSONStrict",
+        "TestGeneratedMultipartUnionTupleAndNullableParts"
+      ]
+    },
+    {
+      "id": "media.xml",
+      "passed_cases": [
+        "TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+        "TestGeneratedXMLNodeTypesNamespacesAndNames",
+        "TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+        "TestGeneratedXMLHTTPCompositionAndReferences",
+        "TestGeneratedXMLParametersAndHeaders",
+        "TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+      ]
+    },
+    {
+      "id": "oas32.schema.xml.nodeType",
+      "passed_cases": [
+        "TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+        "TestGeneratedXMLNodeTypesNamespacesAndNames",
+        "TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+        "TestGeneratedXMLHTTPCompositionAndReferences",
+        "TestGeneratedXMLParametersAndHeaders",
+        "TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+      ]
+    },
+    {
+      "id": "oas32.schema.xml.legacy-compatibility",
+      "passed_cases": [
+        "TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+        "TestGeneratedXMLNodeTypesNamespacesAndNames",
+        "TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+        "TestGeneratedXMLHTTPCompositionAndReferences",
+        "TestGeneratedXMLParametersAndHeaders",
+        "TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+      ]
+    },
+    {
+      "id": "oas32.schema.xml.nodeType-legacy-conflict",
+      "passed_cases": [
+        "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields"
+      ]
+    },
+    {
+      "id": "mediaType.encoding",
+      "passed_cases": [
+        "TestGeneratedMultipartHTTPAndSourceLifetime",
+        "TestGeneratedPositionalAndNestedMultipart",
+        "TestGeneratedMultipartBinaryAlternativeMediaSelection",
+        "TestGeneratedOptionSelectedNestedMultipartDefaults",
+        "TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+        "TestGeneratedOpenMultipartValuesKeepJSONStrict",
+        "TestGeneratedMultipartUnionTupleAndNullableParts"
+      ]
+    },
+    {
+      "id": "mediaType.structured-multipart-default",
+      "passed_cases": [
+        "TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+        "TestGeneratedMultipartWithinOpenRequestMedia"
+      ]
+    },
+    {
+      "id": "mediaType.unknown-runtime-codec",
+      "passed_cases": [
+        "TestGeneratedMultipartNativeXMLAndCustomParts",
+        "TestGeneratedMediaCodecFailuresAndHeaderDirection",
+        "TestGeneratedFiniteMultipartResponseUsesJSONCodecContract",
+        "TestGeneratedInboundCodecBorrowedBodyBoundary"
+      ]
+    },
+    {
+      "id": "compat.encoding.headers",
+      "passed_cases": [
+        "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields"
+      ]
+    },
+    {
+      "id": "compat.encoding.fields",
+      "passed_cases": [
+        "TestConsumerPolicyAppliesEncodingFieldApplicability"
+      ]
+    },
+    {
+      "id": "compat.encoding.entry-applicability",
+      "passed_cases": [
+        "TestGeneratedEncodingIgnoresEntriesWithoutInstanceValues"
+      ]
+    }
+  ],
+  "supplemental_contracts": {
+    "media-and-transport-hooks": [
+      "TestGeneratedMediaCodecFailuresAndHeaderDirection",
+      "TestGeneratedInboundCodecBorrowedBodyBoundary"
+    ],
+    "concurrency-and-lifetime": [
+      "TestGeneratedMultipartHTTPAndSourceLifetime",
+      "TestGeneratedMediaCodecFailuresAndHeaderDirection"
+    ],
+    "compressed-responses": [
+      "TestGeneratedMediaCodecFailuresAndHeaderDirection",
+      "TestGeneratedResponseCompressionAndLease"
+    ]
+  },
+  "limits": [
+    "W06 owns typed stream integration and W09 actual inbound handler integration.",
+    "No peak RSS or broad performance claim; W11 owns full measurements.",
+    "Finite form/multipart responses use custom Decode, matching current TypeScript; arbitrary XML additional properties and prefixItems XML mappings retain existing TypeScript limits."
+  ]
+}

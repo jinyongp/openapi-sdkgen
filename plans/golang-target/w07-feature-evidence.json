@@ -1,0 +1,177 @@
+{
+  "unit": "W07",
+  "definition": "D29",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-code.json",
+  "source_manifest_sha256": "f2b45cdc483661d029e320b301f727c52b784717f882a0eba1ad39664ef77098",
+  "source_files": 1307,
+  "previous_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-final-code.json",
+  "changed_source_files_since_full_suite": [
+    "internal/target/golang/pagination_test.go",
+    "internal/target/golang/templates/operation-pagination.go.tmpl"
+  ],
+  "check_reuse": "Candidate full Go race414 events and TypeScript133 passed. Only pagination template/test changed after those suites; final affected pagination/Link race7 top-level consumers passed including actual failing-before Link cursor-reset regression. All other source hashes unchanged. Final vet/fmt/mod/diff ran again. Dedicated W01-W06 current-source checks and complete scope reviews are additional prerequisites, not replaced by this broad result.",
+  "checks": {
+    "candidate-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-final-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/http/extension",
+          "action": "skip",
+          "elapsed": 0
+        },
+        {
+          "package": "openapi-sdkgen/internal/schema/plan",
+          "action": "skip",
+          "elapsed": 0
+        },
+        {
+          "package": "openapi-sdkgen/internal/generator",
+          "action": "pass",
+          "elapsed": 1.027
+        },
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 1.039
+        },
+        {
+          "package": "openapi-sdkgen/internal/output",
+          "action": "pass",
+          "elapsed": 2.116
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 7.468
+        },
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 269.599
+        }
+      ],
+      "passed_event_count": 414
+    },
+    "typescript": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-final-typescript-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/typescript",
+          "action": "pass",
+          "elapsed": 33.012
+        }
+      ],
+      "passed_event_count": 133
+    },
+    "affected-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-affected-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 21.34
+        }
+      ],
+      "passed_event_count": 7
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-vet-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-fmt-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-mod-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-complete-diff-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    }
+  },
+  "features": [
+    {
+      "id": "response.links-external-closure",
+      "passed_cases": [
+        "TestGeneratedExternalLinkClosure"
+      ]
+    },
+    {
+      "id": "response.links-locked-remote-closure",
+      "passed_cases": [
+        "TestGeneratedLockedRemoteLinkClosure"
+      ]
+    },
+    {
+      "id": "components.links",
+      "passed_cases": [
+        "TestGeneratedComponentLinksAndNativeHeaders"
+      ]
+    },
+    {
+      "id": "response.links",
+      "passed_cases": [
+        "TestGeneratedLinkCalls",
+        "TestGeneratedLinkStatusGroups",
+        "TestGeneratedLinkStreamTargets",
+        "TestGeneratedLinkNativeBodies",
+        "TestGeneratedLinkPresenceAndPointers"
+      ]
+    },
+    {
+      "id": "response.links.fetch-managed-request-headers",
+      "passed_cases": [
+        "TestGeneratedComponentLinksAndNativeHeaders",
+        "TestGeneratedNativeGoMethodsAndHeaders"
+      ]
+    },
+    {
+      "id": "compat.link.target-identity",
+      "passed_cases": [
+        "TestGeneratedExternalLinkClosure",
+        "TestGeneratedLockedRemoteLinkClosure",
+        "TestGeneratedComponentLinksAndNativeHeaders"
+      ]
+    }
+  ],
+  "supplemental_contracts": {
+    "calls-and-types": [
+      "TestGeneratedResourceCalls",
+      "TestGeneratedComplexResourceArguments",
+      "TestGeneratedResourceArgumentFallback",
+      "TestGeneratedPunctuationResourcePath",
+      "TestGeneratedComponentLinksAndNativeHeaders"
+    ],
+    "extensions": [
+      "TestGeneratedEnvelopeViews",
+      "TestGeneratedPagination",
+      "TestGeneratedPaginationItemVariants",
+      "TestGeneratedStructuredSort",
+      "TestGeneratedErrorCategoryDetails",
+      "TestGeneratedResponsePropertyProfile"
+    ],
+    "link-invocation": [
+      "TestGeneratedLinkCalls",
+      "TestGeneratedLinkStatusGroups",
+      "TestGeneratedLinkNativeBodies",
+      "TestGeneratedLinkPresenceAndPointers",
+      "TestGeneratedLinkStreamTargets"
+    ]
+  },
+  "adaptations": {
+    "response.links.fetch-managed-request-headers": "Go uses explicit declared native request headers; does not enforce browser forbidden-header rules or promise browser automatic Origin. Existing parity matrix adaptation retained."
+  }
+}

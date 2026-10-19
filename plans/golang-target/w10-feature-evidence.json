@@ -1,0 +1,5555 @@
+{
+  "unit": "W10",
+  "definition": "D29 plan1,3,10,13-14; original W10 task; W09 done1668/claim1669",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-code.json",
+  "source_manifest_sha256": "14f373a2b238361053707821989e3e251abad8cb452a69ce0daadc6b23306458",
+  "source_files": 1402,
+  "checks": {
+    "affected-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-affected-race-check.json",
+      "exit_code": 0,
+      "passed_event_count": 206,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/scripts/generate-check/snapshot",
+          "action": "pass",
+          "elapsed": 1.019
+        },
+        {
+          "package": "openapi-sdkgen/internal/playground",
+          "action": "pass",
+          "elapsed": 1.4060000000000001
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 9.827
+        }
+      ]
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-vet-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-fmt-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-mod-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-diff-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "docs-build": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-docs-build-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "docs-tests": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-docs-tests-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "playground": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-playground-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "example": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-example-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "go-tools": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-go-tools-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    },
+    "perf-command": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-perf-command-check.json",
+      "exit_code": 0,
+      "passed_event_count": 0,
+      "package_results": []
+    }
+  },
+  "additional_checks": {
+    "ci-go": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w10-ci-go.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w10-ci-go.stderr",
+      "raw_stderr_sha256": "6710bc1492e959ea44a9e362c40469c6487966545af0a30ad40061a7a23d9ff2"
+    },
+    "ci-typescript-tools": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w10-ci-typescript-tools.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w10-ci-typescript-tools.stderr",
+      "raw_stderr_sha256": "3c6f84603ea44b0410b5ee2ba29231280cb3cc7b1dff29d94dca6515c0e27d29"
+    },
+    "native-delivery": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w10-native-delivery.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w10-native-delivery.stderr",
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "npm-source": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w10-npm-source.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w10-npm-source.stderr",
+      "raw_stderr_sha256": "9a54e781e1283b5875f1e5970c6653c44b637e01ccbdb5a27945756d139c2f6d"
+    }
+  },
+  "source_applicability": "The CI suites started before this final snapshot was captured; no product source changed between their start and completion. All11 exact-snapshot checks verify file hashes before and after execution. Browser-specific source hashes and native binary hash are retained. TypeScript verifier profiles were moved without behavior changes; tools CI and original failure/cleanup tests passed. W09 full SDK/runtime evidence remains applicable to unchanged generator/runtime sources; W10 adds only a benchmark test under the Go target.",
+  "features": [
+    {
+      "id": "response.links-external-closure",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/link_external_test.go::TestGeneratedExternalLinkClosure"
+        ]
+      }
+    },
+    {
+      "id": "response.links-locked-remote-closure",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/link_external_test.go::TestGeneratedLockedRemoteLinkClosure"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.title",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.multipleOf",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.maximum",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.exclusiveMaximum",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.minimum",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.exclusiveMinimum",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.maxLength",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.minLength",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.pattern",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.maxItems",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.minItems",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.uniqueItems",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.maxProperties",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.minProperties",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.required",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.enum",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.type",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.allOf",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.oneOf",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.anyOf",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.not",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.items",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.properties",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.additionalProperties.schema",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.additionalProperties.true",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.additionalProperties.false",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "schema.recursive-components",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.description",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.format",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.default",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.nullable",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.discriminator",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/discriminator_runtime_test.go::TestGeneratedDiscriminatorMappings"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.readOnly",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/models_projection_runtime_test.go::TestGeneratedProjectionsRecursiveDTOAndAllOf"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.writeOnly",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/models_projection_runtime_test.go::TestGeneratedProjectionsRecursiveDTOAndAllOf"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.xml",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+          "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+          "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+          "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+          "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders",
+          "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.externalDocs",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.example",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "oas30.schema.deprecated",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.ref.direct-component",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.ref.nested-pointer",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.boolean",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.id",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.schema",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.anchor",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.dynamicAnchor",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.dynamicRef",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.vocabulary",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.comment",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.defs",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.type",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.const",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.enum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.annotated-enum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.annotated-enum.member-deprecated",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "enum.component-deprecated",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.allOf",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.anyOf",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.oneOf",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.not",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.if",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.then",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.else",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.prefixItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.items",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.contains",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.minContains",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.maxContains",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.properties",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.patternProperties",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.additionalProperties.schema",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.additionalProperties.false",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.propertyNames",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.unevaluatedItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.unevaluatedProperties",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.dependentSchemas",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.dependentRequired",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.contentSchema",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+          "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.readOnly",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/models_projection_runtime_test.go::TestGeneratedProjectionsRecursiveDTOAndAllOf"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.writeOnly",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/models_projection_runtime_test.go::TestGeneratedProjectionsRecursiveDTOAndAllOf"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.discriminator",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/discriminator_runtime_test.go::TestGeneratedDiscriminatorMappings"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.xml",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+          "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+          "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+          "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+          "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders",
+          "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts",
+          "internal/target/golang/content_xml_runtime_test.go::TestGeneratedXMLContentSchema"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.multipleOf",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.maximum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.exclusiveMaximum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.minimum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.exclusiveMinimum",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.maxLength",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.minLength",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.pattern",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.maxItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.minItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.uniqueItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.maxProperties",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.minProperties",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.required",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.title",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.description",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.default",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.deprecated",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.examples",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.format",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/formats_runtime_test.go::TestGeneratedFormatAssertions"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.contentEncoding",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+          "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.contentMediaType",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+          "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.externalDocs",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "root.openapi",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "root.info",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "root.servers.url",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "root.servers.variables",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "root.paths",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "root.components",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "root.security",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "root.tags",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "root.externalDocs",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "root.extensions",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "root.webhooks",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/server_preflight_test.go::TestGoInboundRequiresServerAddonWithDocumentScope",
+          "internal/target/golang/server_plan_test.go::TestPreparedInboundNamesAndStreamingMode",
+          "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers",
+          "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundJSON",
+          "internal/target/golang/server_media_test.go::TestGeneratedTypedInboundMediaAndHeaders",
+          "internal/target/golang/server_response_variant_test.go::TestGeneratedTypedInboundResponseVariants"
+        ],
+        "conditions": [
+          {
+            "target": "golang",
+            "with": [
+              "server"
+            ],
+            "state": "generated",
+            "evidence": [
+              "internal/target/golang/server_preflight_test.go::TestGoInboundRequiresServerAddonWithDocumentScope",
+              "internal/target/golang/server_plan_test.go::TestPreparedInboundNamesAndStreamingMode",
+              "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers",
+              "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundJSON",
+              "internal/target/golang/server_media_test.go::TestGeneratedTypedInboundMediaAndHeaders",
+              "internal/target/golang/server_response_variant_test.go::TestGeneratedTypedInboundResponseVariants"
+            ]
+          }
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "root.jsonSchemaDialect",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "root.self",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "components.schemas",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "components.responses",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "components.parameters",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "components.examples",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "components.requestBodies",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "components.headers",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/headers_runtime_test.go::TestGeneratedDeclaredResponseHeaders"
+        ]
+      }
+    },
+    {
+      "id": "components.securitySchemes",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "components.links",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/link_component_test.go::TestGeneratedComponentLinksAndNativeHeaders"
+        ]
+      }
+    },
+    {
+      "id": "components.callbacks",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers"
+        ],
+        "conditions": [
+          {
+            "target": "golang",
+            "with": [
+              "server"
+            ],
+            "state": "generated",
+            "evidence": [
+              "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers"
+            ]
+          }
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "components.pathItems",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "components.mediaTypes",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "operation.standard-methods",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ]
+      }
+    },
+    {
+      "id": "operation.query",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ]
+      }
+    },
+    {
+      "id": "operation.additionalOperations",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ]
+      }
+    },
+    {
+      "id": "operation.operationId",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "operation.tags",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "operation.summary",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "operation.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "operation.externalDocs",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "operation.deprecated",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "operation.callbacks",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/server_preflight_test.go::TestGoInboundCallbackErrorsFollowGenerationSelection",
+          "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers"
+        ],
+        "conditions": [
+          {
+            "target": "golang",
+            "with": [
+              "server"
+            ],
+            "state": "generated",
+            "evidence": [
+              "internal/target/golang/server_preflight_test.go::TestGoInboundCallbackErrorsFollowGenerationSelection",
+              "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers"
+            ]
+          }
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "operation.security",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "operation.scoped-server-alternatives",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "parameter.in.path",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.in.query",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.in.header",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.header.fetch-managed",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ],
+        "conditions": [
+          {
+            "target": "golang",
+            "with": [
+              "server"
+            ],
+            "scope": "inbound-only",
+            "state": "generated",
+            "evidence": [
+              "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "parameter.in.cookie",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.querystring",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.required",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.allowReserved",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.allowEmptyValue",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.cookie-style",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.styles",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.delimited-object",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.structured-non-json-content",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media.json",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media.text",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media.binary",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media.form-urlencoded",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/form_media_runtime_test.go::TestGeneratedURLFormBodies",
+          "internal/target/golang/form_multipart_versions_test.go::TestGeneratedFormAndNullableMultipartAcrossVersions"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media.multipart",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/multipart_http_test.go::TestGeneratedMultipartHTTPAndSourceLifetime",
+          "internal/target/golang/multipart_nested_test.go::TestGeneratedPositionalAndNestedMultipart",
+          "internal/target/golang/multipart_binary_media_test.go::TestGeneratedMultipartBinaryAlternativeMediaSelection",
+          "internal/target/golang/multipart_dynamic_nested_test.go::TestGeneratedOptionSelectedNestedMultipartDefaults",
+          "internal/target/golang/multipart_named_wire_test.go::TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+          "internal/target/golang/multipart_open_test.go::TestGeneratedOpenMultipartValuesKeepJSONStrict",
+          "internal/target/golang/multipart_composition_test.go::TestGeneratedMultipartUnionTupleAndNullableParts"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.media-wildcard",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/open_media_runtime_test.go::TestGeneratedOpenMediaRepresentations"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.encoding",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/multipart_http_test.go::TestGeneratedMultipartHTTPAndSourceLifetime",
+          "internal/target/golang/multipart_nested_test.go::TestGeneratedPositionalAndNestedMultipart",
+          "internal/target/golang/multipart_binary_media_test.go::TestGeneratedMultipartBinaryAlternativeMediaSelection",
+          "internal/target/golang/multipart_dynamic_nested_test.go::TestGeneratedOptionSelectedNestedMultipartDefaults",
+          "internal/target/golang/multipart_named_wire_test.go::TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+          "internal/target/golang/multipart_open_test.go::TestGeneratedOpenMultipartValuesKeepJSONStrict",
+          "internal/target/golang/multipart_composition_test.go::TestGeneratedMultipartUnionTupleAndNullableParts"
+        ]
+      }
+    },
+    {
+      "id": "media.xml",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+          "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+          "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+          "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+          "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders",
+          "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+        ]
+      }
+    },
+    {
+      "id": "media.itemSchema",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources",
+          "internal/target/golang/stream_response_media_test.go::TestGeneratedStreamResponseMedia"
+        ]
+      }
+    },
+    {
+      "id": "media.prefixEncoding",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_response_media_test.go::TestGeneratedMultipartResponsePartContracts",
+          "internal/target/golang/multipart_nested_test.go::TestGeneratedPositionalAndNestedMultipart"
+        ]
+      }
+    },
+    {
+      "id": "media.itemEncoding",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_response_media_test.go::TestGeneratedMultipartResponsePartContracts",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "response.default-media-negotiation",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "response.headers",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/headers_runtime_test.go::TestGeneratedDeclaredResponseHeaders"
+        ]
+      }
+    },
+    {
+      "id": "header.deprecated",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "response.links",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/link_test.go::TestGeneratedLinkCalls",
+          "internal/target/golang/link_status_test.go::TestGeneratedLinkStatusGroups",
+          "internal/target/golang/link_stream_test.go::TestGeneratedLinkStreamTargets",
+          "internal/target/golang/link_native_test.go::TestGeneratedLinkNativeBodies",
+          "internal/target/golang/link_presence_test.go::TestGeneratedLinkPresenceAndPointers"
+        ]
+      }
+    },
+    {
+      "id": "response.links.fetch-managed-request-headers",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/link_component_test.go::TestGeneratedComponentLinksAndNativeHeaders",
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ]
+      }
+    },
+    {
+      "id": "response.streams",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_multipart_test.go::TestGeneratedSequentialMultipartProtocol"
+        ]
+      }
+    },
+    {
+      "id": "response.sequential-untyped",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/raw_stream_runtime_test.go::TestGeneratedUntypedSequentialRaw"
+        ]
+      }
+    },
+    {
+      "id": "media.sse-event-default",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_protocol_test.go::TestGeneratedNativeJSONAndSSEProtocols",
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "media.sse-inbound-event-default",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/server_sse_test.go::TestGeneratedInboundSSEDefaultContract"
+        ]
+      }
+    },
+    {
+      "id": "oas32.schema.discriminator.defaultMapping",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/discriminator_runtime_test.go::TestGeneratedDiscriminatorMappings"
+        ]
+      }
+    },
+    {
+      "id": "oas32.schema.xml.nodeType",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+          "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+          "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+          "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+          "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders",
+          "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+        ]
+      }
+    },
+    {
+      "id": "oas32.schema.xml.legacy-compatibility",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+          "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+          "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+          "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+          "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders",
+          "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts"
+        ]
+      }
+    },
+    {
+      "id": "oas32.schema.xml.nodeType-legacy-conflict",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/compiler/openapi/read_test.go::TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "oas32.optional-paths",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "oas32.streaming-media",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "info.title",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.summary",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.termsOfService",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.contact.name",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.contact.url",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.contact.email",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.license.name",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.license.url",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.license.identifier",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "info.version",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "server.url",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "server.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "server.variable.enum",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "server.variable.default",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "server.variable.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "server.name",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.name",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.externalDocs",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.summary",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.parent",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "tag.kind",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "externalDocs.url",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "externalDocs.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "parameter.name",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.in",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "parameter.deprecated",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+          "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation"
+        ]
+      }
+    },
+    {
+      "id": "parameter.style",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.explode",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.schema",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.content.single-media",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ]
+      }
+    },
+    {
+      "id": "parameter.content.multi-media",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+          "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "parameter.example",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "parameter.examples",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.required",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.content",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.schema",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.example",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.examples",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.encoding",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/multipart_http_test.go::TestGeneratedMultipartHTTPAndSourceLifetime",
+          "internal/target/golang/multipart_nested_test.go::TestGeneratedPositionalAndNestedMultipart",
+          "internal/target/golang/multipart_binary_media_test.go::TestGeneratedMultipartBinaryAlternativeMediaSelection",
+          "internal/target/golang/multipart_dynamic_nested_test.go::TestGeneratedOptionSelectedNestedMultipartDefaults",
+          "internal/target/golang/multipart_named_wire_test.go::TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+          "internal/target/golang/multipart_open_test.go::TestGeneratedOpenMultipartValuesKeepJSONStrict",
+          "internal/target/golang/multipart_composition_test.go::TestGeneratedMultipartUnionTupleAndNullableParts"
+        ]
+      }
+    },
+    {
+      "id": "response.description",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ]
+      }
+    },
+    {
+      "id": "response.summary",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "example.dataValue",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "example.serializedValue",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "response.content",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "response.status.exact",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "response.status.default",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "response.status.range",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "response.media-wildcard",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/open_media_runtime_test.go::TestGeneratedOpenMediaRepresentations"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.type",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.name",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.in",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.apiKey.fetch-managed-header",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.scheme",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.bearerFormat",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.flows",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.openIdConnectUrl",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.oauth2MetadataUrl",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "securityScheme.deprecated",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "oauthFlow.authorizationUrl",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "oauthFlow.tokenUrl",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "oauthFlow.refreshUrl",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "oauthFlow.scopes",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "oauthFlow.deviceAuthorization",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.case-insensitive-json",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.structured-multipart-default",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/multipart_named_wire_test.go::TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+          "internal/target/golang/multipart_direction_test.go::TestGeneratedMultipartWithinOpenRequestMedia"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.unknown-runtime-codec",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/multipart_codecs_test.go::TestGeneratedMultipartNativeXMLAndCustomParts",
+          "internal/target/golang/codec_lifetime_test.go::TestGeneratedMediaCodecFailuresAndHeaderDirection",
+          "internal/target/golang/multipart_direction_test.go::TestGeneratedFiniteMultipartResponseUsesJSONCodecContract",
+          "internal/target/golang/inbound_codec_test.go::TestGeneratedInboundCodecBorrowedBodyBoundary"
+        ]
+      }
+    },
+    {
+      "id": "mediaType.unknown-stream-runtime-codec",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP"
+        ]
+      }
+    },
+    {
+      "id": "pathItem.ref-siblings",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "input.yaml",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "input.yaml.flow-mapping",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "pathItem.ref.local-pointer",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "jsonschema.ref.sibling-wire-semantics",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences"
+        ]
+      }
+    },
+    {
+      "id": "media.streaming-request",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "media.streaming-request-source",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources",
+          "internal/target/golang/stream_handle_test.go::TestGeneratedStreamHandleLifetime"
+        ]
+      }
+    },
+    {
+      "id": "media.stream-protocol-adapter",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources",
+          "internal/target/golang/stream_codec_lifetime_test.go::TestGeneratedStreamCodecContextOwnership"
+        ]
+      }
+    },
+    {
+      "id": "response.operation-stream",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP"
+        ]
+      }
+    },
+    {
+      "id": "response.stream-frame-limit",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_protocol_test.go::TestGeneratedNativeJSONAndSSEProtocols",
+          "internal/target/golang/stream_multipart_test.go::TestGeneratedSequentialMultipartProtocol",
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "requestBody.inbound-complete-byte-limit",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/server_schema_test.go::TestGeneratedGenericInboundRuntime",
+          "internal/target/golang/server_multipart_test.go::TestGeneratedTypedInboundMultipart",
+          "internal/target/golang/server_runtime_test.go::TestGeneratedInboundRuntimeBoundary"
+        ],
+        "conditions": [
+          {
+            "target": "golang",
+            "with": [
+              "server"
+            ],
+            "scope": "inbound-only",
+            "state": "generated",
+            "evidence": [
+              "internal/target/golang/server_schema_test.go::TestGeneratedGenericInboundRuntime",
+              "internal/target/golang/server_multipart_test.go::TestGeneratedTypedInboundMultipart",
+              "internal/target/golang/server_runtime_test.go::TestGeneratedInboundRuntimeBoundary"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "response.stream-raw-body",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/raw_stream_runtime_test.go::TestGeneratedUntypedSequentialRaw",
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP"
+        ]
+      }
+    },
+    {
+      "id": "response.stream-type-helpers",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_response_media_test.go::TestGeneratedStreamResponseMedia"
+        ]
+      }
+    },
+    {
+      "id": "media.sse-content-schema",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP"
+        ]
+      }
+    },
+    {
+      "id": "media.stream-provider-neutral-boundary",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "media.unknown-stream-request-codec",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources"
+        ]
+      }
+    },
+    {
+      "id": "media.case-insensitive-binary",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+          "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+          "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration"
+        ]
+      }
+    },
+    {
+      "id": "compat.reference.oas30-siblings",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/compatibility_semantics_test.go::TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.reference.oas31-siblings",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/compatibility_semantics_test.go::TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.path-item-siblings.nonconflict",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ]
+      }
+    },
+    {
+      "id": "compat.path-item-siblings.conflict",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.parameter.reserved-header",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.parameter.allow-empty-value",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+          "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+          "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation"
+        ]
+      }
+    },
+    {
+      "id": "compat.parameter.path-binding",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "omitted",
+        "evidence": [
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+          "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+          "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation"
+        ],
+        "failureScope": "operation",
+        "generationEffect": "omit-operation"
+      }
+    },
+    {
+      "id": "compat.security.requirement-operation",
+      "versions": [
+        "3.0",
+        "3.1"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "omitted",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ],
+        "failureScope": "operation",
+        "generationEffect": "omit-operation"
+      }
+    },
+    {
+      "id": "compat.security.requirement-root",
+      "versions": [
+        "3.0",
+        "3.1"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+          "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.body30.empty",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/request_body_compatibility_test.go::TestCompatibilityIgnoresEmptyOAS30RequestBodies"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.body30.delete-extension",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+          "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+          "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation"
+        ]
+      }
+    },
+    {
+      "id": "compat.body30.options-extension",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+          "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+          "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation"
+        ]
+      }
+    },
+    {
+      "id": "compat.body30.unsafe",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "omitted",
+        "evidence": [
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+          "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+          "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation"
+        ],
+        "failureScope": "operation",
+        "generationEffect": "omit-operation"
+      }
+    },
+    {
+      "id": "compat.method.fetch-capability",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders"
+        ],
+        "note": "Go accepts valid HTTP token methods; Fetch-only method omissions do not apply. No CONNECT tunnel API is provided."
+      }
+    },
+    {
+      "id": "compat.link.target-identity",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "omitted",
+        "evidence": [
+          "internal/target/golang/link_external_test.go::TestGeneratedExternalLinkClosure",
+          "internal/target/golang/link_external_test.go::TestGeneratedLockedRemoteLinkClosure",
+          "internal/target/golang/link_component_test.go::TestGeneratedComponentLinksAndNativeHeaders"
+        ],
+        "failureScope": "capability",
+        "generationEffect": "omit-capability"
+      }
+    },
+    {
+      "id": "compat.response.content-type",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.encoding.headers",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.encoding.fields",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/compiler/compatibility/consumer_test.go::TestConsumerPolicyAppliesEncodingFieldApplicability",
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.encoding.entry-applicability",
+      "versions": [
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/encoding_applicability_test.go::TestGeneratedEncodingIgnoresEntriesWithoutInstanceValues"
+        ]
+      }
+    },
+    {
+      "id": "compat.version.oas30-metadata",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/version_compatibility_test.go::TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.version.pre32-metadata",
+      "versions": [
+        "3.0",
+        "3.1"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/version_compatibility_test.go::TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.version.invalid-feature",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+          "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+          "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.schema30.boolean-true",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30.boolean-false",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30.const",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30.nullable-type-array",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30.type-array-reject",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.schema30.exclusive-bound",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30.exclusive-bound-reject",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.schema30.annotations",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "metadata",
+        "evidence": [
+          "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+          "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+          "internal/compiler/schema_compatibility_test.go::TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata"
+        ],
+        "requiresAddons": [
+          "metadata"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema30-keyword-reject",
+      "versions": [
+        "3.0"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "error",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers"
+        ],
+        "failureScope": "document",
+        "generationEffect": "block"
+      }
+    },
+    {
+      "id": "compat.schema.binary-version",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+          "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas"
+        ]
+      }
+    },
+    {
+      "id": "compat.schema.content-media-context",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "typescript_unchanged": true,
+      "golang": {
+        "state": "generated",
+        "evidence": [
+          "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+          "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+          "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+          "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas"
+        ]
+      }
+    }
+  ],
+  "conditional_branches": 5,
+  "supplemental_contracts": {
+    "source-delivery": [
+      "go-tools",
+      "example",
+      "/tmp/sdkgen-go-implementation/w10-native-delivery.json"
+    ],
+    "playground-and-distribution": [
+      "playground",
+      "docs-build",
+      "docs-tests",
+      "/tmp/sdkgen-go-implementation/w10-browser-evidence.json",
+      {
+        "raw_stdout": "/tmp/sdkgen-go-implementation/w10-npm-source.stdout",
+        "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "raw_stderr": "/tmp/sdkgen-go-implementation/w10-npm-source.stderr",
+        "raw_stderr_sha256": "9a54e781e1283b5875f1e5970c6653c44b637e01ccbdb5a27945756d139c2f6d"
+      }
+    ]
+  },
+  "supplemental_evidence_index": {
+    "calls-and-types": {
+      "work_items": [
+        "W02",
+        "W03",
+        "W07",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W07",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-feature-evidence.json",
+          "proof": [
+            "TestGeneratedResourceCalls",
+            "TestGeneratedComplexResourceArguments",
+            "TestGeneratedResourceArgumentFallback",
+            "TestGeneratedPunctuationResourcePath",
+            "TestGeneratedComponentLinksAndNativeHeaders"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "extensions": {
+      "work_items": [
+        "W07",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W07",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-feature-evidence.json",
+          "proof": [
+            "TestGeneratedEnvelopeViews",
+            "TestGeneratedPagination",
+            "TestGeneratedPaginationItemVariants",
+            "TestGeneratedStructuredSort",
+            "TestGeneratedErrorCategoryDetails",
+            "TestGeneratedResponsePropertyProfile"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "static-and-runtime-selection": {
+      "work_items": [
+        "W08",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "proof": [
+            "TestGeneratedSelectedLinkClosure",
+            "TestGoSelectionRejectsInvalidEntries",
+            "TestGoSelectedVisibilityAndEmptySurface",
+            "TestGeneratedStaticSelection",
+            "TestGeneratedRuntimeSelection",
+            "TestGeneratedRuntimeNativeMedia",
+            "TestGeneratedStaticRegistryLinking"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "named-clients": {
+      "work_items": [
+        "W08",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "proof": [
+            "TestGeneratedIndependentClients",
+            "TestGeneratedKeywordClientEntries",
+            "TestGeneratedIndependentResourceContracts",
+            "TestGeneratedIndependentComplexResourceContracts"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "metadata": {
+      "work_items": [
+        "W08",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "proof": [
+            "TestGeneratedSelectedMetadataAndInspection",
+            "TestGeneratedMetadataPreservesOriginalValues",
+            "TestGoMetadataRejectsMalformedAndCanonicalizesFallback",
+            "TestGoMetadataAnnotationsWithoutAddon"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "generation-management": {
+      "work_items": [
+        "W01",
+        "W08",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "proof": [
+            "TestGoSelectionClientsMetadataPublication"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "cli-and-inspect": {
+      "work_items": [
+        "W01",
+        "W08",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "proof": [
+            "TestInspectGolangPreservesFullScopeAndJSONKeys",
+            "TestInspectGolangIgnoresGenerationConfiguration",
+            "TestGeneratedResourceOmissionDiagnosticsAndStrictMode"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "media-and-transport-hooks": {
+      "work_items": [
+        "W04",
+        "W05",
+        "W06",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W06",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-feature-evidence.json",
+          "proof": [
+            "TestGeneratedNativeStreamHTTP",
+            "TestGeneratedStreamingRequestSources",
+            "TestGeneratedStreamCodecContextOwnership"
+          ]
+        },
+        {
+          "unit": "W05",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-feature-evidence.json",
+          "proof": [
+            "TestGeneratedMediaCodecFailuresAndHeaderDirection",
+            "TestGeneratedInboundCodecBorrowedBodyBoundary"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "server-runtime": {
+      "work_items": [
+        "W09",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W09",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-feature-evidence.json",
+          "proof": [
+            "TestGeneratedInboundRuntimeBoundary",
+            "TestGeneratedGenericInboundRuntime",
+            "TestGeneratedGenericInboundOfficialSchemaCases",
+            "TestGeneratedTypedInboundHandlers",
+            "TestGeneratedTypedInboundRawResponseHeaders",
+            "TestGeneratedTypedInboundResponseVariants"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "source-delivery": {
+      "work_items": [
+        "W01",
+        "W10",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W10",
+          "checks": [
+            "go-tools",
+            "example"
+          ],
+          "native_without_tools": "/tmp/sdkgen-go-implementation/w10-native-delivery.json"
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "playground-and-distribution": {
+      "work_items": [
+        "W10",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W10",
+          "checks": [
+            "docs-build",
+            "docs-tests",
+            "playground"
+          ],
+          "browser": "/tmp/sdkgen-go-implementation/w10-browser-evidence.json",
+          "npm": {
+            "raw_stdout": "/tmp/sdkgen-go-implementation/w10-npm-source.stdout",
+            "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "raw_stderr": "/tmp/sdkgen-go-implementation/w10-npm-source.stderr",
+            "raw_stderr_sha256": "9a54e781e1283b5875f1e5970c6653c44b637e01ccbdb5a27945756d139c2f6d"
+          }
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "concurrency-and-lifetime": {
+      "work_items": [
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W09",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W06",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-feature-evidence.json",
+          "proof": [
+            "TestGeneratedStreamHandleLifetime",
+            "TestGeneratedStreamingRequestSources",
+            "TestGeneratedStreamCodecContextOwnership"
+          ]
+        },
+        {
+          "unit": "W05",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-feature-evidence.json",
+          "proof": [
+            "TestGeneratedMultipartHTTPAndSourceLifetime",
+            "TestGeneratedMediaCodecFailuresAndHeaderDirection"
+          ]
+        },
+        {
+          "unit": "W09",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-feature-evidence.json",
+          "proof": [
+            "TestGeneratedTypedInboundDuplex",
+            "TestGeneratedTypedInboundMultipartDuplex",
+            "TestGeneratedInboundSlowConsumerCancellation",
+            "TestGeneratedInboundRuntimeBoundary"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "performance-and-platforms": {
+      "work_items": [
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W08",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-feature-evidence.json",
+          "scope": "Actual historical selection build/link samples only; not final performance/platform completion"
+        },
+        {
+          "unit": "W10",
+          "check": "perf-command",
+          "scope": "Command smoke only. Complete matched runtime/build/memory/platform measurements owned by W11 remain pending."
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "json-boundaries": {
+      "work_items": [
+        "W02",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W02",
+          "tests": [
+            "internal/target/golang/wire_runtime_test.go::TestGeneratedJSONValueContracts"
+          ],
+          "rechecked": "W09 full target race and W10 CI go"
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "mixed-composite-enums": {
+      "work_items": [
+        "W02",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W02",
+          "tests": [
+            "internal/target/golang/literals_union_runtime_test.go::TestGeneratedLiteralsAndUnionSnapshots",
+            "internal/target/golang/nullable_tuple_runtime_test.go::TestGeneratedNullableEnumsTuplesAndRootCodecs"
+          ],
+          "rechecked": "W09 full target race and W10 CI go"
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "link-invocation": {
+      "work_items": [
+        "W07",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W07",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-feature-evidence.json",
+          "proof": [
+            "TestGeneratedLinkCalls",
+            "TestGeneratedLinkStatusGroups",
+            "TestGeneratedLinkNativeBodies",
+            "TestGeneratedLinkPresenceAndPointers",
+            "TestGeneratedLinkStreamTargets"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "compressed-responses": {
+      "work_items": [
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W06",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-feature-evidence.json",
+          "proof": [
+            "TestGeneratedNativeStreamHTTP",
+            "TestGeneratedResponseCompressionAndLease",
+            "TestGeneratedCompressionHTTPHeadersAndRaw"
+          ]
+        },
+        {
+          "unit": "W05",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-feature-evidence.json",
+          "proof": [
+            "TestGeneratedMediaCodecFailuresAndHeaderDirection",
+            "TestGeneratedResponseCompressionAndLease"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    },
+    "hook-metadata-ownership": {
+      "work_items": [
+        "W05",
+        "W09",
+        "W11"
+      ],
+      "evidence": [
+        {
+          "unit": "W09",
+          "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-feature-evidence.json",
+          "proof": [
+            "TestGeneratedTypedInboundCustomCodecs",
+            "TestGeneratedInboundRuntimeBoundary",
+            "TestGeneratedInboundCodecBorrowedBodyBoundary"
+          ]
+        }
+      ],
+      "integration": "W11 pending"
+    }
+  },
+  "browser": "/tmp/sdkgen-go-implementation/w10-browser-evidence.json",
+  "native_delivery": "/tmp/sdkgen-go-implementation/w10-native-delivery.json",
+  "guides_locale_code_parity": true,
+  "manifest_default_typescript_preserved": true,
+  "limits": "W10 owns tooling/evidence connections and its2 supplements. W11 full compatibility/performance/platform integration and W12 final review remain required. npm source pack ownership and the current native executable were verified; no published release/npm artifact or deployment is claimed. Local benchmark smoke is not a performance conclusion. No commit/push/publication."
+}

@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "started_at": "2026-10-18T06:44:01.622577+00:00",
+  "finished_at": "2026-10-18T06:44:01.635310+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-reviewed-code.json",
+  "source_manifest_sha256": "776884299ebb1be1f2ced289e60bb914b89bfb47c6c2dbd13fc4478ea2b708a2",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w08-reviewed-diff.stdout",
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w08-reviewed-diff.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [],
+  "passed_tests": []
+}

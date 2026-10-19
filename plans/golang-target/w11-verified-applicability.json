@@ -1,0 +1,168 @@
+{
+  "measuredManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-code.json",
+  "measuredSha256": "640d6b982c9c9e669fe08a84d507e427152bc50126f8b8ff0c2745f28590c3ad",
+  "completeManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "completeSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "changedFiles": [
+    "docs/guide/golang.md",
+    "docs/ko/guide/golang.md",
+    "scripts/perf/golang/README.md",
+    "scripts/perf/golang/runtime_bench.go.tmpl"
+  ],
+  "changedSemantics": [
+    "EN/KO guide uses typed RequestID instead of forbidden raw X-Request-ID",
+    "Optional public typed-stream benchmark includes request construction, declared item validation and DTO conversion; invalid-item/closure diagnostic proves validation enabled"
+  ],
+  "generatorRuntimeUnchanged": true,
+  "candidateToMeasuredApplicability": {
+    "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-applicability.json",
+    "sha256": "22ccc04e0511f846eeec8bb47d5935142b9e4342045507a2031cfdeff6cf5b87"
+  },
+  "freshChecks": [
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-diff-check.json",
+      "sha256": "f66f311bde9f9b2154400267abdaa2a86c32f2d16c23c57842e2386556a54918",
+      "role": "Exact completed source invocation"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-doc-option-check.json",
+      "sha256": "4bcc919b6ccee54c6cec0c4a8f10e52fc9b9c0f25853a10a6d50ad1f8043c915",
+      "role": "Exact completed source invocation"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-docs-check.json",
+      "sha256": "a1dd610244e8270b3827043ae200c8ec5127c8bc392554c9ed38dc29d6affbbd",
+      "role": "Exact completed source invocation"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-docs-validation-check.json",
+      "sha256": "49fae840e2071e6cbdf042dd5118863d7b012c729e74780d7f0cc8b4a484adc0",
+      "role": "Exact completed source invocation"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-runtime-check.json",
+      "sha256": "d07b4143756223e7955cf8d706a76acf5cea90a85bd4e5adab619a3392059851",
+      "role": "Exact completed source invocation"
+    }
+  ],
+  "reusedChecks": [
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-compilers-check.json",
+      "sha256": "ff95fa698a2e9f0a1805a06b5ebd2f091d34239aa28b9d260db2fbb94ab9edaf",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-go-check.json",
+      "sha256": "c3760d6b7e6816f85c8de82b572ced546c9af6a57a177e507adbea7682df8c46",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-typescript-runtime-check.json",
+      "sha256": "dce0ba76b2352a61caa73ba4dbd4707a5e7a02721564370ad6d83d9f42c5f97c",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-typescript-tools-check.json",
+      "sha256": "964b9daca1268a2840c2a4fe82b8d188b7edfbd34d3112c7193796a202a93231",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-docs-tests-check.json",
+      "sha256": "5b7416603ae4aa88bb864c5edb8b43fb49a9a2d8e784e1e6a581afee541e5916",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-example-check.json",
+      "sha256": "12b3a6b54e2c81837d2d29b4964e1b077ddc74d8595c656b9eacac29f8628471",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-affected-race-check.json",
+      "sha256": "ec8203fd22cc4ebc2c4630f59501ffe314e5486a225dcc986754ee13aec201d5",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-diff-check.json",
+      "sha256": "f9e73112b0e1e334119a217e6c552e6f38b4fd0cd0354dedd2551aacb22901f7",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-npm-source-check.json",
+      "sha256": "aaf8b17952c05fa1d13a195383f86ca055e349bf100d745d38130fa82e13995e",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-perf-builds-check.json",
+      "sha256": "ca01b3c3177fe5b26b6701643a8c70cfbb2949d43c1d61f5baf2526d2db46a12",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-perf-generation-check.json",
+      "sha256": "d442da9d6d68b54457fdf5e358d8b7bacd0504798c548d5503f77e0a73c1f1e3",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-perf-platform-check.json",
+      "sha256": "91d3aae802e43ed285bcd7c1d98c6e66ce51f1975796363711fc30b01774cbbb",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-perf-providers-check.json",
+      "sha256": "9b3cadc1e82d20385d82da405920dfcab61257a1a38de65208f00c57c56a1de0",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-playground-check.json",
+      "sha256": "47316eac47df79ec44e13b05c117cdbe07915cf5133c030e3397b0189aa82f0a",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-release-cross-build-check.json",
+      "sha256": "d9565421d4eeee034ad3ad38fff4a1422285f761b32f2d4edcfd6ed1ec84bf9a",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-sdk-security-check.json",
+      "sha256": "29eeaee36c76564fc6e14f8ef1d4a492b8a9186f15da0975ff7d68c56b79500d",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-security-audit-check.json",
+      "sha256": "2f46ceca8c4f027b7d1ff2498ad95fdf55eeae94ef911004f39f093e550db66e",
+      "role": "Applicable unchanged behavior. Generator/runtime, source fixtures, dependency manifests, CLI/UI/tests/toolchain and measure.py are unchanged. The optional runtime template is only consumed by runtime mode; the corrected whole runtime mode was rerun. Two Go-guide code snippets and internal benchmark prose do not change other generated outputs or their measurements. Candidate-to-measured NOTICE/docs applicability chain is preserved separately."
+    }
+  ],
+  "historicalSupersededChecks": [
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-complete-doc-option-check.json",
+      "sha256": "735407a8154c8170fce8d5673d20570d5cac3423a2e5568fa3d46de5227a2097",
+      "exitCode": 0,
+      "role": "Historical invocation (including retained duplicate-helper compile failure), superseded for final runtime or corrected guide content. Framing-only stream samples are not relabelled as typed-SDK timing."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-complete-runtime-check.json",
+      "sha256": "cb6639393d1458443008c38b7b1eb227424ea29a4650cdb04db58d7a8874846c",
+      "exitCode": 1,
+      "role": "Historical invocation (including retained duplicate-helper compile failure), superseded for final runtime or corrected guide content. Framing-only stream samples are not relabelled as typed-SDK timing."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-docs-build-check.json",
+      "sha256": "321364c123a5c4477614fda01afaffbd20f9f84b982a0673ec40f9851053f07f",
+      "exitCode": 0,
+      "role": "Historical invocation (including retained duplicate-helper compile failure), superseded for final runtime or corrected guide content. Framing-only stream samples are not relabelled as typed-SDK timing."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-docs-build-check.json",
+      "sha256": "eee298f86fa1f74e05e82d1f7d225ad8f0a69513417f7deec35aa4cde4f1d4a4",
+      "exitCode": 0,
+      "role": "Historical invocation (including retained duplicate-helper compile failure), superseded for final runtime or corrected guide content. Framing-only stream samples are not relabelled as typed-SDK timing."
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-perf-runtime-check.json",
+      "sha256": "798f0d59e2d8bfb16497742730e14e30647395ffa60f6db31d27fd2ba578427b",
+      "exitCode": 0,
+      "role": "Historical invocation (including retained duplicate-helper compile failure), superseded for final runtime or corrected guide content. Framing-only stream samples are not relabelled as typed-SDK timing."
+    }
+  ],
+  "scope": "Explicit applicability review, preserving all original manifests, source hashes and raw invocations. No old result is rewritten to claim a new tested source."
+}

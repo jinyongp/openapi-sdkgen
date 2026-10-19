@@ -1,0 +1,140 @@
+{
+  "features": 302,
+  "conditions": [
+    {
+      "id": "root.webhooks",
+      "state": "generated",
+      "with": [
+        "server"
+      ],
+      "scope": null
+    },
+    {
+      "id": "components.callbacks",
+      "state": "generated",
+      "with": [
+        "server"
+      ],
+      "scope": null
+    },
+    {
+      "id": "operation.callbacks",
+      "state": "generated",
+      "with": [
+        "server"
+      ],
+      "scope": null
+    },
+    {
+      "id": "parameter.header.fetch-managed",
+      "state": "generated",
+      "with": [
+        "server"
+      ],
+      "scope": "inbound-only"
+    },
+    {
+      "id": "requestBody.inbound-complete-byte-limit",
+      "state": "generated",
+      "with": [
+        "server"
+      ],
+      "scope": "inbound-only"
+    }
+  ],
+  "goEvidenceReferences": 813,
+  "uniqueReferences": [
+    "internal/compiler/compatibility/consumer_test.go::TestConsumerPolicyAppliesEncodingFieldApplicability",
+    "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences",
+    "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+    "internal/compiler/compatibility_semantics_test.go::TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects",
+    "internal/compiler/openapi/read_test.go::TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields",
+    "internal/compiler/request_body_compatibility_test.go::TestCompatibilityIgnoresEmptyOAS30RequestBodies",
+    "internal/compiler/schema_compatibility_test.go::TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata",
+    "internal/compiler/version_compatibility_test.go::TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings",
+    "internal/target/golang/annotations_runtime_test.go::TestGeneratedAnnotatedEnumsAndDocumentation",
+    "internal/target/golang/binary_media_runtime_test.go::TestGeneratedVersionedBinaryMediaAndFalseSchemas",
+    "internal/target/golang/body_runtime_test.go::TestGeneratedFiniteRequestBodies",
+    "internal/target/golang/codec_lifetime_test.go::TestGeneratedMediaCodecFailuresAndHeaderDirection",
+    "internal/target/golang/content_runtime_test.go::TestGeneratedContentSchemasAndMediaRootPolicy",
+    "internal/target/golang/content_xml_runtime_test.go::TestGeneratedXMLContentSchema",
+    "internal/target/golang/discriminator_runtime_test.go::TestGeneratedDiscriminatorMappings",
+    "internal/target/golang/encoding_applicability_test.go::TestGeneratedEncodingIgnoresEntriesWithoutInstanceValues",
+    "internal/target/golang/fixture_models_test.go::TestExistingFixtureSchemaConsumers",
+    "internal/target/golang/form_media_runtime_test.go::TestGeneratedURLFormBodies",
+    "internal/target/golang/form_multipart_versions_test.go::TestGeneratedFormAndNullableMultipartAcrossVersions",
+    "internal/target/golang/formats_runtime_test.go::TestGeneratedFormatAssertions",
+    "internal/target/golang/generator_test.go::TestGeneratedHealthConsumer",
+    "internal/target/golang/generator_test.go::TestPreparedSourceIsIndependentAndDeterministic",
+    "internal/target/golang/headers_runtime_test.go::TestGeneratedDeclaredResponseHeaders",
+    "internal/target/golang/inbound_codec_test.go::TestGeneratedInboundCodecBorrowedBodyBoundary",
+    "internal/target/golang/link_component_test.go::TestGeneratedComponentLinksAndNativeHeaders",
+    "internal/target/golang/link_external_test.go::TestGeneratedExternalLinkClosure",
+    "internal/target/golang/link_external_test.go::TestGeneratedLockedRemoteLinkClosure",
+    "internal/target/golang/link_native_test.go::TestGeneratedLinkNativeBodies",
+    "internal/target/golang/link_presence_test.go::TestGeneratedLinkPresenceAndPointers",
+    "internal/target/golang/link_status_test.go::TestGeneratedLinkStatusGroups",
+    "internal/target/golang/link_stream_test.go::TestGeneratedLinkStreamTargets",
+    "internal/target/golang/link_test.go::TestGeneratedLinkCalls",
+    "internal/target/golang/metadata_annotations_test.go::TestGoMetadataAnnotationsWithoutAddon",
+    "internal/target/golang/metadata_runtime_test.go::TestGeneratedMetadataPreservesOriginalValues",
+    "internal/target/golang/metadata_test.go::TestGeneratedSelectedMetadataAndInspection",
+    "internal/target/golang/methods_runtime_test.go::TestGeneratedNativeGoMethodsAndHeaders",
+    "internal/target/golang/models_projection_runtime_test.go::TestGeneratedProjectionsRecursiveDTOAndAllOf",
+    "internal/target/golang/multipart_binary_media_test.go::TestGeneratedMultipartBinaryAlternativeMediaSelection",
+    "internal/target/golang/multipart_codecs_test.go::TestGeneratedMultipartNativeXMLAndCustomParts",
+    "internal/target/golang/multipart_composition_test.go::TestGeneratedMultipartUnionTupleAndNullableParts",
+    "internal/target/golang/multipart_direction_test.go::TestGeneratedFiniteMultipartResponseUsesJSONCodecContract",
+    "internal/target/golang/multipart_direction_test.go::TestGeneratedMultipartWithinOpenRequestMedia",
+    "internal/target/golang/multipart_dynamic_nested_test.go::TestGeneratedOptionSelectedNestedMultipartDefaults",
+    "internal/target/golang/multipart_http_test.go::TestGeneratedMultipartHTTPAndSourceLifetime",
+    "internal/target/golang/multipart_named_wire_test.go::TestGeneratedNamedMultipartFormDataWireAndModeErrors",
+    "internal/target/golang/multipart_nested_test.go::TestGeneratedPositionalAndNestedMultipart",
+    "internal/target/golang/multipart_open_test.go::TestGeneratedOpenMultipartValuesKeepJSONStrict",
+    "internal/target/golang/multipart_xml_query_test.go::TestGeneratedMultipartXMLQueriesForUnknownAndRepeatedParts",
+    "internal/target/golang/open_media_runtime_test.go::TestGeneratedOpenMediaRepresentations",
+    "internal/target/golang/parameter_styles_runtime_test.go::TestGeneratedParameterWireStyles",
+    "internal/target/golang/parameters_runtime_test.go::TestGeneratedOperationParametersAndOptions",
+    "internal/target/golang/raw_stream_runtime_test.go::TestGeneratedUntypedSequentialRaw",
+    "internal/target/golang/response_runtime_test.go::TestGeneratedResponseSelectionAndErrors",
+    "internal/target/golang/restrictions_test.go::TestCompilerOperationOmissionIsPreserved",
+    "internal/target/golang/restrictions_test.go::TestCompilerSecurityOmissionIsNotPromotedByNameReservation",
+    "internal/target/golang/restrictions_test.go::TestRetainedOperationCompiles",
+    "internal/target/golang/schema_runtime_test.go::TestGeneratedRecursiveAndDynamicReferences",
+    "internal/target/golang/schema_runtime_test.go::TestGeneratedSchemaAssertionsAndAnnotations",
+    "internal/target/golang/schema_suite_test.go::TestGeneratedOfficialUnevaluatedSchemaCases",
+    "internal/target/golang/security_engine_test.go::TestGeneratedSecurityWireAndCollisionRules",
+    "internal/target/golang/security_runtime_test.go::TestGeneratedSecurityAndServers",
+    "internal/target/golang/server_media_test.go::TestGeneratedTypedInboundMediaAndHeaders",
+    "internal/target/golang/server_multipart_test.go::TestGeneratedTypedInboundMultipart",
+    "internal/target/golang/server_plan_test.go::TestPreparedInboundNamesAndStreamingMode",
+    "internal/target/golang/server_preflight_test.go::TestGoInboundCallbackErrorsFollowGenerationSelection",
+    "internal/target/golang/server_preflight_test.go::TestGoInboundRequiresServerAddonWithDocumentScope",
+    "internal/target/golang/server_response_variant_test.go::TestGeneratedTypedInboundResponseVariants",
+    "internal/target/golang/server_runtime_test.go::TestGeneratedInboundRuntimeBoundary",
+    "internal/target/golang/server_schema_test.go::TestGeneratedGenericInboundRuntime",
+    "internal/target/golang/server_sse_test.go::TestGeneratedInboundSSEDefaultContract",
+    "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundHandlers",
+    "internal/target/golang/server_typed_test.go::TestGeneratedTypedInboundJSON",
+    "internal/target/golang/stream_codec_lifetime_test.go::TestGeneratedStreamCodecContextOwnership",
+    "internal/target/golang/stream_handle_test.go::TestGeneratedStreamHandleLifetime",
+    "internal/target/golang/stream_http_test.go::TestGeneratedNativeStreamHTTP",
+    "internal/target/golang/stream_multipart_test.go::TestGeneratedSequentialMultipartProtocol",
+    "internal/target/golang/stream_protocol_test.go::TestGeneratedNativeJSONAndSSEProtocols",
+    "internal/target/golang/stream_request_test.go::TestGeneratedStreamingRequestSources",
+    "internal/target/golang/stream_response_media_test.go::TestGeneratedMultipartResponsePartContracts",
+    "internal/target/golang/stream_response_media_test.go::TestGeneratedStreamResponseMedia",
+    "internal/target/golang/transport_runtime_test.go::TestGeneratedHTTPTransportIntegration",
+    "internal/target/golang/xml_branch_media_test.go::TestGeneratedXMLHTTPCompositionAndReferences",
+    "internal/target/golang/xml_compatibility_http_test.go::TestGeneratedXMLLegacyAndNodeTypeAcrossVersions",
+    "internal/target/golang/xml_composition_http_test.go::TestGeneratedXMLAnyOfConditionalAndDynamicHTTP",
+    "internal/target/golang/xml_nodes_media_test.go::TestGeneratedXMLNodeTypesNamespacesAndNames",
+    "internal/target/golang/xml_parameter_test.go::TestGeneratedXMLParametersAndHeaders"
+  ],
+  "originalTypeScriptPreserved": true,
+  "targetDifferences": [
+    "compat.method.fetch-capability"
+  ],
+  "supplements": 18,
+  "scope": "Structural evidence and test-symbol completeness; actual execution established separately by final CI and generated consumers. Metadata states do not waive runtime assertions."
+}

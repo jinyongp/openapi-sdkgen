@@ -1,0 +1,1536 @@
+{
+  "unit": "W08",
+  "definition": "D29 plan8; W08 concrete API detail task update1650/sync1651",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-code.json",
+  "source_manifest_sha256": "7ffccd36305e34c249d070602db3341868a50faecc3737ea02563f3ca17f4b68",
+  "source_files": 1336,
+  "previous_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-accepted-code.json",
+  "changed_source_files_since_full_suite": [
+    "internal/schema/plan/annotations.go",
+    "internal/target/golang/metadata_annotations_test.go",
+    "internal/target/golang/plan.go",
+    "internal/target/golang/plan_annotations.go",
+    "internal/target/golang/plan_response_headers.go",
+    "internal/target/golang/plan_selective.go",
+    "internal/target/golang/templates/client.go.tmpl",
+    "internal/target/golang/templates/operations.go.tmpl",
+    "internal/target/golang/templates/resources.go.tmpl",
+    "internal/target/typescript/types.go"
+  ],
+  "check_reuse": "Full candidate Go/CLI/common race434 events passed. Only annotation documentation rendering, shared constraint-key list with unchanged TS key order, and the new documentation test changed afterward. Final affected Go race31, TS158 and all static checks passed on the exact1336-file final source. Full TS package race564.110s passed in an earlier combined invocation whose CLI help golden failed; CLI193 events and the later full candidate CLI then passed. No failed combined invocation is represented as a successful full command.",
+  "checks": {
+    "affected-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-affected-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 73.239
+        }
+      ],
+      "passed_event_count": 31
+    },
+    "typescript": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-typescript-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/typescript",
+          "action": "pass",
+          "elapsed": 15.759
+        }
+      ],
+      "passed_event_count": 158
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-vet-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-fmt-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-mod-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-diff-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "measure": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-measure-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 60.657
+        }
+      ],
+      "passed_event_count": 1
+    },
+    "full-candidate-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-accepted-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/generator",
+          "action": "pass",
+          "elapsed": 1.018
+        },
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 1.035
+        },
+        {
+          "package": "openapi-sdkgen/internal/output",
+          "action": "pass",
+          "elapsed": 2.101
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 9.06
+        },
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 329.763
+        }
+      ],
+      "passed_event_count": 434
+    }
+  },
+  "compiler_metadata": {
+    "raw_stdout": "/tmp/sdkgen-go-implementation/w08-compiler-metadata.stdout",
+    "raw_stdout_sha256": "6094dece1908aae58ec7f25dd5777576a6650531c33f48e54b7cf4cb874a9f1b",
+    "passed_cases": [
+      "TestConsumerPolicyAppliesEncodingFieldApplicability",
+      "TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects/oas30_ignores_every_sibling",
+      "TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects/oas31_preserves_description_but_ignores_object_fields",
+      "TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects",
+      "TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences",
+      "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+      "TestCompatibilityIgnoresEmptyOAS30RequestBodies",
+      "TestCompileResultCapturesDecodedEntrySourceMetadata",
+      "TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata",
+      "TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings/3.0_info_summary",
+      "TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings/3.1_server_name",
+      "TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings"
+    ]
+  },
+  "features": [
+    {
+      "id": "oas30.schema.title",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.multipleOf",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.maximum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.minimum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.maxLength",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.minLength",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.pattern",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.maxItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.minItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.uniqueItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.maxProperties",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.minProperties",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.format",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.default",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.externalDocs",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.example",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "oas30.schema.deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestSchemaDeprecationEmitsAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.schema",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/openapi_support_test.go::TestSourceArtifactsAcceptsJSONSchemaResourceScopeMetadata",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.comment",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/schema_support_test.go::TestSourceArtifactsPreservesJSONSchemaCommentsAsMetadata",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.annotated-enum.member-deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/deprecation_test.go::TestSourceArtifactsEmitAnnotatedEnumDeprecationDocumentation",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "enum.component-deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestDeprecatedEnumComponentsEmitAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.multipleOf",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.maximum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.exclusiveMaximum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.minimum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.exclusiveMinimum",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.maxLength",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.minLength",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.pattern",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.maxItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.minItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.uniqueItems",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.maxProperties",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.minProperties",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/types_test.go::TestSchemaConstraintSummaryListsValidationOnlyKeywords",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.title",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.default",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestSchemaDeprecationEmitsAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.examples",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "jsonschema.externalDocs",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "root.info",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "root.tags",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "root.externalDocs",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "root.extensions",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "root.jsonSchemaDialect",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/openapi_support_test.go::TestSourceArtifactsAcceptsJSONSchemaResourceScopeMetadata",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "components.examples",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "operation.tags",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "operation.summary",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "operation.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "operation.externalDocs",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "operation.deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "header.deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestResponseHeaderDeprecationEmitsAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.title",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.summary",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.description",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.termsOfService",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.contact.name",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.contact.url",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.contact.email",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.license.name",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.license.url",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.license.identifier",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "info.version",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "server.description",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "server.variable.description",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "server.name",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.name",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.description",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.externalDocs",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.summary",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.parent",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "tag.kind",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "externalDocs.url",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "externalDocs.description",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "parameter.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "parameter.deprecated",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/version_matrix_test.go::TestOperationAndParameterDeprecationEmitAcrossSupportedVersionLines",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestGoMetadataAnnotationsWithoutAddon",
+        "TestGeneratedAnnotatedEnumsAndDocumentation"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "parameter.example",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "parameter.examples",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "requestBody.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "mediaType.example",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "mediaType.examples",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "response.description",
+      "baseline_state": "metadata",
+      "requires_addons": [],
+      "baseline_evidence": "internal/target/typescript/emit_test.go::TestSourceArtifactsStayConsistentAndDeterministic",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "response.summary",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "example.dataValue",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "example.serializedValue",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/target/typescript/metadata_test.go::TestEmitMetadataPreservesEntryValuesAndRuntimeContracts",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.reference.oas30-siblings",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility_semantics_test.go::TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.reference.oas31-siblings",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility_semantics_test.go::TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityReferenceObjectSiblingsDoNotOverrideReusableObjects"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.parameter.reserved-header",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresReservedRequestHeadersBeforeNestedReferences"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.body30.empty",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/request_body_compatibility_test.go::TestCompatibilityIgnoresEmptyOAS30RequestBodies",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresEmptyOAS30RequestBodies"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.response.content-type",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.encoding.headers",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility_semantics_test.go::TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.encoding.fields",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/compatibility/consumer_test.go::TestConsumerPolicyAppliesEncodingFieldApplicability",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestConsumerPolicyAppliesEncodingFieldApplicability"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.version.oas30-metadata",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/version_compatibility_test.go::TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.version.pre32-metadata",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/version_compatibility_test.go::TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityIgnoresLaterVersionMetadataWithStructuredWarnings"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    },
+    {
+      "id": "compat.schema30.annotations",
+      "baseline_state": "metadata",
+      "requires_addons": [
+        "metadata"
+      ],
+      "baseline_evidence": "internal/compiler/schema_compatibility_test.go::TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata",
+      "passed_cases": [
+        "TestGeneratedMetadataPreservesOriginalValues",
+        "TestGeneratedSelectedMetadataAndInspection",
+        "TestCompatibilityNormalizesProvedOpenAPI30SchemasAndPreservesSourceMetadata"
+      ],
+      "coverage": "Original source snapshot is target independent and preserves these values before selection/normalization. Schema annotations/deprecation also remain in generated Go documentation without the addon; compiler compatibility evidence retains version-specific ignore rules."
+    }
+  ],
+  "supplemental_contracts": {
+    "static-and-runtime-selection": [
+      "TestGeneratedSelectedLinkClosure",
+      "TestGoSelectionRejectsInvalidEntries",
+      "TestGoSelectedVisibilityAndEmptySurface",
+      "TestGeneratedStaticSelection",
+      "TestGeneratedRuntimeSelection",
+      "TestGeneratedRuntimeNativeMedia",
+      "TestGeneratedStaticRegistryLinking"
+    ],
+    "named-clients": [
+      "TestGeneratedIndependentClients",
+      "TestGeneratedKeywordClientEntries",
+      "TestGeneratedIndependentResourceContracts",
+      "TestGeneratedIndependentComplexResourceContracts"
+    ],
+    "metadata": [
+      "TestGeneratedSelectedMetadataAndInspection",
+      "TestGeneratedMetadataPreservesOriginalValues",
+      "TestGoMetadataRejectsMalformedAndCanonicalizesFallback",
+      "TestGoMetadataAnnotationsWithoutAddon"
+    ],
+    "generation-management": [
+      "TestGoSelectionClientsMetadataPublication"
+    ],
+    "cli-and-inspect": [
+      "TestInspectGolangPreservesFullScopeAndJSONKeys",
+      "TestInspectGolangIgnoresGenerationConfiguration",
+      "TestGeneratedResourceOmissionDiagnosticsAndStrictMode"
+    ]
+  },
+  "measurement": {
+    "raw_results": "/tmp/sdkgen-go-implementation/w08-measured-verified/build-measurements.json",
+    "raw_sha256": "1c46f15150b123be6d9c8faabbafd801a3aa01563813a51c6eac2e7b1b06bae8",
+    "variants": [
+      {
+        "Name": "static",
+        "BinaryBytes": 10503134,
+        "Registry": false,
+        "Unused": false,
+        "LinkTarget": false,
+        "RegexCompiler": false,
+        "QuickJSSymbols": 18,
+        "ArtifactsSHA256": "d79dd3b8b30cb158f4afb186d3f6db9cfeea4e4ed264046fcc6af9144ebf1ba9",
+        "ProgramSHA256": "389e29e41ca1723a487ffc0e39ce94d2188f5419e00306ea84a6e77e5007dec8",
+        "GeneratedFiles": 71,
+        "GeneratedBytes": 264142
+      },
+      {
+        "Name": "computed",
+        "BinaryBytes": 11293319,
+        "Registry": true,
+        "Unused": true,
+        "LinkTarget": true,
+        "RegexCompiler": true,
+        "QuickJSSymbols": 156,
+        "ArtifactsSHA256": "d79dd3b8b30cb158f4afb186d3f6db9cfeea4e4ed264046fcc6af9144ebf1ba9",
+        "ProgramSHA256": "ae84872cf6d88cbc32e29615e3da813cd107cc78b5f13d1db42983b962bff3aa",
+        "GeneratedFiles": 71,
+        "GeneratedBytes": 264142
+      },
+      {
+        "Name": "selected",
+        "BinaryBytes": 10463496,
+        "Registry": false,
+        "Unused": false,
+        "LinkTarget": false,
+        "RegexCompiler": false,
+        "QuickJSSymbols": 0,
+        "ArtifactsSHA256": "077419920f1dbbac9cbdc3f260cbc365a9a39052c17028b921679b00d6724045",
+        "ProgramSHA256": "389e29e41ca1723a487ffc0e39ce94d2188f5419e00306ea84a6e77e5007dec8",
+        "GeneratedFiles": 62,
+        "GeneratedBytes": 241512
+      }
+    ],
+    "timings": {
+      "static": {
+        "cold": {
+          "samples": [
+            5.7581243749999995,
+            6.004600083,
+            6.830349004
+          ],
+          "median_seconds": 6.004600083,
+          "minimum_seconds": 5.7581243749999995,
+          "maximum_seconds": 6.830349004
+        },
+        "warm": {
+          "samples": [
+            0.066448327,
+            0.074843473,
+            0.067099253
+          ],
+          "median_seconds": 0.067099253,
+          "minimum_seconds": 0.066448327,
+          "maximum_seconds": 0.074843473
+        }
+      },
+      "computed": {
+        "cold": {
+          "samples": [
+            5.235967599,
+            6.544596401,
+            6.468502328
+          ],
+          "median_seconds": 6.468502328,
+          "minimum_seconds": 5.235967599,
+          "maximum_seconds": 6.544596401
+        },
+        "warm": {
+          "samples": [
+            0.070478855,
+            0.077519555,
+            0.082245818
+          ],
+          "median_seconds": 0.077519555,
+          "minimum_seconds": 0.070478855,
+          "maximum_seconds": 0.082245818
+        }
+      },
+      "selected": {
+        "cold": {
+          "samples": [
+            5.870869038,
+            5.5292298760000005,
+            7.310602725
+          ],
+          "median_seconds": 5.870869038,
+          "minimum_seconds": 5.5292298760000005,
+          "maximum_seconds": 7.310602725
+        },
+        "warm": {
+          "samples": [
+            0.06544283,
+            0.068679121,
+            0.074594093
+          ],
+          "median_seconds": 0.068679121,
+          "minimum_seconds": 0.06544283,
+          "maximum_seconds": 0.074594093
+        }
+      }
+    },
+    "scope": "Internal local small-fixture matched build measurement. Alternating order, fresh per-sample GOCACHE and output for cold, same cache/output for warm; GOCACHEPROG/GOFLAGS cleared, modules/filesystem warm. No other project test/build ran during samples. No Go runtime performance, large-spec or RSS claim. Public benchmarks require CI run."
+  }
+}

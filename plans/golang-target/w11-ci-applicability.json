@@ -1,0 +1,79 @@
+{
+  "candidateManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "candidateSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "finalManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-code.json",
+  "finalSha256": "640d6b982c9c9e669fe08a84d507e427152bc50126f8b8ff0c2745f28590c3ad",
+  "changedFiles": [
+    "NOTICE",
+    "docs/guide/golang.md",
+    "docs/ko/guide/golang.md",
+    "npm/NOTICE"
+  ],
+  "reusedChecks": [
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-go-check.json",
+      "sha256": "c3760d6b7e6816f85c8de82b572ced546c9af6a57a177e507adbea7682df8c46",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-typescript-runtime-check.json",
+      "sha256": "dce0ba76b2352a61caa73ba4dbd4707a5e7a02721564370ad6d83d9f42c5f97c",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-typescript-tools-check.json",
+      "sha256": "964b9daca1268a2840c2a4fe82b8d188b7edfbd34d3112c7193796a202a93231",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-ci-compilers-check.json",
+      "sha256": "ff95fa698a2e9f0a1805a06b5ebd2f091d34239aa28b9d260db2fbb94ab9edaf",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-security-audit-check.json",
+      "sha256": "2f46ceca8c4f027b7d1ff2498ad95fdf55eeae94ef911004f39f093e550db66e",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-sdk-security-check.json",
+      "sha256": "29eeaee36c76564fc6e14f8ef1d4a492b8a9186f15da0975ff7d68c56b79500d",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-docs-tests-check.json",
+      "sha256": "5b7416603ae4aa88bb864c5edb8b43fb49a9a2d8e784e1e6a581afee541e5916",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-playground-check.json",
+      "sha256": "47316eac47df79ec44e13b05c117cdbe07915cf5133c030e3397b0189aa82f0a",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-example-check.json",
+      "sha256": "12b3a6b54e2c81837d2d29b4964e1b077ddc74d8595c656b9eacac29f8628471",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    },
+    {
+      "check": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-release-cross-build-check.json",
+      "sha256": "d9565421d4eeee034ad3ad38fff4a1422285f761b32f2d4edcfd6ed1ec84bf9a",
+      "applicable": true,
+      "reason": "Production/test/toolchain source and emitted SDK code are unchanged. Docs-only prose and license whitespace do not change this behavior. NOTICE package delivery and page builds are separately rechecked at final source."
+    }
+  ],
+  "affectedChecks": [
+    "w11-final-docs-build-check.json",
+    "w11-final-npm-source-check.json"
+  ],
+  "scope": "Explicit applicability review; preserves original immutable source manifests and raw checks. Never rewrites an old result to claim it ran on a different source."
+}

@@ -1,0 +1,72 @@
+{
+  "unit": "w03",
+  "purpose": "Dedicated independent revalidation after D28 invalidated previous workstream definition signatures. No task mutation performed by this check.",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-code.json",
+  "source_manifest_sha256": "0a46c64f317f5fc082ae6e58369325ef4be1eebdaea2c822ca0f77c4ec0b70dc",
+  "source_files": 1258,
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/target/golang",
+    "-run",
+    "^(TestGeneratedBinarySourceOwnership|TestGeneratedResponseCompressionAndLease|TestGeneratedCompressionHTTPHeadersAndRaw|TestGeneratedHTTPTransportIntegration|TestGeneratedOperationParametersAndOptions|TestGeneratedParameterWireStyles|TestGeneratedFiniteRequestBodies|TestGeneratedResponseSelectionAndErrors|TestGeneratedDeclaredResponseHeaders|TestGeneratedUntypedSequentialRaw|TestGeneratedCustomMediaDirections|TestGeneratedOpenMediaRepresentations|TestGeneratedVersionedBinaryMediaAndFalseSchemas|TestGeneratedNativeGoMethodsAndHeaders|TestGeneratedContractAndValidatorNamespaces|TestGeneratedHTTPDependencyBoundaries)$",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T02:31:35.057734+00:00",
+  "finished_at": "2026-10-18T02:32:15.592277+00:00",
+  "exit_code": 0,
+  "expected_cases": [
+    "TestGeneratedBinarySourceOwnership",
+    "TestGeneratedResponseCompressionAndLease",
+    "TestGeneratedCompressionHTTPHeadersAndRaw",
+    "TestGeneratedHTTPTransportIntegration",
+    "TestGeneratedOperationParametersAndOptions",
+    "TestGeneratedParameterWireStyles",
+    "TestGeneratedFiniteRequestBodies",
+    "TestGeneratedResponseSelectionAndErrors",
+    "TestGeneratedDeclaredResponseHeaders",
+    "TestGeneratedUntypedSequentialRaw",
+    "TestGeneratedCustomMediaDirections",
+    "TestGeneratedOpenMediaRepresentations",
+    "TestGeneratedVersionedBinaryMediaAndFalseSchemas",
+    "TestGeneratedNativeGoMethodsAndHeaders",
+    "TestGeneratedContractAndValidatorNamespaces",
+    "TestGeneratedHTTPDependencyBoundaries"
+  ],
+  "passed_cases": [
+    "TestGeneratedVersionedBinaryMediaAndFalseSchemas/3.0.3",
+    "TestGeneratedVersionedBinaryMediaAndFalseSchemas/3.1.0",
+    "TestGeneratedVersionedBinaryMediaAndFalseSchemas/3.2.0",
+    "TestGeneratedVersionedBinaryMediaAndFalseSchemas",
+    "TestGeneratedBinarySourceOwnership",
+    "TestGeneratedFiniteRequestBodies",
+    "TestGeneratedCompressionHTTPHeadersAndRaw",
+    "TestGeneratedResponseCompressionAndLease",
+    "TestGeneratedCustomMediaDirections",
+    "TestGeneratedHTTPDependencyBoundaries",
+    "TestGeneratedDeclaredResponseHeaders",
+    "TestGeneratedNativeGoMethodsAndHeaders",
+    "TestGeneratedContractAndValidatorNamespaces",
+    "TestGeneratedOpenMediaRepresentations",
+    "TestGeneratedParameterWireStyles",
+    "TestGeneratedOperationParametersAndOptions",
+    "TestGeneratedUntypedSequentialRaw",
+    "TestGeneratedResponseSelectionAndErrors",
+    "TestGeneratedHTTPTransportIntegration"
+  ],
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 39.757
+    }
+  ],
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w03-d28-test.stdout",
+  "raw_stdout_sha256": "9de271ba8f4f2c191f1e026f298fb948e5199e3ca4f8786ff884f7daa1e2db90",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w03-d28-test.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

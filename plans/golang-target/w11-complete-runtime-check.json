@@ -1,0 +1,23 @@
+{
+  "label": "complete-runtime",
+  "startedAt": "2026-10-18T14:38:40.018957+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "golang:perf",
+    "runtime",
+    "--output",
+    "/tmp/sdkgen-go-implementation/w11-complete-runtime"
+  ],
+  "exitCode": 1,
+  "elapsedSeconds": 1.7210009659902425,
+  "deadlineSeconds": 1800,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-complete-code.json",
+  "sourceManifestSha256": "da061a5a9c87034f3ea830f45634049fb459e7275b4b52e166d17288210971c4",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-complete-runtime.stdout",
+  "stdoutSha256": "7f09e7bac8a4f049c5d66a1fd4cb980a72779fc6cdc1275abf1cd19cfb338737",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-complete-runtime.stderr",
+  "stderrSha256": "d28e9091c2671838cc638ec42565b84a129363412dba3025598b189512cfe419"
+}

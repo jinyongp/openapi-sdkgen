@@ -1,0 +1,19 @@
+{
+  "label": "release-cross-build",
+  "startedAt": "2026-10-18T13:33:03.629860+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "cross-build:release"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 14.29799429900595,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-release-cross-build.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-release-cross-build.stderr",
+  "stderrSha256": "5a58bb76c8048b4ff1c0ebb0162feaf65df63c44d3d13f4ecb771c289c0afca9"
+}

@@ -1,0 +1,43 @@
+{
+  "unit": "w04",
+  "purpose": "Dedicated independent revalidation after D27 invalidated previous workstream definition signatures. No task mutation performed by this check.",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-reviewed-code.json",
+  "source_manifest_sha256": "4adb9c923fa8c128578151012bbb058e23699bd80ae293e8e7e0b723236caf3d",
+  "source_files": 1228,
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/target/golang",
+    "-run",
+    "^(TestGeneratedSecurityAndServers|TestGeneratedSecurityWireAndCollisionRules|TestGeneratedOriginAndServerURLSemantics)$",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T00:54:17.469018+00:00",
+  "finished_at": "2026-10-18T00:54:24.171693+00:00",
+  "exit_code": 0,
+  "expected_cases": [
+    "TestGeneratedSecurityAndServers",
+    "TestGeneratedSecurityWireAndCollisionRules",
+    "TestGeneratedOriginAndServerURLSemantics"
+  ],
+  "passed_cases": [
+    "TestGeneratedSecurityWireAndCollisionRules",
+    "TestGeneratedSecurityAndServers",
+    "TestGeneratedOriginAndServerURLSemantics"
+  ],
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 6.018
+    }
+  ],
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w04-d27-final-test.stdout",
+  "raw_stdout_sha256": "6ab88b51bd87cff1b1275a2a24a0136aaf03e753b1d33f7ba5822040fae966b9",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w04-d27-final-test.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

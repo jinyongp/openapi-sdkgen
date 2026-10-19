@@ -1,0 +1,79 @@
+{
+  "unit": "w01",
+  "purpose": "Dedicated independent revalidation after D27 invalidated previous workstream definition signatures. No task mutation performed by this check.",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-final-code.json",
+  "source_manifest_sha256": "e8b27efb784b3e93cd0d22a381306692c1588490c6527832664929652d38857f",
+  "source_files": 1227,
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/target/golang",
+    "./internal/generator",
+    "./internal/output",
+    "./cmd/openapi-sdkgen",
+    "-run",
+    "^(TestPreparedSourceIsIndependentAndDeterministic|TestWholeDocumentNamesRemainStable|TestNameCollisionExtendsOriginalPathDigest|TestEmitStopsAtSinkFailure|TestPreparedFileImportsRejectCyclesAndMissingPackages|TestFormattingFailureRollsBackStagedGoArtifacts|TestGeneratedHealthConsumer|TestCanonicalGoOptions|TestGoGenerationIdentity|TestGoConfigAndCLIOverride|TestEmptyGoSectionRemainsExplicit|TestGoGenerationFingerprintAndOwnership)$",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T00:46:29.912986+00:00",
+  "finished_at": "2026-10-18T00:46:33.295116+00:00",
+  "exit_code": 0,
+  "expected_cases": [
+    "TestPreparedSourceIsIndependentAndDeterministic",
+    "TestWholeDocumentNamesRemainStable",
+    "TestNameCollisionExtendsOriginalPathDigest",
+    "TestEmitStopsAtSinkFailure",
+    "TestPreparedFileImportsRejectCyclesAndMissingPackages",
+    "TestFormattingFailureRollsBackStagedGoArtifacts",
+    "TestGeneratedHealthConsumer",
+    "TestCanonicalGoOptions",
+    "TestGoGenerationIdentity",
+    "TestGoConfigAndCLIOverride",
+    "TestEmptyGoSectionRemainsExplicit",
+    "TestGoGenerationFingerprintAndOwnership"
+  ],
+  "passed_cases": [
+    "TestCanonicalGoOptions",
+    "TestGoGenerationIdentity",
+    "TestPreparedSourceIsIndependentAndDeterministic",
+    "TestWholeDocumentNamesRemainStable",
+    "TestNameCollisionExtendsOriginalPathDigest",
+    "TestEmitStopsAtSinkFailure",
+    "TestPreparedFileImportsRejectCyclesAndMissingPackages",
+    "TestFormattingFailureRollsBackStagedGoArtifacts",
+    "TestGoConfigAndCLIOverride",
+    "TestEmptyGoSectionRemainsExplicit",
+    "TestGoGenerationFingerprintAndOwnership",
+    "TestGeneratedHealthConsumer"
+  ],
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/generator",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/internal/output",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+      "action": "pass",
+      "elapsed": 0.078
+    },
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 2.181
+    }
+  ],
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w01-d27-test.stdout",
+  "raw_stdout_sha256": "bc9f403c6837b913b597fdf97381e4d36d3d1445a51bcfa2f097bc1e5ed4b640",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w01-d27-test.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

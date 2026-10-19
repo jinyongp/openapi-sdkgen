@@ -1,0 +1,37 @@
+{
+  "argv": [
+    "env",
+    "SDKGEN_GO_SELECTION_ARTIFACT_DIR=/tmp/sdkgen-go-implementation/w08-measured-verified",
+    "SDKGEN_GO_SELECTION_BUILD_SAMPLES=3",
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/target/golang",
+    "-run",
+    "^TestGeneratedStaticRegistryLinking$",
+    "-count=1",
+    "-json",
+    "-timeout=8m"
+  ],
+  "started_at": "2026-10-18T06:59:00.465256+00:00",
+  "finished_at": "2026-10-18T07:00:01.835346+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-verified-code.json",
+  "source_manifest_sha256": "7ffccd36305e34c249d070602db3341868a50faecc3737ea02563f3ca17f4b68",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w08-verified-measure.stdout",
+  "raw_stdout_sha256": "24ffb28d46b0cbe3c99f3b3159735109994d097c7229f987f77f620c10e45eb1",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w08-verified-measure.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 60.657
+    }
+  ],
+  "passed_tests": [
+    "TestGeneratedStaticRegistryLinking"
+  ]
+}

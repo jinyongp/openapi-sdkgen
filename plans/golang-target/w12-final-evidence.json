@@ -1,0 +1,389 @@
+{
+  "unit": "W12",
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "sourceManifestSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "sourceFiles": 1415,
+  "productionSourceUnchangedFromW12Claim": true,
+  "planD29Unchanged": true,
+  "features": 302,
+  "conditionalBranches": 5,
+  "supplementalContracts": 18,
+  "decisionsReviewed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29
+  ],
+  "validationAudit": [
+    {
+      "id": "0186a1b1-ad35-492b-b037-bb300c2cdbed",
+      "title": "W01 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "afa15178-d7ac-4ff4-b198-91292534cdc1"
+      ]
+    },
+    {
+      "id": "1f011e07-836e-473e-9c39-b8107909e5b1",
+      "title": "W02 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "4b6fbefb-07ba-4f3c-bc85-0a2e9a8fd6ae"
+      ]
+    },
+    {
+      "id": "315d0290-4ba7-47df-b8c6-bead7d52c0bc",
+      "title": "I02 TypeScript·compiler·CLI·출력·배포 준비 회귀",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "27a3c684-11ed-46d7-a1ae-55283884a1bd"
+      ]
+    },
+    {
+      "id": "3475573b-5f18-4b6f-b25a-9b058d86706a",
+      "title": "W07 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "b31396c1-1b1f-4304-bf2e-665e783865a2"
+      ]
+    },
+    {
+      "id": "3f591254-85e4-47f3-9fef-2db8b4d26bd8",
+      "title": "I01 전체 기능 대응과 생성 소비자 통합",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "85b60142-b158-4b50-9fb7-9bc137f7a95c"
+      ]
+    },
+    {
+      "id": "482988e6-0d85-49d4-9ad9-9a66be4a7a42",
+      "title": "I03 고정 성능·도달성·자원 수명·플랫폼 통합",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "ed7a040b-bbcd-491b-ba6b-396a228bd997"
+      ]
+    },
+    {
+      "id": "4bd4efd0-eba5-4e42-818d-2d3addceec4b",
+      "title": "W05 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "eb85d3ba-84e2-40ad-aa26-378c2dc5d2a0"
+      ]
+    },
+    {
+      "id": "59b77a84-f3a2-4906-8e10-2bc974914982",
+      "title": "W08 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "dad78801-03b1-435c-9f3f-b2a99580d4b7"
+      ]
+    },
+    {
+      "id": "5a7341fc-eefe-457c-baac-ed4aaf24745b",
+      "title": "W04 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "e45d4566-3c1f-413f-9dd8-2f4bb545168d"
+      ]
+    },
+    {
+      "id": "6d929dc6-5762-4de2-a5ba-a43a6574225e",
+      "title": "W06 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "b8c894ed-9d96-49a2-8936-83b9c8be84ca"
+      ]
+    },
+    {
+      "id": "6dcf1166-beba-4fae-a0b3-7ffc8ee5f2cc",
+      "title": "W09 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "dc272e14-de95-433e-a4a3-0781b263a4f1"
+      ]
+    },
+    {
+      "id": "78c210e7-ef17-4cc6-a098-c09c3839c5c5",
+      "title": "W11 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "aa4df9e5-0c5d-4462-a282-e3642a77cac4"
+      ]
+    },
+    {
+      "id": "e91f39b2-6727-4f25-81f3-e9b2b66659d3",
+      "title": "W10 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "8086da50-d95a-4075-9639-8a073ce9397b"
+      ]
+    },
+    {
+      "id": "ece332b4-27fd-4ab8-95d1-d22c3398e0cb",
+      "title": "W03 생성·소비·회귀 검증",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "d4deb084-313c-4446-a1c7-a613fd7ba0c0"
+      ]
+    },
+    {
+      "id": "fd27862f-4341-4b24-a2b9-f911796f1011",
+      "title": "I04 최종 리뷰·정의/증거 현재성·완료 경계",
+      "currentPass": false,
+      "completionPending": true,
+      "recordIds": []
+    },
+    {
+      "id": "02f4efe0-129b-4225-baa9-f9cab837f3ed",
+      "title": "W02 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "cbaa61a0-ef62-484d-baa2-1ff1401a6adc"
+      ]
+    },
+    {
+      "id": "0ca60e27-8997-4a3a-8b0c-7dd26c5c200d",
+      "title": "W03 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "5a35ffa9-f20d-4704-bf47-ab36cb8adf6c"
+      ]
+    },
+    {
+      "id": "10157533-6b4a-473f-bddd-b73a85fd980a",
+      "title": "W07 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "ac5eda71-98e9-4aeb-b43f-ebd870141c00"
+      ]
+    },
+    {
+      "id": "2ce23005-d536-4bb2-831e-40d5045af906",
+      "title": "W05 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "af9d145b-dfda-4bce-b214-6feb68a1dc02"
+      ]
+    },
+    {
+      "id": "490f505f-84d1-496d-b330-95361f26c2ad",
+      "title": "W08 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "9c382a81-3777-468e-b2be-6037cda7be3b"
+      ]
+    },
+    {
+      "id": "4b752158-e613-42ed-af1b-b5c737eafed7",
+      "title": "W04 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "adea7114-4635-4d63-8406-9c35e513696a"
+      ]
+    },
+    {
+      "id": "50c3d420-9821-478b-89d1-d13178329363",
+      "title": "W12 전체 범위 최종 리뷰루프",
+      "currentPass": false,
+      "completionPending": true,
+      "recordIds": []
+    },
+    {
+      "id": "7a2b2b8a-c5ea-4f93-9b83-7542b2f3b9b2",
+      "title": "W01 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "5780766f-ad6c-4410-815f-3cadf0868dfd"
+      ]
+    },
+    {
+      "id": "90ae046a-e81c-4d42-ae93-4efda5701cd8",
+      "title": "W06 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "954665cd-6715-474b-9294-4ed668ccd774"
+      ]
+    },
+    {
+      "id": "cbb8829d-282e-4550-94d9-bb5d27d3eb28",
+      "title": "W09 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "606cf881-d0ae-4418-81e5-a13942198fe9"
+      ]
+    },
+    {
+      "id": "d28efd7c-b6a4-46c1-bb96-a70140a7132e",
+      "title": "W11 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "8eaf5468-7404-4d77-9cd0-808a686a783d"
+      ]
+    },
+    {
+      "id": "ff29343e-ba7c-44ca-a42a-e84264ed119a",
+      "title": "W10 필수 리뷰루프",
+      "currentPass": true,
+      "completionPending": false,
+      "recordIds": [
+        "d0d8dd09-1c5a-40e9-99b3-f482e79e17e0"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "label": "diff",
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "stdout": "/tmp/sdkgen-go-implementation/w12-diff.stdout",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "/tmp/sdkgen-go-implementation/w12-diff.stderr",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "benchmark-format",
+      "argv": [
+        "devtools",
+        "run",
+        "--",
+        "gofmt",
+        "-l",
+        "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/scripts/perf/golang/runtime_bench.go.tmpl"
+      ],
+      "exitCode": 0,
+      "stdout": "/tmp/sdkgen-go-implementation/w12-benchmark-format.stdout",
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "/tmp/sdkgen-go-implementation/w12-benchmark-format.stderr",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "reviewAreas": 12,
+  "additionalEligibleFindings": [],
+  "w11Evidence": {
+    "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-feature-evidence.json",
+    "sha256": "40d84033b4a2a70be0166856b5fc628af490ad8fc57fb9fd2e9a0462ef82ffbf"
+  },
+  "performance": {
+    "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-performance.json",
+    "sha256": "f777d0f36bfb033ba6928cf8d42e8efb820bb403df1eefbe6fc5809bec88c731",
+    "commands": 276
+  },
+  "applicability": {
+    "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-applicability.json",
+    "sha256": "ad820fa6f61b25bfec5f85526e25131ff58919c14ec4bd4c24ef122a4f9ed984"
+  },
+  "scope": "Cross-area final review reuses complete unit reviews and W11 current actual checks, with selected source/caller boundary inspection. W12 makes no product-source edits and finds no further eligible defects. Original design probes are historical planning evidence, not a current implementation pass.",
+  "acceptedLimits": [
+    "Full original provider trees are formatted/hashed/API-compared, not all multi-GB trees compiled;18catalog whole generated consumers and14provider selected consumers compile/run.",
+    "Linuxamd64 executed; five off-host OS/arch cross-build only; actual playground WASM built/tested.",
+    "Local performance measurements do not constitute a published Go benchmark or universal performance guarantee.",
+    "No commit/push/publication. W12 pass/done and I04/close are subsequent explicit lifecycle records."
+  ],
+  "reviewDocuments": [
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w01-d29-review.md",
+      "sha256": "ca261fd6f4e300fbefec5824ca89fb03520c0ffac2f1336bd6259dcb99c6c5f3"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w02-review.md",
+      "sha256": "5309ae05e65f68745b6166cdc828219c171e1d8400161ab028ff33c9c7990cbc"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w03-review.md",
+      "sha256": "14efdb261b55db7e8560f1d75df790644b00cb0680b71f7b5f1ea2015068630a"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w04-review.md",
+      "sha256": "461f1c9f3f95f9204cb981f0770b9aa391256095f86a97e44544a3d16b20537d"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w05-review.md",
+      "sha256": "972cc82e6706d06194d864279faf9050c2350f62be6c52355895903707f39474"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-review.md",
+      "sha256": "6376b7d76ed5caadb9835b22bf53b407aff2263d0ab563567820aade3d2ab297"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w07-review.md",
+      "sha256": "ada184c797a9c21ac1732ee0e0ed0d61c69d5f9e97c6b2918a96dca9a279ea23"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w08-review.md",
+      "sha256": "0f9e60dd83ec1f04b93963d0f90ccfa8cfa3cc46d469347596d40ad9e863c7c7"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-review.md",
+      "sha256": "81172268e431d17dfdf5ecbb5e895e11ca95d7225aee5fd1df36c28089048905"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-review.md",
+      "sha256": "d8d176f7a19dd1eff680175b327b309f0c2709e4fee62c8c9c756f750aa848c9"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-review.md",
+      "sha256": "4ab0819490be5d43e47a2f79e98c45ad828681d734c3e21b22478acdf8382ed9"
+    },
+    {
+      "file": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w12-review.md",
+      "sha256": "5285a669543704bc6454836de4dec8575eca2959e8b23d7bc24b45cfdb0e2230"
+    }
+  ],
+  "reviewLedgerComplete": true,
+  "reviewerFindings": [],
+  "reviewLifecycle": "Review complete; subsequent W12 pass/done and I04/close recorded separately to preserve immutable pre-completion audit facts."
+}

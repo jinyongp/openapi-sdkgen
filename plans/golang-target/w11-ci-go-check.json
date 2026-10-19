@@ -1,0 +1,19 @@
+{
+  "label": "ci-go",
+  "argv": [
+    "devtools",
+    "run",
+    "ci:dev",
+    "go"
+  ],
+  "exitCode": 0,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchanged": true,
+  "applicability": "Started on the same unchanged candidate immediately before code-basis capture; process completed successfully. Go target and CLI affected tests run with inner generated-consumer race.",
+  "stdout": "/tmp/sdkgen-go-implementation/w11-ci-go.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-ci-go.stderr",
+  "stderrSha256": "6710bc1492e959ea44a9e362c40469c6487966545af0a30ad40061a7a23d9ff2"
+}

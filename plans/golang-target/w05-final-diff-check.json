@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "--check"
+  ],
+  "started_at": "2026-10-18T00:49:35.255138+00:00",
+  "finished_at": "2026-10-18T00:49:35.274909+00:00",
+  "exit_code": 0,
+  "source_manifest_sha256": "e8b27efb784b3e93cd0d22a381306692c1588490c6527832664929652d38857f",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w05-final-diff.stdout",
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w05-final-diff.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [],
+  "passed_tests": []
+}

@@ -1,0 +1,373 @@
+{
+  "unit": "W06",
+  "definition": "D28",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-code.json",
+  "source_manifest_sha256": "33600463c88cccdb6ee07b624c0126416210d7e7c1db5836869262760ea7b847",
+  "source_files": 1259,
+  "previous_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-code.json",
+  "previous_manifest_sha256": "0a46c64f317f5fc082ae6e58369325ef4be1eebdaea2c822ca0f77c4ec0b70dc",
+  "changed_source_files_since_full_suite": [
+    "internal/target/golang/runtime/types-stream-codec.go.tmpl",
+    "internal/target/golang/stream_codec_lifetime_test.go"
+  ],
+  "check_reuse": "Only the codec template and its new lifetime consumer changed after the full suite. Re-ran all nine stream consumers, Raw and dependency boundaries with root race and generated consumer race; unchanged HTTP/schema/media/CLI sources retain the preceding full-suite evidence. All non-Go-target source hashes, including the TS characterization consumer, are unchanged. Final vet/format/module/diff checks ran again.",
+  "checks": {
+    "affected-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-affected-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 28.3
+        }
+      ],
+      "passed_event_count": 11
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-vet-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-fmt-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-mod-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-diff-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "previous-race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 1.013
+        },
+        {
+          "package": "openapi-sdkgen/internal/generator",
+          "action": "pass",
+          "elapsed": 1.016
+        },
+        {
+          "package": "openapi-sdkgen/internal/output",
+          "action": "pass",
+          "elapsed": 2.1
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 8.939
+        },
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 225.535
+        }
+      ],
+      "passed_event_count": 391
+    },
+    "previous-typescript": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-typescript-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/target/typescript",
+          "action": "pass",
+          "elapsed": 83.233
+        }
+      ],
+      "passed_event_count": 107
+    },
+    "previous-common": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-common-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 0.004
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler/compatibility",
+          "action": "pass",
+          "elapsed": 0.004
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler/openapi",
+          "action": "pass",
+          "elapsed": 0.005
+        },
+        {
+          "package": "openapi-sdkgen/internal/compiler",
+          "action": "pass",
+          "elapsed": 0.008
+        }
+      ],
+      "passed_event_count": 8
+    }
+  },
+  "features": [
+    {
+      "id": "media.itemSchema",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamResponseMedia"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamResponseMedia"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.prefixEncoding",
+      "passed_cases": [
+        "TestGeneratedMultipartResponsePartContracts",
+        "TestGeneratedPositionalAndNestedMultipart"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedMultipartResponsePartContracts"
+      ],
+      "unchanged_case_reuse": [
+        "TestGeneratedPositionalAndNestedMultipart"
+      ]
+    },
+    {
+      "id": "media.itemEncoding",
+      "passed_cases": [
+        "TestGeneratedMultipartResponsePartContracts",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedMultipartResponsePartContracts",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.streams",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedSequentialMultipartProtocol"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedSequentialMultipartProtocol"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.sequential-untyped",
+      "passed_cases": [
+        "TestGeneratedUntypedSequentialRaw"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedUntypedSequentialRaw"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.sse-event-default",
+      "passed_cases": [
+        "TestGeneratedNativeJSONAndSSEProtocols",
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeJSONAndSSEProtocols",
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "oas32.streaming-media",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "mediaType.unknown-stream-runtime-codec",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.streaming-request",
+      "passed_cases": [
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.streaming-request-source",
+      "passed_cases": [
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamHandleLifetime"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamHandleLifetime"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.stream-protocol-adapter",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamCodecContextOwnership"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources",
+        "TestGeneratedStreamCodecContextOwnership"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.operation-stream",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.stream-frame-limit",
+      "passed_cases": [
+        "TestGeneratedNativeJSONAndSSEProtocols",
+        "TestGeneratedSequentialMultipartProtocol",
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeJSONAndSSEProtocols",
+        "TestGeneratedSequentialMultipartProtocol",
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.stream-raw-body",
+      "passed_cases": [
+        "TestGeneratedUntypedSequentialRaw",
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedUntypedSequentialRaw",
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "response.stream-type-helpers",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamResponseMedia"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamResponseMedia"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.sse-content-schema",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.stream-provider-neutral-boundary",
+      "passed_cases": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedNativeStreamHTTP",
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    },
+    {
+      "id": "media.unknown-stream-request-codec",
+      "passed_cases": [
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "cases_on_final_affected_run": [
+        "TestGeneratedStreamingRequestSources"
+      ],
+      "unchanged_case_reuse": []
+    }
+  ],
+  "supplemental_contracts": {
+    "media-and-transport-hooks": [
+      "TestGeneratedNativeStreamHTTP",
+      "TestGeneratedStreamingRequestSources",
+      "TestGeneratedStreamCodecContextOwnership"
+    ],
+    "concurrency-and-lifetime": [
+      "TestGeneratedStreamHandleLifetime",
+      "TestGeneratedStreamingRequestSources",
+      "TestGeneratedStreamCodecContextOwnership"
+    ],
+    "compressed-responses": [
+      "TestGeneratedNativeStreamHTTP",
+      "TestGeneratedResponseCompressionAndLease",
+      "TestGeneratedCompressionHTTPHeadersAndRaw"
+    ]
+  },
+  "failure_reproduction": {
+    "stdout": {
+      "path": "/tmp/sdkgen-go-implementation/w06-codec-context-before.stdout",
+      "sha256": "f2ee83a7e5b8410cbf618c4c8f908ad9fa3ca6e139ae08fb2e017efd5b163efa"
+    },
+    "stderr": {
+      "path": "/tmp/sdkgen-go-implementation/w06-codec-context-before.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "review": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-review.md",
+  "limits": [
+    "No complete collection or custom adapter constant-memory claim.",
+    "Peak RSS and full parity/performance/platform verification remain W11; actual inbound handler remains W09; selection/DCE remains W08; final global review remains W12.",
+    "Preserve existing native response sequence facets and XML limits; input multipart query contracts remain independent."
+  ]
+}

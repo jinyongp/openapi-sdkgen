@@ -1,0 +1,23 @@
+{
+  "label": "verified-runtime",
+  "startedAt": "2026-10-18T14:40:29.873980+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "golang:perf",
+    "runtime",
+    "--output",
+    "/tmp/sdkgen-go-implementation/w11-verified-runtime"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 36.13892957200005,
+  "deadlineSeconds": 1800,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "sourceManifestSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-verified-runtime.stdout",
+  "stdoutSha256": "e3678150fa924c6e82226bced22105c490a98898f56ef915e849697834d9105a",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-verified-runtime.stderr",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

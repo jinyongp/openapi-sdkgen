@@ -1,0 +1,58 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/http/plan",
+    "./internal/compiler",
+    "./internal/compiler/openapi",
+    "./internal/compiler/compatibility",
+    "-run",
+    "Test.*Multipart|TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields|TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields|TestConsumerPolicyAppliesEncodingFieldApplicability",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T02:31:07.447466+00:00",
+  "finished_at": "2026-10-18T02:31:08.173131+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-code.json",
+  "source_manifest_sha256": "0a46c64f317f5fc082ae6e58369325ef4be1eebdaea2c822ca0f77c4ec0b70dc",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w06-reviewed-common.stdout",
+  "raw_stdout_sha256": "41a6d7dddd36a8dc12e9a8ad96aad1ea89a70034fb3d285f334ef0e9903e1618",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w06-reviewed-common.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/http/plan",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler/compatibility",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler/openapi",
+      "action": "pass",
+      "elapsed": 0.005
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler",
+      "action": "pass",
+      "elapsed": 0.008
+    }
+  ],
+  "passed_tests": [
+    "TestMultipartRootMaterializationKeepsOriginalReference",
+    "TestMultipartNestedPrefixInheritsItemEncoding",
+    "TestMultipartPartSchemaPreservesFieldCorrelation",
+    "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+    "TestConsumerPolicyAppliesEncodingFieldApplicability",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields/attribute",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields/wrapped",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields"
+  ]
+}

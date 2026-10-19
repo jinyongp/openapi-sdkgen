@@ -1,0 +1,1528 @@
+{
+  "runtime": {
+    "commands": 9,
+    "results": "/tmp/sdkgen-go-implementation/w11-final-runtime/results.json",
+    "benchmarkCases": 46,
+    "samplesPerCase": 5,
+    "benchmarks": [
+      {
+        "name": "BenchmarkSmallJSON/http-json-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1041.0,
+            "min": 1032.0,
+            "max": 1060.0
+          },
+          "B/op": {
+            "median": 1755.0,
+            "min": 1755.0,
+            "max": 1756.0
+          },
+          "allocs/op": {
+            "median": 16.0,
+            "min": 16.0,
+            "max": 16.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkSmallJSON/do-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 4100.0,
+            "min": 4077.0,
+            "max": 4126.0
+          },
+          "B/op": {
+            "median": 6904.0,
+            "min": 6904.0,
+            "max": 6904.0
+          },
+          "allocs/op": {
+            "median": 65.0,
+            "min": 65.0,
+            "max": 65.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkSmallJSON/raw-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 4064.0,
+            "min": 4027.0,
+            "max": 4158.0
+          },
+          "B/op": {
+            "median": 6904.0,
+            "min": 6904.0,
+            "max": 6904.0
+          },
+          "allocs/op": {
+            "median": 65.0,
+            "min": 65.0,
+            "max": 65.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkSmallJSON/error-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 4796.0,
+            "min": 4699.0,
+            "max": 4980.0
+          },
+          "B/op": {
+            "median": 8440.0,
+            "min": 8440.0,
+            "max": 8440.0
+          },
+          "allocs/op": {
+            "median": 77.0,
+            "min": 77.0,
+            "max": 77.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkLargeJSON/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 8411.0,
+            "min": 8364.0,
+            "max": 8507.0
+          },
+          "MB/s": {
+            "median": 121.75,
+            "min": 120.37,
+            "max": 122.43
+          },
+          "GC/op": {
+            "median": 0.003517,
+            "min": 0.003466,
+            "max": 0.003551
+          },
+          "B/op": {
+            "median": 10792.0,
+            "min": 10792.0,
+            "max": 10792.0
+          },
+          "allocs/op": {
+            "median": 82.0,
+            "min": 82.0,
+            "max": 82.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkLargeJSON/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 2542377.0,
+            "min": 2456760.0,
+            "max": 2636254.0
+          },
+          "MB/s": {
+            "median": 412.44,
+            "min": 397.75,
+            "max": 426.81
+          },
+          "GC/op": {
+            "median": 2.077,
+            "min": 2.07,
+            "max": 2.13
+          },
+          "B/op": {
+            "median": 6296702.0,
+            "min": 6296697.0,
+            "max": 6296720.0
+          },
+          "allocs/op": {
+            "median": 106.0,
+            "min": 106.0,
+            "max": 106.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkLargeJSON/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 34031423.0,
+            "min": 29137332.0,
+            "max": 36440709.0
+          },
+          "MB/s": {
+            "median": 492.99,
+            "min": 460.4,
+            "max": 575.8
+          },
+          "GC/op": {
+            "median": 3.667,
+            "min": 3.5,
+            "max": 4.0
+          },
+          "B/op": {
+            "median": 119420064.0,
+            "min": 119419989.0,
+            "max": 119420138.0
+          },
+          "allocs/op": {
+            "median": 120.0,
+            "min": 119.0,
+            "max": 120.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkXML-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 8113.0,
+            "min": 8071.0,
+            "max": 8403.0
+          },
+          "B/op": {
+            "median": 9376.0,
+            "min": 9376.0,
+            "max": 9376.0
+          },
+          "allocs/op": {
+            "median": 104.0,
+            "min": 104.0,
+            "max": 104.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkMultipart/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 19810.0,
+            "min": 19630.0,
+            "max": 21201.0
+          },
+          "MB/s": {
+            "median": 52931.76,
+            "min": 49458.03,
+            "max": 53417.41
+          },
+          "B/op": {
+            "median": 28472.0,
+            "min": 28463.0,
+            "max": 28482.0
+          },
+          "allocs/op": {
+            "median": 145.0,
+            "min": 145.0,
+            "max": 145.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkMultipart/67108864-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 452569.0,
+            "min": 443360.0,
+            "max": 457024.0
+          },
+          "MB/s": {
+            "median": 148284.28,
+            "min": 146838.89,
+            "max": 151364.37
+          },
+          "B/op": {
+            "median": 28469.0,
+            "min": 28436.0,
+            "max": 28471.0
+          },
+          "allocs/op": {
+            "median": 145.0,
+            "min": 145.0,
+            "max": 145.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/gzip/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 10331.0,
+            "min": 10256.0,
+            "max": 10608.0
+          },
+          "MB/s": {
+            "median": 99.11,
+            "min": 96.53,
+            "max": 99.84
+          },
+          "first-byte-ns/op": {
+            "median": 9253.0,
+            "min": 9092.0,
+            "max": 9482.0
+          },
+          "B/op": {
+            "median": 47052.0,
+            "min": 47042.0,
+            "max": 47071.0
+          },
+          "allocs/op": {
+            "median": 26.0,
+            "min": 26.0,
+            "max": 26.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/deflate/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 9294.0,
+            "min": 8806.0,
+            "max": 10187.0
+          },
+          "MB/s": {
+            "median": 110.18,
+            "min": 100.52,
+            "max": 116.28
+          },
+          "first-byte-ns/op": {
+            "median": 8366.0,
+            "min": 7919.0,
+            "max": 9287.0
+          },
+          "B/op": {
+            "median": 46354.0,
+            "min": 46299.0,
+            "max": 46359.0
+          },
+          "allocs/op": {
+            "median": 25.0,
+            "min": 25.0,
+            "max": 25.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/br/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 16033.0,
+            "min": 15002.0,
+            "max": 16312.0
+          },
+          "MB/s": {
+            "median": 63.87,
+            "min": 62.78,
+            "max": 68.26
+          },
+          "first-byte-ns/op": {
+            "median": 14745.0,
+            "min": 13850.0,
+            "max": 15139.0
+          },
+          "B/op": {
+            "median": 69005.0,
+            "min": 68986.0,
+            "max": 69020.0
+          },
+          "allocs/op": {
+            "median": 32.0,
+            "min": 32.0,
+            "max": 32.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/zstd/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 5933.0,
+            "min": 5803.0,
+            "max": 6658.0
+          },
+          "MB/s": {
+            "median": 172.58,
+            "min": 153.79,
+            "max": 176.47
+          },
+          "first-byte-ns/op": {
+            "median": 5248.0,
+            "min": 5127.0,
+            "max": 5929.0
+          },
+          "B/op": {
+            "median": 15537.0,
+            "min": 15531.0,
+            "max": 15541.0
+          },
+          "allocs/op": {
+            "median": 34.0,
+            "min": 34.0,
+            "max": 34.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/chain/1024-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 19926.0,
+            "min": 19576.0,
+            "max": 20590.0
+          },
+          "MB/s": {
+            "median": 51.39,
+            "min": 49.73,
+            "max": 52.31
+          },
+          "first-byte-ns/op": {
+            "median": 18477.0,
+            "min": 18010.0,
+            "max": 19017.0
+          },
+          "B/op": {
+            "median": 105019.0,
+            "min": 104999.0,
+            "max": 105038.0
+          },
+          "allocs/op": {
+            "median": 32.0,
+            "min": 32.0,
+            "max": 32.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/gzip/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 129339.0,
+            "min": 128201.0,
+            "max": 130871.0
+          },
+          "MB/s": {
+            "median": 8107.2,
+            "min": 8012.3,
+            "max": 8179.14
+          },
+          "first-byte-ns/op": {
+            "median": 9564.0,
+            "min": 9061.0,
+            "max": 10554.0
+          },
+          "B/op": {
+            "median": 46928.0,
+            "min": 46910.0,
+            "max": 46950.0
+          },
+          "allocs/op": {
+            "median": 26.0,
+            "min": 26.0,
+            "max": 26.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/deflate/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 104097.0,
+            "min": 102343.0,
+            "max": 104564.0
+          },
+          "MB/s": {
+            "median": 10073.08,
+            "min": 10028.1,
+            "max": 10245.7
+          },
+          "first-byte-ns/op": {
+            "median": 9739.0,
+            "min": 9113.0,
+            "max": 10510.0
+          },
+          "B/op": {
+            "median": 46232.0,
+            "min": 46217.0,
+            "max": 46256.0
+          },
+          "allocs/op": {
+            "median": 25.0,
+            "min": 25.0,
+            "max": 25.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/br/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1732700.0,
+            "min": 1729400.0,
+            "max": 1743097.0
+          },
+          "MB/s": {
+            "median": 605.17,
+            "min": 601.56,
+            "max": 606.32
+          },
+          "first-byte-ns/op": {
+            "median": 1716750.0,
+            "min": 1714145.0,
+            "max": 1727072.0
+          },
+          "B/op": {
+            "median": 1128676.0,
+            "min": 1128116.0,
+            "max": 1129424.0
+          },
+          "allocs/op": {
+            "median": 33.0,
+            "min": 33.0,
+            "max": 34.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/zstd/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1060207.0,
+            "min": 829328.0,
+            "max": 1110546.0
+          },
+          "MB/s": {
+            "median": 989.03,
+            "min": 944.2,
+            "max": 1264.37
+          },
+          "first-byte-ns/op": {
+            "median": 919312.0,
+            "min": 704524.0,
+            "max": 958675.0
+          },
+          "B/op": {
+            "median": 8955028.0,
+            "min": 8954383.0,
+            "max": 8956397.0
+          },
+          "allocs/op": {
+            "median": 41.0,
+            "min": 40.0,
+            "max": 42.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/chain/1048576-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 152517.0,
+            "min": 151682.0,
+            "max": 153939.0
+          },
+          "MB/s": {
+            "median": 6875.16,
+            "min": 6811.64,
+            "max": 6913.01
+          },
+          "first-byte-ns/op": {
+            "median": 28334.0,
+            "min": 27724.0,
+            "max": 29271.0
+          },
+          "B/op": {
+            "median": 118180.0,
+            "min": 118161.0,
+            "max": 118200.0
+          },
+          "allocs/op": {
+            "median": 41.0,
+            "min": 41.0,
+            "max": 41.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/gzip/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1916552.0,
+            "min": 1895608.0,
+            "max": 1925236.0
+          },
+          "MB/s": {
+            "median": 8753.85,
+            "min": 8714.37,
+            "max": 8850.57
+          },
+          "first-byte-ns/op": {
+            "median": 13424.0,
+            "min": 12612.0,
+            "max": 25577.0
+          },
+          "B/op": {
+            "median": 47025.0,
+            "min": 47023.0,
+            "max": 47040.0
+          },
+          "allocs/op": {
+            "median": 26.0,
+            "min": 26.0,
+            "max": 26.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/deflate/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1482588.0,
+            "min": 1460974.0,
+            "max": 1490650.0
+          },
+          "MB/s": {
+            "median": 11316.17,
+            "min": 11254.97,
+            "max": 11483.59
+          },
+          "first-byte-ns/op": {
+            "median": 10921.0,
+            "min": 10553.0,
+            "max": 25788.0
+          },
+          "B/op": {
+            "median": 46289.0,
+            "min": 46289.0,
+            "max": 46291.0
+          },
+          "allocs/op": {
+            "median": 25.0,
+            "min": 25.0,
+            "max": 25.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/br/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 24476309.0,
+            "min": 23483222.0,
+            "max": 24550146.0
+          },
+          "MB/s": {
+            "median": 685.45,
+            "min": 683.39,
+            "max": 714.43
+          },
+          "first-byte-ns/op": {
+            "median": 7130346.0,
+            "min": 6124735.0,
+            "max": 7211861.0
+          },
+          "B/op": {
+            "median": 4272281.0,
+            "min": 4272281.0,
+            "max": 4272281.0
+          },
+          "allocs/op": {
+            "median": 35.0,
+            "min": 35.0,
+            "max": 35.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/zstd/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1681256.0,
+            "min": 1625514.0,
+            "max": 1997001.0
+          },
+          "MB/s": {
+            "median": 9978.98,
+            "min": 8401.2,
+            "max": 10321.17
+          },
+          "first-byte-ns/op": {
+            "median": 523595.0,
+            "min": 499569.0,
+            "max": 877421.0
+          },
+          "B/op": {
+            "median": 8955050.0,
+            "min": 8954353.0,
+            "max": 8956447.0
+          },
+          "allocs/op": {
+            "median": 40.0,
+            "min": 40.0,
+            "max": 41.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkCompression/chain/16777216-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1911424.0,
+            "min": 1905321.0,
+            "max": 1933246.0
+          },
+          "MB/s": {
+            "median": 8777.34,
+            "min": 8678.26,
+            "max": 8805.45
+          },
+          "first-byte-ns/op": {
+            "median": 48864.0,
+            "min": 45916.0,
+            "max": 59879.0
+          },
+          "B/op": {
+            "median": 186924.0,
+            "min": 186921.0,
+            "max": 186927.0
+          },
+          "allocs/op": {
+            "median": 41.0,
+            "min": 41.0,
+            "max": 41.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/1000/chunk7/slowfalse-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 729307.0,
+            "min": 707816.0,
+            "max": 746218.0
+          },
+          "MB/s": {
+            "median": 49.36,
+            "min": 48.24,
+            "max": 50.86
+          },
+          "first-item-ns/op": {
+            "median": 1985.0,
+            "min": 1861.0,
+            "max": 2955.0
+          },
+          "items/s": {
+            "median": 1373655.0,
+            "min": 1345136.0,
+            "max": 1415048.0
+          },
+          "B/op": {
+            "median": 1105687.0,
+            "min": 1105681.0,
+            "max": 1105690.0
+          },
+          "allocs/op": {
+            "median": 20011.0,
+            "min": 20011.0,
+            "max": 20011.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/1000/chunk7/slowtrue-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 750075.0,
+            "min": 742788.0,
+            "max": 788552.0
+          },
+          "MB/s": {
+            "median": 48.0,
+            "min": 45.65,
+            "max": 48.47
+          },
+          "first-item-ns/op": {
+            "median": 5139.0,
+            "min": 4958.0,
+            "max": 6686.0
+          },
+          "items/s": {
+            "median": 1336964.0,
+            "min": 1270541.0,
+            "max": 1348962.0
+          },
+          "B/op": {
+            "median": 1105693.0,
+            "min": 1105688.0,
+            "max": 1105697.0
+          },
+          "allocs/op": {
+            "median": 20011.0,
+            "min": 20011.0,
+            "max": 20011.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/1000/chunk4096/slowfalse-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 716722.0,
+            "min": 659349.0,
+            "max": 795622.0
+          },
+          "MB/s": {
+            "median": 50.23,
+            "min": 45.25,
+            "max": 54.6
+          },
+          "first-item-ns/op": {
+            "median": 1587.0,
+            "min": 1390.0,
+            "max": 2422.0
+          },
+          "items/s": {
+            "median": 1398300.0,
+            "min": 1258741.0,
+            "max": 1519417.0
+          },
+          "B/op": {
+            "median": 1177614.0,
+            "min": 1177606.0,
+            "max": 1177620.0
+          },
+          "allocs/op": {
+            "median": 16008.0,
+            "min": 16008.0,
+            "max": 16008.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/1000/chunk4096/slowtrue-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 704648.0,
+            "min": 681133.0,
+            "max": 879177.0
+          },
+          "MB/s": {
+            "median": 51.09,
+            "min": 40.95,
+            "max": 52.85
+          },
+          "first-item-ns/op": {
+            "median": 4710.0,
+            "min": 4505.0,
+            "max": 5938.0
+          },
+          "items/s": {
+            "median": 1422350.0,
+            "min": 1139931.0,
+            "max": 1471412.0
+          },
+          "B/op": {
+            "median": 1177615.0,
+            "min": 1177607.0,
+            "max": 1177618.0
+          },
+          "allocs/op": {
+            "median": 16008.0,
+            "min": 16008.0,
+            "max": 16008.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/100000/chunk7/slowfalse-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 72407336.0,
+            "min": 69110534.0,
+            "max": 76459810.0
+          },
+          "MB/s": {
+            "median": 49.72,
+            "min": 47.08,
+            "max": 52.09
+          },
+          "first-item-ns/op": {
+            "median": 5656.0,
+            "min": 4354.0,
+            "max": 10455.0
+          },
+          "items/s": {
+            "median": 1381175.0,
+            "min": 1307991.0,
+            "max": 1447081.0
+          },
+          "B/op": {
+            "median": 110403336.0,
+            "min": 110403048.0,
+            "max": 110403824.0
+          },
+          "allocs/op": {
+            "median": 2000021.0,
+            "min": 2000020.0,
+            "max": 2000026.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/100000/chunk7/slowtrue-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 76433754.0,
+            "min": 74612310.0,
+            "max": 83183483.0
+          },
+          "MB/s": {
+            "median": 47.1,
+            "min": 43.28,
+            "max": 48.25
+          },
+          "first-item-ns/op": {
+            "median": 6382.0,
+            "min": 5496.0,
+            "max": 8622.0
+          },
+          "items/s": {
+            "median": 1308426.0,
+            "min": 1202232.0,
+            "max": 1340356.0
+          },
+          "B/op": {
+            "median": 110403672.0,
+            "min": 110403056.0,
+            "max": 110403824.0
+          },
+          "allocs/op": {
+            "median": 2000024.0,
+            "min": 2000018.0,
+            "max": 2000025.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/100000/chunk4096/slowfalse-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 65833664.0,
+            "min": 63831086.0,
+            "max": 69564792.0
+          },
+          "MB/s": {
+            "median": 54.68,
+            "min": 51.75,
+            "max": 56.4
+          },
+          "first-item-ns/op": {
+            "median": 5786.0,
+            "min": 5566.0,
+            "max": 7630.0
+          },
+          "items/s": {
+            "median": 1519116.0,
+            "min": 1437606.0,
+            "max": 1566752.0
+          },
+          "B/op": {
+            "median": 117603736.0,
+            "min": 117603440.0,
+            "max": 117603944.0
+          },
+          "allocs/op": {
+            "median": 1600024.0,
+            "min": 1600021.0,
+            "max": 1600025.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkStream/100000/chunk4096/slowtrue-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 69854883.0,
+            "min": 69312242.0,
+            "max": 73511468.0
+          },
+          "MB/s": {
+            "median": 51.54,
+            "min": 48.97,
+            "max": 51.94
+          },
+          "first-item-ns/op": {
+            "median": 7058.0,
+            "min": 6723.0,
+            "max": 9538.0
+          },
+          "items/s": {
+            "median": 1431666.0,
+            "min": 1360452.0,
+            "max": 1442846.0
+          },
+          "B/op": {
+            "median": 117603480.0,
+            "min": 117603336.0,
+            "max": 117604104.0
+          },
+          "allocs/op": {
+            "median": 1600021.0,
+            "min": 1600020.0,
+            "max": 1600027.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/ascii/compile-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 832.8,
+            "min": 809.2,
+            "max": 857.9
+          },
+          "B/op": {
+            "median": 1320.0,
+            "min": 1320.0,
+            "max": 1320.0
+          },
+          "allocs/op": {
+            "median": 24.0,
+            "min": 24.0,
+            "max": 24.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/ascii/execute-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 70.55,
+            "min": 70.06,
+            "max": 71.6
+          },
+          "B/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "allocs/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/unicode/compile-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1611.0,
+            "min": 1596.0,
+            "max": 1634.0
+          },
+          "B/op": {
+            "median": 1320.0,
+            "min": 1320.0,
+            "max": 1320.0
+          },
+          "allocs/op": {
+            "median": 24.0,
+            "min": 24.0,
+            "max": 24.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/unicode/execute-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 98.99,
+            "min": 96.71,
+            "max": 103.3
+          },
+          "B/op": {
+            "median": 80.0,
+            "min": 80.0,
+            "max": 80.0
+          },
+          "allocs/op": {
+            "median": 2.0,
+            "min": 2.0,
+            "max": 2.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/lookaround/compile-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 672.1,
+            "min": 648.6,
+            "max": 770.4
+          },
+          "B/op": {
+            "median": 1312.0,
+            "min": 1312.0,
+            "max": 1312.0
+          },
+          "allocs/op": {
+            "median": 22.0,
+            "min": 22.0,
+            "max": 22.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/lookaround/execute-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 41.37,
+            "min": 41.01,
+            "max": 42.21
+          },
+          "B/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "allocs/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/backreference/compile-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 1148.0,
+            "min": 1127.0,
+            "max": 1161.0
+          },
+          "B/op": {
+            "median": 2076.0,
+            "min": 2076.0,
+            "max": 2076.0
+          },
+          "allocs/op": {
+            "median": 28.0,
+            "min": 28.0,
+            "max": 28.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/backreference/execute-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 52.66,
+            "min": 52.62,
+            "max": 52.9
+          },
+          "B/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "allocs/op": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/complexity/compile-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 993.9,
+            "min": 941.7,
+            "max": 1066.0
+          },
+          "B/op": {
+            "median": 1908.0,
+            "min": 1908.0,
+            "max": 1908.0
+          },
+          "allocs/op": {
+            "median": 25.0,
+            "min": 25.0,
+            "max": 25.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkRegex/complexity/execute-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 296368991.0,
+            "min": 294568503.0,
+            "max": 299040570.0
+          },
+          "B/op": {
+            "median": 8424.0,
+            "min": 8424.0,
+            "max": 8424.0
+          },
+          "allocs/op": {
+            "median": 19.0,
+            "min": 19.0,
+            "max": 19.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkConcurrent/1-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 35278.0,
+            "min": 34968.0,
+            "max": 37258.0
+          },
+          "calls/s": {
+            "median": 28346.0,
+            "min": 26840.0,
+            "max": 28598.0
+          },
+          "latency-ns/call": {
+            "median": 19867.0,
+            "min": 19685.0,
+            "max": 21369.0
+          },
+          "B/op": {
+            "median": 9248.0,
+            "min": 9248.0,
+            "max": 9248.0
+          },
+          "allocs/op": {
+            "median": 78.0,
+            "min": 78.0,
+            "max": 78.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkConcurrent/8-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 118107.0,
+            "min": 116844.0,
+            "max": 119125.0
+          },
+          "calls/s": {
+            "median": 67735.0,
+            "min": 67156.0,
+            "max": 68468.0
+          },
+          "latency-ns/call": {
+            "median": 17538.0,
+            "min": 16736.0,
+            "max": 18051.0
+          },
+          "B/op": {
+            "median": 73893.0,
+            "min": 73878.0,
+            "max": 73993.0
+          },
+          "allocs/op": {
+            "median": 617.0,
+            "min": 617.0,
+            "max": 617.0
+          }
+        }
+      },
+      {
+        "name": "BenchmarkConcurrent/64-16",
+        "samples": 5,
+        "metrics": {
+          "ns/op": {
+            "median": 544826.0,
+            "min": 500003.0,
+            "max": 561145.0
+          },
+          "calls/s": {
+            "median": 117469.0,
+            "min": 114053.0,
+            "max": 127999.0
+          },
+          "latency-ns/call": {
+            "median": 51017.0,
+            "min": 49427.0,
+            "max": 59088.0
+          },
+          "B/op": {
+            "median": 591042.0,
+            "min": 591022.0,
+            "max": 592046.0
+          },
+          "allocs/op": {
+            "median": 4929.0,
+            "min": 4929.0,
+            "max": 4931.0
+          }
+        }
+      }
+    ]
+  },
+  "builds": {
+    "commands": 117,
+    "results": "/tmp/sdkgen-go-implementation/w11-final-builds/results.json",
+    "workloads": [
+      {
+        "consumer": "full-static",
+        "cold": {
+          "samples": 5,
+          "secondsMedian": 5.333685566991335,
+          "secondsMin": 5.006329411000479,
+          "secondsMax": 5.4975278670026455,
+          "peakRSSKiBMax": 286836,
+          "binaryBytes": 10569455
+        },
+        "warm": {
+          "samples": 5,
+          "secondsMedian": 0.2338925320073031,
+          "secondsMin": 0.2320942410005955,
+          "secondsMax": 0.25020828199922107,
+          "peakRSSKiBMax": 187808,
+          "binaryBytes": 10569455
+        },
+        "reachability": {
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 18,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        }
+      },
+      {
+        "consumer": "selected",
+        "cold": {
+          "samples": 5,
+          "secondsMedian": 4.774851531998138,
+          "secondsMin": 4.720316792008816,
+          "secondsMax": 4.844758566003293,
+          "peakRSSKiBMax": 290108,
+          "binaryBytes": 10506568
+        },
+        "warm": {
+          "samples": 5,
+          "secondsMedian": 0.22354869499395136,
+          "secondsMin": 0.21747966900875326,
+          "secondsMax": 0.2269793620071141,
+          "peakRSSKiBMax": 177092,
+          "binaryBytes": 10506568
+        },
+        "reachability": {
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 0,
+          "regexDependencies": [],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        }
+      },
+      {
+        "consumer": "named",
+        "cold": {
+          "samples": 5,
+          "secondsMedian": 5.0014774260052945,
+          "secondsMin": 4.927072342004976,
+          "secondsMax": 5.019509903999278,
+          "peakRSSKiBMax": 287352,
+          "binaryBytes": 10564372
+        },
+        "warm": {
+          "samples": 5,
+          "secondsMedian": 0.22618631199293304,
+          "secondsMin": 0.22463363999850117,
+          "secondsMax": 0.2382201040018117,
+          "peakRSSKiBMax": 188628,
+          "binaryBytes": 10564372
+        },
+        "reachability": {
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 18,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        }
+      },
+      {
+        "consumer": "dynamic",
+        "cold": {
+          "samples": 5,
+          "secondsMedian": 5.159267939001438,
+          "secondsMin": 5.083062962992699,
+          "secondsMax": 5.3569112670084,
+          "peakRSSKiBMax": 291528,
+          "binaryBytes": 12034907
+        },
+        "warm": {
+          "samples": 5,
+          "secondsMedian": 0.24449029201059602,
+          "secondsMin": 0.23264765700150747,
+          "secondsMax": 0.24970923201180995,
+          "peakRSSKiBMax": 197828,
+          "binaryBytes": 12034907
+        },
+        "reachability": {
+          "operationSymbols": 160,
+          "streamSymbols": 88,
+          "patternMatchSymbols": 2,
+          "regexDependencySymbols": 156,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        }
+      }
+    ]
+  },
+  "generation": {
+    "commands": 33,
+    "results": "/tmp/sdkgen-go-implementation/w11-final-generation/results.json",
+    "workloads": [
+      {
+        "operations": 1000,
+        "selected": "full",
+        "samples": 5,
+        "secondsMedian": 1.4912155420024646,
+        "secondsMin": 1.467630065002595,
+        "secondsMax": 1.5110366750013782,
+        "peakRSSKiBMax": 138300,
+        "files": 6051,
+        "bytes": 15229437,
+        "artifactSha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+      },
+      {
+        "operations": 1000,
+        "selected": 1,
+        "samples": 5,
+        "secondsMedian": 0.1512745690124575,
+        "secondsMin": 0.1495327559969155,
+        "secondsMax": 0.1559567770018475,
+        "peakRSSKiBMax": 81040,
+        "files": 57,
+        "bytes": 262714,
+        "artifactSha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+      },
+      {
+        "operations": 1000,
+        "selected": 10,
+        "samples": 5,
+        "secondsMedian": 0.1677673429949209,
+        "secondsMin": 0.16082902999187354,
+        "secondsMax": 0.17325432899815496,
+        "peakRSSKiBMax": 88336,
+        "files": 111,
+        "bytes": 395437,
+        "artifactSha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+      },
+      {
+        "operations": 10000,
+        "selected": "full",
+        "samples": 5,
+        "secondsMedian": 14.813835909997579,
+        "secondsMin": 14.756420769001124,
+        "secondsMax": 15.270162220986094,
+        "peakRSSKiBMax": 1071296,
+        "files": 60051,
+        "bytes": 151337437,
+        "artifactSha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+      },
+      {
+        "operations": 10000,
+        "selected": 1,
+        "samples": 5,
+        "secondsMedian": 1.9010530519881286,
+        "secondsMin": 1.8777002030110452,
+        "secondsMax": 1.925462860002881,
+        "peakRSSKiBMax": 675496,
+        "files": 57,
+        "bytes": 262714,
+        "artifactSha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+      },
+      {
+        "operations": 10000,
+        "selected": 10,
+        "samples": 5,
+        "secondsMedian": 1.8965284599980805,
+        "secondsMin": 1.876678015003563,
+        "secondsMax": 1.9059264609968523,
+        "peakRSSKiBMax": 676056,
+        "files": 111,
+        "bytes": 395437,
+        "artifactSha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+      }
+    ]
+  },
+  "platform": {
+    "commands": 10,
+    "results": "/tmp/sdkgen-go-implementation/w11-final-platform/results.json"
+  }
+}

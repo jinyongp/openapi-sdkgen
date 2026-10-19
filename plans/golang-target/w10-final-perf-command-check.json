@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "golang:perf",
+    "-benchtime=1x"
+  ],
+  "started_at": "2026-10-18T11:01:53.498340+00:00",
+  "finished_at": "2026-10-18T11:01:55.236777+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-code.json",
+  "source_manifest_sha256": "14f373a2b238361053707821989e3e251abad8cb452a69ce0daadc6b23306458",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w10-final-perf-command.stdout",
+  "raw_stdout_sha256": "0b7816cdcb273e4ece524e6031b15a95e09b4d8d8050661025988295e53f772c",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w10-final-perf-command.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [],
+  "passed_tests": []
+}

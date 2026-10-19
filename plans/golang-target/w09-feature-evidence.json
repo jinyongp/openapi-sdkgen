@@ -1,0 +1,370 @@
+{
+  "unit": "W09",
+  "definition": "D29 plan6,7,9,10.3 / W09 task original scope, progress1663",
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-code.json",
+  "source_manifest_sha256": "df8c5cd75ecc097cf9250c0c1dedfdd05e9df4c8fc688f6717c31843cd068ef3",
+  "source_files": 1383,
+  "checks": {
+    "race": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-race-check.json",
+      "exit_code": 0,
+      "package_results": [
+        {
+          "package": "openapi-sdkgen/internal/generator",
+          "action": "pass",
+          "elapsed": 1.018
+        },
+        {
+          "package": "openapi-sdkgen/internal/http/plan",
+          "action": "pass",
+          "elapsed": 1.045
+        },
+        {
+          "package": "openapi-sdkgen/internal/output",
+          "action": "pass",
+          "elapsed": 2.121
+        },
+        {
+          "package": "openapi-sdkgen/cmd/openapi-sdkgen",
+          "action": "pass",
+          "elapsed": 9.346
+        },
+        {
+          "package": "openapi-sdkgen/internal/target/golang",
+          "action": "pass",
+          "elapsed": 395.449
+        }
+      ],
+      "passed_event_count": 461
+    },
+    "vet": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-vet-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "fmt": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-fmt-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "mod": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-mod-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    },
+    "diff": {
+      "path": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w09-final-diff-check.json",
+      "exit_code": 0,
+      "package_results": [],
+      "passed_event_count": 0
+    }
+  },
+  "additional_checks": {
+    "w09-typescript": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w09-typescript.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w09-typescript.stderr",
+      "raw_stderr_sha256": "4fb2464fc6a178ba13f38964e8a1ba6ea8c02aabec6e0f867e9d37273aee7f9d"
+    },
+    "w09-full-go": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w09-full-go.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w09-full-go.stderr",
+      "raw_stderr_sha256": "45eeac2982f82350d3b0d524da33c40b7113ef0c196b17a1d211c3909fbcf4a1"
+    },
+    "w09-header-final": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w09-header-final.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w09-header-final.stderr",
+      "raw_stderr_sha256": "45eeac2982f82350d3b0d524da33c40b7113ef0c196b17a1d211c3909fbcf4a1"
+    },
+    "w09-component-generate": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w09-component-generate.stdout",
+      "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w09-component-generate.stderr",
+      "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w09-component-consumer": {
+      "raw_stdout": "/tmp/sdkgen-go-implementation/w09-component-consumer.stdout",
+      "raw_stdout_sha256": "01ccca46eed53a14c5de53127a1ad6140f77ed7745abea9689213fb9d636585c",
+      "raw_stderr": "/tmp/sdkgen-go-implementation/w09-component-consumer.stderr",
+      "raw_stderr_sha256": "622e7789d795461c7f1a64c0414839bb0b4f3d6c2935aa82315e7e017777441f"
+    }
+  },
+  "check_reuse": "Final frozen source Go-target/common/CLI race plus vet/fmt/module/diff all pass. Earlier full all-package race passed before server-only header changes; final affected inbound/shared XML/MIME checks passed after them. Full TypeScript package and TypeScript tools/provider/native/declaration/selection examples pass; subsequent changes are Go server planning/runtime/tests and plans only, with no TypeScript/common compiler source change. No failed combined invocation counted as pass.",
+  "features": [
+    {
+      "id": "root.webhooks",
+      "baseline_state": "error",
+      "versions": [
+        "3.1",
+        "3.2"
+      ],
+      "baseline_conditions": [
+        {
+          "target": "typescript",
+          "with": [
+            "server"
+          ],
+          "state": "generated",
+          "evidence": "internal/target/typescript/server_test.go::TestGeneratedWebhookRouterExecutesThroughFetch"
+        }
+      ],
+      "golang_server_addon": "generated",
+      "requires_addons": [
+        "server"
+      ],
+      "baseline_evidence": "internal/target/typescript/openapi_support_test.go::TestSourceArtifactsRejectsUnimplementedOpenAPIFeaturesWithPaths",
+      "passed_cases": [
+        "TestGoInboundRequiresServerAddonWithDocumentScope",
+        "TestPreparedInboundNamesAndStreamingMode",
+        "TestGeneratedTypedInboundHandlers",
+        "TestGeneratedTypedInboundJSON",
+        "TestGeneratedTypedInboundMediaAndHeaders",
+        "TestGeneratedTypedInboundResponseVariants"
+      ],
+      "coverage": "Actual generated consumers and common contract tests as listed; runtime consumers exercise detailed HTTP/media/lifetime/limits cases under inner race detector."
+    },
+    {
+      "id": "components.callbacks",
+      "baseline_state": "error",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "baseline_conditions": [
+        {
+          "target": "typescript",
+          "with": [
+            "server"
+          ],
+          "state": "generated",
+          "evidence": "internal/target/typescript/server_test.go::TestGeneratedCallbackEndpointsAreHostBoundAndRoundTripJSON"
+        }
+      ],
+      "golang_server_addon": "generated",
+      "requires_addons": [
+        "server"
+      ],
+      "baseline_evidence": "internal/target/typescript/openapi_support_test.go::TestSourceArtifactsRejectsUnimplementedOpenAPIFeaturesWithPaths",
+      "passed_cases": [
+        "TestInboundCollectionPreservesContractsAndOwners",
+        "TestGeneratedTypedInboundHandlers"
+      ],
+      "coverage": "Common IR ownership and exact diagnostics plus actual generated Go handlers, sources, wire data and host binding. Component callback additionally generated through public CLI and exercised under real HTTP1/HTTP2."
+    },
+    {
+      "id": "operation.callbacks",
+      "baseline_state": "error",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "baseline_conditions": [
+        {
+          "target": "typescript",
+          "with": [
+            "server"
+          ],
+          "state": "generated",
+          "evidence": "internal/target/typescript/server_test.go::TestGeneratedCallbackEndpointsAreHostBoundAndRoundTripJSON"
+        }
+      ],
+      "golang_server_addon": "generated",
+      "requires_addons": [
+        "server"
+      ],
+      "baseline_evidence": "internal/target/typescript/server_failure_scope_test.go::TestInboundContractsWithoutServerAddonRemainDocumentBlocking",
+      "passed_cases": [
+        "TestInboundCollectionPreservesContractsAndOwners",
+        "TestGoInboundCallbackErrorsFollowGenerationSelection",
+        "TestGeneratedTypedInboundHandlers"
+      ],
+      "coverage": "Actual generated consumers and common contract tests as listed; runtime consumers exercise detailed HTTP/media/lifetime/limits cases under inner race detector."
+    },
+    {
+      "id": "media.sse-inbound-event-default",
+      "baseline_state": "generated",
+      "versions": [
+        "3.2"
+      ],
+      "baseline_conditions": [],
+      "golang_server_addon": "generated",
+      "requires_addons": [
+        "server"
+      ],
+      "baseline_evidence": "internal/target/typescript/support_gaps_test.go::TestSupportGapSSEEventDefaultInboundContract",
+      "passed_cases": [
+        "TestGeneratedInboundSSEDefaultContract"
+      ],
+      "coverage": "Actual generated consumers and common contract tests as listed; runtime consumers exercise detailed HTTP/media/lifetime/limits cases under inner race detector."
+    },
+    {
+      "id": "requestBody.inbound-complete-byte-limit",
+      "baseline_state": "generated",
+      "versions": [
+        "3.0",
+        "3.1",
+        "3.2"
+      ],
+      "baseline_conditions": [
+        {
+          "target": "typescript",
+          "with": [
+            "server"
+          ],
+          "scope": "inbound-only",
+          "state": "generated",
+          "evidence": "internal/target/typescript/server_body_test.go::TestGeneratedWebhookRouterDecodesTextAndFormBodies"
+        }
+      ],
+      "golang_server_addon": "generated",
+      "requires_addons": [
+        "server"
+      ],
+      "baseline_evidence": "internal/target/typescript/server_body_test.go::TestGeneratedWebhookRouterDecodesTextAndFormBodies",
+      "passed_cases": [
+        "TestGeneratedGenericInboundRuntime",
+        "TestGeneratedTypedInboundMultipart",
+        "TestGeneratedInboundRuntimeBoundary"
+      ],
+      "coverage": "Actual generated consumers and common contract tests as listed; runtime consumers exercise detailed HTTP/media/lifetime/limits cases under inner race detector."
+    }
+  ],
+  "supplemental_contracts": {
+    "server-runtime": [
+      "TestGeneratedInboundRuntimeBoundary",
+      "TestGeneratedGenericInboundRuntime",
+      "TestGeneratedGenericInboundOfficialSchemaCases",
+      "TestGeneratedTypedInboundHandlers",
+      "TestGeneratedTypedInboundRawResponseHeaders",
+      "TestGeneratedTypedInboundResponseVariants"
+    ],
+    "concurrency-and-lifetime": [
+      "TestGeneratedTypedInboundDuplex",
+      "TestGeneratedTypedInboundMultipartDuplex",
+      "TestGeneratedInboundSlowConsumerCancellation",
+      "TestGeneratedInboundRuntimeBoundary"
+    ],
+    "hook-metadata-ownership": [
+      "TestGeneratedTypedInboundCustomCodecs",
+      "TestGeneratedInboundRuntimeBoundary",
+      "TestGeneratedInboundCodecBorrowedBodyBoundary"
+    ]
+  },
+  "manual_component_callback": {
+    "root": "/tmp/sdkgen-go-implementation/w09-component-consumer",
+    "input_files": {
+      "input.json": "0bc6fe3c7af173ae63e00eefadae500f643a2d23c378c65a633a22f969856053",
+      "go.mod": "f9456186e0e4554745c77083b9026d2ca7cd180058a994794fa03704e690405f",
+      "consumer_test.go": "d35e83f092d772b76b1d4e4ef6ae299f3abd12387ded801ae5994725a503d288",
+      "go.sum": "e602b7b0a798d485f611ebe732823d95135443c80967a08b897d0d7ff400e213"
+    },
+    "generated_files": {
+      "api/errors.go": "93cfd2d4d6aca0f3b028cd6d52aa828869eded72d6955757ee23a27f9a15fac6",
+      "api/client.go": "2aaf5d25351f7a8ac13f6bbbe317a618cb4d48b838f63a25ca4b2ab4cfa2ef72",
+      "api/.openapi-sdkgen-manifest.json": "ad5badbd986cccf7f329e52f06652a049c93cdc66b6890ab564665de384afd1f",
+      "api/types/errors.go": "9d1bea32f00c2532737f1b7b89ba4eff846e859ee44d42ab36eda3f55d4c12f9",
+      "api/types/stream_data.go": "1370ad9f2fe886fecb64bd955a90ac79a718d37ff75ab43d15c130bc3d516a83",
+      "api/types/transport.go": "d8bf24bf37120686a209d0510011a46d41a8031631536ca6cbb9ffcb3af5193a",
+      "api/types/stream_codec.go": "e72c3bd039d80605abf6291c3872a1a365247e7a4416e774c280a8215f1f72d4",
+      "api/types/multipart.go": "7efbf81de8046f56329a90a93eaeb48aa7533caaae8f166d66b62d3d50610bd8",
+      "api/types/request.go": "69f9fab7d4e26f98c389c491cf4d4bcf71020c4c5fcdc75b95b37afd1abc5fdd",
+      "api/types/value.go": "fb939baa6aaca7037cf2b9bf6e386f0f48b4c3a2c7d1450c8bc200194e3005a3",
+      "api/types/binary.go": "5fbff27fe2369bc86602c012a5d35efcc17c6b41ab91ec972d9f8192114c5022",
+      "api/types/stream_contract.go": "eb125a70177a92fca7cce2f628685959be0b643807adfcea14cf823d8570ca60",
+      "api/types/security.go": "a2ab9ef67cdfcebf1b32afc2eb23754e202e64bae10a93a80bf5dd6d1c825fd7",
+      "api/server/callbacks/source_7bbea8e8fd8d6a8e048a72661adcafed7ed2fd21e0d50cbf085d3d59911ffc4a.go": "d9d62803e54b6605c374100804dd79aa066191380e459db4deb8ca08a072780e",
+      "api/server/callbacks/options.go": "74089efbcb5d26264b7be86217413dbc8ca46325fe8adf4711ec553f56ebec31",
+      "api/server/runtime/schema_contract.go": "4c5653a9b26f523157c23a500af4ed5f7665a9f5cd92fed9533c7ac357a0ddea",
+      "api/server/runtime/multipart_output.go": "5de096134ed25a14c254752bb70b4e5125d4bb35f9d24ee9d1ffd42a1d055d7f",
+      "api/server/runtime/types.go": "4d8dad62443019543089dff00cd5c9da977d5996b6a7b52b1c68ca23dbbc1744",
+      "api/server/runtime/headers.go": "e107f4dfedc75dfa30b2062499a2e44e05bc0935bf9e9a5b4a4a503d8877c3ea",
+      "api/server/runtime/execution.go": "9fdc8568c09de2f1cfa50c32f290732c636845f122c16516bdbbba92c7ed2d75",
+      "api/server/runtime/schema_formats.go": "b9c8c29040af25c90b63dff71d22d5ee0719c8b7c1fee7f7215b837c61392155",
+      "api/server/runtime/stream.go": "1605a2e895759abc1eae47b6d9486039e6b7f91206649c0cee4d88f4bc56fae7",
+      "api/server/runtime/multipart.go": "152a5841aa6b331e1832cf340880565200f3402c19684d1c5528c6d1783e226d",
+      "api/server/runtime/protocols.go": "e2b02e66f60068037ce411138ca2c6030bc79fbb8b2d53b42c1c47e397a3f721",
+      "api/server/runtime/parameters.go": "8e814d2cf780239599dd51db9f328c591942b73970c7a1b422086191ca85082f",
+      "api/server/runtime/coercion.go": "7898720d6803637de91aa234629ceca1dd683804c6b06ff328f9d539ec19adb7",
+      "api/server/runtime/schema_xml.go": "9911aa0b1805b7b2ee2bedfb6827410d0add664be8708d1e0a2fb7748d692d08",
+      "api/server/runtime/media.go": "91a49d906eeb7ea55b6fb72386dc7977ad8198d9cfe4a5db5b3f179f5b1d9793",
+      "api/server/runtime/schema.go": "f82a8d02e12a08e573bfbcca757523e090f7c3352fbcd131a014e7d83b346862",
+      "api/server/runtime/handler.go": "6af218037a985490119942893c1d6bb55ab077ed4d4898e90935bad89200bac9",
+      "api/server/runtime/security.go": "c07abe434026f5e98affe7daa227a479e428c67aa1237e7273fd2ae27fbc2a8d",
+      "api/internal/multipartcodec/decode.go": "b12c7f1e7f81a95f5fa5419dde2cb4315596944ed603377f8dc2bded4882ac93",
+      "api/internal/multipartcodec/encode.go": "1ec236832a68422ef810a9c91e9003f001b0818eb68006ff463dc3c5e13e6cc3",
+      "api/internal/transport/headers.go": "3ce734c604b3782c86b6685accf7a323a0a8acd9f60360adfded2d1fcc6b7d4b",
+      "api/internal/transport/url.go": "b245157e14b0cc1b1e1fa950551e81b8f71e07fadf57abb741f744786ab23bc9",
+      "api/internal/transport/body.go": "bdc379849c86629f7ad55d255008aa1622d0f4877ef99098b6ff3f53ac423265",
+      "api/internal/transport/adapter.go": "8a01d555f25d073ac924bad0a1b0a680a05d0cea01fbf4a75e13f158d4da238b",
+      "api/internal/wire/xml_output.go": "513b1de27b67945387b049aa5e1667334d13a7f8ce3c0ea8aad7f2f8a12216ca",
+      "api/internal/wire/json.go": "a8253282fa1dc942e733abcac744f8ed600b8d408684b3c78884343fb194301f",
+      "api/internal/wire/scalar.go": "ef77aad28ff561a5d6bd02fbecc09b569d79cdc9c367393e71863015e510a656",
+      "api/internal/wire/text_stream.go": "b0f5bccc2a1c3c5db2cc1f16d0c0781ee199c5e98f8ca0672e698d471d2cbc5f",
+      "api/internal/wire/media.go": "af697cda1aec0b546908d571288105fd7e04905136de4782f327e9f9b61ddd1a",
+      "api/internal/wire/value.go": "c1040f3deeb07227091a514a6a7247a146c9519820aba937e6f1fde5dd48d70c",
+      "api/internal/wire/xml_name.go": "01fb5979200612d68da75efcd833885bac423ba80f250e75ab2200e1994b0933",
+      "api/internal/wire/hash.go": "34da34b8a20e5059a82f2590ec7eb0a056543c70bb85d1ff8b84203909d7214b",
+      "api/internal/wire/xml.go": "39bb72f307ea774562750e676db8a231178fa8243addc8265f9a3a502f29be99",
+      "api/internal/core/client.go": "d2f746a578639e9f86c635e7ffdbc4c3fedbc382d2e73caa9477d109f903515f",
+      "api/internal/core/execution.go": "f3868ea9891a2c127fba7da5590fe318e17e75764e74e6b0c2d3798a706f062f",
+      "api/internal/core/body.go": "fb475b6774ef6f3efe07153524a4e8014092855073bdd8027dfa712443c832e1",
+      "api/internal/core/parameters.go": "a735f653e2c2815bed742250719f3bff15a11f587c25e2a8bb303952098197ca",
+      "api/internal/core/server.go": "9ec92f1edbe004685f36ef00bb10a6115e4660f707b2e7e82eec3c913e113845",
+      "api/internal/core/response.go": "a1af0685e6d3383af1901dcecd0918395fa608104d8f6b443610a9811cef45d3",
+      "api/internal/core/options.go": "3e9bb2456b77b1c1fa19a8fda69fd350542374b2e295b408da31df48a4fa1535",
+      "api/internal/media/form.go": "b6aa84d9272aeefac3baa982e4cc8ecac3043353b341431d87b355a1bb0f70ea",
+      "api/internal/media/inbound.go": "c45d6b62e47a803c34c0329faf26832f9f594dd28b962f45e7647187630678ff",
+      "api/internal/media/multipart_source.go": "d9a6fb846417fb795f468037eb27773c6033948014a125778b936aa83762a15d",
+      "api/internal/media/multipart.go": "56e07086a1becca27f3f2c2de41a5db1da6f39d50c2686df01af95c307465c31",
+      "api/internal/media/value.go": "5520382a5af8ccc5eca2f8c81d3089472e300db9fc60fbee5204ebcad6e4b3d7",
+      "api/internal/media/http.go": "64a86dfd040136f765ee90a13c7157e7d21ef8a0eb8c4970dad24e323430812e",
+      "api/internal/security/security.go": "84755372d4adb694240e6c2101068f45f1691501bfd0105e2b443ff9cf5547c6",
+      "api/internal/stream/sse.go": "94fc38fb0f054c35e283cd6fabc25ea9c6e91d0660e981da88a3038f8185e80d",
+      "api/internal/stream/multipart.go": "30f902b9d5db3662aa8a90cbde955fa1a570ce8105714cee0c946402b60d6afe",
+      "api/internal/stream/json.go": "a7cc7278d50eb15c5f55d01c3dd68370e335c4ea526af100fc9fb85aa0bb78bb",
+      "api/internal/stream/reader.go": "d4a11829976c5e9a7ebe7eedfee31fa2a5d928d8b8f2427fed9fc8d3c132f9d2",
+      "api/internal/stream/encode.go": "d18d3cfabc92bbde5b14711b1fead82a28c06d9b5c19307995a29532fb5ea178",
+      "api/internal/schema/source_5664f026055177e233bba555ebfabf4d11f5c86c133a6d1310a1ea6f9005abf9.go": "17de87ae1152622ae0de69f1c1417768a6cc3c8481ce8730d9dbbe205246354e",
+      "api/internal/schema/source_a2f37d600855108a7c7741a495283a0eccfd6d11637999175b550656dbdf1cb0.go": "4ccd45d3934cd19921fc2202bb3bd15381ce281407529e720270cffb63e2f3a8",
+      "api/internal/schema/format-time.go": "b5bf222d95773ad81f636c6a3b05b772b97155e4f111538ff5cd9fd814a6f074",
+      "api/internal/schema/source_cd202dc02ee4ec9b389ad7567ce1e75b7f4b3afdfa0dbe48dfe6a8cd67f7b8e3.go": "aed0d5a66f5d97da992351b058d5e7bddc28dc292f089ea271a250a2eb11b897",
+      "api/internal/schema/source_9cec898714df4aa62c84e88d75e68d2c3378902dfcaa29719f31be5a6f48daff.go": "fcbb680c23b7d0cb8a7ec5d06ee9de6357ae9ad8b2037805a692ddc51f8aa74c",
+      "api/internal/schema/content.go": "4a3585020979a2aaa0ee5cb5f821ad848c0d37c8916d6705fd35c6e61f4b4d99",
+      "api/internal/schema/multiple.go": "c07c3c030059a6548cbca406dc075b977070ed1697099ee0dcd1dde8e9acc125",
+      "api/internal/schema/unique.go": "ac6d32081b3e99a76387b2441de55b116a9f68dc743ac2db3933568382b0adf0",
+      "api/internal/schema/format-date-time.go": "eb3c49b75d629bc8ff030d53f11e8430f1b7226e4dcff48109ce3f1836a51c1b",
+      "api/internal/schema/source_c09ee88ac0a0aac68f7025e304b99fba177ced758eae717c762d64a04d8f1ca0.go": "1af8563f9119a7cc159b94702020b1083c671665afa26452ef60ecdb145387b3",
+      "api/internal/schema/source_a2608c77d4b54aa69633950a243e642a616732f81fe5357a437bea33b4aea78b.go": "afe9240725c4a221fe0b87a50f5a3d4d179288e05a489387790ff3941cbd43a3",
+      "api/internal/schema/source_1e673056a2df6a9d6f829cb5152fe8db148057f4b61ce475dcce8bcf4db5af29.go": "7d82d45dcb7cd24929e95f69568d5c2ed95309ea498355c688f6e338fc231a91",
+      "api/internal/schema/source_f36411b8a240d53b80279f123f76e1a3d679c234fff6ce67bb4ba6b9d3d47ef5.go": "df0b14969bba97f37e6d9d9827300870dcdae2feec923e0915d5e26ca6046e00",
+      "api/internal/schema/integer.go": "a4d6ed51f1b3dd13c17534de07b768205f609204774569a254044639314f0d74",
+      "api/internal/schema/format-ip.go": "962986300c6cdcbb189fe494c616adb36b05d80c96e18dce4f277df4b490e158",
+      "api/internal/schema/source_298df754ef1e8dff5972264b347ab673971a639b7d868ea0b5c2515fd879b1f7.go": "b7cdad1ba37e364766565fe598ecb3305de2f9e06b4fea033a8110738ae73fa9",
+      "api/internal/schema/format-number.go": "e65c8f8cab8518438b49b26fd7bde5a6896aa44b8c894e0affd393f02804b396",
+      "api/internal/schema/source_cb537ac7e89a884da78952da9a1cffe5a28966a2a50fbb67c91984b2f757ab25.go": "e27417780390733f327e27489278da178d30b214907a2f21ac90e0761c2a6092",
+      "api/internal/schema/format-date.go": "72d55b38fe7d3da1fbaf918a5063521ca0e089923dcb765a82b6c0b581a02297",
+      "api/internal/schema/source_a805d8260e8a54fdeca2f23dc3747d666934c6b9573ba2387f707537be6a44bc.go": "f9cfaa3414c797d4b00e1010ef59881f6398f96c07ec14ed730dfd47aa1cd535",
+      "api/internal/schema/json.go": "eff77b977cd9665cc7fcdae40888df85d699a0258c96bb6fba2b9be63b3e4574",
+      "api/internal/schema/format-template.go": "bb4b5beeed109654f7f9f742041dcf0fe34220695d8f45189c7115102704396e",
+      "api/internal/schema/source_7f20c518118a1d0ae32fa3fc92359922da09a75f556583c0a255f42fad1318b8.go": "a61e0cf31fcb19616733050b208a18532d5461297774440e8722c97949cbca70",
+      "api/internal/schema/source_e55227fb9bcd7bb5edf75e3596463da1dc440d12875510dbf7206a017562694c.go": "9ba4dd06953319cb40beceb2a33b93a5f2519922cef8fc00f3e2677b8e607400",
+      "api/internal/schema/format-url.go": "2823100a542775e6f94142eaa68f35691af00cef02f87c4c25d2f32c7dc65103",
+      "api/internal/schema/source_d6055a985ed5250641362a7a5c9c6ed49fb8df1876ae0858755a770fd27c6388.go": "8fa9436b328a126d01df74f116d26c1e352b1eb3a79c59aec26fbf6069504a60",
+      "api/internal/schema/regex.go": "9be855c8398613ddf7f675b52d38c70ea42860244b8759b2e9a945beaef75c4f",
+      "api/internal/schema/source_a4e93652de01cd5b31070ed9c1ec09e76d5822c4bc551c7aba93a5395f5988a4.go": "4a7363071d068c841bafe0cc54c4649f6067bc22c6d74858cdf154bc3cab514e",
+      "api/internal/schema/source_cd9b0d9d6904ffc3ae7e4c8d1b1407288bbbfbd18ffcdcad32cd28d5d898971c.go": "6e142f918dda75e311cbcf13bd0d5e0437e903b73756a39038dabe6deb309b10",
+      "api/internal/schema/source_28f5cf0d058892eba4b7024f5b948bc80f200d69987c60c23f2a9927f47c750f.go": "7981847cd14422eb27474c476ef4ac2822788f0fdd3c25f3745460c7f6f3fed7",
+      "api/internal/schema/source_12c98e030374f4d826518b75386c8c7491ec40a17cb21ddecffc60d6fc410ef4.go": "a3e885fdca30ff6ca1c7f8682e23d19688a6b77be5315c78b133807f1a477dc8",
+      "api/internal/schema/source_af73703f6ab10343e53e8eac705e090c6a3825598cd42eb4e6126ff699684035.go": "1fe318d61ee316591c5ec02627c8432858b2efe11d1ec3feb11349c77a993bc8",
+      "api/internal/operations/operations.go": "b9ea75b8011ee4b13c267d3d2fbed90bb1089fc23ad3e99ed9a241fa01312fe9"
+    }
+  },
+  "limits": "D29 XML additional/prefixItems mapping limitations retained; host owns listeners/auth policy/callback registration and hook shared-state concurrency. W10-W12 and full integrations remain required. No commit/push/publication."
+}

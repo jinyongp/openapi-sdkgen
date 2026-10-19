@@ -1,0 +1,19 @@
+{
+  "label": "final-npm-source",
+  "startedAt": "2026-10-18T13:38:06.919212+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "source-check:npm"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 0.22853714300435968,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-final-code.json",
+  "sourceManifestSha256": "640d6b982c9c9e669fe08a84d507e427152bc50126f8b8ff0c2745f28590c3ad",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-final-npm-source.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-final-npm-source.stderr",
+  "stderrSha256": "9a54e781e1283b5875f1e5970c6653c44b637e01ccbdb5a27945756d139c2f6d"
+}

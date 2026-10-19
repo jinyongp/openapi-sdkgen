@@ -1,0 +1,45 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "-race",
+    "./internal/target/golang",
+    "-run",
+    "^TestGenerated(StreamCodecContextOwnership|StreamHandleLifetime|NativeJSONAndSSEProtocols|SequentialMultipartProtocol|NativeStreamHTTP|StreamingRequestSources|StreamResponseMedia|MultipartResponsePartContracts|RecursiveMultipartResponse|UntypedSequentialRaw|HTTPDependencyBoundaries)$",
+    "-count=1",
+    "-json",
+    "-timeout=6m"
+  ],
+  "started_at": "2026-10-18T02:41:30.664005+00:00",
+  "finished_at": "2026-10-18T02:42:00.765933+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-final-code.json",
+  "source_manifest_sha256": "33600463c88cccdb6ee07b624c0126416210d7e7c1db5836869262760ea7b847",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w06-final-affected-race.stdout",
+  "raw_stdout_sha256": "f797a9f0d927bccfcec256e12f8fafb7c1804f8bfafd54b877213d12fe17db83",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w06-final-affected-race.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/target/golang",
+      "action": "pass",
+      "elapsed": 28.3
+    }
+  ],
+  "passed_tests": [
+    "TestGeneratedHTTPDependencyBoundaries",
+    "TestGeneratedUntypedSequentialRaw",
+    "TestGeneratedStreamCodecContextOwnership",
+    "TestGeneratedStreamHandleLifetime",
+    "TestGeneratedNativeStreamHTTP",
+    "TestGeneratedSequentialMultipartProtocol",
+    "TestGeneratedNativeJSONAndSSEProtocols",
+    "TestGeneratedStreamingRequestSources",
+    "TestGeneratedStreamResponseMedia",
+    "TestGeneratedMultipartResponsePartContracts",
+    "TestGeneratedRecursiveMultipartResponse"
+  ]
+}

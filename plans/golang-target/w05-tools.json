@@ -1,0 +1,9 @@
+{
+  "go": "go version go1.27.2 linux/amd64",
+  "node": "v24.22.0",
+  "devtools": {
+    "commit": "unknown",
+    "protocol_version": 7,
+    "version": "0.25.3"
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "exitCode": 0,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "scope": "Fresh candidate generated library includes full media/regex/server runtime. Library pattern ./api/... includes exported library entry points. Root scanner/OSV results are separate.",
+  "raw": "/tmp/sdkgen-go-implementation/w11-sdk-govulncheck.json",
+  "rawSha256": "d2bfc48ca1a2c820fe1c33fb1da4242e91a147bae145e9dac0a3477217c84236",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-sdk-govulncheck.stderr",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "scannerConfig": {
+    "protocol_version": "v1.0.0",
+    "scanner_name": "govulncheck",
+    "scanner_version": "v1.9.0",
+    "db": "https://vuln.go.dev",
+    "db_last_modified": "2026-10-08T22:31:09Z",
+    "go_version": "go1.27.2",
+    "scan_level": "symbol",
+    "scan_mode": "source"
+  },
+  "sbom": {
+    "go_version": "go1.27.2",
+    "modules": [
+      {
+        "path": "example.test/goperf"
+      },
+      {
+        "path": "github.com/andybalholm/brotli",
+        "version": "v1.2.6"
+      },
+      {
+        "path": "github.com/bits-and-blooms/bitset",
+        "version": "v1.20.0"
+      },
+      {
+        "path": "github.com/go-quickjs/go-quickjs",
+        "version": "v0.27.0"
+      },
+      {
+        "path": "github.com/klauspost/compress",
+        "version": "v1.20.3"
+      },
+      {
+        "path": "github.com/nlnwa/whatwg-url",
+        "version": "v0.6.2"
+      },
+      {
+        "path": "golang.org/x/net",
+        "version": "v0.61.0"
+      },
+      {
+        "path": "golang.org/x/text",
+        "version": "v0.43.0"
+      },
+      {
+        "path": "stdlib",
+        "version": "v1.27.2"
+      }
+    ],
+    "roots": [
+      "example.test/goperf/api/internal/wire",
+      "example.test/goperf/api/types",
+      "example.test/goperf/api/internal/media",
+      "example.test/goperf/api/internal/stream",
+      "example.test/goperf/api/internal/multipartcodec",
+      "example.test/goperf/api/internal/security",
+      "example.test/goperf/api/internal/transport",
+      "example.test/goperf/api/internal/core",
+      "example.test/goperf/api/internal/schema",
+      "example.test/goperf/api/models",
+      "example.test/goperf/api/internal/operations",
+      "example.test/goperf/api/internal/resources",
+      "example.test/goperf/api",
+      "example.test/goperf/api/operations",
+      "example.test/goperf/api/internal/registry",
+      "example.test/goperf/api/metadata",
+      "example.test/goperf/api/selective",
+      "example.test/goperf/api/server/runtime"
+    ]
+  },
+  "findings": 0,
+  "generatorSha256": "84596a317e11c464f3dc34aa46a45c12777bd6daa78e11dc7e621cf26a537937"
+}

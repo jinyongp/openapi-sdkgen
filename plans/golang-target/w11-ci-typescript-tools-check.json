@@ -1,0 +1,20 @@
+{
+  "label": "ci-typescript-tools",
+  "startedAt": "2026-10-18T13:30:59.318007+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "ci:dev",
+    "typescript-tools"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 14.893365822004853,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-ci-typescript-tools.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-ci-typescript-tools.stderr",
+  "stderrSha256": "3c6f84603ea44b0410b5ee2ba29231280cb3cc7b1dff29d94dca6515c0e27d29"
+}

@@ -1,0 +1,153 @@
+{
+  "scope": "Exact downloaded generated-runtime module license inventory, including bundled subdirectories; not a legal opinion or vulnerability audit. No dependency code vendored into generated SDK.",
+  "modules": [
+    {
+      "module": "github.com/andybalholm/brotli",
+      "version": "v1.2.6",
+      "goModSha256": "9836ed7059e6b6be9d42e666c866deea8646d5815216fcf6216966074744cb1f",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
+          "firstLine": "Copyright (c) 2009, 2010, 2013-2016 by the Brotli Authors."
+        },
+        {
+          "path": "flate/LICENSE",
+          "sha256": "2d36597f7117c38b006835ae7f537487207d8ec407aa9d9980794b2030cbc067",
+          "firstLine": "Copyright (c) 2009 The Go Authors. All rights reserved."
+        }
+      ]
+    },
+    {
+      "module": "github.com/klauspost/compress",
+      "version": "v1.20.3",
+      "goModSha256": "0d4e90d99acbc19eea5706e7390f8c925b26b1f5861385bb4f1321d454a1d48c",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "0d9e582ee4bff57bf1189c9e514e6da7ce277f9cd3bc2d488b22fbb39a6d87cf",
+          "firstLine": "Copyright (c) 2012 The Go Authors. All rights reserved."
+        },
+        {
+          "path": "gzhttp/LICENSE",
+          "sha256": "2252a5b1e2b1d3663b53ea77051b8ed065cb9270a3d1174d5d6ead8a2de051b6",
+          "firstLine": "                                 Apache License"
+        },
+        {
+          "path": "internal/lz4ref/LICENSE",
+          "sha256": "6a358d2540ca14048f02d366f23787c0a480157e58f058113f0e27168dd4e447",
+          "firstLine": "Copyright (c) 2015, Pierre Curto"
+        },
+        {
+          "path": "internal/snapref/LICENSE",
+          "sha256": "f69f157b0be75da373605dbc8bbf142e8924ee82d8f44f11bcaf351335bf98cf",
+          "firstLine": "Copyright (c) 2011 The Snappy-Go Authors. All rights reserved."
+        },
+        {
+          "path": "s2/LICENSE",
+          "sha256": "08683b14bda8ae3538abf19e1879e853a39e3b8276a8d673363b529d15a61c1a",
+          "firstLine": "Copyright (c) 2011 The Snappy-Go Authors. All rights reserved."
+        },
+        {
+          "path": "s2/cmd/internal/filepathx/LICENSE",
+          "sha256": "8582c87d9a6baa28f7827c5205b7d16c3179bc794ebd4c7cc287c49a89b7eaa1",
+          "firstLine": "Copyright 2016 The filepathx Authors"
+        },
+        {
+          "path": "s2/cmd/internal/readahead/LICENSE",
+          "sha256": "10fa24a602fde465db603cd5d546e37e33642a73cd24ddf5910be81724fec8b2",
+          "firstLine": "The MIT License (MIT)"
+        },
+        {
+          "path": "snappy/LICENSE",
+          "sha256": "f69f157b0be75da373605dbc8bbf142e8924ee82d8f44f11bcaf351335bf98cf",
+          "firstLine": "Copyright (c) 2011 The Snappy-Go Authors. All rights reserved."
+        },
+        {
+          "path": "snappy/xerial/LICENSE",
+          "sha256": "d4ff111fa30ac75e28dca3868de957a3b73ff50b76bc4b8fe5c3a1f008d26703",
+          "firstLine": "The MIT License (MIT)"
+        },
+        {
+          "path": "zstd/internal/xxhash/LICENSE.txt",
+          "sha256": "f566a9f97bacdaf00d9f21dd991e81dc11201c4e016c86b470799429a1c9a79c",
+          "firstLine": "Copyright (c) 2016 Caleb Spare"
+        }
+      ]
+    },
+    {
+      "module": "github.com/go-quickjs/go-quickjs",
+      "version": "v0.27.0",
+      "goModSha256": "7e3852064074df1efcc21d91d651fa3835f1effd5d2c28fa0afabfe6ab2e9119",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "96f73f9d2a16c21a36b418f06073be26e7d6d5e7c1bc99756b21a4f2c74ef171",
+          "firstLine": "The MIT License (MIT)"
+        },
+        {
+          "path": "internal/fdlibm/LICENSE",
+          "sha256": "ebda39bd6afb0269dfa162fa2ccf7f9d85554e5994dae0531a603863124e79e0",
+          "firstLine": "The code in this directory is derived from two sources, whose notices"
+        }
+      ]
+    },
+    {
+      "module": "github.com/nlnwa/whatwg-url",
+      "version": "v0.6.2",
+      "goModSha256": "16e135ecf10628c5c42ac8dc03f08557e6b4e64326fc43021601352d3cfcde15",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "firstLine": "                                 Apache License"
+        }
+      ]
+    },
+    {
+      "module": "github.com/bits-and-blooms/bitset",
+      "version": "v1.20.0",
+      "goModSha256": "e1d76f51cb52ad77a366c14e391f29ff1adba192135a9a4cbeca5e87ad7e41fd",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "3ef376b769105f14098dd45e9d08ed3568c77d38ad33c470634606048e62119f",
+          "firstLine": "Copyright (c) 2014 Will Fitzgerald. All rights reserved."
+        }
+      ]
+    },
+    {
+      "module": "golang.org/x/net",
+      "version": "v0.61.0",
+      "goModSha256": "7bbcec6b6af859939ec01bbe5234e556c867bf80e171abc23ad16c2c8e3951fe",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+          "firstLine": "Copyright 2009 The Go Authors."
+        }
+      ]
+    },
+    {
+      "module": "golang.org/x/text",
+      "version": "v0.43.0",
+      "goModSha256": "63270b8ca6290a720212e1d6e58b8d12a8aa315a1cb960411d7ec2998c0aab59",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad",
+          "firstLine": "Copyright 2009 The Go Authors."
+        }
+      ]
+    }
+  ],
+  "generatorDistribution": {
+    "addedRootModule": "github.com/go-quickjs/go-quickjs v0.27.0",
+    "noticeFiles": [
+      "NOTICE",
+      "npm/NOTICE"
+    ],
+    "noticeSha256": "4afc2408749833c621179ce10f3016e5e6eb31293c9b06f03f34986df098620e",
+    "scope": "Preserve the exact pinned upstream MIT and bundled fdlibm/V8/Arm notices in existing source/npm distribution notice files; no runtime dependency code vendored into generated SDK. License text is preserved with trailing blank-line whitespace normalized."
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "label": "example",
+  "startedAt": "2026-10-18T13:33:01.627914+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "go:example"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 1.9370597820088733,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-example.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-example.stderr",
+  "stderrSha256": "339baff20603c88e254af821b56a6f0479f5639eab657efcba68857882de62fd"
+}

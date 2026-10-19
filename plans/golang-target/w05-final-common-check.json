@@ -1,0 +1,57 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "test",
+    "./internal/http/plan",
+    "./internal/compiler",
+    "./internal/compiler/openapi",
+    "./internal/compiler/compatibility",
+    "-run",
+    "Test.*Multipart|TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields|TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields|TestConsumerPolicyAppliesEncodingFieldApplicability",
+    "-count=1",
+    "-json"
+  ],
+  "started_at": "2026-10-18T00:47:31.563155+00:00",
+  "finished_at": "2026-10-18T00:47:32.300500+00:00",
+  "exit_code": 0,
+  "source_manifest_sha256": "e8b27efb784b3e93cd0d22a381306692c1588490c6527832664929652d38857f",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w05-final-common.stdout",
+  "raw_stdout_sha256": "5549d687ae4312e5d899728184ef42e9264a990dbde240dfef4b3d2877dd4f59",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w05-final-common.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [
+    {
+      "package": "openapi-sdkgen/internal/http/plan",
+      "action": "pass",
+      "elapsed": 0.005
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler/compatibility",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler/openapi",
+      "action": "pass",
+      "elapsed": 0.004
+    },
+    {
+      "package": "openapi-sdkgen/internal/compiler",
+      "action": "pass",
+      "elapsed": 0.008
+    }
+  ],
+  "passed_tests": [
+    "TestMultipartRootMaterializationKeepsOriginalReference",
+    "TestMultipartNestedPrefixInheritsItemEncoding",
+    "TestMultipartPartSchemaPreservesFieldCorrelation",
+    "TestConsumerPolicyAppliesEncodingFieldApplicability",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields/attribute",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields/wrapped",
+    "TestCompatibilityIgnoresResponseContentTypeAndEncodingNoEffectFields",
+    "TestReadRejectsOpenAPI32XMLNodeTypeWithDeprecatedLegacyFields"
+  ]
+}

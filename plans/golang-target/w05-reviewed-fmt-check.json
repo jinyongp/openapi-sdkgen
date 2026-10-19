@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "fmt-check:dev"
+  ],
+  "started_at": "2026-10-18T00:57:21.471520+00:00",
+  "finished_at": "2026-10-18T00:57:21.571851+00:00",
+  "exit_code": 0,
+  "source_manifest_sha256": "4adb9c923fa8c128578151012bbb058e23699bd80ae293e8e7e0b723236caf3d",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w05-reviewed-fmt.stdout",
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w05-reviewed-fmt.stderr",
+  "raw_stderr_sha256": "4130df15d2a1c796df8ca1e6d300be4760398320303654cbd86a431bd1e8aebb",
+  "package_results": [],
+  "passed_tests": []
+}

@@ -1,0 +1,24 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "corepack",
+    "pnpm",
+    "--dir",
+    "docs",
+    "run",
+    "docs:validate:test"
+  ],
+  "started_at": "2026-10-18T11:01:43.673636+00:00",
+  "finished_at": "2026-10-18T11:01:45.998907+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w10-final-code.json",
+  "source_manifest_sha256": "14f373a2b238361053707821989e3e251abad8cb452a69ce0daadc6b23306458",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w10-final-docs-tests.stdout",
+  "raw_stdout_sha256": "0c9d30280f1cb363a8f3dad42a8f51cc52e800d7dcb917ea1ef666152ed3b7b2",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w10-final-docs-tests.stderr",
+  "raw_stderr_sha256": "aeff25cf443c857243c94accd51310f0fa6725274dc78a8847f3f7e64318deda",
+  "package_results": [],
+  "passed_tests": []
+}

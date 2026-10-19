@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "go",
+    "vet",
+    "./..."
+  ],
+  "started_at": "2026-10-18T00:57:20.732037+00:00",
+  "finished_at": "2026-10-18T00:57:21.417066+00:00",
+  "exit_code": 0,
+  "source_manifest_sha256": "4adb9c923fa8c128578151012bbb058e23699bd80ae293e8e7e0b723236caf3d",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w05-reviewed-vet.stdout",
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w05-reviewed-vet.stderr",
+  "raw_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "package_results": [],
+  "passed_tests": []
+}

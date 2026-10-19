@@ -1,0 +1,25 @@
+{
+  "label": "docs-tests",
+  "startedAt": "2026-10-18T13:32:57.276493+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "--",
+    "corepack",
+    "pnpm",
+    "--dir",
+    "docs",
+    "run",
+    "docs:validate:test"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 3.4814747769996757,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-docs-tests.stdout",
+  "stdoutSha256": "e270ad2a66ebe0b0a83809afcc2f682d5c35e48134e05c8532699e125bad0ce4",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-docs-tests.stderr",
+  "stderrSha256": "aeff25cf443c857243c94accd51310f0fa6725274dc78a8847f3f7e64318deda"
+}

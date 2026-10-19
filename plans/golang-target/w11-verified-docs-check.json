@@ -1,0 +1,20 @@
+{
+  "label": "verified-docs",
+  "startedAt": "2026-10-18T14:41:06.584203+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "build:docs"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 6.287696744999266,
+  "deadlineSeconds": 1800,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "sourceManifestSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-verified-docs.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-verified-docs.stderr",
+  "stderrSha256": "3a5233dcd618a365a092908235333e389f7d406ae7a5737ea3f967acd4d42161"
+}

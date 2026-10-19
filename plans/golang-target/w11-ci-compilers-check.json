@@ -1,0 +1,20 @@
+{
+  "label": "ci-compilers",
+  "startedAt": "2026-10-18T13:31:00.884851+00:00",
+  "argv": [
+    "devtools",
+    "run",
+    "ci:dev",
+    "compiler"
+  ],
+  "exitCode": 0,
+  "elapsedSeconds": 309.78045706001285,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchangedBeforeAfter": true,
+  "stdout": "/tmp/sdkgen-go-implementation/w11-check-ci-compilers.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-check-ci-compilers.stderr",
+  "stderrSha256": "9c85e3c697596c3ec1e35839e5432cea3935599a5ed797039579dcd7c39352b7"
+}

@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "devtools",
+    "run",
+    "mod-tidy-check:dev"
+  ],
+  "started_at": "2026-10-18T02:31:09.583567+00:00",
+  "finished_at": "2026-10-18T02:31:09.889862+00:00",
+  "exit_code": 0,
+  "source_manifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w06-reviewed-code.json",
+  "source_manifest_sha256": "0a46c64f317f5fc082ae6e58369325ef4be1eebdaea2c822ca0f77c4ec0b70dc",
+  "raw_stdout": "/tmp/sdkgen-go-implementation/w06-reviewed-mod.stdout",
+  "raw_stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "raw_stderr": "/tmp/sdkgen-go-implementation/w06-reviewed-mod.stderr",
+  "raw_stderr_sha256": "1bf8c552b9915257dbbc043316d1c9502e0d5edc7f2a9b097bf154df96815104",
+  "package_results": [],
+  "passed_tests": []
+}

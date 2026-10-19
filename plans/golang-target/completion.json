@@ -1,0 +1,39 @@
+{
+  "completedAt": "2026-10-19T00:08:25.635002+09:00",
+  "profile": "openapi-sdkgen",
+  "workstreamId": "27b14d70-62bf-4d16-a2c9-f642392ff06f",
+  "state": "done",
+  "completionStatus": "current",
+  "closeCommand": "devtools task workstream close",
+  "revision": 1710,
+  "tasks": {
+    "canceled": 0,
+    "done": 12,
+    "open": 0
+  },
+  "taskCompletion": {
+    "current": 12,
+    "none": 0,
+    "stale": 0
+  },
+  "requiredValidations": 27,
+  "allRequiredValidationsSatisfied": true,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "sourceManifestSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "sourceFiles": 1415,
+  "sourceUnchangedAfterW12": true,
+  "planSha256": "eccfb4f8410fa2db3fbcfa679ff06d704980d98e1a57b9d09b79215bb9385f40",
+  "W11ImplementationRecord": "aa4df9e5-0c5d-4462-a282-e3642a77cac4",
+  "W11ReviewRecord": "8eaf5468-7404-4d77-9cd0-808a686a783d",
+  "W12ReviewRecord": "1d3af9e6-1603-4740-aca4-3b43c2e7cfd7",
+  "integrationRecords": {
+    "I01": "e0dce2ca-f00e-44f0-96b3-e59bea799d0d",
+    "I02": "46f00217-fa19-4b79-b3c8-481618d226c2",
+    "I03": "d35c5a9f-9080-4f99-87ff-0741b56d8500",
+    "I04": "7aa5c165-7b6b-485c-856f-208909187e13"
+  },
+  "closeRaw": "/tmp/sdkgen-go-implementation/go-workstream-closed.json",
+  "closeRawSha256": "7de456e09753d74b5f18ec8c84849046f9d62a7c176a4e103fbcea3a426e033a",
+  "lifecycleApplicability": "I01-I03 passed before W12 as prerequisites, then identical unchanged-source results were connected to the workstream basis after all12tasks completed. Historical records and rejected close attempts are preserved. No tests relabelled as running on a changed source.",
+  "gitPublication": "No commit, push, PR or release publication performed."
+}

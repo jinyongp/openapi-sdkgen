@@ -1,0 +1,18 @@
+{
+  "label": "security-audit",
+  "argv": [
+    "devtools",
+    "run",
+    "audit:security"
+  ],
+  "exitCode": 0,
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-candidate-code.json",
+  "sourceManifestSha256": "12795c21ef46b7506957befc02bac4c61d2264e57081fe5ecc1530afd095199a",
+  "sourceFiles": 1415,
+  "sourceUnchanged": true,
+  "applicability": "Root actual govulncheck and OSV source dependency inventories, including nested Go example. No known reachable/inventory vulnerabilities reported.",
+  "stdout": "/tmp/sdkgen-go-implementation/w11-security-audit.stdout",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderr": "/tmp/sdkgen-go-implementation/w11-security-audit.stderr",
+  "stderrSha256": "b341ff65e93481bdda072b5d2c2071ce5a520935a07594b55b37efca8b3f2f28"
+}
