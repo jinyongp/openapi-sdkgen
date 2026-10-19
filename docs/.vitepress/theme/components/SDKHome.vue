@@ -31,10 +31,15 @@ function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "
 
     <section class="installation" aria-labelledby="install-title">
       <h2 id="install-title">{{ korean ? 'CLI 설치' : 'Install the CLI' }}</h2>
-      <pre><code>brew install jinyongp/tap/openapi-sdkgen</code></pre>
-      <p>{{ korean ? 'npm으로 설치하려면:' : 'Or install with npm:' }}</p>
-      <pre><code>npm install -g openapi-sdkgen</code></pre>
-      <p>{{ korean ? '실행 파일은' : 'Precompiled binaries are available from' }} <a href="https://github.com/jinyongp/openapi-sdkgen/releases">GitHub Releases</a>{{ korean ? '에서도 내려받을 수 있습니다.' : '.' }}</p>
+      <p>macOS / Linux</p>
+      <pre><code>curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh &amp;&amp; sh install.sh</code></pre>
+      <p>Windows PowerShell</p>
+      <pre><code>Invoke-WebRequest https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1 -ErrorAction Stop
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1</code></pre>
+      <p>{{ korean ? '안내된 설치 경로를 필요에 따라' : 'Add the printed installation directory to' }} <code>PATH</code>{{ korean ? '에 추가한 뒤' : ' if needed, then run' }} <code>openapi-sdkgen --version</code>{{ korean ? '으로 확인하세요.' : '.' }}</p>
+      <p><a href="https://github.com/jinyongp/openapi-sdkgen/releases">{{ korean ? '실행 파일 직접 다운로드' : 'Download an executable' }}</a>{{ korean ? ', npm 또는 Homebrew로도 설치할 수 있습니다.' : ', npm and Homebrew are also available.' }}</p>
+      <p>npm (Node.js 22+): <code>npm install -g openapi-sdkgen</code></p>
+      <p>Homebrew: <code>brew install jinyongp/tap/openapi-sdkgen</code></p>
     </section>
 
     <section id="start" class="start" aria-labelledby="start-title">

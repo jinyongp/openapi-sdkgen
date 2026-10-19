@@ -17,12 +17,29 @@ for a complete runnable application.
 
 ## Install the CLI {#install}
 
+macOS / Linux:
+
 ```sh
-brew install jinyongp/tap/openapi-sdkgen
+curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh && sh install.sh
 ```
 
-For npm, use `npm install -g openapi-sdkgen`. You can also download a
-[native executable](https://github.com/jinyongp/openapi-sdkgen/releases).
+Windows PowerShell:
+
+```powershell
+Invoke-WebRequest https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1 -ErrorAction Stop
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Add the printed installation directory to `PATH` if needed, then run
+`openapi-sdkgen --version`. The default is `~/.local/bin` on macOS/Linux or
+`%LOCALAPPDATA%\Programs\openapi-sdkgen\bin` on Windows.
+
+To choose a released version or directory, use `sh install.sh --version X.Y.Z --install-dir /your/bin`
+or `powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version X.Y.Z -InstallDir C:\your\bin`.
+Download the installer again to upgrade. To uninstall, remove the installed executable.
+
+Other options: [download an executable](https://github.com/jinyongp/openapi-sdkgen/releases),
+`npm install -g openapi-sdkgen` (Node.js 22+), or `brew install jinyongp/tap/openapi-sdkgen`.
 
 ## Generate the SDK {#generate}
 

@@ -8,12 +8,32 @@ Use the generated clients, models and validation code inside your application.
 
 ## Install
 
+macOS / Linux:
+
 ```sh
-brew install jinyongp/tap/openapi-sdkgen
+curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh && sh install.sh
 ```
 
-Or use `npm install -g openapi-sdkgen` with Node.js 22+.
-[Native executables](https://github.com/jinyongp/openapi-sdkgen/releases) are also available.
+Windows PowerShell:
+
+```powershell
+Invoke-WebRequest https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1 -ErrorAction Stop
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The installer downloads and verifies the native executable. It installs to
+`~/.local/bin` on macOS/Linux or `%LOCALAPPDATA%\Programs\openapi-sdkgen\bin` on
+Windows. Add the printed directory to `PATH` if needed, then run
+`openapi-sdkgen --version`. No Go or Node.js installation is needed.
+
+Use `sh install.sh --version X.Y.Z --install-dir /your/bin` or
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version X.Y.Z -InstallDir C:\your\bin` to choose a released
+version and location. Download the installer again to upgrade. To uninstall, remove
+the installed executable.
+
+Other options: [download an executable](https://github.com/jinyongp/openapi-sdkgen/releases),
+`npm install -g openapi-sdkgen` (Node.js 22+), or
+`brew install jinyongp/tap/openapi-sdkgen`.
 
 ## Quick start: TypeScript
 

@@ -16,12 +16,29 @@ Go 1.27 이상이 필요합니다. 실행 가능한 전체 코드는 [Go Todo �
 
 ## CLI 설치 {#install}
 
+macOS / Linux:
+
 ```sh
-brew install jinyongp/tap/openapi-sdkgen
+curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh && sh install.sh
 ```
 
-npm으로 설치하려면 `npm install -g openapi-sdkgen`을 사용하세요.
-[실행 파일](https://github.com/jinyongp/openapi-sdkgen/releases)을 직접 받아도 됩니다.
+Windows PowerShell:
+
+```powershell
+Invoke-WebRequest https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1 -ErrorAction Stop
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+안내된 설치 경로를 필요에 따라 `PATH`에 추가한 뒤 `openapi-sdkgen --version`으로 확인하세요.
+기본 경로는 macOS/Linux에서 `~/.local/bin`, Windows에서
+`%LOCALAPPDATA%\Programs\openapi-sdkgen\bin`입니다.
+
+버전이나 경로를 지정하려면 `sh install.sh --version X.Y.Z --install-dir /your/bin` 또는
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version X.Y.Z -InstallDir C:\your\bin`을 사용하세요.
+업데이트할 때는 설치 스크립트를 새로 받아 실행하세요. 삭제하려면 설치된 실행 파일을 지우세요.
+
+[실행 파일 직접 다운로드](https://github.com/jinyongp/openapi-sdkgen/releases),
+`npm install -g openapi-sdkgen`(Node.js 22+), `brew install jinyongp/tap/openapi-sdkgen`도 사용할 수 있습니다.
 
 ## SDK 생성 {#generate}
 
