@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +21,8 @@ func TestGoModulePath(t *testing.T) {
 		{"raw quoted", "module `example.test/app`", ""},
 		{"block", "module ( // comment\n\t\"example.test/app\"\n)\nrequire (\n module v1.0.0\n)\n", "example.test/app"},
 		{"quoted keyword", "\"module\" example.test/app", ""},
+		{"missing keyword separator", "module\"example.test/app\"", ""},
+		{"byte order mark", "\ufeffmodule example.test/app\n", ""},
 		{"missing", "go 1.27.0\n", ""},
 		{"empty", "module\n", ""},
 		{"empty block", "module (\n)\n", ""},
@@ -56,6 +59,13 @@ func TestGoModulePathMatchesGoTool(t *testing.T) {
 		"module (\n\"example.test/app\"\n)\n",
 		"module `example.test/app`\n",
 		"\"module\" example.test/app\n",
+		"module\"example.test/app\"\n",
+		"module \"example.test\"/app\n",
+		"module example.test/\"app\"\n",
+		"\ufeffmodule example.test/app\n",
+		"module(\nexample.test/app\n)\n",
+		"module \"example.test/app\"// comment\n",
+		"module\texample.test/app\r\n",
 	} {
 		t.Run(source, func(t *testing.T) {
 			file := filepath.Join(t.TempDir(), "go.mod")
@@ -190,10 +200,12 @@ func TestGoImportPathUsesPhysicalOutputModule(t *testing.T) {
 	if err := os.Symlink(filepath.Join(root, "destination", "sdk"), outputLink); err != nil {
 		t.Fatal(err)
 	}
-	for _, extra := range [][]string{{}, {"--check"}, {"--incremental"}} {
-		args := []string{"--input", input, "--output", outputLink, "--target", "golang"}
-		if err := generate(append(args, extra...)); err == nil || !strings.Contains(err.Error(), "must not be a symlink") {
-			t.Fatalf("output root symlink was not rejected: %v", err)
+	for _, output := range []string{outputLink, outputLink + string(filepath.Separator), outputLink + strings.Repeat(string(filepath.Separator), 2)} {
+		for _, extra := range [][]string{{}, {"--check"}, {"--incremental"}} {
+			args := []string{"--input", input, "--output", output, "--target", "golang"}
+			if err := generate(append(args, extra...)); err == nil || !strings.Contains(err.Error(), "must not be a symlink") {
+				t.Fatalf("output root symlink %q was not rejected: %v", output, err)
+			}
 		}
 	}
 }
@@ -235,6 +247,31 @@ func TestGoGenerationInfersImportPathAndKeepsFingerprint(t *testing.T) {
 	// An explicitly empty flag must remain invalid, rather than silently selecting inference.
 	if err := generate(append(append([]string{}, args...), "--check", "--go-import-path", "")); err == nil {
 		t.Fatal("accepted explicitly empty import path")
+	}
+	before := snapshotGeneratedDirectory(t, output)
+	renamedModule := "module example.test/renamed\n\ngo 1.27.0\n"
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte(renamedModule), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := generate(append(append([]string{}, args...), "--check")); err == nil {
+		t.Fatal("check missed an inferred module path change")
+	}
+	if !maps.Equal(before, snapshotGeneratedDirectory(t, output)) {
+		t.Fatal("check changed the SDK while reporting a module path change")
+	}
+	if err := generate(append(append([]string{}, args...), "--incremental")); err != nil {
+		t.Fatal(err)
+	}
+	if err := generate(append(append([]string{}, args...), "--check")); err != nil {
+		t.Fatal(err)
+	}
+	manifest, err = readArtifactManifestRecord(output)
+	if err != nil || manifest.Generation == nil || manifest.Generation.Golang == nil || manifest.Generation.Golang.ImportPath != "example.test/renamed/internal/api" {
+		t.Fatalf("incremental generation kept the old inferred module path: %v", err)
+	}
+	data, err = os.ReadFile(filepath.Join(root, "go.mod"))
+	if err != nil || string(data) != renamedModule {
+		t.Fatal("incremental generation changed the consumer's renamed module")
 	}
 }
 

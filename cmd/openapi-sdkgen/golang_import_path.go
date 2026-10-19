@@ -120,6 +120,10 @@ func physicalGoOutputPath(output string) (string, error) {
 // Read only the module directive, including quoted and parenthesized forms.
 // Dependency directives are not interpreted and no Go toolchain is invoked.
 func goModulePath(data string) (string, error) {
+	// text/scanner silently discards an initial BOM, but Go module files reject it.
+	if strings.HasPrefix(data, "\ufeff") {
+		return "", errors.New("byte order mark is not valid in go.mod")
+	}
 	var lexer scanner.Scanner
 	lexer.Init(strings.NewReader(data))
 	lexer.Mode = scanner.ScanIdents | scanner.ScanStrings | scanner.ScanRawStrings | scanner.ScanComments
@@ -209,7 +213,8 @@ func goModulePath(data string) (string, error) {
 		unquoted := token != scanner.String && token != scanner.RawString && token != '(' && token != ')'
 		// Slash tokens belong to an adjacent unquoted module path, but keeping
 		// them out of identifiers lets the scanner recognize attached // comments.
-		if unquoted && previousUnquoted && lexer.Position.Offset == previousEnd {
+		// Quotes adjoining an identifier must not create a separate keyword.
+		if previousUnquoted && token != '(' && token != ')' && lexer.Position.Offset == previousEnd {
 			line[len(line)-1] += value
 		} else {
 			line = append(line, value)

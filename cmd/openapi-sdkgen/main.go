@@ -344,7 +344,13 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		// Discovery and publication must use the same physical destination, even
 		// when a symlink precedes '..'. Keep a symlink at the output root intact
 		// so the existing publication checks reject it.
-		if info, err := os.Lstat(*values.output); err != nil || info.Mode()&os.ModeSymlink == 0 {
+		root := *values.output
+		for len(root) > len(filepath.VolumeName(root))+1 && os.IsPathSeparator(root[len(root)-1]) {
+			root = root[:len(root)-1]
+		}
+		if info, err := os.Lstat(root); err == nil && info.Mode()&os.ModeSymlink != 0 {
+			*values.output = root
+		} else {
 			output, err := physicalGoOutputPath(*values.output)
 			if err != nil {
 				return generateUsageError(err.Error())
