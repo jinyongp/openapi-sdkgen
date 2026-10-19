@@ -133,7 +133,7 @@ func (execution *Execution) Send(data RequestData) (*http.Response,error) {
         code:=types.NetworkError;if errors.As(err,&detail)&&(detail.Code==types.RequestEncodeFailed||detail.Code==types.RequestBodyConsumed||detail.Code==types.RequestOptionsInvalid){code=types.RequestEncodeFailed}
         return nil,execution.Failure(code,err)
     }
-    normalized,lease,err:=transport.NewResponseBody(execution.Context,response,execution.Operation.Method,execution.client.transport.Capabilities().ResponseBody)
+    normalized,lease,err:=transport.NewResponseBody(execution.Context,response,execution.Operation.Method)
     execution.lease=lease
     if normalized!=nil{execution.Response=normalized}
     if err!=nil{return nil,execution.Failure(types.ResponseDecodeFailed,err)}

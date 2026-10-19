@@ -4,13 +4,7 @@ const (
     SameOrigin CredentialsMode = "same-origin"
     Include CredentialsMode = "include"
 )
-type ResponseBodyMode uint8
-const (
-    Encoded ResponseBodyMode = iota+1
-    DecodedWithOriginalHeaders
-)
 type TransportCapabilities struct {
-    ResponseBody ResponseBodyMode
     MutualTLS bool
     CookieJar bool
     CookieHeaders bool

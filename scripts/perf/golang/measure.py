@@ -124,7 +124,7 @@ class Measurement:
         sdk = self.generate('runtime-generation', HERE / 'fixture.json', module)
         shutil.copyfile(HERE / 'runtime_bench.go.tmpl', sdk / 'runtime_bench_test.go')
         self.run('runtime-compile', ['go', 'test', '-mod=readonly', '-run', '^$', './api'], module)
-        self.run('runtime-live-heap', ['go', 'test', '-mod=readonly', '-v', '-run', '^Test((Stream|Compression)LiveHeap|LargeJSONLiveHeapAndGC)$', '-count=1', './api'], module)
+        self.run('runtime-live-heap', ['go', 'test', '-mod=readonly', '-v', '-run', '^Test((Stream|ResponseBody)LiveHeap|LargeJSONLiveHeapAndGC)$', '-count=1', './api'], module)
         self.run('runtime-benchmark', ['go', 'test', '-mod=readonly', '-run', '^$', '-bench', '.', '-benchmem', '-benchtime=100ms', '-count=5', '-timeout=15m', './api'], module)
         profile_binary = module / 'runtime-profile.test'
         mutex_profile = self.output / 'runtime-mutex.pprof'

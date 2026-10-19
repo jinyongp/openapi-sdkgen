@@ -74,7 +74,7 @@ func TestGeneratedTypeScriptGoSameHTTPContract(t *testing.T) {
 const sameHTTPGoConsumer = `package consumer_test
 import("context";"errors";"io";"net/http";"strings";"testing";api "example.test/consumer/api";"example.test/consumer/api/types")
 type oracleTransport struct{t *testing.T;body string;status,calls int;wantPath,wantAccept string}
-func(t *oracleTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(t *oracleTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(t *oracleTransport)Do(r *http.Request,_ types.TransportOptions)(*http.Response,error){t.calls++;if r.URL.String()!="https://size.test"+t.wantPath||r.Method!="GET"||r.Header.Get("Authorization")!="Bearer benchmark"||r.Header.Get("Accept")!=t.wantAccept{t.t.Fatal(r.URL,r.Method,r.Header)};return &http.Response{StatusCode:t.status,Header:http.Header{"Content-Type":{"application/json"}},Body:io.NopCloser(strings.NewReader(t.body))},nil}
 func TestIndependentHTTPOracle(t *testing.T){for _,scenario:=range []struct{name,body,id,path,accept string;status int;raw,invalid,requestInvalid bool}{
  {name:"ordinary",body:"{\"id\":\"one\",\"title\":\"One\"}",id:"one",path:"/items/one",status:200},

@@ -28,7 +28,7 @@ type partCodecReader struct{*strings.Reader;closed *atomic.Int32}
 func(reader *partCodecReader)Close()error{reader.closed.Add(1);return nil}
 type partPreflightTransport struct{calls atomic.Int32}
 func(transport *partPreflightTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){transport.calls.Add(1);return &http.Response{StatusCode:204,Header:make(http.Header),Body:http.NoBody,Request:request},nil}
-func(*partPreflightTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.DecodedWithOriginalHeaders}}
+func(*partPreflightTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 type negativePartSource struct{}
 func(negativePartSource)Metadata()types.BinaryMetadata{return types.BinaryMetadata{Size:types.Some(int64(-1))}}
 func(negativePartSource)Open(context.Context)(io.ReadCloser,error){panic("negative-size source must not be opened")}

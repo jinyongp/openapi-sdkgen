@@ -69,7 +69,8 @@ SDK는 client를 값으로 복사해 기존 timeout·credentials·redirect 정�
 `BodyLease`는 decode 계층 없이 닫기 1회·취소·EOF·에러 경로의 소유권을 담당한다.
 HEAD·본문 없는 상태·Raw 및 Stream 소유권 이전·중간 실패 정리를 보존한다.
 제한은 SDK가 실제로 읽는 바이트에 적용한다. HTTP 계층이 해제하면 해제 후 바이트가 대상이다.
-압축된 Body가 그대로 오면 Raw는 그대로 노출하고, typed 호출은 기존 미디어 코덱의 decode 결과를 따른다.
+압축된 Body가 그대로 오면 binary·순차형 Raw는 해당 바이트를 노출한다. JSON 등 일반 Raw와 typed
+호출은 기존 미디어 코덱의 decode·검증 결과를 따른다. Raw를 검증 생략 API로 바꾸지 않는다.
 Content-Encoding만 보고 거부하지 않는다. 사용자 코덱이 해당 본문을 처리할 수도 있기 때문이다.
 
 기본 net/http 동작에 따라 gzip 자동 해제 시 Content-Encoding/Content-Length가 없어질 수 있다.

@@ -28,7 +28,7 @@ func(source *requestItems[T])Err()error{return source.ctx.Err()}
 func(source *requestItems[T])Close()error{source.stats.closes.Add(1);if source.stats.requireCancel&&source.ctx.Err()==nil{return errors.New("factory context was not canceled before close")};return nil}
 func itemFactory[T any](stats *requestStats,items []T)types.SourceFactory[T]{return func(ctx context.Context)(types.Source[T],error){stats.factories.Add(1);return &requestItems[T]{ctx:ctx,items:items,stats:stats},nil}}
 type requestTransport struct{calls atomic.Int32;inspect func(*http.Request)(*http.Response,error)}
-func(*requestTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(*requestTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(transport *requestTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){transport.calls.Add(1);return transport.inspect(request)}
 func requestClient(t *testing.T,transport *requestTransport,codecs ...map[string]types.StreamCodec)*sdk.Client{t.Helper();options:=sdk.ClientOptions{BaseURL:"https://example.test",Transport:transport};if len(codecs)!=0{options.StreamCodecs=codecs[0]};client,err:=sdk.NewClient(options);if err!=nil{t.Fatal(err)};return client}
 func emptyRequestResponse(request *http.Request)*http.Response{return &http.Response{StatusCode:204,Header:make(http.Header),Body:http.NoBody,Request:request}}

@@ -3,13 +3,9 @@ type HTTPTransport struct { client http.Client; capabilities types.TransportCapa
 
 func NewHTTPClient(provided *http.Client) *HTTPTransport {
     var client http.Client
-    if provided==nil{
-        client=*http.DefaultClient
-        selected:=client.Transport;if selected==nil{selected=http.DefaultTransport}
-        if standard,ok:=selected.(*http.Transport);ok{owned:=standard.Clone();owned.DisableCompression=true;client.Transport=owned}else{client.Transport=selected}
-    }else{client=*provided}
+    if provided==nil{client=*http.DefaultClient}else{client=*provided}
     roundTripper:=client.Transport;if roundTripper==nil{roundTripper=http.DefaultTransport}
-    capabilities:=types.TransportCapabilities{ResponseBody:types.Encoded,CookieJar:client.Jar!=nil,CookieHeaders:true}
+    capabilities:=types.TransportCapabilities{CookieJar:client.Jar!=nil,CookieHeaders:true}
     if standard,ok:=roundTripper.(*http.Transport);ok&&standard.TLSClientConfig!=nil{capabilities.MutualTLS=len(standard.TLSClientConfig.Certificates)!=0||standard.TLSClientConfig.GetClientCertificate!=nil}
     client.Transport=guardedRoundTripper{inner:roundTripper}
     return &HTTPTransport{client:client,capabilities:capabilities}
@@ -31,14 +27,9 @@ func (transport *HTTPTransport) Do(request *http.Request,options types.Transport
     if !options.AllowRedirects{client.CheckRedirect=func(*http.Request,[]*http.Request)error{return errors.New("request redirect is disabled")}}
     outgoing:=request.Clone(request.Context())
     if outgoing.Header==nil{outgoing.Header=make(http.Header)}
-    if len(HeaderValues(outgoing.Header,"Accept-Encoding"))==0{
-        encoding:="gzip, deflate";if outgoing.URL.Scheme=="https"{encoding="br, gzip, deflate"};if len(HeaderValues(outgoing.Header,"Range"))!=0{encoding="identity"}
-        outgoing.Header.Set("Accept-Encoding",encoding)
-    }
     if err:=configureNativeHeaders(outgoing);err!=nil{var detail *types.SDKError;if errors.As(err,&detail){return nil,err};return nil,&types.SDKError{Code:types.RequestEncodeFailed,Message:"native request header preparation failed",Cause:err}}
     response,err:=client.Do(outgoing)
     if err!=nil{return response,err}
-    if response.Uncompressed{return response,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"HTTPClient implicitly decoded and may have removed original headers"}}
     return response,nil
 }
 

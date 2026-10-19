@@ -81,7 +81,7 @@ func TestDeclaredHeaders(t *testing.T){
  raw,err=call.WithOptions(options("default")).Raw(context.Background());if err!=nil{t.Fatal(err)};fallback,ok:=raw.AsDefaultHeaders();if !ok||fallback.XDefault!="default"{t.Fatal("default headers",fallback,ok)}
 }
 type incapableTransport struct{called bool}
-func(host *incapableTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(host *incapableTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(host *incapableTransport)Do(*http.Request,types.TransportOptions)(*http.Response,error){host.called=true;return nil,errors.New("unexpected HTTP")}
 func TestRequiredCookieCapability(t *testing.T){host:=&incapableTransport{};client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"http://example.test",Transport:host});if err!=nil{t.Fatal(err)};_,err=client.Operations.GetCookies().Do(context.Background());var apiError *sdk.APIError;if !errors.As(err,&apiError)||apiError.Code!=types.TransportCapabilityRequired||host.called{t.Fatal("cookie header capability",err,host.called)}}
 `

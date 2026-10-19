@@ -23,8 +23,6 @@ func NewClient(options ClientOptions) (*Client, error) {
         switch value.Kind(){case reflect.Chan,reflect.Func,reflect.Interface,reflect.Map,reflect.Pointer,reflect.Slice:if value.IsNil(){return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"Transport is nil"}}}
     }
     if host==nil{host=transport.NewHTTPClient(options.HTTPClient)}
-    state:=host.Capabilities().ResponseBody
-    if state!=types.Encoded&&state!=types.DecodedWithOriginalHeaders{return nil,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"Transport must declare its response body state"}}
     codecs:=make(map[string]types.MediaCodec,len(options.Codecs))
     for name,codec:=range options.Codecs{bare,_,_:=strings.Cut(name,";");key:=strings.ToLower(strings.TrimSpace(bare));if key==""{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"codec media type is empty"}};if _,exists:=codecs[key];exists{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"codec media types collide after normalization"}};codecs[key]=codec}
     streamCodecs:=make(map[string]types.StreamCodec,len(options.StreamCodecs))

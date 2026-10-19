@@ -157,7 +157,7 @@ func TestLocalURISecurityIdentityAndFinalOrigin(t *testing.T){
  if err!=nil{t.Fatal(err)};if _,err:=client.Operations.GetURI().Do(context.Background());err!=nil||!called{t.Fatal("URI security",err)}
 }
 type securityHostTransport struct{}
-func(*securityHostTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.DecodedWithOriginalHeaders}}
+func(*securityHostTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(*securityHostTransport)Do(request *http.Request,options types.TransportOptions)(*http.Response,error){if options.AllowRedirects{return nil,errors.New("security redirect allowed")};return &http.Response{StatusCode:204,Header:make(http.Header),Body:http.NoBody,Request:request},nil}
 func TestActualMutualTLS(t *testing.T){
  server:=httptest.NewUnstartedServer(http.HandlerFunc(func(writer http.ResponseWriter,request *http.Request){if len(request.TLS.PeerCertificates)==0{t.Error("missing client certificate")};writer.WriteHeader(204)}));server.TLS=&tls.Config{ClientAuth:tls.RequireAnyClientCert};server.StartTLS();defer server.Close()

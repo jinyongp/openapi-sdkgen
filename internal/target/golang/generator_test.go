@@ -198,10 +198,6 @@ func testGeneratedModule(t *testing.T, plan generator.Plan, files map[string]str
 	files["go.mod"] = "module example.test/consumer\n\ngo 1.27.0\n"
 	modFlag := "-mod=readonly"
 	for _, artifact := range artifacts {
-		if artifact.Path == "internal/transport/body.go" {
-			files["go.mod"] += "\nrequire (\n github.com/andybalholm/brotli v1.2.6\n github.com/klauspost/compress v1.20.3\n)\n"
-			modFlag = "-mod=mod"
-		}
 		if artifact.Path == "internal/schema/regex.go" {
 			files["go.mod"] += "\nrequire github.com/go-quickjs/go-quickjs v0.27.0\n"
 			modFlag = "-mod=mod"

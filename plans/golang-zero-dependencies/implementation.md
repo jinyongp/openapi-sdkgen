@@ -47,3 +47,29 @@ Script/Script_Extensions에 실제 배정된 값만 alias로 채택하도록 고
 마지막 데이터 재생성의 byte 비교도 4개 파일 모두 일치했다. 오류·불변 view·기본값·출력 결정성·데이터
 도달성 구조를 리뷰했고 고친 alias 영역과 전체 공식 검증을 재검토했다. 세부 해시는 `w03-evidence.json`.
 정규식·URL 엔진 자체의 적합성이나 URL의 UTS46 정책을 완료했다고 주장하지 않는다.
+
+## W02 — 압축을 사용자 HTTP 계층에 위임
+
+SDK의 압축 decoder·기본 Accept-Encoding 삽입·DisableCompression 변경과 이미 해제된 응답의
+거부를 제거했다. `ResponseBodyMode`/capability 선언도 제거했고 모든 생성 소비자 호출부를 갱신했다.
+일반/순차 본문 lease는 지연 읽기·닫기1회·취소·오류·연결 재사용을 유지한다.
+고정 br/zstd/gzip/deflate 바이트 fixture로 binary Raw와 custom codec의 전달을 확인하며 정상 테스트
+소비자에서 외부 압축 라이브러리를 설치하지 않는다. gzip 자동 해제는 net/http가 수행한다.
+
+리뷰 중 일반 JSON Raw도 기존 미디어 decode·schema 검증을 수행함을 확인했다. 이를 생략하는 API로
+확대하지 않고 계획의 Raw 설명을 명확하게 했다. Binary/순차 Raw는 반환 바이트, JSON Raw는 기존
+검증 계약을 유지한다. 필수 헤더가 HTTP 계층에서 사라지면 실제 헤더를 기준으로 오류다.
+
+집중 검사에서 HTTP 설정·명시 encoding/Range·연결 풀·자동 gzip·원래 헤더 유지 사용자 transport·
+opaque binary Raw·custom codec·필수 헤더 실패·close/cancel/race 통과.
+전체 Go 타깃 회귀를 두 번 실행했고 이전 SDK 해제를 전제로 하던 순차 Raw·XML·stream 헤더 기대값을
+찾아 새 계약에 맞췄다. 두 번째 전체 검사에서 stream metadata assertion 1개만 실패했으며,
+제품 코드는 그대로 두고 해당 기대값을 수정했다. 최종 코드의 HTTP/압축 lease/순차 Raw/XML/실제 stream
+영향 집합 6개를 재실행해 모두 통과했다. 나머지 전체 검사 결과는 동일 제품 코드에서의 결과를 재사용한다.
+전체 단일 green run은 W11에서 다시 확인한다. 실패 기록을 통과 기록으로 바꾸지 않는다.
+
+공개 lease API를 소비하는 성능 도구도 함께 수정했다. decoder 측정을 SDK lease 측정으로 오인하지 않도록
+이름·범위를 바꿨고 생성·컴파일·수명 진단·benchmark 1회 호출이 통과했다
+(`.tmp/golang-zero-w02-perf-check`). 이는 성능 비교용 표본이 아니다.
+사용자 HTTP 계층/SDK 의미 경계·수명·보안 capability·기존 호출부·측정 도구 리뷰와 영향 재검사를 마쳤다.
+실제 모듈·문서의 예전 설치 안내 정리는 W08/W09에서 수행한다. 정규식·URL 외부 의존성은 아직 남아 있다.

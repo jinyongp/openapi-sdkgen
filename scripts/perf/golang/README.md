@@ -58,3 +58,8 @@ Stream timing and forced-GC retention use the public generated Events().Stream()
 including HTTP request construction, declared item-schema validation and typed DTO
 conversion. An invalid item is rejected in the diagnostic test before timings are
 accepted. Framing-only historical samples are retained separately.
+
+Compression is owned by the injected HTTP layer. `BenchmarkResponseBodyLease` and
+`TestResponseBodyLiveHeap` measure the SDK wrapper over returned bytes; they do not
+measure decompression. Historical `BenchmarkCompression` results retain their
+original scope and cannot be compared as decoder speed improvements.

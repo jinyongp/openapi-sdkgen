@@ -80,7 +80,7 @@ func TestResponseSelection(t *testing.T){
 type ownedBody struct{io.Reader;closed *atomic.Int32;failure error}
 func(body *ownedBody)Close()error{body.closed.Add(1);return body.failure}
 type testTransport struct{closed atomic.Int32;failure error;slow bool}
-func(host *testTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(host *testTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(host *testTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){
  if host.slow{<-request.Context().Done();return nil,request.Context().Err()}
  return &http.Response{StatusCode:200,Header:http.Header{"Content-Type":[]string{"application/json"}},Body:&ownedBody{Reader:strings.NewReader("{\"names\":[]}"),closed:&host.closed,failure:host.failure},Request:request},nil

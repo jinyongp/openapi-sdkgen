@@ -41,7 +41,7 @@ func TestUnknownStreamProtocolAndBoundedReader(t *testing.T){
 type trackedStreamBody struct{io.Reader;closes atomic.Int32}
 func(body *trackedStreamBody)Close()error{body.closes.Add(1);return nil}
 type trackedStreamTransport struct{body *trackedStreamBody}
-func(transport trackedStreamTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(transport trackedStreamTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(transport trackedStreamTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){return &http.Response{StatusCode:200,Header:http.Header{"Content-Type":{"application/vnd.frames"}},Body:transport.body,Request:request},nil}
 func TestProtocolConstructorFailureClosesOriginalBody(t *testing.T){
  body:=&trackedStreamBody{Reader:strings.NewReader("unused")};sentinel:=errors.New("decode constructor failed");codec:=types.NewStreamCodec[types.Value,types.Value](pipeProtocol{failure:sentinel},nil);client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"https://example.test",Transport:trackedStreamTransport{body:body},StreamCodecs:map[string]types.StreamCodec{"application/vnd.frames":codec}});if err!=nil{t.Fatal(err)};handle:=client.Operations.CustomNumbers().Stream(context.Background());if handle.Next()||!errors.Is(handle.Err(),sentinel){t.Fatal("decode failure",handle.Err())};handle.Close();if body.closes.Load()!=1{t.Fatal("original body close count",body.closes.Load())}

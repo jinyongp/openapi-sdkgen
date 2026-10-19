@@ -2,8 +2,6 @@ package api_test
 
 import (
 	"bytes"
-	"compress/flate"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,8 +19,6 @@ import (
 	"example.test/goperf/api/internal/transport"
 	"example.test/goperf/api/models"
 	"example.test/goperf/api/types"
-	"github.com/andybalholm/brotli"
-	"github.com/klauspost/compress/zstd"
 )
 
 const todoJSON = `{"id":"one","title":"Measured todo"}`
@@ -36,7 +32,7 @@ type memoryTransport struct {
 }
 
 func (t *memoryTransport) Capabilities() types.TransportCapabilities {
-	return types.TransportCapabilities{ResponseBody: types.Encoded}
+	return types.TransportCapabilities{}
 }
 func (t *memoryTransport) Do(r *http.Request, _ types.TransportOptions) (*http.Response, error) {
 	if t.checkAuth && r.Header.Get("Authorization") != "Bearer measured-token" {
@@ -243,79 +239,42 @@ func BenchmarkMultipart(b *testing.B) {
 	}
 }
 
-func coding(b testing.TB, payload []byte, name string) []byte {
-	b.Helper()
-	var out bytes.Buffer
-	var w io.WriteCloser
-	switch name {
-	case "gzip":
-		w = gzip.NewWriter(&out)
-	case "deflate":
-		var err error
-		w, err = flate.NewWriter(&out, flate.DefaultCompression)
-		if err != nil {
-			b.Fatal(err)
-		}
-	case "br":
-		w = brotli.NewWriter(&out)
-	case "zstd":
-		var err error
-		w, err = zstd.NewWriter(&out, zstd.WithEncoderConcurrency(1))
-		if err != nil {
-			b.Fatal(err)
-		}
-	case "chain":
-		return coding(b, coding(b, payload, "gzip"), "br")
-	}
-	if _, err := w.Write(payload); err != nil {
-		b.Fatal(err)
-	}
-	if err := w.Close(); err != nil {
-		b.Fatal(err)
-	}
-	return out.Bytes()
-}
-func BenchmarkCompression(b *testing.B) {
+// This measures the SDK body lease over bytes already supplied by the host.
+// Compression decoder measurements before HTTP delegation are historical only.
+func BenchmarkResponseBodyLease(b *testing.B) {
 	for _, size := range []int{1024, 1 << 20, 16 << 20} {
-		for _, name := range []string{"gzip", "deflate", "br", "zstd", "chain"} {
-			b.Run(fmt.Sprintf("%s/%d", name, size), func(b *testing.B) {
-				payload := bytes.Repeat([]byte("x"), size)
-				encoded := coding(b, payload, name)
-				header := name
-				if name == "chain" {
-					header = "gzip, br"
+		b.Run(fmt.Sprint(size), func(b *testing.B) {
+			payload := bytes.Repeat([]byte("x"), size)
+			ctx := context.Background()
+			var first int64
+			b.ReportAllocs()
+			b.SetBytes(int64(size))
+			b.ResetTimer()
+			for b.Loop() {
+				closed := 0
+				body := &countedBody{Reader: bytes.NewReader(payload), onClose: func() { closed++ }}
+				start := time.Now()
+				response, lease, err := transport.NewResponseBody(ctx, &http.Response{StatusCode: 200, Body: body}, "GET")
+				if err != nil {
+					b.Fatal(err)
 				}
-				ctx := context.Background()
-				var first int64
-				b.ReportAllocs()
-				b.SetBytes(int64(size))
-				b.ResetTimer()
-				for b.Loop() {
-					closed := 0
-					body := &countedBody{Reader: bytes.NewReader(encoded), onClose: func() { closed++ }}
-					start := time.Now()
-					r, lease, err := transport.NewResponseBody(ctx, &http.Response{StatusCode: 200, Header: http.Header{"Content-Encoding": {header}}, Body: body}, "GET", types.Encoded)
-					if err != nil {
-						b.Fatal(err)
-					}
-					if body.reads != 0 {
-						b.Fatal("eager decoder")
-					}
-					var p [1]byte
-					if _, err := io.ReadFull(r.Body, p[:]); err != nil {
-						b.Fatal(err)
-					}
-					first += time.Since(start).Nanoseconds()
-					n, err := io.Copy(io.Discard, r.Body)
-					lease.Close()
-					if err != nil || n+1 != int64(size) || closed != 1 {
-						b.Fatal(n, err, closed)
-					}
+				if body.reads != 0 {
+					b.Fatal("eager body read")
 				}
-				b.StopTimer()
-				b.ReportMetric(float64(first)/float64(b.N), "first-byte-ns/op")
-			})
-		}
+				var p [1]byte
+				if _, err := io.ReadFull(response.Body, p[:]); err != nil {
+					b.Fatal(err)
+				}
+				first += time.Since(start).Nanoseconds()
+				n, err := io.Copy(io.Discard, response.Body)
+				lease.Close()
+				if err != nil || n+1 != int64(size) || closed != 1 {
+					b.Fatal(n, err, closed)
+				}
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(first)/float64(b.N), "first-byte-ns/op")
+		})
 	}
 }
 
@@ -347,7 +306,7 @@ type frameTransport struct {
 }
 
 func (t *frameTransport) Capabilities() types.TransportCapabilities {
-	return types.TransportCapabilities{ResponseBody: types.Encoded}
+	return types.TransportCapabilities{}
 }
 func (t *frameTransport) Do(request *http.Request, _ types.TransportOptions) (*http.Response, error) {
 	if request.Method != "GET" || request.URL.Path != "/events" || request.Header.Get("Accept") != "application/x-ndjson" {
@@ -523,38 +482,31 @@ func TestStreamLiveHeap(t *testing.T) {
 	}
 }
 
-func TestCompressionLiveHeap(t *testing.T) {
+func TestResponseBodyLiveHeap(t *testing.T) {
 	for _, size := range []int{1024, 1 << 20, 16 << 20} {
-		for _, name := range []string{"gzip", "deflate", "br", "zstd", "chain"} {
-			payload := bytes.Repeat([]byte("x"), size)
-			encoded := coding(t, payload, name)
-			header := name
-			if name == "chain" {
-				header = "gzip, br"
-			}
-			runtime.GC()
-			var before, active runtime.MemStats
-			runtime.ReadMemStats(&before)
-			closed := 0
-			body := &countedBody{Reader: bytes.NewReader(encoded), onClose: func() { closed++ }}
-			r, lease, err := transport.NewResponseBody(context.Background(), &http.Response{StatusCode: 200, Header: http.Header{"Content-Encoding": {header}}, Body: body}, "GET", types.Encoded)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var first [1]byte
-			if _, err := io.ReadFull(r.Body, first[:]); err != nil {
-				t.Fatal(err)
-			}
-			runtime.GC()
-			runtime.ReadMemStats(&active)
-			n, err := io.Copy(io.Discard, r.Body)
-			lease.Close()
-			if err != nil || n+1 != int64(size) || closed != 1 {
-				t.Fatal(n, err, closed)
-			}
-			t.Logf("coding=%s decodedBytes=%d encodedBytes=%d baseline=%d decoderLiveHeap=%d delta=%d", name, size, len(encoded), before.HeapAlloc, active.HeapAlloc, int64(active.HeapAlloc)-int64(before.HeapAlloc))
-			runtime.KeepAlive(payload)
+		payload := bytes.Repeat([]byte("x"), size)
+		runtime.GC()
+		var before, active runtime.MemStats
+		runtime.ReadMemStats(&before)
+		closed := 0
+		body := &countedBody{Reader: bytes.NewReader(payload), onClose: func() { closed++ }}
+		response, lease, err := transport.NewResponseBody(context.Background(), &http.Response{StatusCode: 200, Body: body}, "GET")
+		if err != nil {
+			t.Fatal(err)
 		}
+		var first [1]byte
+		if _, err := io.ReadFull(response.Body, first[:]); err != nil {
+			t.Fatal(err)
+		}
+		runtime.GC()
+		runtime.ReadMemStats(&active)
+		n, err := io.Copy(io.Discard, response.Body)
+		lease.Close()
+		if err != nil || n+1 != int64(size) || closed != 1 {
+			t.Fatal(n, err, closed)
+		}
+		t.Logf("hostBytes=%d baseline=%d leaseLiveHeap=%d delta=%d", size, before.HeapAlloc, active.HeapAlloc, int64(active.HeapAlloc)-int64(before.HeapAlloc))
+		runtime.KeepAlive(payload)
 	}
 }
 

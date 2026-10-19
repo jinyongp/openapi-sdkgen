@@ -51,7 +51,7 @@ func TestXMLHTTP(t *testing.T){
  result,err:=client.Operations.GetXML().Do(context.Background());if err!=nil{t.Fatal(err)}
  if result.ID!=7||result.Name!="Hello"||len(result.Tags)!=2||result.Tags[1]!="two"{t.Fatal("XML typed projection",result)}
  encoded,err:=json.Marshal(result);if err!=nil||string(encoded)!="{\"id\":7,\"name\":\"Hello\",\"tags\":[\"one\",\"two\"]}"{t.Fatal("XML JSON DTO",string(encoded),err)}
- raw,err:=client.Operations.GetXML().Raw(context.Background());if err!=nil{t.Fatal(err)};if string(raw.Bytes())!=body||raw.Headers.Get("Content-Encoding")!="gzip"||raw.OriginalResponse.Body!=http.NoBody{t.Fatal("XML Raw bytes/headers/lease")}
+ raw,err:=client.Operations.GetXML().Raw(context.Background());if err!=nil{t.Fatal(err)};if string(raw.Bytes())!=body||raw.Headers.Get("Content-Encoding")!=""||raw.OriginalResponse.Body!=http.NoBody{t.Fatal("XML Raw bytes/headers/lease")}
  if value,ok:=raw.As200XML();!ok||value.ID!=7{t.Fatal("XML Raw accessor",ok,value)}
  if codecCalls.Load()!=0{t.Fatal("native XML invoked host codec")}
  value,err:=types.ParseValue(encoded);if err!=nil{t.Fatal(err)}

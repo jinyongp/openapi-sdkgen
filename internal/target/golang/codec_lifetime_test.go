@@ -26,7 +26,7 @@ const codecLifetimeConsumer = `package consumer_test
 import("compress/gzip";"context";"errors";"io";"net/http";"net/http/httptest";"strings";"sync/atomic";"testing";sdk "example.test/consumer/api";"example.test/consumer/api/types")
 type codecTransport func(*http.Request)(*http.Response,error)
 func(transport codecTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){return transport(request)}
-func(codecTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.DecodedWithOriginalHeaders}}
+func(codecTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 type codecProbe struct{*strings.Reader;closed atomic.Int32;failure error}
 func(body *codecProbe)Read(buffer []byte)(int,error){if body.failure!=nil{return 0,body.failure};return body.Reader.Read(buffer)}
 func(body *codecProbe)Close()error{body.closed.Add(1);return nil}

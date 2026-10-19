@@ -27,12 +27,20 @@ func TestClientSettingsAndCapability(t *testing.T){
  adapter:=NewHTTPClient(provided)
  request,_:=http.NewRequest("GET","https://example.test/path",nil)
  response,err:=adapter.Do(request,types.TransportOptions{Credentials:types.Omit,AllowRedirects:true});if err!=nil{t.Fatal(err)};response.Body.Close()
- if seenEncoding!="br, gzip, deflate"||request.Header.Get("Accept-Encoding")!=""{t.Fatal("default encoding or request clone",seenEncoding)}
+ if seenEncoding!=""||request.Header.Get("Accept-Encoding")!=""{t.Fatal("default encoding or request clone",seenEncoding)}
  request.Header.Set("Range","bytes=0-3")
  response,err=adapter.Do(request,types.TransportOptions{AllowRedirects:true});if err!=nil{t.Fatal(err)};response.Body.Close()
- if seenEncoding!="identity"{t.Fatal("Range did not select identity")}
+ if seenEncoding!=""{t.Fatal("SDK rewrote encoding for Range")}
  if provided.Timeout!=2*time.Second||provided.Jar!=jar||provided.CheckRedirect==nil{t.Fatal("mutated injected HTTPClient settings")}
- if caps:=adapter.Capabilities();caps.ResponseBody!=types.Encoded||!caps.CookieJar||!caps.CookieHeaders{t.Fatalf("capabilities %+v",caps)}
+ if caps:=adapter.Capabilities();!caps.CookieJar||!caps.CookieHeaders{t.Fatalf("capabilities %+v",caps)}
+}
+func TestCompressionSettingsAndPoolIdentity(t *testing.T){
+ for _,disabled:=range []bool{false,true}{
+  original:=&http.Transport{DisableCompression:disabled};provided:=&http.Client{Transport:original};adapter:=NewHTTPClient(provided)
+  guarded,ok:=adapter.client.Transport.(guardedRoundTripper);if !ok||guarded.inner!=original||provided.Transport!=original||original.DisableCompression!=disabled{t.Fatal("changed host compression settings or pool")}
+ }
+ var seen string;adapter:=NewHTTPClient(&http.Client{Transport:adapterRoundTrip(func(r *http.Request)(*http.Response,error){seen=r.Header.Get("Accept-Encoding");return &http.Response{StatusCode:200,Header:make(http.Header),Body:http.NoBody,Request:r},nil})})
+ request,_:=http.NewRequest("GET","http://example.test",nil);request.Header.Set("Accept-Encoding","zstd");response,err:=adapter.Do(request,types.TransportOptions{AllowRedirects:true});if err!=nil{t.Fatal(err)};response.Body.Close();if seen!="zstd"||request.Header.Get("Accept-Encoding")!="zstd"{t.Fatal("rewrote explicit compression header")}
 }
 func TestActualCookieModesAndCrossOriginRedirect(t *testing.T){
  var firstCookie,lastCookie string
@@ -54,7 +62,7 @@ func TestActualConnectionReuse(t *testing.T){
   trace:=&httptrace.ClientTrace{GotConn:func(info httptrace.GotConnInfo){reused=info.Reused}}
   request,_:=http.NewRequestWithContext(httptrace.WithClientTrace(context.Background(),trace),"GET",server.URL,nil)
   response,err:=adapter.Do(request,types.TransportOptions{AllowRedirects:true});if err!=nil{t.Fatal(err)}
-  normalized,_,err:=NewResponseBody(request.Context(),response,"GET",adapter.Capabilities().ResponseBody);if err!=nil{t.Fatal(err)}
+  normalized,_,err:=NewResponseBody(request.Context(),response,"GET");if err!=nil{t.Fatal(err)}
   if _,err:=io.Copy(io.Discard,normalized.Body);err!=nil{t.Fatal(err)}
   if sample==1&&!reused{t.Fatal("buffered body cleanup prevented connection reuse")}
  }
@@ -67,7 +75,7 @@ func TestRedirectFailureAndImplicitDecompressionOwnership(t *testing.T){
  if closed.Load()!=1{t.Fatalf("redirect failure closed original %d times",closed.Load())}
  closed.Store(0)
  adapter=NewHTTPClient(&http.Client{Transport:adapterRoundTrip(func(request *http.Request)(*http.Response,error){return &http.Response{StatusCode:200,Header:make(http.Header),Body:&adapterBody{Reader:strings.NewReader("decoded"),closed:&closed},Request:request,Uncompressed:true},nil})})
- response,err=adapter.Do(request,types.TransportOptions{AllowRedirects:true});if err==nil{t.Fatal("implicit decompression accepted")};if response!=nil{response.Body.Close()}
+ response,err=adapter.Do(request,types.TransportOptions{AllowRedirects:true});if err!=nil{t.Fatal("HTTP layer decompression rejected",err)};if response!=nil{response.Body.Close()}
  if closed.Load()!=1{t.Fatalf("implicit decoding closed original %d times",closed.Load())}
 }
 type adapterBody struct{io.Reader;closed *atomic.Int32}
@@ -76,13 +84,13 @@ func(body *adapterBody)Close()error{body.closed.Add(1);return nil}
 
 const httpCompressionConsumer = `package consumer_test
 import("bytes";"compress/gzip";"context";"encoding/json";"io";"net/http";"net/http/httptest";"strconv";"testing";sdk "example.test/consumer/api")
-func TestActualSDKGzipPreservesHeaders(t *testing.T){
+func TestActualSDKUsesHTTPGzipMetadata(t *testing.T){
  var compressed bytes.Buffer;writer:=gzip.NewWriter(&compressed);io.WriteString(writer,"{\"ok\":true}");writer.Close()
- server:=httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter,request *http.Request){if request.Header.Get("Accept-Encoding")!="gzip, deflate"{t.Error("unexpected compression negotiation",request.Header)};writer.Header().Set("Content-Type","application/json");writer.Header().Set("Content-Encoding","gzip");writer.Header().Set("Content-Length",strconv.Itoa(compressed.Len()));writer.Write(compressed.Bytes())}));defer server.Close()
+ server:=httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter,request *http.Request){if request.Header.Get("Accept-Encoding")!="gzip"{t.Error("unexpected compression negotiation",request.Header)};writer.Header().Set("Content-Type","application/json");writer.Header().Set("Content-Encoding","gzip");writer.Header().Set("Content-Length",strconv.Itoa(compressed.Len()));writer.Write(compressed.Bytes())}));defer server.Close()
  client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:server.URL});if err!=nil{t.Fatal(err)}
  result,err:=client.Operations.GetHealth().Do(context.Background());if err!=nil{t.Fatal(err)};encoded,_:=json.Marshal(result);if string(encoded)!="{\"ok\":true}"{t.Fatal("decoded result",string(encoded))}
  response,err:=client.Operations.GetHealth().Raw(context.Background());if err!=nil{t.Fatal(err)}
  data:=response.Bytes();if string(data)!="{\"ok\":true}"{t.Fatalf("Raw decoded bytes: %s",data)}
- if !response.OriginalResponse.Uncompressed||response.OriginalResponse.ContentLength!=-1||response.Headers.Get("Content-Encoding")!="gzip"||response.Headers.Get("Content-Length")!=strconv.Itoa(compressed.Len())||response.OriginalResponse.Body!=http.NoBody{t.Fatal("lost original compressed headers or body ownership",response)}
+ if !response.OriginalResponse.Uncompressed||response.OriginalResponse.ContentLength!=-1||response.Headers.Get("Content-Encoding")!=""||response.Headers.Get("Content-Length")!=""||response.OriginalResponse.Body!=http.NoBody{t.Fatal("changed HTTP compression metadata or body ownership",response)}
 }
 `

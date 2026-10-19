@@ -21,27 +21,27 @@ func TestGeneratedUntypedSequentialRaw(t *testing.T) {
 
 const rawStreamConsumer = `package consumer_test
 import("bytes";"compress/gzip";"context";"errors";"io";"net/http";"net/http/httptest";"sync/atomic";"testing";"time";sdk "example.test/consumer/api";"example.test/consumer/api/types")
-type rawBody struct{io.Reader;reads,closes atomic.Int32}
-func(body *rawBody)Read(buffer []byte)(int,error){body.reads.Add(1);return body.Reader.Read(buffer)}
+type rawBody struct{io.Reader;reads,closes atomic.Int32;failure error}
+func(body *rawBody)Read(buffer []byte)(int,error){body.reads.Add(1);if body.failure!=nil{return 0,body.failure};return body.Reader.Read(buffer)}
 func(body *rawBody)Close()error{body.closes.Add(1);return nil}
 type rawTransport struct{body *rawBody;ctx context.Context}
-func(host *rawTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{ResponseBody:types.Encoded}}
+func(host *rawTransport)Capabilities()types.TransportCapabilities{return types.TransportCapabilities{}}
 func(host *rawTransport)Do(request *http.Request,_ types.TransportOptions)(*http.Response,error){host.ctx=request.Context();return &http.Response{StatusCode:200,Header:http.Header{"Content-Type":[]string{"text/event-stream"},"Content-Encoding":[]string{"gzip"}},Body:host.body,Request:request},nil}
 func TestSequentialRawIsUnreadUntilConsumption(t *testing.T){
  var encoded bytes.Buffer;writer:=gzip.NewWriter(&encoded);writer.Write([]byte("data: hello\n\n"));writer.Close()
  for _,consume:=range []bool{false,true}{host:=&rawTransport{body:&rawBody{Reader:bytes.NewReader(encoded.Bytes())}};client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"http://example.test",Transport:host});if err!=nil{t.Fatal(err)}
   raw,err:=client.Operations.Events().Raw(context.Background());if err!=nil{t.Fatal(err)}
   if host.body.reads.Load()!=0||host.ctx.Err()!=nil||raw.OriginalResponse.Body!=http.NoBody||raw.ContentType!="text/event-stream"{t.Fatal("eager read or premature cancel")}
-  if consume{data,err:=io.ReadAll(raw.Body);if err!=nil||string(data)!="data: hello\n\n"{t.Fatal(string(data),err)};if host.ctx.Err()!=context.Canceled{t.Fatal("EOF retained request context")}}
+  if consume{data,err:=io.ReadAll(raw.Body);if err!=nil||!bytes.Equal(data,encoded.Bytes()){t.Fatal(string(data),err)};if host.ctx.Err()!=context.Canceled{t.Fatal("EOF retained request context")}}
   if consume{var buffer [1]byte;if count,err:=raw.Body.Read(buffer[:]);count!=0||err!=io.EOF{t.Fatal("EOF became cleanup cancellation on repeated Read",count,err)}}
   if err:=raw.Close();err!=nil{t.Fatal(err)};if err:=raw.Close();err!=nil{t.Fatal(err)}
   if host.body.closes.Load()!=1||host.ctx.Err()!=context.Canceled{t.Fatal("body/context ownership",host.body.closes.Load(),host.ctx.Err())}
  }
- host:=&rawTransport{body:&rawBody{Reader:bytes.NewReader([]byte("not gzip"))}};client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"http://example.test",Transport:host});if err!=nil{t.Fatal(err)}
+ cause:=errors.New("host decoding failed");host:=&rawTransport{body:&rawBody{Reader:bytes.NewReader(nil),failure:cause}};client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"http://example.test",Transport:host});if err!=nil{t.Fatal(err)}
  raw,err:=client.Operations.Events().Raw(context.Background());if err!=nil{t.Fatal(err)}
  _,err=io.ReadAll(raw.Body);var apiError *sdk.APIError
- if !errors.As(err,&apiError)||apiError.Code!=types.ResponseDecodeFailed||apiError.Status!=200{t.Fatal("decode failure became own cleanup cancellation",err)}
- if host.body.closes.Load()!=1||host.ctx.Err()!=context.Canceled{t.Fatal("malformed compressed Raw was not finalized")}
+ if !errors.Is(err,cause)||!errors.As(err,&apiError)||apiError.Code!=types.ResponseDecodeFailed||apiError.Status!=200{t.Fatal("decode failure became own cleanup cancellation",err)}
+ if host.body.closes.Load()!=1||host.ctx.Err()!=context.Canceled{t.Fatal("failed HTTP body was not finalized")}
 }
 func TestSequentialRawLiveHTTPAndTimeout(t *testing.T){
  stopped:=make(chan struct{},4)
