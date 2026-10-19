@@ -1,0 +1,78 @@
+{
+  "version": "1.6.4",
+  "publicRoutes": [
+    "/",
+    "/examples/",
+    "/examples/ai-streaming",
+    "/examples/webhook-server",
+    "/guide/client",
+    "/guide/files-links-streams",
+    "/guide/generate",
+    "/guide/getting-started",
+    "/guide/golang",
+    "/guide/inspect",
+    "/guide/named-clients",
+    "/guide/remote-inputs",
+    "/guide/schema-vocabularies",
+    "/guide/selection-benchmarks",
+    "/guide/selective-client",
+    "/guide/server",
+    "/guide/transport",
+    "/playground",
+    "/reference/",
+    "/reference/capabilities",
+    "/reference/cli",
+    "/reference/client-api",
+    "/reference/compatibility",
+    "/reference/extensions",
+    "/reference/server-api",
+    "/reference/streaming",
+    "/reference/typescript-types"
+  ],
+  "scopeCount": 6,
+  "nestedLocalePriorityVerified": true,
+  "wrongOrderReproduced": true,
+  "staticBuildPassed": true,
+  "htmlLanguageVerified": true,
+  "searchDocumentIDsIsolated": true,
+  "modules": [
+    {
+      "name": "chunks/@localSearchIndexgolang.BSLfhEPn.js",
+      "documentIds": [
+        "/openapi-sdkgen/golang/#golang-scope"
+      ]
+    },
+    {
+      "name": "chunks/@localSearchIndexko.Dz4Pn35d.js",
+      "documentIds": [
+        "/openapi-sdkgen/ko/#ko-scope"
+      ]
+    },
+    {
+      "name": "chunks/@localSearchIndexroot.Cw2fbBS8.js",
+      "documentIds": [
+        "/openapi-sdkgen/#root-scope"
+      ]
+    },
+    {
+      "name": "chunks/@localSearchIndextypescript.x_zD1xFb.js",
+      "documentIds": [
+        "/openapi-sdkgen/typescript/#typescript-scope"
+      ]
+    },
+    {
+      "name": "chunks/golang.BXg57f1Q.js",
+      "documentIds": [
+        "/openapi-sdkgen/ko/golang/#ko-golang-scope"
+      ]
+    },
+    {
+      "name": "chunks/typescript.eU2lFJT0.js",
+      "documentIds": [
+        "/openapi-sdkgen/ko/typescript/#ko-typescript-scope"
+      ]
+    }
+  ],
+  "harnessCorrection": "First two assertions inspected generated chunk file names incompletely. Final check scans nested chunks and verifies actual documentIds; builds themselves passed during those failed harness assertions.",
+  "probeScriptSha256": "89e0a840ba0030ce7d60c3f4e49108f19696f37b02380f75fd27255e8a88b858"
+}
