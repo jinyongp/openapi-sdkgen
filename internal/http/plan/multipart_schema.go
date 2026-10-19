@@ -1,11 +1,12 @@
 package plan
 
 import (
+	"context"
 	"maps"
 	"slices"
 	"strconv"
 
-	"github.com/go-quickjs/go-quickjs/jsregexp"
+	"openapi-sdkgen/internal/goruntime/ecmaregexp"
 
 	"openapi-sdkgen/internal/compiler/ir"
 )
@@ -41,11 +42,11 @@ func multipartPartSchema(document *ir.Document, value any, name string, position
 	if !positional {
 		patterns, _ := schema["patternProperties"].(map[string]any)
 		for _, pattern := range slices.Sorted(maps.Keys(patterns)) {
-			expression, err := jsregexp.Compile(pattern, "u")
+			expression, err := ecmaregexp.Compile(pattern)
 			if err != nil {
 				return nil, err
 			}
-			accepts, err := expression.MatchString(name)
+			accepts, err := expression.Match(context.Background(), name)
 			if err != nil {
 				return nil, err
 			}

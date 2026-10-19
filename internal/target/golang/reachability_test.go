@@ -29,7 +29,7 @@ func TestUnusedSchemaLiteralCanBeLinkedAway(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := t.TempDir()
-	files := map[string]string{"go.mod": "module example.test/consumer\n\ngo 1.27.0\n\nrequire (\n github.com/andybalholm/brotli v1.2.6\n github.com/klauspost/compress v1.20.3\n github.com/nlnwa/whatwg-url v0.6.2\n golang.org/x/net v0.61.0\n golang.org/x/text v0.43.0\n github.com/bits-and-blooms/bitset v1.20.0\n)\n"}
+	files := map[string]string{"go.mod": "module example.test/consumer\n\ngo 1.27.0\n"}
 	for _, artifact := range artifacts {
 		files[filepath.Join("api", artifact.Path)] = string(artifact.Data)
 	}
@@ -52,9 +52,9 @@ func main(){client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"https://example
 	defer cancel()
 	for _, operation := range []string{"GetHealth", "GetUnused", "GetUnusedURL"} {
 		binary := filepath.Join(root, operation+".bin")
-		command := exec.CommandContext(ctx, "go", "build", "-mod=mod", "-buildvcs=false", "-o", binary, "./"+strings.ToLower(operation))
+		command := exec.CommandContext(ctx, "go", "build", "-mod=readonly", "-buildvcs=false", "-o", binary, "./"+strings.ToLower(operation))
 		command.Dir = root
-		command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local")
+		command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off", "GOMODCACHE="+t.TempDir())
 		if output, err := command.CombinedOutput(); err != nil {
 			t.Fatalf("build consumer: %v %s", err, output)
 		}

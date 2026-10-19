@@ -40,7 +40,7 @@ func TestGeneratedComponentLinksAndNativeHeaders(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Cleanup(func() { _ = os.Remove(file) })
-			command := exec.Command("go", "test", "-mod=mod", "-run", "^$", ".")
+			command := exec.Command("go", "test", "-mod=readonly", "-run", "^$", ".")
 			command.Dir = root
 			command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local")
 			output, err := command.CombinedOutput()

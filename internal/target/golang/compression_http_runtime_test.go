@@ -31,7 +31,7 @@ func TestGeneratedCompressionHTTPHeadersAndRaw(t *testing.T) {
 	root := testGeneratedModule(t, plan, map[string]string{"consumer_test.go": compressionHTTPConsumer, "encoded.json": compressionFixtures(t)})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	command := exec.CommandContext(ctx, "go", "test", "-mod=mod", "./...")
+	command := exec.CommandContext(ctx, "go", "test", "-mod=readonly", "./...")
 	command.Dir = root
 	command.Env = append(os.Environ(), "CGO_ENABLED=0", "GOWORK=off", "GOTOOLCHAIN=local")
 	if output, err := command.CombinedOutput(); err != nil {

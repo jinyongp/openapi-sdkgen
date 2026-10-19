@@ -196,17 +196,6 @@ func testGeneratedModule(t *testing.T, plan generator.Plan, files map[string]str
 		}
 	}
 	files["go.mod"] = "module example.test/consumer\n\ngo 1.27.0\n"
-	modFlag := "-mod=readonly"
-	for _, artifact := range artifacts {
-		if artifact.Path == "internal/schema/regex.go" {
-			files["go.mod"] += "\nrequire github.com/go-quickjs/go-quickjs v0.27.0\n"
-			modFlag = "-mod=mod"
-		}
-		if artifact.Path == "internal/transport/url.go" {
-			files["go.mod"] += "\nrequire (\n github.com/nlnwa/whatwg-url v0.6.2\n golang.org/x/net v0.61.0\n golang.org/x/text v0.43.0\n github.com/bits-and-blooms/bitset v1.20.0\n)\n"
-			modFlag = "-mod=mod"
-		}
-	}
 	for name, data := range files {
 		if err := os.MkdirAll(filepath.Dir(filepath.Join(root, name)), 0o755); err != nil {
 			t.Fatal(err)
@@ -217,10 +206,10 @@ func testGeneratedModule(t *testing.T, plan generator.Plan, files map[string]str
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	command := exec.CommandContext(ctx, "go", "test", modFlag, "-race", "-timeout=45s", "./...")
+	command := exec.CommandContext(ctx, "go", "test", "-mod=readonly", "-race", "-timeout=45s", "./...")
 	command.WaitDelay = 5 * time.Second
 	command.Dir = root
-	command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local")
+	command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off", "GOMODCACHE="+t.TempDir())
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("generated consumer: %v\n%s", err, output)
 	}

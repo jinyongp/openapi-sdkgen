@@ -5,7 +5,6 @@ go 1.27.0
 toolchain go1.27.2
 
 require (
-	github.com/go-quickjs/go-quickjs v0.27.0
 	github.com/pb33f/libopenapi v0.41.6
 	github.com/pelletier/go-toml/v2 v2.4.3
 	go.yaml.in/yaml/v4 v4.0.0-rc.6

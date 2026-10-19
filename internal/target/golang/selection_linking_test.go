@@ -62,22 +62,14 @@ func main(){ref,ok:=selective.LookupOperation("source");if !ok{panic("missing op
 		registry := strings.Contains(string(symbols), "example.test/consumer/api/internal/registry.load")
 		unused := strings.Contains(string(symbols), "example.test/consumer/api/internal/operations.UnusedCall.execute")
 		target := strings.Contains(string(symbols), "example.test/consumer/api/internal/operations.TargetCall.execute")
-		compiler := strings.Contains(string(symbols), "go-quickjs/go-quickjs/internal/regexp.Compile")
-		if registry != (variant == "computed") || unused != (variant == "computed") || target != (variant == "computed") || compiler != (variant == "computed") {
+		compiler := strings.Contains(string(symbols), "/internal/runtime/ecmaregexp.Compile")
+		matcher := strings.Contains(string(symbols), "/internal/runtime/ecmaregexp.(*Program).match")
+		if registry != (variant == "computed") || unused != (variant == "computed") || target != (variant == "computed") || compiler || matcher != (variant == "computed") {
 			t.Fatalf("%s registry=%t unused=%t target=%t regexp_compiler=%t", variant, registry, unused, target, compiler)
 		}
 		info, err := os.Stat(binary)
 		if err != nil {
 			t.Fatal(err)
-		}
-		quickJS := 0
-		for _, symbol := range strings.Split(string(symbols), "\n") {
-			if strings.Contains(symbol, "go-quickjs") {
-				quickJS++
-			}
-		}
-		if variant == "selected" && quickJS != 0 {
-			t.Fatal("generation selection retained unused regex package")
 		}
 		output, err := exec.Command(binary).CombinedOutput()
 		if err != nil {
@@ -93,8 +85,8 @@ func main(){ref,ok:=selective.LookupOperation("source");if !ok{panic("missing op
 			artifactPlan = selected
 		}
 		digest, count, sourceBytes := selectionArtifactDigest(t, artifactPlan)
-		result.Variants = append(result.Variants, selectionBuildVariant{Name: variant, BinaryBytes: info.Size(), Registry: registry, Unused: unused, LinkTarget: target, RegexCompiler: compiler, QuickJSSymbols: quickJS, ArtifactsSHA256: digest, GeneratedFiles: count, GeneratedBytes: sourceBytes, ProgramSHA256: selectionDigest([]byte(files["cmd/"+variant+"/main.go"]))})
-		t.Logf("%s binary_bytes=%d registry=%t unused=%t quickjs_symbols=%d", variant, info.Size(), registry, unused, quickJS)
+		result.Variants = append(result.Variants, selectionBuildVariant{Name: variant, BinaryBytes: info.Size(), Registry: registry, Unused: unused, LinkTarget: target, RegexCompiler: compiler, RegexMatcher: matcher, ArtifactsSHA256: digest, GeneratedFiles: count, GeneratedBytes: sourceBytes, ProgramSHA256: selectionDigest([]byte(files["cmd/"+variant+"/main.go"]))})
+		t.Logf("%s binary_bytes=%d registry=%t unused=%t regex_matcher=%t regex_compiler=%t", variant, info.Size(), registry, unused, matcher, compiler)
 		if directory := os.Getenv("SDKGEN_GO_SELECTION_ARTIFACT_DIR"); directory != "" {
 			if err := os.MkdirAll(directory, 0700); err != nil {
 				t.Fatal(err)
@@ -156,7 +148,7 @@ type selectionBuildVariant struct {
 	Name                                        string
 	BinaryBytes                                 int64
 	Registry, Unused, LinkTarget, RegexCompiler bool
-	QuickJSSymbols                              int
+	RegexMatcher                                bool
 	ArtifactsSHA256, ProgramSHA256              string
 	GeneratedFiles                              int
 	GeneratedBytes                              int64

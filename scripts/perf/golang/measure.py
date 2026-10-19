@@ -116,7 +116,6 @@ class Measurement:
         path = self.output / name
         path.mkdir()
         (path / 'go.mod').write_text((ROOT / 'examples/golang-todo-app/go.mod').read_text().replace('example.com/sdkgen-go-example', 'example.test/goperf'))
-        shutil.copyfile(ROOT / 'examples/golang-todo-app/go.sum', path / 'go.sum')
         return path
 
     def runtime(self):

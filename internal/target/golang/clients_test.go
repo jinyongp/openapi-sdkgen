@@ -25,7 +25,7 @@ func TestGeneratedIndependentClients(t *testing.T) {
 		}
 		consumer := strings.ReplaceAll(independentClientConsumer, "ROOT_HAS_UNUSED", map[bool]string{true: "false", false: "true"}[explicitRoot])
 		root := testGeneratedModule(t, plan, map[string]string{"clients_test.go": consumer})
-		command := exec.Command("go", "list", "-mod=mod", "-deps", "example.test/consumer/api/clients/source-only")
+		command := exec.Command("go", "list", "-mod=readonly", "-deps", "example.test/consumer/api/clients/source-only")
 		command.Dir = root
 		command.Env = append(os.Environ(), "GOWORK=off", "GOTOOLCHAIN=local")
 		output, err := command.CombinedOutput()

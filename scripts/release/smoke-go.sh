@@ -20,7 +20,7 @@ else
 fi
 scratch="$(mktemp -d "$ROOT/.tmp/go-distribution-smoke.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
-cp "$ROOT/examples/golang-todo-app/"{go.mod,go.sum} "$scratch/"
+cp "$ROOT/examples/golang-todo-app/go.mod" "$scratch/"
 sed -i.bak 's|example.com/sdkgen-go-example|example.com/consumer|' "$scratch/go.mod"
 awk '/^```go$/{copy=1;next} /^```$/{if(copy)exit} copy {print}' "$ROOT/docs/golang/guide/getting-started.md" > "$scratch/main.go"
 

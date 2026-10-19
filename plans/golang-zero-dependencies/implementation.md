@@ -1,7 +1,7 @@
 # Go 무의존성 구현 기록
 
 현재 실행: [계획](plan.md), [devtools ID](workstream.json).
-계획 단위별로 리뷰·재검증·커밋한다. W01–W07을 구현·검증했고 의존 정리·문서·출시 통합 검증을 이어간다.
+계획 단위별로 리뷰·재검증·커밋한다. W01–W08을 구현·검증했고 문서·성능·출시 통합 검증을 이어간다.
 
 ## W01 — 기준과 적합성 입력
 
@@ -175,3 +175,24 @@ realm/descriptor/coercion API 및 비u lexical enumeration으로 불완전하며
 자료 소유권·AST 경계·상수 직렬화·캡처/오류 전파·DAG/도달성·불변/동시 실행·원본/출력 일치를 리뷰했다.
 생성 소비자 helper의 예전 모듈 pin은 W08에서 제거한다. 실제 무외부 모듈 격리 검증과 binary symbol
 검증은 W08/W10에 남아 있으며 현재 결과에 포함하지 않는다.
+
+## W08 — 외부 SDK runtime 모듈 제거
+
+공용 multipart part schema projection에 남은 QuickJS 호출도 자체 Compile/Match로 교체했다.
+Go module tidy로 생성기의 마지막 QuickJS 의존을 제거했다. 생성 소비자 helper와 link/reachability
+검사, 예제에서 외부 module require/pin 및 example go.sum을 없앴다. 생성 검증은 readonly·offline·
+CGO0로 실행하고 실제 module/package 그래프를 확인한다. 예제·배포 smoke·성능 준비 도구의
+이전 go.sum 복사도 제거했다. QuickJS 고지를 공식 Unicode 전체 라이선스로 대체하고 npm과 맞췄다.
+과거 probe·baseline 자료는 변경하지 않았다.
+
+서버·callback/webhook·전체/독립/정적 선택/계산 조회를 포함한 새 소비자를 빈 module cache,
+GOWORK/GOPROXY/GOSUMDB off, GOTOOLCHAIN local, CGO0에서 컴파일했다. 실제 그래프는
+main1/external0, standard193/owned25 package이며 go.sum도 만들지 않고 cache도 비어 있었다.
+고정 구문/매칭 생성 소비자·독립 client·typed inbound·linker·unused schema 검사 통과.
+정적/computed/selected linker3종은 matcher와 compiler를 구분하며 정적 schema에는 compiler가 없었다.
+이전 QuickJS compiler symbol 전제는 고쳐서 세 변형을 재검증했다.
+
+공용 multipart package 회귀, Go example 로컬 HTTP 실행, server 포함 check:generate 통과.
+Node/TypeScript가 없는 PATH에서도 Go 생성·configured package/import·실패17 전파·임시 정리 검사가
+통과했다. import·module graph·test-only 우회·공지/라이선스·도구/예제 호출부를 리뷰했다.
+전체 repository Go 회귀는 별도로 실행 중이며 아직 통과로 기록하지 않는다. 문서 정리는 W09에서 이어간다.

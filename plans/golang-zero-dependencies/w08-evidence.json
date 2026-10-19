@@ -1,0 +1,47 @@
+{
+  "unit": "W08",
+  "scope": "Generator QuickJS removal, generated consumer/module/example/helper cleanup and Unicode notices. Whole repository Go regression is running, not yet claimed passed.",
+  "commandsPassed": [
+    "go mod tidy",
+    "go test ./internal/http/plan -count=1",
+    "isolated generated health, conformance, independent clients, typed inbound and linker tests",
+    "go:example",
+    "check:generate Go example with server addon",
+    "go-check-test.sh: no Node/TypeScript, configured package/import, failure17 propagation, cleanup"
+  ],
+  "moduleGraph": {
+    "main": 1,
+    "external": 0,
+    "standardPackages": 193,
+    "ownedPackages": 25,
+    "CGOEnabled": false,
+    "GOWORK": "off",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOMODCACHE": "empty task directory; remained empty",
+    "goSumCreated": false
+  },
+  "raw": {
+    "isolation": "=== RUN   TestGeneratedIndependentClients\n--- PASS: TestGeneratedIndependentClients (5.10s)\n=== RUN   TestGeneratedStandardLibraryOnlyModuleGraph\n    dependency_free_test.go:111: main modules=1 external modules=0 standard packages=193 owned packages=25; CGO0 all modes/server/callbacks/webhooks compile\n--- PASS: TestGeneratedStandardLibraryOnlyModuleGraph (2.74s)\n=== RUN   TestUnusedSchemaLiteralCanBeLinkedAway\n--- PASS: TestUnusedSchemaLiteralCanBeLinkedAway (1.40s)\n=== RUN   TestGeneratedTypedInboundCustomCodecs\n--- PASS: TestGeneratedTypedInboundCustomCodecs (2.76s)\n=== RUN   TestGeneratedTypedInboundRawResponseHeaders\n--- PASS: TestGeneratedTypedInboundRawResponseHeaders (2.69s)\n=== RUN   TestGeneratedTypedInboundMediaAndHeaders\n--- PASS: TestGeneratedTypedInboundMediaAndHeaders (2.76s)\n=== RUN   TestGeneratedTypedInboundMultipartResponse\n--- PASS: TestGeneratedTypedInboundMultipartResponse (2.75s)\n=== RUN   TestGeneratedTypedInboundMultipartDuplex\n--- PASS: TestGeneratedTypedInboundMultipartDuplex (3.01s)\n=== RUN   TestGeneratedTypedInboundMultipart\n--- PASS: TestGeneratedTypedInboundMultipart (2.79s)\n=== RUN   TestGeneratedTypedInboundOpenMedia\n--- PASS: TestGeneratedTypedInboundOpenMedia (2.93s)\n=== RUN   TestGeneratedTypedInboundBodyPresence\n--- PASS: TestGeneratedTypedInboundBodyPresence (3.02s)\n=== RUN   TestGeneratedTypedInboundResponseVariants\n--- PASS: TestGeneratedTypedInboundResponseVariants (2.82s)\n=== RUN   TestGeneratedTypedInboundDuplex\n--- PASS: TestGeneratedTypedInboundDuplex (2.92s)\n=== RUN   TestGeneratedTypedInboundHandlers\n--- PASS: TestGeneratedTypedInboundHandlers (2.83s)\n=== RUN   TestGeneratedTypedInboundJSON\n--- PASS: TestGeneratedTypedInboundJSON (2.74s)\nPASS\nok  \topenapi-sdkgen/internal/target/golang\t43.268s\n",
+    "linker": "=== RUN   TestGeneratedStaticRegistryLinking\n    selection_linking_test.go:89: static binary_bytes=9669557 registry=false unused=false regex_matcher=false regex_compiler=false\n    selection_linking_test.go:89: computed binary_bytes=10033657 registry=true unused=true regex_matcher=true regex_compiler=false\n    selection_linking_test.go:89: selected binary_bytes=9657467 registry=false unused=false regex_matcher=false regex_compiler=false\n--- PASS: TestGeneratedStaticRegistryLinking (6.53s)\nPASS\nok  \topenapi-sdkgen/internal/target/golang\t6.532s\n"
+  },
+  "review": {
+    "removed": "QuickJS in target planner was removed W07; last shared multipart schema projection caller now uses owned matcher. Generator module tidy removes QuickJS. Generated helper/test/example require pins and example go.sum removed. Verifier is offline readonly and checks actual module/package graph.",
+    "notice": "Obsolete QuickJS/fdlibm notices replaced by the complete official Unicode data license; root and npm NOTICE identical. Historical probes and performance baseline manifests remain unchanged.",
+    "selection": "Static/computed/selected binary symbols distinguish matcher from runtime compiler; compiler absent for all static schema patterns, matcher retained only when needed. Updated obsolete QuickJS symbol assumptions and reran all3 variants.",
+    "callers": "Example/distribution/performance setup no longer copies removed example go.sum; no production imports or pinned helpers remain for removed modules. Docs are W09."
+  },
+  "sourceSHA256": {
+    "go.mod": "37238852dc0d2a936a38b3d138bccc52e9be897d4b849dc224c02fe1e8faba86",
+    "go.sum": "05c10000ef6a1b3e925a7465ae6a7d433345c289249ef652b1cc1b56147ace55",
+    "internal/http/plan/multipart_schema.go": "34929614cd9b46ec8ff5500db6d1290d36c871b2a3599c6f83044ab8f1284107",
+    "internal/target/golang/dependency_free_test.go": "c95e6e338a538f7c885d6dc6ab7bd38304698462ff277000029a7e0c8e7bec19",
+    "internal/target/golang/generator_test.go": "b3d6668dbe19dc80df1663e431bd7f75b45e79ad603586504cade004494dd2cb",
+    "internal/target/golang/selection_linking_test.go": "a9d73d59b9552212438484e787192bb01f2bfaba4f056ecc81ca0e29888a4d2a",
+    "scripts/generate/verify-golang.sh": "2400e6407f4ac629fb007c9fc452bcfe8043f837f3fba1da196d2a9048ddf131",
+    "scripts/perf/golang/measure.py": "c3cb8766ac18a659f3811b53c76bdebc3084852686bda76e8f0bea684dc86c0a",
+    "NOTICE": "dcbd4f0ddbb673f511ef542d2552634dac9b048e4088b111b299c9143183edf8",
+    "npm/NOTICE": "dcbd4f0ddbb673f511ef542d2552634dac9b048e4088b111b299c9143183edf8"
+  }
+}
