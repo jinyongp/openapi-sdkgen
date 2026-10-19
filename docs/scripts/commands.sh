@@ -4,7 +4,7 @@ set -- "${SCRIPT_ARGS[@]}"
 command="${1:-help}"
 shift || true
 if [[ "$command" == help || "$command" == --help || "${1:-}" == --help ]]; then
-  printf 'Documentation commands: install, lock, validate, dev, build, preview\ninstall/lock use the network; lock updates the lockfile. validate/build write documentation assets. dev/preview serve on DOCS_PORT.\n' >&2
+  printf 'Documentation commands: install, lock, validate, verify, dev, build, preview\ninstall/lock use the network; lock updates the lockfile. validate/build write documentation assets. dev/preview serve on DOCS_PORT.\n' >&2
   exit 0
 fi
 require_system_node
@@ -14,6 +14,11 @@ case "$command" in
   lock) run_step 'Documentation lockfile' pnpm_docs install --lockfile-only "$@" ;;
   validate) run_step 'Documentation validation' pnpm_docs run docs:validate "$@" ;;
   build) run_step 'Documentation build' pnpm_docs run docs:build "$@" ;;
+  verify)
+    run_step 'Built documentation contracts' node "$ROOT/docs/scripts/validate-built-docs.mjs"
+    run_step 'Go documentation examples' node "$ROOT/docs/scripts/verify-go-docs.mjs"
+    run_step 'Documentation tool tests' pnpm_docs run docs:validate:test
+    ;;
   dev|preview)
     run_live diagnostic "documentation $command" corepack pnpm --dir "$ROOT/docs" run "docs:$command" --host 127.0.0.1 --port "${DOCS_PORT:-4173}" --strictPort "$@" ;;
   *) script_error "unknown documentation command: $command"; exit 2 ;;

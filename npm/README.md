@@ -1,11 +1,12 @@
 # openapi-sdkgen
 
 Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
-The source supports `typescript` and `golang` targets. Go support will be
-available in the next release; see the [Go guide](https://jinyongp.dev/openapi-sdkgen/guide/golang.html).
+Choose `typescript` or `golang`. The generated source belongs to your application;
+no separate SDK runtime package is required.
 
-Use Node.js 22+ and your own `openapi.yaml`. For a complete runnable example,
-follow [Getting started](https://jinyongp.dev/openapi-sdkgen/guide/getting-started.html).
+The npm launcher requires Node.js 22+. Use your own `openapi.yaml`, or follow a
+complete local example: [TypeScript](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started.html)
+or [Go](https://jinyongp.dev/openapi-sdkgen/golang/guide/getting-started.html).
 
 ```sh
 pnpm dlx openapi-sdkgen generate \
@@ -13,6 +14,19 @@ pnpm dlx openapi-sdkgen generate \
   --target typescript \
   --output ./src/generated/api
 ```
+
+For Go, set the generated package's full import path:
+
+```sh
+pnpm dlx openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target golang \
+  --go-import-path example.com/consumer/internal/api \
+  --output ./internal/api
+```
+
+Match the import path to your Go module. SDK consumption requires Go 1.27+ and the
+runtime dependencies imported by generated features; your module owns those versions.
 
 The npm launcher requires Node.js 22 or newer. This requirement applies only to
 the npm launcher; generated SDK source has its own runtime compatibility

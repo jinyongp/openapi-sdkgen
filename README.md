@@ -2,16 +2,19 @@
 
 Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
 
-`openapi-sdkgen` uses an explicit `typescript` or `golang` target. Go support is
-included in this source revision and will be available in the next release.
-For Go 1.27+, see [Generate and use a Go SDK](docs/guide/golang.md) and the
-[runnable Go example](examples/golang-todo-app). The native generator needs no
-Node.js or Go installation to generate source.
+Choose `typescript` or `golang` to generate the client, models and runtime source inside
+your application. The native generator needs no Node.js or Go installation to generate source.
+The generated SDK uses your application's toolchain and dependency versions.
+
+| SDK | Requirements to use generated source | Start here |
+| --- | --- | --- |
+| TypeScript | Your JS runtime/bundler; optional TypeScript 5.7.3+ checking | [First TypeScript SDK](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started.html) |
+| Go | Go 1.27+ and your Go module | [First Go SDK](https://jinyongp.dev/openapi-sdkgen/golang/guide/getting-started.html) |
 
 ## Quick start: TypeScript
 
 For a complete example with a local response and expected output, follow
-[Getting started](https://jinyongp.dev/openapi-sdkgen/guide/getting-started.html).
+[Getting started](https://jinyongp.dev/openapi-sdkgen/typescript/guide/getting-started.html).
 The commands below assume Node.js 22+, an existing `openapi.yaml`, and an API
 server whose URL and operations match that contract.
 
@@ -19,7 +22,7 @@ The TypeScript target generates the client, types, and source runtime inside you
 application. Your existing TypeScript toolchain compiles them with the rest of the
 project. SDK generation does not require a TypeScript installation. For type
 checking, use TypeScript 5.7.3 or later; see the
-[compiler support contract](docs/reference/typescript-types.md#compiler-support).
+[compiler support contract](docs/typescript/reference/types.md#compiler-support).
 
 Generate a client from a Node-based project:
 
@@ -51,8 +54,28 @@ import `./generated/api/index.js`.
 
 After changing the document, run the same command to update the SDK.
 `--incremental` updates managed files and preserves other files in the output
-directory. See [Generate and verify](docs/guide/generate.md) for update and
+directory. See [Generate and verify](docs/typescript/guide/generate.md) for update and
 conflict handling.
+
+## Quick start: Go
+
+In your Go module, generate from your own `openapi.yaml`:
+
+```sh
+openapi-sdkgen generate \
+  --input ./openapi.yaml \
+  --target golang \
+  --go-import-path example.com/consumer/internal/api \
+  --output ./internal/api \
+  --incremental
+```
+
+Match the import path to your module. The root package defaults to `api`; generated source
+includes no `go.mod` or `go.sum`. Install the dependencies used by your generated features
+in the application module. [First Go SDK](docs/golang/guide/getting-started.md) includes the
+pinned dependencies, a complete local mock call and expected output.
+[Go examples](docs/golang/examples/index.md) cover SSE, Links, selection and `net/http` webhooks.
+Go's linker removes unreachable code; generation selection can also reduce source and compile work.
 
 ## Install
 
@@ -114,23 +137,11 @@ points alongside the main client entry.
 Full guides and reference documentation:
 [jinyongp.dev/openapi-sdkgen](https://jinyongp.dev/openapi-sdkgen/).
 
-- [Getting started](docs/guide/getting-started.md)
-- [Generating an SDK](docs/guide/generate.md)
-- [Using the generated client](docs/guide/client.md)
-- [Transport, authentication, and streams](docs/guide/transport.md)
-- [Examples](docs/examples/index.md)
-- [CLI reference](docs/reference/cli.md)
-- [Generated client API](docs/reference/client-api.md)
-- [Generated server API](docs/reference/server-api.md)
-- [Streaming API](docs/reference/streaming.md)
-- [Supported OpenAPI capabilities](docs/reference/capabilities.md)
-- [Security policy](SECURITY.md)
+- [TypeScript documentation](docs/typescript/index.md)
+- [Go documentation](docs/golang/index.md)
+- [Playground](https://jinyongp.dev/openapi-sdkgen/)
 
-Runnable examples:
-
-- [Todo app](examples/typescript-todo-app)
-- [Advanced client](examples/typescript-advanced-app)
-- [OpenAPI capabilities](examples/typescript-openapi-capabilities-app)
+Choose SDK and display language independently on the documentation site.
 
 ## License
 

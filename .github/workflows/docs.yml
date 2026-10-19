@@ -12,6 +12,9 @@ on:
       - "go.mod"
       - "go.sum"
       - ".github/workflows/docs.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/npm-smoke.yml"
+      - "scripts/release/**"
       - ".node-version"
   pull_request:
     paths:
@@ -22,8 +25,22 @@ on:
       - "go.mod"
       - "go.sum"
       - ".github/workflows/docs.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/npm-smoke.yml"
+      - "scripts/release/**"
       - ".node-version"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      release-ref:
+        required: true
+        type: string
+      release-commit:
+        required: true
+        type: string
+      release-version:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -36,10 +53,15 @@ jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          ref: ${{ inputs.release-commit || github.sha }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -48,24 +70,52 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - name: Verify release identity
+        if: inputs.release-ref != ''
+        env:
+          RELEASE_REF: ${{ inputs.release-ref }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          set -euo pipefail
+          test "$RELEASE_REF" = "v$RELEASE_VERSION"
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$(git rev-parse "$RELEASE_REF^{commit}")" = "$RELEASE_COMMIT"
       - name: Install documentation dependencies
         env:
           CI: "true"
         run: bash docs/scripts/commands.sh install
       - name: Configure GitHub Pages
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: inputs.release-ref != ''
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Build documentation
         run: bash docs/scripts/commands.sh build
+      - name: Verify built routes and generated consumers
+        run: bash docs/scripts/commands.sh verify
+      - name: Record documentation release identity
+        if: inputs.release-ref != ''
+        env:
+          RELEASE_REF: ${{ inputs.release-ref }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path("docs/.vitepress/dist/release.json").write_text(json.dumps({
+              "tag": os.environ["RELEASE_REF"], "commit": os.environ["RELEASE_COMMIT"],
+              "version": os.environ["RELEASE_VERSION"], "targets": ["typescript", "golang"]
+          }) + "\n")
+          PY
       - name: Upload GitHub Pages artifact
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: inputs.release-ref != ''
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: docs/.vitepress/dist
 
   deploy:
     name: Deploy documentation
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: inputs.release-ref != ''
     needs: build
     runs-on: ubuntu-24.04
     permissions:

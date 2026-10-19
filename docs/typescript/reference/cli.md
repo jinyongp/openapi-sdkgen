@@ -36,7 +36,7 @@ See [Find APIs](/typescript/guide/inspect) for the workflow.
 | `--route <METHOD /path>` | Exact method and OpenAPI path template; repeatable |
 | `--deprecated true\|false` | Deprecated status; an undeclared value matches false |
 | `--format table\|json\|selection` | Table by default, versioned JSON, or a `[selection]` TOML fragment |
-| `--target typescript\|golang` | Analyze the full-document client for the selected target before filtering |
+| `--target typescript` | Analyze the full-document client for the selected target before filtering |
 | `--schema-extension <path>` | Schema vocabulary manifest for explicit target analysis; repeatable |
 | `--diagnostics-format human\|json` | Diagnostics on standard error |
 | `--diagnostic-mode fail-fast\|collect` | Diagnostic collection mode |
@@ -66,14 +66,14 @@ reference caches follow the existing input policy.
 | `total`, `matched` | API count before and after filters |
 | `operations` | Rows sorted by path, then method |
 | `documentsRead` | Decoded document count when measured by the lookup |
-| `target`, `analysisScope` | Present for explicit analysis: selected `typescript` or `golang`, `full-document-client` |
+| `target`, `analysisScope` | Present for explicit analysis: selected `typescript`, `full-document-client` |
 
 Each row contains `method`, `path`, `route`, `operationId` (string or `null`),
 `tags`, `summary`, `deprecated`, `source`, and its mounted JSON `pointer`.
 TypeScript rows add a `typescript` object: `status` is `exposed`, `hidden`, or
 `omitted`; `resourceCall` is a call expression or `null`; `routes` and
 `operations` indicate public access through `$routes` and `$operations`.
-`resourceOmission` gives the reason when a public API lacks a resource call. Go rows use the same analysis fields under `golang`; call expressions use Go API names.
+`resourceOmission` gives the reason when a public API lacks a resource call.
 
 Standard output contains only the selected result format. Warnings and errors
 go to standard error. Input, declaration, target analysis, and output errors
@@ -94,9 +94,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | --- | --- |
 | `--config <path>` | Load repeated generation settings from one explicit TOML file; CLI flags override matching config values |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON/YAML source: local path, `file://` URL, HTTP(S) URL, or `-` for stdin |
-| `--target typescript\|golang` | Generate TypeScript or Go source |
-| `--go-import-path <path>` | Full generated Go package import path; required for Go |
-| `--go-package <name>` | Go root package name; default `api` |
+| `--target typescript` | Generate TypeScript source |
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
 | `--incremental` | Update an existing manifest-owned output directory |
@@ -140,8 +138,6 @@ Supported config keys are intentionally narrower than the complete CLI surface:
 | `clients.<name>.selection.operations` | Config-only named client operation IDs |
 | `clients.<name>.selection.routes` | Config-only named client routes |
 | `incremental` | `--incremental` |
-| `golang.import_path` | `--go-import-path` |
-| `golang.package` | `--go-package` |
 | `typescript.typecheck` | `--typecheck`; applies to all generated TypeScript files |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |

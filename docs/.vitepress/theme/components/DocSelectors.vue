@@ -28,6 +28,11 @@ async function navigate(sdk: SDKTarget | null, locale: DisplayLocale): Promise<v
   const suffix: string = query.size ? `?${query.toString()}` : "";
   await router.go(`${withDocsBase(destination)}${suffix}`);
   await nextTick();
+  if (current.topic === "playground" && props.placement === "mobile") {
+    const menu: HTMLButtonElement | null = document.querySelector(".VPNavBarHamburger");
+    if (menu?.getAttribute("aria-expanded") !== "true") menu?.click();
+    await nextTick();
+  }
   const focusTarget: HTMLElement | null = document.querySelector(current.topic === "playground" ? `[data-doc-selectors="${props.placement}"] select` : "main h1, .VPHome h1");
   if (focusTarget) { if (focusTarget.tagName !== "SELECT") focusTarget.setAttribute("tabindex", "-1"); focusTarget.focus(); }
 }
@@ -62,9 +67,9 @@ watch((): SDKTarget | null => context.value.sdk, (sdk: SDKTarget | null): void =
 <style scoped>
 .doc-selectors { display:flex; gap:12px; align-items:center; padding:8px 12px; flex-wrap:wrap; }
 label { display:flex; align-items:center; gap:6px; font-size:12px; }
-select { max-width:100%; background:var(--vp-c-bg-soft); border:1px solid var(--vp-c-divider); border-radius:6px; padding:4px 8px; color:var(--vp-c-text-1); font:inherit; }
+select { max-width:100%; background:var(--vp-c-bg-soft); border:1px solid var(--vp-c-divider); border-radius:6px; padding:4px 8px; color:var(--vp-c-text-1); font:inherit; appearance:auto; }
 select:focus-visible { outline:2px solid var(--vp-c-brand-1); outline-offset:3px; }
 .selection-hint { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 [data-doc-selectors="desktop"] { display:none; }
-@media (min-width: 960px) { [data-doc-selectors="desktop"] { display:flex; } [data-doc-selectors="mobile"] { display:none; } }
+@media (min-width: 960px) { [data-doc-selectors="desktop"] { display:flex; flex:0 0 auto; flex-wrap:nowrap; gap:10px; padding-block:2px; } [data-doc-selectors="desktop"] label { display:grid; gap:0; line-height:1.4; } [data-doc-selectors="mobile"] { display:none; } }
 </style>

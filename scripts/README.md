@@ -152,3 +152,17 @@ options and addons while retaining ownership of input/output/target arguments.
 module with loopback servers. `devtools run playground:verify` builds and executes
 both WASM targets and checks every exported ZIP path/byte. Playground verification
 requires installed docs dependencies and does not execute a generated consumer.
+
+
+`devtools run verify:docs` follows `build:docs` and checks the rendered SDK scopes,
+historical anchors, search indexes, documentation tool contracts and the actual Go
+first-call/SSE/webhook code blocks. It uses disposable modules and local HTTP servers.
+
+Release checks include the Go example. Published native, npm (three operating systems)
+and stable Homebrew distributions also generate and run a Go consumer through
+`scripts/release/smoke-go.sh`. Production Pages is called by the stable release only
+after those distributions pass. Main/PR/manual docs workflows build and verify without
+production deployment. The reusable docs workflow checks the tag/commit/version and
+builds its WASM and pages at that commit, recording `release.json` in the artifact.
+On a docs-only failure, rerun the failed release jobs at the same tag; successful
+package publication jobs and immutable assets are reused by the existing release flow.

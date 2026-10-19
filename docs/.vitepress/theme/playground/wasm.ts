@@ -34,11 +34,11 @@ interface PendingGeneration {
 }
 
 let generatorWorker: Worker | undefined;
-let nextRequestID = 0;
-const pendingGenerations = new Map<number, PendingGeneration>();
+let nextRequestID: number = 0;
+const pendingGenerations: Map<number, PendingGeneration> = new Map<number, PendingGeneration>();
 
 function rejectPending(error: Error): void {
-  pendingGenerations.forEach(({ reject }) => reject(error));
+  pendingGenerations.forEach((pending: PendingGeneration): void => pending.reject(error));
   pendingGenerations.clear();
   generatorWorker?.terminate();
   generatorWorker = undefined;
@@ -49,7 +49,7 @@ function worker(): Worker {
 
   const instance: Worker = new Worker(`${import.meta.env.BASE_URL}playground/generator-worker.js`);
   generatorWorker = instance;
-  instance.addEventListener("message", (event: MessageEvent<GenerationResponse>) => {
+  instance.addEventListener("message", (event: MessageEvent<GenerationResponse>): void => {
     if (generatorWorker !== instance) return;
     const pending: PendingGeneration | undefined = pendingGenerations.get(event.data.id);
     if (!pending) return;
@@ -68,8 +68,8 @@ function worker(): Worker {
 }
 
 export function generate(source: string, target: string, options: GenerationOptions = {}): Promise<GenerationResult> {
-  return new Promise((resolve, reject) => {
-    const id = nextRequestID;
+  return new Promise((resolve: (result: GenerationResult) => void, reject: (error: Error) => void): void => {
+    const id: number = nextRequestID;
     nextRequestID += 1;
     pendingGenerations.set(id, { resolve, reject });
     const request: GenerationRequest = { id, source, target, options };

@@ -116,3 +116,21 @@ legacy/query/한글 앵커 및 검증기 결함 탐지 9건 통과. 브라우저
 리뷰: 각 SDK/locale 경로와 정적 HTML lang, base·.html·query·fragment·no-JS 링크,
 검색 모달 scope·배포 metadata·중립 홈·검증 호출자를 확인했다. 한글 수동 alias의 NFC/NFD 혼합과
 정적 replace의 .html 생략을 수정해 재검증했다. 호환 Playground는 no-JS에서 양쪽 SDK 링크를 제공한다.
+
+## W09 — 출시 안내·화면·배포 연결
+
+README/npm README를 정식 TS/Go 지원으로 개편하고 언어별 시작/예제 링크를 연결했다.
+TS CLI에서 Go 옵션을 제외해 선택한 SDK 설명만 보이도록 했다. main·PR·수동 docs 실행은
+검사/빌드만 하고, stable release가 published native/npm/Homebrew의 Go 생성·실행 검증 뒤
+동일 tag/commit/version의 문서·WASM을 빌드/배포한다. artifact에는 release.json을 남긴다.
+실패한 docs job만 재실행할 수 있으며 기존 패키지 게시 흐름은 유지했다.
+
+검증: `build:docs`, `verify:docs`, actionlint 전체 workflow 검사, bash 문법 검사 통과.
+`smoke-go.sh`를 버전이 주입된 로컬 candidate 실행 파일로 실행해 버전·생성·mock 호출을 확인했다.
+외부 패키지 게시와 published 배포판 smoke는 실제 release CI가 담당하며 이번 작업에서는 실행하지 않았다.
+리뷰: release 의존성·실패/재시도·prerelease 배포 제외·태그 SHA 확인·권한·npm 3 OS fixture,
+원래 native/npm/Homebrew publisher, 문서 설치/첫 실행, EN/KO 코드 일치와 SDK별 CLI를 확인했다.
+320·960·1024·1280px 브라우저에서 선택기/Playground 가로 넘침을 확인했다. 960px 선택기
+줄바꿈을 고쳤고, 실제 모바일 키보드 Home/Enter SDK 전환 뒤 sdk-mobile 포커스 복원도 확인했다.
+입력 없는 SDK 전환의 공유 query가 이전 옵션을 남기는 문제와 숨긴 mobile select 포커스를 수정했다.
+생성 상태/SDK·파일 수는 live status로 제공한다. 전체 재검토와 확대/색상/저장소 최종 점검은 W10에서 한다.

@@ -7,6 +7,10 @@ on:
         description: Published openapi-sdkgen npm version to verify.
         required: true
         type: string
+      commit:
+        description: Release commit to use for the verification fixture.
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       version:
@@ -29,11 +33,25 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit || github.sha }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22.23.3"
           package-manager-cache: false
       - name: Execute published npm launcher from a cold native cache
         env:
+          PACKAGE_VERSION: ${{ inputs.version }}
           OPENAPI_SDKGEN_CACHE_DIR: ${{ runner.temp }}/openapi-sdkgen-native-cache
-        run: npx --yes openapi-sdkgen@${{ inputs.version }} --version
+        shell: bash
+        run: npx --yes "openapi-sdkgen@$PACKAGE_VERSION" --version
+      - name: Generate and execute a Go SDK through the published launcher
+        shell: bash
+        env:
+          PACKAGE_VERSION: ${{ inputs.version }}
+          OPENAPI_SDKGEN_CACHE_DIR: ${{ runner.temp }}/openapi-sdkgen-native-cache
+        run: bash scripts/release/smoke-go.sh npm "$PACKAGE_VERSION"

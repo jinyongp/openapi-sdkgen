@@ -180,6 +180,10 @@ onMounted((): void => {
     serverAddon.value = options.server; metadataAddon.value = options.metadata;
   }
   target.value = nextTarget;
+  const locationURL: URL = new URL(window.location.href);
+  updateGenerationOptions(locationURL);
+  window.history.replaceState(window.history.state, "", locationURL);
+  writeSDKOptions(preferenceStorage(), nextTarget, { goImportPath: goImportPath.value, goPackage: goPackage.value, server: serverAddon.value, metadata: metadataAddon.value });
   activateSession(); preferencesReady = true; ready.value = true;
   const example: PlaygroundExample | undefined = playgroundExamples.find((candidate: PlaygroundExample): boolean => candidate.id === parameters.get("example"));
   if (example && (!wasActive || exampleID.value !== example.id)) void loadExample(example);
@@ -309,6 +313,10 @@ function validateSize(size: number) {
 }
 
 function updateGenerationOptions(locationURL: URL): void {
+  for (const key of [...locationURL.searchParams.keys()]) {
+    if (!["example", "with", "go-import-path", "go-package"].includes(key)) locationURL.searchParams.delete(key);
+  }
+  if (!playgroundExamples.some((example: PlaygroundExample): boolean => example.id === locationURL.searchParams.get("example"))) locationURL.searchParams.delete("example");
   if (target.value === "golang") {
     locationURL.searchParams.delete("target");
     locationURL.searchParams.set("go-import-path", goImportPath.value);
@@ -494,15 +502,17 @@ function toggleDirectory(path: string) {
       </div>
     </header>
 
+    <p class="visually-hidden" role="status">{{ loading ? copy.generating : error ? copy.stopped : loaded ? `${generatedTarget === 'golang' ? 'Go' : 'TypeScript'} · ${fileCountLabel}` : '' }}</p>
+
     <section class="workbench" :class="{ 'has-files': loaded }">
       <aside class="source-panel">
         <div class="source-controls" :class="{ compact: loaded }">
           <p class="field-label">SDK · {{ target === 'golang' ? 'Go' : 'TypeScript' }}</p>
           <template v-if="target === 'golang'">
             <label class="field-label" for="playground-go-import-path">{{ copy.goImportPath }}</label>
-            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!!error" spellcheck="false" />
+            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!goImportPath.trim()" spellcheck="false" />
             <label class="field-label" for="playground-go-package">{{ copy.goPackage }}</label>
-            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!!error" spellcheck="false" />
+            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(goPackage)" spellcheck="false" />
           </template>
           <label><input v-model="serverAddon" type="checkbox" :disabled="!ready" /> {{ copy.serverAddon }}</label>
           <label><input v-model="metadataAddon" type="checkbox" :disabled="!ready" /> {{ copy.metadataAddon }}</label>
@@ -707,8 +717,9 @@ function toggleDirectory(path: string) {
 .source-controls { overflow: auto; padding: 26px; }
 .field-label { display: block; margin-bottom: 8px; color: var(--vp-c-text-2); font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
 .input-label { margin-top: 24px; }
-select, .url-form input, .auth-fields input { width: 100%; height: 42px; border: 1px solid var(--vp-c-divider); border-radius: 9px; color: var(--vp-c-text-1); background: var(--vp-c-bg); font: inherit; }
+select, .url-form input, .auth-fields input, .source-controls > input[type="text"] { width: 100%; height: 42px; border: 1px solid var(--vp-c-divider); border-radius: 9px; color: var(--vp-c-text-1); background: var(--vp-c-bg); font: inherit; }
 select { padding: 0 12px; }
+.source-controls > input[type="text"] { padding: 0 11px; margin-bottom: 12px; min-width: 0; }
 .example-list { display: grid; gap: 8px; }
 .example-item { display: grid; width: 100%; gap: 4px; padding: 11px 12px; border: 1px solid var(--vp-c-divider); border-radius: 10px; color: var(--vp-c-text-2); background: var(--vp-c-bg); cursor: pointer; font: inherit; text-align: left; transition: .15s ease; }
 .example-item:hover { border-color: var(--vp-c-brand-1); background: color-mix(in srgb, var(--vp-c-brand-1) 5%, var(--vp-c-bg)); }

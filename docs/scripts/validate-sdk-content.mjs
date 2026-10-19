@@ -13,6 +13,7 @@ export async function validateSDKContent(targets = publishedTargets) {
       const source = await readFile(resolve(root, `.${path}`), "utf8");
       contents.push([...source.matchAll(/```([^\n]*)\n([\s\S]*?)```/g)].map(m => `${m[1]}\n${m[2]}`));
       if (/next release|source preview|미출시|다음 릴리스|소스 미리보기/i.test(source)) throw new Error(`Unreleased product copy: ${path}`);
+      if (sdk === "typescript" && /--go-import-path|--go-package|\[golang\]/.test(source)) throw new Error(`Go options in TypeScript page: ${path}`);
       if (sdk === "golang" && /```(?:ts|typescript|js|javascript)\b|\$operations|\$routes|createClient\(/.test(source)) throw new Error(`TypeScript consumer API in Go page: ${path}`);
     }
     if (JSON.stringify(contents[0]) !== JSON.stringify(contents[1])) throw new Error(`Code examples differ by locale: ${sdk}/${topic.id}`);
