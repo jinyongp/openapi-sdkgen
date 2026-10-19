@@ -2,7 +2,7 @@ package emit
 
 import (
 	"fmt"
-	"openapi-sdkgen/internal/target/typescript/schema/plan"
+	"openapi-sdkgen/internal/schema/plan"
 	"strings"
 )
 

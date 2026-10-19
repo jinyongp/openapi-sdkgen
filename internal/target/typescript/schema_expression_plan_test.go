@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 func TestSchemaDescriptorAliasesAreOwnedByEachFile(t *testing.T) {

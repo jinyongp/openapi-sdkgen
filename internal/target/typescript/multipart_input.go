@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 // multipartInputSchema projects only a request media occurrence. A component

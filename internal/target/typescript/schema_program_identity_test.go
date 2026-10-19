@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
 func TestSchemaProgramsShareDispatchAndPreserveReferenceTargets(t *testing.T) {

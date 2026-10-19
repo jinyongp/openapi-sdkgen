@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 // Descriptor sharing retains complete semantic data, including reference names.

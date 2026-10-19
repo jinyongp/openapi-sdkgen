@@ -1,4 +1,4 @@
-// Package plan owns normalized schema semantics independently of TypeScript output.
+// Package plan owns normalized schema semantics independently of target output.
 package plan
 
 import "encoding/json"
@@ -80,4 +80,6 @@ type Options struct {
 	LegacyNullable  bool
 	ReferenceName   func(string) (string, error)
 	Observer        Observer
+	// Source records annotations separately from executable schema semantics.
+	Source func(*Node, any)
 }

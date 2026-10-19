@@ -9,7 +9,7 @@ import (
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/openapiwalk"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 type projection string

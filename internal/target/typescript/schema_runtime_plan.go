@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 	"sort"
 	"strings"
 )

@@ -31,6 +31,9 @@ func Lower(value any, options Options) (*Node, error) {
 		return node, nil
 	}
 	node := &Node{}
+	if options.Source != nil {
+		options.Source(node, value)
+	}
 	add := func(name string, value Value, feature string) {
 		node.Fields = append(node.Fields, Field{Name: name, Value: value})
 		if feature != "" && options.Observer != nil {

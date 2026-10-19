@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
 func (wire *wireRenderContext) emitWireComponents(output *bytes.Buffer, document *ir.Document, name string, direction projection) error {

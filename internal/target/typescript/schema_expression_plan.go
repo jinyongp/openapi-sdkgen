@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 	schemaemit "openapi-sdkgen/internal/target/typescript/schema/emit"
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
 )
 
 // This cache owns semantic nodes and exact dependencies, never an importing

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	schemaplan "openapi-sdkgen/internal/target/typescript/schema/plan"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 type wirePropertiesMode uint8
