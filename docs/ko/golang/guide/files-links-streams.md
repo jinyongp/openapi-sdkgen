@@ -22,6 +22,13 @@ if err != nil {
 fmt.Println(todo.ID)
 ```
 
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+201 application/json
+todo-1
+```
+
 `Raw`와 `Do`는 각각 요청을 보냅니다. 한 번 받은 응답을 사용하려면 `Raw` 결과를 Link에 전달하세요.
 
 ## 스트림 읽기
@@ -35,6 +42,12 @@ for events.Next() {
 if err := events.Err(); err != nil {
 	return err
 }
+```
+
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+Ship the SDK
 ```
 
 첫 `Next()`에서 요청을 시작합니다. 조기에 중단할 때도 `Close()`를 호출하고,

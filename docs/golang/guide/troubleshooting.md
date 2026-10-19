@@ -25,5 +25,7 @@ if errors.As(err, &failure) {
 }
 ```
 
+For a call canceled through its context, this prints `REQUEST_ABORTED`. If `err` is `nil` or does not contain an SDK `APIError`, the branch prints nothing.
+
 Check [authentication and transport](./transport.md), and close streams when stopping early.
 See [OpenAPI support](../reference/capabilities.md) for XML mapping limits.

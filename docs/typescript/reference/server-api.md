@@ -143,5 +143,7 @@ A framework adapter only needs to preserve Fetch request/response semantics:
 const response = await router.fetch(request);
 ```
 
+With a valid request for the illustrative handler above, `response.status` is `204` and its body is empty. A secured contract also requires an authenticator, as described above.
+
 Mounting the router, converting a framework request to a Fetch `Request`, and
 returning the resulting Fetch `Response` remain application responsibilities.

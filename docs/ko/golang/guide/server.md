@@ -21,6 +21,8 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+JSON 본문 `{"id":"todo-1","title":"Ship the SDK"}`를 받으면 핸들러는 `todo-1`을 출력하고 본문 없이 `204 No Content`로 응답합니다. 입력이 명세에 맞지 않으면 이 출력 전에 요청을 거절합니다.
+
 ## 인증과 요청 제한
 
 인증이 필요한 명세에는 `Options.Authenticate`를 제공합니다. 인증 함수를 제공하지 않으면

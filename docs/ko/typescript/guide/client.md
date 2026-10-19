@@ -51,6 +51,18 @@ const created = await api.todos.create({
 const todos = await api.todos.list();
 ```
 
+새 Todo 서버에서 처음 생성했다면 `created`에는 다음 값이 반환됩니다.
+
+```json
+{
+  "id": "1",
+  "title": "Write documentation",
+  "completed": false
+}
+```
+
+`todos`는 `{ items: [created] }` 형태입니다. 목록 호출도 배열을 바로 반환하지 않고 `items` 배열을 가진 객체를 반환합니다.
+
 [`$routes`](/ko/typescript/reference/client-api#routes)는 HTTP 메서드와 OpenAPI 경로를 기준으로 API를 호출합니다.
 `operationId`가 없는 API도 이 방식으로 호출할 수 있습니다.
 
@@ -58,12 +70,16 @@ const todos = await api.todos.list();
 const todos = await api.$routes["GET /todos"]();
 ```
 
+위의 `api.todos.list()`와 같은 `{ items: [...] }` 형태의 값을 반환합니다.
+
 `operationId`가 애플리케이션에서 사용할 안정적인 이름이라면 [`$operations`](/ko/typescript/reference/client-api#operations)를
 사용합니다.
 
 ```ts
 const todos = await api.$operations.listTodos();
 ```
+
+위의 `api.todos.list()`와 같은 `{ items: [...] }` 형태의 값을 반환합니다.
 
 ## 호출 밖에서 입력 타입 지정
 
@@ -77,8 +93,10 @@ type CreateTodoInput = OperationInput<typeof api.$operations.createTodo>;
 type CreateTodoBody = RouteInput<"POST /todos">["body"];
 const body: CreateTodoBody = { title: "Write documentation" };
 const input: CreateTodoInput = { body };
-await api.$operations.createTodo(input);
+const created = await api.$operations.createTodo(input);
 ```
+
+`created`는 위와 같은 Todo 객체입니다. 입력 타입을 따로 꺼내 써도 반환값은 달라지지 않습니다.
 
 <span id="raw-로-status와-header-확인"></span>
 
@@ -98,6 +116,15 @@ if (result.status === 201) {
   console.log(result.response.headers.get("content-type"));
 }
 ```
+
+예제 서버에서는 다음처럼 출력됩니다.
+
+```text
+Write documentation
+application/json
+```
+
+변환된 Todo 객체는 `result.data`에 있고, `result.status`는 `201`입니다.
 
 `.raw()`의 반환 타입은 상태 코드별로 구분되므로
 `result.status`를 확인하면 TypeScript가 해당 응답 필드를 좁힐 수 있습니다.
@@ -122,6 +149,8 @@ try {
   console.error(error.code, error.message);
 }
 ```
+
+성공하면 오류 처리 분기로 들어가지 않습니다. 호출이 실패하면 `code`와 `message`를 가진 SDK 오류가 발생합니다. 명세에 선언된 HTTP 오류 본문은 아래의 타입 좁히기를 거쳐 `error.data`에서 읽습니다.
 
 명세에 오류 응답이 선언된 API에서는 `isOperationHTTPError`로 응답 본문 타입을
 좁힐 수 있습니다. 사용 조건과 예제는 [오류 레퍼런스](/ko/typescript/reference/client-api#errors)에 있습니다.

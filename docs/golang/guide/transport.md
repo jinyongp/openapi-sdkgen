@@ -19,6 +19,8 @@ client, err := api.NewClient(api.ClientOptions{
 })
 ```
 
+`NewClient` returns a configured client or an error; it sends no request. Later calls use a transport that does not automatically request or decode gzip.
+
 Configure your own transport for Brotli, Zstandard or other encodings. Advertise an encoding
 only when your HTTP layer can decode it. Return decoded bytes for JSON, XML and stream
 validation, or supply a media codec that handles the returned representation. The SDK uses

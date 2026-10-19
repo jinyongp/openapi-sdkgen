@@ -101,8 +101,10 @@ const api = createClient({
 
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 console.log(tasks);
-await api.$routes["GET /health"]();
+const health = await api.$routes["GET /health"]();
 ```
+
+Example server responses: `tasks` is `["Write documentation", "Ship the SDK"]`, and `GET /health` returns the string `"ok"`. The Task contract returns a string array directly, unlike the Todo contract's `{ items: [...] }` wrapper.
 
 `operations` uses exact OpenAPI operation IDs. `routes` uses the exact HTTP
 method and OpenAPI path template, including operations without an ID. Selecting
@@ -136,14 +138,16 @@ import {
   loadOperations,
   routes,
 } from "./generated/api/selective/index.js";
-import tasks from "./tasks.operations.js";
+import taskOperations from "./tasks.operations.js";
 
 const api = createClient({
   baseURL: "https://api.example.test/v1",
-  operations: await loadOperations([tasks, routes["GET /health"]]),
+  operations: await loadOperations([taskOperations, routes["GET /health"]]),
 });
-await api.$operations.listTasks({ query: { limit: 20 } });
+const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 ```
+
+`tasks` is the same string array as in the first call; composing feature selections does not wrap or transform the API response.
 
 Pass nested arrays and groups directly. Await asynchronously loaded selections first.
 See [selective client inputs](../reference/client-api.md#selection-input) for accepted

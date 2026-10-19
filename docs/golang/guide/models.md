@@ -19,4 +19,6 @@ call := client.Operations.CreateTodo(input)
 call = call.WithOptions(types.RequestOptions{RequestID: types.Some("example")})
 ```
 
+This prepares a call and sets its request ID to `example`. It sends no request and produces no Todo yet. `call.Do(ctx)` returns the Todo shown in [API calls](./client.md).
+
 See [types](../reference/types.md) for codecs, unions, enums and component projections.

@@ -15,6 +15,8 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+JSON 본문 `{"id":"todo-1","title":"Ship the SDK"}`를 받으면 핸들러는 `todo-1`을 출력하고 본문 없이 `204 No Content`로 응답합니다. 입력이 명세에 맞지 않으면 이 출력 전에 요청을 거절합니다.
+
 ## 인증
 
 인증이 필요하면 `Options.Authenticate`를 제공합니다. 매개변수를 디코딩한 뒤 이 함수를 호출하며,
@@ -57,6 +59,8 @@ if err != nil {
 }
 return contract.Validate(ctx, value)
 ```
+
+`{"count":2}`를 디코딩하면 해당 값이 반환되고 `Validate`는 `nil`을 반환합니다. `2`를 `"two"`로 바꾸면 정수 스키마에 맞지 않아 디코딩이 실패합니다.
 
 ## 호스트 연결
 

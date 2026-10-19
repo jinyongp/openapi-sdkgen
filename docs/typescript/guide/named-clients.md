@@ -54,6 +54,15 @@ const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.products("product-1").get();
 ```
 
+Example `product` value for a server returning a notebook:
+
+```json
+{
+  "id": "product-1",
+  "name": "Notebook"
+}
+```
+
 `createClient` is synchronous. Its resource tree, `$routes`, and `$operations`
 contain the selected APIs. Resource method names follow the document's naming
 rules; use [API inspection](/typescript/guide/inspect#typescript) to check the generated call
@@ -69,6 +78,15 @@ const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.$routes["GET /products/{id}"]({
   path: { id: "product-1" },
 });
+```
+
+Example `product` value for a server returning a notebook:
+
+```json
+{
+  "id": "product-1",
+  "name": "Notebook"
+}
 ```
 
 Importing the entry prepares its selected code; the method call sends the API

@@ -21,7 +21,13 @@ if err != nil {
 	return err
 }
 todo, err := operation.Call(api.GetTodoInput{Path: api.GetTodoPath{ID: "todo-1"}}).Do(ctx)
+if err != nil {
+	return err
+}
+fmt.Println(todo.ID, todo.Title)
 ```
+
+Todo 예제 서버에서는 `todo-1 Ship the SDK`가 출력됩니다. 정적 참조에서도 Todo 응답 타입이 유지됩니다. 선택 범위는 사용할 수 있는 메서드를 바꾸며 반환 데이터를 바꾸지는 않습니다.
 
 생성 루트 아래의 `operations`와 `selective`를 import하세요. Go 링커는 도달하지 않는 코드를
 제거하므로 JavaScript 번들러나 트리 셰이킹 설정이 필요하지 않습니다. 미사용 메서드가

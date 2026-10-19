@@ -38,6 +38,14 @@ const router = createWebhookRouter(handlers, {
 });
 ```
 
+For an authenticated request containing `{"todoID":"todo-1","completed":true}`, this handler prints:
+
+```text
+todo-1 true
+```
+
+The sender receives `204 No Content` with no body.
+
 Call `router.fetch(request)` from your HTTP host and forward its returned `Response`.
 The SDK decodes and validates the request; your application chooses the route and authentication policy.
 

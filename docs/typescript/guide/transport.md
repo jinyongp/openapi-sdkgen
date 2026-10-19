@@ -73,6 +73,8 @@ await api.$operations.createTodo(
 );
 ```
 
+This selects `userAuth` and sends `Authorization: Bearer example-token`. A successful call returns the created Todo object, as in [client calls](./client.md).
+
 The generated TypeScript type exposes the allowed requirement IDs for
 autocomplete and static checking. With one effective requirement, the SDK selects
 it automatically. An empty requirement represents anonymous access and uses the
@@ -167,6 +169,8 @@ await api.$operations.createTodo({
 });
 ```
 
+The request carries `Idempotency-Key: request-1` and a JSON title. A successful response returns the created Todo object; whether repeated keys deduplicate requests is server policy.
+
 The active Fetch environment controls headers such as `Origin`, `Host`, `Cookie`,
 and `Sec-*`, including whether caller-provided values can be applied.
 
@@ -189,6 +193,8 @@ const api = createClient({
 });
 ```
 
+When an operation is called, this transport prints the server's status, for example `201` for Todo creation, and returns the Response to the SDK for normal decoding. Constructing `api` alone prints nothing.
+
 `capabilities.cookieJar`, `readableResponseHeaders`, and `mutualTLS` describe
 features already implemented by the transport. Setting them does not install a
 cookie jar or configure client certificates. Configure those features in the
@@ -207,6 +213,8 @@ const todos = await api.todos.list(
   { signal: controller.signal, timeoutMS: 5_000 },
 );
 ```
+
+If the call completes, `todos` is `{ items: [...] }`. If the signal is aborted or the 5-second timeout expires first, the promise rejects instead of returning a list. Call `controller.abort()` to trigger cancellation.
 
 The same request options are available to operation, route, resource, Link, and
 stream calls where applicable.

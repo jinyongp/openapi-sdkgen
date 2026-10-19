@@ -145,5 +145,7 @@ HTTP 서버와 프레임워크의 인증·세션 시스템은 애플리케이션
 const response = await router.fetch(request);
 ```
 
+위 예시 핸들러에 유효한 요청을 전달하면 `response.status`는 `204`이고 본문은 비어 있습니다. 보안이 선언된 명세라면 위에서 설명한 인증 함수도 필요합니다.
+
 라우터 연결, 프레임워크 요청을 Fetch `Request`로 변환하는 작업, 결과
 Fetch `Response` 반환은 애플리케이션이 담당합니다.

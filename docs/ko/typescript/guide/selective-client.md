@@ -99,8 +99,10 @@ const api = createClient({
 
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 console.log(tasks);
-await api.$routes["GET /health"]();
+const health = await api.$routes["GET /health"]();
 ```
+
+서버 응답 예시로 `tasks`는 `["Write documentation", "Ship the SDK"]`, `GET /health`의 반환값은 문자열 `"ok"`입니다. Task 명세는 Todo 명세의 `{ items: [...] }`와 달리 문자열 배열을 바로 반환합니다.
 
 `operations`는 OpenAPI에 선언된 API 식별자를 키로 사용합니다. `routes`의 키는
 HTTP 메서드와 OpenAPI 경로 템플릿을 합친 값이며, 식별자가 없는 API도 선택할
@@ -134,14 +136,16 @@ import {
   loadOperations,
   routes,
 } from "./generated/api/selective/index.js";
-import tasks from "./tasks.operations.js";
+import taskOperations from "./tasks.operations.js";
 
 const api = createClient({
   baseURL: "https://api.example.test/v1",
-  operations: await loadOperations([tasks, routes["GET /health"]]),
+  operations: await loadOperations([taskOperations, routes["GET /health"]]),
 });
-await api.$operations.listTasks({ query: { limit: 20 } });
+const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 ```
+
+`tasks`에는 첫 호출과 같은 문자열 배열이 반환됩니다. 기능별 선택 목록을 합쳐도 API 응답 형태는 바뀌지 않습니다.
 
 중첩된 배열과 객체를 그대로 전달할 수 있습니다. 목록을 비동기로 구한다면
 먼저 `await`하세요. 허용되는 값과 순환 참조 처리는

@@ -36,6 +36,8 @@ openapi-sdkgen은 지원하는 `x-*` 선언을 코드를 쓰기 전에 검증합
 x-envelope: data
 ```
 
+예를 들어 서버 본문이 `{"data":{"id":"todo-1","title":"Write documentation"}}`라면 일반 호출은 `ID`가 `"todo-1"`, `Title`이 `"Write documentation"`인 생성 모델 값을 반환합니다. Raw 응답에서는 바깥 `data` 구조도 유지됩니다.
+
 이 확장을 사용하려면 본문이 있는 모든 성공 JSON 응답이 `data` 속성을 가진
 객체여야 합니다. `Raw(ctx)`는 나머지 메타데이터를 포함한 전체 응답 본문을
 반환합니다.

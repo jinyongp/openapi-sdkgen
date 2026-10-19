@@ -50,6 +50,18 @@ const created = await api.todos.create({
 const todos = await api.todos.list();
 ```
 
+For example, after the first creation on a fresh Todo server, `created` is:
+
+```json
+{
+  "id": "1",
+  "title": "Write documentation",
+  "completed": false
+}
+```
+
+`todos` is `{ items: [created] }`. The list result is an object containing an array, not the array itself.
+
 Use [`$routes`](/typescript/reference/client-api#routes) to identify an operation by HTTP method and OpenAPI path, including
 operations with no `operationId`:
 
@@ -57,11 +69,15 @@ operations with no `operationId`:
 const todos = await api.$routes["GET /todos"]();
 ```
 
+This returns the same `{ items: [...] }` value as `api.todos.list()` above.
+
 Use [`$operations`](/typescript/reference/client-api#operations) when `operationId` is the stable application-facing name:
 
 ```ts
 const todos = await api.$operations.listTodos();
 ```
+
+This returns the same `{ items: [...] }` value as `api.todos.list()` above.
 
 ## Name an input outside the call
 
@@ -75,8 +91,10 @@ type CreateTodoInput = OperationInput<typeof api.$operations.createTodo>;
 type CreateTodoBody = RouteInput<"POST /todos">["body"];
 const body: CreateTodoBody = { title: "Write documentation" };
 const input: CreateTodoInput = { body };
-await api.$operations.createTodo(input);
+const created = await api.$operations.createTodo(input);
 ```
+
+`created` has the same Todo shape shown above; extracting the input types does not change the response.
 
 ## Read status and headers with `.raw()`
 
@@ -94,6 +112,15 @@ if (result.status === 201) {
   console.log(result.response.headers.get("content-type"));
 }
 ```
+
+For the example server, this prints:
+
+```text
+Write documentation
+application/json
+```
+
+The decoded Todo is `result.data`; `result.status` is `201`.
 
 The generated raw response is status-aware, so TypeScript can narrow fields
 based on `result.status`.
@@ -119,6 +146,8 @@ try {
   console.error(error.code, error.message);
 }
 ```
+
+A successful call enters no error branch. A failed exchange throws an SDK error with `code` and `message`; declared HTTP error bodies are available as `error.data` after narrowing below.
 
 For an operation with declared error responses, `isOperationHTTPError` can narrow
 the body type. See the [error reference](/typescript/reference/client-api#errors) for conditions and an example.

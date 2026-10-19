@@ -63,6 +63,12 @@ if err != nil {
 fmt.Printf("Created %s: %s\n", todo.ID, todo.Title)
 ```
 
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+Created todo-1: Ship the SDK
+```
+
 `todo`에서 생성된 항목의 `ID`, `Title`을 읽을 수 있습니다.
 서버를 준비하지 않고 실행해보려면 위의 예제 ZIP을 사용하세요.
 로컬 서버, 모듈 설정, 생성 명령과 실행 방법이 포함되어 있습니다.

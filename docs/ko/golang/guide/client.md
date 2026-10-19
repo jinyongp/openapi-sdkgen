@@ -18,6 +18,12 @@ if err != nil {
 fmt.Println(todo.ID, todo.Title)
 ```
 
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+todo-1 Ship the SDK
+```
+
 `Operations`는 작업별 API를, `Routes`는 HTTP 메서드·경로별 진입점을 제공합니다.
 리소스 메서드는 `client.Todos.ByID("todo-1").Get().Do(ctx)`처럼 경로 값을 미리 연결합니다.
 클라이언트·선택자·호출을 구성할 때는 통신하지 않습니다. `Do`, `Raw`, 스트림 실행마다
@@ -44,6 +50,13 @@ if err != nil {
 fmt.Println(todo.ID)
 ```
 
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+201 application/json
+todo-1
+```
+
 같은 교환에서는 `Raw`와 `Do` 중 하나를 실행하세요. 두 메서드는 각각 별도 요청을 보냅니다.
 타입 없는 순차형 `Raw`의 `Body`는 읽은 뒤 닫아야 합니다. 스트림은 소진·취소·명시적 닫기에서
 본문과 데이터 소스를 정리합니다. 중간에 소비를 멈추면 반드시 닫으세요.
@@ -59,3 +72,5 @@ if errors.As(err, &failure) {
 	fmt.Println(failure.Code)
 }
 ```
+
+예를 들어 context로 취소된 호출이라면 `REQUEST_ABORTED`가 출력됩니다. `err`가 `nil`이거나 SDK의 `APIError`가 아니면 이 분기에서는 출력하지 않습니다.

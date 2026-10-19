@@ -25,5 +25,7 @@ if errors.As(err, &failure) {
 }
 ```
 
+예를 들어 context로 취소된 호출이라면 `REQUEST_ABORTED`가 출력됩니다. `err`가 `nil`이거나 SDK의 `APIError`가 아니면 이 분기에서는 출력하지 않습니다.
+
 [인증과 전송](./transport.md)을 점검하고, 스트림을 중단할 때는 닫기와 오류 확인을 수행하세요.
 XML 매핑의 지원 범위는 [OpenAPI 지원](../reference/capabilities.md)에 있습니다.

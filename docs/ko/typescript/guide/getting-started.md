@@ -53,6 +53,15 @@ const todo = await api.todos.create({
 });
 
 const todos = await api.todos.list({ query: { completed: false } });
+console.log(JSON.stringify(todo));
+console.log(JSON.stringify(todos));
+```
+
+예제 서버를 처음 실행한 상태라면 첫 호출은 항목 `1`을 만들고, 두 번째 호출은 그 항목을 `items`에 담아 반환합니다. 출력은 다음과 같습니다.
+
+```text
+{"id":"1","title":"Write documentation","completed":false}
+{"items":[{"id":"1","title":"Write documentation","completed":false}]}
 ```
 
 `todo`에는 생성된 항목이, `todos.items`에는 조회한 항목들이 반환됩니다.

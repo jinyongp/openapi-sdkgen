@@ -109,6 +109,16 @@ const todo = await api.todos.create({
 });
 ```
 
+Todo 명세의 `todo` 반환값 예시입니다.
+
+```json
+{
+  "id": "1",
+  "title": "Write documentation",
+  "completed": false
+}
+```
+
 이름이나 경로 선택자 타입의 충돌로 리소스 메서드를 만들 수 없으면
 `SDKGEN-W513`을 보고합니다. 해당 API는 `$operations`나 `$routes`로 호출하세요.
 
@@ -120,12 +130,40 @@ HTTP 메서드와 OpenAPI 경로를 기준으로 호출합니다.
 const todos = await api.$routes["GET /todos"]();
 ```
 
+Todo 명세의 `todos` 반환값 예시입니다.
+
+```json
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Write documentation",
+      "completed": false
+    }
+  ]
+}
+```
+
 ### `$operations`
 
 OpenAPI에 선언된 `operationId`로 호출합니다.
 
 ```ts
 const todos = await api.$operations["listTodos"]();
+```
+
+Todo 명세의 `todos` 반환값 예시입니다.
+
+```json
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Write documentation",
+      "completed": false
+    }
+  ]
+}
 ```
 
 ### `.raw()`
@@ -143,6 +181,8 @@ result.status;
 result.headers;
 result.response;
 ```
+
+Todo 생성 응답에서는 `result.status`가 `201`, `result.contentType`이 `"application/json"`이고, `result.data`가 위의 Todo 객체입니다. `result.response`는 원본 Fetch `Response`입니다.
 
 일반 호출에서는 응답 본문이 이미 소비됩니다. 선언된 스트리밍
 응답에서 소비되지 않은 본문이 필요하면 별도의 `.raw()` 요청을 사용합니다.
@@ -181,6 +221,8 @@ await api.$operations.createTodo(
   },
 );
 ```
+
+요청은 `userAuth` 대안과 지정한 Authorization 헤더를 사용합니다. 성공 시 반환값은 일반 생성 호출과 같은 Todo 객체입니다.
 
 유효한 인증 요구 사항 ID는 생성된 TypeScript 타입에 포함됩니다. 인증 정보를
 동적으로 가져와야 한다면 `securityProvider`를 사용합니다. 전체 인증
@@ -259,6 +301,8 @@ try {
   if (error.status === 404) console.log(error.data.message);
 }
 ```
+
+서버가 상태 코드 `404`와 JSON `{"message":"Todo not found"}`를 보내면 `Todo not found`를 출력합니다. 그 외에 이 API의 선언된 HTTP 오류는 상태별로 처리할 수 있고, 가드에 해당하지 않는 오류는 다시 던집니다.
 <span id="openapi-메타데이터"></span>
 
 <span id="metadata-migration"></span>
@@ -275,6 +319,8 @@ openapi.version;
 openapi.versionLine;
 ```
 
+명세가 `openapi: "3.2.0"`을 선언했다면 `openapi.version`은 `"3.2.0"`, `openapi.versionLine`은 `"3.2"`입니다.
+
 SDK에서 원문을 읽으려면 [`--with metadata`](/ko/typescript/reference/cli#metadata-addon)를 지정하세요.
 원문의 설명이나 확장 필드를 읽는 문서 도구·스크립트에서 사용할 수 있습니다.
 
@@ -283,6 +329,8 @@ import { openapi } from "./generated/api/metadata";
 
 console.log(openapi.document.info.title);
 ```
+
+시작하기의 명세로 생성했다면 `Todo API`를 출력합니다. 포함된 메타데이터를 읽을 뿐 HTTP 요청을 보내지는 않습니다.
 
 `openapi.document`에는 입력 JSON·YAML 문서 전체를 디코딩한 값이 들어갑니다.
 API를 선택해 생성해도 제외한 API의 원문은 함께 포함됩니다. 외부 `$ref`는
@@ -340,6 +388,8 @@ const api = createClient({
 await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
+`listTasks`가 선택되어 있으면 `["Write documentation", "Ship the SDK"]` 같은 배열을 반환합니다. 선택되지 않았다면 선택적 연결은 요청을 보내지 않고 `undefined`를 반환합니다.
+
 `all.js`를 사용하면 이름 목록의 전송 비용이 추가되지만 모든 API 구현을 가져오지는
 않습니다. 이렇게 계산한 선택의 후보 메서드는 여전히 선택적입니다. 작은 기본 참조
 객체를 열거하거나 그 객체에서 전체 목록의 포함 여부를 확인하는 대신 이 진입점을
@@ -360,6 +410,8 @@ const dynamic = createClient({
 
 await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
 ```
+
+`listTasks`가 선택되어 있으면 `["Write documentation", "Ship the SDK"]` 같은 배열을 반환합니다. 선택되지 않았다면 선택적 연결은 요청을 보내지 않고 `undefined`를 반환합니다.
 
 고정된 목록이라면 선언할 때 튜플 타입을 유지하세요. 이미 일반 배열로 넓어진 타입은
 나중에 함수에 전달한다고 원래 정보가 복원되지 않습니다. 타입은 접근자의 내부 동작이나

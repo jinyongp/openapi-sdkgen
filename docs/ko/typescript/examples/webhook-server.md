@@ -43,6 +43,14 @@ const router = createWebhookRouter(handlers, {
 });
 ```
 
+인증된 요청의 본문이 `{"todoID":"todo-1","completed":true}`라면 핸들러는 다음 값을 출력합니다.
+
+```text
+todo-1 true
+```
+
+요청을 보낸 쪽에는 본문 없이 `204 No Content`를 반환합니다.
+
 호스트의 HTTP 처리기에서 `router.fetch(request)`를 호출하고 반환된 `Response`를 전달합니다.
 SDK는 요청 해석과 스키마 검증을 수행하며, 애플리케이션은 수신 경로와 인증 정책을 정합니다.
 

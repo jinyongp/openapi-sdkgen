@@ -106,6 +106,16 @@ const todo = await api.todos.create({
 });
 ```
 
+Example returned `todo` value from the Todo contract:
+
+```json
+{
+  "id": "1",
+  "title": "Write documentation",
+  "completed": false
+}
+```
+
 If a naming or selector-type conflict prevents a resource method, generation
 reports `SDKGEN-W513`. Call the operation through `$operations` or `$routes`.
 
@@ -118,12 +128,40 @@ Call an API by its HTTP method and OpenAPI path. This also works when no
 const todos = await api.$routes["GET /todos"]();
 ```
 
+Example returned `todos` value from the Todo contract:
+
+```json
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Write documentation",
+      "completed": false
+    }
+  ]
+}
+```
+
 ### `$operations`
 
 Call an API by its declared `operationId`.
 
 ```ts
 const todos = await api.$operations["listTodos"]();
+```
+
+Example returned `todos` value from the Todo contract:
+
+```json
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Write documentation",
+      "completed": false
+    }
+  ]
+}
 ```
 
 ### `.raw()`
@@ -141,6 +179,8 @@ result.status;
 result.headers;
 result.response;
 ```
+
+For a Todo creation response, `result.status` is `201`, `result.contentType` is `"application/json"`, and `result.data` is the Todo object above. `result.response` is the original Fetch `Response`.
 
 The Fetch body is normally already consumed by decoded calls. For declared
 streaming responses, a separate `.raw()` request preserves the unconsumed body.
@@ -178,6 +218,8 @@ await api.$operations.createTodo(
   },
 );
 ```
+
+The request uses the `userAuth` alternative and the supplied Authorization header. Its successful result is the same Todo object as an ordinary creation call.
 
 The generated type exposes the valid requirement IDs. Use `securityProvider`
 when credentials need to be acquired dynamically. See
@@ -254,6 +296,8 @@ try {
 }
 ```
 
+If the server responds with status `404` and JSON `{"message":"Todo not found"}`, this prints `Todo not found`. Other failures are handled according to their narrowed status or rethrown by the guard.
+
 <span id="metadata-migration"></span>
 
 ## OpenAPI metadata
@@ -268,6 +312,8 @@ openapi.version;
 openapi.versionLine;
 ```
 
+For a document declaring `openapi: "3.2.0"`, `openapi.version` is `"3.2.0"` and `openapi.versionLine` is `"3.2"`.
+
 To read the original document from the SDK, enable
 [`--with metadata`](/typescript/reference/cli#metadata-addon). This is useful for documentation
 tools or scripts that inspect the source description and extensions.
@@ -277,6 +323,8 @@ import { openapi } from "./generated/api/metadata";
 
 console.log(openapi.document.info.title);
 ```
+
+For the Getting started contract, this prints `Todo API`. It reads bundled metadata and makes no HTTP request.
 
 The export contains the whole decoded JSON or YAML entry document, including APIs
 excluded by selection. External `$ref` values keep their original paths. YAML
@@ -333,6 +381,8 @@ const api = createClient({
 await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 
+If `listTasks` is selected, an example result is `["Write documentation", "Ship the SDK"]`. If it is absent, optional chaining returns `undefined` without sending a request.
+
 `all.js` adds the names to the downloaded code, but does not import every
 operation implementation. Computed selections still have optional candidate
 methods. Use this entry rather than enumerating or testing membership on the
@@ -353,6 +403,8 @@ const dynamic = createClient({
 
 await dynamic.$operations.listTasks?.({ query: { limit: 20 } });
 ```
+
+If `listTasks` is selected, an example result is `["Write documentation", "Ship the SDK"]`. If it is absent, optional chaining returns `undefined` without sending a request.
 
 Keep an array as a tuple at its declaration when its membership is fixed. Passing
 an already widened array later does not restore information that TypeScript has

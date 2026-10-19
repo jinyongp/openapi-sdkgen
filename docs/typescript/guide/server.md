@@ -50,6 +50,14 @@ const handlers: WebhookHandlers = {
 };
 ```
 
+For an authenticated request containing `{"todoID":"todo-1","completed":true}`, this handler prints:
+
+```text
+todo-1 true
+```
+
+The sender receives `204 No Content` with no body.
+
 Map the Webhook name to the application path that receives it:
 
 For the secured example contract, also supply `authenticate` as shown in the
@@ -64,6 +72,8 @@ const router = createWebhookRouter(handlers, {
 
 const response = await router.fetch(request);
 ```
+
+`response` is a Fetch `Response`. With the secured example contract, this router has no authenticator and returns status `401` without calling the handler; the next section adds authentication.
 
 A framework adapter converts the incoming request to a Fetch `Request`, calls
 `router.fetch(request)`, and returns the resulting Fetch `Response`.
@@ -140,6 +150,8 @@ const response =
     "{$request.body#/callbackUrl}"
   ].POST.fetch(request);
 ```
+
+For the illustrative callback body `{"todoID":"todo-1","completed":true}`, the handler above prints `todo-1 true`; `response.status` is `204` and its body is empty.
 
 The runtime expression remains part of the OpenAPI contract, while your application
 chooses the deployment URL that receives the callback.

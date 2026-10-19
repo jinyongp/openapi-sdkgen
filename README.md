@@ -39,6 +39,9 @@ const todo = await api.todos.create({
 });
 ```
 
+For a server returning the created Todo, an example `todo` value is
+`{ id: "1", title: "Write documentation", completed: false }`.
+
 Build the SDK with your application's toolchain. Bundlers such as Vite and
 Next.js also accept the directory import `./generated/api`.
 

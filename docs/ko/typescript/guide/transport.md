@@ -77,6 +77,8 @@ await api.$operations.createTodo(
 );
 ```
 
+`userAuth`를 선택하고 `Authorization: Bearer example-token`을 보냅니다. 성공하면 [클라이언트 호출](./client.md)과 같은 생성된 Todo 객체를 반환합니다.
+
 허용되는 인증 요구 사항의 식별자는 생성된 TypeScript 유니온 타입에 포함되며 자동 완성과
 정적 타입 검사로 확인할 수 있습니다. 유효한 인증 요구 사항이 하나면
 SDK가 자동 선택합니다. 빈 인증 요구 사항이 다른 대안과 함께 있으면 익명 접근을
@@ -178,6 +180,8 @@ await api.$operations.createTodo({
 });
 ```
 
+요청에는 `Idempotency-Key: request-1`과 JSON 본문의 제목이 들어갑니다. 성공하면 생성된 Todo 객체를 반환합니다. 같은 키의 요청을 중복 처리하지 않을지는 서버 정책에 따릅니다.
+
 `Origin`, `Host`, `Cookie`, `Sec-*` 같은 헤더는 실행 중인 Fetch 환경이 제어하며,
 호출자가 지정한 값을 적용할 수 있는지도 전송 구현이 결정합니다.
 
@@ -202,6 +206,8 @@ const api = createClient({
 });
 ```
 
+이 전송 함수를 통해 API를 호출하면 서버의 상태 코드가 출력됩니다. Todo 생성 성공이라면 `201`입니다. 원본 Response는 SDK에 돌려주어 평소처럼 변환합니다. `api`를 만드는 것만으로는 아무것도 출력하지 않습니다.
+
 `capabilities.cookieJar`, `readableResponseHeaders`, `mutualTLS`은 전송 구현이
 이미 제공하는 기능을 알리는 설정입니다. 값을 지정하는 것만으로 쿠키 저장소나
 클라이언트 인증서가 구성되지는 않습니다. 해당 기능은 호스트 전송 구현에서 먼저 준비하세요.
@@ -220,6 +226,8 @@ const todos = await api.todos.list(
   { signal: controller.signal, timeoutMS: 5_000 },
 );
 ```
+
+완료되면 `todos`는 `{ items: [...] }` 형태입니다. 그 전에 취소 신호가 오거나 5초 제한을 넘으면 목록 대신 Promise 거부로 실패를 알립니다. `controller.abort()`로 취소할 수 있습니다.
 
 같은 요청 옵션은 생성된 API, 경로, 리소스, Link, 스트림 호출에서
 사용할 수 있습니다.

@@ -1,6 +1,6 @@
 # Public documentation reading-flow review
 
-Status: complete. All listed checks passed; no unresolved reader-flow findings remain.
+Status: initial pass and follow-up complete. The follow-up below records the missing results and unclear request-stream example identified after the initial pass.
 
 ## Contract
 
@@ -184,3 +184,41 @@ review does not require rewriting already useful content.
 | `docs/ko/golang/reference/server-api.md` | Reviewed |
 | `docs/ko/golang/reference/streaming.md` | Reviewed |
 | `docs/ko/golang/reference/types.md` | Reviewed |
+
+## Follow-up: call results and request-stream responsibilities
+
+The initial pass simplified code but omitted recognizable returned values in several
+examples. Its request-stream example also fabricated Todo state changes in a client
+without showing a receiving server. Adding a status print did not explain that use case.
+
+Review scope: executable API calls in both locales across all 56 canonical SDK pages
+(112 localized pages), root README, and linked runnable examples. Type-only declarations,
+configuration snippets and generation commands are reviewed for their described artifacts;
+they do not need fabricated console output. Keep tested output distinct from illustrative
+server responses, and keep complete runnable setup in downloads.
+
+- Ordinary and raw calls: show Todo/list shapes, status/header output and named-client
+  Product results. Explain that selection retains response shapes and optional calls can
+  return undefined without a request.
+- Streams: show item values, response metadata and SSE output. Replace synthetic Todo
+  state generation with a client uploading an NDJSON file to a separate Node HTTP server.
+  The server logs received titles and returns `{ "imported": 2 }`; the client prints
+  `Imported 2 todos`. Include the complete source as the eighth downloadable application.
+- Inbound calls: pair request bodies with handler logs and sender-visible status/body.
+  Identify the secured router example that returns 401 before authentication is installed.
+- Transport, errors, metadata, dynamic validation and envelope mapping: explain their
+  observable result or state that configuration alone sends no request.
+- No generated SDK runtime behavior or external dependencies change.
+
+Review loop: the first built-link check found NFC Korean fragments that did not match
+VitePress's NFD heading IDs. Add a stable explicit request-stream anchor, preserve the old
+heading anchor, repair callers and repeat built-route validation. Rechecking selection snippets
+also caught an imported feature array named `tasks` colliding with the new result variable;
+rename the feature import to `taskOperations` in both locales. The eighth ZIP is included
+in the existing exact-source/determinism tests and generated-consumer execution checks.
+
+Validation: `build:docs` and `verify:docs` passed after the anchor fix, including 8 built ZIP
+consumers (SDK generation, compilation and execution), both locales, historical anchors,
+search scope and documentation tool tests. Final format/build and built-route rechecks also
+passed after the last snippet/prose fixes; example runtime evidence remains applicable to
+unchanged source.

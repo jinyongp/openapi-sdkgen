@@ -23,6 +23,14 @@ if err := events.Err(); err != nil {
 }
 ```
 
+The downloaded example supplies a fixed local SSE response and prints:
+
+```text
+hello
+```
+
+Your service determines the event values and how many items arrive.
+
 This contract returns a `Data` string for each SSE event. Keep `defer events.Close()`
 for early exits and check `Err()` after the loop.
 

@@ -54,6 +54,15 @@ const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.products("product-1").get();
 ```
 
+서버가 공책 상품을 반환할 때의 `product` 값 예시입니다.
+
+```json
+{
+  "id": "product-1",
+  "name": "Notebook"
+}
+```
+
 `createClient`는 동기 함수입니다. 리소스 트리와 `$routes`, `$operations`에는
 선택한 API가 들어갑니다. 리소스 메서드 이름은 문서의 이름 규칙을 따르므로
 [호출 경로 조회](/ko/typescript/guide/inspect#typescript)로 확인할 수 있습니다. 각 인스턴스는 기존
@@ -69,6 +78,15 @@ const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.$routes["GET /products/{id}"]({
   path: { id: "product-1" },
 });
+```
+
+서버가 공책 상품을 반환할 때의 `product` 값 예시입니다.
+
+```json
+{
+  "id": "product-1",
+  "name": "Notebook"
+}
 ```
 
 진입점을 가져오면 선택된 코드를 준비하고, 메서드를 호출하면 API 요청을 보냅니다.

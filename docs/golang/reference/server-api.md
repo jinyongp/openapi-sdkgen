@@ -15,6 +15,8 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+For a JSON request body `{"id":"todo-1","title":"Ship the SDK"}`, the handler prints `todo-1` and replies with `204 No Content` and an empty body. Invalid input is rejected before this log runs.
+
 ## Authentication
 
 Required authentication uses `Options.Authenticate`. Parameters are decoded before this
@@ -58,6 +60,8 @@ if err != nil {
 }
 return contract.Validate(ctx, value)
 ```
+
+For `{"count":2}`, `Decode` returns the decoded value and `Validate` returns `nil`. Replacing `2` with `"two"` violates the integer schema and makes decoding fail.
 
 ## Host integration
 

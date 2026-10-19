@@ -53,6 +53,15 @@ const todo = await api.todos.create({
 });
 
 const todos = await api.todos.list({ query: { completed: false } });
+console.log(JSON.stringify(todo));
+console.log(JSON.stringify(todos));
+```
+
+With a fresh example server, the first call creates item `1` and the second returns it in `items`:
+
+```text
+{"id":"1","title":"Write documentation","completed":false}
+{"items":[{"id":"1","title":"Write documentation","completed":false}]}
 ```
 
 `todo` is the created item; `todos.items` contains the listed items.

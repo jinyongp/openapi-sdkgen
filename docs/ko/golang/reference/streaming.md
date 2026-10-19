@@ -17,6 +17,12 @@ if err := events.Err(); err != nil {
 }
 ```
 
+Todo 예제 서버를 사용하면 다음처럼 출력됩니다.
+
+```text
+Ship the SDK
+```
+
 유한 파일은 `types.Binary`로 표현합니다. `BinaryFromBytes`, `BinaryFromString`, 또는
 메타데이터와 `Open(context.Context)`를 제공하는 `BinarySource`를 사용하세요. 실행 전에
 데이터 소스를 열지 않으며 성공적으로 연 읽기 객체는 SDK가 소유하고 닫습니다.

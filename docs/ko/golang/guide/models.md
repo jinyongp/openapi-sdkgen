@@ -18,4 +18,6 @@ call := client.Operations.CreateTodo(input)
 call = call.WithOptions(types.RequestOptions{RequestID: types.Some("example")})
 ```
 
+이 코드는 요청 ID가 `example`인 호출을 준비합니다. 아직 HTTP 요청을 보내거나 Todo를 반환하지 않습니다. `call.Do(ctx)`를 실행했을 때의 반환값은 [API 호출](./client.md)에서 확인할 수 있습니다.
+
 코덱·합성 타입·열거값·컴포넌트 투영은 [타입 참조](../reference/types.md)를 확인하세요.

@@ -18,6 +18,12 @@ if err != nil {
 fmt.Println(todo.ID, todo.Title)
 ```
 
+With the Todo example server, the output is:
+
+```text
+todo-1 Ship the SDK
+```
+
 `Operations` preserves the operation API; `Routes` provides method/path entry points.
 Resource methods bind path values, for example `client.Todos.ByID("todo-1").Get().Do(ctx)`.
 Constructing a client, selector or call does not send HTTP. Every `Do`, `Raw` or stream
@@ -44,6 +50,13 @@ if err != nil {
 fmt.Println(todo.ID)
 ```
 
+With the Todo example server, the output is:
+
+```text
+201 application/json
+todo-1
+```
+
 Call `Raw` or `Do` once for a desired exchange: each method starts a separate execution.
 For untyped sequential `Raw`, close its owned `Body` after reading. `Stream` closes its
 response/source lease when exhausted, canceled, or explicitly closed; close it when stopping early.
@@ -59,3 +72,5 @@ if errors.As(err, &failure) {
 	fmt.Println(failure.Code)
 }
 ```
+
+For a call canceled through its context, this prints `REQUEST_ABORTED`. If `err` is `nil` or does not contain an SDK `APIError`, the branch prints nothing.

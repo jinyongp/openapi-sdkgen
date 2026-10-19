@@ -30,6 +30,15 @@ for await (const event of stream) {
 }
 ```
 
+The downloaded example supplies a fixed local SSE response and prints:
+
+```text
+Hello
+world
+```
+
+Your service determines the event values and how many items arrive.
+
 SSE `data` is a string. This contract puts JSON text inside it, so parse that value
 before reading `text`. `itemSchema` validates the Event object; `contentSchema`
 validates the JSON inside `data`.

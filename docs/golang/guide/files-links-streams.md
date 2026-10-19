@@ -22,6 +22,13 @@ if err != nil {
 fmt.Println(todo.ID)
 ```
 
+With the Todo example server, the output is:
+
+```text
+201 application/json
+todo-1
+```
+
 `Raw` and `Do` each send a request. Reuse the `Raw` result when following its Link.
 
 ## Read a stream
@@ -35,6 +42,12 @@ for events.Next() {
 if err := events.Err(); err != nil {
 	return err
 }
+```
+
+With the Todo example server, the output is:
+
+```text
+Ship the SDK
 ```
 
 The first `Next()` starts the exchange. Close the stream on early exits and inspect

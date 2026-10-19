@@ -64,6 +64,12 @@ if err != nil {
 fmt.Printf("Created %s: %s\n", todo.ID, todo.Title)
 ```
 
+With the Todo example server, the output is:
+
+```text
+Created todo-1: Ship the SDK
+```
+
 Read the created item's `ID` and `Title` from `todo`. To run without preparing an
 API server, use the example ZIP above. It includes the local server, Go module,
 generation command and run instructions.

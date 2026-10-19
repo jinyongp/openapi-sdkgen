@@ -35,6 +35,15 @@ for await (const event of stream) {
 }
 ```
 
+내려받은 예제는 정해진 SSE 응답을 로컬에서 보내며 다음처럼 출력됩니다.
+
+```text
+Hello
+world
+```
+
+실제 서비스에서는 서버가 보내는 값과 항목 수에 따라 결과가 달라집니다.
+
 SSE의 `data`는 문자열입니다. 이 명세에서는 그 안에 JSON 텍스트가 있으므로
 해석한 뒤 `text`를 사용합니다. `itemSchema`는 이벤트 구조를,
 `contentSchema`는 `data` 안의 JSON 구조를 검증합니다.

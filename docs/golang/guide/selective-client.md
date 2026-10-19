@@ -21,7 +21,13 @@ if err != nil {
 	return err
 }
 todo, err := operation.Call(api.GetTodoInput{Path: api.GetTodoPath{ID: "todo-1"}}).Do(ctx)
+if err != nil {
+	return err
+}
+fmt.Println(todo.ID, todo.Title)
 ```
+
+With the Todo example server, this prints `todo-1 Ship the SDK`. The static reference preserves the typed Todo response; selection changes the available methods, not their data.
 
 Import `operations` and `selective` under your generated root. The linker removes unreachable
 code, so Go needs no JavaScript bundler or tree-shaking configuration.

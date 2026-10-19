@@ -37,6 +37,8 @@ Return the `data` property from successful responses.
 x-envelope: data
 ```
 
+For example, for a server body `{"data":{"id":"todo-1","title":"Write documentation"}}`, an ordinary call returns a generated model value with `ID` equal to `"todo-1"` and `Title` equal to `"Write documentation"`. The raw response keeps the outer `data` wrapper.
+
 Every successful JSON response with a body must be an object with a `data`
 property. A normal call returns `data`; `Raw(ctx)` returns the complete decoded
 response.

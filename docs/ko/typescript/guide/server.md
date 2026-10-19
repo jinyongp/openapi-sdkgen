@@ -48,6 +48,14 @@ const handlers: WebhookHandlers = {
 };
 ```
 
+인증된 요청의 본문이 `{"todoID":"todo-1","completed":true}`라면 핸들러는 다음 값을 출력합니다.
+
+```text
+todo-1 true
+```
+
+요청을 보낸 쪽에는 본문 없이 `204 No Content`를 반환합니다.
+
 이 웹훅 이름을 애플리케이션의 수신 경로와 연결합니다.
 
 ```ts
@@ -59,6 +67,8 @@ const router = createWebhookRouter(handlers, {
 
 const response = await router.fetch(request);
 ```
+
+`response`는 Fetch `Response`입니다. 보안이 선언된 예제 명세에서 이 라우터에는 인증 함수가 없으므로 핸들러를 호출하지 않고 상태 코드 `401`을 반환합니다. 다음 절에서 인증 함수를 추가합니다.
 
 프레임워크 어댑터는 들어온 요청을 Fetch `Request`로 바꾸고
 `router.fetch(request)`를 호출한 뒤 결과 Fetch `Response`를 반환하면 됩니다.
@@ -141,6 +151,8 @@ const response =
     "{$request.body#/callbackUrl}"
   ].POST.fetch(request);
 ```
+
+예시 콜백 본문 `{"todoID":"todo-1","completed":true}`가 오면 위 핸들러는 `todo-1 true`를 출력합니다. `response.status`는 `204`이고 응답 본문은 비어 있습니다.
 
 런타임 표현식은 OpenAPI 계약에 그대로 유지되고, 콜백 수신 URL은
 애플리케이션에서 정합니다.

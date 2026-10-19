@@ -17,6 +17,12 @@ if err := events.Err(); err != nil {
 }
 ```
 
+With the Todo example server, the output is:
+
+```text
+Ship the SDK
+```
+
 Finite files use `types.Binary`; use `BinaryFromBytes`, `BinaryFromString`, or a
 `BinarySource` that supplies metadata and `Open(context.Context)`. The source owns no
 request before execution. The SDK owns and closes each successfully opened reader.

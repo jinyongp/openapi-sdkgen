@@ -23,6 +23,8 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+JSON 본문 `{"id":"todo-1","title":"Ship the SDK"}`를 받으면 핸들러는 `todo-1`을 출력하고 본문 없이 `204 No Content`로 응답합니다. 입력이 명세에 맞지 않으면 이 출력 전에 요청을 거절합니다.
+
 SDK는 입력을 검증한 뒤 처리기에 전달하고 응답을 인코딩합니다.
 애플리케이션은 리스너, 수신 경로와 인증 정책을 관리합니다.
 

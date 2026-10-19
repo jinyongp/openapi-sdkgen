@@ -23,6 +23,8 @@ if err != nil {
 mux.Handle("/hooks/created", handler)
 ```
 
+For a JSON request body `{"id":"todo-1","title":"Ship the SDK"}`, the handler prints `todo-1` and replies with `204 No Content` and an empty body. Invalid input is rejected before this log runs.
+
 The SDK validates input before invoking the handler and encodes its response.
 Your application owns the listener, public route and authentication policy.
 
