@@ -1,0 +1,120 @@
+{
+  "scope": "W10 candidate implementation and verification; local performance data, not a public benchmark claim.",
+  "finalCommands": {
+    "runtime": 9,
+    "features": 49,
+    "generation": 33,
+    "builds": 117,
+    "platform": 10,
+    "providers": 107,
+    "server": 30,
+    "matchedParallel": 3
+  },
+  "archives": 23,
+  "sourceProvenance": "measurements/provenance.json",
+  "comparison": "measurements/comparison.json",
+  "providerParity": "measurements/provider-parity.json",
+  "matchedParallel": "measurements/matched-parallel-comparison.json",
+  "checks": [
+    {
+      "label": "go-ci",
+      "argv": [
+        "devtools",
+        "run",
+        "ci:dev",
+        "go"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 457.36621771601494,
+      "log": "/tmp/sdkgen-zero/w11-go-ci.log"
+    },
+    {
+      "label": "race",
+      "argv": [
+        "devtools",
+        "run",
+        "race:dev"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 25.864749025000492,
+      "log": "/tmp/sdkgen-zero/w11-race.log"
+    },
+    {
+      "label": "fuzz",
+      "argv": [
+        "devtools",
+        "run",
+        "fuzz:dev"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 87.13342393701896,
+      "log": "/tmp/sdkgen-zero/w11-fuzz.log"
+    },
+    {
+      "label": "docs-build",
+      "argv": [
+        "devtools",
+        "run",
+        "build:docs"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 10.754098531004274,
+      "log": "/tmp/sdkgen-zero/w11-docs-build.log"
+    },
+    {
+      "label": "docs-verify",
+      "argv": [
+        "devtools",
+        "run",
+        "verify:docs"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 8.050351792015135,
+      "log": "/tmp/sdkgen-zero/w11-docs-verify.log"
+    },
+    {
+      "label": "playground",
+      "argv": [
+        "devtools",
+        "run",
+        "--",
+        "bash",
+        "scripts/verification/playground.sh"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 2.550127546011936,
+      "log": "/tmp/sdkgen-zero/w11-playground.log"
+    },
+    {
+      "label": "release-cross",
+      "argv": [
+        "devtools",
+        "run",
+        "cross-build:release"
+      ],
+      "exitCode": 0,
+      "wallSeconds": 14.989606677001575,
+      "log": "/tmp/sdkgen-zero/w11-release-cross.log"
+    }
+  ],
+  "reviewedAreas": [
+    "measurement inputs/toolchain/source identity",
+    "all seven providers and full/one/ten selection",
+    "generated surfaces and diagnostic contracts",
+    "cold/warm consumers including server schema",
+    "actual dependency/source/symbol reachability",
+    "normalization and Unicode generation",
+    "matcher cancellation/budget/anchoring/concurrency",
+    "prepared source ownership and deterministic emission",
+    "header decoder callers and static program sharing",
+    "HTTP/stream allocation, latency and lifetime diagnostics",
+    "six consumer and six release cross-builds; native and WASM integration"
+  ],
+  "releaseOnlyChecks": [
+    {
+      "check": "Published npm with empty native cache",
+      "status": "not run before publication",
+      "reason": "Requires the actual published candidate; native candidate and release workflow wiring passed. No push/publication/remote dispatch authorized or performed."
+    }
+  ]
+}

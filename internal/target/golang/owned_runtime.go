@@ -57,11 +57,11 @@ func ownedRuntimeFile(source, root string) ([]byte, []importPlan, error) {
 func ownedRuntimePlans(config generator.GoOptions, module runtimeModule) ([]filePlan, error) {
 	files := make([]filePlan, 0, len(module.Sources))
 	for _, source := range module.Sources {
-		_, imports, err := ownedRuntimeFile(source, config.ImportPath)
+		prepared, imports, err := ownedRuntimeFile(source, config.ImportPath)
 		if err != nil {
 			return nil, fmt.Errorf("owned Go source %s: %w", source, err)
 		}
-		files = append(files, filePlan{Path: path.Join(path.Dir(module.Path), path.Base(source)), Package: module.Package, Source: source, RuntimeRoot: config.ImportPath, Imports: imports})
+		files = append(files, filePlan{Path: path.Join(path.Dir(module.Path), path.Base(source)), Package: module.Package, Source: source, Prepared: string(prepared), Imports: imports})
 	}
 	return files, nil
 }

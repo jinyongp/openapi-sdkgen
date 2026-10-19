@@ -1,6 +1,12 @@
 package unicode17
 
-import "sort"
+import (
+	"slices"
+	"sort"
+	"unicode/utf8"
+)
+
+type normalizationRange struct{ lo, hi rune }
 
 type classEntry struct {
 	lo, hi rune
@@ -63,8 +69,39 @@ func compose(left, right rune) (rune, bool) {
 	return 0, false
 }
 
+// quickNFC accepts only Unicode's definitive NFC_QC=Yes with canonical order.
+// Maybe/No points use the complete algorithm. Invalid UTF8 must still take the
+// scalar-replacement path rather than being returned unchanged.
+func quickNFC(value string) bool {
+	var previous uint8
+	for offset, point := range value {
+		if point < 128 {
+			previous = 0
+			continue
+		}
+		if point == utf8.RuneError {
+			if _, size := utf8.DecodeRuneInString(value[offset:]); size == 1 {
+				return false
+			}
+		}
+		index := sort.Search(len(nfcNonYes), func(index int) bool { return nfcNonYes[index].hi >= point })
+		if index < len(nfcNonYes) && nfcNonYes[index].lo <= point {
+			return false
+		}
+		class := CombiningClass(point)
+		if class != 0 && previous > class {
+			return false
+		}
+		previous = class
+	}
+	return true
+}
+
 // NFC implements canonical decomposition, stable ordering and composition.
 func NFC(value string) string {
+	if quickNFC(value) {
+		return value
+	}
 	runes := make([]rune, 0, len(value))
 	for _, point := range value {
 		runes = appendDecomposed(runes, point)
@@ -80,7 +117,9 @@ func NFC(value string) string {
 			end++
 		}
 		run := runes[start:end]
-		sort.SliceStable(run, func(i, j int) bool { return CombiningClass(run[i]) < CombiningClass(run[j]) })
+		if len(run) > 1 {
+			slices.SortStableFunc(run, func(a, b rune) int { return int(CombiningClass(a)) - int(CombiningClass(b)) })
+		}
 		start = end
 	}
 	if len(runes) == 0 {

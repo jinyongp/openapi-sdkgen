@@ -3,6 +3,7 @@ package golang
 import (
 	"encoding/json"
 	"fmt"
+	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
@@ -121,4 +122,73 @@ func TestPinnedSyntax(t *testing.T){data,err:=os.ReadFile("corpus-syntax.json");
 		t.Fatal(err)
 	}
 	testGeneratedModule(t, plan, map[string]string{"api/internal/schema/conformance_test.go": test.String(), "api/internal/schema/corpus-syntax.json": string(syntax)})
+}
+
+func TestStaticPatternProgramIsSharedAcrossSchemas(t *testing.T) {
+	document := &ir.Document{OpenAPIVersionLine: "3.1"}
+	for _, name := range []string{"left", "right"} {
+		document.Operations = append(document.Operations, ir.Operation{OperationID: name, RouteKey: "GET /" + name, Method: "GET", Path: "/" + name, Responses: []ir.Response{{Status: "200", Content: []ir.MediaType{{ContentType: "application/json", Schema: map[string]any{"type": "string", "pattern": `(?i:^(?<word>\p{L}+)-\k<word>$)`}}}}}})
+	}
+	plan, diagnostics, err := (Generator{}).Prepare(document, generator.Options{Golang: &generator.GoOptions{ImportPath: "example.test/consumer/api"}})
+	if err != nil || len(diagnostics) > 0 {
+		t.Fatal(err, diagnostics)
+	}
+	artifacts, err := (Generator{}).Emit(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	declarations := 0
+	for _, artifact := range artifacts {
+		if !strings.HasSuffix(artifact.Path, ".go") {
+			continue
+		}
+		file, err := parser.ParseFile(token.NewFileSet(), artifact.Path, artifact.Data, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ast.Inspect(file, func(node ast.Node) bool {
+			if spec, ok := node.(*ast.ValueSpec); ok {
+				for _, name := range spec.Names {
+					if strings.HasPrefix(name.Name, "CompiledPattern_") {
+						declarations++
+					}
+				}
+			}
+			return true
+		})
+	}
+	if declarations != 1 {
+		t.Fatal("same immutable pattern duplicated", declarations)
+	}
+	testGeneratedModule(t, plan, map[string]string{"api/internal/schema/shared_test.go": `package schema
+import("context";"testing";"example.test/consumer/api/internal/wire")
+func TestSharedProgram(t *testing.T){for range 10{if _,err:=ValidateHTTP__LeftOutput__(context.Background(),wire.Text("Go-go"),"");err!=nil{t.Fatal(err)};if _,err:=ValidateHTTP__RightOutput__(context.Background(),wire.Text("Go-no"),"");err==nil{t.Fatal("shared program mixed states")}}}
+`})
+}
+
+func TestOwnedRuntimeBytesDoNotAliasFrozenPlan(t *testing.T) {
+	_, plan := healthPlan(t)
+	artifacts, err := (Generator{}).Emit(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := make(map[string]string)
+	for _, artifact := range artifacts {
+		if strings.HasPrefix(artifact.Path, "internal/runtime/") {
+			expected[artifact.Path] = string(artifact.Data)
+			artifact.Data[0] ^= 0xff
+		}
+	}
+	if len(expected) == 0 {
+		t.Fatal("missing owned runtime artifacts")
+	}
+	again, err := (Generator{}).Emit(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, artifact := range again {
+		if before, ok := expected[artifact.Path]; ok && string(artifact.Data) != before {
+			t.Fatal("caller mutation changed frozen source", artifact.Path)
+		}
+	}
 }

@@ -28,11 +28,12 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 	}
 	for _, file := range prepared.Files {
 		if file.Source != "" {
-			data, _, err := ownedRuntimeFile(file.Source, file.RuntimeRoot)
-			if err != nil {
-				return err
+			if file.Prepared == "" {
+				return fmt.Errorf("missing prepared Go source %s", file.Source)
 			}
-			if err := sink.WriteArtifact(generator.Artifact{Path: file.Path, Data: data}); err != nil {
+			// The frozen plan owns immutable formatted text. Each sink receives
+			// fresh bytes so a caller cannot mutate a later emission.
+			if err := sink.WriteArtifact(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}); err != nil {
 				return err
 			}
 			continue

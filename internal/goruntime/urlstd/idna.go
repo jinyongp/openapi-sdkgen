@@ -37,6 +37,7 @@ func DomainToASCII(value string) (string, error) {
 		return lower(value), nil
 	}
 	var mapped strings.Builder
+	mapped.Grow(min(len(value), 256))
 	for _, point := range value {
 		status, replacement := unicode17.LookupIDNA(point)
 		switch status {

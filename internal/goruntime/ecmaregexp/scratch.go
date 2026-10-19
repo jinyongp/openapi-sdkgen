@@ -1,34 +1,57 @@
 package ecmaregexp
 
-// Escape analysis moves the VM's four buffers to the heap. Reuse a bounded
-// number of exclusively borrowed states; never retain grown buffers or input.
+import (
+	"sync"
+	"sync/atomic"
+)
+
+// Buffer storage is bounded independently of sync.Pool. Pool entries are only
+// hints: GC may discard them, and scanning can leave a stale hint. A successful
+// lease CAS is the sole authority to use a buffer. Overflow states are temporary.
 type matchScratch struct {
 	state    machine
 	tasks    [128]task
 	choices  [32]choice
 	journal  [128]change
 	captures [64]int
+	leased   atomic.Bool
+	cached   bool
 }
 
-var scratchCache = make(chan *matchScratch, 32)
+var scratchBuffers [32]matchScratch
+var scratchHints sync.Pool
 
 func borrowScratch() *matchScratch {
-	select {
-	case scratch := <-scratchCache:
-		return scratch
-	default:
-		return new(matchScratch)
+	// Bound stale-hint work; scanning the fixed arena also recovers buffers after
+	// GC drops pool entries. The common per-P pool path avoids a global channel.
+	for range len(scratchBuffers) {
+		hint := scratchHints.Get()
+		if hint == nil {
+			break
+		}
+		scratch := hint.(*matchScratch)
+		if scratch.leased.CompareAndSwap(false, true) {
+			return scratch
+		}
 	}
+	for index := range scratchBuffers {
+		scratch := &scratchBuffers[index]
+		if scratch.leased.CompareAndSwap(false, true) {
+			scratch.cached = true
+			return scratch
+		}
+	}
+	return new(matchScratch)
 }
 func resetScratch(scratch *matchScratch) {
-	// Tasks/choices/journal contain only integers. Clearing the state releases
-	// input, Program, context and any grown heap buffers between callers.
+	// Integer arrays contain no input data. Release input, Program, context and
+	// any grown heap buffers before publishing an available lease.
 	scratch.state = machine{}
 }
 func returnScratch(scratch *matchScratch) {
 	resetScratch(scratch)
-	select {
-	case scratchCache <- scratch:
-	default:
+	if scratch.cached {
+		scratch.leased.Store(false)
+		scratchHints.Put(scratch)
 	}
 }

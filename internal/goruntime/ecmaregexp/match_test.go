@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -356,4 +357,55 @@ func TestPinnedTest262SupplementaryTraces(t *testing.T) {
 		}
 	}
 	t.Log("supplementary pinned traces", len(corpus.Cases), "unique patterns", len(compiled))
+}
+
+func TestConcurrentMatcherAcrossPoolGC(t *testing.T) {
+	p, err := Compile(`(?i:^(?<word>[a-z]+)-\k<word>$)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var group sync.WaitGroup
+	for worker := range 64 {
+		group.Go(func() {
+			word := strings.Repeat(string(rune('a'+worker%26)), 256+worker)
+			input := word + "-" + word
+			for range 32 {
+				if ok, err := p.Match(context.Background(), input); err != nil || !ok {
+					t.Error(ok, err)
+					return
+				}
+				if ok, err := p.Match(context.Background(), input+"!"); err != nil || ok {
+					t.Error(ok, err)
+					return
+				}
+			}
+		})
+	}
+	group.Go(func() {
+		for range 8 {
+			runtime.GC()
+		}
+	})
+	group.Wait()
+}
+
+func TestInitialAnchorSearchBoundary(t *testing.T) {
+	cases := []struct {
+		pattern, input string
+		want           bool
+	}{
+		{`^a$`, "ba", false}, {`(?i:^a$)`, "bA", false}, {`(?m:^a$)`, "b\na", true},
+		{`(^a)|b`, "xb", true}, {`(?:^a)?b`, "xb", true}, {`(?<=^a)b`, "ab", true},
+		{`(?:)^a$`, "ba", false}, {`(^a)$`, "ba", false},
+	}
+	for _, c := range cases {
+		p, err := Compile(c.pattern)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := p.Match(context.Background(), c.input)
+		if err != nil || got != c.want {
+			t.Errorf("%q on %q: %t %v", c.pattern, c.input, got, err)
+		}
+	}
 }

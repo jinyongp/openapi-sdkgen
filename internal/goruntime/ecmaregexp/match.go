@@ -67,6 +67,10 @@ func (program *Program) match(ctx context.Context, value string, limit uint64) (
 	} else {
 		state.captures = make([]int, count)
 	}
+	anchored, err := state.startAnchored()
+	if err != nil {
+		return false, err
+	}
 	for start := 0; ; {
 		state.position, state.direction, state.head = start, 1, -1
 		state.tasks = state.tasks[:0]
@@ -104,7 +108,7 @@ func (program *Program) match(ctx context.Context, value string, limit uint64) (
 				}
 			}
 		}
-		if start == len(value) {
+		if anchored || start == len(value) {
 			break
 		}
 		_, next, _ := forward(value, start)
@@ -115,6 +119,32 @@ func (program *Program) match(ctx context.Context, value string, limit uint64) (
 	}
 	return false, nil
 }
+
+// Only an unconditional initial start assertion can eliminate later search
+// positions. Alternatives, lookarounds and repeats stay on the general path.
+func (state *machine) startAnchored() (bool, error) {
+	index := state.program.Root
+	for {
+		if err := state.step(); err != nil {
+			return false, err
+		}
+		node := state.program.Nodes[index]
+		switch node.Op {
+		case Sequence:
+			if node.B == 0 {
+				return false, nil
+			}
+			index = state.program.Edges[node.A]
+		case Capture:
+			index = node.A
+		case Start:
+			return node.Flags&Multiline == 0, nil
+		default:
+			return false, nil
+		}
+	}
+}
+
 func (state *machine) step() error {
 	if state.steps >= state.limit {
 		return ErrComplexity

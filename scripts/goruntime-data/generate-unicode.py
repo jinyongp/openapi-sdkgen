@@ -163,6 +163,8 @@ def main():
     for point, values in sorted(decompositions.items()):
         entries.append((point, len(pool), len(values))); pool += values
     text = 'var canonicalClasses = [...]classEntry{\n' + ''.join(f'{{0x{lo:x},0x{hi:x},{value}}},\n' for lo, hi, value in collapse(classes)) + '}\n'
+    unstable = merge([span(f[0]) for f in records(ucd / 'DerivedNormalizationProps.txt') if f[1] == 'NFC_QC' and f[2] in ['N', 'M']])
+    text += 'var nfcNonYes = [...]normalizationRange{\n' + ''.join(f'{{0x{lo:x},0x{hi:x}}},\n' for lo, hi in unstable) + '}\n'
     text += 'var decompositions = [...]decompositionEntry{\n' + ''.join(f'{{0x{point:x},{offset},{count}}},\n' for point, offset, count in entries) + '}\n'
     text += 'var decompositionRunes = [...]rune{' + ','.join(f'0x{point:x}' for point in pool) + '}\n'
     text += 'var compositions = [...]compositionEntry{\n' + ''.join(f'{{0x{key:x},0x{point:x}}},\n' for key, point in compositions) + '}\n'

@@ -7,7 +7,8 @@ W04의 `Program`은 평평한 semantic instruction/edge/range 자료다. 캡처 
   고립 surrogate 및 인접 surrogate pair를 동일 의미로 읽는다. 기본 ASCII 경로에서 입력 전체를
   []rune로 복사하지 않는다. capture도 byte span으로 저장하며 참조는 code point별로 비교한다.
 - 명시적 task continuation, 대안 choice, capture undo journal을 쓴다. 호출별 상태이고 Program은 불변이다.
-  최대32개의 고정 크기 scratch를 독점 대여하고 커질 때만 확장한다. 반환 시 입력·프로그램·context 참조와 확장 buffer를 해제한다. 코드 노드가 공유돼도 실행 상태는 공유하지 않는다.
+  최대32개의 고정 크기 scratch를 독점 대여하고 커질 때만 확장한다. 반환 시 입력·프로그램·context 참조와 확장 buffer를 해제한다. W10에서는 전역 channel 경합을 실측해 고정 arena의 atomic lease와 sync.Pool hint로 바꿨다.
+  GC가 hint를 버려도 arena에서 회수하며 중복 hint는 lease CAS로 거른다. 코드 노드가 공유돼도 실행 상태는 공유하지 않는다.
 - continuation은 arena의 immutable linked task다. choice가 parent head·arena/journal checkpoint·
   cursor/direction·재개 action을 저장한다. 재시도 때 checkpoint를 복구한다. 현재 head와 살아 있는
   choice checkpoint보다 뒤의 arena는 회수해 반복마다 task가 영구 누적되지 않게 한다.

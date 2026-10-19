@@ -1,0 +1,173 @@
+{
+  "cases": [
+    {
+      "case": "provider-github-selected0-sample0",
+      "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "routes": 1221,
+      "surfaceEntries": 1221,
+      "diagnosticContracts": 26,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-github-selected1-sample0",
+      "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "routes": 1,
+      "surfaceEntries": 1221,
+      "diagnosticContracts": 20,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-github-selected10-sample0",
+      "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+      "routes": 10,
+      "surfaceEntries": 1221,
+      "diagnosticContracts": 20,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-stripe-selected0-sample0",
+      "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+      "routes": 559,
+      "surfaceEntries": 559,
+      "diagnosticContracts": 4,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-stripe-selected1-sample0",
+      "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+      "routes": 1,
+      "surfaceEntries": 559,
+      "diagnosticContracts": 4,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-stripe-selected10-sample0",
+      "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+      "routes": 10,
+      "surfaceEntries": 559,
+      "diagnosticContracts": 4,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-cloudflare-selected0-sample0",
+      "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+      "routes": 3595,
+      "surfaceEntries": 3600,
+      "diagnosticContracts": 39,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-cloudflare-selected1-sample0",
+      "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+      "routes": 1,
+      "surfaceEntries": 3600,
+      "diagnosticContracts": 37,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-cloudflare-selected10-sample0",
+      "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+      "routes": 10,
+      "surfaceEntries": 3600,
+      "diagnosticContracts": 37,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-gitlab-selected0-sample0",
+      "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+      "routes": 1860,
+      "surfaceEntries": 1864,
+      "diagnosticContracts": 1419,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-gitlab-selected1-sample0",
+      "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+      "routes": 1,
+      "surfaceEntries": 1864,
+      "diagnosticContracts": 4,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-gitlab-selected10-sample0",
+      "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+      "routes": 10,
+      "surfaceEntries": 1864,
+      "diagnosticContracts": 4,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-microsoft-graph-beta-selected0-sample0",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "routes": 29581,
+      "surfaceEntries": 29581,
+      "diagnosticContracts": 1208,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-microsoft-graph-beta-selected1-sample0",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "routes": 1,
+      "surfaceEntries": 29581,
+      "diagnosticContracts": 0,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-microsoft-graph-beta-selected10-sample0",
+      "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+      "routes": 10,
+      "surfaceEntries": 29581,
+      "diagnosticContracts": 0,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-digitalocean-selected0-sample0",
+      "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+      "routes": 268,
+      "surfaceEntries": 739,
+      "diagnosticContracts": 471,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-digitalocean-selected1-sample0",
+      "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+      "routes": 1,
+      "surfaceEntries": 739,
+      "diagnosticContracts": 471,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-digitalocean-selected10-sample0",
+      "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+      "routes": 10,
+      "surfaceEntries": 739,
+      "diagnosticContracts": 471,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-twilio-selected0-sample0",
+      "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+      "routes": 197,
+      "surfaceEntries": 197,
+      "diagnosticContracts": 99,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-twilio-selected1-sample0",
+      "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+      "routes": 1,
+      "surfaceEntries": 197,
+      "diagnosticContracts": 1,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    },
+    {
+      "case": "provider-twilio-selected10-sample0",
+      "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+      "routes": 10,
+      "surfaceEntries": 197,
+      "diagnosticContracts": 10,
+      "sameRoutesSurfacesDiagnosticContracts": true
+    }
+  ],
+  "scope": "One/ten/full exact routes for seven pinned providers. Five samples per case have identical generated hashes. Diagnostic source paths and free-text messages/hints are excluded; severity/code/phase/rule/action/pointer are compared."
+}

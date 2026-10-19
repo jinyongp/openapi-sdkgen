@@ -42,7 +42,10 @@ manifest remains pending for integration; this is not a full Test262 pass.
 Inputs are scanned by byte cursor; simple repetitions use compact retry state.
 A cache retains at most 32 exclusively borrowed fixed-size scratch buffers. Return
 clears input, program, context and grown buffers. The arrays hold only integers.
-The cache is optional for correctness, and concurrent calls share no match state.
+Pool entries are hints over a fixed 32-buffer arena; atomic lease ownership guards
+against stale entries and recovers buffers after pool GC. Overflow state is not
+retained. This avoids a single global channel in concurrent matches. Concurrent
+calls share no match state.
 
 Node 24.22's scoped case modifier has a narrow oracle discrepancy for Kelvin
 sign/long s literals. ECMA-262 Canonicalize with the locally updated flags and

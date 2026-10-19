@@ -23,7 +23,7 @@ type filePlan struct {
 	OpenAPIVersion, OpenAPIVersionLine string
 	Path                               string
 	Template                           string
-	Source, RuntimeRoot                string
+	Source                             string
 	Package                            string
 	Imports                            []importPlan
 	Operations                         []operationPlan
@@ -471,7 +471,10 @@ func prepare(document *ir.Document, options generator.Options) (generator.Plan, 
 	if err != nil {
 		return generator.Plan{}, nil, err
 	}
-	headerPrepared := prepareHeaderDecoders(modelOperations, &schemas)
+	headerPrepared, err := prepareHeaderDecoders(modelOperations, &schemas)
+	if err != nil {
+		return generator.Plan{}, nil, err
+	}
 	for index := range schemas.programs {
 		schemas.programs[index].Public = true
 	}

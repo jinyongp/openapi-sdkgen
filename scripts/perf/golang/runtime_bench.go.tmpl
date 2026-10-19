@@ -15,6 +15,7 @@ import (
 	"time"
 
 	api "example.test/goperf/api"
+	"example.test/goperf/api/internal/runtime/unicode17"
 	"example.test/goperf/api/internal/schema"
 	"example.test/goperf/api/internal/transport"
 	"example.test/goperf/api/models"
@@ -373,7 +374,21 @@ func BenchmarkStream(b *testing.B) {
 }
 
 func BenchmarkRegex(b *testing.B) {
-	for _, sample := range []struct{ name, pattern, input string }{{"ascii", "^[a-z]+$", "sdkgen"}, {"unicode", `^\p{L}+$`, "한글"}, {"lookaround", "a(?=b)", "ab"}, {"backreference", `^(\w+)-\1$`, "go-go"}, {"complexity", "^(a+)+$", strings.Repeat("a", 32) + "!"}} {
+	for _, sample := range []struct {
+		name, pattern, input string
+		want                 bool
+	}{
+		{"ascii", "^[a-z]+$", "sdkgen", true},
+		{"unicode", `^\p{L}+$`, "한글", true},
+		{"lookaround", "a(?=b)", "ab", true},
+		{"backreference", `^(\w+)-\1$`, "go-go", true},
+		{"nested", "^(?:(a|b)+c)+$", "abcabc", true},
+		{"mismatch", "^[a-z]+$", "SDKGEN!", false},
+		{"ascii-1KiB", "^[a-z]+$", strings.Repeat("a", 1<<10), true},
+		{"ascii-1MiB", "^[a-z]+$", strings.Repeat("a", 1<<20), true},
+		{"unicode-1MiB", `^\p{L}+$`, strings.Repeat("한", (1<<20)/3), true},
+		{"complexity", "^(a+)+$", strings.Repeat("a", 32) + "!", false},
+	} {
 		b.Run(sample.name, func(b *testing.B) {
 			b.Run("compile", func(b *testing.B) {
 				b.ReportAllocs()
@@ -396,7 +411,7 @@ func BenchmarkRegex(b *testing.B) {
 						if err == nil {
 							b.Fatal("execution limit lost")
 						}
-					} else if err != nil || !ok {
+					} else if err != nil || ok != sample.want {
 						b.Fatal(ok, err)
 					}
 				}
@@ -537,5 +552,51 @@ func TestLargeJSONLiveHeapAndGC(t *testing.T) {
 		runtime.KeepAlive(value)
 		runtime.KeepAlive(dto)
 		runtime.KeepAlive(encoded)
+	}
+}
+
+func BenchmarkURL(b *testing.B) {
+	for _, sample := range []struct {
+		name, input    string
+		absolute, want bool
+	}{
+		{"ascii", "https://example.test/a?b#c", true, true},
+		{"idn", "https://例え.テスト/道", true, true},
+		{"long-idn", "https://" + strings.Repeat("例", 64) + ".test/a", true, true},
+		{"relative", "../a/./b/../?x", false, true},
+		{"ipv4", "http://0x7f.1:80/a", true, true},
+		{"ipv6", "https://[::ffff:127.0.0.1]/", true, true},
+		{"rejected", "https://example.test%2fevil.test/", true, false},
+	} {
+		b.Run(sample.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				if got := schema.FormatURL(sample.input, sample.absolute); got != sample.want {
+					b.Fatal(got, sample.input)
+				}
+			}
+		})
+	}
+}
+
+var normalizedResult string
+
+func BenchmarkNormalization(b *testing.B) {
+	for _, sample := range []struct{ name, input, want string }{
+		{"ascii", "sdkgen", "sdkgen"},
+		{"composed", "café", "café"},
+		{"decomposed", "cafe\u0301", "café"},
+		{"hangul", "\u1100\u1161", "가"},
+		{"long-combining", strings.Repeat("A\u030A", 512), strings.Repeat("Å", 512)},
+	} {
+		b.Run(sample.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				normalizedResult = unicode17.NFC(sample.input)
+				if normalizedResult != sample.want {
+					b.Fatal("NFC result")
+				}
+			}
+		})
 	}
 }

@@ -1,6 +1,8 @@
 package golang
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -69,4 +71,25 @@ func patternProgramSource(program *ecmaregexp.Program) string {
 	}
 	out.WriteString("}")
 	return out.String()
+}
+
+// Identical pattern source always has the same Unicode-u semantics. Keep the
+// immutable program once; each schema retains the binding/source metadata used
+// by header, XML and server projections. Emission collects successful programs
+// so an omitted operation cannot leave references to a discarded declaration.
+func (planner *schemaPlanner) preparePattern(source string) (schemaPattern, error) {
+	if prepared, ok := planner.compiledPatterns[source]; ok {
+		return prepared, nil
+	}
+	compiled, err := ecmaregexp.Compile(source)
+	if err != nil {
+		return schemaPattern{}, fmt.Errorf("invalid JavaScript pattern: %w", err)
+	}
+	hash := sha256.Sum256([]byte(source))
+	prepared := schemaPattern{Name: "CompiledPattern_" + hex.EncodeToString(hash[:]), Pattern: source, Program: patternProgramSource(compiled)}
+	if planner.compiledPatterns == nil {
+		planner.compiledPatterns = make(map[string]schemaPattern)
+	}
+	planner.compiledPatterns[source] = prepared
+	return prepared, nil
 }

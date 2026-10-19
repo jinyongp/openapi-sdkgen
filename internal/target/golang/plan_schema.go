@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"openapi-sdkgen/internal/goruntime/ecmaregexp"
 	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
@@ -37,6 +36,7 @@ type schemaPlanner struct {
 	programs          []schemaProgram
 	reference         func(string, schemaplan.Projection) (string, error)
 	needsRegex        bool
+	compiledPatterns  map[string]schemaPattern
 	nodes             map[string]*schemaplan.Node
 	nodeNames         map[*schemaplan.Node]string
 	sources           map[*schemaplan.Node]string
@@ -183,15 +183,15 @@ func (planner *schemaPlanner) node(name string, node *schemaplan.Node) (string, 
 	var literals []schemaLiteral
 	var patterns []schemaPattern
 	pattern := func(text string) (string, error) {
-		compiled, err := ecmaregexp.Compile(text)
+		prepared, err := planner.preparePattern(text)
 		if err != nil {
-			return "", fmt.Errorf("invalid JavaScript pattern: %w", err)
+			return "", err
 		}
-		patternName := fmt.Sprintf("%sPattern%d", name, len(patterns))
-		patterns = append(patterns, schemaPattern{Name: patternName, Pattern: text, Program: patternProgramSource(compiled)})
+		patterns = append(patterns, prepared)
 		planner.needsRegex = true
-		return patternName, nil
+		return prepared.Name, nil
 	}
+
 	if node.Get("patternProperties") != nil {
 		fmt.Fprintln(&body, "patternKeys:=make(map[string]bool)")
 	}

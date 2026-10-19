@@ -1,0 +1,16 @@
+{
+  "finalProductionFiles": 356,
+  "productionFilter": "go.mod/go.sum, non-test cmd/internal Go/template source, scripts/golang-compat/main.go",
+  "providerBaselineProductionFilesVerified": 331,
+  "providerBaselineProductionDifferencesFromCab3cb8": 0,
+  "providerBaselineArchiveSha256": "d025062d595e77744057f001aaaf64e6cbb0e53c0b2623f8860069c4f781d3c9",
+  "sameProductionSourceAcrossFinalProducerModes": true,
+  "runtimeEngineSourceMatchesFinalProducer": true,
+  "go": "go version go1.27.2 linux/amd64",
+  "node": "v24.22.0",
+  "providerBaselineArchive": "plans/golang-target/measurements/2026-10-19/raw/w11-final-providers.tar.gz",
+  "providerBaselineBasis": "provider-baseline-basis.json",
+  "runtimeNote": "Final runtime measurements precede Go-target-only pattern interning and prepared-source reuse; runtime production sources match every final mode.",
+  "sampling": "Five sequential samples, no interleaving; setup commands separate. GNU time maximumRSSKiB is max process/child RSS, not total allocated or live heap. Provider observed group RSS is separately sampled. Off-host binaries cross-built only.",
+  "scope": "Internal local measurements, not public numeric claims."
+}

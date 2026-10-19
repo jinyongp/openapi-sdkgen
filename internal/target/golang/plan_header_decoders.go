@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	schemaplan "openapi-sdkgen/internal/schema/plan"
-	"strconv"
 	"strings"
 )
 
@@ -14,10 +13,19 @@ type headerDecoderPlanner struct {
 	bindings   map[*schemaplan.Node]string
 	references map[string]*schemaplan.Node
 	programs   []string
+	patterns   map[string]string
+	err        error
 }
 
-func prepareHeaderDecoders(operations []operationPlan, schemas *schemaPlanner) string {
-	planner := headerDecoderPlanner{schemas: schemas, bindings: make(map[*schemaplan.Node]string), references: make(map[string]*schemaplan.Node)}
+func prepareHeaderDecoders(operations []operationPlan, schemas *schemaPlanner) (string, error) {
+	planner := headerDecoderPlanner{schemas: schemas, bindings: make(map[*schemaplan.Node]string), references: make(map[string]*schemaplan.Node), patterns: make(map[string]string)}
+	for _, program := range schemas.programs {
+		for _, pattern := range program.Patterns {
+			if planner.patterns[pattern.Pattern] == "" {
+				planner.patterns[pattern.Pattern] = pattern.Name
+			}
+		}
+	}
 	for name, node := range schemas.nodes {
 		planner.references["check"+name] = node
 	}
@@ -33,7 +41,7 @@ func prepareHeaderDecoders(operations []operationPlan, schemas *schemaPlanner) s
 			}
 		}
 	}
-	return strings.Join(planner.programs, "\n")
+	return strings.Join(planner.programs, "\n"), planner.err
 }
 
 func (planner *headerDecoderPlanner) shapes(node *schemaplan.Node, active map[*schemaplan.Node]bool) []*schemaplan.Node {
@@ -169,7 +177,6 @@ func (planner *headerDecoderPlanner) function(node *schemaplan.Node) string {
 	if types["object"] {
 		var code bytes.Buffer
 		fmt.Fprintln(&code, "tokens,err:=HeaderObjectTokens(text,explode);if err!=nil{return wire.Value{},err};fields:=make(map[string]wire.Value,len(tokens));for key,token:=range tokens{rules:=[]HeaderScalarRule{}")
-		patternIndex := 0
 		for _, shape := range shapes {
 			fmt.Fprintln(&code, "{matched:=false;_=matched")
 			if properties, ok := shape.Get("properties").(schemaplan.Properties); ok {
@@ -179,9 +186,13 @@ func (planner *headerDecoderPlanner) function(node *schemaplan.Node) string {
 			}
 			if patterns, ok := shape.Get("patternProperties").(schemaplan.SchemaMap); ok {
 				for _, property := range patterns.Entries {
-					pattern := name + "Pattern" + strconv.Itoa(patternIndex)
-					patternIndex++
-					planner.programs = append(planner.programs, fmt.Sprintf("var %s = Pattern{source:%q}", pattern, property.Name))
+					// Header coercion uses the same immutable compiled pattern
+					// as the schema validator; it never recompiles source.
+					pattern := planner.patterns[property.Name]
+					if pattern == "" {
+						planner.err = fmt.Errorf("missing prepared header pattern %q", property.Name)
+						return ""
+					}
 					fmt.Fprintf(&code, "if ok,err:=%s.Match(ctx,key);err!=nil{return wire.Value{},err}else if ok{matched=true;rules=append(rules,%s)}\n", pattern, planner.rule(property.Schema))
 				}
 			}

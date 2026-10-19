@@ -292,16 +292,25 @@ func completeFiles(config generator.GoOptions, files []filePlan, programs []sche
 	for _, program := range programs {
 		programGroups[program.Owner] = append(programGroups[program.Owner], program)
 	}
+	patterns := make(map[string]schemaPattern)
+	for _, program := range programs {
+		for _, pattern := range program.Patterns {
+			if previous, ok := patterns[pattern.Name]; ok && previous.Pattern != pattern.Pattern {
+				return nil, fmt.Errorf("conflicting prepared pattern binding %s", pattern.Name)
+			}
+			patterns[pattern.Name] = pattern
+		}
+	}
+	for _, name := range sortedKeys(patterns) {
+		// A separate data artifact keeps formatter memory local to one program;
+		// global initialization is literal-only so the linker can discard it.
+		files = append(files, filePlan{Path: namedSourceFilePath("internal/schema", "pattern", name), Package: "schema", Template: "templates/prepared.go.tmpl", Imports: []importPlan{{Path: config.ImportPath + "/internal/runtime/ecmaregexp"}}, Prepared: fmt.Sprintf("var %s = Pattern{compiled:%s}\n", name, patterns[name].Program)})
+	}
+
 	for _, owner := range sortedKeys(programGroups) {
 		group := programGroups[owner]
 		imports := []importPlan{{Path: "context"}, {Path: config.ImportPath + "/internal/wire"}}
 
-		for _, program := range group {
-			if len(program.Patterns) > 0 {
-				imports = append(imports, importPlan{Path: config.ImportPath + "/internal/runtime/ecmaregexp"})
-				break
-			}
-		}
 		for _, program := range group {
 			if program.ViewTarget == "" {
 				imports = append(imports, importPlan{Path: "errors"})

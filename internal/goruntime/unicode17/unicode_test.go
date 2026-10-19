@@ -246,3 +246,14 @@ func TestIDNAMarkTable(t *testing.T) {
 		}
 	}
 }
+
+func TestNFCQuickCheckAndInvalidText(t *testing.T) {
+	for _, sample := range []struct{ input, want string }{
+		{"sdkgen", "sdkgen"}, {"café", "café"}, {"cafe\u0301", "café"}, {"\u1100\u1161", "가"},
+		{"a\u0301\u0327", "á\u0327"}, {string([]byte{0xff, 0xc0}), "\ufffd\ufffd"},
+	} {
+		if got := NFC(sample.input); got != sample.want {
+			t.Errorf("NFC(%q)=%q want %q", sample.input, got, sample.want)
+		}
+	}
+}

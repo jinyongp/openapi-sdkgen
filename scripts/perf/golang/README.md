@@ -22,9 +22,11 @@ These are local measurements, without fixed timing, percentage or source-size
 CI gates. Public numeric claims require the project's GitHub Actions benchmark
 workflow and a link to the measured run.
 
-`devtools run golang:perf builds` measures four real consumers: a direct call in
+`devtools run golang:perf builds` measures five real consumers: a direct call in
 full generation, generation-time selection, an independent named client, and
-computed dynamic lookup. The named case configures both a Todo entry and a second
+computed dynamic lookup, plus server schema compilation/validation. Use
+`builds --variant server` to supplement an existing four-consumer run without
+repeating unaffected measurements. The named case configures both a Todo entry and a second
 entry with the other XML/stream/regex APIs, then imports only the Todo entry.
 Its source union therefore includes the full fixture. Each gets five cold builds with separate empty
 `GOCACHE` directories and five warm builds using the corresponding same cache.
@@ -63,3 +65,15 @@ Compression is owned by the injected HTTP layer. `BenchmarkResponseBodyLease` an
 `TestResponseBodyLiveHeap` measure the SDK wrapper over returned bytes; they do not
 measure decompression. Historical `BenchmarkCompression` results retain their
 original scope and cannot be compared as decoder speed improvements.
+
+
+`runtime` uses `runtime-fixture.json`, which adds otherwise unused regex-format
+and IRI operations to the common fixture so compiler and URL microbenchmarks have
+real generated entry points. It also measures 1/8/64-worker shared-pattern matches,
+NFC and URL cases. Do not compare total benchmark command time with an older
+harness that has fewer cases. Per-case runtime results use five samples.
+
+`features` separately measures small JSON (10 operations), Unicode-pattern-heavy
+(1,000 operations) and server (1,000 operations) generation, with full/one/ten
+operation selection and five samples. Inputs, outputs and consumer checks are
+preserved in the same format as `generation`.

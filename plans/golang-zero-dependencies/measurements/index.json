@@ -1,0 +1,189 @@
+{
+  "archives": [
+    {
+      "name": "baseline-runtime-failed",
+      "sourceDirectory": "/tmp/sdkgen-zero/paired-baseline-runtime",
+      "archive": "baseline-runtime-failed.tar.gz",
+      "sha256": "127654d7c6212af766b7daed7063d6c0a2de8787255de4a17686638cf984c8a5",
+      "files": 11,
+      "hashMaps": 2
+    },
+    {
+      "name": "baseline-runtime",
+      "sourceDirectory": "/tmp/sdkgen-zero/paired-baseline-runtime-v2",
+      "archive": "baseline-runtime.tar.gz",
+      "sha256": "ae50e41f6591f67926db1517f533f9b89bb6316e5d0a3ba33d56a3a7d85434b7",
+      "files": 31,
+      "hashMaps": 2
+    },
+    {
+      "name": "baseline-features",
+      "sourceDirectory": "/tmp/sdkgen-zero/paired-baseline-features",
+      "archive": "baseline-features.tar.gz",
+      "sha256": "139ecfac7e4cde9d2c99249f1b46a5c479ae22846b004e40a6be18fade7a2354",
+      "files": 149,
+      "hashMaps": 9
+    },
+    {
+      "name": "baseline-server",
+      "sourceDirectory": "/tmp/sdkgen-zero/paired-baseline-server",
+      "archive": "baseline-server.tar.gz",
+      "sha256": "3480367726ca6b26c846f29327f183189755fc427c46c6df121f1b6aab302b2e",
+      "files": 92,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-runtime-initial",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-runtime-initial",
+      "archive": "candidate-runtime-initial.tar.gz",
+      "sha256": "e1f4be550e20a4bf623983bfcbcdcea8c46166bccff4bbd614e6b47c8c496496",
+      "files": 31,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-runtime",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-runtime",
+      "archive": "candidate-runtime.tar.gz",
+      "sha256": "bfe8c4971cf168c512621f4a9bb3c9f8a8ab029c590e739d8286789d233123d6",
+      "files": 31,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-runtime-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-runtime-final",
+      "archive": "candidate-runtime-final.tar.gz",
+      "sha256": "d81ece91a49e98c1bfe5ac520dd18cd5d42f16b4d0d692d7cfa47e70b57bbbae",
+      "files": 31,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-features-initial",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-features-initial",
+      "archive": "candidate-features-initial.tar.gz",
+      "sha256": "f6b5aa742e41b2b260271e642190fbb8caf9ea3385e11c8d1bfc3f528d66da9c",
+      "files": 149,
+      "hashMaps": 9
+    },
+    {
+      "name": "candidate-features",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-features",
+      "archive": "candidate-features.tar.gz",
+      "sha256": "d7fe9ec674f283f50aa192538c69f2e8a9d99a2a365253bab280bb6e934241ab",
+      "files": 149,
+      "hashMaps": 9
+    },
+    {
+      "name": "candidate-features-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-features-final",
+      "archive": "candidate-features-final.tar.gz",
+      "sha256": "1b68a045f8e0d2d2b61001b49b5711262b2ab8c8264866bddfa7348e4ef920c0",
+      "files": 149,
+      "hashMaps": 9
+    },
+    {
+      "name": "candidate-generation",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-generation",
+      "archive": "candidate-generation.tar.gz",
+      "sha256": "498193c6ba9cfb0ca33bf9905974dc3df7eaebf889e1813e6483a4da4348f4f3",
+      "files": 101,
+      "hashMaps": 5
+    },
+    {
+      "name": "candidate-generation-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-generation-final",
+      "archive": "candidate-generation-final.tar.gz",
+      "sha256": "7df6f2241f2120d8bc4f44509e95614f9dccfabcf0a4445b459f0eb2bae82094",
+      "files": 101,
+      "hashMaps": 5
+    },
+    {
+      "name": "candidate-builds",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-builds",
+      "archive": "candidate-builds.tar.gz",
+      "sha256": "0db4006d93761f14d699891776aa4c0abd85948c809276ae628f820130245ff6",
+      "files": 353,
+      "hashMaps": 4
+    },
+    {
+      "name": "candidate-builds-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-builds-final",
+      "archive": "candidate-builds-final.tar.gz",
+      "sha256": "3ca9c4361f6faa82a9801be42bd6d25b85faa71da26f323ce7e7e70730907458",
+      "files": 353,
+      "hashMaps": 4
+    },
+    {
+      "name": "candidate-platform",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-platform",
+      "archive": "candidate-platform.tar.gz",
+      "sha256": "5327fc6b4ce3c708c4963978bc5da688ac9ff104a099311307a725e6eac86bce",
+      "files": 32,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-platform-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-platform-final",
+      "archive": "candidate-platform-final.tar.gz",
+      "sha256": "28bf93f19f98ab757f5388ba392709ee0e85fc8d70501ac5c39d92032052506d",
+      "files": 32,
+      "hashMaps": 2
+    },
+    {
+      "name": "candidate-providers",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-providers",
+      "archive": "candidate-providers.tar.gz",
+      "sha256": "431b6e6f00c847ca17352ff03b2a21971ddd20731ef84aa4dbe39205a2b3833e",
+      "files": 144,
+      "hashMaps": 1
+    },
+    {
+      "name": "candidate-providers-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-providers-final",
+      "archive": "candidate-providers-final.tar.gz",
+      "sha256": "1a2e1b450b76b715e0f3bef87b34b3622cf20f3052458cfe0a56cab1ccf52cb1",
+      "files": 428,
+      "hashMaps": 1
+    },
+    {
+      "name": "candidate-server-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-candidate-server-final",
+      "archive": "candidate-server-final.tar.gz",
+      "sha256": "e474ad210c2567485be9f0bf569e1e8de3b880645b11e12a8ebb85af42f4b97d",
+      "files": 92,
+      "hashMaps": 2
+    },
+    {
+      "name": "diagnostics",
+      "sourceDirectory": "/tmp/sdkgen-zero/w10-evidence-bundle",
+      "archive": "diagnostics.tar.gz",
+      "sha256": "bf2ff78f5ac11164c4d7aa69f08fd7fa2b253751727dd990536aed479770bf20",
+      "files": 30,
+      "hashMaps": 0
+    },
+    {
+      "name": "parallel-final-failed",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-final-parallel",
+      "archive": "parallel-final-failed.tar.gz",
+      "sha256": "66cc48776045d7f5fc3aed9aeab7e00e880284d828d38475d2c4ec724e6a72d8",
+      "files": 13,
+      "hashMaps": 3
+    },
+    {
+      "name": "parallel-final",
+      "sourceDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-final-parallel-v2",
+      "archive": "parallel-final.tar.gz",
+      "sha256": "06a11c37488c01aff0dedd41ab8a116381145bc156bcc4aca75d0ed13ca9d148",
+      "files": 16,
+      "hashMaps": 3
+    },
+    {
+      "name": "verification",
+      "sourceDirectory": "/tmp/sdkgen-zero/final-verification-bundle",
+      "archive": "verification.tar.gz",
+      "sha256": "1900b4aecb875e2e63c0f34b1ee7d0c30a1ca8a18b474cc27d497c7e9bf6590e",
+      "files": 9,
+      "hashMaps": 0
+    }
+  ],
+  "scope": "Local diagnostics. Historical and interrupted runs are preserved, not passing final samples. JSON whitespace is normalized; original bytes/hash and lossless parsed reconstruction are recorded."
+}

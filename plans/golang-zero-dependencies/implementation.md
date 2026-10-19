@@ -217,3 +217,62 @@ mock 검사 통과. 한국어 문장·제품 경계·이전 설명 잔존·소�
 갱신 smoke 스크립트를 호출하도록 준비돼 있으며 이를 가짜 launcher 실행으로 대체하거나 통과로
 기록하지 않았다. Native 후보 소비는 통과했다. push/게시/원격 dispatch는 수행하지 않았다.
 전체 Go 회귀·자원 비교·6개 플랫폼 및 최종 전 영역 리뷰는 W10/W11에서 이어간다.
+
+## W10 — 비용 검증과 측정 기반 보완
+
+전체 Go/TypeScript 회귀의 첫 실행에서 Go 대상 경계 allowlist, header pattern 방출,
+이전 compiler symbol 전제가 실패했다. 나머지 패키지와 TypeScript 실행/선언 matrix는 통과했다.
+allowlist를 자체 runtime DAG에 맞추고 header coercion이 schema와 같은 준비된 pattern을
+참조하도록 고쳤다. compiler symbol 전제 수정은 W08에 포함했다. 영향받은 header/multipart,
+정적·계산 조회·선택 linker 검사는 통과했다. 최종 전체 Go 통과는 아직 별도로 필요하다.
+
+초기 측정에서 발견한 비용을 다음과 같이 보완했다.
+
+- NFC는 공식 NFC_QC=Yes와 canonical order가 확정된 문자열을 할당 없이 반환한다.
+  Maybe/No와 잘못된 UTF8은 전체 정규화 경로를 유지한다. 반사 기반 안정 정렬을 제거하고
+  실제 여러 combining mark가 있는 구간만 정렬한다. IDNA mapping builder의 작은 초기 용량도
+  추가했다. 공식 정규화/IDNA 사례·race·정규화 fuzz 973,202회를 통과했다.
+- 정규식 scratch의 전역 channel 경합은 CPU profile로 확인했다. 최대32개 고정 buffer arena와
+  atomic lease, per-P pool hint로 대체했다. GC가 hint를 버리거나 오래된 hint가 남아도 CAS만
+  소유권을 부여한다. 초과 동시 호출은 임시 상태를 쓰며 반환 시 입력·program·context·확장
+  buffer를 지운다. 64 worker/강제 GC race와 matcher fuzz 849,291회를 통과했다.
+- 비multiline 선두 start assertion이 반드시 실행되는 경우만 검색 시작 위치 반복을 생략한다.
+  alternative/lookaround/repeat는 일반 경로를 유지하고 분석 비용도 전체 step budget에 포함한다.
+  독립 경계·전체 자체 runtime race·후속 matcher fuzz 255,362회를 통과했다.
+- 같은 정적 pattern은 원문 전체 SHA256으로 한 번 컴파일하고 공유한다. 성공한 schema program의
+  참조를 모아 pattern별 literal-only 자료 파일로 방출하므로 제외된 operation의 첫 소유자가
+  유효 선언을 잃게 하지 않는다. 미사용 자료는 linker가 제거할 수 있다. 독립 두 schema 소비자,
+  정적/동적 고정 구문·매칭, XML/header/server 영향 검사와 linker 검사를 통과했다.
+- 자체 source는 준비 시 정렬한 불변 문자열을 보존하고 방출 시 새 byte slice를 전달한다.
+  같은 소스를 두 번 파싱/정렬하지 않는다. 소비자가 첫 출력 byte를 변경해도 재방출이 변하지
+  않는 검사와 결정성·무외부 모듈 격리 소비자가 통과했다.
+
+최종 producer의 features49/generation33/builds117/platform10 명령은 모두 성공했다.
+6개 OS/architecture 조합은 CGO0 교차 빌드이며 실행은 native Linux amd64만 했다.
+실제 Playground WASM build도 통과했다. 제공자107개와 서버 소비자30개 명령도 전부 성공했다.
+7개 제공자×전체/1개/10개 선택의21개 사례에서 입력·출력 경로·생성 표면·진단 계약이 기준과 같다.
+각 반복의 생성 해시도 일치했다. 기준 제공자의 생산 코드331개가 cab3cb8과 byte 단위로 일치하고
+Go1.27.2/Node24.22.0 조건도 같다. 최종 생성 모드는 생산 코드356개가 같으며 실행 벤치마크의
+자체 엔진 Go 소스도 최종 코드와 같다. 이후 보완은 생성 대상의 공유·방출 경로다.
+
+최종 Go CI(형식/vet/tidy/모듈/전체 Go/Node 없는 생성), race, fuzz9종, 문서 build/실행 예제/도구,
+Playground WASM/ZIP/격리 Go HTTP 소비자, 배포용6개 교차 빌드가 전부 통과했다. TypeScript 전체
+실행/선언 matrix의 앞선 성공도 유지한다. 최종 CI에서 다시 돌린 TypeScript 일반 검사와 별도 구분한다.
+모든 검증이 끝난 뒤 동일 소스·명령으로 정규식 동시 실행6종×5회를 다시 측정했다. 최초 추가 실행의
+패키지 경로 누락 실패도 보존했고 수정한 별도 실행은 통과했다.
+
+측정상 중대한 초기 비용은 원인·profile·수정 전후를 기록했다. NFC ASCII는 할당을 없앴고, 동시
+matcher의 전역 channel 경합을 제거했으며 동일 Unicode pattern1,000개 소스는32.14MiB에서
+16.26MiB로 줄었다. 최종 생성은1.49초 중앙값(기준1.46초)이다. 작은 JSON은0.04→0.09초, 단순
+정규식은70.5→152.7ns/op로 증가가 남는다. 자체 소스 준비·VM의 비용이며 절대적 개선을 주장하지
+않는다. Graph 전체 생성 중앙값은308.95→336.44초, RSS6522.5→6608.8MiB다. 무한·폭발적 증가나
+측정 한도 초과 없이 동일한 생성 계약을 지켰다. 다른 조건으로 인한 기여를 개별 원인으로 단정하지 않는다.
+소비자 cold 빌드·바이너리는 대체로 감소했다. 병적 정규식의 한도 도달 시간은 엔진 작업 단위가 달라
+정상 처리 속도 개선으로 해석하지 않는다.
+
+원시 기록23개 압축 파일·프로파일·실패/의도적 중단·기준/후보·재현 도구와 모든 해시는
+`measurements/index.json`과 비교 문서에 보존했다. JSON은 값의 완전한 복원과 원본 해시를 보존하고
+공백만 정규화한다. 실행 파일·빌드 cache는 임시 위치에 남기고 hash/크기를 기록했다. 공개 성능 수치나
+통계적 유의성을 주장하지 않는다. 정규식/Unicode/소유권·동시성·header 호출부·정적 도달성·측정
+조건·모드 누락·플랫폼·제품 통합 영역은 reviewed이며 확인된 결함을 수정하고 재검증했다.
+전체 변경의 최종 W11 리뷰와 게시 후 npm 검사는 이 결과에 완료로 섞지 않는다.

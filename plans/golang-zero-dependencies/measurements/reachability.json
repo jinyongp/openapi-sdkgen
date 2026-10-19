@@ -1,0 +1,52 @@
+[
+  {
+    "case": "full-static",
+    "matcherSource": true,
+    "compilerSource": false,
+    "propertyDataSource": false,
+    "matcherSymbol": false,
+    "compilerSymbol": false,
+    "propertySymbol": false,
+    "symbolOutputSha256": "b6c5b040215a728d6e3f148c101b7f9feccc299a566b803b73a0e048d7159c09"
+  },
+  {
+    "case": "selected",
+    "matcherSource": false,
+    "compilerSource": false,
+    "propertyDataSource": false,
+    "matcherSymbol": false,
+    "compilerSymbol": false,
+    "propertySymbol": false,
+    "symbolOutputSha256": "7cfab53fbc4bb5d62dd1ac74fa6a5b030deb0c4cffc848d4ebb23ce43b238f79"
+  },
+  {
+    "case": "named",
+    "matcherSource": true,
+    "compilerSource": false,
+    "propertyDataSource": false,
+    "matcherSymbol": false,
+    "compilerSymbol": false,
+    "propertySymbol": false,
+    "symbolOutputSha256": "9d0d7d95cc523b6f3bfcbbc61523a99b785524409d81be79ea08ed70d40f3b0d"
+  },
+  {
+    "case": "dynamic",
+    "matcherSource": true,
+    "compilerSource": false,
+    "propertyDataSource": false,
+    "matcherSymbol": true,
+    "compilerSymbol": false,
+    "propertySymbol": false,
+    "symbolOutputSha256": "3c7a0219505eb754eb8e962e71e46930b614fa0b481085a12a8387b794097aa9"
+  },
+  {
+    "case": "server",
+    "matcherSource": true,
+    "compilerSource": true,
+    "propertyDataSource": true,
+    "matcherSymbol": true,
+    "compilerSymbol": true,
+    "propertySymbol": true,
+    "symbolOutputSha256": "22e4ab1df055b4bae887b5650af69074506a0d06ff051189a6ebbdef3cc82592"
+  }
+]

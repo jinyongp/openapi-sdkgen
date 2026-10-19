@@ -56,11 +56,14 @@ func TestGeneratedHTTPDependencyBoundaries(t *testing.T) {
 		"internal/core":       {"internal/media": true, "internal/security": true, "internal/transport": true, "types": true},
 		"models":              {"internal/schema": true, "internal/wire": true, "types": true},
 		"internal/media":      {"internal/schema": true, "internal/wire": true, "internal/stream": true, "types": true},
-		"internal/schema":     {"internal/wire": true}, "internal/transport": {"types": true}, "types": {"internal/wire": true}, "internal/wire": {},
-		"internal/security": {"types": true},
-		"operations":        {"internal/core": true, "internal/operations": true, "models": true, "types": true},
-		"selective":         {"internal/core": true, "internal/registry": true, "operations": true, "types": true},
-		"internal/registry": {"operations": true},
+		"internal/schema":     {"internal/wire": true, "internal/runtime/ecmaregexp": true, "internal/runtime/urlstd": true}, "internal/transport": {"types": true, "internal/runtime/urlstd": true}, "types": {"internal/wire": true}, "internal/wire": {},
+		"internal/security":           {"types": true},
+		"operations":                  {"internal/core": true, "internal/operations": true, "models": true, "types": true},
+		"selective":                   {"internal/core": true, "internal/registry": true, "operations": true, "types": true},
+		"internal/registry":           {"operations": true},
+		"internal/runtime/ecmaregexp": {"internal/runtime/unicode17": true},
+		"internal/runtime/urlstd":     {"internal/runtime/unicode17": true},
+		"internal/runtime/unicode17":  {},
 	}
 	for name, item := range packages {
 		if name != prefix && !strings.HasPrefix(name, prefix+"/") {

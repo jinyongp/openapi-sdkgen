@@ -1,0 +1,249 @@
+{
+  "scope": "Identical command and benchmark source; five calibrated 100ms samples; sequential, after all CI checks. Only per-case benchmark metrics are compared.",
+  "results": {
+    "baseline": {
+      "BenchmarkRegexConcurrent/ascii/workers1": {
+        "ns/op": {
+          "n": 5,
+          "median": 67.85,
+          "min": 67.67,
+          "max": 70.93
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/ascii/workers8": {
+        "ns/op": {
+          "n": 5,
+          "median": 10.28,
+          "min": 10.23,
+          "max": 18.36
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/ascii/workers64": {
+        "ns/op": {
+          "n": 5,
+          "median": 9.694,
+          "min": 9.204,
+          "max": 10.76
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers1": {
+        "ns/op": {
+          "n": 5,
+          "median": 59.61,
+          "min": 59.39,
+          "max": 60.76
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers8": {
+        "ns/op": {
+          "n": 5,
+          "median": 10.16,
+          "min": 9.714,
+          "max": 11.05
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers64": {
+        "ns/op": {
+          "n": 5,
+          "median": 7.952,
+          "min": 7.905,
+          "max": 7.982
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    "candidate": {
+      "BenchmarkRegexConcurrent/ascii/workers1": {
+        "ns/op": {
+          "n": 5,
+          "median": 143.0,
+          "min": 142.8,
+          "max": 145.8
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/ascii/workers8": {
+        "ns/op": {
+          "n": 5,
+          "median": 28.39,
+          "min": 28.16,
+          "max": 28.49
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/ascii/workers64": {
+        "ns/op": {
+          "n": 5,
+          "median": 23.44,
+          "min": 21.81,
+          "max": 24.24
+        },
+        "B/op": {
+          "n": 5,
+          "median": 1.0,
+          "min": 0.0,
+          "max": 1.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers1": {
+        "ns/op": {
+          "n": 5,
+          "median": 254.5,
+          "min": 251.6,
+          "max": 256.2
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers8": {
+        "ns/op": {
+          "n": 5,
+          "median": 44.09,
+          "min": 42.79,
+          "max": 44.96
+        },
+        "B/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "BenchmarkRegexConcurrent/capture/workers64": {
+        "ns/op": {
+          "n": 5,
+          "median": 35.47,
+          "min": 34.9,
+          "max": 36.01
+        },
+        "B/op": {
+          "n": 5,
+          "median": 1.0,
+          "min": 1.0,
+          "max": 2.0
+        },
+        "allocs/op": {
+          "n": 5,
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    }
+  }
+}

@@ -27,10 +27,10 @@ case "$command" in
   mod-tidy) run_step 'Go module tidy' go mod tidy "$@" ;;
   mod-tidy-check) run_step 'Go module tidy check' go mod tidy -diff "$@" ;;
   mod-verify) run_step 'Go module verify' go mod verify "$@" ;;
-  race) run_step 'Go race detector' go test -race "$@" ./internal/compiler ./internal/output ./scripts/compat-benchmark ;;
+  race) run_step 'Go race detector' go test -race "$@" ./internal/compiler ./internal/output ./internal/goruntime/... ./scripts/compat-benchmark ;;
   fuzz)
     duration="${FUZZ_TIME:-3s}"
-    for target in './internal/diagnostic FuzzSafeSourceDisplay' './internal/output FuzzSafeArtifactPath' './internal/compiler FuzzJSONPointerTokenRoundTrip' './internal/compiler FuzzRemoteReferenceURLSyntax'; do
+    for target in './internal/diagnostic FuzzSafeSourceDisplay' './internal/output FuzzSafeArtifactPath' './internal/compiler FuzzJSONPointerTokenRoundTrip' './internal/compiler FuzzRemoteReferenceURLSyntax' './internal/goruntime/ecmaregexp FuzzCompile' './internal/goruntime/ecmaregexp FuzzMatcher' './internal/goruntime/unicode17 FuzzNFCIdempotence' './internal/goruntime/urlstd FuzzURLRoundTrip' './internal/goruntime/urlstd FuzzPunycode'; do
       read -r package name <<<"$target"
       run_step "$name" go test "$package" -run='^$' -fuzz="^$name$" -fuzztime="$duration"
     done ;;

@@ -10,12 +10,13 @@ remains the
 ## Product boundary
 
 `openapi-sdkgen` accepts OpenAPI 3.0.x, 3.1.x, and 3.2.x documents and generates
-application-owned TypeScript source. The generated source includes its source runtime and is compiled by the
-consumer's existing TypeScript toolchain.
+application-owned TypeScript or Go source. Each target includes its source runtime
+and uses the consumer's corresponding compiler. Generated Go requires Go 1.27 or
+later and no external runtime modules.
 
-TypeScript is the active output target. The optional `server` add-on generates Fetch-native Webhook and Callback
-contracts alongside the client output. Host applications connect those
-contracts to their framework and HTTP stack.
+The optional `server` add-on generates Webhook and Callback contracts alongside
+the client output: Fetch-native contracts for TypeScript and `net/http` handlers
+for Go. Host applications connect those contracts to their framework and HTTP stack.
 
 Supported OpenAPI semantics are generated or preserved as documented metadata.
 A construct that cannot be represented safely is rejected with a source-aware
@@ -70,7 +71,7 @@ OpenAPI decode, validation, resolution, normalization
 target-neutral IR
    │
    ▼
-TypeScript target preparation
+selected target preparation
    │
    ▼
 semantic module plan and source emission
@@ -132,7 +133,7 @@ belongs in typed IR fields so targets consume one normalized representation.
 
 Schema resources have their own normalized registry. Resource URI, dialect,
 pointer identity, boolean schemas, anchors, dynamic references, and compiled
-custom-vocabulary results are established before TypeScript lowering. Type and
+custom-vocabulary results are established before target lowering. Type and
 wire projection can therefore share one reference model.
 
 ## Diagnostics
@@ -149,6 +150,44 @@ rendering.
 
 Skipped pipeline phases are reported when an earlier phase prevents safe
 continuation.
+
+## Go target
+
+The Go target prepares an immutable source plan from the same normalized IR.
+`internal/target/golang` owns Go names, DTOs, schema projections, operation/client
+selection, the runtime dependency manifest and emitted package paths. `EmitTo`
+formats generated programs and writes artifacts through the shared sink; it does
+not resolve schemas or change selection. Authored runtime source is formatted
+once during preparation, stored as immutable text, and copied for each emission.
+
+`internal/goruntime` is the canonical production source for the owned Unicode 17,
+ECMAScript Unicode-pattern and WHATWG URL implementations. An explicit embedded
+source inventory excludes tests and preparation tools. The target rewrites Go
+import literals through the AST into the generated SDK's `internal/runtime`
+packages and preserves the Unicode license. The generated SDK imports only its
+own packages and the Go standard library. The generator's OpenAPI/tooling modules
+are separate from that consumer dependency contract.
+
+Static schema patterns compile during generation. Identical sources share one
+immutable versioned program, emitted as independently removable literal data.
+Dynamic server schemas and the regex format assertion additionally retain the
+compiler and Unicode property data. The manifest selects complete source groups;
+Go's linker can discard unreachable functions and program data after compilation.
+Generation selection also reduces source parsing and compilation work.
+
+Matching has per-call state, explicit stacks, a whole-search step budget and
+context checks. At most 32 fixed scratch buffers are retained; overflow calls use
+temporary buffers. Returning a buffer releases input, context, program and grown
+storage. Unicode normalization and IDNA use checked-in, hash-pinned Unicode 17
+data; URL parsing, origin decisions and serialization share one immutable record.
+
+The host supplies HTTP policy through `http.Client`/`RoundTripper` or the transport
+interface. Generated code does not negotiate or decode content compression and
+does not alter a shared HTTP transport. It validates the actual headers and bytes
+returned by that layer. Binary and sequential Raw responses preserve those bytes;
+structured Raw responses retain their media decoding and schema validation.
+The optional server add-on exposes `net/http` handlers and application-owned
+contracts alongside the client SDK.
 
 ## TypeScript target
 

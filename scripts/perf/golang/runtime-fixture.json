@@ -1,0 +1,327 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Go fixed performance workloads",
+    "version": "1"
+  },
+  "paths": {
+    "/todo": {
+      "get": {
+        "operationId": "todo",
+        "responses": {
+          "200": {
+            "description": "Measured response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Measured response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/xml": {
+      "get": {
+        "operationId": "xml",
+        "responses": {
+          "200": {
+            "description": "Measured response",
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "xml": {
+                    "name": "record",
+                    "namespace": "urn:perf",
+                    "prefix": "p"
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "xml": {
+                        "attribute": true
+                      }
+                    },
+                    "value": {
+                      "oneOf": [
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "operationId": "upload",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Uploaded"
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "events",
+        "responses": {
+          "200": {
+            "description": "Frames",
+            "content": {
+              "application/x-ndjson": {
+                "itemSchema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/secure": {
+      "get": {
+        "operationId": "secure",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Measured response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "title"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/node": {
+      "post": {
+        "operationId": "node",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Node"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recursive shared node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Node"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pattern": {
+      "get": {
+        "operationId": "pattern",
+        "responses": {
+          "200": {
+            "description": "Pattern value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Pattern"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/__benchmarkRegexSyntax": {
+      "get": {
+        "operationId": "benchmarkRegexSyntax",
+        "responses": {
+          "200": {
+            "description": "Engine benchmark support",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "regex",
+                  "$vocabulary": {
+                    "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/__benchmarkURL": {
+      "get": {
+        "operationId": "benchmarkURL",
+        "responses": {
+          "200": {
+            "description": "Engine benchmark support",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "iri",
+                  "$vocabulary": {
+                    "https://json-schema.org/draft/2020-12/vocab/format-assertion": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Node": {
+        "type": "object",
+        "required": [
+          "text",
+          "choice"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "choice": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "next": {
+            "$ref": "#/components/schemas/Node"
+          }
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "Pattern": {
+        "type": "string",
+        "pattern": "^[a-z]+$"
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -120,8 +120,9 @@ class Measurement:
 
     def runtime(self):
         module = self.module('runtime')
-        sdk = self.generate('runtime-generation', HERE / 'fixture.json', module)
+        sdk = self.generate('runtime-generation', HERE / 'runtime-fixture.json', module)
         shutil.copyfile(HERE / 'runtime_bench.go.tmpl', sdk / 'runtime_bench_test.go')
+        shutil.copyfile(HERE / 'regex_parallel_bench.go.tmpl', sdk / 'regex_parallel_bench_test.go')
         self.run('runtime-compile', ['go', 'test', '-mod=readonly', '-run', '^$', './api'], module)
         self.run('runtime-live-heap', ['go', 'test', '-mod=readonly', '-v', '-run', '^Test((Stream|ResponseBody)LiveHeap|LargeJSONLiveHeapAndGC)$', '-count=1', './api'], module)
         self.run('runtime-benchmark', ['go', 'test', '-mod=readonly', '-run', '^$', '-bench', '.', '-benchmem', '-benchtime=100ms', '-count=5', '-timeout=15m', './api'], module)
@@ -173,6 +174,30 @@ class Measurement:
             # Keep selected10 as a compile check; large full output is covered separately.
             self.run(f'generation-{operations}-consumer', ['go', 'test', '-mod=readonly', '-run', '^$', './api/...'], module)
 
+    def features(self):
+        for name in ['small-json', 'regex-heavy', 'server']:
+            module = self.module('features-' + name)
+            document = {'openapi': '3.1.0', 'info': {'title': 'Fixed feature workload', 'version': '1'}, 'paths': {}}
+            operations = 10 if name == 'small-json' else 1000
+            pattern = r'(?i:^(?<word>\p{L}+)-\k<word>$)'
+            for n in range(operations):
+                schema = {'type': 'object', 'properties': {'id': {'type': 'string'}}}
+                if name == 'regex-heavy':
+                    schema = {'type': 'string', 'pattern': pattern}
+                document['paths']['/items/' + str(n)] = {'get': {'operationId': 'feature' + str(n), 'responses': {'200': {'description': 'Feature cost', 'content': {'application/json': {'schema': schema}}}}}}
+            input_file = module / 'input.json'
+            input_file.write_text(json.dumps(document))
+            for selected in [0, 1, 10]:
+                extra = ['--with', 'server'] if name == 'server' else []
+                extra += [arg for n in range(selected) for arg in ['--operation', 'feature' + str(n)]]
+                hashes = []
+                for sample in range(5):
+                    self.generate(f'features-{name}-selected{selected}-sample{sample}', input_file, module, extra)
+                    hashes.append(self.results[-1]['output']['sha256'])
+                if len(set(hashes)) != 1:
+                    raise SystemExit('Feature generation output changed between matched samples')
+            self.run('features-' + name + '-consumer', ['go', 'test', '-mod=readonly', '-run', '^$', './api/...'], module)
+
     def providers(self):
         auditor = self.output / 'golang-compat'
         self.run('build-provider-auditor', ['go', 'build', '-o', auditor, './scripts/golang-compat'], ROOT)
@@ -207,14 +232,17 @@ class Measurement:
                 if len(set(hashes)) != 1:
                     raise SystemExit('Provider output changed between matched samples')
 
-    def builds(self):
+    def builds(self, variant=None):
         variants = {
             'full-static': ('api "example.test/goperf/api"', 'c,err:=api.NewClient(api.ClientOptions{BaseURL:"https://example.test",Transport:memoryTransport{}});if err!=nil{panic(err)};if _,err:=c.Operations.Todo().Do(ctx);err!=nil{panic(err)}', []),
             'selected': ('api "example.test/goperf/api"', 'c,err:=api.NewClient(api.ClientOptions{BaseURL:"https://example.test",Transport:memoryTransport{}});if err!=nil{panic(err)};if _,err:=c.Operations.Todo().Do(ctx);err!=nil{panic(err)}', ['--operation', 'todo']),
             'named': ('api "example.test/goperf/api/clients/only"', 'c,err:=api.NewClient(api.ClientOptions{BaseURL:"https://example.test",Transport:memoryTransport{}});if err!=nil{panic(err)};if _,err:=c.Operations.Todo().Do(ctx);err!=nil{panic(err)}', []),
             'dynamic': ('"os";"example.test/goperf/api/selective"', 'id:="todo";if len(os.Args)>1{id=os.Args[1]};ref,ok:=selective.LookupOperation(id);if !ok{panic("missing operation")};p,err:=selective.Prepare(ref);if err!=nil{panic(err)};c,err:=selective.NewClient(selective.ClientOptions{BaseURL:"https://example.test",Transport:memoryTransport{}},p);if err!=nil{panic(err)};operation,err:=selective.Bind(c,ref);if err!=nil{panic(err)};if _,err:=operation.Call(types.Value{}).Do(ctx);err!=nil{panic(err)}', []),
+            'server': ('server "example.test/goperf/api/server/runtime"', 'raw,err:=types.ValueFrom(map[string]any{"types":[]any{"string"},"pattern":"^[a-zA-Z]+$"});if err!=nil{panic(err)};contract,err:=server.CompileSchema(raw,nil);if err!=nil{panic(err)};value,err:=types.ValueFrom("Go");if err!=nil{panic(err)};if err:=contract.Validate(ctx,value);err!=nil{panic(err)}', ['--with', 'server']),
         }
         for name, (imports, body, extra) in variants.items():
+            if variant is not None and name != variant:
+                continue
             module = self.module('build-' + name)
             if name == 'named':
                 config = module / 'clients.toml'
@@ -250,9 +278,12 @@ class Measurement:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', choices=['runtime', 'generation', 'builds', 'platform', 'providers'])
+    parser.add_argument('mode', choices=['runtime', 'generation', 'builds', 'platform', 'providers', 'features'])
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--variant', choices=['full-static', 'selected', 'named', 'dynamic', 'server'], help='Only this consumer in builds mode')
     args = parser.parse_args()
+    if args.variant and args.mode != 'builds':
+        parser.error('--variant requires builds mode')
     os.umask(0o077)
     if args.output:
         args.output.mkdir(parents=True, exist_ok=False)
@@ -263,4 +294,7 @@ if __name__ == '__main__':
         output = Path(tempfile.mkdtemp(prefix=args.mode + '-', dir=parent))
     print(f'Private raw measurements: {output}', flush=True)
     measurement = Measurement(output)
-    getattr(measurement, args.mode)()
+    if args.mode == 'builds':
+        measurement.builds(args.variant)
+    else:
+        getattr(measurement, args.mode)()
