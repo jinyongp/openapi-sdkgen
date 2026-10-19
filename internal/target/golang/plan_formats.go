@@ -44,7 +44,7 @@ func (planner *schemaPlanner) format(node *schemaplan.Node, format string, patte
 		planner.formatRoots["format-ip"] = true
 		return matched(fmt.Sprintf("FormatIP(text,%t)", format == "ipv6")), nil
 	case "regex":
-		planner.needsRegex = true
+		planner.formatRoots["regex-compiler"] = true
 		return "if text,ok:=value.String();ok{matched,err:=FormatRegex(ctx,text);if err!=nil{return result,err};if !matched{" + fail + "}}\n", nil
 	case "uri", "uri-reference", "iri", "iri-reference", "uri-template", "idn-hostname":
 		guardSource := `[\u0000-\u001f\u007f\s]`

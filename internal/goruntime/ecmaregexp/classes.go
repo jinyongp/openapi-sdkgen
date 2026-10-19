@@ -38,10 +38,6 @@ func complement(ranges []Range) []Range {
 	}
 	return out
 }
-func rangeContains(ranges []Range, value rune) bool {
-	index := sort.Search(len(ranges), func(index int) bool { return ranges[index].Hi >= value })
-	return index < len(ranges) && ranges[index].Lo <= value
-}
 func foldedRanges(ranges []Range) []Range {
 	ranges = mergeRanges(ranges)
 	var additions []Range

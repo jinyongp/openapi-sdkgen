@@ -2,8 +2,8 @@
 // converting into net/http's public request representation. It also canonicalizes
 // IDNA, legacy IPv4 spellings and default ports for origin comparisons.
 func ParseHTTPURL(value,base string)(*url.URL,error){
-    var parsed *whatwg.Url;var err error
-    if base==""{parsed,err=whatwg.Parse(value)}else{parsed,err=whatwg.ParseRef(base,value)}
+    var parsed *urlstd.URL;var err error
+    if base==""{parsed,err=urlstd.Parse(value)}else{parsed,err=urlstd.ParseRef(base,value)}
     if err!=nil{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"HTTP URL is invalid",Cause:err}}
     if parsed.Protocol()!="http:"&&parsed.Protocol()!="https:"{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"URL must use HTTP(S)"}}
     result,err:=url.Parse(parsed.Href(false));if err!=nil{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"HTTP URL cannot be represented by net/http",Cause:err}}

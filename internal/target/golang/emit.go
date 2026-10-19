@@ -27,6 +27,17 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		return fmt.Errorf("invalid Go source plan")
 	}
 	for _, file := range prepared.Files {
+		if file.Source != "" {
+			data, _, err := ownedRuntimeFile(file.Source, file.RuntimeRoot)
+			if err != nil {
+				return err
+			}
+			if err := sink.WriteArtifact(generator.Artifact{Path: file.Path, Data: data}); err != nil {
+				return err
+			}
+			continue
+		}
+
 		templateSource, err := sources.ReadFile(file.Template)
 		if err != nil {
 			return fmt.Errorf("Go template %s: %w", file.Template, err)

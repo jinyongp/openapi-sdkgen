@@ -1,0 +1,42 @@
+{
+  "unit": "W07",
+  "scope": "Single canonical source emitted by explicit DAG and AST import-literal rewriting; static programs vs optional dynamic compiler. Consumer module helper pins removed in W08, not claimed here.",
+  "checks": [
+    "original runtime packages race pass",
+    "deterministic double emission with nested SDK import root",
+    "plain/static/dynamic compiler and property-table file selection",
+    "generated static+dynamic independent Boolean assertions95",
+    "generated compiler syntax3930",
+    "existing regex42 and format assertions, HTTP phase+cause, CGO0 schema consumer",
+    "server/inbound, security, HTTP integration affected groups pass"
+  ],
+  "outputs": {
+    "w07-original-race.txt": "?   \topenapi-sdkgen/internal/goruntime\t[no test files]\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t3.261s\nok  \topenapi-sdkgen/internal/goruntime/unicode17\t2.201s\nok  \topenapi-sdkgen/internal/goruntime/urlstd\t1.328s\n",
+    "w07-trace-preparation-final.txt": "{\"cases\":1919,\"files\":2119,\"capturedFiles\":477,\"incompleteFiles\":22,\"oversizedInputs\":1863}\n",
+    "w07-traces-first.txt": "=== RUN   TestPinnedTest262SupplementaryTraces\n    match_test.go:358: supplementary pinned traces 1919 unique patterns 1797\n--- PASS: TestPinnedTest262SupplementaryTraces (0.04s)\nPASS\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t0.038s\n"
+  },
+  "supplementaryTraces": {
+    "cases": 1919,
+    "patterns": 1797,
+    "sourceFiles": 2119,
+    "capturedFiles": 477,
+    "incompleteJSFiles": 22,
+    "oversizedCalls": 1863,
+    "limitations": "No full Test262 JS/API pass. Object/realm/coercion assertions and non-u lexical enumeration incomplete; original reason per file retained. Size limits affect fixture preparation only; Unicode boundaries and 1MiB repeat independently tested."
+  },
+  "review": {
+    "fixed": "Dynamic wrapper needed a direct wire import; manifest corrected and all affected generated groups rerun.",
+    "sourceOwnership": "Explicit embed list excludes tests/tools; URL and compiler share canonical sources; full notices preserved. Static matcher range helper and common range type split from compiler/property implementation.",
+    "staticPrograms": "Version, flat nodes/edges/ranges/named captures/flags serialized at generation; no source compilation in static SDK request path. Named pattern source retained in planner metadata for existing XML/server part projection callers.",
+    "boundaries": "HTTP uses urlstd before final net/url conversion; static and dynamic wrappers propagate budget/context errors distinctly. Internal NewPattern helper removed; no public root SDK API removal.",
+    "selection": "Only dynamic server schemas and regex-format assertions need the compiler and property tables; static patterns do not. Full binary symbol proof deferred W10."
+  },
+  "sourceSHA256": {
+    "internal/goruntime/assets.go": "7c0a1c40a7e7dbef9cf4077a876b6777fbf6d8d455990329c09ed523cd9f5038",
+    "internal/target/golang/owned_runtime.go": "535dabbdf2bf8799bb63d2490e49ff2714b201cafaabb15ffedeee6b37d0e080",
+    "internal/target/golang/owned_runtime_test.go": "132a8760f055c27e0f02f55976256f7a4f003734af45192db55e42a01996f40e",
+    "internal/target/golang/plan_pattern.go": "e8c16e1e28577dc71b43d0b2c0a06df1819cece2a441c1efbadbc23330379458",
+    "internal/target/golang/plan_files.go": "1b7fbd9d86181352bd4336db4d853d5ac7ca02c84bd4078763abb2b5f89bbf74",
+    "scripts/goruntime-data/trace-regexp-matches.mjs": "130cc025758dc05caacd27aaff617146a943935b9262f42ad534153edbfa30ec"
+  }
+}

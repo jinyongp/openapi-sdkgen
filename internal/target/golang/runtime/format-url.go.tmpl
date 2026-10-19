@@ -1,7 +1,7 @@
-var formatURLBase struct { once sync.Once; value *url.Url }
+var formatURLBase struct { once sync.Once; value *urlstd.URL }
 
-func urlFormatBase() *url.Url {
-    formatURLBase.once.Do(func(){base,err:=url.Parse("https://format.invalid/");if err!=nil{panic(err)};formatURLBase.value=base})
+func urlFormatBase() *urlstd.URL {
+    formatURLBase.once.Do(func(){base,err:=urlstd.Parse("https://format.invalid/");if err!=nil{panic(err)};formatURLBase.value=base})
     return formatURLBase.value
 }
 
@@ -15,7 +15,7 @@ func FormatURL(value string,absolute bool) bool {
 }
 func FormatIDNHostname(value string) (string,bool) {
     if value==""{return "",false}
-    parsed,err:=url.Parse("http://"+value)
+    parsed,err:=urlstd.Parse("http://"+value)
     if err!=nil{return "",false}
     return parsed.Hostname(),true
 }

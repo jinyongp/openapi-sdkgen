@@ -1,0 +1,13 @@
+// PreparePattern is used for schemas received at runtime. Static schema patterns
+// contain only prepared programs and do not require this compiler in their SDK.
+func PreparePattern(source string)(*Pattern,error){
+    program,err:=ecmaregexp.Compile(source)
+    if err!=nil{return nil,err}
+    return &Pattern{compiled:program},nil
+}
+func FormatRegex(ctx context.Context,value string) (bool,error) {
+    _,err:=ecmaregexp.CompileContext(ctx,value)
+    if errors.Is(err,ecmaregexp.ErrComplexity){return false,&wire.ValidationLimitError{Cause:err}}
+    if contextErr:=ctx.Err();contextErr!=nil{return false,contextErr}
+    return err==nil,nil
+}

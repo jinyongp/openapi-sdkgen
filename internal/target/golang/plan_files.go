@@ -11,12 +11,22 @@ import (
 
 type runtimeModule struct {
 	Path, Package, Template string
+	Sources                 []string
 	Dependencies            []string
 	StandardImports         []importPlan
 }
 
 // This catalog is explicit: adding an embedded file never changes output roots.
 var runtimeModules = map[string]runtimeModule{
+	"owned-unicode-license": {Path: "internal/runtime/unicode17/LICENSE.txt", Package: "unicode17", Sources: []string{"unicode17/LICENSE.txt"}},
+	"owned-fold":            {Path: "internal/runtime/unicode17/fold.go", Package: "unicode17", Sources: []string{"unicode17/ranges.go", "unicode17/fold.go", "unicode17/fold_data.go"}, Dependencies: []string{"owned-unicode-license"}},
+	"owned-properties":      {Path: "internal/runtime/unicode17/properties.go", Package: "unicode17", Sources: []string{"unicode17/properties.go", "unicode17/properties_data.go"}, Dependencies: []string{"owned-fold"}},
+	"owned-idna":            {Path: "internal/runtime/unicode17/idna.go", Package: "unicode17", Sources: []string{"unicode17/idna.go", "unicode17/idna_data.go", "unicode17/normalization.go", "unicode17/normalization_data.go"}, Dependencies: []string{"owned-unicode-license"}},
+	"owned-url":             {Path: "internal/runtime/urlstd/url.go", Package: "urlstd", Sources: []string{"urlstd/url.go", "urlstd/host.go", "urlstd/idna.go", "urlstd/punycode.go", "urlstd/encoding.go"}, Dependencies: []string{"owned-idna"}},
+	"owned-regex":           {Path: "internal/runtime/ecmaregexp/program.go", Package: "ecmaregexp", Sources: []string{"ecmaregexp/program.go", "ecmaregexp/ranges.go", "ecmaregexp/text.go", "ecmaregexp/match.go", "ecmaregexp/scratch.go"}, Dependencies: []string{"owned-fold"}},
+	"owned-compiler":        {Path: "internal/runtime/ecmaregexp/compile.go", Package: "ecmaregexp", Sources: []string{"ecmaregexp/compile.go", "ecmaregexp/classes.go"}, Dependencies: []string{"owned-regex", "owned-properties"}},
+	"regex-compiler":        {Path: "internal/schema/regex_compile.go", Package: "schema", Template: "runtime/regex-compiler.go.tmpl", Dependencies: []string{"regex", "owned-compiler", "wire"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}}},
+
 	"server-protocols":              {Path: "server/runtime/protocols.go", Package: "runtime", Template: "runtime/server-protocols.go.tmpl", Dependencies: []string{"stream-json", "stream-sse", "stream-multipart"}},
 	"server-schema-contract":        {Path: "server/runtime/schema_contract.go", Package: "runtime", Template: "runtime/server-schema-contract.go.tmpl", Dependencies: []string{"schema-integer", "types"}, StandardImports: []importPlan{{Path: "fmt"}}},
 	"server-schema-xml":             {Path: "server/runtime/schema_xml.go", Package: "runtime", Template: "runtime/server-schema-xml.go.tmpl", Dependencies: []string{"server-media", "schema", "wire-xml-output", "types"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}}},
@@ -24,7 +34,7 @@ var runtimeModules = map[string]runtimeModule{
 	"multipart-encode":              {Path: "internal/multipartcodec/encode.go", Package: "multipartcodec", Template: "runtime/multipart-encode.go.tmpl", Dependencies: []string{"multipart-codec", "media-multipart", "wire", "types-multipart"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}, {Path: "fmt"}, {Path: "io"}, {Path: "net/http"}, {Path: "mime"}, {Path: "net/textproto"}, {Path: "strconv"}, {Path: "strings"}}},
 	"server-multipart":              {Path: "server/runtime/multipart.go", Package: "runtime", Template: "runtime/server-multipart.go.tmpl", Dependencies: []string{"server-media", "multipart-codec", "types-multipart", "schema", "stream-multipart", "types-stream-data"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}, {Path: "fmt"}, {Path: "io"}, {Path: "mime"}, {Path: "mime/multipart"}, {Path: "net/http"}, {Path: "strconv"}, {Path: "strings"}}},
 	"multipart-codec":               {Path: "internal/multipartcodec/decode.go", Package: "multipartcodec", Template: "runtime/multipart-codec.go.tmpl", Dependencies: []string{"stream-multipart", "media-inbound", "types-multipart", "types-stream-data"}, StandardImports: []importPlan{{Path: "bytes"}, {Path: "context"}, {Path: "errors"}, {Path: "fmt"}, {Path: "io"}, {Path: "mime"}, {Path: "net/http"}, {Path: "sort"}, {Path: "strconv"}, {Path: "strings"}}},
-	"server-schema":                 {Path: "server/runtime/schema.go", Package: "runtime", Template: "runtime/server-schema.go.tmpl", Dependencies: []string{"server-schema-xml", "server-schema-contract", "server-media", "media-value", "schema-integer", "schema-multiple", "schema-unique", "schema-content", "regex", "wire-xml", "types"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "sort"}}},
+	"server-schema":                 {Path: "server/runtime/schema.go", Package: "runtime", Template: "runtime/server-schema.go.tmpl", Dependencies: []string{"server-schema-xml", "server-schema-contract", "server-media", "media-value", "schema-integer", "schema-multiple", "schema-unique", "schema-content", "regex-compiler", "wire-xml", "types"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "sort"}}},
 	"server-headers":                {Path: "server/runtime/headers.go", Package: "runtime", Template: "runtime/server-headers.go.tmpl", Dependencies: []string{"server-media", "server-parameters", "media-value", "types"}, StandardImports: []importPlan{{Path: "fmt"}, {Path: "net/http"}, {Path: "net/url"}, {Path: "strings"}}},
 	"server-stream":                 {Path: "server/runtime/stream.go", Package: "runtime", Template: "runtime/server-stream.go.tmpl", Dependencies: []string{"server-execution", "stream-reader", "types-stream-codec"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}, {Path: "fmt"}, {Path: "io"}, {Path: "sync"}}},
 	"server-media":                  {Path: "server/runtime/media.go", Package: "runtime", Template: "runtime/server-media.go.tmpl", Dependencies: []string{"server-execution", "server-coercion", "media-inbound", "media-form", "wire", "types"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "io"}, {Path: "strconv"}, {Path: "strings"}}},
@@ -64,7 +74,7 @@ var runtimeModules = map[string]runtimeModule{
 	"wire-xml-name":                 {Path: "internal/wire/xml_name.go", Package: "wire", Template: "runtime/wire-xml-name.go.tmpl", Dependencies: []string{"wire"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "strconv"}, {Path: "strings"}}},
 	"wire-xml-output":               {Path: "internal/wire/xml_output.go", Package: "wire", Template: "runtime/wire-xml-output.go.tmpl", Dependencies: []string{"wire-xml"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "strings"}}},
 	"media-form":                    {Path: "internal/media/form.go", Package: "media", Template: "runtime/media-form.go.tmpl", Dependencies: []string{"media-value", "types-request"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "strings"}}},
-	"transport-url":                 {Path: "internal/transport/url.go", Package: "transport", Template: "runtime/transport-url.go.tmpl", Dependencies: []string{"types-errors"}, StandardImports: []importPlan{{Path: "net/url"}, {Alias: "whatwg", Path: "github.com/nlnwa/whatwg-url/url"}}},
+	"transport-url":                 {Path: "internal/transport/url.go", Package: "transport", Template: "runtime/transport-url.go.tmpl", Dependencies: []string{"types-errors", "owned-url"}, StandardImports: []importPlan{{Path: "net/url"}}},
 	"types-security":                {Path: "types/security.go", Package: "types", Template: "runtime/types-security.go.tmpl", Dependencies: []string{"types"}, StandardImports: []importPlan{{Path: "context"}}},
 	"security":                      {Path: "internal/security/security.go", Package: "security", Template: "runtime/security.go.tmpl", Dependencies: []string{"types-security", "types-request"}, StandardImports: []importPlan{{Path: "context"}, {Path: "encoding/base64"}, {Path: "net/http"}, {Path: "net/url"}, {Path: "strings"}}},
 	"core-server":                   {Path: "internal/core/server.go", Package: "core", Template: "runtime/core-server.go.tmpl", Dependencies: []string{"types-security", "transport-url"}, StandardImports: []importPlan{{Path: "net/url"}, {Path: "strings"}}},
@@ -97,9 +107,9 @@ var runtimeModules = map[string]runtimeModule{
 	"format-date-time":              {Path: "internal/schema/format-date-time.go", Package: "schema", Template: "runtime/format-date-time.go.tmpl", Dependencies: []string{"format-date", "format-time"}},
 	"format-ip":                     {Path: "internal/schema/format-ip.go", Package: "schema", Template: "runtime/format-ip.go.tmpl", StandardImports: []importPlan{{Path: "net/netip"}, {Path: "strings"}}},
 	"format-template":               {Path: "internal/schema/format-template.go", Package: "schema", Template: "runtime/format-template.go.tmpl"},
-	"format-url":                    {Path: "internal/schema/format-url.go", Package: "schema", Template: "runtime/format-url.go.tmpl", StandardImports: []importPlan{{Path: "github.com/nlnwa/whatwg-url/url"}, {Path: "strings"}, {Path: "sync"}}},
+	"format-url":                    {Path: "internal/schema/format-url.go", Package: "schema", Template: "runtime/format-url.go.tmpl", Dependencies: []string{"owned-url"}, StandardImports: []importPlan{{Path: "strings"}, {Path: "sync"}}},
 	"model-state":                   {Path: "models/state.go", Package: "models", Template: "runtime/model-state.go.tmpl", Dependencies: []string{"schema", "types-binary", "wire-media"}, StandardImports: []importPlan{{Path: "context"}, {Path: "fmt"}, {Path: "strings"}}},
-	"regex":                         {Path: "internal/schema/regex.go", Package: "schema", Template: "runtime/regex.go.tmpl", Dependencies: []string{"wire"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}, {Path: "sync"}, {Path: "github.com/go-quickjs/go-quickjs/jsregexp"}}},
+	"regex":                         {Path: "internal/schema/regex.go", Package: "schema", Template: "runtime/regex.go.tmpl", Dependencies: []string{"wire", "owned-regex"}, StandardImports: []importPlan{{Path: "context"}, {Path: "errors"}}},
 	"wire":                          {Path: "internal/wire/json.go", Package: "wire", Template: "runtime/wire.go.tmpl", Dependencies: []string{"wire-value"}, StandardImports: []importPlan{{Path: "fmt"}, {Path: "strconv"}, {Path: "strings"}, {Path: "unicode/utf8"}}},
 	"wire-value":                    {Path: "internal/wire/value.go", Package: "wire", Template: "runtime/wire-value.go.tmpl", StandardImports: []importPlan{{Path: "math"}, {Path: "fmt"}, {Path: "sort"}, {Path: "strconv"}, {Path: "strings"}, {Path: "unicode/utf8"}}},
 	"types":                         {Path: "types/value.go", Package: "types", Template: "runtime/types.go.tmpl", Dependencies: []string{"wire"}, StandardImports: []importPlan{{Path: "fmt"}, {Path: "reflect"}}},
@@ -139,11 +149,19 @@ func planFiles(config generator.GoOptions, operations []operationPlan, needsRege
 			if err := visit(dependency); err != nil {
 				return err
 			}
-			if path.Dir(module.Path) != path.Dir(runtimeModules[dependency].Path) {
+			if len(module.Sources) == 0 && path.Dir(module.Path) != path.Dir(runtimeModules[dependency].Path) {
 				imports = append(imports, importPlan{Path: config.ImportPath + "/" + path.Dir(runtimeModules[dependency].Path)})
 			}
 		}
-		files = append(files, filePlan{Path: module.Path, Package: module.Package, Template: module.Template, Imports: imports})
+		if len(module.Sources) > 0 {
+			owned, err := ownedRuntimePlans(config, module)
+			if err != nil {
+				return err
+			}
+			files = append(files, owned...)
+		} else {
+			files = append(files, filePlan{Path: module.Path, Package: module.Package, Template: module.Template, Imports: imports})
+		}
 		state[name] = 2
 		return nil
 	}
@@ -277,6 +295,13 @@ func completeFiles(config generator.GoOptions, files []filePlan, programs []sche
 	for _, owner := range sortedKeys(programGroups) {
 		group := programGroups[owner]
 		imports := []importPlan{{Path: "context"}, {Path: config.ImportPath + "/internal/wire"}}
+
+		for _, program := range group {
+			if len(program.Patterns) > 0 {
+				imports = append(imports, importPlan{Path: config.ImportPath + "/internal/runtime/ecmaregexp"})
+				break
+			}
+		}
 		for _, program := range group {
 			if program.ViewTarget == "" {
 				imports = append(imports, importPlan{Path: "errors"})

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-quickjs/go-quickjs/jsregexp"
+	"openapi-sdkgen/internal/goruntime/ecmaregexp"
 	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
@@ -25,7 +25,7 @@ type schemaProgram struct {
 	Public                bool
 }
 type schemaLiteral struct{ Name, JSON string }
-type schemaPattern struct{ Name, Pattern string }
+type schemaPattern struct{ Name, Pattern, Program string }
 
 type schemaPlanner struct {
 	xmlRequests       map[*schemaplan.Node]string
@@ -183,11 +183,12 @@ func (planner *schemaPlanner) node(name string, node *schemaplan.Node) (string, 
 	var literals []schemaLiteral
 	var patterns []schemaPattern
 	pattern := func(text string) (string, error) {
-		if _, err := jsregexp.Compile(text, "u"); err != nil {
+		compiled, err := ecmaregexp.Compile(text)
+		if err != nil {
 			return "", fmt.Errorf("invalid JavaScript pattern: %w", err)
 		}
 		patternName := fmt.Sprintf("%sPattern%d", name, len(patterns))
-		patterns = append(patterns, schemaPattern{Name: patternName, Pattern: text})
+		patterns = append(patterns, schemaPattern{Name: patternName, Pattern: text, Program: patternProgramSource(compiled)})
 		planner.needsRegex = true
 		return patternName, nil
 	}

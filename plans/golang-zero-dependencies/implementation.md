@@ -1,7 +1,7 @@
 # Go 무의존성 구현 기록
 
 현재 실행: [계획](plan.md), [devtools ID](workstream.json).
-계획 단위별로 리뷰·재검증·커밋한다. W01–W06를 구현·검증했고 방출·의존 정리·출시 통합 검증을 이어간다.
+계획 단위별로 리뷰·재검증·커밋한다. W01–W07을 구현·검증했고 의존 정리·문서·출시 통합 검증을 이어간다.
 
 ## W01 — 기준과 적합성 입력
 
@@ -146,3 +146,32 @@ w06-evidence.json에 보존했다. 최종 URL/Unicode/정규식 원본 패키지
 setter/DOM/SearchParams/HTML의 비UTF8 encoding 인자는 SDK 범위 밖이며 통과로 주장하지 않는다.
 인증 origin/중복해석·소유권·정수 경계·잘못된 입력·결정성·버전·링크 도달성 구조를 리뷰했다.
 전체 성능·생성 SDK 소비자 연결은 W07/W10에서 이어서 검사한다.
+
+## W07 — 단일 원본·정적 프로그램 방출
+
+명시적 source/DAG 목록으로 자체 runtime만 방출한다. 원본 embed 목록도 명시적이고 test/tool은
+포함하지 않는다. Go AST import literal만 SDK import root로 변경하며 string/pattern 값과
+주석·라이선스를 보존한다. Unicode notice를 SDK에 함께 출력한다. 정적 matcher에 필요한 range
+helper/type은 parser/property 구현에서 분리해 선택 생성 시 compiler 표를 요구하지 않는다.
+
+정적 pattern은 생성 시 자체 Compile로 검증·컴파일하고 versioned nodes/edges/ranges/named captures를
+Go 값으로 방출한다. 요청 경로에서 다시 컴파일하지 않는다. patternProperties와 XML/server part
+projection이 참조하는 원문 메타데이터는 planner에서 유지한다. 동적 server schema와 regex format만
+compiler/property 자료를 요구한다. HTTP·형식 URL은 자체 urlstd를 사용하고 HTTP 표현으로만 마지막에
+net/url로 변환한다. 기존 internal NewPattern 테스트 helper는 정적 생성 검증으로 대체했다.
+
+기존 regex42·format·CGO0 및 HTTP 단계/원인 검사가 통과했다. 고정 독립 assertion95개를 생성 정적·동적
+경로에서 확인하고 구문3,930개를 생성 compiler에서도 확인했다. plain/static/dynamic 파일 선택,
+중첩 import root·결정성·외부 import 부재를 검사했다. 리뷰에서 동적 wrapper의 wire 직접 import 누락을
+고쳐 서버/inbound·보안·HTTP 영향 그룹과 집중 생성 검사를 재실행했고 전부 통과했다.
+원본 패키지도 추가 fixture와 함께 race 통과했다.
+
+Test262 동적 입력 보조 adapter가1,919개 Boolean trace(1,797 pattern,477개 파일)를 만들었고 전부
+자체 matcher와 일치했다.2,119개 전체 파일 outcome을 별도 manifest에 보존했다.22개 JS 실행은
+realm/descriptor/coercion API 및 비u lexical enumeration으로 불완전하며 통과로 집계하지 않는다.
+큰 입력1,863호출은 준비 크기 제한 때문에 trace하지 않았다. 이는 SDK 제한이 아니며 전체 Unicode
+경계 자료와1MiB 반복 검사는 별도로 통과했다. 전체 Test262 JS 적합성 통과로 주장하지 않는다.
+
+자료 소유권·AST 경계·상수 직렬화·캡처/오류 전파·DAG/도달성·불변/동시 실행·원본/출력 일치를 리뷰했다.
+생성 소비자 helper의 예전 모듈 pin은 W08에서 제거한다. 실제 무외부 모듈 격리 검증과 binary symbol
+검증은 W08/W10에 남아 있으며 현재 결과에 포함하지 않는다.

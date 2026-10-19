@@ -3,7 +3,7 @@
 var {{.Name}} wire.LazyValue
 {{end}}
 {{range .Patterns}}
-var {{.Name}} = Pattern{source:{{quote .Pattern}}}
+var {{.Name}} = Pattern{compiled:{{.Program}}}
 {{end}}
 {{if .Public}}
 func {{.Name}}(ctx context.Context,value wire.Value,path string) (Evaluation,error) {

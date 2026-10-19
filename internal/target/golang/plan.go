@@ -23,6 +23,7 @@ type filePlan struct {
 	OpenAPIVersion, OpenAPIVersionLine string
 	Path                               string
 	Template                           string
+	Source, RuntimeRoot                string
 	Package                            string
 	Imports                            []importPlan
 	Operations                         []operationPlan

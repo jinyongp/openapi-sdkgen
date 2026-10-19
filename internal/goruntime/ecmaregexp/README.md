@@ -50,3 +50,21 @@ Unicode 17 simple folding require these literals to match `k`/`s`. Independent
 contracts retain those results; the matrix's Kelvin expectation is explicitly
 corrected rather than silently adopting Node's result. See the W05 implementation
 record and evidence for the reproduction and normative references.
+
+Supplementary dynamic inputs can be prepared with:
+
+```sh
+devtools run -- node scripts/goruntime-data/trace-regexp-matches.mjs
+```
+
+This runs hash-pinned test/harness source only during preparation in disposable
+Node VM contexts. It records 1,919 fixed-u Boolean traces from 477 source files
+and retains all 2,119 file outcomes in `regexp-trace-coverage.json`. Node is the
+supplementary oracle; these are not independent assertions or a full Test262
+pass. Sticky/nonzero-lastIndex and JS object/coercion behavior are outside the
+SDK matching contract. Inputs over 8,192 UTF16 units and patterns over 32,768
+units are not traced; these are preparation limits only. The corpus retains
+1,863 oversized calls. Exhaustive Unicode boundaries and the independent 1MiB
+matching case cover those areas separately. Twenty-two JS runs are incomplete:
+realm/descriptor/coercion API assertions and four non-u lexical enumeration
+tests; their exact errors remain in the manifest and are not counted as passes.

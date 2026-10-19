@@ -1,9 +1,11 @@
 package ecmaregexp
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -307,4 +309,51 @@ func TestMatcherExplicitStacks(t *testing.T) {
 	if ok, err := p.Match(context.Background(), "a"); err != nil || !ok {
 		t.Fatal(ok, err)
 	}
+}
+
+func TestPinnedTest262SupplementaryTraces(t *testing.T) {
+	file, err := os.Open("../../../testdata/goruntime/regexp-traces.json.gz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	zipped, err := gzip.NewReader(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer zipped.Close()
+	data, err := io.ReadAll(zipped)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var corpus struct {
+		Cases []struct {
+			PatternUnits, InputUnits []uint16
+			Matches                  bool
+			File                     string
+		}
+	}
+	if err := json.Unmarshal(data, &corpus); err != nil {
+		t.Fatal(err)
+	}
+	if len(corpus.Cases) < 1000 {
+		t.Fatal("incomplete fixed trace fixture")
+	}
+	compiled := make(map[string]*Program)
+	for i, c := range corpus.Cases {
+		pattern, input := wireUnits(c.PatternUnits), wireUnits(c.InputUnits)
+		p := compiled[pattern]
+		if p == nil {
+			p, err = Compile(pattern)
+			if err != nil {
+				t.Fatalf("trace %d %s compile: %v", i, c.File, err)
+			}
+			compiled[pattern] = p
+		}
+		got, err := p.Match(context.Background(), input)
+		if err != nil || got != c.Matches {
+			t.Errorf("trace %d %s %q on %q: %t %v want %t", i, c.File, pattern, input, got, err, c.Matches)
+		}
+	}
+	t.Log("supplementary pinned traces", len(corpus.Cases), "unique patterns", len(compiled))
 }

@@ -6,7 +6,6 @@ import "sort"
 
 const Version = "17.0.0"
 
-type Range struct{ Lo, Hi rune }
 type propertyEntry struct{ offset, count int }
 type propertyAlias struct {
 	name  string
