@@ -1,0 +1,709 @@
+{
+  "scope": "Private local baseline, not a public benchmark claim",
+  "rawLocation": ".tmp/golang-zero-baseline-builds",
+  "runs": 117,
+  "measurements": {
+    "build-generator": {
+      "exitCode": 0,
+      "wallSeconds": 0.7045824000088032,
+      "peakRSSKiB": 664732,
+      "binaryBytes": null
+    },
+    "build-full-static-generation0": {
+      "exitCode": 0,
+      "wallSeconds": 0.05283298998256214,
+      "peakRSSKiB": 23352,
+      "binaryBytes": null
+    },
+    "build-full-static-generation1": {
+      "exitCode": 0,
+      "wallSeconds": 0.054488105000928044,
+      "peakRSSKiB": 23056,
+      "binaryBytes": null
+    },
+    "build-full-static-generation2": {
+      "exitCode": 0,
+      "wallSeconds": 0.05374006601050496,
+      "peakRSSKiB": 23408,
+      "binaryBytes": null
+    },
+    "build-full-static-generation3": {
+      "exitCode": 0,
+      "wallSeconds": 0.05378133899648674,
+      "peakRSSKiB": 22740,
+      "binaryBytes": null
+    },
+    "build-full-static-generation4": {
+      "exitCode": 0,
+      "wallSeconds": 0.05377887497888878,
+      "peakRSSKiB": 22792,
+      "binaryBytes": null
+    },
+    "build-full-static-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 5.565445271990029,
+      "peakRSSKiB": 269160,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 0.003424256981816143,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.2377270979923196,
+      "peakRSSKiB": 186900,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0032815010054036975,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 5.102814277983271,
+      "peakRSSKiB": 278152,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 0.003140756016364321,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.2344824080064427,
+      "peakRSSKiB": 184592,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.003398522996576503,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 5.015930135996314,
+      "peakRSSKiB": 275900,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0030435310036409646,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.22804213801282458,
+      "peakRSSKiB": 183588,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0033997310092672706,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-full-static-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 5.082895247003762,
+      "peakRSSKiB": 277216,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 0.003089776000706479,
+      "peakRSSKiB": 5836,
+      "binaryBytes": null
+    },
+    "build-full-static-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.22755988099379465,
+      "peakRSSKiB": 187800,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.003384078008821234,
+      "peakRSSKiB": 5580,
+      "binaryBytes": null
+    },
+    "build-full-static-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 5.202865690982435,
+      "peakRSSKiB": 276068,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 0.003988607000792399,
+      "peakRSSKiB": 5708,
+      "binaryBytes": null
+    },
+    "build-full-static-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.29175204600323923,
+      "peakRSSKiB": 187056,
+      "binaryBytes": 10569791
+    },
+    "run-full-static-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0035930740123149008,
+      "peakRSSKiB": 5708,
+      "binaryBytes": null
+    },
+    "deps-full-static": {
+      "exitCode": 0,
+      "wallSeconds": 0.07030473501072265,
+      "peakRSSKiB": 26256,
+      "binaryBytes": null
+    },
+    "symbols-full-static": {
+      "exitCode": 0,
+      "wallSeconds": 0.06381452101049945,
+      "peakRSSKiB": 24388,
+      "binaryBytes": null
+    },
+    "stripped-full-static": {
+      "exitCode": 0,
+      "wallSeconds": 0.944574471010128,
+      "peakRSSKiB": 158204,
+      "binaryBytes": 7303328
+    },
+    "run-stripped-full-static": {
+      "exitCode": 0,
+      "wallSeconds": 0.004394302988657728,
+      "peakRSSKiB": 5964,
+      "binaryBytes": null
+    },
+    "build-selected-generation0": {
+      "exitCode": 0,
+      "wallSeconds": 0.038632568990578875,
+      "peakRSSKiB": 21904,
+      "binaryBytes": null
+    },
+    "build-selected-generation1": {
+      "exitCode": 0,
+      "wallSeconds": 0.030150614999001846,
+      "peakRSSKiB": 21584,
+      "binaryBytes": null
+    },
+    "build-selected-generation2": {
+      "exitCode": 0,
+      "wallSeconds": 0.04139412098447792,
+      "peakRSSKiB": 21648,
+      "binaryBytes": null
+    },
+    "build-selected-generation3": {
+      "exitCode": 0,
+      "wallSeconds": 0.03399163798894733,
+      "peakRSSKiB": 22160,
+      "binaryBytes": null
+    },
+    "build-selected-generation4": {
+      "exitCode": 0,
+      "wallSeconds": 0.03182764901430346,
+      "peakRSSKiB": 21844,
+      "binaryBytes": null
+    },
+    "build-selected-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 4.814455081999768,
+      "peakRSSKiB": 292472,
+      "binaryBytes": 10507056
+    },
+    "run-selected-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0034131850115954876,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.22700872999848798,
+      "peakRSSKiB": 175496,
+      "binaryBytes": 10507056
+    },
+    "run-selected-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0030560700106434524,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 4.950779943988891,
+      "peakRSSKiB": 273456,
+      "binaryBytes": 10507056
+    },
+    "run-selected-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 0.004703908023657277,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.21856599699822254,
+      "peakRSSKiB": 177068,
+      "binaryBytes": 10507056
+    },
+    "run-selected-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.002967581996927038,
+      "peakRSSKiB": 6012,
+      "binaryBytes": null
+    },
+    "build-selected-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 4.74260151697672,
+      "peakRSSKiB": 271832,
+      "binaryBytes": 10507056
+    },
+    "run-selected-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0036765429831575602,
+      "peakRSSKiB": 6012,
+      "binaryBytes": null
+    },
+    "build-selected-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.22155299299629405,
+      "peakRSSKiB": 177676,
+      "binaryBytes": 10507056
+    },
+    "run-selected-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0031711070041637868,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 4.9292889760108665,
+      "peakRSSKiB": 284176,
+      "binaryBytes": 10507056
+    },
+    "run-selected-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 0.0031485290091950446,
+      "peakRSSKiB": 6012,
+      "binaryBytes": null
+    },
+    "build-selected-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.23027679201913998,
+      "peakRSSKiB": 171928,
+      "binaryBytes": 10507056
+    },
+    "run-selected-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.0033649989927653223,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 4.862166870996589,
+      "peakRSSKiB": 282124,
+      "binaryBytes": 10507056
+    },
+    "run-selected-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0031320989946834743,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-selected-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.22673241602024063,
+      "peakRSSKiB": 175244,
+      "binaryBytes": 10507056
+    },
+    "run-selected-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0033221530029550195,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "deps-selected": {
+      "exitCode": 0,
+      "wallSeconds": 0.04797213998972438,
+      "peakRSSKiB": 26572,
+      "binaryBytes": null
+    },
+    "symbols-selected": {
+      "exitCode": 0,
+      "wallSeconds": 0.0538369879941456,
+      "peakRSSKiB": 23868,
+      "binaryBytes": null
+    },
+    "stripped-selected": {
+      "exitCode": 0,
+      "wallSeconds": 0.5065475970041007,
+      "peakRSSKiB": 147648,
+      "binaryBytes": 7262368
+    },
+    "run-stripped-selected": {
+      "exitCode": 0,
+      "wallSeconds": 0.003432872996199876,
+      "peakRSSKiB": 6140,
+      "binaryBytes": null
+    },
+    "build-named-generation0": {
+      "exitCode": 0,
+      "wallSeconds": 0.061259921989403665,
+      "peakRSSKiB": 23140,
+      "binaryBytes": null
+    },
+    "build-named-generation1": {
+      "exitCode": 0,
+      "wallSeconds": 0.0588650889985729,
+      "peakRSSKiB": 23400,
+      "binaryBytes": null
+    },
+    "build-named-generation2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0578286089876201,
+      "peakRSSKiB": 23300,
+      "binaryBytes": null
+    },
+    "build-named-generation3": {
+      "exitCode": 0,
+      "wallSeconds": 0.05839241499779746,
+      "peakRSSKiB": 23540,
+      "binaryBytes": null
+    },
+    "build-named-generation4": {
+      "exitCode": 0,
+      "wallSeconds": 0.059047855000244454,
+      "peakRSSKiB": 23252,
+      "binaryBytes": null
+    },
+    "build-named-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 5.034290815994609,
+      "peakRSSKiB": 271852,
+      "binaryBytes": 10564284
+    },
+    "run-named-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 0.003214500000467524,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.2282908689812757,
+      "peakRSSKiB": 185988,
+      "binaryBytes": 10564284
+    },
+    "run-named-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0031774649978615344,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 5.085844183980953,
+      "peakRSSKiB": 279828,
+      "binaryBytes": 10564284
+    },
+    "run-named-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 0.003256413998315111,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.23908017500070855,
+      "peakRSSKiB": 185556,
+      "binaryBytes": 10564284
+    },
+    "run-named-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.0032640270073898137,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 5.041368596022949,
+      "peakRSSKiB": 278116,
+      "binaryBytes": 10564284
+    },
+    "run-named-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0033762240200303495,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.22260836299392395,
+      "peakRSSKiB": 184736,
+      "binaryBytes": 10564284
+    },
+    "run-named-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0032242290035355836,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 5.0830844180018175,
+      "peakRSSKiB": 282316,
+      "binaryBytes": 10564284
+    },
+    "run-named-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 0.003411293000681326,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.23261931698652916,
+      "peakRSSKiB": 186608,
+      "binaryBytes": 10564284
+    },
+    "run-named-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.0033236820017918944,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 5.013169217010727,
+      "peakRSSKiB": 281700,
+      "binaryBytes": 10564284
+    },
+    "run-named-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0034027709916699678,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "build-named-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.2313902800087817,
+      "peakRSSKiB": 187964,
+      "binaryBytes": 10564284
+    },
+    "run-named-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0029661169974133372,
+      "peakRSSKiB": 5828,
+      "binaryBytes": null
+    },
+    "deps-named": {
+      "exitCode": 0,
+      "wallSeconds": 0.048999788996297866,
+      "peakRSSKiB": 26864,
+      "binaryBytes": null
+    },
+    "symbols-named": {
+      "exitCode": 0,
+      "wallSeconds": 0.05172240699175745,
+      "peakRSSKiB": 24160,
+      "binaryBytes": null
+    },
+    "stripped-named": {
+      "exitCode": 0,
+      "wallSeconds": 0.8041808849957306,
+      "peakRSSKiB": 159660,
+      "binaryBytes": 7299232
+    },
+    "run-stripped-named": {
+      "exitCode": 0,
+      "wallSeconds": 0.0030731000006198883,
+      "peakRSSKiB": 5700,
+      "binaryBytes": null
+    },
+    "build-dynamic-generation0": {
+      "exitCode": 0,
+      "wallSeconds": 0.05422602500766516,
+      "peakRSSKiB": 23028,
+      "binaryBytes": null
+    },
+    "build-dynamic-generation1": {
+      "exitCode": 0,
+      "wallSeconds": 0.05351995100500062,
+      "peakRSSKiB": 23056,
+      "binaryBytes": null
+    },
+    "build-dynamic-generation2": {
+      "exitCode": 0,
+      "wallSeconds": 0.05304082401562482,
+      "peakRSSKiB": 23508,
+      "binaryBytes": null
+    },
+    "build-dynamic-generation3": {
+      "exitCode": 0,
+      "wallSeconds": 0.05356107800616883,
+      "peakRSSKiB": 23148,
+      "binaryBytes": null
+    },
+    "build-dynamic-generation4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0536897569836583,
+      "peakRSSKiB": 22928,
+      "binaryBytes": null
+    },
+    "build-dynamic-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 5.233548267016886,
+      "peakRSSKiB": 278900,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-cold0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0036896490200888366,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.25713951798388734,
+      "peakRSSKiB": 194932,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-warm0": {
+      "exitCode": 0,
+      "wallSeconds": 0.0034052549744956195,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 6.908969157986576,
+      "peakRSSKiB": 284680,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-cold1": {
+      "exitCode": 0,
+      "wallSeconds": 0.0036010420008096844,
+      "peakRSSKiB": 6728,
+      "binaryBytes": null
+    },
+    "build-dynamic-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.24843006499577314,
+      "peakRSSKiB": 194036,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-warm1": {
+      "exitCode": 0,
+      "wallSeconds": 0.003906686994014308,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 5.572469523991458,
+      "peakRSSKiB": 283508,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-cold2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0035475969780236483,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.26042606399278156,
+      "peakRSSKiB": 193152,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-warm2": {
+      "exitCode": 0,
+      "wallSeconds": 0.0035967799776699394,
+      "peakRSSKiB": 6728,
+      "binaryBytes": null
+    },
+    "build-dynamic-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 5.476371830009157,
+      "peakRSSKiB": 285596,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-cold3": {
+      "exitCode": 0,
+      "wallSeconds": 0.003624327015131712,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.24338430498028174,
+      "peakRSSKiB": 194040,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-warm3": {
+      "exitCode": 0,
+      "wallSeconds": 0.0034042920160572976,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "build-dynamic-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 5.551568672002759,
+      "peakRSSKiB": 286848,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-cold4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0036561549932230264,
+      "peakRSSKiB": 6472,
+      "binaryBytes": null
+    },
+    "build-dynamic-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.2725806099770125,
+      "peakRSSKiB": 196840,
+      "binaryBytes": 12039923
+    },
+    "run-dynamic-warm4": {
+      "exitCode": 0,
+      "wallSeconds": 0.0035686049959622324,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    },
+    "deps-dynamic": {
+      "exitCode": 0,
+      "wallSeconds": 0.047971054998924956,
+      "peakRSSKiB": 26524,
+      "binaryBytes": null
+    },
+    "symbols-dynamic": {
+      "exitCode": 0,
+      "wallSeconds": 0.05440915600047447,
+      "peakRSSKiB": 24328,
+      "binaryBytes": null
+    },
+    "stripped-dynamic": {
+      "exitCode": 0,
+      "wallSeconds": 0.9345397370052524,
+      "peakRSSKiB": 169632,
+      "binaryBytes": 8421536
+    },
+    "run-stripped-dynamic": {
+      "exitCode": 0,
+      "wallSeconds": 0.003390691999811679,
+      "peakRSSKiB": 6600,
+      "binaryBytes": null
+    }
+  }
+}

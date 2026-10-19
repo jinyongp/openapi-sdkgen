@@ -1,0 +1,398 @@
+{
+  "000-build-generator.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "000-build-generator.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "000-build-generator.time.json": {
+    "sha256": "64a18d321bdd2d8dc4c7d1fde9764021f941e5dc444be8f72b19361d99f8e30e",
+    "text": "{\"elapsedSeconds\":0.75,\"maximumRSSKiB\":665788,\"userSeconds\":0.85,\"systemSeconds\":0.41}\n"
+  },
+  "001-generation-1000-selected0-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "001-generation-1000-selected0-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "001-generation-1000-selected0-sample0.time.json": {
+    "sha256": "526cf1a53ef57a9c07e7bf226eff59088ade47d99a872c3f57a031bd9e01b9e7",
+    "text": "{\"elapsedSeconds\":1.46,\"maximumRSSKiB\":129744,\"userSeconds\":1.65,\"systemSeconds\":0.74}\n"
+  },
+  "002-generation-1000-selected0-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "002-generation-1000-selected0-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "002-generation-1000-selected0-sample1.time.json": {
+    "sha256": "a030aa306c31668f4ef8a0aa9296e82dc512740f918e51507dac95013f37d417",
+    "text": "{\"elapsedSeconds\":1.47,\"maximumRSSKiB\":135312,\"userSeconds\":1.57,\"systemSeconds\":0.81}\n"
+  },
+  "003-generation-1000-selected0-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "003-generation-1000-selected0-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "003-generation-1000-selected0-sample2.time.json": {
+    "sha256": "af0c9cc62228debe8647f0f7a41075456c90a7b7cd903e3ec4f308e7b3629cc2",
+    "text": "{\"elapsedSeconds\":1.47,\"maximumRSSKiB\":129296,\"userSeconds\":1.59,\"systemSeconds\":0.79}\n"
+  },
+  "004-generation-1000-selected0-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "004-generation-1000-selected0-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "004-generation-1000-selected0-sample3.time.json": {
+    "sha256": "d77d8ca18faf70aa0789bbd33b5ea4bda1de63e03e978ce281b79b673048221d",
+    "text": "{\"elapsedSeconds\":1.46,\"maximumRSSKiB\":123024,\"userSeconds\":1.60,\"systemSeconds\":0.77}\n"
+  },
+  "005-generation-1000-selected0-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "005-generation-1000-selected0-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "005-generation-1000-selected0-sample4.time.json": {
+    "sha256": "d12ffcf183c5b9406e0bfe24ac6011fb5d127559ae022dc93f9abbc1cef146b1",
+    "text": "{\"elapsedSeconds\":1.63,\"maximumRSSKiB\":131472,\"userSeconds\":1.82,\"systemSeconds\":0.79}\n"
+  },
+  "006-generation-1000-selected1-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "006-generation-1000-selected1-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "006-generation-1000-selected1-sample0.time.json": {
+    "sha256": "6543c32c99c7fdc8f6b5dbfbfb44d992e73b713d885a3dcf6e08dc323cf9f396",
+    "text": "{\"elapsedSeconds\":0.17,\"maximumRSSKiB\":75408,\"userSeconds\":0.18,\"systemSeconds\":0.04}\n"
+  },
+  "007-generation-1000-selected1-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "007-generation-1000-selected1-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "007-generation-1000-selected1-sample1.time.json": {
+    "sha256": "077edcf1e46035c21fe4c09ae00a2ec80437118fc487a88b74221f8674545a45",
+    "text": "{\"elapsedSeconds\":0.16,\"maximumRSSKiB\":84496,\"userSeconds\":0.15,\"systemSeconds\":0.06}\n"
+  },
+  "008-generation-1000-selected1-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "008-generation-1000-selected1-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "008-generation-1000-selected1-sample2.time.json": {
+    "sha256": "d61600e896d9d15ffcb87404768e5520096b6515e18f1006237155b3a2f87875",
+    "text": "{\"elapsedSeconds\":0.17,\"maximumRSSKiB\":76108,\"userSeconds\":0.16,\"systemSeconds\":0.06}\n"
+  },
+  "009-generation-1000-selected1-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "009-generation-1000-selected1-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "009-generation-1000-selected1-sample3.time.json": {
+    "sha256": "764eac7544f5dfb5b64db3ccb3212ebdd078b61800ca2752f11c0b00b15453f9",
+    "text": "{\"elapsedSeconds\":0.15,\"maximumRSSKiB\":81296,\"userSeconds\":0.15,\"systemSeconds\":0.06}\n"
+  },
+  "010-generation-1000-selected1-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "010-generation-1000-selected1-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "010-generation-1000-selected1-sample4.time.json": {
+    "sha256": "427daa66559f95d51e98a49e2e662cd384ac3f9c949c22756e7d24e4bf0f9a17",
+    "text": "{\"elapsedSeconds\":0.15,\"maximumRSSKiB\":80272,\"userSeconds\":0.15,\"systemSeconds\":0.05}\n"
+  },
+  "011-generation-1000-selected10-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "011-generation-1000-selected10-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "011-generation-1000-selected10-sample0.time.json": {
+    "sha256": "5fdf0790e77cb8bcfaab843713075aeee3d7805ac5232581619781f45b646c62",
+    "text": "{\"elapsedSeconds\":0.16,\"maximumRSSKiB\":88592,\"userSeconds\":0.17,\"systemSeconds\":0.05}\n"
+  },
+  "012-generation-1000-selected10-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "012-generation-1000-selected10-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "012-generation-1000-selected10-sample1.time.json": {
+    "sha256": "d4bdbdf784dd967099b75fa19f1f2320929baefeeec5dd19748aad5bc2954b7b",
+    "text": "{\"elapsedSeconds\":0.17,\"maximumRSSKiB\":86544,\"userSeconds\":0.16,\"systemSeconds\":0.06}\n"
+  },
+  "013-generation-1000-selected10-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "013-generation-1000-selected10-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "013-generation-1000-selected10-sample2.time.json": {
+    "sha256": "792dd106947333e6b299c0ebd8c4cd0bc18cce542f1a1bafe71ac3878edc7f4e",
+    "text": "{\"elapsedSeconds\":0.17,\"maximumRSSKiB\":87244,\"userSeconds\":0.16,\"systemSeconds\":0.06}\n"
+  },
+  "014-generation-1000-selected10-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "014-generation-1000-selected10-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "014-generation-1000-selected10-sample3.time.json": {
+    "sha256": "ba7c90f06fe0afb81139c0cb9dd4973603cf844c3110fc4398eef30dda10627c",
+    "text": "{\"elapsedSeconds\":0.16,\"maximumRSSKiB\":88316,\"userSeconds\":0.14,\"systemSeconds\":0.07}\n"
+  },
+  "015-generation-1000-selected10-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "015-generation-1000-selected10-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "015-generation-1000-selected10-sample4.time.json": {
+    "sha256": "bab57d2e439405ae1e9baedf735c720526243b2e85950dd61aebbcc18fcc67d6",
+    "text": "{\"elapsedSeconds\":0.17,\"maximumRSSKiB\":88000,\"userSeconds\":0.17,\"systemSeconds\":0.06}\n"
+  },
+  "016-generation-1000-consumer.stdout": {
+    "sha256": "e61b0783f21747a8470073e08b5be091916c4793c91ee8aaf99357aade8c0ab7",
+    "text": "?   \texample.test/goperf/api\t[no test files]\n?   \texample.test/goperf/api/internal/core\t[no test files]\n?   \texample.test/goperf/api/internal/media\t[no test files]\n?   \texample.test/goperf/api/internal/operations\t[no test files]\n?   \texample.test/goperf/api/internal/registry\t[no test files]\n?   \texample.test/goperf/api/internal/resources\t[no test files]\n?   \texample.test/goperf/api/internal/schema\t[no test files]\n?   \texample.test/goperf/api/internal/security\t[no test files]\n?   \texample.test/goperf/api/internal/transport\t[no test files]\n?   \texample.test/goperf/api/internal/wire\t[no test files]\n?   \texample.test/goperf/api/models\t[no test files]\n?   \texample.test/goperf/api/operations\t[no test files]\n?   \texample.test/goperf/api/selective\t[no test files]\n?   \texample.test/goperf/api/types\t[no test files]\n"
+  },
+  "016-generation-1000-consumer.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "016-generation-1000-consumer.time.json": {
+    "sha256": "9dac9956deae07c144777fac7f61647789a7ae72335070642f9472fb4193774f",
+    "text": "{\"elapsedSeconds\":0.72,\"maximumRSSKiB\":104748,\"userSeconds\":2.08,\"systemSeconds\":1.01}\n"
+  },
+  "017-generation-10000-selected0-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "017-generation-10000-selected0-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "017-generation-10000-selected0-sample0.time.json": {
+    "sha256": "622a1c347937cf5a600d9d1c07dde21b83a2901ba27cd88bbaebaaa1328a84e0",
+    "text": "{\"elapsedSeconds\":15.70,\"maximumRSSKiB\":1051292,\"userSeconds\":19.14,\"systemSeconds\":6.84}\n"
+  },
+  "018-generation-10000-selected0-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "018-generation-10000-selected0-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "018-generation-10000-selected0-sample1.time.json": {
+    "sha256": "4254a53c68c7afb749e07d1a7caaf6237f9fa02ba6e74d61ceb9dbc480e71254",
+    "text": "{\"elapsedSeconds\":15.46,\"maximumRSSKiB\":920112,\"userSeconds\":19.09,\"systemSeconds\":6.42}\n"
+  },
+  "019-generation-10000-selected0-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "019-generation-10000-selected0-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "019-generation-10000-selected0-sample2.time.json": {
+    "sha256": "8b0a4ce869be1fae013dbb1f6904d6aa78c65b2ffbb41bcbbadcfbc104dd4b34",
+    "text": "{\"elapsedSeconds\":15.67,\"maximumRSSKiB\":925548,\"userSeconds\":18.83,\"systemSeconds\":6.95}\n"
+  },
+  "020-generation-10000-selected0-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "020-generation-10000-selected0-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "020-generation-10000-selected0-sample3.time.json": {
+    "sha256": "e518f86ad98ce5c3f960524bf73988dfab1e1df274057acc067ec661ac94560f",
+    "text": "{\"elapsedSeconds\":14.73,\"maximumRSSKiB\":910852,\"userSeconds\":17.83,\"systemSeconds\":6.82}\n"
+  },
+  "021-generation-10000-selected0-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "021-generation-10000-selected0-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "021-generation-10000-selected0-sample4.time.json": {
+    "sha256": "e326e7b757b1fb11e38b37926065c5570405b2b74757a03797d611a3d2332bda",
+    "text": "{\"elapsedSeconds\":14.96,\"maximumRSSKiB\":902888,\"userSeconds\":18.22,\"systemSeconds\":6.66}\n"
+  },
+  "022-generation-10000-selected1-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "022-generation-10000-selected1-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "022-generation-10000-selected1-sample0.time.json": {
+    "sha256": "345c74099e2e1cbf8603ab4e1228607949371d006d7c33b1246a28498f57c20d",
+    "text": "{\"elapsedSeconds\":1.97,\"maximumRSSKiB\":656696,\"userSeconds\":2.07,\"systemSeconds\":0.36}\n"
+  },
+  "023-generation-10000-selected1-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "023-generation-10000-selected1-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "023-generation-10000-selected1-sample1.time.json": {
+    "sha256": "39b73f7d796a51b5df2bb3ce61c52ddff5dcd4eb9de17dadd9df13873b740358",
+    "text": "{\"elapsedSeconds\":1.86,\"maximumRSSKiB\":669888,\"userSeconds\":2.03,\"systemSeconds\":0.29}\n"
+  },
+  "024-generation-10000-selected1-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "024-generation-10000-selected1-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "024-generation-10000-selected1-sample2.time.json": {
+    "sha256": "575b893b01b364f05c83ffd72a1286fbecbf95cab4cdb3062badb62d6fb3fa7d",
+    "text": "{\"elapsedSeconds\":1.87,\"maximumRSSKiB\":677768,\"userSeconds\":1.99,\"systemSeconds\":0.35}\n"
+  },
+  "025-generation-10000-selected1-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "025-generation-10000-selected1-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "025-generation-10000-selected1-sample3.time.json": {
+    "sha256": "f95c02c6e559306e4f1bef67abd1076d8293aed343e7454ae91b28765b7c433c",
+    "text": "{\"elapsedSeconds\":1.89,\"maximumRSSKiB\":632172,\"userSeconds\":2.15,\"systemSeconds\":0.25}\n"
+  },
+  "026-generation-10000-selected1-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "026-generation-10000-selected1-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "026-generation-10000-selected1-sample4.time.json": {
+    "sha256": "8f17d115ac1d5c05bc202bcae6186a57a8e13ee700b67d5193302ca9df9032e4",
+    "text": "{\"elapsedSeconds\":1.92,\"maximumRSSKiB\":671884,\"userSeconds\":2.04,\"systemSeconds\":0.35}\n"
+  },
+  "027-generation-10000-selected10-sample0.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "027-generation-10000-selected10-sample0.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "027-generation-10000-selected10-sample0.time.json": {
+    "sha256": "8bca6c8c73d8c28773a0bb18d96d70fa342a2196b4775f93100e9575bbfe634d",
+    "text": "{\"elapsedSeconds\":1.87,\"maximumRSSKiB\":609196,\"userSeconds\":2.08,\"systemSeconds\":0.32}\n"
+  },
+  "028-generation-10000-selected10-sample1.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "028-generation-10000-selected10-sample1.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "028-generation-10000-selected10-sample1.time.json": {
+    "sha256": "7fa59f87d0b480cabf4afbf0b6aef1cdd479fb33d694ef8e339a25d51e092f35",
+    "text": "{\"elapsedSeconds\":2.01,\"maximumRSSKiB\":672160,\"userSeconds\":2.06,\"systemSeconds\":0.42}\n"
+  },
+  "029-generation-10000-selected10-sample2.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "029-generation-10000-selected10-sample2.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "029-generation-10000-selected10-sample2.time.json": {
+    "sha256": "cc85bd36054c6b9651827e265c3f2b40641dc26f4c7c4f3773caf2a457622c68",
+    "text": "{\"elapsedSeconds\":1.85,\"maximumRSSKiB\":653128,\"userSeconds\":2.03,\"systemSeconds\":0.32}\n"
+  },
+  "030-generation-10000-selected10-sample3.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "030-generation-10000-selected10-sample3.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "030-generation-10000-selected10-sample3.time.json": {
+    "sha256": "9fb1521b6b372539cc4b2f4833b16e17221146e5d7ede4e60691c3c8170853ce",
+    "text": "{\"elapsedSeconds\":1.83,\"maximumRSSKiB\":614024,\"userSeconds\":2.10,\"systemSeconds\":0.26}\n"
+  },
+  "031-generation-10000-selected10-sample4.stdout": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "031-generation-10000-selected10-sample4.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "031-generation-10000-selected10-sample4.time.json": {
+    "sha256": "9d754eb0bbcf9291d90cefdbcf664a33e3c1748f4afc479948e9a0992e8ad764",
+    "text": "{\"elapsedSeconds\":1.85,\"maximumRSSKiB\":675388,\"userSeconds\":2.00,\"systemSeconds\":0.31}\n"
+  },
+  "032-generation-10000-consumer.stdout": {
+    "sha256": "e61b0783f21747a8470073e08b5be091916c4793c91ee8aaf99357aade8c0ab7",
+    "text": "?   \texample.test/goperf/api\t[no test files]\n?   \texample.test/goperf/api/internal/core\t[no test files]\n?   \texample.test/goperf/api/internal/media\t[no test files]\n?   \texample.test/goperf/api/internal/operations\t[no test files]\n?   \texample.test/goperf/api/internal/registry\t[no test files]\n?   \texample.test/goperf/api/internal/resources\t[no test files]\n?   \texample.test/goperf/api/internal/schema\t[no test files]\n?   \texample.test/goperf/api/internal/security\t[no test files]\n?   \texample.test/goperf/api/internal/transport\t[no test files]\n?   \texample.test/goperf/api/internal/wire\t[no test files]\n?   \texample.test/goperf/api/models\t[no test files]\n?   \texample.test/goperf/api/operations\t[no test files]\n?   \texample.test/goperf/api/selective\t[no test files]\n?   \texample.test/goperf/api/types\t[no test files]\n"
+  },
+  "032-generation-10000-consumer.stderr": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "text": ""
+  },
+  "032-generation-10000-consumer.time.json": {
+    "sha256": "6337b0d986cef7e5c40228001a8d1df38c4e084364ad0fda0fb4f82ebb36516b",
+    "text": "{\"elapsedSeconds\":0.65,\"maximumRSSKiB\":100068,\"userSeconds\":2.04,\"systemSeconds\":0.85}\n"
+  }
+}

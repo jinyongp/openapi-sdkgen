@@ -1,0 +1,1607 @@
+[
+  {
+    "label": "build-generator",
+    "argv": [
+      "go",
+      "build",
+      "-o",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "./cmd/openapi-sdkgen"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.7530865959997755,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/000-build-generator.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/000-build-generator.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/000-build-generator.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.75,
+      "maximumRSSKiB": 665788,
+      "userSeconds": 0.85,
+      "systemSeconds": 0.41
+    }
+  },
+  {
+    "label": "generation-1000-selected0-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.46996370900888,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/001-generation-1000-selected0-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/001-generation-1000-selected0-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/001-generation-1000-selected0-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.46,
+      "maximumRSSKiB": 129744,
+      "userSeconds": 1.65,
+      "systemSeconds": 0.74
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 6051,
+      "bytes": 15229437,
+      "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5",
+      "fileHashesReference": "artifact-trees.json.gz#f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+    }
+  },
+  {
+    "label": "generation-1000-selected0-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.4783005960052833,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/002-generation-1000-selected0-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/002-generation-1000-selected0-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/002-generation-1000-selected0-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.47,
+      "maximumRSSKiB": 135312,
+      "userSeconds": 1.57,
+      "systemSeconds": 0.81
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 6051,
+      "bytes": 15229437,
+      "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5",
+      "fileHashesReference": "artifact-trees.json.gz#f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+    }
+  },
+  {
+    "label": "generation-1000-selected0-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.4733031310024671,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/003-generation-1000-selected0-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/003-generation-1000-selected0-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/003-generation-1000-selected0-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.47,
+      "maximumRSSKiB": 129296,
+      "userSeconds": 1.59,
+      "systemSeconds": 0.79
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 6051,
+      "bytes": 15229437,
+      "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5",
+      "fileHashesReference": "artifact-trees.json.gz#f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+    }
+  },
+  {
+    "label": "generation-1000-selected0-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.4684497519920114,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/004-generation-1000-selected0-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/004-generation-1000-selected0-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/004-generation-1000-selected0-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.46,
+      "maximumRSSKiB": 123024,
+      "userSeconds": 1.6,
+      "systemSeconds": 0.77
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 6051,
+      "bytes": 15229437,
+      "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5",
+      "fileHashesReference": "artifact-trees.json.gz#f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+    }
+  },
+  {
+    "label": "generation-1000-selected0-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.638592303992482,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/005-generation-1000-selected0-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/005-generation-1000-selected0-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/005-generation-1000-selected0-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.63,
+      "maximumRSSKiB": 131472,
+      "userSeconds": 1.82,
+      "systemSeconds": 0.79
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 6051,
+      "bytes": 15229437,
+      "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5",
+      "fileHashesReference": "artifact-trees.json.gz#f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+    }
+  },
+  {
+    "label": "generation-1000-selected1-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.17607110002427362,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/006-generation-1000-selected1-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/006-generation-1000-selected1-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/006-generation-1000-selected1-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.17,
+      "maximumRSSKiB": 75408,
+      "userSeconds": 0.18,
+      "systemSeconds": 0.04
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-1000-selected1-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.16640466699027456,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/007-generation-1000-selected1-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/007-generation-1000-selected1-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/007-generation-1000-selected1-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.16,
+      "maximumRSSKiB": 84496,
+      "userSeconds": 0.15,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-1000-selected1-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.17135726098786108,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/008-generation-1000-selected1-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/008-generation-1000-selected1-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/008-generation-1000-selected1-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.17,
+      "maximumRSSKiB": 76108,
+      "userSeconds": 0.16,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-1000-selected1-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.16027094301534817,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/009-generation-1000-selected1-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/009-generation-1000-selected1-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/009-generation-1000-selected1-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.15,
+      "maximumRSSKiB": 81296,
+      "userSeconds": 0.15,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-1000-selected1-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.1538872300006915,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/010-generation-1000-selected1-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/010-generation-1000-selected1-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/010-generation-1000-selected1-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.15,
+      "maximumRSSKiB": 80272,
+      "userSeconds": 0.15,
+      "systemSeconds": 0.05
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-1000-selected10-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.17066747701028362,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/011-generation-1000-selected10-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/011-generation-1000-selected10-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/011-generation-1000-selected10-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.16,
+      "maximumRSSKiB": 88592,
+      "userSeconds": 0.17,
+      "systemSeconds": 0.05
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-1000-selected10-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.17907450700295158,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/012-generation-1000-selected10-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/012-generation-1000-selected10-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/012-generation-1000-selected10-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.17,
+      "maximumRSSKiB": 86544,
+      "userSeconds": 0.16,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-1000-selected10-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.1739085119916126,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/013-generation-1000-selected10-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/013-generation-1000-selected10-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/013-generation-1000-selected10-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.17,
+      "maximumRSSKiB": 87244,
+      "userSeconds": 0.16,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-1000-selected10-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.16697034097160213,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/014-generation-1000-selected10-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/014-generation-1000-selected10-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/014-generation-1000-selected10-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.16,
+      "maximumRSSKiB": 88316,
+      "userSeconds": 0.14,
+      "systemSeconds": 0.07
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-1000-selected10-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.18044741099583916,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/015-generation-1000-selected10-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/015-generation-1000-selected10-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/015-generation-1000-selected10-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.17,
+      "maximumRSSKiB": 88000,
+      "userSeconds": 0.17,
+      "systemSeconds": 0.06
+    },
+    "inputSha256": "b21814b1f307039c25672353e04f26f52c8d914b0257a669338c6954af0089ef",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-1000-consumer",
+    "argv": [
+      "go",
+      "test",
+      "-mod=readonly",
+      "-run",
+      "^$",
+      "./api/..."
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-1000",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.7224154419964179,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/016-generation-1000-consumer.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/016-generation-1000-consumer.stderr",
+    "stdoutSha256": "e61b0783f21747a8470073e08b5be091916c4793c91ee8aaf99357aade8c0ab7",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/016-generation-1000-consumer.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.72,
+      "maximumRSSKiB": 104748,
+      "userSeconds": 2.08,
+      "systemSeconds": 1.01
+    }
+  },
+  {
+    "label": "generation-10000-selected0-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 15.70129366000765,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/017-generation-10000-selected0-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/017-generation-10000-selected0-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/017-generation-10000-selected0-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 15.7,
+      "maximumRSSKiB": 1051292,
+      "userSeconds": 19.14,
+      "systemSeconds": 6.84
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 60051,
+      "bytes": 151337437,
+      "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce",
+      "fileHashesReference": "artifact-trees.json.gz#2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+    }
+  },
+  {
+    "label": "generation-10000-selected0-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 15.46675748398411,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/018-generation-10000-selected0-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/018-generation-10000-selected0-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/018-generation-10000-selected0-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 15.46,
+      "maximumRSSKiB": 920112,
+      "userSeconds": 19.09,
+      "systemSeconds": 6.42
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 60051,
+      "bytes": 151337437,
+      "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce",
+      "fileHashesReference": "artifact-trees.json.gz#2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+    }
+  },
+  {
+    "label": "generation-10000-selected0-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 15.67495603999123,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/019-generation-10000-selected0-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/019-generation-10000-selected0-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/019-generation-10000-selected0-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 15.67,
+      "maximumRSSKiB": 925548,
+      "userSeconds": 18.83,
+      "systemSeconds": 6.95
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 60051,
+      "bytes": 151337437,
+      "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce",
+      "fileHashesReference": "artifact-trees.json.gz#2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+    }
+  },
+  {
+    "label": "generation-10000-selected0-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 14.736280151002575,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/020-generation-10000-selected0-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/020-generation-10000-selected0-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/020-generation-10000-selected0-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 14.73,
+      "maximumRSSKiB": 910852,
+      "userSeconds": 17.83,
+      "systemSeconds": 6.82
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 60051,
+      "bytes": 151337437,
+      "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce",
+      "fileHashesReference": "artifact-trees.json.gz#2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+    }
+  },
+  {
+    "label": "generation-10000-selected0-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 14.969730008015176,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/021-generation-10000-selected0-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/021-generation-10000-selected0-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/021-generation-10000-selected0-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 14.96,
+      "maximumRSSKiB": 902888,
+      "userSeconds": 18.22,
+      "systemSeconds": 6.66
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 60051,
+      "bytes": 151337437,
+      "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce",
+      "fileHashesReference": "artifact-trees.json.gz#2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+    }
+  },
+  {
+    "label": "generation-10000-selected1-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.9751019479881506,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/022-generation-10000-selected1-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/022-generation-10000-selected1-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/022-generation-10000-selected1-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.97,
+      "maximumRSSKiB": 656696,
+      "userSeconds": 2.07,
+      "systemSeconds": 0.36
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-10000-selected1-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8623106380109675,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/023-generation-10000-selected1-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/023-generation-10000-selected1-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/023-generation-10000-selected1-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.86,
+      "maximumRSSKiB": 669888,
+      "userSeconds": 2.03,
+      "systemSeconds": 0.29
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-10000-selected1-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8792499040137045,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/024-generation-10000-selected1-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/024-generation-10000-selected1-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/024-generation-10000-selected1-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.87,
+      "maximumRSSKiB": 677768,
+      "userSeconds": 1.99,
+      "systemSeconds": 0.35
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-10000-selected1-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8918684999807738,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/025-generation-10000-selected1-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/025-generation-10000-selected1-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/025-generation-10000-selected1-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.89,
+      "maximumRSSKiB": 632172,
+      "userSeconds": 2.15,
+      "systemSeconds": 0.25
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-10000-selected1-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.9282933060021605,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/026-generation-10000-selected1-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/026-generation-10000-selected1-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/026-generation-10000-selected1-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.92,
+      "maximumRSSKiB": 671884,
+      "userSeconds": 2.04,
+      "systemSeconds": 0.35
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 57,
+      "bytes": 262714,
+      "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b",
+      "fileHashesReference": "artifact-trees.json.gz#c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+    }
+  },
+  {
+    "label": "generation-10000-selected10-sample0",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8764789379783906,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/027-generation-10000-selected10-sample0.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/027-generation-10000-selected10-sample0.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/027-generation-10000-selected10-sample0.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.87,
+      "maximumRSSKiB": 609196,
+      "userSeconds": 2.08,
+      "systemSeconds": 0.32
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-10000-selected10-sample1",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 2.0196267570136115,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/028-generation-10000-selected10-sample1.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/028-generation-10000-selected10-sample1.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/028-generation-10000-selected10-sample1.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 2.01,
+      "maximumRSSKiB": 672160,
+      "userSeconds": 2.06,
+      "systemSeconds": 0.42
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-10000-selected10-sample2",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8531910669989884,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/029-generation-10000-selected10-sample2.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/029-generation-10000-selected10-sample2.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/029-generation-10000-selected10-sample2.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.85,
+      "maximumRSSKiB": 653128,
+      "userSeconds": 2.03,
+      "systemSeconds": 0.32
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-10000-selected10-sample3",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.8357476170058362,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/030-generation-10000-selected10-sample3.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/030-generation-10000-selected10-sample3.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/030-generation-10000-selected10-sample3.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.83,
+      "maximumRSSKiB": 614024,
+      "userSeconds": 2.1,
+      "systemSeconds": 0.26
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-10000-selected10-sample4",
+    "argv": [
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/sdkgen",
+      "generate",
+      "--target",
+      "golang",
+      "--input",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/input.json",
+      "--output",
+      "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000/api",
+      "--go-import-path",
+      "example.test/goperf/api",
+      "--operation",
+      "item0",
+      "--operation",
+      "item1",
+      "--operation",
+      "item2",
+      "--operation",
+      "item3",
+      "--operation",
+      "item4",
+      "--operation",
+      "item5",
+      "--operation",
+      "item6",
+      "--operation",
+      "item7",
+      "--operation",
+      "item8",
+      "--operation",
+      "item9"
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 1.852653993992135,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/031-generation-10000-selected10-sample4.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/031-generation-10000-selected10-sample4.stderr",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/031-generation-10000-selected10-sample4.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 1.85,
+      "maximumRSSKiB": 675388,
+      "userSeconds": 2.0,
+      "systemSeconds": 0.31
+    },
+    "inputSha256": "b5c55e33953370698ce07aea885184619f239c462c13df97b09798e18ef77c82",
+    "output": {
+      "files": 111,
+      "bytes": 395437,
+      "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64",
+      "fileHashesReference": "artifact-trees.json.gz#8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+    }
+  },
+  {
+    "label": "generation-10000-consumer",
+    "argv": [
+      "go",
+      "test",
+      "-mod=readonly",
+      "-run",
+      "^$",
+      "./api/..."
+    ],
+    "cwd": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/generation-10000",
+    "environment": {
+      "CGO_ENABLED": "0",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "exitCode": 0,
+    "wallSeconds": 0.6565463109873235,
+    "stdout": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/032-generation-10000-consumer.stdout",
+    "stderr": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/032-generation-10000-consumer.stderr",
+    "stdoutSha256": "e61b0783f21747a8470073e08b5be091916c4793c91ee8aaf99357aade8c0ab7",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "time": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/golang-zero-baseline-generation/032-generation-10000-consumer.time.json",
+    "stoppedReason": null,
+    "maximumObservedGroupRSSKiB": 0,
+    "metrics": {
+      "elapsedSeconds": 0.65,
+      "maximumRSSKiB": 100068,
+      "userSeconds": 2.04,
+      "systemSeconds": 0.85
+    }
+  }
+]

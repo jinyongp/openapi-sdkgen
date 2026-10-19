@@ -1,0 +1,61 @@
+{
+  "scope": "Private local baseline, not a public benchmark claim",
+  "rawLocation": ".tmp/golang-zero-baseline-runtime",
+  "runs": 9,
+  "measurements": {
+    "build-generator": {
+      "exitCode": 0,
+      "wallSeconds": 1.6115574119903613,
+      "peakRSSKiB": 665448,
+      "binaryBytes": null
+    },
+    "runtime-generation": {
+      "exitCode": 0,
+      "wallSeconds": 0.05590214297990315,
+      "peakRSSKiB": 22748,
+      "binaryBytes": null
+    },
+    "runtime-compile": {
+      "exitCode": 0,
+      "wallSeconds": 1.0709290409868117,
+      "peakRSSKiB": 184512,
+      "binaryBytes": null
+    },
+    "runtime-live-heap": {
+      "exitCode": 0,
+      "wallSeconds": 0.6683000000193715,
+      "peakRSSKiB": 176608,
+      "binaryBytes": null
+    },
+    "runtime-benchmark": {
+      "exitCode": 0,
+      "wallSeconds": 29.778218482009834,
+      "peakRSSKiB": 184200,
+      "binaryBytes": null
+    },
+    "runtime-concurrent-contention": {
+      "exitCode": 0,
+      "wallSeconds": 0.7882209469971713,
+      "peakRSSKiB": 219312,
+      "binaryBytes": null
+    },
+    "runtime-mutex-profile": {
+      "exitCode": 0,
+      "wallSeconds": 0.14375178501359187,
+      "peakRSSKiB": 32664,
+      "binaryBytes": null
+    },
+    "runtime-block-profile": {
+      "exitCode": 0,
+      "wallSeconds": 0.07451620802748948,
+      "peakRSSKiB": 33108,
+      "binaryBytes": null
+    },
+    "runtime-concurrent-race": {
+      "exitCode": 0,
+      "wallSeconds": 3.6310580300050788,
+      "peakRSSKiB": 209008,
+      "binaryBytes": null
+    }
+  }
+}

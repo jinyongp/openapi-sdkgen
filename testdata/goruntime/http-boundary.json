@@ -1,0 +1,20 @@
+{
+  "contract": "N02-N04 in plans/golang-zero-dependencies/plan.md",
+  "cases": [
+    {"name":"default-gzip","httpLayer":"net/http default","sdkNegotiatesEncoding":false,"sdkDecodesBody":false,"typedBody":"decoded by HTTP layer","headers":"returned by HTTP layer"},
+    {"name":"injected-client","httpLayer":"user http.Client","sdkMutatesTransport":false,"sdkMutatesCompressionSettings":false},
+    {"name":"explicit-encoding","requestHeader":"Accept-Encoding: gzip","sdkRewritesHeader":false,"sdkDecodesBody":false},
+    {"name":"range","requestHeader":"Range: bytes=0-3","sdkAddsIdentityEncoding":false},
+    {"name":"already-decoded","responseUncompressed":true,"sdkRejectsUncompressedFlag":false,"sdkDecodesAgain":false},
+    {"name":"encoded-raw","httpLayer":"returns compressed bytes","rawBytes":"exact returned bytes","sdkDecodesBody":false},
+    {"name":"decoded-preserved-headers","httpLayer":"returns plaintext and original headers","rawBytes":"plaintext","sdkRewritesHeader":false},
+    {"name":"missing-required-header","httpLayer":"removed a schema-required header","typedResult":"existing response header validation error"},
+    {"name":"custom-codec","httpLayer":"returns compressed bytes","codecInput":"exact returned response body and headers"},
+    {"name":"early-close","sourceReads":0,"sourceCloseCalls":1},
+    {"name":"blocked-read-cancel","result":"context cancellation","sourceCloseCalls":1},
+    {"name":"eof-close-failure","result":"source close error preserved"},
+    {"name":"bodyless-status","sourceReads":0,"sourceCloseCalls":1},
+    {"name":"raw-stream-ownership","owner":"returned handle until Close/EOF/cancellation"},
+    {"name":"shared-client","mutatedSharedFields":false,"connectionPoolShared":true}
+  ]
+}
