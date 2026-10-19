@@ -1,7 +1,7 @@
 # Compatibility results
 
-These results show SDK generation and TypeScript typechecking for each OpenAPI
-document.
+These published measurements cover the TypeScript target. They show SDK generation
+and TypeScript typechecking for each OpenAPI document.
 
 Results are extracted from GitHub Actions. The tables link to the measured runs;
 download the [run provenance](/compatibility-results/provenance.json) alongside the results.

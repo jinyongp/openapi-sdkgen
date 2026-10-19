@@ -114,7 +114,7 @@ async function requestHighlight(path: string, source: string, theme: CodeTheme, 
   try {
     const result = await highlight(source, theme, (progress) => {
       if (sequence === highlightSequence) highlighted.value = { ...progress };
-    });
+    }, props.path.endsWith(".go") ? "go" : "typescript");
     if (sequence === highlightSequence) {
       highlighted.value = result;
       setCachedResult(key, result);

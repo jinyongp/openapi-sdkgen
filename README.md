@@ -2,8 +2,11 @@
 
 Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
 
-`openapi-sdkgen` uses an explicit target for each output language. The current
-release includes the `typescript` target.
+`openapi-sdkgen` uses an explicit `typescript` or `golang` target. Go support is
+included in this source revision and will be available in the next release.
+For Go 1.27+, see [Generate and use a Go SDK](docs/guide/golang.md) and the
+[runnable Go example](examples/golang-todo-app). The native generator needs no
+Node.js or Go installation to generate source.
 
 ## Quick start: TypeScript
 

@@ -36,7 +36,7 @@ API 목록을 조회하고 필터링하거나, 선택 생성에 쓸 경로를 �
 | `--route <METHOD /path>` | 정확히 일치하는 메서드·OpenAPI 경로. 반복 가능 |
 | `--deprecated true\|false` | 사용 중단 여부. 미선언 상태는 `false`로 조회 |
 | `--format table\|json\|selection` | 기본 표, 버전이 있는 JSON, `[selection]` TOML 블록 |
-| `--target typescript` | 문서 전체 클라이언트의 호출 경로를 분석한 뒤 조회 필터 적용 |
+| `--target typescript\|golang` | 선택한 타깃의 문서 전체 클라이언트를 분석한 뒤 조회 필터 적용 |
 | `--schema-extension <path>` | 명시적인 TypeScript 분석에 쓸 스키마 어휘 매니페스트. 반복 가능 |
 | `--diagnostics-format human\|json` | 표준 오류로 출력할 진단 형식 |
 | `--diagnostic-mode fail-fast\|collect` | 진단 수집 방식 |
@@ -64,7 +64,7 @@ CLI 덮어쓰기 규칙은 생성 명령과 같습니다. 설정 파일의 `sele
 | `total`, `matched` | 필터 적용 전 전체 API 수, 검색 결과 수 |
 | `operations` | 경로·메서드 순으로 정렬된 항목 |
 | `documentsRead` | 목록 조회에서 측정한 디코딩 문서 수. 측정된 경우에 포함 |
-| `target`, `analysisScope` | 명시적인 분석에 포함: `typescript`, `full-document-client` |
+| `target`, `analysisScope` | 명시적인 분석에 포함: 선택한 `typescript` 또는 `golang`, `full-document-client` |
 
 각 항목에는 `method`, `path`, `route`, 문자열 또는 `null`인 `operationId`,
 `tags`, `summary`, `deprecated`, `source`, 입력 문서에 연결된 JSON `pointer`가
@@ -72,6 +72,7 @@ CLI 덮어쓰기 규칙은 생성 명령과 같습니다. 설정 파일의 `sele
 `omitted` 중 하나인 `status`, 호출식 또는 `null`인 `resourceCall`, `$routes`와
 `$operations`로 공개 호출할 수 있는지를 나타내는 `routes`, `operations`가 있습니다.
 공개 API의 리소스 호출식이 없으면 `resourceOmission`에 이유를 담습니다.
+Go 분석 항목은 같은 호출 경로 분석 필드를 `golang` 객체로 제공하며 Go API 이름을 사용합니다.
 
 표준 출력에는 선택한 형식의 결과만, 표준 오류에는 경고와 오류를 출력합니다.
 입력·API 선언·생성 대상 분석·출력 오류는 0이 아닌 종료 코드를 반환합니다.
@@ -94,7 +95,9 @@ openapi-sdkgen generate [options]
 | --- | --- |
 | `--config <path>` | 반복 생성 설정을 명시적인 TOML 파일 하나에서 읽음. 같은 설정의 CLI 옵션이 우선 |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, 3.2.x JSON/YAML 입력. 로컬 경로, `file://` URL, HTTP(S) URL, 표준 입력을 뜻하는 `-` |
-| `--target typescript` | TypeScript SDK 생성 |
+| `--target typescript\|golang` | TypeScript 또는 Go 소스 생성 |
+| `--go-import-path <path>` | 생성할 Go 패키지의 전체 경로. Go 타깃에서 필수 |
+| `--go-package <name>` | Go 루트 패키지 이름. 기본값 `api` |
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 생성 파일 검증 |
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
 | `--incremental` | 기존 매니페스트에 기록된 출력 갱신 |
@@ -140,6 +143,8 @@ openapi-sdkgen generate --config ./openapi-sdkgen.toml
 | `clients.<name>.selection.operations` | 설정 파일 전용 클라이언트 API 식별자 목록 |
 | `clients.<name>.selection.routes` | 설정 파일 전용 클라이언트 경로 목록 |
 | `incremental` | `--incremental` |
+| `golang.import_path` | `--go-import-path` |
+| `golang.package` | `--go-package` |
 | `typescript.typecheck` | `--typecheck`. 생성된 모든 TypeScript 파일에 적용 |
 | `diagnostics_format` | `--diagnostics-format` |
 | `diagnostic_mode` | `--diagnostic-mode` |

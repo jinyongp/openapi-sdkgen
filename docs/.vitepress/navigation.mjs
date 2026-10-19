@@ -18,6 +18,10 @@ const sidebarGroups = [
         labels: { en: "Create your first SDK", ko: "첫 SDK 만들기" },
       },
       {
+        route: "/guide/golang",
+        labels: { en: "Generate a Go SDK", ko: "Go SDK 만들기" },
+      },
+      {
         route: "/guide/inspect",
         labels: { en: "Find APIs", ko: "생성할 API 찾기" },
       },

@@ -9,10 +9,17 @@ export interface GenerationResult {
   error?: string;
 }
 
+export interface GenerationOptions {
+  goImportPath?: string;
+  goPackage?: string;
+  addons?: string[];
+}
+
 interface GenerationRequest {
   id: number;
   source: string;
   target: string;
+  options: GenerationOptions;
 }
 
 interface GenerationResponse {
@@ -57,12 +64,12 @@ function worker(): Worker {
   return generatorWorker;
 }
 
-export function generate(source: string, target: string): Promise<GenerationResult> {
+export function generate(source: string, target: string, options: GenerationOptions = {}): Promise<GenerationResult> {
   return new Promise((resolve, reject) => {
     const id = nextRequestID;
     nextRequestID += 1;
     pendingGenerations.set(id, { resolve, reject });
-    const request: GenerationRequest = { id, source, target };
+    const request: GenerationRequest = { id, source, target, options };
     worker().postMessage(request);
   });
 }

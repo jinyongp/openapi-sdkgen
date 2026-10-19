@@ -1,7 +1,8 @@
 # openapi-sdkgen
 
 Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
-The current release includes the `typescript` target.
+The source supports `typescript` and `golang` targets. Go support will be
+available in the next release; see the [Go guide](https://jinyongp.dev/openapi-sdkgen/guide/golang.html).
 
 Use Node.js 22+ and your own `openapi.yaml`. For a complete runnable example,
 follow [Getting started](https://jinyongp.dev/openapi-sdkgen/guide/getting-started.html).
@@ -20,7 +21,7 @@ contract.
 The package downloads and verifies the matching native executable from the
 same-version GitHub Release on first execution. The first run needs network
 access; later runs reuse the verified cache and can work offline. Go is not
-required.
+required to generate source. Consuming a generated Go SDK requires Go 1.27+.
 
 Set `OPENAPI_SDKGEN_CACHE_DIR` to override the cache root, for example in an
 isolated CI environment. The executable version always matches the installed

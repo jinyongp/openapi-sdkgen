@@ -31,13 +31,14 @@ export interface HighlightResult {
   background?: string;
 }
 
-interface HighlightRequest {
+export interface HighlightRequest {
   id: number;
   source: string;
   theme: CodeTheme;
+  language: "typescript" | "go";
 }
 
-interface HighlightResponse {
+export interface HighlightResponse {
   id: number;
   startLine?: number;
   tokens?: HighlightedToken[][];
@@ -110,6 +111,7 @@ export function highlight(
   source: string,
   theme: CodeTheme,
   onProgress?: (result: HighlightResult) => void,
+  language: "typescript" | "go" = "typescript",
 ): Promise<HighlightResult> {
   cancelHighlight();
   return new Promise((resolve, reject) => {
@@ -121,7 +123,7 @@ export function highlight(
       resolve,
       reject,
     });
-    const request: HighlightRequest = { id, source, theme };
+    const request: HighlightRequest = { id, source, theme, language };
     worker().postMessage(request);
   });
 }

@@ -1,6 +1,7 @@
 # 호환성 검증 결과
 
-OpenAPI 문서별 SDK 생성과 TypeScript 타입 검사 결과입니다.
+이 공개 측정은 TypeScript 타깃을 대상으로 합니다. OpenAPI 문서별 SDK 생성과
+TypeScript 타입 검사 결과를 보여 줍니다.
 
 GitHub Actions에서 측정한 결과입니다. 표에서 측정한 실행을 확인할 수 있으며,
 결과와 함께 [실행 정보](/compatibility-results/provenance.json)를 내려받을 수 있습니다.

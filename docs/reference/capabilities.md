@@ -1,5 +1,7 @@
 # OpenAPI support
 
+The generator has TypeScript and Go targets. See [Go SDKs](../guide/golang.md) for Go APIs, dependencies, streams, selection, and server handlers. Go support in this source revision will ship in the next release.
+
 openapi-sdkgen reads OpenAPI 3.0.x, 3.1.x, and 3.2.x documents and interprets
 features according to the version declared by the document. Unsupported declarations produce diagnostics with their OpenAPI location.
 Document-wide errors stop generation; problems scoped to an operation or call

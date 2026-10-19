@@ -1,4 +1,5 @@
 import typescript from "@shikijs/langs/typescript";
+import go from "@shikijs/langs/go";
 import dracula from "@shikijs/themes/dracula";
 import githubDark from "@shikijs/themes/github-dark";
 import githubLight from "@shikijs/themes/github-light";
@@ -7,31 +8,14 @@ import vitesseDark from "@shikijs/themes/vitesse-dark";
 import { createHighlighterCore } from "shiki/core";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import type { GrammarState } from "shiki/types";
-import type { CodeTheme, HighlightedToken } from "./highlight";
-
-interface HighlightRequest {
-  id: number;
-  source: string;
-  theme: CodeTheme;
-}
-
-interface HighlightResponse {
-  id: number;
-  startLine?: number;
-  tokens?: HighlightedToken[][];
-  totalLines?: number;
-  foreground?: string;
-  background?: string;
-  done?: boolean;
-  error?: string;
-}
+import type { HighlightRequest, HighlightResponse, HighlightedToken } from "./highlight";
 
 const chunkLineCount = 250;
 let activeRequestID = 0;
 
 const highlighterPromise = createHighlighterCore({
   themes: [githubDark, githubLight, dracula, nord, vitesseDark],
-  langs: [typescript],
+  langs: [typescript, go],
   engine: createJavaScriptRegexEngine(),
 });
 
@@ -48,7 +32,7 @@ self.addEventListener("message", async (event: MessageEvent<HighlightRequest>) =
       const hasFollowingChunk = endLine < sourceLines.length;
       const chunkSource = sourceLines.slice(startLine, endLine).join("\n") + (hasFollowingChunk ? "\n" : "");
       const result = highlighter.codeToTokens(chunkSource, {
-        lang: "typescript",
+        lang: request.language ?? "typescript",
         theme: request.theme,
         grammarState,
       });

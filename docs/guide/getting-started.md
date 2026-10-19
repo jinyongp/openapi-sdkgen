@@ -1,5 +1,7 @@
 # Getting started
 
+For Go, start with [Generate and use a Go SDK](./golang.md). This page uses TypeScript.
+
 Generate an SDK from a small Todo document, then optionally run a call with a mock
 response. You can complete every step without an API server. The final step
 explains how to connect your own server.

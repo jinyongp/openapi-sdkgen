@@ -8,12 +8,13 @@ document and inspect generated source immediately.
 
 | What to try | Example and setup |
 | --- | --- |
+| Go client, streams, Links, selection and webhooks | [Go SDK guide](../guide/golang.md): Go 1.27+ and local HTTP servers; no Node.js |
 | Generation through a first response | [Getting started](../guide/getting-started.md): Node.js and pnpm; mock responses included |
 | File transfers and follow-up calls | [Files, Links, and streams](../guide/files-links-streams.md): feature-specific document and API server |
 | Receive AI output incrementally | [AI streaming](./ai-streaming.md): local mock SSE; model and server setup for a real service |
 | Receive external requests | [Webhook receiver](./webhook-server.md): local Fetch requests; HTTP host for deployment |
 
-Both examples include a local check with expected output. Follow Getting started
+The AI streaming and webhook examples include a local check with expected output. Follow Getting started
 for the shared installation and ESM setup, then adapt the integration to your application.
 
 ## AI streaming API

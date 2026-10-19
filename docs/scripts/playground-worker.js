@@ -27,7 +27,7 @@ self.addEventListener("message", async (event) => {
     runtimePromise ??= startRuntime();
     await runtimePromise;
     if (!self.openapiSDKGenGenerate) throw new Error("Generator is unavailable.");
-    response.result = JSON.parse(self.openapiSDKGenGenerate(event.data.source, event.data.target));
+    response.result = JSON.parse(self.openapiSDKGenGenerate(event.data.source, event.data.target, JSON.stringify(event.data.options ?? {})));
   } catch (cause) {
     response.error = cause instanceof Error ? cause.message : String(cause);
   }

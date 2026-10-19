@@ -1,5 +1,14 @@
 # OpenAPI 3.x Atomic SDK Capability Inventory
 
+Both TypeScript and Go have explicit support evidence in the feature manifest.
+The unqualified `state`, `conditions`, and `evidence` fields retain their TypeScript
+meaning. `targetStates.golang` is the complete Go state/condition/evidence profile;
+its absence would be an unsupported documentation gap, not inherited TypeScript support.
+The tables below retain the TypeScript view. Go accepts valid HTTP token methods
+without Fetch-only omissions; see [the Go guide](guide/golang.md) for consumer APIs
+and runtime boundaries.
+
+
 This is the grouped, human-readable companion to
 [`openapi-feature-matrix.md`](openapi-feature-matrix.md). Every listed capability
 has one target state: `generated`, `metadata`, `omitted`, or

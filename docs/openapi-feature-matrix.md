@@ -1,5 +1,14 @@
 # OpenAPI 3.x SDK Generation Capability Matrix
 
+Both TypeScript and Go have explicit support evidence in the feature manifest.
+The unqualified `state`, `conditions`, and `evidence` fields retain their TypeScript
+meaning. `targetStates.golang` is the complete Go state/condition/evidence profile;
+its absence would be an unsupported documentation gap, not inherited TypeScript support.
+The tables below retain the TypeScript view. Go accepts valid HTTP token methods
+without Fetch-only omissions; see [the Go guide](guide/golang.md) for consumer APIs
+and runtime boundaries.
+
+
 This matrix is the implementation contract for `openapi-sdkgen`. It covers
 every normative OpenAPI 3.x feature family and every Schema Object keyword
 family. `generated` means observable generated source/runtime behavior;
@@ -11,7 +20,7 @@ Version information and generated JSDoc are included by default. Lossless
 this condition through `requiresAddons`. Optional source exports do not omit or
 block API operations. No valid API semantics may be silently dropped.
 [The canonical feature manifest](openapi-feature-manifest.json)
-is the field-level register for the active TypeScript target; this matrix and
+is the field-level register for TypeScript and Go; this matrix and
 the [capability inventory](openapi-feature-inventory.md) are readable views of it.
 JavaScript output is not a supported generator target.
 

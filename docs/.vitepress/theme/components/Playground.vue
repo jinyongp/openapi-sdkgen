@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue";
 import { Check, Copy, FolderDown } from "@lucide/vue";
 import { useData } from "vitepress";
 import CodeViewer from "./CodeViewer.vue";
@@ -18,6 +18,11 @@ const translations = {
     heading: "SDK Playground",
     description: "Generate an SDK from an OpenAPI document and inspect the generated types and methods.",
     target: "Target",
+    goImportPath: "SDK import path",
+    goPackage: "Root package",
+    serverAddon: "Server handlers",
+    metadataAddon: "OpenAPI metadata",
+    generationOnly: "Generates source files only. Compile and run the SDK in your own project.",
     examples: "OpenAPI samples",
     yourDocument: "Your document",
     document: "OpenAPI document",
@@ -42,7 +47,7 @@ const translations = {
     authPrivacy: "Credentials stay in memory only and are cleared when you change documents or reload the page. Authenticated redirects are blocked.",
     localNetwork: "Allow local network access",
     localNetworkHelp: "May show a browser permission prompt. The source server must still allow CORS.",
-    privacy: "Files stay in this browser. URL loading requires CORS. Use a self-contained document; external references and CLI add-ons require local generation.",
+    privacy: "Files stay in this browser. URL loading requires CORS. Use a self-contained document; external references and schema extension manifests require local generation.",
     generatedFiles: "Generated files",
     generatedCode: "Generated code",
     colorTheme: "Color theme",
@@ -77,6 +82,11 @@ const translations = {
     heading: "SDK 플레이그라운드",
     description: "OpenAPI 문서로 SDK를 생성하고, 생성된 타입과 메서드를 확인하세요.",
     target: "대상",
+    goImportPath: "SDK 패키지 경로",
+    goPackage: "루트 패키지",
+    serverAddon: "서버 핸들러",
+    metadataAddon: "OpenAPI 메타데이터",
+    generationOnly: "소스 파일만 생성합니다. SDK 컴파일과 실행은 사용자 프로젝트에서 진행하세요.",
     examples: "OpenAPI 예제",
     yourDocument: "내 문서",
     document: "OpenAPI 문서",
@@ -101,7 +111,7 @@ const translations = {
     authPrivacy: "인증 정보는 메모리에만 유지되며 문서를 변경하거나 페이지를 새로고침하면 제거됩니다. 인증 요청의 리디렉션은 차단됩니다.",
     localNetwork: "로컬 네트워크 접근 허용",
     localNetworkHelp: "브라우저 권한 요청이 표시될 수 있습니다. 원본 서버의 CORS 허용도 필요합니다.",
-    privacy: "파일은 이 브라우저 안에서만 처리됩니다. URL은 CORS 접근이 필요합니다. 외부 참조 없는 문서를 사용하세요. 외부 참조와 CLI 확장은 로컬에서 생성합니다.",
+    privacy: "파일은 이 브라우저 안에서만 처리됩니다. URL은 CORS 접근이 필요합니다. 외부 참조 없는 문서를 사용하세요. 외부 참조와 스키마 확장 매니페스트는 로컬에서 생성합니다.",
     generatedFiles: "생성된 파일",
     generatedCode: "생성된 코드",
     colorTheme: "색상 테마",
@@ -137,6 +147,12 @@ const translations = {
 const { lang } = useData();
 const copy = computed(() => lang.value === "ko-KR" ? translations.ko : translations.en);
 const target = ref("typescript");
+const ready: Ref<boolean> = ref(false);
+const generatedTarget: Ref<string> = ref("typescript");
+const goImportPath: Ref<string> = ref("example.com/consumer/internal/api");
+const goPackage: Ref<string> = ref("api");
+const serverAddon: Ref<boolean> = ref(false);
+const metadataAddon: Ref<boolean> = ref(false);
 const colorTheme = ref<CodeTheme>("github-dark");
 const expandedPaths = ref<ReadonlySet<string>>(new Set());
 const url = ref("");
@@ -176,8 +192,16 @@ onMounted(() => {
   if (preferences.codeTheme) colorTheme.value = preferences.codeTheme;
   expandedPaths.value = new Set(preferences.expandedPaths);
   preferencesReady = true;
+  const parameters: URLSearchParams = new URLSearchParams(window.location.search);
+  if (parameters.get("target") === "golang") target.value = "golang";
+  goImportPath.value = parameters.get("go-import-path") ?? goImportPath.value;
+  goPackage.value = parameters.get("go-package") ?? goPackage.value;
+  const addons: string[] = (parameters.get("with") ?? "").split(",");
+  serverAddon.value = addons.includes("server");
+  metadataAddon.value = addons.includes("metadata");
+  ready.value = true;
 
-  const exampleID = new URLSearchParams(window.location.search).get("example");
+  const exampleID = parameters.get("example");
   const example = playgroundExamples.find((candidate) => candidate.id === exampleID);
   if (example !== undefined) void loadExample(example);
 });
@@ -205,7 +229,7 @@ async function downloadAll(): Promise<void> {
   actionError.value = "";
   try {
     const archive: Uint8Array<ArrayBuffer> = await archiveArtifacts(artifacts.value);
-    downloadBlob(new Blob([archive], { type: "application/zip" }), "openapi-sdkgen-typescript.zip");
+    downloadBlob(new Blob([archive], { type: "application/zip" }), `openapi-sdkgen-${generatedTarget.value}.zip`);
   } catch {
     actionError.value = copy.value.exportError;
   } finally {
@@ -298,7 +322,25 @@ function validateSize(size: number) {
   if (size > maximumInputBytes) throw new Error(copy.value.tooLarge);
 }
 
+function updateGenerationOptions(locationURL: URL): void {
+  if (target.value === "golang") {
+    locationURL.searchParams.set("target", "golang");
+    locationURL.searchParams.set("go-import-path", goImportPath.value);
+    locationURL.searchParams.set("go-package", goPackage.value);
+  } else {
+    for (const key of ["target", "go-import-path", "go-package"]) locationURL.searchParams.delete(key);
+  }
+  const addons: string[] = [];
+  if (serverAddon.value) addons.push("server");
+  if (metadataAddon.value) addons.push("metadata");
+  if (addons.length) locationURL.searchParams.set("with", addons.join(","));
+  else locationURL.searchParams.delete("with");
+}
+
 async function runGeneration(contents: string, label: string) {
+  const locationURL: URL = new URL(window.location.href);
+  updateGenerationOptions(locationURL);
+  window.history.replaceState({}, "", locationURL);
   resetMessages();
   artifacts.value = [];
   selectedPath.value = "";
@@ -306,7 +348,12 @@ async function runGeneration(contents: string, label: string) {
   try {
     const bytes = new TextEncoder().encode(contents).byteLength;
     validateSize(bytes);
-    const result = await generate(contents, target.value);
+    const selectedTarget: string = target.value;
+    const addons: string[] = [];
+    if (serverAddon.value) addons.push("server");
+    if (metadataAddon.value) addons.push("metadata");
+    const result = await generate(contents, selectedTarget, { addons, ...(selectedTarget === "golang" ? { goImportPath: goImportPath.value, goPackage: goPackage.value } : {}) });
+    generatedTarget.value = selectedTarget;
     if (result.error) throw new Error(result.error);
     diagnostics.value = result.diagnostics ?? "";
     if (!result.artifacts?.length) {
@@ -451,9 +498,20 @@ function toggleDirectory(path: string) {
       <aside class="source-panel">
         <div v-if="!loaded" class="source-controls">
           <label class="field-label" for="playground-target">{{ copy.target }}</label>
-          <select id="playground-target" v-model="target">
+          <select id="playground-target" v-model="target" :disabled="loading || !ready">
             <option value="typescript">TypeScript</option>
+            <option value="golang">Go</option>
           </select>
+
+          <template v-if="target === 'golang'">
+            <label class="field-label" for="playground-go-import-path">{{ copy.goImportPath }}</label>
+            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="loading || !ready" spellcheck="false" />
+            <label class="field-label" for="playground-go-package">{{ copy.goPackage }}</label>
+            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="loading || !ready" spellcheck="false" />
+          </template>
+          <label><input v-model="serverAddon" type="checkbox" :disabled="loading || !ready" /> {{ copy.serverAddon }}</label>
+          <label><input v-model="metadataAddon" type="checkbox" :disabled="loading || !ready" /> {{ copy.metadataAddon }}</label>
+          <p class="field-help">{{ copy.generationOnly }}</p>
 
           <p class="field-label input-label">{{ copy.examples }}</p>
           <div class="example-list">
@@ -462,7 +520,7 @@ function toggleDirectory(path: string) {
               :key="example.id"
               class="example-item"
               type="button"
-              :disabled="loading"
+              :disabled="loading || !ready"
               @click="loadExample(example)"
             >
               <span class="example-heading">
@@ -479,7 +537,7 @@ function toggleDirectory(path: string) {
             class="drop-zone"
             :class="{ dragging }"
             type="button"
-            :disabled="loading"
+            :disabled="loading || !ready"
             @click="fileInput?.click()"
             @dragenter.prevent="dragging = true"
             @dragover.prevent
@@ -562,7 +620,7 @@ function toggleDirectory(path: string) {
             </div>
             <button type="button" :disabled="exporting" @click="startOver">{{ copy.change }}</button>
           </div>
-          <div class="target-summary"><span>{{ fileCountLabel }}</span><strong>TypeScript</strong></div>
+          <div class="target-summary"><span>{{ fileCountLabel }}</span><strong>{{ generatedTarget === "golang" ? "Go" : "TypeScript" }}</strong></div>
           <nav class="tree-scroll" :aria-label="copy.generatedFiles">
             <FileTree
               :expanded-paths="expandedPaths"
