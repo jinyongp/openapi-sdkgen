@@ -1,0 +1,367 @@
+{
+  "basis": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/provider-target-comparison-20261019T003753Z/basis.json",
+  "metric": "GNU time child elapsed seconds and maximum RSS; excludes 0.5 second monitor polling delay; Go raw metrics reaggregated identically.",
+  "scope": "Full and 10-route selection. No disk publication, SDK compile, TypeScript compiler or bundler.",
+  "workloads": [
+    {
+      "provider": "github",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 1.75,
+        "secondsMin": 1.67,
+        "secondsMax": 2.52,
+        "peakRSSKiBMax": 233484,
+        "files": 9730,
+        "bytes": 35498656,
+        "artifactSha256": "4665b0233fbd89a9cf969c59021891e28033a75d6eb04d3ef80f9e1c55e5d3c1"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 8.97,
+        "secondsMin": 8.89,
+        "secondsMax": 8.99,
+        "peakRSSKiBMax": 597564,
+        "files": 20589,
+        "bytes": 164193123,
+        "artifactSha256": "ae7f776bc8a61677ca2705c96f359853fac46fbe7857ea53c91d3424ae6eca37"
+      }
+    },
+    {
+      "provider": "github",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 0.8,
+        "secondsMin": 0.77,
+        "secondsMax": 0.83,
+        "peakRSSKiBMax": 196712,
+        "files": 263,
+        "bytes": 833331,
+        "artifactSha256": "8d098c918dcb3a3bbd7aca48f3078364f1635cd932e0d4c2cc90b77545480961"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 1.06,
+        "secondsMin": 1.04,
+        "secondsMax": 1.08,
+        "peakRSSKiBMax": 262224,
+        "files": 264,
+        "bytes": 1166355,
+        "artifactSha256": "2660bfbe24ff8ca43c9b0be5040e75b8198c9a22c4ef5a249426bb4fcdcf1754"
+      }
+    },
+    {
+      "provider": "stripe",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 1.78,
+        "secondsMin": 1.75,
+        "secondsMax": 1.82,
+        "peakRSSKiBMax": 247548,
+        "files": 7733,
+        "bytes": 38506401,
+        "artifactSha256": "c9b23e3065d621f054be0a3dc8c9cd71d928ce3bfefaa8be9cb55cac4c71b67c"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 10.94,
+        "secondsMin": 10.9,
+        "secondsMax": 11.04,
+        "peakRSSKiBMax": 579656,
+        "files": 17342,
+        "bytes": 247499534,
+        "artifactSha256": "728ceb0082dcdd38f465e5cb7c9007abdbd0e96404cbdae0d613851f95364334"
+      }
+    },
+    {
+      "provider": "stripe",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 0.65,
+        "secondsMin": 0.64,
+        "secondsMax": 0.67,
+        "peakRSSKiBMax": 136200,
+        "files": 2093,
+        "bytes": 6187636,
+        "artifactSha256": "07d8a25229470598b36234d2c45c4005c22cd1aeb20093102367ad1007a4f7d8"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 4.06,
+        "secondsMin": 4.05,
+        "secondsMax": 4.09,
+        "peakRSSKiBMax": 317424,
+        "files": 7260,
+        "bytes": 81956923,
+        "artifactSha256": "8ee3efb8f5cbd7fab6f2a6f6c2d05ad6e439a8fde4ba3147c8c608d667486cfc"
+      }
+    },
+    {
+      "provider": "cloudflare",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 6.0,
+        "secondsMin": 5.79,
+        "secondsMax": 7.19,
+        "peakRSSKiBMax": 674028,
+        "files": 35897,
+        "bytes": 113035337,
+        "artifactSha256": "5fc889b9e8f3d35bc28fc37b7a5f10e2e76857c1d3ca3b1c7a7f053360991ab2"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 39.44,
+        "secondsMin": 39.16,
+        "secondsMax": 39.74,
+        "peakRSSKiBMax": 2007120,
+        "files": 74053,
+        "bytes": 768947498,
+        "artifactSha256": "4bae42e742410de2c58a870b4946f62fc3717a355f60c9733e5aa772ded2e60c"
+      }
+    },
+    {
+      "provider": "cloudflare",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 2.19,
+        "secondsMin": 1.9,
+        "secondsMax": 2.41,
+        "peakRSSKiBMax": 455260,
+        "files": 320,
+        "bytes": 941549,
+        "artifactSha256": "afc05cc68b079f49e0cf39f448196629761e834877b7686ee652e3c01bd0f520"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 3.25,
+        "secondsMin": 3.22,
+        "secondsMax": 3.29,
+        "peakRSSKiBMax": 700920,
+        "files": 301,
+        "bytes": 1989019,
+        "artifactSha256": "30c486e11af55dba957a95787f4defef69a4322b2c4b2c853c10d796f5cb3c04"
+      }
+    },
+    {
+      "provider": "gitlab",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 1.93,
+        "secondsMin": 1.79,
+        "secondsMax": 2.13,
+        "peakRSSKiBMax": 220716,
+        "files": 12515,
+        "bytes": 47466373,
+        "artifactSha256": "9aadc2817d57fe2c6eb0e002b416145ddcf88cd8b2de6f8143e94bf40f7179d2"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 10.87,
+        "secondsMin": 10.86,
+        "secondsMax": 10.91,
+        "peakRSSKiBMax": 650424,
+        "files": 24180,
+        "bytes": 222318112,
+        "artifactSha256": "f890d846c439a8fa987d693ff662c09ea8fe080c1f91e999b94a7979b3f14e3a"
+      }
+    },
+    {
+      "provider": "gitlab",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 0.53,
+        "secondsMin": 0.51,
+        "secondsMax": 1.25,
+        "peakRSSKiBMax": 150592,
+        "files": 287,
+        "bytes": 943732,
+        "artifactSha256": "54d5e58be833cede084b45341cace6d1a34a1a605cdfedc704842918fdd9da94"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 1.09,
+        "secondsMin": 1.08,
+        "secondsMax": 1.1,
+        "peakRSSKiBMax": 297684,
+        "files": 269,
+        "bytes": 1745206,
+        "artifactSha256": "da019180ee9d728ea724919ad495c0b3d08a6da5d6be28f814f1231970d5febb"
+      }
+    },
+    {
+      "provider": "digitalocean",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 5.16,
+        "secondsMin": 3.17,
+        "secondsMax": 6.85,
+        "peakRSSKiBMax": 504284,
+        "files": 1482,
+        "bytes": 3864577,
+        "artifactSha256": "8d9c21e8bbf45cd4e060db3bc508fef543e7577c44bc67a5b24c5494fee54633"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 3.29,
+        "secondsMin": 3.23,
+        "secondsMax": 3.29,
+        "peakRSSKiBMax": 508704,
+        "files": 1154,
+        "bytes": 3796723,
+        "artifactSha256": "c2d5cd6261351c4686248d6c750c8dc3a4c4dedca27f5fd3c75ff27678251698"
+      }
+    },
+    {
+      "provider": "digitalocean",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 4.64,
+        "secondsMin": 3.12,
+        "secondsMax": 6.13,
+        "peakRSSKiBMax": 507924,
+        "files": 220,
+        "bytes": 681586,
+        "artifactSha256": "5160a2bcd14c898669048000131646bd948215619e9941ea4664ec57ab23b3ef"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 3.03,
+        "secondsMin": 2.99,
+        "secondsMax": 3.06,
+        "peakRSSKiBMax": 499468,
+        "files": 150,
+        "bytes": 552060,
+        "artifactSha256": "963054b8b6cbfbd902439273f2e70ef2ca3927f99efc07faea2776d5fa9310eb"
+      }
+    },
+    {
+      "provider": "twilio",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 0.29,
+        "secondsMin": 0.27,
+        "secondsMax": 0.32,
+        "peakRSSKiBMax": 58136,
+        "files": 1762,
+        "bytes": 6758338,
+        "artifactSha256": "024f70211dda6c942287ebb4b5ccc8df45ee61d7a1c370c5e723b3e07f54be96"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 1.94,
+        "secondsMin": 1.92,
+        "secondsMax": 1.94,
+        "peakRSSKiBMax": 117104,
+        "files": 5529,
+        "bytes": 43100433,
+        "artifactSha256": "f65f38d7d3f6bda5e8cd62b238b0398dcbbb16809db86899cb3820f058717492"
+      }
+    },
+    {
+      "provider": "twilio",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 0.12,
+        "secondsMin": 0.12,
+        "secondsMax": 0.13,
+        "peakRSSKiBMax": 43800,
+        "files": 233,
+        "bytes": 763140,
+        "artifactSha256": "d49644a15c623e21475154a7271f074e02d387d677714f242528372da1fc6d6c"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 0.17,
+        "secondsMin": 0.17,
+        "secondsMax": 0.17,
+        "peakRSSKiBMax": 52948,
+        "files": 167,
+        "bytes": 763038,
+        "artifactSha256": "6fe85fe35a1bccc1f3701887b3c35725018cdc9a7807642f044867b01504c704"
+      }
+    },
+    {
+      "provider": "microsoft-graph-beta",
+      "selected": "full",
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 101.53,
+        "secondsMin": 97.31,
+        "secondsMax": 111.72,
+        "peakRSSKiBMax": 3770980,
+        "files": 186506,
+        "bytes": 2361781904,
+        "artifactSha256": "2d067fd32393d188850efb3805dc32cf060a1406f6093989df8ecc0a27267418"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 308.95,
+        "secondsMin": 307.16,
+        "secondsMax": 313.31,
+        "peakRSSKiBMax": 6769872,
+        "files": 477701,
+        "bytes": 3195326552,
+        "artifactSha256": "74927dc1d8e6b1f3ea55cab7ae357899add4b2bbcc3ec4bd1c75f593429139d4"
+      }
+    },
+    {
+      "provider": "microsoft-graph-beta",
+      "selected": 10,
+      "typescript": {
+        "samples": 5,
+        "secondsMedian": 9.6,
+        "secondsMin": 9.29,
+        "secondsMax": 9.9,
+        "peakRSSKiBMax": 1896212,
+        "files": 247,
+        "bytes": 823322,
+        "artifactSha256": "38c7bbecddfa2f2be38793c00d58599f225dc0ce26874f44d27513297b8fe829"
+      },
+      "golang": {
+        "samples": 5,
+        "secondsMedian": 19.33,
+        "secondsMin": 19.11,
+        "secondsMax": 19.37,
+        "peakRSSKiBMax": 4150324,
+        "files": 274,
+        "bytes": 1185679,
+        "artifactSha256": "a4f6b9b69aefb7f5c3325bc3cb76379b11fb51b5b25469b901328af1bcc3d8c4"
+      }
+    }
+  ],
+  "validation": {
+    "typescriptSamples": 70,
+    "golangReusedSamples": 70,
+    "inputHashesMatched": true,
+    "fiveSampleDeterminismPerWorkload": true,
+    "fullArtifactHashesMatchPriorCorrectnessAudit": [
+      "github",
+      "stripe",
+      "cloudflare",
+      "gitlab",
+      "digitalocean",
+      "twilio",
+      "microsoft-graph-beta"
+    ],
+    "selectedDirectRoutesAllEmitted": true,
+    "cpuMetrics": "GNU time userSeconds/systemSeconds retained per sample in results.json, not used as elapsed time."
+  },
+  "limitations": [
+    "Earlier Go run versus fresh TypeScript run; not interleaved. Same production source files, pinned inputs and runtime flags; uncontrolled host load may differ.",
+    "Five samples per case; memory is maximum process RSS, not allocations or retained Go heap.",
+    "Both enable server addon; metadata addon disabled. Exact first ten previously emitted Go route keys used on both targets.",
+    "Render/format/hash only, no generated source disk publication, consumer compilation, TypeScript type checking or bundling.",
+    "Time uses GNU time elapsedSeconds for both targets, excluding the 0.5 second monitor polling delay included in the earlier prose table."
+  ]
+}

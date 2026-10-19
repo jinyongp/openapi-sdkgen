@@ -5,6 +5,10 @@
 GitHub Actions 측정과 해당 run 링크가 필요하다. 원시 결과는 private
 `/tmp/sdkgen-go-implementation/w11-final-*/`에 보관한다.
 
+2026-10-19에 원시 로그·집계·프로파일과 실패·재측정 이력을
+[저장소 내부 측정 기록](measurements/2026-10-19/README.md)으로 보존했다.
+후속 TypeScript 비교표와 각 압축 파일·구성 파일의 SHA256도 해당 기록에서 확인할 수 있다.
+
 ## 측정 기준
 
 생성·빌드·플랫폼·제공자 측정은 [고정 측정 소스](w11-final-code.json)의 SHA256

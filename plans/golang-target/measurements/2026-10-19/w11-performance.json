@@ -1,0 +1,2025 @@
+{
+  "scope": "Internal local measurement; no public Go benchmark claim, no cross-language speed comparison. Peak RSS, total allocation and forced-GC live heap are distinct.",
+  "sourceManifest": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-code.json",
+  "sourceManifestSha256": "1e7c3b09d00dab78f12159ce6082fc1bf4f50eb02d7fd048d865729ef6e187c5",
+  "applicability": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/plans/golang-target/w11-verified-applicability.json",
+  "modes": {
+    "runtime": {
+      "commands": 9,
+      "results": "/tmp/sdkgen-go-implementation/w11-verified-runtime/results.json",
+      "resultsSha256": "5a63c237e5d43fed72dc720b8e05d83b90a596461ebf201e8e83f3030862a861",
+      "basis": "/tmp/sdkgen-go-implementation/w11-verified-runtime/basis.json",
+      "basisSha256": "4b990172c737b2925ae4e325ee3845fe4aa8b7934edb751678b1451623767909",
+      "applicabilityChangedPaths": [],
+      "benchmarkCases": 46,
+      "samplesPerCase": 5,
+      "benchmarks": [
+        {
+          "name": "BenchmarkSmallJSON/http-json-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1054.0,
+              "min": 1027.0,
+              "max": 1128.0
+            },
+            "B/op": {
+              "median": 1755.0,
+              "min": 1755.0,
+              "max": 1756.0
+            },
+            "allocs/op": {
+              "median": 16.0,
+              "min": 16.0,
+              "max": 16.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkSmallJSON/do-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 4129.0,
+              "min": 3989.0,
+              "max": 4205.0
+            },
+            "B/op": {
+              "median": 6904.0,
+              "min": 6904.0,
+              "max": 6904.0
+            },
+            "allocs/op": {
+              "median": 65.0,
+              "min": 65.0,
+              "max": 65.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkSmallJSON/raw-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 3953.0,
+              "min": 3914.0,
+              "max": 4008.0
+            },
+            "B/op": {
+              "median": 6904.0,
+              "min": 6904.0,
+              "max": 6904.0
+            },
+            "allocs/op": {
+              "median": 65.0,
+              "min": 65.0,
+              "max": 65.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkSmallJSON/error-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 4725.0,
+              "min": 4627.0,
+              "max": 4789.0
+            },
+            "B/op": {
+              "median": 8440.0,
+              "min": 8440.0,
+              "max": 8440.0
+            },
+            "allocs/op": {
+              "median": 77.0,
+              "min": 77.0,
+              "max": 77.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkLargeJSON/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 8219.0,
+              "min": 8210.0,
+              "max": 8576.0
+            },
+            "MB/s": {
+              "median": 124.6,
+              "min": 119.4,
+              "max": 124.72
+            },
+            "GC/op": {
+              "median": 0.003514,
+              "min": 0.003452,
+              "max": 0.003553
+            },
+            "B/op": {
+              "median": 10792.0,
+              "min": 10792.0,
+              "max": 10792.0
+            },
+            "allocs/op": {
+              "median": 82.0,
+              "min": 82.0,
+              "max": 82.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkLargeJSON/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 2594738.0,
+              "min": 2421328.0,
+              "max": 2648815.0
+            },
+            "MB/s": {
+              "median": 404.12,
+              "min": 395.87,
+              "max": 433.06
+            },
+            "GC/op": {
+              "median": 2.132,
+              "min": 2.103,
+              "max": 2.196
+            },
+            "B/op": {
+              "median": 6296709.0,
+              "min": 6296684.0,
+              "max": 6296716.0
+            },
+            "allocs/op": {
+              "median": 106.0,
+              "min": 106.0,
+              "max": 106.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkLargeJSON/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 31403799.0,
+              "min": 29621042.0,
+              "max": 36681940.0
+            },
+            "MB/s": {
+              "median": 534.24,
+              "min": 457.37,
+              "max": 566.4
+            },
+            "GC/op": {
+              "median": 3.667,
+              "min": 3.25,
+              "max": 3.75
+            },
+            "B/op": {
+              "median": 119419989.0,
+              "min": 119419980.0,
+              "max": 119420092.0
+            },
+            "allocs/op": {
+              "median": 119.0,
+              "min": 119.0,
+              "max": 120.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkXML-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 8163.0,
+              "min": 7871.0,
+              "max": 8311.0
+            },
+            "B/op": {
+              "median": 9376.0,
+              "min": 9376.0,
+              "max": 9376.0
+            },
+            "allocs/op": {
+              "median": 104.0,
+              "min": 104.0,
+              "max": 104.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkMultipart/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 20035.0,
+              "min": 19410.0,
+              "max": 20390.0
+            },
+            "MB/s": {
+              "median": 52337.01,
+              "min": 51425.55,
+              "max": 54023.31
+            },
+            "B/op": {
+              "median": 28469.0,
+              "min": 28462.0,
+              "max": 28476.0
+            },
+            "allocs/op": {
+              "median": 145.0,
+              "min": 145.0,
+              "max": 145.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkMultipart/67108864-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 459658.0,
+              "min": 452759.0,
+              "max": 472484.0
+            },
+            "MB/s": {
+              "median": 145997.33,
+              "min": 142034.11,
+              "max": 148222.18
+            },
+            "B/op": {
+              "median": 28501.0,
+              "min": 28411.0,
+              "max": 28506.0
+            },
+            "allocs/op": {
+              "median": 145.0,
+              "min": 145.0,
+              "max": 145.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/gzip/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 10054.0,
+              "min": 9378.0,
+              "max": 10258.0
+            },
+            "MB/s": {
+              "median": 101.85,
+              "min": 99.82,
+              "max": 109.2
+            },
+            "first-byte-ns/op": {
+              "median": 8998.0,
+              "min": 8318.0,
+              "max": 9192.0
+            },
+            "B/op": {
+              "median": 47044.0,
+              "min": 47028.0,
+              "max": 47062.0
+            },
+            "allocs/op": {
+              "median": 26.0,
+              "min": 26.0,
+              "max": 26.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/deflate/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 9651.0,
+              "min": 9555.0,
+              "max": 9769.0
+            },
+            "MB/s": {
+              "median": 106.1,
+              "min": 104.82,
+              "max": 107.16
+            },
+            "first-byte-ns/op": {
+              "median": 8717.0,
+              "min": 8702.0,
+              "max": 8881.0
+            },
+            "B/op": {
+              "median": 46341.0,
+              "min": 46318.0,
+              "max": 46353.0
+            },
+            "allocs/op": {
+              "median": 25.0,
+              "min": 25.0,
+              "max": 25.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/br/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 16815.0,
+              "min": 16682.0,
+              "max": 17016.0
+            },
+            "MB/s": {
+              "median": 60.9,
+              "min": 60.18,
+              "max": 61.38
+            },
+            "first-byte-ns/op": {
+              "median": 15525.0,
+              "min": 15439.0,
+              "max": 15752.0
+            },
+            "B/op": {
+              "median": 69023.0,
+              "min": 69006.0,
+              "max": 69034.0
+            },
+            "allocs/op": {
+              "median": 32.0,
+              "min": 32.0,
+              "max": 32.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/zstd/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 5858.0,
+              "min": 5762.0,
+              "max": 5891.0
+            },
+            "MB/s": {
+              "median": 174.8,
+              "min": 173.81,
+              "max": 177.7
+            },
+            "first-byte-ns/op": {
+              "median": 5169.0,
+              "min": 5101.0,
+              "max": 5229.0
+            },
+            "B/op": {
+              "median": 15536.0,
+              "min": 15534.0,
+              "max": 15539.0
+            },
+            "allocs/op": {
+              "median": 34.0,
+              "min": 34.0,
+              "max": 34.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/chain/1024-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 20921.0,
+              "min": 19693.0,
+              "max": 22366.0
+            },
+            "MB/s": {
+              "median": 48.95,
+              "min": 45.78,
+              "max": 52.0
+            },
+            "first-byte-ns/op": {
+              "median": 19201.0,
+              "min": 18207.0,
+              "max": 20712.0
+            },
+            "B/op": {
+              "median": 105034.0,
+              "min": 105011.0,
+              "max": 105074.0
+            },
+            "allocs/op": {
+              "median": 32.0,
+              "min": 32.0,
+              "max": 32.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/gzip/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 131870.0,
+              "min": 129410.0,
+              "max": 134575.0
+            },
+            "MB/s": {
+              "median": 7951.59,
+              "min": 7791.78,
+              "max": 8102.72
+            },
+            "first-byte-ns/op": {
+              "median": 10765.0,
+              "min": 9226.0,
+              "max": 11062.0
+            },
+            "B/op": {
+              "median": 46935.0,
+              "min": 46918.0,
+              "max": 46967.0
+            },
+            "allocs/op": {
+              "median": 26.0,
+              "min": 26.0,
+              "max": 26.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/deflate/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 104385.0,
+              "min": 102676.0,
+              "max": 106407.0
+            },
+            "MB/s": {
+              "median": 10045.3,
+              "min": 9854.43,
+              "max": 10212.48
+            },
+            "first-byte-ns/op": {
+              "median": 9701.0,
+              "min": 9047.0,
+              "max": 10463.0
+            },
+            "B/op": {
+              "median": 46240.0,
+              "min": 46225.0,
+              "max": 46265.0
+            },
+            "allocs/op": {
+              "median": 25.0,
+              "min": 25.0,
+              "max": 25.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/br/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1736781.0,
+              "min": 1676829.0,
+              "max": 1787130.0
+            },
+            "MB/s": {
+              "median": 603.75,
+              "min": 586.74,
+              "max": 625.33
+            },
+            "first-byte-ns/op": {
+              "median": 1721622.0,
+              "min": 1661504.0,
+              "max": 1769259.0
+            },
+            "B/op": {
+              "median": 1128044.0,
+              "min": 1127893.0,
+              "max": 1129286.0
+            },
+            "allocs/op": {
+              "median": 33.0,
+              "min": 33.0,
+              "max": 33.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/zstd/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1111503.0,
+              "min": 817589.0,
+              "max": 1376215.0
+            },
+            "MB/s": {
+              "median": 943.39,
+              "min": 761.93,
+              "max": 1282.52
+            },
+            "first-byte-ns/op": {
+              "median": 961091.0,
+              "min": 706101.0,
+              "max": 1212579.0
+            },
+            "B/op": {
+              "median": 8956186.0,
+              "min": 8954835.0,
+              "max": 8956893.0
+            },
+            "allocs/op": {
+              "median": 41.0,
+              "min": 41.0,
+              "max": 42.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/chain/1048576-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 147118.0,
+              "min": 145429.0,
+              "max": 153316.0
+            },
+            "MB/s": {
+              "median": 7127.47,
+              "min": 6839.33,
+              "max": 7210.25
+            },
+            "first-byte-ns/op": {
+              "median": 22917.0,
+              "min": 22026.0,
+              "max": 28409.0
+            },
+            "B/op": {
+              "median": 118122.0,
+              "min": 118052.0,
+              "max": 118157.0
+            },
+            "allocs/op": {
+              "median": 41.0,
+              "min": 41.0,
+              "max": 41.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/gzip/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1899486.0,
+              "min": 1890243.0,
+              "max": 1908508.0
+            },
+            "MB/s": {
+              "median": 8832.5,
+              "min": 8790.75,
+              "max": 8875.69
+            },
+            "first-byte-ns/op": {
+              "median": 14481.0,
+              "min": 11615.0,
+              "max": 28023.0
+            },
+            "B/op": {
+              "median": 47031.0,
+              "min": 47023.0,
+              "max": 47047.0
+            },
+            "allocs/op": {
+              "median": 26.0,
+              "min": 26.0,
+              "max": 26.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/deflate/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1480276.0,
+              "min": 1457416.0,
+              "max": 1501037.0
+            },
+            "MB/s": {
+              "median": 11333.85,
+              "min": 11177.09,
+              "max": 11511.62
+            },
+            "first-byte-ns/op": {
+              "median": 11094.0,
+              "min": 10570.0,
+              "max": 13683.0
+            },
+            "B/op": {
+              "median": 46291.0,
+              "min": 46289.0,
+              "max": 46293.0
+            },
+            "allocs/op": {
+              "median": 25.0,
+              "min": 25.0,
+              "max": 25.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/br/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 24433511.0,
+              "min": 24142607.0,
+              "max": 24668727.0
+            },
+            "MB/s": {
+              "median": 686.65,
+              "min": 680.1,
+              "max": 694.92
+            },
+            "first-byte-ns/op": {
+              "median": 7032263.0,
+              "min": 6893566.0,
+              "max": 7159997.0
+            },
+            "B/op": {
+              "median": 4272281.0,
+              "min": 4272281.0,
+              "max": 4272281.0
+            },
+            "allocs/op": {
+              "median": 35.0,
+              "min": 35.0,
+              "max": 35.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/zstd/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1659165.0,
+              "min": 1595670.0,
+              "max": 1873125.0
+            },
+            "MB/s": {
+              "median": 10111.85,
+              "min": 8956.8,
+              "max": 10514.21
+            },
+            "first-byte-ns/op": {
+              "median": 488626.0,
+              "min": 442122.0,
+              "max": 705024.0
+            },
+            "B/op": {
+              "median": 8954825.0,
+              "min": 8953940.0,
+              "max": 8955645.0
+            },
+            "allocs/op": {
+              "median": 40.0,
+              "min": 40.0,
+              "max": 41.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkCompression/chain/16777216-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1924760.0,
+              "min": 1900123.0,
+              "max": 1970981.0
+            },
+            "MB/s": {
+              "median": 8716.52,
+              "min": 8512.11,
+              "max": 8829.54
+            },
+            "first-byte-ns/op": {
+              "median": 45832.0,
+              "min": 40874.0,
+              "max": 73857.0
+            },
+            "B/op": {
+              "median": 186921.0,
+              "min": 186921.0,
+              "max": 186927.0
+            },
+            "allocs/op": {
+              "median": 41.0,
+              "min": 41.0,
+              "max": 41.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/1000/chunk7/slowfalse-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1453329.0,
+              "min": 1420985.0,
+              "max": 1456322.0
+            },
+            "MB/s": {
+              "median": 24.77,
+              "min": 24.72,
+              "max": 25.33
+            },
+            "first-item-ns/op": {
+              "median": 24837.0,
+              "min": 23891.0,
+              "max": 26974.0
+            },
+            "items/s": {
+              "median": 688231.0,
+              "min": 686816.0,
+              "max": 703899.0
+            },
+            "B/op": {
+              "median": 1467484.0,
+              "min": 1467416.0,
+              "max": 1467522.0
+            },
+            "allocs/op": {
+              "median": 26100.0,
+              "min": 26100.0,
+              "max": 26100.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/1000/chunk7/slowtrue-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1459843.0,
+              "min": 1457435.0,
+              "max": 1486680.0
+            },
+            "MB/s": {
+              "median": 24.66,
+              "min": 24.22,
+              "max": 24.7
+            },
+            "first-item-ns/op": {
+              "median": 23633.0,
+              "min": 21648.0,
+              "max": 26552.0
+            },
+            "items/s": {
+              "median": 685151.0,
+              "min": 672785.0,
+              "max": 686291.0
+            },
+            "B/op": {
+              "median": 1467430.0,
+              "min": 1467372.0,
+              "max": 1467524.0
+            },
+            "allocs/op": {
+              "median": 26100.0,
+              "min": 26100.0,
+              "max": 26100.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/1000/chunk4096/slowfalse-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1347181.0,
+              "min": 1336188.0,
+              "max": 1360769.0
+            },
+            "MB/s": {
+              "median": 26.72,
+              "min": 26.46,
+              "max": 26.94
+            },
+            "first-item-ns/op": {
+              "median": 25323.0,
+              "min": 22743.0,
+              "max": 25683.0
+            },
+            "items/s": {
+              "median": 742475.0,
+              "min": 735058.0,
+              "max": 748579.0
+            },
+            "B/op": {
+              "median": 1531304.0,
+              "min": 1531293.0,
+              "max": 1531325.0
+            },
+            "allocs/op": {
+              "median": 22097.0,
+              "min": 22097.0,
+              "max": 22097.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/1000/chunk4096/slowtrue-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1368430.0,
+              "min": 1353132.0,
+              "max": 1370555.0
+            },
+            "MB/s": {
+              "median": 26.31,
+              "min": 26.27,
+              "max": 26.6
+            },
+            "first-item-ns/op": {
+              "median": 24354.0,
+              "min": 22785.0,
+              "max": 25649.0
+            },
+            "items/s": {
+              "median": 730938.0,
+              "min": 729803.0,
+              "max": 739198.0
+            },
+            "B/op": {
+              "median": 1531327.0,
+              "min": 1531294.0,
+              "max": 1531351.0
+            },
+            "allocs/op": {
+              "median": 22097.0,
+              "min": 22097.0,
+              "max": 22097.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/100000/chunk7/slowfalse-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 140943011.0,
+              "min": 140169563.0,
+              "max": 142510530.0
+            },
+            "MB/s": {
+              "median": 25.54,
+              "min": 25.26,
+              "max": 25.68
+            },
+            "first-item-ns/op": {
+              "median": 31300.0,
+              "min": 26600.0,
+              "max": 38112.0
+            },
+            "items/s": {
+              "median": 709511.0,
+              "min": 701707.0,
+              "max": 713425.0
+            },
+            "B/op": {
+              "median": 145613376.0,
+              "min": 145612864.0,
+              "max": 145614272.0
+            },
+            "allocs/op": {
+              "median": 2600113.0,
+              "min": 2600107.0,
+              "max": 2600120.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/100000/chunk7/slowtrue-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 143516086.0,
+              "min": 143417785.0,
+              "max": 144725373.0
+            },
+            "MB/s": {
+              "median": 25.08,
+              "min": 24.87,
+              "max": 25.1
+            },
+            "first-item-ns/op": {
+              "median": 29335.0,
+              "min": 28494.0,
+              "max": 58581.0
+            },
+            "items/s": {
+              "median": 696789.0,
+              "min": 690967.0,
+              "max": 697267.0
+            },
+            "B/op": {
+              "median": 145613744.0,
+              "min": 145613216.0,
+              "max": 145614624.0
+            },
+            "allocs/op": {
+              "median": 2600115.0,
+              "min": 2600111.0,
+              "max": 2600121.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/100000/chunk4096/slowfalse-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 129266127.0,
+              "min": 127627750.0,
+              "max": 130806586.0
+            },
+            "MB/s": {
+              "median": 27.85,
+              "min": 27.52,
+              "max": 28.21
+            },
+            "first-item-ns/op": {
+              "median": 29025.0,
+              "min": 26580.0,
+              "max": 36118.0
+            },
+            "items/s": {
+              "median": 773601.0,
+              "min": 764492.0,
+              "max": 783532.0
+            },
+            "B/op": {
+              "median": 152014064.0,
+              "min": 152013648.0,
+              "max": 152014288.0
+            },
+            "allocs/op": {
+              "median": 2200110.0,
+              "min": 2200106.0,
+              "max": 2200112.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkStream/100000/chunk4096/slowtrue-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 134451087.0,
+              "min": 131909336.0,
+              "max": 135828307.0
+            },
+            "MB/s": {
+              "median": 26.78,
+              "min": 26.5,
+              "max": 27.29
+            },
+            "first-item-ns/op": {
+              "median": 31680.0,
+              "min": 27783.0,
+              "max": 43302.0
+            },
+            "items/s": {
+              "median": 743768.0,
+              "min": 736227.0,
+              "max": 758100.0
+            },
+            "B/op": {
+              "median": 152014192.0,
+              "min": 152013776.0,
+              "max": 152014256.0
+            },
+            "allocs/op": {
+              "median": 2200109.0,
+              "min": 2200107.0,
+              "max": 2200111.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/ascii/compile-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 766.2,
+              "min": 760.1,
+              "max": 791.4
+            },
+            "B/op": {
+              "median": 1320.0,
+              "min": 1320.0,
+              "max": 1320.0
+            },
+            "allocs/op": {
+              "median": 24.0,
+              "min": 24.0,
+              "max": 24.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/ascii/execute-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 69.45,
+              "min": 67.58,
+              "max": 70.1
+            },
+            "B/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            },
+            "allocs/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/unicode/compile-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1539.0,
+              "min": 1517.0,
+              "max": 1546.0
+            },
+            "B/op": {
+              "median": 1320.0,
+              "min": 1320.0,
+              "max": 1320.0
+            },
+            "allocs/op": {
+              "median": 24.0,
+              "min": 24.0,
+              "max": 24.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/unicode/execute-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 96.42,
+              "min": 95.26,
+              "max": 97.24
+            },
+            "B/op": {
+              "median": 80.0,
+              "min": 80.0,
+              "max": 80.0
+            },
+            "allocs/op": {
+              "median": 2.0,
+              "min": 2.0,
+              "max": 2.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/lookaround/compile-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 625.9,
+              "min": 621.2,
+              "max": 633.3
+            },
+            "B/op": {
+              "median": 1312.0,
+              "min": 1312.0,
+              "max": 1312.0
+            },
+            "allocs/op": {
+              "median": 22.0,
+              "min": 22.0,
+              "max": 22.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/lookaround/execute-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 40.57,
+              "min": 40.16,
+              "max": 40.79
+            },
+            "B/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            },
+            "allocs/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/backreference/compile-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 1129.0,
+              "min": 1116.0,
+              "max": 1148.0
+            },
+            "B/op": {
+              "median": 2076.0,
+              "min": 2076.0,
+              "max": 2076.0
+            },
+            "allocs/op": {
+              "median": 28.0,
+              "min": 28.0,
+              "max": 28.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/backreference/execute-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 52.41,
+              "min": 51.95,
+              "max": 55.65
+            },
+            "B/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            },
+            "allocs/op": {
+              "median": 0.0,
+              "min": 0.0,
+              "max": 0.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/complexity/compile-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 923.5,
+              "min": 916.3,
+              "max": 932.9
+            },
+            "B/op": {
+              "median": 1908.0,
+              "min": 1908.0,
+              "max": 1908.0
+            },
+            "allocs/op": {
+              "median": 25.0,
+              "min": 25.0,
+              "max": 25.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkRegex/complexity/execute-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 299980469.0,
+              "min": 297951072.0,
+              "max": 300770117.0
+            },
+            "B/op": {
+              "median": 8424.0,
+              "min": 8424.0,
+              "max": 8424.0
+            },
+            "allocs/op": {
+              "median": 19.0,
+              "min": 19.0,
+              "max": 19.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkConcurrent/1-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 34989.0,
+              "min": 34642.0,
+              "max": 36622.0
+            },
+            "calls/s": {
+              "median": 28581.0,
+              "min": 27306.0,
+              "max": 28867.0
+            },
+            "latency-ns/call": {
+              "median": 19198.0,
+              "min": 19051.0,
+              "max": 20219.0
+            },
+            "B/op": {
+              "median": 9248.0,
+              "min": 9248.0,
+              "max": 9248.0
+            },
+            "allocs/op": {
+              "median": 78.0,
+              "min": 78.0,
+              "max": 78.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkConcurrent/8-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 118800.0,
+              "min": 117372.0,
+              "max": 119745.0
+            },
+            "calls/s": {
+              "median": 67340.0,
+              "min": 66809.0,
+              "max": 68159.0
+            },
+            "latency-ns/call": {
+              "median": 17313.0,
+              "min": 17222.0,
+              "max": 17492.0
+            },
+            "B/op": {
+              "median": 73890.0,
+              "min": 73888.0,
+              "max": 73929.0
+            },
+            "allocs/op": {
+              "median": 617.0,
+              "min": 617.0,
+              "max": 617.0
+            }
+          }
+        },
+        {
+          "name": "BenchmarkConcurrent/64-16",
+          "samples": 5,
+          "metrics": {
+            "ns/op": {
+              "median": 540382.0,
+              "min": 530781.0,
+              "max": 580463.0
+            },
+            "calls/s": {
+              "median": 118435.0,
+              "min": 110257.0,
+              "max": 120577.0
+            },
+            "latency-ns/call": {
+              "median": 51925.0,
+              "min": 42667.0,
+              "max": 59923.0
+            },
+            "B/op": {
+              "median": 591038.0,
+              "min": 590978.0,
+              "max": 591998.0
+            },
+            "allocs/op": {
+              "median": 4929.0,
+              "min": 4929.0,
+              "max": 4931.0
+            }
+          }
+        }
+      ],
+      "liveHeapRaw": "/tmp/sdkgen-go-implementation/w11-verified-runtime/003-runtime-live-heap.stdout",
+      "typedStreamLiveHeap": [
+        {
+          "frames": 1000,
+          "baselineBytes": 502624,
+          "peakLiveHeapBytes": 511160,
+          "deltaBytes": 8536
+        },
+        {
+          "frames": 100000,
+          "baselineBytes": 506336,
+          "peakLiveHeapBytes": 519520,
+          "deltaBytes": 13184
+        }
+      ]
+    },
+    "builds": {
+      "commands": 117,
+      "results": "/tmp/sdkgen-go-implementation/w11-final-builds/results.json",
+      "resultsSha256": "d7e565c64f47fdace3bf0c6a5e15602d8b171222313cfae6b441c3889517f933",
+      "basis": "/tmp/sdkgen-go-implementation/w11-final-builds/basis.json",
+      "basisSha256": "9262e1bfc363bbdc7bd39dc5463881f25cb1ffbbdbcb58778b1743bda428024a",
+      "applicabilityChangedPaths": [
+        "docs/guide/golang.md",
+        "docs/ko/guide/golang.md",
+        "scripts/perf/golang/README.md",
+        "scripts/perf/golang/runtime_bench.go.tmpl"
+      ],
+      "workloads": [
+        {
+          "consumer": "full-static",
+          "cache": "cold",
+          "samples": 5,
+          "secondsMedian": 5.333685566991335,
+          "secondsMin": 5.006329411000479,
+          "secondsMax": 5.4975278670026455,
+          "peakRSSKiBMax": 286836,
+          "binaryBytes": 10569455
+        },
+        {
+          "consumer": "full-static",
+          "cache": "warm",
+          "samples": 5,
+          "secondsMedian": 0.2338925320073031,
+          "secondsMin": 0.2320942410005955,
+          "secondsMax": 0.25020828199922107,
+          "peakRSSKiBMax": 187808,
+          "binaryBytes": 10569455
+        },
+        {
+          "consumer": "selected",
+          "cache": "cold",
+          "samples": 5,
+          "secondsMedian": 4.774851531998138,
+          "secondsMin": 4.720316792008816,
+          "secondsMax": 4.844758566003293,
+          "peakRSSKiBMax": 290108,
+          "binaryBytes": 10506568
+        },
+        {
+          "consumer": "selected",
+          "cache": "warm",
+          "samples": 5,
+          "secondsMedian": 0.22354869499395136,
+          "secondsMin": 0.21747966900875326,
+          "secondsMax": 0.2269793620071141,
+          "peakRSSKiBMax": 177092,
+          "binaryBytes": 10506568
+        },
+        {
+          "consumer": "named",
+          "cache": "cold",
+          "samples": 5,
+          "secondsMedian": 5.0014774260052945,
+          "secondsMin": 4.927072342004976,
+          "secondsMax": 5.019509903999278,
+          "peakRSSKiBMax": 287352,
+          "binaryBytes": 10564372
+        },
+        {
+          "consumer": "named",
+          "cache": "warm",
+          "samples": 5,
+          "secondsMedian": 0.22618631199293304,
+          "secondsMin": 0.22463363999850117,
+          "secondsMax": 0.2382201040018117,
+          "peakRSSKiBMax": 188628,
+          "binaryBytes": 10564372
+        },
+        {
+          "consumer": "dynamic",
+          "cache": "cold",
+          "samples": 5,
+          "secondsMedian": 5.159267939001438,
+          "secondsMin": 5.083062962992699,
+          "secondsMax": 5.3569112670084,
+          "peakRSSKiBMax": 291528,
+          "binaryBytes": 12034907
+        },
+        {
+          "consumer": "dynamic",
+          "cache": "warm",
+          "samples": 5,
+          "secondsMedian": 0.24449029201059602,
+          "secondsMin": 0.23264765700150747,
+          "secondsMax": 0.24970923201180995,
+          "peakRSSKiBMax": 197828,
+          "binaryBytes": 12034907
+        }
+      ],
+      "reachability": [
+        {
+          "consumer": "full-static",
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 18,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        },
+        {
+          "consumer": "selected",
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 0,
+          "regexDependencies": [],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        },
+        {
+          "consumer": "named",
+          "operationSymbols": 8,
+          "streamSymbols": 0,
+          "patternMatchSymbols": 0,
+          "regexDependencySymbols": 18,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        },
+        {
+          "consumer": "dynamic",
+          "operationSymbols": 160,
+          "streamSymbols": 88,
+          "patternMatchSymbols": 2,
+          "regexDependencySymbols": 156,
+          "regexDependencies": [
+            "github.com/go-quickjs/go-quickjs/internal/wtf8",
+            "github.com/go-quickjs/go-quickjs/internal/regexp",
+            "github.com/go-quickjs/go-quickjs/jsregexp"
+          ],
+          "metadataSymbols": 0,
+          "xmlDecodeSymbols": 0
+        }
+      ]
+    },
+    "generation": {
+      "commands": 33,
+      "results": "/tmp/sdkgen-go-implementation/w11-final-generation/results.json",
+      "resultsSha256": "e3104905fa67a2a6d7f70d5ecaca1e5cb8b41f76cb18534795e7d7800cbf7812",
+      "basis": "/tmp/sdkgen-go-implementation/w11-final-generation/basis.json",
+      "basisSha256": "9262e1bfc363bbdc7bd39dc5463881f25cb1ffbbdbcb58778b1743bda428024a",
+      "applicabilityChangedPaths": [
+        "docs/guide/golang.md",
+        "docs/ko/guide/golang.md",
+        "scripts/perf/golang/README.md",
+        "scripts/perf/golang/runtime_bench.go.tmpl"
+      ],
+      "workloads": [
+        {
+          "operations": 1000,
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 1.4912155420024646,
+          "secondsMin": 1.467630065002595,
+          "secondsMax": 1.5110366750013782,
+          "peakRSSKiBMax": 138300,
+          "files": 6051,
+          "bytes": 15229437,
+          "sha256": "f76f37d657c76b51b3be4c91f93b04ee1e805e93f0cf6a1b29f2c652b5c861e5"
+        },
+        {
+          "operations": 1000,
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 0.1512745690124575,
+          "secondsMin": 0.1495327559969155,
+          "secondsMax": 0.1559567770018475,
+          "peakRSSKiBMax": 81040,
+          "files": 57,
+          "bytes": 262714,
+          "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+        },
+        {
+          "operations": 1000,
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 0.1677673429949209,
+          "secondsMin": 0.16082902999187354,
+          "secondsMax": 0.17325432899815496,
+          "peakRSSKiBMax": 88336,
+          "files": 111,
+          "bytes": 395437,
+          "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+        },
+        {
+          "operations": 10000,
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 14.813835909997579,
+          "secondsMin": 14.756420769001124,
+          "secondsMax": 15.270162220986094,
+          "peakRSSKiBMax": 1071296,
+          "files": 60051,
+          "bytes": 151337437,
+          "sha256": "2c627720c3c705b847907315d94ab9fac52d6357b4227e32523343e49b7901ce"
+        },
+        {
+          "operations": 10000,
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 1.9010530519881286,
+          "secondsMin": 1.8777002030110452,
+          "secondsMax": 1.925462860002881,
+          "peakRSSKiBMax": 675496,
+          "files": 57,
+          "bytes": 262714,
+          "sha256": "c27bd10bc1205fbc35e48a4b25a9f158ade3463b4b639ce90d7b84a2f321307b"
+        },
+        {
+          "operations": 10000,
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 1.8965284599980805,
+          "secondsMin": 1.876678015003563,
+          "secondsMax": 1.9059264609968523,
+          "peakRSSKiBMax": 676056,
+          "files": 111,
+          "bytes": 395437,
+          "sha256": "8c9575eb3a28c48b8e6255a7b3ad32a49df4e9263ad893710d5f046158c00f64"
+        }
+      ]
+    },
+    "platform": {
+      "commands": 10,
+      "results": "/tmp/sdkgen-go-implementation/w11-final-platform/results.json",
+      "resultsSha256": "7bb411d58a3ef4daa371d91fb4411400cdf706c0052279ef7e7cdc2aefaa0937",
+      "basis": "/tmp/sdkgen-go-implementation/w11-final-platform/basis.json",
+      "basisSha256": "9262e1bfc363bbdc7bd39dc5463881f25cb1ffbbdbcb58778b1743bda428024a",
+      "applicabilityChangedPaths": [
+        "docs/guide/golang.md",
+        "docs/ko/guide/golang.md",
+        "scripts/perf/golang/README.md",
+        "scripts/perf/golang/runtime_bench.go.tmpl"
+      ]
+    },
+    "providers": {
+      "commands": 107,
+      "results": "/tmp/sdkgen-go-implementation/w11-final-providers/results.json",
+      "resultsSha256": "fe41f085493f4488f1201dda12fd0b98d2245b7679fa3cb69003d123608c2d16",
+      "basis": "/tmp/sdkgen-go-implementation/w11-final-providers/basis.json",
+      "basisSha256": "9262e1bfc363bbdc7bd39dc5463881f25cb1ffbbdbcb58778b1743bda428024a",
+      "applicabilityChangedPaths": [
+        "docs/guide/golang.md",
+        "docs/ko/guide/golang.md",
+        "scripts/perf/golang/README.md",
+        "scripts/perf/golang/runtime_bench.go.tmpl"
+      ],
+      "workloads": [
+        {
+          "provider": "github",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 9.00685905899445,
+          "secondsMin": 9.006469512998592,
+          "secondsMax": 9.007104976000846,
+          "peakRSSKiBMax": 597564,
+          "maximumObservedGroupRSSKiB": 583316,
+          "files": 20589,
+          "bytes": 164193123,
+          "artifactSha256": "ae7f776bc8a61677ca2705c96f359853fac46fbe7857ea53c91d3424ae6eca37",
+          "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 1.0,
+            "emit": 7.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "github",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 1.501401134999469,
+          "secondsMin": 1.5013492229918484,
+          "secondsMax": 1.5015934770053718,
+          "peakRSSKiBMax": 263684,
+          "maximumObservedGroupRSSKiB": 264284,
+          "files": 123,
+          "bytes": 510568,
+          "artifactSha256": "46b1543ef418a8a1b5278af6040a46f967eafa6edc8d0084fdd0d942c126bb74",
+          "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 1.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "github",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 1.5015366040024674,
+          "secondsMin": 1.5014012590108905,
+          "secondsMax": 1.5016611380124232,
+          "peakRSSKiBMax": 262224,
+          "maximumObservedGroupRSSKiB": 262588,
+          "files": 264,
+          "bytes": 1166355,
+          "artifactSha256": "2660bfbe24ff8ca43c9b0be5040e75b8198c9a22c4ef5a249426bb4fcdcf1754",
+          "inputSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+          "phaseSecondsMedian": {
+            "compile": 1.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "stripe",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 11.008579581990489,
+          "secondsMin": 11.00814936000097,
+          "secondsMax": 11.508636498008855,
+          "peakRSSKiBMax": 579656,
+          "maximumObservedGroupRSSKiB": 565012,
+          "files": 17342,
+          "bytes": 247499534,
+          "artifactSha256": "728ceb0082dcdd38f465e5cb7c9007abdbd0e96404cbdae0d613851f95364334",
+          "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 1.0,
+            "emit": 9.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "stripe",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 4.003317433001939,
+          "secondsMin": 4.003217349003535,
+          "secondsMax": 4.503768012000364,
+          "peakRSSKiBMax": 323048,
+          "maximumObservedGroupRSSKiB": 302548,
+          "files": 7132,
+          "bytes": 81382858,
+          "artifactSha256": "60d6307812081ea34f1c679e1997ad4f7e43d37a27fa9cd31b2e79a5ba051397",
+          "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+          "phaseSecondsMedian": {
+            "compile": 1.0,
+            "prepare": 0.0,
+            "emit": 3.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "stripe",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 4.503579203999834,
+          "secondsMin": 4.503418701002374,
+          "secondsMax": 4.503978362001362,
+          "peakRSSKiBMax": 317424,
+          "maximumObservedGroupRSSKiB": 300660,
+          "files": 7260,
+          "bytes": 81956923,
+          "artifactSha256": "8ee3efb8f5cbd7fab6f2a6f6c2d05ad6e439a8fde4ba3147c8c608d667486cfc",
+          "inputSha256": "622e04fb9ae98eb28b5a67c7c885af52a71ffa60e9230b2197f5b3e136651b1d",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 0.0,
+            "emit": 3.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "cloudflare",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 39.529200874996604,
+          "secondsMin": 39.52894543399452,
+          "secondsMax": 40.029628388991114,
+          "peakRSSKiBMax": 2007120,
+          "maximumObservedGroupRSSKiB": 2007868,
+          "files": 74053,
+          "bytes": 768947498,
+          "artifactSha256": "4bae42e742410de2c58a870b4946f62fc3717a355f60c9733e5aa772ded2e60c",
+          "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+          "phaseSecondsMedian": {
+            "compile": 2.0,
+            "prepare": 5.0,
+            "emit": 33.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "cloudflare",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 3.5029104790010024,
+          "secondsMin": 3.5028069359977962,
+          "secondsMax": 3.5035618910042103,
+          "peakRSSKiBMax": 695644,
+          "maximumObservedGroupRSSKiB": 644328,
+          "files": 123,
+          "bytes": 501641,
+          "artifactSha256": "616b9ae15c835551dcb507d77afa160372d2b3e89a7f800888eceab0d6a05c67",
+          "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+          "phaseSecondsMedian": {
+            "compile": 2.0,
+            "prepare": 1.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "cloudflare",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 3.5028387070051394,
+          "secondsMin": 3.5027314909966663,
+          "secondsMax": 3.5031008740043035,
+          "peakRSSKiBMax": 700920,
+          "maximumObservedGroupRSSKiB": 671300,
+          "files": 301,
+          "bytes": 1989019,
+          "artifactSha256": "30c486e11af55dba957a95787f4defef69a4322b2c4b2c853c10d796f5cb3c04",
+          "inputSha256": "179f1cd2bb3921aad64f9dcf05d45a0f9b9905fb2c1ea3ca2aabef53383ed2b3",
+          "phaseSecondsMedian": {
+            "compile": 2.0,
+            "prepare": 1.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "gitlab",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 11.008377179998206,
+          "secondsMin": 11.008055375001277,
+          "secondsMax": 11.008774652000284,
+          "peakRSSKiBMax": 650424,
+          "maximumObservedGroupRSSKiB": 652524,
+          "files": 24180,
+          "bytes": 222318112,
+          "artifactSha256": "f890d846c439a8fa987d693ff662c09ea8fe080c1f91e999b94a7979b3f14e3a",
+          "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 2.0,
+            "emit": 9.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "gitlab",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 1.501520101010101,
+          "secondsMin": 1.5013287639885675,
+          "secondsMax": 1.5016142909880728,
+          "peakRSSKiBMax": 299372,
+          "maximumObservedGroupRSSKiB": 301016,
+          "files": 115,
+          "bytes": 457759,
+          "artifactSha256": "b65f9a121fd17f64be7a6b70f67331cafbc37827f2ddca955204f308613192a3",
+          "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 1.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "gitlab",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 1.5014983269938966,
+          "secondsMin": 1.5014386730035767,
+          "secondsMax": 1.501516920994618,
+          "peakRSSKiBMax": 297684,
+          "maximumObservedGroupRSSKiB": 298096,
+          "files": 269,
+          "bytes": 1745206,
+          "artifactSha256": "da019180ee9d728ea724919ad495c0b3d08a6da5d6be28f814f1231970d5febb",
+          "inputSha256": "4a906043bbf46b29cf20e62008f141ab49002ce7b22d7ce280b5e714a0d850b8",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 1.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "microsoft-graph-beta",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 309.2267131469998,
+          "secondsMin": 307.2234382989991,
+          "secondsMax": 313.73404496700095,
+          "peakRSSKiBMax": 6769872,
+          "maximumObservedGroupRSSKiB": 6761124,
+          "files": 477701,
+          "bytes": 3195326552,
+          "artifactSha256": "74927dc1d8e6b1f3ea55cab7ae357899add4b2bbcc3ec4bd1c75f593429139d4",
+          "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+          "phaseSecondsMedian": {
+            "compile": 9.0,
+            "prepare": 154.0,
+            "emit": 146.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "microsoft-graph-beta",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 19.514739204008947,
+          "secondsMin": 19.014263980003307,
+          "secondsMax": 21.015481041002204,
+          "peakRSSKiBMax": 4134232,
+          "maximumObservedGroupRSSKiB": 4083892,
+          "files": 148,
+          "bytes": 694678,
+          "artifactSha256": "b83efa807b63b40a429b7849cf358dbfd029ec26d4109dd127ba15b21c19df1b",
+          "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+          "phaseSecondsMedian": {
+            "compile": 9.0,
+            "prepare": 10.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "microsoft-graph-beta",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 19.514674851001473,
+          "secondsMin": 19.51462177099893,
+          "secondsMax": 19.51522835700598,
+          "peakRSSKiBMax": 4150324,
+          "maximumObservedGroupRSSKiB": 4099636,
+          "files": 274,
+          "bytes": 1185679,
+          "artifactSha256": "a4f6b9b69aefb7f5c3325bc3cb76379b11fb51b5b25469b901328af1bcc3d8c4",
+          "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+          "phaseSecondsMedian": {
+            "compile": 8.0,
+            "prepare": 10.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "digitalocean",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 3.502990952998516,
+          "secondsMin": 3.5029031629965175,
+          "secondsMax": 3.503104439994786,
+          "peakRSSKiBMax": 508704,
+          "maximumObservedGroupRSSKiB": 495104,
+          "files": 1154,
+          "bytes": 3796723,
+          "artifactSha256": "c2d5cd6261351c4686248d6c750c8dc3a4c4dedca27f5fd3c75ff27678251698",
+          "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+          "phaseSecondsMedian": {
+            "compile": 3.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "digitalocean",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 3.502988734006067,
+          "secondsMin": 3.5028656000067713,
+          "secondsMax": 3.503473087999737,
+          "peakRSSKiBMax": 509008,
+          "maximumObservedGroupRSSKiB": 496032,
+          "files": 112,
+          "bytes": 448947,
+          "artifactSha256": "5ef452300da30c4153eb3857128564b81f740984a97e0e721830f721888f815d",
+          "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+          "phaseSecondsMedian": {
+            "compile": 3.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "digitalocean",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 3.502869803996873,
+          "secondsMin": 3.002498611996998,
+          "secondsMax": 3.5031618520006305,
+          "peakRSSKiBMax": 499468,
+          "maximumObservedGroupRSSKiB": 500244,
+          "files": 150,
+          "bytes": 552060,
+          "artifactSha256": "963054b8b6cbfbd902439273f2e70ef2ca3927f99efc07faea2776d5fa9310eb",
+          "inputSha256": "5fd3fdb6012e1c45889bf265f6481f2421b5262fb45092edfd15140f49f42cb0",
+          "phaseSecondsMedian": {
+            "compile": 3.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "twilio",
+          "selected": "full",
+          "samples": 5,
+          "secondsMedian": 2.0017357469914714,
+          "secondsMin": 2.001683744005277,
+          "secondsMax": 2.002030196003034,
+          "peakRSSKiBMax": 117104,
+          "maximumObservedGroupRSSKiB": 95672,
+          "files": 5529,
+          "bytes": 43100433,
+          "artifactSha256": "f65f38d7d3f6bda5e8cd62b238b0398dcbbb16809db86899cb3820f058717492",
+          "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 0.0,
+            "emit": 2.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "twilio",
+          "selected": 1,
+          "samples": 5,
+          "secondsMedian": 0.5007049500127323,
+          "secondsMin": 0.5006797640089644,
+          "secondsMax": 0.5008330590062542,
+          "peakRSSKiBMax": 51588,
+          "maximumObservedGroupRSSKiB": 272,
+          "files": 113,
+          "bytes": 467850,
+          "artifactSha256": "9a711b0608c4fcedb35e5a0ec04855689202bdf7be7dfe35828dffa30aba9b28",
+          "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        },
+        {
+          "provider": "twilio",
+          "selected": 10,
+          "samples": 5,
+          "secondsMedian": 0.5007668509933865,
+          "secondsMin": 0.5007463049987564,
+          "secondsMax": 0.5007700389978709,
+          "peakRSSKiBMax": 52948,
+          "maximumObservedGroupRSSKiB": 208,
+          "files": 167,
+          "bytes": 763038,
+          "artifactSha256": "6fe85fe35a1bccc1f3701887b3c35725018cdc9a7807642f044867b01504c704",
+          "inputSha256": "78e76cc93c355a259e241866c241663eddb6ce0ed528f066c6cf0958648f5637",
+          "phaseSecondsMedian": {
+            "compile": 0.0,
+            "prepare": 0.0,
+            "emit": 0.0
+          },
+          "phaseTimestampResolutionSeconds": 1
+        }
+      ]
+    }
+  }
+}

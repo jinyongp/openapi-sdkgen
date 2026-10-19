@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-10-19T01:15:09.668994+00:00",
+  "baseCommit": "d6346cbc573b808560054015f2121194b8ed1ff0",
+  "measurementArchiveFiles": 2289,
+  "measurementArchives": 18,
+  "commandRecords": 659,
+  "documentationChecks": [
+    {
+      "argv": [
+        "devtools",
+        "run",
+        "validate:docs"
+      ],
+      "exitCode": 0,
+      "observedResult": "ok Documentation validation"
+    },
+    {
+      "argv": [
+        "devtools",
+        "run",
+        "build:docs"
+      ],
+      "exitCode": 0,
+      "observedResult": "ok Documentation build"
+    }
+  ],
+  "documentationFiles": {
+    "docs/guide/golang.md": "66286c2989034e50e2b1f5330c4bf8b63f4e5c7289159133afe79253a29f33bd",
+    "docs/ko/guide/golang.md": "d7ec2b8315d1e71903c219833cfcd43049d72ad3adbbe3af20ec2aa59240da91"
+  },
+  "scope": "Post-completion measurement preservation and documentation clarification. Original implementation completion and source manifests are unchanged."
+}
