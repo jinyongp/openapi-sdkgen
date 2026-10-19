@@ -49,6 +49,12 @@ for (const [os, arch] of [["Linux", "x86_64"], ["Linux", "aarch64"], ["Darwin", 
     for (let i = 0; i < 2; i++) {
       const result = f.run("--version", "v1.2.3");
       assert.equal(result.status, 0, result.stderr);
+      let previous = -1;
+      for (const message of [`Installing openapi-sdkgen 1.2.3`, `Destination: ${f.destination}`, 'Downloading release checksums', `Downloading ${f.asset}`, 'Verifying SHA-256', 'Extracting executable', 'Installing executable', 'Installed openapi-sdkgen 1.2.3', 'Run now:']) {
+        const position = result.stdout.indexOf(message);
+        assert.ok(position > previous, `Missing or out-of-order installer guidance: ${message}`);
+        previous = position;
+      }
       assert.equal(readFileSync(f.destination, "utf8"), f.executable);
       assert.equal(spawnSync(f.destination, [], { encoding: "utf8" }).stdout.trim(), "fixture CLI 1.2.3");
       assert.deepEqual(readdirSync(join(f.home, ".local/bin")), ["openapi-sdkgen"]);
@@ -79,7 +85,11 @@ for (const mode of ["download", "tamper", "missing", "duplicate", "bad-archive"]
       const hash = createHash("sha256").update("not an archive").digest("hex");
       writeFileSync(join(f.root, "checksums.txt"), `${hash}  ${f.asset}\n`);
     }
-    assert.notEqual(f.run("--version", "1.2.3").status, 0);
+    const result = f.run("--version", "1.2.3");
+    assert.notEqual(result.status, 0);
+    assert.equal(result.stdout.includes('Installed openapi-sdkgen'), false);
+    if (mode === 'download') assert.match(result.stderr, /connection.*release version/);
+    if (mode === 'tamper') assert.match(result.stderr, /Checksum mismatch/);
     assert.equal(readFileSync(f.destination, "utf8"), "old installation");
     assert.deepEqual(readdirSync(join(f.home, ".local/bin")), ["openapi-sdkgen"]);
   });
@@ -98,4 +108,41 @@ test("rejects unsupported platforms, bad arguments and link destinations", t => 
   const target = join(f.root, "old"); writeFileSync(target, "old"); symlinkSync(target, f.destination);
   assert.notEqual(f.run("--version", "1.2.3").status, 0);
   assert.equal(readFileSync(target, "utf8"), "old");
+});
+test("printed commands handle quotes and spaces and select the new installation ahead of an old command", t => {
+  const f = fixture(t);
+  const directory = join(f.root, "tools ' $literal");
+  const oldCommand = join(f.root, "bin/openapi-sdkgen");
+  writeFileSync(oldCommand, '#!/bin/sh\necho old\n'); chmodSync(oldCommand, 0o755);
+  f.env.PATH += `:${directory}`;
+  const result = f.run('--version', '1.2.3', '--install-dir', directory);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Another openapi-sdkgen currently takes precedence/);
+  const lines = result.stdout.split('\n');
+  const immediate = lines[lines.indexOf('Run now:') + 1].trim();
+  const immediateRun = spawnSync('sh', ['-c', immediate], {env: f.env, encoding:'utf8'});
+  assert.equal(immediateRun.status, 0, immediateRun.stderr);
+  assert.equal(immediateRun.stdout.trim(), 'fixture CLI 1.2.3');
+  const pathCommand = lines.find(line => line.trimStart().startsWith('export PATH=')).trim();
+  const byName = spawnSync('sh', ['-c', `${pathCommand}\nopenapi-sdkgen --version`], {env:f.env, encoding:'utf8'});
+  assert.equal(byName.status, 0, byName.stderr);
+  assert.equal(byName.stdout.trim(), 'fixture CLI 1.2.3');
+  assert.equal(spawnSync(oldCommand, [], {encoding:'utf8'}).stdout.trim(), 'old');
+});
+test("an active install directory needs no PATH setup", t => {
+  const f = fixture(t);
+  f.env.PATH = `${join(f.home, '.local/bin')}:${f.env.PATH}`;
+  const result = f.run('--version', '1.2.3');
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Verify installation:\n  openapi-sdkgen --version/);
+  assert.equal(result.stdout.includes('export PATH='), false);
+});
+test("an unwritable destination reports a directory option and no success", t => {
+  const f = fixture(t);
+  const blocked = join(f.root, 'blocked'); writeFileSync(blocked, 'retain');
+  const result = f.run('--version', '1.2.3', '--install-dir', blocked);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /writable directory with --install-dir/);
+  assert.equal(result.stdout.includes('Installed openapi-sdkgen'), false);
+  assert.equal(readFileSync(blocked, 'utf8'), 'retain');
 });
