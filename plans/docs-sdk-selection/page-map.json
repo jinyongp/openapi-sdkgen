@@ -1518,8 +1518,14 @@
     }
   ],
   "note": "Existing heading IDs were captured from the current built site, including decomposed Korean Unicode. Preserve them as aliases when splitting pages. Four SDK/locale routes per topic; neutral pages and legacy pages are excluded from the SDK content count.",
-  "availabilityAtPlanning": {
-    "typescript": "released-as-described-by-current-docs",
-    "golang": "source-preview-as-described-by-current-docs"
+  "releaseContract": {
+    "sdkAvailabilityAtLaunch": {
+      "typescript": "released",
+      "golang": "released"
+    },
+    "delivery": "Go release and docs redesign ship together",
+    "versionSource": "Releaseway prepare-release tag/version/commit outputs",
+    "documentation": "Remove unreleased/next-release/source-preview claims from shipped docs, README and npm README",
+    "deployment": "Deploy the matching docs/WASM artifact after native/npm/Homebrew distribution verification; prevent main from publishing redesigned docs early"
   }
 }
