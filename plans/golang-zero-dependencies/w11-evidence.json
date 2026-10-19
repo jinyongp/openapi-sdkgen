@@ -1,0 +1,108 @@
+{
+  "scope": "W11 final review at unchanged W10 production source; documentation/evidence corrections only.",
+  "implementationCommit": "806144ead981656034ef78ae94e76762174a7272",
+  "productionFilesVerifiedUnchanged": 356,
+  "review": "w11-review.md",
+  "priorFinalChecks": "w10-evidence.json",
+  "freshTypeScriptMatrices": {
+    "argv": [
+      "devtools",
+      "run",
+      "test:dev",
+      "-count=1",
+      "-timeout=20m",
+      "-run",
+      "^TestRuntimeFeature(Native|Declaration)MatrixRegression$"
+    ],
+    "exitCode": 0,
+    "wallSeconds": 312.62993491700036,
+    "commit": "806144ead981656034ef78ae94e76762174a7272",
+    "log": "/tmp/sdkgen-zero/w11-typescript-matrices.log",
+    "scope": "Fresh native/declaration TypeScript matrices after shared matcher optimizations; no matrix result inferred from older runs."
+  },
+  "archivesVerified": 24,
+  "reReviewedUnitRecords": [
+    {
+      "unit": "W01",
+      "originalRecord": "df4aa383-7a0b-4df3-8802-9591c850f098",
+      "newReviewRecord": "e0e8292a-f7d8-4466-a002-30aebdd51f3a",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W02",
+      "originalRecord": "d271a226-794e-42d9-bd70-dee1bb386420",
+      "newReviewRecord": "f1c5bc23-9eb1-4c0a-9606-85f383b43730",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W03",
+      "originalRecord": "851c3018-c6c3-41dd-b96a-cf5d3951d2fb",
+      "newReviewRecord": "dcb6ef7d-92b7-47b2-8d81-7e3286c9a1bc",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W04",
+      "originalRecord": "f5604331-5803-49a0-aee0-5ce2f70adae9",
+      "newReviewRecord": "77d04b82-c94b-47e8-b7db-1c5540620abf",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W05",
+      "originalRecord": "242f0015-0ff6-4167-88ae-de8cc1b64245",
+      "newReviewRecord": "26b91af4-77f1-4eec-9427-2e413c105fd5",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W06",
+      "originalRecord": "1297dcf1-337c-4651-af2f-a672c85358b2",
+      "newReviewRecord": "ca4185e5-1245-480a-9413-484bdade4822",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W07",
+      "originalRecord": "be22c2a6-518f-4aba-b3a5-abde7e142c48",
+      "newReviewRecord": "b89bd301-6f76-41f1-a4b5-941bba20cd26",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W08",
+      "originalRecord": "29a7a227-3fb3-4681-a4da-295dbf1973f1",
+      "newReviewRecord": "b975544f-4777-4be1-aa3b-cc96c1e91681",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    },
+    {
+      "unit": "W09",
+      "originalRecord": "00ca4db3-68ad-4494-a47f-87b82d2bf0ee",
+      "newReviewRecord": "cbee0ed7-c76d-4da9-8c73-8f28e6f9d5c8",
+      "basisCommit": "806144ead981656034ef78ae94e76762174a7272",
+      "state": "done",
+      "reusedChecksAreNotFreshExecutions": true
+    }
+  ],
+  "remainingInScopeDefects": [],
+  "remainingImplementationDecisions": [],
+  "releaseOnly": [
+    {
+      "check": "Published npm cold native cache smoke",
+      "status": "Not run; requires actual publication. Native candidate, source pack and release workflow wiring passed."
+    }
+  ],
+  "unexecutedPlatforms": "Off-host binaries cross-built; only native Linux executed.",
+  "publication": "No push, publication or remote workflow dispatch."
+}

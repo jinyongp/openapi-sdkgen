@@ -183,6 +183,14 @@
       "sha256": "1900b4aecb875e2e63c0f34b1ee7d0c30a1ca8a18b474cc27d497c7e9bf6590e",
       "files": 9,
       "hashMaps": 0
+    },
+    {
+      "name": "final-review-verification",
+      "sourceDirectory": "/tmp/sdkgen-zero/w11-final-evidence-bundle",
+      "archive": "final-review-verification.tar.gz",
+      "sha256": "3a91ba3b080aa0d62a93291866df562775b9b86abed92f56d3d2f0e066ee4c51",
+      "files": 4,
+      "hashMaps": 0
     }
   ],
   "scope": "Local diagnostics. Historical and interrupted runs are preserved, not passing final samples. JSON whitespace is normalized; original bytes/hash and lossless parsed reconstruction are recorded."

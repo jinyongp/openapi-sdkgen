@@ -31,4 +31,5 @@ W04의 `Program`은 평평한 semantic instruction/edge/range 자료다. 캡처 
   `\W`는 folded word set의 complement이고 `\P`의 u folding 순서와 구분한다.
 - matcher 검증은 기존42개·독립 경계/캡처/취소/complexity·고정 Test262의 boolean 관련 사례·
   Node differential/fuzz·동시 공유 Program·ASCII/Unicode/큰 입력·메모리 수명으로 한다.
-  JS 객체 API·다른 flags의 제외 사유와 동적 추출 pending을 덮어쓰지 않는다.
+  JS 객체 API·다른 flags의 제외 사유를 유지한다. 정적 추출과 보충 동적 trace의 전체 파일
+  결과·불완전 실행·준비 크기 제한은 별도 manifest로 구분하며 전체 JS API 통과로 주장하지 않는다.

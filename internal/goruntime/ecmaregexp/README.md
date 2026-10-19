@@ -24,8 +24,9 @@ Preparation needs the existing development TypeScript 6 API and cached pinned
 Test262 source. SDK consumers and ordinary conformance tests do not need it.
 The fixture contains 3,930 unique static `u` sources from 710 of 2,119 source
 files, including 324 invalid patterns. It recompiles patterns; it does not claim
-the original JS tests passed. Per-file pending dynamic/API-scope coverage stays
-visible in `testdata/goruntime/regexp-coverage.json` for the matcher integration.
+the original JS tests passed. Static extraction outcomes stay visible in
+`testdata/goruntime/regexp-coverage.json`. Supplementary dynamic traces and every
+source-file outcome are recorded separately in `regexp-trace-coverage.json`.
 
 The Boolean matching fixture is separately prepared with:
 
@@ -36,8 +37,9 @@ devtools run -- node scripts/goruntime-data/extract-regexp-matches.mjs
 It derives 95 unique Boolean contracts from 98 static assertions in 19 pinned
 Test262 files. These expectations come from the assertions, not the new engine.
 Capture values are checked through backreferences and assertions in additional
-independent and Node differential cases. Dynamic JS/API coverage in the syntax
-manifest remains pending for integration; this is not a full Test262 pass.
+independent and Node differential cases. The syntax manifest describes static
+extraction; the supplementary trace manifest records dynamic runs, incomplete JS
+API assertions and preparation limits. Neither is a full Test262 JS API pass.
 
 Inputs are scanned by byte cursor; simple repetitions use compact retry state.
 A cache retains at most 32 exclusively borrowed fixed-size scratch buffers. Return

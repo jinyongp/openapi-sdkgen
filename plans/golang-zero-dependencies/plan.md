@@ -1,7 +1,8 @@
 # 외부 의존성이 없는 Go SDK 구현 계획
 
 작성: 2026-10-19. 기준: `72e679c`.
-상태: 설계·작업 분해 완료, 제품 구현과 새 엔진 적합성 검증은 미실행.
+실행 상태와 검증 범위: [구현 기록](implementation.md), [최종 리뷰](w11-review.md) 및
+workstream의 실제 완료·검증 기록을 따른다. 아래 기준 상태는 계획 작성 시점의 조사 이력이다.
 사용자 결정: 생성 SDK의 외부 의존성을 모두 제거하고 필요한 검증은 제품이 자체 지원한다.
 압축 협상·해제는 사용자 HTTP 전송 계층이 제어한다. 작업마다 리뷰→수정→재검증→커밋하고
 마지막에 전체 통합 리뷰를 수행한다. 이 문서는 구현 명령이나 배포 실행 기록이 아니다.
@@ -25,9 +26,9 @@
 기존 계획의 D09·D23·D25·D26과 6.1절은 이 문서가 대체한다. D10(의미가 다른 RE2 자동 대체 금지),
 스키마·코덱·스트림·본문 수명 계약은 유지한다. 기존 연구와 완료 기록은 당시 구현의 이력이다.
 
-## 2. 조사로 확인한 현재 상태
+## 2. 작성 시점에 조사한 기준 상태
 
-| 소비 지점 | 현재 책임·의존 | 변경 영향 |
+| 소비 지점 | 기준 구현의 책임·의존 | 변경 영향 |
 | --- | --- | --- |
 | `internal/target/golang/plan_schema.go` | `jsregexp.Compile`로 생성 시 패턴 확인 | 자체 엔진과 생성 SDK에 같은 parser 필요 |
 | `runtime/regex.go.tmpl`, `runtime/server-schema.go.tmpl` | 조건부 검증, 실행 중 받은 스키마의 패턴 컴파일 | 생성 시 컴파일만으로 대체 불가 |
@@ -37,9 +38,9 @@
 | `runtime/transport-body.go.tmpl` | gzip/deflate/br/zstd 해제와 Body 수명 관리가 결합 | 해제를 제거하면서 수명 관리는 보존 |
 | `plan_files.go` | transport-body가 기본 root, regex/format은 조건부 | 새 패키지 도달 가능성과 import 재계획 |
 
-직접 의존은 brotli, compress/zstd, whatwg-url, go-quickjs/jsregexp이다.
+기준 구현의 직접 의존은 brotli, compress/zstd, whatwg-url, go-quickjs/jsregexp였다.
 whatwg-url의 bitset·x/net·x/text 간접 의존도 함께 사라진다.
-현재 fixture 42개는 회귀 표본이며 정규식 전체 적합성 증거가 아니다.
+기준 fixture 42개는 회귀 표본이며 정규식 전체 적합성 증거가 아니다.
 기존 URL 28개 표본 역시 WHATWG 전체 적합성 증거가 아니다.
 
 ## 3. 확정 결정
@@ -241,4 +242,5 @@ fixture 변경은 새 계약의 독립 기대값으로 수정하며 이전 검�
 책임·경계 리뷰와 세부 알고리즘·검증 리뷰에서 위 누락을 보완하고 작업 단위·완료 기준에 반영했다.
 후속 재검토에서 scoped modifier용 CaseFolding과 IDNA Joiner용 DerivedJoiningType 입력을 추가했다.
 제품 방향·책임·알고리즘·데이터 버전·오류·출시 경계의 미결 선택은 없다.
-새 엔진의 적합성·성능은 미검증이며 W01–W11에서 증명해야 한다. 계획 검토 완료를 제품 완료로 취급하지 않는다.
+계획 작성 시점에는 새 엔진의 적합성·성능이 미검증이었다. W01–W11의 실제 검증 결과와
+출시 후에 실행할 검사는 구현·최종 리뷰 기록에서 구분한다. 계획 검토 자체를 제품 검증으로 취급하지 않는다.
