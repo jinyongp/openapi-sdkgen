@@ -23,6 +23,7 @@ const translations = {
     serverAddon: "Server handlers",
     metadataAddon: "OpenAPI metadata",
     generationOnly: "Generates source files only. Compile and run the SDK in your own project.",
+    goGenerationOnly: "Uses Go 1.27+ and the standard library only. Compile and run the generated source in your own project.",
     examples: "OpenAPI samples",
     yourDocument: "Your document",
     document: "OpenAPI document",
@@ -87,6 +88,7 @@ const translations = {
     serverAddon: "서버 핸들러",
     metadataAddon: "OpenAPI 메타데이터",
     generationOnly: "소스 파일만 생성합니다. SDK 컴파일과 실행은 사용자 프로젝트에서 진행하세요.",
+    goGenerationOnly: "Go 1.27 이상의 표준 라이브러리만 사용합니다. 생성한 소스의 컴파일과 실행은 사용자 프로젝트에서 진행하세요.",
     examples: "OpenAPI 예제",
     yourDocument: "내 문서",
     document: "OpenAPI 문서",
@@ -525,7 +527,7 @@ function toggleDirectory(path: string) {
           </template>
           <label><input v-model="serverAddon" type="checkbox" :disabled="!ready" /> {{ copy.serverAddon }}</label>
           <label><input v-model="metadataAddon" type="checkbox" :disabled="!ready" /> {{ copy.metadataAddon }}</label>
-          <p class="field-help">{{ copy.generationOnly }}</p>
+          <p class="field-help">{{ target === 'golang' ? copy.goGenerationOnly : copy.generationOnly }}</p>
           <button v-if="loading" type="button" @click="startOver">{{ copy.change }}</button>
 
           <template v-if="!loaded">

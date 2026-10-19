@@ -25,8 +25,8 @@ pnpm dlx openapi-sdkgen generate \
   --output ./internal/api
 ```
 
-Match the import path to your Go module. SDK consumption requires Go 1.27+ and the
-runtime dependencies imported by generated features; your module owns those versions.
+Match the import path to your Go module. SDK consumption requires Go 1.27+ and uses
+only the standard library. No additional runtime modules are needed.
 
 The npm launcher requires Node.js 22 or newer. This requirement applies only to
 the npm launcher; generated SDK source has its own runtime compatibility

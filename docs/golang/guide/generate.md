@@ -1,7 +1,7 @@
 # Generate and verify
 
 The generator emits Go source into your application. Start with [First Go SDK](./getting-started.md)
-for module setup and dependencies.
+for module setup and a working request.
 
 ## Fresh output
 
@@ -11,7 +11,7 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 ```
 
 The output includes operation models, clients, shared HTTP/schema source and the requested addons.
-Your module owns `go.mod` and `go.sum`; generation does not install dependencies.
+Your module owns `go.mod` and `go.sum`. Generated source uses only the standard library.
 
 ## Regenerate an existing SDK
 

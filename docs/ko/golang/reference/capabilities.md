@@ -17,6 +17,14 @@ Go는 OpenAPI 3.0.x·3.1.x·3.2.x에서 타입이 있는 모델·송신 클라�
 | 수신 | `--with server`: 타입이 있는 `net/http` 웹훅과 콜백 |
 | 메타데이터 | `--with metadata`: 원래 명세를 담은 독립 데이터 패키지 |
 
+## URL과 정규식
+
+생성된 Go 소스에는 외부 런타임 모듈 의존성이 없습니다. URL 해석과 출처 정규화는 WHATWG URL
+의미를 따릅니다. 스키마 패턴은 고정 Unicode 17 자료와 ECMAScript Unicode `u` 의미를 사용하며,
+범위별 `i`·`m`·`s` 수정자, 전후방 탐색과 역참조를 지원합니다. 매칭은 실행 한도와 `context.Context`의 취소·기한을 따르고,
+한도를 넘으면 스키마 불일치와 구분되는 오류를 반환합니다.
+응답 압축은 사용자 HTTP 클라이언트가 담당합니다. [인증과 전송](../guide/transport.md)을 참고하세요.
+
 ## 스트림과 OpenAPI 버전 {#openapi-version-support}
 
 OpenAPI 3.2의 `itemSchema`는 타입이 있는 증분 항목을, `prefixEncoding`·`itemEncoding`은
@@ -25,7 +33,7 @@ OpenAPI 3.2의 `itemSchema`는 타입이 있는 증분 항목을, `prefixEncodin
 
 ## 플랫폼과 매핑 경계
 
-애플리케이션이 Go 1.27 이상·모듈·전송·리스너를 제공합니다. Go는 유효한 HTTP token 메서드를
+애플리케이션이 Go 1.27 이상·모듈·전송·리스너를 제공합니다. Go는 유효한 HTTP 토큰 메서드를
 지원하며 브라우저 Fetch 제한을 적용하지 않습니다. 별도 CONNECT 터널 API는 없습니다.
 XML은 namespace·attribute·CDATA·wrapped와 타입이 있는 합성 매핑을 지원하지만 임의의
 추가 속성·위치별 prefix item 매핑에는 제약이 있습니다. 표현할 수 없으면 JSON이나 명시적

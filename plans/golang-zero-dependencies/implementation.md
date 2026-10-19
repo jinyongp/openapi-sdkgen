@@ -1,7 +1,7 @@
 # Go 무의존성 구현 기록
 
 현재 실행: [계획](plan.md), [devtools ID](workstream.json).
-계획 단위별로 리뷰·재검증·커밋한다. W01–W08을 구현·검증했고 문서·성능·출시 통합 검증을 이어간다.
+계획 단위별로 리뷰·재검증·커밋한다. W01–W09를 구현·검증했고 성능·플랫폼·최종 통합 검증을 이어간다.
 
 ## W01 — 기준과 적합성 입력
 
@@ -196,3 +196,24 @@ main1/external0, standard193/owned25 package이며 go.sum도 만들지 않고 ca
 Node/TypeScript가 없는 PATH에서도 Go 생성·configured package/import·실패17 전파·임시 정리 검사가
 통과했다. import·module graph·test-only 우회·공지/라이선스·도구/예제 호출부를 리뷰했다.
 전체 repository Go 회귀는 별도로 실행 중이며 아직 통과로 기록하지 않는다. 문서 정리는 W09에서 이어간다.
+
+## W09 — 문서·Playground·출시 경로 정리
+
+영문·한국어 시작 안내의 외부 모듈 설치 단계를 제거했다. README/npm/Go 예제·선택 비용·
+API 지원 범위·스트림·전송 문서를 실제 표준 라이브러리 전용 동작에 맞췄다. URL/Unicode/정규식
+기능은 함께 생성되며 사용자 HTTP 압축·실제 헤더·구조화 Raw 검증의 경계를 설명한다.
+미출시 문구를 넣지 않았고 과거 anchor와 언어별 동일 code block을 유지했다.
+
+Playground Go 안내에 Go1.27/표준 라이브러리 조건을 표시한다. WASM 결과 ZIP이 Unicode notice도
+보존하도록 이전 go-only assertion을 보완했다. WASM으로 생성한 정적 정규식·IRI·regex 형식/server
+SDK를 빈 모듈 cache·offline·CGO0에서 컴파일해 로컬 HTTP 응답 검증까지 통과했다.
+Go 문서 실행기도 의존성 설치 없이 예제3개를 같은 조건에서 생성·컴파일·로컬 실행했다.
+
+docs validation·전체 build, 언어/링크/다운로드 음성 사례6개, Playground 옵션/context/ZIP9개,
+npm source pack와고지 일치, native distribution version/생성/실제 Go 호출, release dispatch/CI reuse
+mock 검사 통과. 한국어 문장·제품 경계·이전 설명 잔존·소비 예제·고지/다운로드·출시 호출부를 리뷰했다.
+
+실제 게시된 npm의 cold native-cache smoke는 이 후보를 게시해야 실행할 수 있다. 워크플로가 동일한
+갱신 smoke 스크립트를 호출하도록 준비돼 있으며 이를 가짜 launcher 실행으로 대체하거나 통과로
+기록하지 않았다. Native 후보 소비는 통과했다. push/게시/원격 dispatch는 수행하지 않았다.
+전체 Go 회귀·자원 비교·6개 플랫폼 및 최종 전 영역 리뷰는 W10/W11에서 이어간다.

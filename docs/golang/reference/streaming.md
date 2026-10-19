@@ -2,7 +2,7 @@
 
 Sequential output is pull based. The first `Next` starts execution; processing each item
 controls demand. `MaxStreamFrameBytes` bounds one frame, not the total response or
-a compression decoder's history window. Request options override client defaults;
+buffers retained by your HTTP transport. Request options override client defaults;
 the SDK chooses a stream `Accept` only when neither sets it. Always inspect `Err`
 after the loop:
 
@@ -40,6 +40,6 @@ consuming an item. Only one `Next` may run at a time. After `Next()` returns fal
 Context cancellation remains observable. Backpressure follows pull demand; no background item queue is promised.
 
 SSE, NDJSON, JSON sequence and declared incremental media follow the operation contract.
-A frame limit does not bound total bytes or decompressor history. Typed errors preserve execution context.
+A frame limit does not bound total bytes or buffers in your HTTP transport. Typed errors preserve execution context.
 For raw sequential output, the caller owns and closes the body. For custom `MediaCodec` and `StreamCodec`,
 implement only supported directions; missing directions fail explicitly. See [files and Links](../guide/files-links-streams.md).

@@ -25,7 +25,7 @@ todo, err := operation.Call(api.GetTodoInput{Path: api.GetTodoPath{ID: "todo-1"}
 Import `operations` and `selective` under your generated root. The linker removes unreachable
 code, so Go needs no JavaScript bundler or tree-shaking configuration.
 Imported package initialization can remain even when unused methods disappear.
-Generation selection can also avoid importing unused runtime dependencies.
+Generation selection can also omit unused generated runtime packages.
 However, the compiler still checks imported packages. Use generation selection
 (`--operation getTodo` or `--route 'GET /todos/{id}'`) to reduce generated source and
 compile work. Link dependencies remain internal. Named clients in TOML have independent

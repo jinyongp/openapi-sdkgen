@@ -32,37 +32,17 @@ openapi-sdkgen generate \
 is `api` by default. The generator writes no `go.mod`; your application owns its dependencies.
 The native executable needs no Go or Node.js to generate source. The npm launcher needs Node.js.
 
-## Install the generated dependencies
+<span id="install-the-generated-dependencies"></span>
 
-```sh
-go get github.com/andybalholm/brotli@v1.2.6 \
-  github.com/klauspost/compress@v1.20.3 \
-  github.com/nlnwa/whatwg-url@v0.6.2 \
-  github.com/go-quickjs/go-quickjs@v0.27.0
-go mod tidy
-```
+## Compile with the standard library
 
-This example directly uses four external modules. There is no separate SDK runtime
-module to install, but the generated Go source does have external dependencies.
+The generated SDK uses only the Go standard library. No `go get` or SDK runtime
+installation is needed. URL normalization, Unicode handling and schema regular
+expressions are included as generated source. Your application can choose extra
+HTTP or media adapters without making them SDK requirements.
 
-| Feature | Module used by Go source | TypeScript equivalent |
-| --- | --- | --- |
-| Brotli response decoding | `andybalholm/brotli` | Fetch response decoding in the host runtime |
-| Zstandard response decoding | `klauspost/compress/zstd` | Fetch response decoding where supported by the host runtime |
-| URL parsing and normalization | `nlnwa/whatwg-url` | Built-in `URL` |
-| JavaScript-compatible regular expression validation | `go-quickjs/go-quickjs/jsregexp` | Built-in `RegExp` |
-
-The current transport imports the compression and URL modules even for a basic generated
-client. The regular expression module is included when selected schemas require regular
-expression validation or when the `server` addon's validation code needs it.
-Go's standard `net/url` and `regexp` packages do not provide the same URL and regular
-expression behavior guaranteed here.
-
-`bitset`, `golang.org/x/net`, and `golang.org/x/text` are indirect dependencies of
-`whatwg-url`. Go installs them automatically; they do not need separate entries in the
-installation command. `go mod tidy` removes modules unused by the generated code.
-Generated TypeScript has no separate npm runtime dependencies: the JavaScript host
-provides the corresponding capabilities.
+Compile and run the example below in your Go module. For compression settings,
+see [security and transport](./transport.md).
 
 ## Run a first request against a local mock
 

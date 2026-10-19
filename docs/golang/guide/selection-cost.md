@@ -16,8 +16,11 @@ Go build settings. Choose the smallest suitable surface:
 | Generation selection | Known API subset | Less emitted source and compile work |
 
 Generation must still parse and analyze the input. Memory does not necessarily fall in proportion
-to selected operations. Compression, schema and URL dependencies have their own compile and memory
-costs. Measure generation separately from SDK compilation, runtime allocations and final binary size.
+to selected operations. Owned schema, URL and Unicode source still has compile and memory costs;
+URL normalization is part of the HTTP client even with few operations. Static patterns are compiled
+during generation. A runtime pattern compiler is included only for dynamic server schemas or
+`regex` format assertions. Measure generation separately from SDK compilation, runtime allocations
+and final binary size.
 
 ## Compare matched builds
 

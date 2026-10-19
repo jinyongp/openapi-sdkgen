@@ -17,6 +17,14 @@ generation; operation/surface diagnostics can omit the affected capability. Use
 | Inbound | `--with server`: typed `net/http` webhooks and callbacks |
 | Metadata | `--with metadata`: independent original-document data package |
 
+## URL and regular expressions
+
+Generated Go source has no external runtime modules. URL parsing and origin normalization
+follow WHATWG URL semantics. Schema patterns use ECMAScript Unicode `u` semantics with
+scoped `i`/`m`/`s` modifiers and fixed Unicode 17 data, including lookaround and backreferences.
+Matching is bounded and context-aware; an execution limit is an error, not a schema mismatch.
+Transport compression belongs to your HTTP client; see [transport](../guide/transport.md).
+
 ## Streaming versions {#openapi-version-support}
 
 OpenAPI 3.2 `itemSchema` enables typed incremental items, with `prefixEncoding` and `itemEncoding`

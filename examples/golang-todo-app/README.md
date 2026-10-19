@@ -12,10 +12,9 @@ bash ./setup.sh
 go run .
 ```
 
-`setup.sh` generates `generated/api` with the server addon and installs the Go
-module's dependencies. To use another executable, set `SDKGEN_BIN` to its path.
-The generated SDK imports the fixed versions in `go.mod`; no TypeScript compiler
-or separate SDK runtime package is required.
+`setup.sh` generates `generated/api` with the server addon. The generated SDK
+uses only the Go standard library. To use another executable, set `SDKGEN_BIN`
+to its path.
 
 Expected output:
 

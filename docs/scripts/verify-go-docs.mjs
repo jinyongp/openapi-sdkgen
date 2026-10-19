@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 const root = resolve(import.meta.dirname, "../..");
 const scratch = await mkdtemp(resolve(root, ".tmp/go-docs-"));
-function run(command, args, cwd = root) {
-  const result = spawnSync(command, args, { cwd, encoding: "utf8", env: { ...process.env, GOWORK: "off", GOTOOLCHAIN: "local" } });
+function run(command, args, cwd = root, consumer = false) {
+  const result = spawnSync(command, args, { cwd, encoding: "utf8", env: { ...process.env, GOWORK: "off", GOTOOLCHAIN: "local", ...(consumer ? { GOPROXY: "off", GOSUMDB: "off", CGO_ENABLED: "0", GOMODCACHE: resolve(scratch, "module-cache") } : {}) } });
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")}\n${result.error ?? result.stderr}\n${result.stdout}`);
   return result.stdout.trim();
 }
@@ -24,14 +24,9 @@ try {
     await writeFile(resolve(scratch, "main.go"), code);
     await rm(resolve(scratch, "internal"), { recursive: true, force: true });
     run(resolve(scratch, "generator"), ["generate", "--input", resolve(root, `docs/public/examples/${example.input}.json`), "--target", "golang", "--go-import-path", "example.com/consumer/internal/api", "--output", resolve(scratch, "internal/api"), ...example.addons]);
-    if (example.path === "guide/getting-started") {
-      const install = en.match(/```sh\n(go get [\s\S]*?)```/)?.[1];
-      if (!install) throw new Error("Missing Go dependency installation command");
-      if (install !== ko.match(/```sh\n(go get [\s\S]*?)```/)?.[1]) throw new Error("Dependency installation differs by locale");
-      run("sh", ["-c", install], scratch);
-      console.log("ok Go dependency installation: documented command in a fresh consumer module");
-    }
-    const output = run("go", ["run", "-mod=readonly", "."], scratch);
+    const modules = JSON.parse(run("go", ["list", "-m", "-json", "all"], scratch, true));
+    if (!modules.Main || modules.Path !== "example.com/consumer" || modules.Replace) throw new Error("Go docs consumer acquired external modules");
+    const output = run("go", ["run", "-mod=readonly", "."], scratch, true);
     if (output !== example.expected) throw new Error(`Unexpected ${example.path}: ${output}`);
     console.log(`ok Go documentation ${example.path}: generated, compiled, local HTTP result verified`);
   }

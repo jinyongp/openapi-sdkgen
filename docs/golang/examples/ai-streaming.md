@@ -1,7 +1,7 @@
 # AI streaming over SSE
 
 The server owns model/provider dependencies and publishes an HTTP contract. A Go consumer needs
-only the generated SDK and its runtime dependencies; it does not import the model provider.
+only the generated SDK and the Go standard library; it does not import the model provider.
 Save the [Generation API document](/examples/golang-ai-stream.json) as `openapi.json`.
 Use [module/dependency setup](../guide/getting-started.md), then generate:
 

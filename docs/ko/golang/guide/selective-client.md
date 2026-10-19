@@ -25,7 +25,7 @@ todo, err := operation.Call(api.GetTodoInput{Path: api.GetTodoPath{ID: "todo-1"}
 생성 루트 아래의 `operations`와 `selective`를 import하세요. Go 링커는 도달하지 않는 코드를
 제거하므로 JavaScript 번들러나 트리 셰이킹 설정이 필요하지 않습니다. 미사용 메서드가
 제거돼도 import한 패키지의 초기화 코드는 남을 수 있습니다. 생성 시 선택하면 사용하지
-않는 런타임 의존성을 import하는 일도 줄일 수 있습니다. 다만 컴파일러는 import한 패키지를 검사합니다. 생성 소스와 컴파일 작업을 줄이려면 `--operation getTodo` 또는
+않는 생성 런타임 패키지도 제외할 수 있습니다. 다만 컴파일러는 import한 패키지를 검사합니다. 생성 소스와 컴파일 작업을 줄이려면 `--operation getTodo` 또는
 `--route 'GET /todos/{id}'`로 생성 범위를 선택하세요. Link 실행에 필요한 작업은 내부에 남깁니다.
 TOML의 이름 있는 클라이언트는 독립 진입 패키지를 가집니다. 실행 중 `LookupOperation`이나
 `LookupRoute`로 선택하면 레지스트리를 지연 초기화하며 `types.Value` 또는 `types.NativeInput`을

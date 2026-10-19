@@ -33,7 +33,7 @@ verify_version() {
 }
 verify_call() {
   local actual
-  actual="$(GOWORK=off GOTOOLCHAIN=local go -C "$scratch" run -mod=readonly .)" || return
+  actual="$(GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off CGO_ENABLED=0 GOMODCACHE="$scratch/module-cache" go -C "$scratch" run -mod=readonly .)" || return
   [[ "$actual" == 'todo-1 Ship the SDK' ]] || { script_error "Unexpected Go call result: $actual"; return 1; }
 }
 run_step 'distribution version' verify_version

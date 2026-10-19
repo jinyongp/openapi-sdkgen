@@ -24,7 +24,7 @@ openapi-sdkgen generate --config ./openapi-sdkgen.toml
 
 Import `example.com/consumer/internal/api/clients/orders` or
 `example.com/consumer/internal/api/clients/catalog` and use `NewClient` with that package's
-`ClientOptions`. Calls use `context.Context` like the root client. The application owns dependencies.
+`ClientOptions`. Calls use `context.Context` like the root client. The generated source uses only the Go standard library.
 
 Client names start with a lowercase letter and use lowercase ASCII letters, digits or hyphens,
 up to 64 characters. Reserved Windows device names are rejected. Selections must be nonempty;

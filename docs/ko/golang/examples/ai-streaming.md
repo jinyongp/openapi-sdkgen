@@ -1,9 +1,9 @@
 # SSE로 AI 스트림 받기
 
-서버가 모델·provider 의존성을 관리하고 HTTP 계약을 공개합니다. Go 소비자는 생성된 SDK와
-런타임 의존성만 사용하며 모델 provider를 import하지 않습니다.
+서버가 모델 제공자의 의존성을 관리하고 HTTP 계약을 공개합니다. Go 소비자는 생성된 SDK와
+Go 표준 라이브러리만 사용하며 모델 제공자를 import하지 않습니다.
 [Generation API 명세](/examples/golang-ai-stream.json)를 `openapi.json`으로 저장하고
-[모듈·의존성 설정](../guide/getting-started.md)을 한 뒤 생성하세요.
+[모듈 설정](../guide/getting-started.md)을 한 뒤 생성하세요.
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \

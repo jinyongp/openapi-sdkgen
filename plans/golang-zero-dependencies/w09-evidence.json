@@ -1,0 +1,54 @@
+{
+  "unit": "W09",
+  "scope": "EN/KO consumer docs, README/npm/example, Playground guidance/ZIP/WASM Go consumer, release consumption smoke. No publication.",
+  "checksPassed": [
+    "docs validation (final Korean wording included)",
+    "docs build",
+    "EN/KO code blocks identical in checked examples",
+    "Go docs3 main programs compile/run against local HTTP with offline empty module cache",
+    "Playground WASM TypeScript+Go generation, exact ZIP bytes+Unicode notice, invalid options",
+    "WASM generated Go static regex+IRI+regex format/server compile and real HTTP validation with CGO0 and offline empty module cache",
+    "locale validation negative cases6 and Playground options/context/ZIP tests9",
+    "npm source pack and root/npm notice equality",
+    "native distribution version/generation/Go HTTP call in CGO0 offline empty module cache",
+    "release dispatch and CI reuse tests (mocked; no remote dispatch)"
+  ],
+  "rawPlayground": "✔ WASM generates both targets and ZIP retains every exact file (854.858732ms)\n✔ WASM reports invalid options and preserves the two-argument TypeScript call (17.871426ms)\n✔ WASM Go output compiles offline and validates a real HTTP response (2300.511475ms)\nℹ tests 3\nℹ suites 0\nℹ pass 3\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3377.567732\n",
+  "releaseOnlyPending": [
+    "Published npm cold native-cache smoke is configured in .github/workflows/npm-smoke.yml, using the same updated scripts/release/smoke-go.sh. It requires publication of this candidate and was not executed or replaced with a fake launcher. Native candidate consumption passed."
+  ],
+  "review": {
+    "currentProduct": "No go get/runtime module install instructions; both targets ship together without unreleased copy. Host compression policy, removed headers, structured Raw validation, streaming frame vs host buffers and optional owned runtime source costs align with tests.",
+    "locales": "English/Korean code is identical; Korean prose reviewed as native writing; historical anchors preserved.",
+    "playground": "Source-only generation guidance now states Go1.27/standard-library requirements; ZIP permits and preserves the Unicode notice. A generated offline consumer exercises the new validation runtime.",
+    "tools": "Docs verifier no longer installs dependencies. Native/npm release smoke uses readonly offline CGO0 consumer conditions. Example setup no longer needs mod tidy."
+  },
+  "sourceSHA256": {
+    "README.md": "d3fda015860babada5b971ca0609fc7ebf603db82830ffe2d6ec197b6bbe5d72",
+    "docs/.vitepress/theme/components/Playground.vue": "65e8574612b1ec97c0a779cfeb2637f3358908d775a46dafc945a0b2bb2753c8",
+    "docs/golang/examples/ai-streaming.md": "accd06a8ad80469943ed385184cc9a68874c4f713ea591767fa650658fd45db4",
+    "docs/golang/guide/generate.md": "a048627844f0ec94e05c8d3a269f231d1944b1d9d6a182b25028043c44cbfe00",
+    "docs/golang/guide/getting-started.md": "93489d7746fd3e5dd56518fecfa0692265e926201e738e42f31c44fea91f32cf",
+    "docs/golang/guide/named-clients.md": "22b141bae9cc856920f709304780160037a09507864668161ad642d763736057",
+    "docs/golang/guide/selection-cost.md": "8bb5cc42930bc2054ee9b24dcd9a796ba0437988b91d595bc2dc32895c66191c",
+    "docs/golang/guide/selective-client.md": "a290adb4210e83085e099f187b9a2a9fec9c63b807d9ed064ba3947c8e02743d",
+    "docs/golang/guide/transport.md": "f5917eda49334d79060a75666f19a77d4dd4376a10739608606a72a6c0e1b6cc",
+    "docs/golang/reference/capabilities.md": "80a745872792a1fee01b1e115587883d82638d4ba7e77c53433930b47d71abd8",
+    "docs/golang/reference/streaming.md": "5429c4693c8188bc04c4781087f8dea2d76beedce075658e17344438cc32a38a",
+    "docs/ko/golang/examples/ai-streaming.md": "177b9e5fbc6ff9774fbf820e0f90faa6e768d42da160d86e52310d1598fa1ec2",
+    "docs/ko/golang/guide/generate.md": "1a81c31c5c75e7250cd32f072387047381af7901a23e9a024d1bee469e88aadd",
+    "docs/ko/golang/guide/getting-started.md": "5a2d9e8ea65274bff36e07415095d7351086b031528d7fc5f24e4493e4564148",
+    "docs/ko/golang/guide/selection-cost.md": "e03b3682aaf0b09725562b6ab290bd00dd7c8fd8b1ed597495369aae8e2ac0e6",
+    "docs/ko/golang/guide/selective-client.md": "23aad7116a783068d5f5b386601e2a5497e81a007c5b2c220085382bd3a3684d",
+    "docs/ko/golang/guide/transport.md": "dc3d8b0417fc1cc0ad42e78e24b30456df263ff2aefc5af7ade27d19b7222fc2",
+    "docs/ko/golang/reference/capabilities.md": "8f750e9c5f516beca09ab2f706d04876e532eccee0b8db86abda489e7145dc45",
+    "docs/ko/golang/reference/streaming.md": "5ede5570ea2e465266087f2c21a9d1e4c5313bce915828fb9c7e33753860d2e5",
+    "docs/scripts/playground-wasm.test.mjs": "213c0eab797ce853ffa37a8430afcb8b1d148c7469db8e26bb8fd772cd551fab",
+    "docs/scripts/verify-go-docs.mjs": "4d8a3fad9c417a20264c100560a0918befb36bf271121f89ddc93e3f6497b8ea",
+    "examples/golang-todo-app/README.md": "4c2ca5b1308f162f01db167d8c1a7c3adeea8e2324a1558394160c6e44001f18",
+    "examples/golang-todo-app/setup.sh": "dbb213a593cb84d1037566be859824ecc24ca74905e42155187185ecc1469e3a",
+    "npm/README.md": "dfbc6a0fc8f58a342dd4e0f9ebcd019a23d82b9f40b237e856ce3ffffbd287c9",
+    "scripts/release/smoke-go.sh": "bfa760bb0f6b30c4055028602d288563da6b0e12fffb587da70c79003dc899f3",
+    "scripts/verification/playground.sh": "bfc943fb761d1e075ddcf013e2e58b080ee5f747ba045c38e24153061722f7d0"
+  }
+}

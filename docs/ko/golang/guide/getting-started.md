@@ -32,34 +32,16 @@ openapi-sdkgen generate \
 `api`입니다. 생성기는 `go.mod`를 쓰지 않으며 의존성은 애플리케이션이 관리합니다.
 실행 파일로 생성할 때는 Go·Node.js가 필요하지 않습니다. npm 실행기는 Node.js가 필요합니다.
 
-## 생성된 소스의 의존성 설치
+<span id="생성된-소스의-의존성-설치"></span>
 
-```sh
-go get github.com/andybalholm/brotli@v1.2.6 \
-  github.com/klauspost/compress@v1.20.3 \
-  github.com/nlnwa/whatwg-url@v0.6.2 \
-  github.com/go-quickjs/go-quickjs@v0.27.0
-go mod tidy
-```
+## 표준 라이브러리로 컴파일하기
 
-이 예제는 외부 모듈 4개를 직접 사용합니다. 별도의 SDK 런타임 모듈은 설치하지 않지만,
-생성된 Go 소스에 외부 의존성이 없는 것은 아닙니다.
+생성된 SDK는 Go 표준 라이브러리만 사용합니다. `go get`이나 별도 SDK 런타임 설치가 필요하지
+않습니다. URL 정규화·Unicode 처리·스키마 정규식 검증에 필요한 코드도 함께 생성합니다.
+애플리케이션에서 HTTP·미디어 어댑터를 추가로 선택할 수 있으며 SDK가 이를 요구하지는 않습니다.
 
-| 기능 | Go 소스가 사용하는 모듈 | TypeScript에서 사용하는 기능 |
-| --- | --- | --- |
-| Brotli 응답 압축 해제 | `andybalholm/brotli` | 실행 환경의 Fetch 응답 압축 해제 |
-| Zstandard 응답 압축 해제 | `klauspost/compress/zstd` | 실행 환경이 지원하는 Fetch 응답 압축 해제 |
-| URL 해석·정규화 | `nlnwa/whatwg-url` | 내장 `URL` |
-| JavaScript 정규식과 호환되는 검증 | `go-quickjs/go-quickjs/jsregexp` | 내장 `RegExp` |
-
-일반 클라이언트를 생성해도 현재 전송 코드는 압축 해제와 URL 모듈을 import합니다.
-정규식 모듈은 선택한 스키마의 정규식 검증 또는 `server` 확장의 검증 코드가 필요할 때 포함됩니다.
-Go 표준 라이브러리의 `net/url`·`regexp`는 여기서 보장하는 URL·정규식 동작과 같지 않습니다.
-
-`whatwg-url`이 사용하는 `bitset`, `golang.org/x/net`, `golang.org/x/text`는 간접 의존성입니다.
-Go가 함께 설치하므로 설치 명령에 따로 나열할 필요는 없습니다. `go mod tidy`는 생성된 코드에서
-사용하지 않는 모듈을 제거합니다. TypeScript 생성 소스에는 별도 npm 런타임 의존성이 없으며,
-대응 기능은 JavaScript 실행 환경이 제공합니다.
+Go 모듈에서 아래 예제를 컴파일하고 실행하세요. 압축 설정은 [인증과 전송](./transport.md)을
+참고하세요.
 
 ## 로컬 모의 서버에 첫 요청 보내기
 

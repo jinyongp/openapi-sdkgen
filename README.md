@@ -4,7 +4,7 @@ Generate application SDK source from OpenAPI 3.0, 3.1, and 3.2 documents.
 
 Choose `typescript` or `golang` to generate the client, models and runtime source inside
 your application. The native generator needs no Node.js or Go installation to generate source.
-The generated SDK uses your application's toolchain and dependency versions.
+Generated SDKs use your application's toolchain and need no extra runtime packages.
 
 | SDK | Requirements to use generated source | Start here |
 | --- | --- | --- |
@@ -71,9 +71,8 @@ openapi-sdkgen generate \
 ```
 
 Match the import path to your module. The root package defaults to `api`; generated source
-includes no `go.mod` or `go.sum`. Install the dependencies used by your generated features
-in the application module. [First Go SDK](docs/golang/guide/getting-started.md) includes the
-pinned dependencies, a complete local mock call and expected output.
+includes no `go.mod` or `go.sum` and uses only the Go standard library.
+[First Go SDK](docs/golang/guide/getting-started.md) includes a complete local mock call and expected output.
 [Go examples](docs/golang/examples/index.md) cover SSE, Links, selection and `net/http` webhooks.
 Go's linker removes unreachable code; generation selection can also reduce source and compile work.
 
