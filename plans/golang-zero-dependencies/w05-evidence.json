@@ -4,7 +4,7 @@
   "tests": [
     "existing 42 pattern/input Node oracle",
     "pinned Test262 95 independent Boolean contracts (98 assertions, 19 files)",
-    "61 patterns x 29 inputs matrix; one narrow normative Kelvin override",
+    "55 patterns x 29 inputs matrix; one narrow normative Kelvin override",
     "12 x 12 x 6 patterns x 31 inputs composed Node oracle (invalid patterns compared as invalid)",
     "100000 noncapture and 20000 nested lookahead explicit stack execution",
     "concurrent immutable program reuse, 1MiB simple repeat",

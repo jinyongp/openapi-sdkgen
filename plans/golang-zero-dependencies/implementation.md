@@ -103,7 +103,7 @@ UTF8/WTF8 byte cursor로 정방향/역방향을 읽고 lookbehind의 역순 conc
 입력 전체를 rune 배열로 복사하지 않으며 단일 문자 반복은 compact retry를 쓴다.
 검색 전체에 1억 작업 budget과 1,024작업마다 context 확인을 적용한다.
 
-기존42개, 고정 Test262 assertion에서 유도한95개 boolean 계약, 61×29 경계 조합,
+기존42개, 고정 Test262 assertion에서 유도한95개 boolean 계약, 55×29 경계 조합,
 12×12×6 pattern ×31 input의 보조 Node 비교가 통과했다. 마지막 집합은 잘못된 문법의
 거부도 비교한다. 100,000 괄호/20,000 assertion 중첩, 1MiB 반복, 동시 재사용, 취소·budget 후
 재사용, scratch 참조 해제와 race 통과. 30초 fuzz 2,262,657회 무실패.
