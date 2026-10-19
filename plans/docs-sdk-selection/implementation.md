@@ -41,3 +41,16 @@ HTML lang·선택값·제목 포커스·저장값, 뒤로가기, 320px 모바일
 브라우저 오류는 favicon 404 한 건이며 제품 코드 오류는 없었다.
 리뷰: SSR에서 window 접근 방지, base·query·path 우선, 키보드 native 동작과 label/hint,
 숨긴 선택기, 검색 remount, 기존 테마 호출자를 확인했다. Go 개방과 전체 4 scope 검증은 W08에서 한다.
+
+## W04 — Go 핵심 사용 흐름
+
+EN/KO 시작·생성·inspect·원격 입력·호출/오류·모델·인증/전송·문제 해결 16개 페이지를 작성했다.
+시작하기는 설치→사용자 모듈→의존성→전체 main.go→로컬 mock 호출까지 완결된다.
+기존 Go 가이드의 검증된 API 설명을 주제별로 분리하고 Go CLI 설정을 반영했다.
+
+검증: `devtools run -- node docs/scripts/verify-go-docs.mjs`는 실제 문서 코드 블록을
+추출해 native generator로 SDK를 만들고 모듈에서 컴파일·실행해 `todo-1 Ship the SDK`를 확인한다.
+`devtools run go:example`도 통과했다.
+리뷰: 모듈/출력/import 경계, Go 버전과 의존성 소유권, 취소·응답 소유권, 오류와 presence,
+CLI 분석과 생성의 구분, EN/KO 코드 대응을 확인했다. Korean inspect에 남은 TS 전용 절을 제거했다.
+심화·참조 목적지의 파일 및 전체 링크 검사는 W05/W06에서 내용이 완성된 뒤 수행한다.
