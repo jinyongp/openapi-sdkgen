@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from "vue";
 import { Check, Copy, FolderDown } from "@lucide/vue";
-import { useData } from "vitepress";
+import { useData, useRoute } from "vitepress";
 import CodeViewer from "./CodeViewer.vue";
 import FileTree from "./FileTree.vue";
 import { playgroundExamples, type PlaygroundExample } from "../playground/examples";
 import { codeThemes, type CodeTheme } from "../playground/highlight";
-import { readPlaygroundPreferences, writePlaygroundPreferences } from "../playground/preferences";
+import { readPlaygroundPreferences, writePlaygroundPreferences, readSelectedPath, writeSelectedPath } from "../playground/preferences";
 import { buildArtifactTree, findArtifact } from "../playground/tree";
-import { generate, type GeneratedArtifact } from "../playground/wasm";
+import { generate, type GenerationResult, type GeneratedArtifact } from "../playground/wasm";
 import { archiveArtifacts, downloadBlob } from "../playground/download";
 
 const maximumInputBytes = 64 * 1024 * 1024;
@@ -144,37 +144,15 @@ const translations = {
   },
 } as const;
 
+import { parseDocContext, type SDKTarget } from "../../doc-context";
+import { playgroundSession, sessionActive, activateSession, scheduleSessionWork, currentEpoch, invalidateSession, isCurrent, beginFetch, clearCredentials, leaveSession, type AuthenticationMode } from "../playground/session";
+import { readSDKOptions, writeSDKOptions } from "../playground/options";
 const { lang } = useData();
+const route: ReturnType<typeof useRoute> = useRoute();
 const copy = computed(() => lang.value === "ko-KR" ? translations.ko : translations.en);
-const target = ref("typescript");
+const { target, generatedTarget, goImportPath, goPackage, serverAddon, metadataAddon, colorTheme, expandedPaths, url, localNetworkAccess, authenticationMode, bearerToken, apiKeyHeader, apiKeyValue, basicUsername, basicPassword, sourceLabel, artifacts, selectedPath, diagnostics, error, loading, dragging, exporting, copiedPath, actionError, source, exampleID } = playgroundSession;
 const ready: Ref<boolean> = ref(false);
-const generatedTarget: Ref<string> = ref("typescript");
-const goImportPath: Ref<string> = ref("example.com/consumer/internal/api");
-const goPackage: Ref<string> = ref("api");
-const serverAddon: Ref<boolean> = ref(false);
-const metadataAddon: Ref<boolean> = ref(false);
-const colorTheme = ref<CodeTheme>("github-dark");
-const expandedPaths = ref<ReadonlySet<string>>(new Set());
-const url = ref("");
-const localNetworkAccess = ref(false);
-type AuthenticationMode = "none" | "bearer" | "api-key" | "basic" | "cookies";
-const authenticationMode = ref<AuthenticationMode>("none");
-const bearerToken = ref("");
-const apiKeyHeader = ref("X-API-Key");
-const apiKeyValue = ref("");
-const basicUsername = ref("");
-const basicPassword = ref("");
-const sourceLabel = ref("");
-const artifacts = ref<GeneratedArtifact[]>([]);
-const selectedPath = ref("");
-const diagnostics = ref("");
-const error = ref("");
-const loading = ref(false);
-const dragging = ref(false);
-const fileInput = ref<HTMLInputElement>();
-const exporting = ref<boolean>(false);
-const copiedPath = ref<string>("");
-const actionError = ref<string>("");
+const fileInput: Ref<HTMLInputElement | undefined> = ref<HTMLInputElement>();
 let copyTimer: ReturnType<typeof setTimeout> | undefined;
 
 const selectedArtifact = computed(() => findArtifact(artifacts.value, selectedPath.value));
@@ -187,23 +165,25 @@ const fileCountLabel = computed<string>((): string => lang.value === "ko-KR"
 const tree = computed(() => buildArtifactTree(artifacts.value));
 let preferencesReady = false;
 
-onMounted(() => {
-  const preferences = readPlaygroundPreferences(preferenceStorage(), codeThemeValues);
+onMounted((): void => {
+  const parameters: URLSearchParams = new URLSearchParams(window.location.search);
+  const nextTarget: SDKTarget = parseDocContext(route.path)?.sdk ?? (parameters.get("target") === "golang" ? "golang" : "typescript");
+  const changed: boolean = target.value !== nextTarget;
+  const wasActive: boolean = sessionActive;
+  if (changed) invalidateSession();
+  const preferences = readPlaygroundPreferences(preferenceStorage(), codeThemeValues, nextTarget);
   if (preferences.codeTheme) colorTheme.value = preferences.codeTheme;
   expandedPaths.value = new Set(preferences.expandedPaths);
-  preferencesReady = true;
-  const parameters: URLSearchParams = new URLSearchParams(window.location.search);
-  if (parameters.get("target") === "golang") target.value = "golang";
-  goImportPath.value = parameters.get("go-import-path") ?? goImportPath.value;
-  goPackage.value = parameters.get("go-package") ?? goPackage.value;
-  const addons: string[] = (parameters.get("with") ?? "").split(",");
-  serverAddon.value = addons.includes("server");
-  metadataAddon.value = addons.includes("metadata");
-  ready.value = true;
-
-  const exampleID = parameters.get("example");
-  const example = playgroundExamples.find((candidate) => candidate.id === exampleID);
-  if (example !== undefined) void loadExample(example);
+  if (changed || !wasActive) {
+    const options = readSDKOptions(preferenceStorage(), nextTarget, wasActive ? new URLSearchParams() : parameters);
+    goImportPath.value = options.goImportPath; goPackage.value = options.goPackage;
+    serverAddon.value = options.server; metadataAddon.value = options.metadata;
+  }
+  target.value = nextTarget;
+  activateSession(); preferencesReady = true; ready.value = true;
+  const example: PlaygroundExample | undefined = playgroundExamples.find((candidate: PlaygroundExample): boolean => candidate.id === parameters.get("example"));
+  if (example && (!wasActive || exampleID.value !== example.id)) void loadExample(example);
+  else if (source.value && (changed || !artifacts.value.length && !loading.value)) void runGeneration(source.value, sourceLabel.value);
 });
 
 watch([colorTheme, expandedPaths], () => {
@@ -211,29 +191,35 @@ watch([colorTheme, expandedPaths], () => {
   writePlaygroundPreferences(preferenceStorage(), {
     codeTheme: colorTheme.value,
     expandedPaths: expandedPaths.value,
-  });
+  }, target.value);
 });
 
 watch(selectedPath, (): void => {
   copiedPath.value = "";
   actionError.value = "";
+  if (selectedPath.value) writeSelectedPath(preferenceStorage(), target.value, selectedPath.value);
 });
 
 onBeforeUnmount((): void => {
   if (copyTimer !== undefined) clearTimeout(copyTimer);
+  if (parseDocContext(route.path)?.topic !== "playground") leaveSession();
 });
 
 async function downloadAll(): Promise<void> {
-  if (exporting.value || !loaded.value) return;
+  if (exporting.value || loading.value || !loaded.value) return;
+  const token: number = currentEpoch();
+  const snapshot: GeneratedArtifact[] = artifacts.value;
+  const sdk: string = generatedTarget.value;
   exporting.value = true;
   actionError.value = "";
   try {
-    const archive: Uint8Array<ArrayBuffer> = await archiveArtifacts(artifacts.value);
-    downloadBlob(new Blob([archive], { type: "application/zip" }), `openapi-sdkgen-${generatedTarget.value}.zip`);
+    const archive: Uint8Array<ArrayBuffer> = await archiveArtifacts(snapshot);
+    if (!isCurrent(token) || snapshot !== artifacts.value || loading.value) return;
+    downloadBlob(new Blob([archive], { type: "application/zip" }), `openapi-sdkgen-${sdk}.zip`);
   } catch {
-    actionError.value = copy.value.exportError;
+    if (isCurrent(token)) actionError.value = copy.value.exportError;
   } finally {
-    exporting.value = false;
+    if (isCurrent(token)) exporting.value = false;
   }
 }
 
@@ -324,7 +310,7 @@ function validateSize(size: number) {
 
 function updateGenerationOptions(locationURL: URL): void {
   if (target.value === "golang") {
-    locationURL.searchParams.set("target", "golang");
+    locationURL.searchParams.delete("target");
     locationURL.searchParams.set("go-import-path", goImportPath.value);
     locationURL.searchParams.set("go-package", goPackage.value);
   } else {
@@ -334,57 +320,63 @@ function updateGenerationOptions(locationURL: URL): void {
   if (serverAddon.value) addons.push("server");
   if (metadataAddon.value) addons.push("metadata");
   if (addons.length) locationURL.searchParams.set("with", addons.join(","));
-  else locationURL.searchParams.delete("with");
+  else locationURL.searchParams.set("with", "");
 }
 
-async function runGeneration(contents: string, label: string) {
+async function runGeneration(contents: string, label: string): Promise<void> {
+  const token: number = invalidateSession();
+  source.value = contents; sourceLabel.value = label;
   const locationURL: URL = new URL(window.location.href);
   updateGenerationOptions(locationURL);
-  window.history.replaceState({}, "", locationURL);
-  resetMessages();
-  artifacts.value = [];
-  selectedPath.value = "";
-  loading.value = true;
+  window.history.replaceState(window.history.state, "", locationURL);
+  resetMessages(); artifacts.value = []; selectedPath.value = ""; loading.value = true;
+  const selectedTarget: SDKTarget = target.value;
+  writeSDKOptions(preferenceStorage(), selectedTarget, { goImportPath: goImportPath.value, goPackage: goPackage.value, server: serverAddon.value, metadata: metadataAddon.value });
   try {
-    const bytes = new TextEncoder().encode(contents).byteLength;
-    validateSize(bytes);
-    const selectedTarget: string = target.value;
+    validateSize(new TextEncoder().encode(contents).byteLength);
+    if (selectedTarget === "golang" && (!goImportPath.value.trim() || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(goPackage.value))) throw new Error(lang.value === "ko-KR" ? "Go 패키지 경로와 유효한 패키지 이름을 입력하세요." : "Enter a Go import path and a valid package name.");
     const addons: string[] = [];
-    if (serverAddon.value) addons.push("server");
-    if (metadataAddon.value) addons.push("metadata");
-    const result = await generate(contents, selectedTarget, { addons, ...(selectedTarget === "golang" ? { goImportPath: goImportPath.value, goPackage: goPackage.value } : {}) });
+    if (serverAddon.value) addons.push("server"); if (metadataAddon.value) addons.push("metadata");
+    const result: GenerationResult = await generate(contents, selectedTarget, { addons, ...(selectedTarget === "golang" ? { goImportPath: goImportPath.value, goPackage: goPackage.value } : {}) });
+    if (!isCurrent(token)) return;
     generatedTarget.value = selectedTarget;
     if (result.error) throw new Error(result.error);
     diagnostics.value = result.diagnostics ?? "";
-    if (!result.artifacts?.length) {
-      if (!diagnostics.value) throw new Error(copy.value.noFiles);
-      return;
-    }
-    sourceLabel.value = label;
+    if (!result.artifacts?.length) { if (!diagnostics.value) throw new Error(copy.value.noFiles); return; }
     artifacts.value = result.artifacts;
-    selectedPath.value = result.artifacts[0].path;
+    selectedPath.value = readSelectedPath(preferenceStorage(), selectedTarget, result.artifacts.map((artifact: GeneratedArtifact): string => artifact.path));
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : String(cause);
-  } finally {
-    loading.value = false;
-  }
+    if (isCurrent(token)) error.value = cause instanceof Error ? cause.message : String(cause);
+  } finally { if (isCurrent(token)) loading.value = false; }
 }
 
-async function loadFile(file?: File) {
-  if (!file || loading.value) return;
+watch([goImportPath, goPackage, serverAddon, metadataAddon], (): void => {
+  if (!preferencesReady) return;
+  writeSDKOptions(preferenceStorage(), target.value, { goImportPath: goImportPath.value, goPackage: goPackage.value, server: serverAddon.value, metadata: metadataAddon.value });
+  if (source.value) {
+    invalidateSession(); artifacts.value = []; loading.value = true;
+    scheduleSessionWork((): void => { void runGeneration(source.value, sourceLabel.value); });
+  }
+}, { flush: "sync" });
+
+async function loadFile(file?: File): Promise<void> {
+  if (!file) return;
+  const token: number = invalidateSession();
   loading.value = true;
   try {
     validateSize(file.size);
-    await runGeneration(await file.text(), file.name);
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : String(cause);
-  } finally {
-    loading.value = false;
-  }
+    const contents: string = await file.text();
+    if (!isCurrent(token)) return;
+    clearCredentials(); exampleID.value = "";
+    const locationURL: URL = new URL(window.location.href); locationURL.searchParams.delete("example");
+    window.history.replaceState(window.history.state, "", locationURL);
+    await runGeneration(contents, file.name);
+  } catch (cause) { if (isCurrent(token)) error.value = cause instanceof Error ? cause.message : String(cause); }
+  finally { if (isCurrent(token)) loading.value = false; }
 }
 
-async function loadURL() {
-  if (loading.value) return;
+async function loadURL(): Promise<void> {
+  const token: number = invalidateSession();
   resetMessages();
   let parsed: URL;
   try {
@@ -404,7 +396,7 @@ async function loadURL() {
 
   loading.value = true;
   try {
-    const request: LocalNetworkRequestInit = { mode: "cors" };
+    const request: LocalNetworkRequestInit = { mode: "cors", signal: beginFetch() };
     if (localNetworkAccess.value) request.targetAddressSpace = targetAddressSpace(parsed);
     applyAuthentication(request);
     const response = await fetch(parsed, request);
@@ -416,9 +408,15 @@ async function loadURL() {
     }
     const length = Number(response.headers.get("content-length"));
     if (Number.isFinite(length) && length > 0) validateSize(length);
-    const label = `${parsed.hostname}${parsed.pathname}`;
-    await runGeneration(await response.text(), label);
+    const contents: string = await response.text();
+    if (!isCurrent(token)) return;
+    const label: string = `${parsed.hostname}${parsed.pathname}`;
+    exampleID.value = "";
+    const locationURL: URL = new URL(window.location.href); locationURL.searchParams.delete("example");
+    window.history.replaceState(window.history.state, "", locationURL);
+    await runGeneration(contents, label);
   } catch (cause) {
+    if (!isCurrent(token)) return;
     error.value = cause instanceof TypeError
       ? authenticationMode.value !== "none"
         ? copy.value.authenticatedFetchError
@@ -443,11 +441,12 @@ function exampleDescription(example: PlaygroundExample): string {
   return lang.value === "ko-KR" ? example.description.ko : example.description.en;
 }
 
-async function loadExample(example: PlaygroundExample) {
-  if (loading.value) return;
+async function loadExample(example: PlaygroundExample): Promise<void> {
+  clearCredentials();
+  exampleID.value = example.id;
   const locationURL = new URL(window.location.href);
   locationURL.searchParams.set("example", example.id);
-  window.history.replaceState({}, "", locationURL);
+  window.history.replaceState(window.history.state, "", locationURL);
 
   await runGeneration(
     example.document,
@@ -455,11 +454,12 @@ async function loadExample(example: PlaygroundExample) {
   );
 }
 
-function startOver() {
-  if (exporting.value) return;
+function startOver(): void {
+  invalidateSession();
+  source.value = ""; exampleID.value = "";
   const locationURL = new URL(window.location.href);
   locationURL.searchParams.delete("example");
-  window.history.replaceState({}, "", locationURL);
+  window.history.replaceState(window.history.state, "", locationURL);
   sourceLabel.value = "";
   artifacts.value = [];
   selectedPath.value = "";
@@ -486,7 +486,7 @@ function toggleDirectory(path: string) {
 </script>
 
 <template>
-  <main class="sdk-playground">
+  <div class="sdk-playground">
     <header class="playground-heading">
       <div>
         <h1>{{ copy.heading }}</h1>
@@ -496,23 +496,20 @@ function toggleDirectory(path: string) {
 
     <section class="workbench" :class="{ 'has-files': loaded }">
       <aside class="source-panel">
-        <div v-if="!loaded" class="source-controls">
-          <label class="field-label" for="playground-target">{{ copy.target }}</label>
-          <select id="playground-target" v-model="target" :disabled="loading || !ready">
-            <option value="typescript">TypeScript</option>
-            <option value="golang">Go</option>
-          </select>
-
+        <div class="source-controls" :class="{ compact: loaded }">
+          <p class="field-label">SDK · {{ target === 'golang' ? 'Go' : 'TypeScript' }}</p>
           <template v-if="target === 'golang'">
             <label class="field-label" for="playground-go-import-path">{{ copy.goImportPath }}</label>
-            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="loading || !ready" spellcheck="false" />
+            <input id="playground-go-import-path" v-model="goImportPath" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!!error" spellcheck="false" />
             <label class="field-label" for="playground-go-package">{{ copy.goPackage }}</label>
-            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="loading || !ready" spellcheck="false" />
+            <input id="playground-go-package" v-model="goPackage" type="text" :disabled="!ready" :aria-describedby="error ? 'playground-generation-error' : undefined" :aria-invalid="!!error" spellcheck="false" />
           </template>
-          <label><input v-model="serverAddon" type="checkbox" :disabled="loading || !ready" /> {{ copy.serverAddon }}</label>
-          <label><input v-model="metadataAddon" type="checkbox" :disabled="loading || !ready" /> {{ copy.metadataAddon }}</label>
+          <label><input v-model="serverAddon" type="checkbox" :disabled="!ready" /> {{ copy.serverAddon }}</label>
+          <label><input v-model="metadataAddon" type="checkbox" :disabled="!ready" /> {{ copy.metadataAddon }}</label>
           <p class="field-help">{{ copy.generationOnly }}</p>
+          <button v-if="loading" type="button" @click="startOver">{{ copy.change }}</button>
 
+          <template v-if="!loaded">
           <p class="field-label input-label">{{ copy.examples }}</p>
           <div class="example-list">
             <button
@@ -610,9 +607,10 @@ function toggleDirectory(path: string) {
             </span>
           </label>
           <p class="privacy-note">{{ copy.privacy }}</p>
+          </template>
         </div>
 
-        <template v-else>
+        <template v-if="loaded">
           <div class="tree-header">
             <div>
               <span class="field-label">{{ copy.generatedFiles }}</span>
@@ -642,7 +640,8 @@ function toggleDirectory(path: string) {
         <div v-else-if="error || (diagnostics && !loaded)" class="empty-code error-state" aria-live="polite">
           <span class="error-icon" aria-hidden="true">!</span>
           <strong>{{ copy.stopped }}</strong>
-          <pre>{{ error || diagnostics }}</pre>
+          <pre id="playground-generation-error">{{ error || diagnostics }}</pre>
+          <button v-if="source" type="button" @click="runGeneration(source, sourceLabel)">{{ lang === 'ko-KR' ? '다시 생성' : 'Retry generation' }}</button>
         </div>
         <template v-else-if="selectedArtifact">
           <header class="code-header">
@@ -661,7 +660,7 @@ function toggleDirectory(path: string) {
                 <Check v-if="copiedPath === selectedPath" :size="16" aria-hidden="true" />
                 <Copy v-else :size="16" aria-hidden="true" />
               </button>
-              <button class="download-all" type="button" :disabled="exporting" :aria-busy="exporting" @click="downloadAll">
+              <button class="download-all" type="button" :disabled="exporting || loading" :aria-busy="exporting" @click="downloadAll">
                 <FolderDown :size="16" aria-hidden="true" />
                 {{ exporting ? copy.exporting : copy.downloadAll }}
               </button>
@@ -687,7 +686,7 @@ function toggleDirectory(path: string) {
         </div>
       </section>
     </section>
-  </main>
+  </div>
 </template>
 
 <style scoped>
@@ -704,6 +703,7 @@ function toggleDirectory(path: string) {
 .playground-heading p { margin: 0; color: var(--vp-c-text-2); }
 .workbench { display: grid; height: min(680px, calc(100dvh - 220px)); max-height: calc(100dvh - 96px); grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); overflow: hidden; border: 1px solid var(--vp-c-divider); border-radius: 16px; background: var(--vp-c-bg); box-shadow: 0 22px 65px rgba(15, 23, 42, .08); }
 .source-panel { display: flex; min-height: 0; overflow: hidden; flex-direction: column; border-right: 1px solid var(--vp-c-divider); background: color-mix(in srgb, var(--vp-c-bg-soft) 70%, var(--vp-c-bg)); }
+.source-controls.compact { flex: 0 0 auto; max-height: 45%; padding: 16px; }
 .source-controls { overflow: auto; padding: 26px; }
 .field-label { display: block; margin-bottom: 8px; color: var(--vp-c-text-2); font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
 .input-label { margin-top: 24px; }

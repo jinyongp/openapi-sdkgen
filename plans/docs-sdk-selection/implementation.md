@@ -81,3 +81,22 @@ Go 근거로 재사용하지 않는다. 두 타깃의 공개 문서는 정식 �
 공개 측정 근거와 구현 지원 계약의 구분, 확장 YAML/Go API를 대조했다.
 존재하지 않는 공통 Sort 타입 표기를 실제 생성 모델의 Field/Direction 설명으로 수정했다.
 Go 선택 개방은 Playground와 legacy가 완성되는 W08에서 한다.
+
+## W07 — Playground 세션과 최신 실행
+
+원문·결과·옵션·인증을 앱 메모리 세션으로 분리했다. 상단 SDK 선택기만 남겼고 현재 SDK 옵션은
+결과 화면에서도 편집할 수 있다. 옵션은 SDK별 저장/URL 우선이며 빈 `with=`는 확장 없음이다.
+트리/선택 파일은 SDK별로 복원하되 실제 결과에 존재하는 경로만 선택한다. 옵션 연속 입력은
+즉시 이전 세대를 폐기하고 300ms 후 생성한다. 원문·원격 URL·인증은 저장/공유하지 않는다.
+fetch abort·Worker 종료·instance identity·success/catch/finally epoch·ZIP snapshot을 적용했다.
+
+검증: `build:docs`, `playground:verify`(실제 WASM 두 SDK/addon/ZIP), options/ZIP 계약 4건 통과.
+브라우저에서 실제 업로드 원문의 locale 전환, 응답을 지연한 Worker의 TS→Go→TS,
+이전 Worker error, abort를 무시한 늦은 URL 응답, ZIP 시작 직후 SDK 변경을 재현했다.
+원문 유지·최종 SDK 결과·stale 결과/오류/loading/다운로드 폐기를 확인했다.
+인증은 locale 변경 중 유지되고 Playground를 떠나 재진입하면 지워지는 것을 실제 UI로 확인했다.
+중간 preview는 재빌드 후 옛 asset 캐시로 404가 발생해 관리 preview를 재시작하고 다시 확인했다.
+리뷰: SSR/session 경계, 파일·fetch·예제 입력, 안전 옵션, worker 오류/취소, locale remount,
+다운로드/복사·tree 호출자와 인증 삭제를 확인했다. 초기 옵션 watcher 중복 실행, source가 없는
+느린 fetch의 SDK 전환 취소, 저장 함수 SDK 인자 누락을 고치고 재검증했다.
+최종 4 scope 공개 상태와 모바일/키보드 전체 점검은 W08/W09/W10에서 수행한다.

@@ -37,7 +37,7 @@ let generatorWorker: Worker | undefined;
 let nextRequestID = 0;
 const pendingGenerations = new Map<number, PendingGeneration>();
 
-function rejectPending(error: Error) {
+function rejectPending(error: Error): void {
   pendingGenerations.forEach(({ reject }) => reject(error));
   pendingGenerations.clear();
   generatorWorker?.terminate();
@@ -47,9 +47,11 @@ function rejectPending(error: Error) {
 function worker(): Worker {
   if (generatorWorker) return generatorWorker;
 
-  generatorWorker = new Worker(`${import.meta.env.BASE_URL}playground/generator-worker.js`);
-  generatorWorker.addEventListener("message", (event: MessageEvent<GenerationResponse>) => {
-    const pending = pendingGenerations.get(event.data.id);
+  const instance: Worker = new Worker(`${import.meta.env.BASE_URL}playground/generator-worker.js`);
+  generatorWorker = instance;
+  instance.addEventListener("message", (event: MessageEvent<GenerationResponse>) => {
+    if (generatorWorker !== instance) return;
+    const pending: PendingGeneration | undefined = pendingGenerations.get(event.data.id);
     if (!pending) return;
     pendingGenerations.delete(event.data.id);
     if (event.data.error) {
@@ -58,10 +60,11 @@ function worker(): Worker {
     }
     pending.resolve(event.data.result ?? {});
   });
-  generatorWorker.addEventListener("error", () => {
+  instance.addEventListener("error", (): void => {
+    if (generatorWorker !== instance) return;
     rejectPending(new Error("Generator worker stopped unexpectedly."));
   });
-  return generatorWorker;
+  return instance;
 }
 
 export function generate(source: string, target: string, options: GenerationOptions = {}): Promise<GenerationResult> {
@@ -70,6 +73,8 @@ export function generate(source: string, target: string, options: GenerationOpti
     nextRequestID += 1;
     pendingGenerations.set(id, { resolve, reject });
     const request: GenerationRequest = { id, source, target, options };
-    worker().postMessage(request);
+    try { worker().postMessage(request); } catch (cause) { rejectPending(cause instanceof Error ? cause : new Error(String(cause))); }
   });
 }
+
+export function cancelGeneration(): void { rejectPending(new Error("Generation canceled.")); }

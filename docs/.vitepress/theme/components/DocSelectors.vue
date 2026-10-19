@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, watch, type ComputedRef } from "vue";
 import { useRoute, useRouter } from "vitepress";
+import { invalidateSession, playgroundSession } from "../playground/session";
 import { publishedTargets } from "../../docs-catalog.mjs";
 import { contextDestination, isSDKTarget, parseDocContext, withDocsBase, writeSDKPreference, type DocContext, type DisplayLocale, type SDKTarget } from "../../doc-context";
 
@@ -19,10 +20,11 @@ function remember(sdk: SDKTarget): void {
 async function navigate(sdk: SDKTarget | null, locale: DisplayLocale): Promise<void> {
   const current: DocContext = context.value;
   if (sdk) remember(sdk);
+  if (current.topic === "playground" && sdk !== current.sdk) { invalidateSession(); playgroundSession.artifacts.value = []; }
   const destination: string = sdk ? contextDestination(current, sdk, locale).path : locale === "ko" ? "/ko/" : "/";
   const query: URLSearchParams = new URLSearchParams(current.topic === "playground" ? window.location.search : "");
   query.delete("target");
-  if (sdk === "typescript") { query.delete("goImportPath"); query.delete("goPackage"); }
+  if (sdk === "typescript") { query.delete("go-import-path"); query.delete("go-package"); }
   const suffix: string = query.size ? `?${query.toString()}` : "";
   await router.go(`${withDocsBase(destination)}${suffix}`);
   await nextTick();
