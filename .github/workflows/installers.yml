@@ -20,6 +20,11 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
+      - name: Set up GNU Bash on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install bash
+          echo "$(brew --prefix bash)/bin" >> "$GITHUB_PATH"
       - run: bash scripts/install/test.sh
 
   windows:

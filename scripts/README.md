@@ -49,7 +49,9 @@ to distinguish generator options from the check script's arguments.
 commands report the essential result on stderr. JSON and exported data use
 stdout. Known secret environment values and credential-shaped diagnostics are
 redacted before storage or display. Failed stages report the cause and their protected log directory under
-`.tmp/runs`. Scripts need Bash and Python 3 for diagnostic redaction; TypeScript
+`.tmp/runs`. Project scripts need Bash 4.4+ and Python 3 for diagnostic redaction;
+macOS CI selects Homebrew's GNU Bash before running these scripts. The public
+`install.sh` uses POSIX `sh`. TypeScript
 commands also need the project's Node version and Corepack.
 Reports name their output paths. Local logs remain under `.tmp/runs` until the
 owner removes them; CI uploads failure diagnostics with seven-day retention.

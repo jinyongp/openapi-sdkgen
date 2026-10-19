@@ -299,6 +299,8 @@ jobs:
         run: |
           set -euo pipefail
           brew update
+          brew install bash
+          export PATH="$(brew --prefix bash)/bin:$PATH"
           brew install jinyongp/tap/openapi-sdkgen
           bash scripts/release/smoke-go.sh native "$(command -v openapi-sdkgen)" "$RELEASE_VERSION"
 
