@@ -199,6 +199,9 @@ exec = ['bash', 'scripts/release/test.sh']
 [commands."build:install"]
 exec = ['bash', 'scripts/install/build.sh']
 
+[commands."verify:install"]
+exec = ['bash', 'scripts/install/verify-site.sh']
+
 [commands."test:install"]
 exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/install/test.sh']
 

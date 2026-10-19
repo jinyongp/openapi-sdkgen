@@ -23,7 +23,7 @@ TypeScript verification implementations stay with the code they exercise.
 | `examples` | `todo:examples`, `advanced:examples`, `capabilities:examples` |
 | `release` | `check:release`, `cross-build:release`, `test:release`, `publish:release` |
 | `npm` | `source-check:npm` |
-| `install` | `build:install VERSION OUTPUT`, `test:install` |
+| `install` | `build:install VERSION OUTPUT`, `test:install`, `verify:install` |
 | `docs` | `validate:docs`, `build:docs`, `dev:docs` |
 
 Use `devtools command list` for the full command list. TypeScript runtime checks,
@@ -129,7 +129,11 @@ asset retries reuse the original scripts and verify the complete checksum file.
 The installers default to that embedded version; explicit version arguments
 select another release. Downloads always use that release's GitHub asset URLs.
 They verify the archive checksum before replacing an executable, stage beside
-the destination, and leave PATH configuration to the user.
+the destination, and leave PATH configuration to the user. Progress identifies
+the version, platform, destination and current step. Completion prints an
+executable verification command and, when needed, a safely quoted command to
+prepend the directory to PATH. Existing commands taking precedence are identified.
+PowerShell preference changes are local to the installer, including `irm | iex`.
 
 Ordinary CI requires installer fixtures on Linux, macOS and Windows. The release
 workflow additionally executes the published installers and native commands on
@@ -138,7 +142,12 @@ and runs the existing Go consumer. `releaseway/actions/distribute` merges the
 exact release's digest-verified scripts with the documentation build; the existing
 Pages workflow deploys the complete site. The source templates are not copied
 directly to the public site. Prereleases retain their GitHub script assets and do
-not replace the stable site's installers.
+not replace the stable site's installers. After deployment,
+`scripts/install/verify-site.sh` compares the actual served bytes against the
+hashes recorded from the merged artifact. Six bounded attempts allow for Pages
+propagation; a mismatch fails verification without rolling back the live site.
+For a read-only recheck, use `devtools run verify:install` with `PAGE_URL`,
+`SHELL_SHA` and `POWERSHELL_SHA` from the matching release artifact.
 
 Before publication, compare the public CLI help and generated exports with the
 English and Korean guides and references. Confirm that released features are
