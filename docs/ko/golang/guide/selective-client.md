@@ -47,7 +47,7 @@ TOML의 이름 있는 클라이언트는 독립 진입 패키지를 가집니다
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server \
+  --output ./internal/api --with server \
   --operation getTodo
 ```
 

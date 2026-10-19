@@ -106,6 +106,7 @@ func applyGenerateProjectConfig(
 			*values.goPackage = *config.Golang.Package
 		}
 		if config.Golang.ImportPath != nil && !visited["go-import-path"] {
+			values.goImportPathExplicit = true
 			if values.goImportPath == nil {
 				values.goImportPath = new(string)
 			}

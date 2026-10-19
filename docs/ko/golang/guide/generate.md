@@ -8,17 +8,23 @@
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server
+  --output ./internal/api --with server
 ```
 
 출력에는 작업별 모델·클라이언트·공통 HTTP/스키마 소스와 요청한 확장이 포함됩니다.
 `go.mod`와 `go.sum`은 사용자 모듈이 관리합니다. 생성된 소스는 표준 라이브러리만 사용합니다.
 
+import 경로는 출력 위치에서 위로 올라가며 찾은 가장 가까운 `go.mod`의 `module` 값과
+모듈 안의 출력 상대 경로로 정합니다. 중첩 모듈이 있으면 그 모듈을 기준으로 합니다.
+별도 모듈로 배포할 소스를 미리 생성하는 경우처럼 경로를 직접 정해야 할 때는
+`--go-import-path` 또는 `[golang].import_path`를 지정하세요. CLI 옵션이 설정 파일보다 우선합니다.
+모듈을 찾지 못하면 명시적인 경로를 요구하며, `go.mod`를 만들거나 수정하지 않습니다.
+
 ## 기존 SDK 재생성
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --incremental
+  --output ./internal/api --with server --incremental
 ```
 
 <!--@include: ../../_shared/ko/managed-output.md -->
@@ -27,13 +33,16 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --check
+  --output ./internal/api --with server --check
 go test ./...
 ```
 
 `--check`는 소스를 쓰지 않습니다. 출력 디렉터리를 지정하면 경로·내용·생성 조건·매니페스트의
 차이를 검사하고, 생략하면 생성 가능 여부만 확인합니다. `--check`와 `--incremental`은 함께
 쓸 수 없습니다. 성공하면 0, 실패하면 0이 아닌 종료 코드를 반환합니다. Go 컴파일이나 API 호출은 하지 않습니다.
+
+`--output` 없이 `--check`만 실행하려면 기준 위치가 없으므로
+`--go-import-path` 또는 `[golang].import_path`를 지정해야 합니다.
 
 ## 설정 파일
 
@@ -44,7 +53,6 @@ output = "./internal/api"
 addons = ["server"]
 
 [golang]
-import_path = "example.com/consumer/internal/api"
 package = "api"
 ```
 

@@ -8,17 +8,24 @@ which includes a webhook and needs `--with server`. Omit the addon for contracts
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server
+  --output ./internal/api --with server
 ```
 
 The output includes operation models, clients, shared HTTP/schema source and the requested addons.
 Your module owns `go.mod` and `go.sum`. Generated source uses only the standard library.
 
+The import path combines the nearest output ancestor's `go.mod` module path with
+the output directory relative to that module. Nested modules take precedence.
+To generate source for a separate module before it exists, or otherwise override
+that path, set `--go-import-path` or `[golang].import_path`. The CLI flag takes
+precedence over configuration. If no module is found, an explicit path is required.
+The CLI does not create or modify `go.mod`.
+
 ## Regenerate an existing SDK
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --incremental
+  --output ./internal/api --with server --incremental
 ```
 
 <!--@include: ../../_shared/en/managed-output.md -->
@@ -27,7 +34,7 @@ openapi-sdkgen generate --input ./openapi.json --target golang \
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server --check
+  --output ./internal/api --with server --check
 go test ./...
 ```
 
@@ -35,6 +42,9 @@ go test ./...
 fingerprints and the manifest. Without output it only verifies that generation succeeds.
 `--check` and `--incremental` are mutually exclusive. A successful check exits zero; failures exit nonzero.
 It does not compile Go or contact your API.
+
+A `--check` run without `--output` has no destination for inference; supply
+`--go-import-path` or `[golang].import_path` in that case.
 
 ## Configuration
 
@@ -45,7 +55,6 @@ output = "./internal/api"
 addons = ["server"]
 
 [golang]
-import_path = "example.com/consumer/internal/api"
 package = "api"
 ```
 

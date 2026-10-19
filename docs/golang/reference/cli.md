@@ -95,7 +95,7 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 | `--config <path>` | Load repeated generation settings from one explicit TOML file; CLI flags override matching config values |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, or 3.2.x JSON/YAML source: local path, `file://` URL, HTTP(S) URL, or `-` for stdin |
 | `--target golang` | Generate Go source |
-| `--go-import-path <path>` | Full generated Go package import path; required for Go |
+| `--go-import-path <path>` | Override the Go import path inferred from the output module |
 | `--go-package <name>` | Go root package name; default `api` |
 | `--output <directory>` | Generated directory; with `--check`, verify an existing managed output |
 | `--check` | Check whether SDK generation can succeed; with `--output`, also check that existing generated files are up to date. Existing files stay unchanged |
@@ -109,6 +109,12 @@ Normal generation also requires `--output`; check mode makes `--output` optional
 
 Choose either `--check` or `--incremental` for a run. `--output` expects a
 directory path; standard output is not a supported generation destination.
+
+For Go, the CLI derives the import path from the nearest `go.mod` above the
+output and its module-relative output path. Explicit `--go-import-path` takes
+precedence over `[golang].import_path`; discovery runs only when both are omitted.
+Supply an explicit path when no module exists or when checking without `--output`.
+Explicit empty values are invalid. Module files are never modified.
 
 ## Project configuration
 

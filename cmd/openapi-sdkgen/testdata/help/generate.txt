@@ -19,7 +19,7 @@ Generation:
   --typecheck                     Remove @ts-nocheck for your compiler; does not run tsc
                                   (default false)
   --go-package <name>             Go root package name (default api)
-  --go-import-path <path>         Go SDK import root; required for golang
+  --go-import-path <path>         Go SDK import root; defaults to the output module path
   --with <addon>                  Add generated artifacts (available: metadata, server)
                                   (repeatable)
   --operation <id>                Generate an exact OpenAPI operationId; combine with

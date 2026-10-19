@@ -10,7 +10,8 @@
 
 ## import나 빌드가 실패할 때
 
-`--go-import-path`가 `go.mod`의 모듈 이름과 출력 디렉터리에 맞는지 확인하세요.
+출력 위치에서 가장 가까운 `go.mod`를 확인하세요. `--go-import-path`를 직접 지정했다면
+대상 모듈 이름과 출력 디렉터리에 맞는지 확인하세요.
 `--check`는 생성 결과를 검사하므로, Go 빌드는 `go test ./...`로 따로 확인합니다.
 전체 모듈 설정은 [Todo 예제 ZIP](/downloads/golang-todo-app.zip)을 참고하세요.
 

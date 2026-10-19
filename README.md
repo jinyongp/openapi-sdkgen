@@ -56,13 +56,12 @@ Generate inside your Go module:
 openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target golang \
-  --go-import-path example.com/consumer/internal/api \
   --output ./internal/api \
   --incremental
 ```
 
-Match `--go-import-path` to your module and output directory. Import the generated
-package and build it with Go 1.27+.
+The CLI derives the import path from the output module's `go.mod`.
+Import the generated package and build it with Go 1.27+.
 
 [Getting started](https://jinyongp.dev/openapi-sdkgen/golang/guide/getting-started) ·
 [Download the Todo application](https://jinyongp.dev/openapi-sdkgen/downloads/golang-todo-app.zip)

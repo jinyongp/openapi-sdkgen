@@ -96,7 +96,7 @@ openapi-sdkgen generate [options]
 | `--config <path>` | 반복 생성 설정을 명시적인 TOML 파일 하나에서 읽음. 같은 설정의 CLI 옵션이 우선 |
 | `--input <source>` | OpenAPI 3.0.x, 3.1.x, 3.2.x JSON/YAML 입력. 로컬 경로, `file://` URL, HTTP(S) URL, 표준 입력을 뜻하는 `-` |
 | `--target golang` | Go 소스 생성 |
-| `--go-import-path <path>` | 생성할 Go 패키지의 전체 경로. Go 타깃에서 필수 |
+| `--go-import-path <path>` | 출력 위치의 모듈에서 자동으로 정하는 Go import 경로를 재정의 |
 | `--go-package <name>` | Go 루트 패키지 이름. 기본값 `api` |
 | `--output <directory>` | 생성 디렉터리. `--check`와 함께 쓰면 기존 생성 파일 검증 |
 | `--check` | SDK 생성 가능 여부 확인. `--output`을 지정하면 기존 생성 파일이 최신인지도 비교. 기존 파일은 유지 |
@@ -110,6 +110,12 @@ openapi-sdkgen generate [options]
 
 한 번의 실행에서는 `--check`와 `--incremental` 중 하나를 선택합니다.
 `--output`에는 생성 파일을 저장할 디렉터리를 지정합니다.
+
+Go import 경로는 출력 위치에서 가장 가까운 `go.mod`의 `module` 값과
+모듈 내 출력 상대 경로를 합쳐 정합니다. `--go-import-path`가 가장 우선하고,
+설정 파일의 `[golang].import_path`가 그다음입니다. 둘 다 생략했을 때만 모듈을 찾습니다.
+`go.mod`가 없거나 `--output` 없는 검사라면 경로를 직접 지정해야 합니다.
+빈 값을 명시하면 오류이며, `go.mod`는 변경하지 않습니다.
 
 <span id="project-configuration"></span>
 

@@ -49,7 +49,7 @@ compilation separately, using the same input and selection for each comparison.
 
 ```sh
 openapi-sdkgen generate --input ./openapi.json --target golang \
-  --go-import-path example.com/consumer/internal/api --output ./internal/api --with server \
+  --output ./internal/api --with server \
   --operation getTodo
 ```
 

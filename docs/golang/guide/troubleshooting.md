@@ -10,7 +10,8 @@ For output conflicts, see [regeneration](./generate.md).
 
 ## Imports or builds fail
 
-Match `--go-import-path` to your `go.mod` module name and output directory.
+Check the `go.mod` nearest the output directory. If you supplied `--go-import-path`,
+match it to the destination module and output directory.
 `--check` verifies generation; run `go test ./...` to check the Go build separately.
 [Download the Todo example](/downloads/golang-todo-app.zip) for a complete module setup.
 

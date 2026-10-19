@@ -8,9 +8,6 @@ source = "./openapi.yaml"
 target = "golang"
 output = "./internal/api"
 
-[golang]
-import_path = "example.com/consumer/internal/api"
-
 [clients.orders.selection]
 operations = ["listOrders", "createOrder"]
 

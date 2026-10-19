@@ -27,19 +27,18 @@ npm으로 설치하려면 `npm install -g openapi-sdkgen`을 사용하세요.
 
 기존 Go 모듈에서 [Todo 명세](/examples/golang-todo.json)를 `openapi.json`으로 저장합니다.
 이 명세에는 웹훅이 있어 `--with server`를 함께 지정합니다.
-아래는 모듈 이름이 `example.com/consumer`인 경우입니다.
 
 ```sh
 openapi-sdkgen generate \
   --input ./openapi.json \
   --target golang \
-  --go-import-path example.com/consumer/internal/api \
   --output ./internal/api \
   --with server \
   --incremental
 ```
 
-`--go-import-path`는 모듈 이름과 출력 디렉터리에 맞춰 바꾸세요.
+출력 위치에서 가장 가까운 `go.mod`를 찾아 import 경로를 자동으로 정합니다.
+예를 들어 모듈이 `example.com/consumer`라면 `example.com/consumer/internal/api`가 됩니다.
 명세가 바뀌면 같은 명령으로 갱신할 수 있습니다.
 
 ## 애플리케이션에서 호출 {#call}

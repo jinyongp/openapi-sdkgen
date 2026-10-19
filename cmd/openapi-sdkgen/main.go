@@ -102,6 +102,7 @@ type generateFlagValues struct {
 	goPackage              *string
 	goImportPath           *string
 	goExplicit             bool
+	goImportPathExplicit   bool
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -315,6 +316,11 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 	if target.Name() == "golang" || values.goExplicit || visited["go-package"] || visited["go-import-path"] {
 		options.Golang = &generator.GoOptions{Package: *values.goPackage, ImportPath: *values.goImportPath}
 		if target.Name() == "golang" {
+			importPath, err := resolveGoImportPath(*values.output, options.Golang.ImportPath, values.goImportPathExplicit || visited["go-import-path"])
+			if err != nil {
+				return generateUsageError(err.Error())
+			}
+			options.Golang.ImportPath = importPath
 			canonical, err := generator.CanonicalGoOptions(options.Golang)
 			if err != nil {
 				return generateUsageError(err.Error())
@@ -497,7 +503,7 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 		Name: "go-package", Metavariable: "name", Summary: "Go root package name (default api)",
 	}, "api")
 	values.goImportPath = flags.String(generationGroup, helpOption{
-		Name: "go-import-path", Metavariable: "path", Summary: "Go SDK import root; required for golang",
+		Name: "go-import-path", Metavariable: "path", Summary: "Go SDK import root; defaults to the output module path",
 	}, "")
 	flags.Var(generationGroup, helpOption{
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",

@@ -28,20 +28,19 @@ For npm, use `npm install -g openapi-sdkgen`. You can also download a
 
 In your Go module, save the [Todo contract](/examples/golang-todo.json) as `openapi.json`.
 The contract includes a webhook, so enable `--with server`.
-This command assumes the module is named `example.com/consumer`:
 
 ```sh
 openapi-sdkgen generate \
   --input ./openapi.json \
   --target golang \
-  --go-import-path example.com/consumer/internal/api \
   --output ./internal/api \
   --with server \
   --incremental
 ```
 
-Match `--go-import-path` to your module and output directory. Run the same command
-to update the SDK when the contract changes.
+The CLI finds the nearest `go.mod` above the output and derives the import path.
+For module `example.com/consumer`, it is `example.com/consumer/internal/api`.
+Run the same command to update the SDK when the contract changes.
 
 ## Call the API {#call}
 
