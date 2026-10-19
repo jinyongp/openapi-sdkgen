@@ -102,6 +102,7 @@ const api = createClient({
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 console.log(tasks);
 const health = await api.$routes["GET /health"]();
+console.log(health);
 ```
 
 Example server responses: `tasks` is `["Write documentation", "Ship the SDK"]`, and `GET /health` returns the string `"ok"`. The Task contract returns a string array directly, unlike the Todo contract's `{ items: [...] }` wrapper.
@@ -145,6 +146,7 @@ const api = createClient({
   operations: await loadOperations([taskOperations, routes["GET /health"]]),
 });
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
+console.log(tasks);
 ```
 
 `tasks` is the same string array as in the first call; composing feature selections does not wrap or transform the API response.

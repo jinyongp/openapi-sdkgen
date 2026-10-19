@@ -100,6 +100,7 @@ const api = createClient({
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
 console.log(tasks);
 const health = await api.$routes["GET /health"]();
+console.log(health);
 ```
 
 서버 응답 예시로 `tasks`는 `["Write documentation", "Ship the SDK"]`, `GET /health`의 반환값은 문자열 `"ok"`입니다. Task 명세는 Todo 명세의 `{ items: [...] }`와 달리 문자열 배열을 바로 반환합니다.
@@ -143,6 +144,7 @@ const api = createClient({
   operations: await loadOperations([taskOperations, routes["GET /health"]]),
 });
 const tasks = await api.$operations.listTasks({ query: { limit: 20 } });
+console.log(tasks);
 ```
 
 `tasks`에는 첫 호출과 같은 문자열 배열이 반환됩니다. 기능별 선택 목록을 합쳐도 API 응답 형태는 바뀌지 않습니다.
