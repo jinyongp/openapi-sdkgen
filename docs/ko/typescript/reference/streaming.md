@@ -51,6 +51,8 @@ const stream = api.$operations.watchTodos.stream({
 });
 ```
 
+예를 들어 `watchTodos` 응답이 NDJSON `{"todoID":"todo-1","completed":true}`를 보내면 `for await (const event of stream)`에서 해당 객체를 읽습니다. 프레임과 출력은 [요청·응답 예시](../guide/files-links-streams.md)에서 확인하세요.
+
 반환 타입은 `OperationStream<T>`입니다.
 
 ### `OperationStream`
@@ -78,6 +80,8 @@ metadata.contentType;
 metadata.request;
 ```
 
+정상 NDJSON 응답의 예로 `metadata.status`는 `200`, `metadata.contentType`은 `"application/x-ndjson"`입니다. 메타데이터를 읽어도 이벤트 항목을 소비하지 않습니다.
+
 원본 Fetch 응답 본문을 소비하지 않은 상태로 사용해야 한다면 별도의
 `.raw()` 요청을 사용합니다.
 
@@ -91,6 +95,8 @@ OpenAPI 3.2 요청 본문에 `itemSchema`가 있으면 `StreamSource<T>`를
 ```ts
 type StreamSource<T> = AsyncIterable<T> | ReadableStream<T>;
 ```
+
+NDJSON 소스가 `{ title: "Write documentation" }`를 내보내면 하나의 요청 본문에 JSON 한 줄을 씁니다. 항목마다 요청을 보내는 방식이 아닙니다. [요청 명세와 전송 예시](../guide/files-links-streams.md#send-streaming-request-bodies)를 참고하세요.
 
 미디어 타입 객체에 `schema`만 있으면 전체 데이터 값을
 전달합니다. `schema`와 `itemSchema`가 함께 있으면 전체 값과
@@ -174,6 +180,8 @@ const jsonSSEAdapter: StreamAdapter<ServerSentEvent, unknown> = {
   },
 };
 ```
+
+항목 `{ text: "Hello" }`를 `encode`에 넣으면 `{ data: '{"text":"Hello"}' }`가 나옵니다. SSE 프레이밍은 `data: {"text":"Hello"}` 다음에 빈 줄을 붙여 전송합니다. `decode`는 그 프레임을 다시 `{ text: "Hello" }`로 바꿉니다.
 
 이 어댑터를 사용하면 SDK가 JSON 데이터를 직접 반환합니다. 표준 SSE 이벤트 스키마는
 프레임 객체를 설명합니다. 이벤트 출력을 유지하면서 내부 JSON을 제한하려면

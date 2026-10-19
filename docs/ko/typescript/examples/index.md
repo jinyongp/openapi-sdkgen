@@ -14,6 +14,11 @@
 항목 생성과 목록 조회를 실제 로컬 HTTP 서버에 요청합니다.
 [예제 ZIP](/downloads/typescript-todo-app.zip) · [사용 흐름](../guide/getting-started.md)
 
+## 파일을 서버로 가져오기
+
+클라이언트의 NDJSON 파일을 별도 HTTP 서버에 전송하고 처리 결과를 받습니다.
+[예제 ZIP](/downloads/typescript-request-streaming-app.zip) · [주요 코드](../guide/files-links-streams.md#send-streaming-request-bodies)
+
 ## AI 응답 스트리밍
 
 SSE 응답을 생성된 클라이언트로 읽습니다. 외부 모델 없이 실행할 수 있습니다.

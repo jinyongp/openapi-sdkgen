@@ -171,6 +171,16 @@ try {
       },
       ["Capability API listening", "Capability inbound host listening"],
     ],
+    [
+      "typescript-request-streaming-app",
+      "api",
+      [],
+      {
+        IMPORT_API_PORT: "18975",
+        IMPORT_API_BASE_URL: "http://127.0.0.1:18975",
+      },
+      ["Import API listening"],
+    ],
     ["typescript-ai-streaming-app", "api", [], {}, []],
     ["typescript-webhook-app", "api", ["--with", "server"], {}, []],
   ]) {
@@ -204,7 +214,9 @@ try {
         const data = JSON.parse(result);
         assert.equal(data.created.title, "Generate and use this SDK");
         assert.deepEqual(data.listed.items, [data.created]);
-      } else if (name === "typescript-ai-streaming-app")
+      } else if (name === "typescript-request-streaming-app")
+        assert.equal(result, "Imported 2 todos");
+      else if (name === "typescript-ai-streaming-app")
         assert.equal(result, "Hello\nworld");
       else if (name === "typescript-webhook-app")
         assert.deepEqual(JSON.parse(result.split("\n").slice(1).join("\n")), {

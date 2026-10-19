@@ -10,6 +10,11 @@ run instructions. The documentation shows the key code and usage conditions.
 Create and list items against a local HTTP server.
 [Download ZIP](/downloads/typescript-todo-app.zip) · [Usage overview](../guide/getting-started.md)
 
+## Stream a file import
+
+Upload a client-side NDJSON file to a separate HTTP server and read its processing result.
+[Download ZIP](/downloads/typescript-request-streaming-app.zip) · [Key code](../guide/files-links-streams.md#send-streaming-request-bodies)
+
 ## AI streaming
 
 Read SSE through a generated client, without an external model.

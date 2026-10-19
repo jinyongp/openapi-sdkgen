@@ -163,7 +163,7 @@ builds run the same check, so the documentation CI rejects unformatted code exam
 
 `devtools run verify:docs` follows `build:docs` and checks TypeScript/Vue setup source, rendered SDK scopes,
 historical anchors, search indexes and documentation tool contracts. It unpacks all
-seven example ZIPs from the built site, generates and compiles their SDKs, and runs
+eight example ZIPs from the built site, generates and compiles their SDKs, and runs
 the consumers with local servers or local Fetch responses. Go consumers use empty
 module caches with the network disabled. Install the existing verification
 tooling first with `devtools run ts-install:dev`; this requirement is for docs development,

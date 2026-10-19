@@ -47,6 +47,8 @@ const stream = api.$operations.watchTodos.stream({
 });
 ```
 
+For example, a `watchTodos` response carrying NDJSON `{"todoID":"todo-1","completed":true}` yields that object to `for await (const event of stream)`. See [request and response wire examples](../guide/files-links-streams.md) for framing and output.
+
 The return type is `OperationStream<T>`.
 
 ### OperationStream
@@ -74,6 +76,8 @@ metadata.contentType;
 metadata.request;
 ```
 
+For a successful NDJSON response, for example, `metadata.status` is `200` and `metadata.contentType` is `"application/x-ndjson"`. This is metadata, not a consumed event.
+
 Use a separate `.raw()` request when the application needs the original,
 unconsumed Fetch response body.
 
@@ -84,6 +88,8 @@ OpenAPI 3.2 request bodies with `itemSchema` accept `StreamSource<T>`:
 ```ts
 type StreamSource<T> = AsyncIterable<T> | ReadableStream<T>;
 ```
+
+An NDJSON source yielding `{ title: "Write documentation" }` writes one JSON line into one request body. It does not issue one request per item. See the [complete request contract and wire example](../guide/files-links-streams.md#send-streaming-request-bodies).
 
 A Media Type Object with only `schema` accepts the complete application value.
 When both `schema` and `itemSchema` are present, the generated request type
@@ -165,6 +171,8 @@ const jsonSSEAdapter: StreamAdapter<ServerSentEvent, unknown> = {
   },
 };
 ```
+
+For the example item `{ text: "Hello" }`, `encode` yields `{ data: '{"text":"Hello"}' }`; SSE framing then writes `data: {"text":"Hello"}` followed by a blank line. `decode` maps that frame back to `{ text: "Hello" }`.
 
 This compatibility adapter changes the SDK application value. A normative SSE
 Event schema describes the frame object; use `contentSchema` on `data` to
