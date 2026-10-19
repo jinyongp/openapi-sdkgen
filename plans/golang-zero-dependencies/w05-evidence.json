@@ -1,0 +1,435 @@
+{
+  "unit": "W05",
+  "scope": "Owned Boolean matcher; generated SDK integration pending W07. Full Test262 JS/API execution not claimed.",
+  "tests": [
+    "existing 42 pattern/input Node oracle",
+    "pinned Test262 95 independent Boolean contracts (98 assertions, 19 files)",
+    "61 patterns x 29 inputs matrix; one narrow normative Kelvin override",
+    "12 x 12 x 6 patterns x 31 inputs composed Node oracle (invalid patterns compared as invalid)",
+    "100000 noncapture and 20000 nested lookahead explicit stack execution",
+    "concurrent immutable program reuse, 1MiB simple repeat",
+    "budget/cancellation errors, post-failure reuse and scratch reference/growth release",
+    "final race pass",
+    "FuzzMatcher: 2262657 executions, 30 seconds, no failures"
+  ],
+  "sourceSha256": {
+    "internal/goruntime/ecmaregexp/program.go": "581a320bb27ef6d960a76fd932ccdd8e68aaa4de629836979fb9cc4974dd9ed9",
+    "internal/goruntime/ecmaregexp/classes.go": "93fcc993c7fcde17f8b6e5d764f624c3634ebeee8ac257a9bd83b7253c638c36",
+    "internal/goruntime/ecmaregexp/compile.go": "7d9e287e9aa6dcd621660a4dc3b1baabc4242a463290564749ebcde753d7b4ba",
+    "internal/goruntime/ecmaregexp/scratch.go": "40ebee4437e8ace4131e7f91e8998e4489f672a7a9eb8f1bc1ab1ffe7133c0fb",
+    "internal/goruntime/ecmaregexp/text.go": "a8aed9e11a2965c54475665663e1ab1d53e9561106e76328744f38d9ae09bce4",
+    "internal/goruntime/ecmaregexp/compile_test.go": "51c88dbb0ce83ed1da5f8ae1673243ef6acf176bdbc55b1ad1f9297337aeb235",
+    "internal/goruntime/ecmaregexp/match_test.go": "e87e441bf0310262b465df04307512092ef109449d137b2d591ab2bf05728ae8",
+    "internal/goruntime/ecmaregexp/match.go": "d409e6cf2f1d621b0f93b4b80fcb82fbc4da1d1635297f16f9a5634cf6298f3d"
+  },
+  "scratchDiagnostic": {
+    "scope": "Local engineering microbenchmark, five samples each, sequential before/after. Only warm single-thread short ASCII matching; no general SDK speed claim. Test-only additions after candidate measurement do not change matcher code.",
+    "command": "go test ./internal/goruntime/ecmaregexp -run ^$ -bench BenchmarkMatchASCII -benchmem -benchtime=100ms -count=5",
+    "before": "goos: linux\ngoarch: amd64\npkg: openapi-sdkgen/internal/goruntime/ecmaregexp\ncpu: AMD Ryzen 7 9800X3D 8-Core Processor           \nBenchmarkMatchASCII-16    \t   47108\t      2563 ns/op\t   13824 B/op\t       4 allocs/op\nBenchmarkMatchASCII-16    \t   45229\t      2549 ns/op\t   13824 B/op\t       4 allocs/op\nBenchmarkMatchASCII-16    \t   46965\t      2563 ns/op\t   13824 B/op\t       4 allocs/op\nBenchmarkMatchASCII-16    \t   45330\t      2619 ns/op\t   13824 B/op\t       4 allocs/op\nBenchmarkMatchASCII-16    \t   46740\t      2555 ns/op\t   13824 B/op\t       4 allocs/op\nPASS\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t0.604s\n",
+    "after": "goos: linux\ngoarch: amd64\npkg: openapi-sdkgen/internal/goruntime/ecmaregexp\ncpu: AMD Ryzen 7 9800X3D 8-Core Processor           \nBenchmarkMatchASCII-16    \t  809192\t       148.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkMatchASCII-16    \t  797178\t       149.8 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkMatchASCII-16    \t  808904\t       150.6 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkMatchASCII-16    \t  811381\t       152.9 ns/op\t       0 B/op\t       0 allocs/op\nBenchmarkMatchASCII-16    \t  792054\t       148.7 ns/op\t       0 B/op\t       0 allocs/op\nPASS\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t0.610s\n",
+    "beforeSource": {
+      "internal/goruntime/ecmaregexp/program.go": "581a320bb27ef6d960a76fd932ccdd8e68aaa4de629836979fb9cc4974dd9ed9",
+      "internal/goruntime/ecmaregexp/classes.go": "93fcc993c7fcde17f8b6e5d764f624c3634ebeee8ac257a9bd83b7253c638c36",
+      "internal/goruntime/ecmaregexp/compile.go": "7d9e287e9aa6dcd621660a4dc3b1baabc4242a463290564749ebcde753d7b4ba",
+      "internal/goruntime/ecmaregexp/text.go": "a8aed9e11a2965c54475665663e1ab1d53e9561106e76328744f38d9ae09bce4",
+      "internal/goruntime/ecmaregexp/compile_test.go": "51c88dbb0ce83ed1da5f8ae1673243ef6acf176bdbc55b1ad1f9297337aeb235",
+      "internal/goruntime/ecmaregexp/match_test.go": "71891934532e28757c86dbd57c0962682c6263686541aca4127a42611880b3de",
+      "internal/goruntime/ecmaregexp/match.go": "dab844b446243c94e5602bfd82651d84b0719981ea1997fb402af419a1f7f23d"
+    },
+    "beforeSourceArchive": "w05-pool-before-sources.tar.gz"
+  },
+  "oracleDiscrepancy": {
+    "normative": [
+      "https://tc39.es/ecma262/2026/multipage/text-processing.html#sec-runtime-semantics-canonicalize-ch",
+      "https://tc39.es/ecma262/2026/multipage/text-processing.html#sec-updatemodifiers"
+    ],
+    "node": [
+      {
+        "pattern": "(?i:K)",
+        "local": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:k)",
+        "local": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:\\bK\\b)",
+        "local": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:^K$)",
+        "local": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:[K])",
+        "local": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "K",
+            true
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            false
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:ſ)",
+        "local": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "s",
+            false
+          ],
+          [
+            "S",
+            false
+          ],
+          [
+            "ſ",
+            true
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "s",
+            true
+          ],
+          [
+            "S",
+            true
+          ],
+          [
+            "ſ",
+            true
+          ]
+        ]
+      },
+      {
+        "pattern": "(?i:s)",
+        "local": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "s",
+            true
+          ],
+          [
+            "S",
+            true
+          ],
+          [
+            "ſ",
+            true
+          ]
+        ],
+        "global": [
+          [
+            "k",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "K",
+            false
+          ],
+          [
+            "s",
+            true
+          ],
+          [
+            "S",
+            true
+          ],
+          [
+            "ſ",
+            true
+          ]
+        ]
+      }
+    ],
+    "description": "Node24.22 scoped literals Kelvin/long s disagree with Unicode simple folding and the old Go engine; local flags require u+i folding. Node issue66277 concerns related scoped flag state, not proof of the same root cause."
+  }
+}

@@ -1,7 +1,7 @@
 # Go 무의존성 구현 기록
 
 현재 실행: [계획](plan.md), [devtools ID](workstream.json).
-계획 단위별로 리뷰·재검증·커밋한다. W01 완료. W02 압축 경계 통합 검증과 독립적인 W03 Unicode 구현을 진행했다.
+계획 단위별로 리뷰·재검증·커밋한다. W01–W05를 구현·검증했고 URL·방출·의존 정리·출시 통합 검증을 이어간다.
 
 ## W01 — 기준과 적합성 입력
 
@@ -94,3 +94,29 @@ upstream JS를 실행한 적합성 통과로 표현하지 않는다. 추출은 �
 반복 property 자료의 저장 중복을 로컬 진단해 684,000 range를684개로 공유했다. 원시 1회×3표본은
 `w04-evidence.json`에 남겼으며 기준 source hash 미수집 등 한계를 명시했다. 전체 성능 판단은 W10이다.
 범위·실패·불변 자료·Unicode·생성 가능한 구조를 재검토했다. 매칭 실행과 SDK 연결은 W05/W07의 pending 작업이다.
+
+## W05 — bounded 자체 정규식 매처
+
+Program을 불변으로 공유하며 캡처·continuation·choice·undo journal은 호출별로 실행한다.
+UTF8/WTF8 byte cursor로 정방향/역방향을 읽고 lookbehind의 역순 concat, atomic lookaround,
+미참여 참조, 반복 캡처 초기화, greedy/lazy, 필수 빈 반복과 후속 backtrack을 구현했다.
+입력 전체를 rune 배열로 복사하지 않으며 단일 문자 반복은 compact retry를 쓴다.
+검색 전체에 1억 작업 budget과 1,024작업마다 context 확인을 적용한다.
+
+기존42개, 고정 Test262 assertion에서 유도한95개 boolean 계약, 61×29 경계 조합,
+12×12×6 pattern ×31 input의 보조 Node 비교가 통과했다. 마지막 집합은 잘못된 문법의
+거부도 비교한다. 100,000 괄호/20,000 assertion 중첩, 1MiB 반복, 동시 재사용, 취소·budget 후
+재사용, scratch 참조 해제와 race 통과. 30초 fuzz 2,262,657회 무실패.
+상위 Test262 JS 전체나 capture-array API 통과로 주장하지 않는다. 동적 원본/API 분류 잔여는 W07에서 보완한다.
+
+보조 oracle Node24.22에서 scoped Kelvin/long-s literal folding 차이를 발견했다.
+ECMA-2622026 Canonicalize/UpdateModifiers와 Unicode17 C/S folding, 기존 Go 엔진은 자체 결과와 일치한다.
+Kelvin matrix 기대값 두 개만 규격값으로 명시적으로 보정하고 독립 계약으로 보존했다.
+관련 Node issue66277과 같은 원인/수정이라고 단정하지 않는다. 재현·규격 링크는 w05-evidence.json.
+
+측정 중 기본 VM buffer4개가 escape해 짧은 ASCII 호출도 13,824B/4alloc을 쓰는 원인을 확인했다.
+최대32개 고정 scratch만 캐시하고 독점 대여, 반환 시 입력/Program/context와 확장 배열 참조를 지운다.
+동일 입력 전후5표본에서 warm ASCII는 0B/0alloc이었다. 원시 출력·정확한 전후 원본 해시/이전
+원본 archive를 보존했다. 짧은 단일 스레드 microbenchmark이며 SDK 전체 성능 개선으로 확대하지 않는다.
+의미·복원·캡처/역방향·수명·경쟁·오류 전파·자료 소유권을 리뷰하고 추가 회귀와 race를 재실행했다.
+제품 QuickJS 교체는 W07, 의존 모듈 제거는 W08의 pending 작업이다.

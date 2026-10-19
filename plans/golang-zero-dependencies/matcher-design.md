@@ -7,7 +7,7 @@ W04의 `Program`은 평평한 semantic instruction/edge/range 자료다. 캡처 
   고립 surrogate 및 인접 surrogate pair를 동일 의미로 읽는다. 기본 ASCII 경로에서 입력 전체를
   []rune로 복사하지 않는다. capture도 byte span으로 저장하며 참조는 code point별로 비교한다.
 - 명시적 task continuation, 대안 choice, capture undo journal을 쓴다. 호출별 상태이고 Program은 불변이다.
-  작은 고정 stack buffer를 사용하고 커질 때만 확장한다. 코드 노드가 공유돼도 실행 상태는 공유하지 않는다.
+  최대32개의 고정 크기 scratch를 독점 대여하고 커질 때만 확장한다. 반환 시 입력·프로그램·context 참조와 확장 buffer를 해제한다. 코드 노드가 공유돼도 실행 상태는 공유하지 않는다.
 - continuation은 arena의 immutable linked task다. choice가 parent head·arena/journal checkpoint·
   cursor/direction·재개 action을 저장한다. 재시도 때 checkpoint를 복구한다. 현재 head와 살아 있는
   choice checkpoint보다 뒤의 arena는 회수해 반복마다 task가 영구 누적되지 않게 한다.
@@ -19,7 +19,7 @@ W04의 `Program`은 평평한 semantic instruction/edge/range 자료다. 캡처 
   캡처를 복원한다. native recursion으로 nested assertion을 평가하지 않는다.
 - repeat는 매 회 자식 캡처 구간을 초기화한다. greedy/lazy 및 최소/최대, zero-progress 종료를
   continuation으로 표현한다. 최소 횟수의 빈 반복을 임의로 생략하지 않는다.
-  예: `(|a){2}\\1$`와 입력 `aa`는 마지막 반복의 대안으로 backtrack할 수 있어야 한다.
+  예: `(|a){2}\1$`와 입력 `aa`는 마지막 반복의 대안으로 backtrack할 수 있어야 한다.
 - 캡처 없는 단일 문자/class/dot repeat에는 compact retry action을 사용해 1MiB `a+`에
   문자당 choice를 보존하지 않는다. literal noncapture 단일-child wrapper는 투명하게 확인할 수 있다.
   복합/capture repeat를 같은 최적화로 바꾸지 않는다.
@@ -27,7 +27,7 @@ W04의 `Program`은 평평한 semantic instruction/edge/range 자료다. 캡처 
   1,024작업마다 context를 확인한다. 오류를 boolean 불일치로 바꾸지 않는다.
 - CharacterClass range는 compiler가 `u` 의미에 따라 folding/negation을 준비했다.
   IgnoreCase이면 input rune을 unicode17.Fold한 뒤 membership을 검사한다.
-  `\\W`는 folded word set의 complement이고 `\\P`의 u folding 순서와 구분한다.
+  `\W`는 folded word set의 complement이고 `\P`의 u folding 순서와 구분한다.
 - matcher 검증은 기존42개·독립 경계/캡처/취소/complexity·고정 Test262의 boolean 관련 사례·
   Node differential/fuzz·동시 공유 Program·ASCII/Unicode/큰 입력·메모리 수명으로 한다.
   JS 객체 API·다른 flags의 제외 사유와 동적 추출 pending을 덮어쓰지 않는다.
