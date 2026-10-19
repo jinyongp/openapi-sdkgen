@@ -34,16 +34,6 @@ The native executable needs no Go or Node.js to generate source. The npm launche
 
 <span id="install-the-generated-dependencies"></span>
 
-## Compile with the standard library
-
-The generated SDK uses only the Go standard library. No `go get` or SDK runtime
-installation is needed. URL normalization, Unicode handling and schema regular
-expressions are included as generated source. Your application can choose extra
-HTTP or media adapters without making them SDK requirements.
-
-Compile and run the example below in your Go module. For compression settings,
-see [security and transport](./transport.md).
-
 ## Run a first request against a local mock
 
 Save this as `main.go`. It owns a local server and closes it after one typed call.
