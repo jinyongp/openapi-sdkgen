@@ -222,37 +222,12 @@ func errorContractsDiagnostics(document *ir.Document) ([]aggregatedErrorContract
 	return result, bySchema, failures
 }
 
+func schemaReferences(schema map[string]any) []string {
+	return newExtensionPlanner().SchemaReferences(schema)
+}
+
 func reachableErrorComponentSchemas(document *ir.Document) map[string]bool {
-	result := make(map[string]bool)
-	var visitSchema func(map[string]any)
-	visitSchema = func(schema map[string]any) {
-		for _, name := range schemaReferences(schema) {
-			if result[name] {
-				continue
-			}
-			result[name] = true
-			visitSchema(document.ComponentSchemas[name])
-		}
-	}
-	for _, operation := range document.Operations {
-		if operation.Visibility == "hidden" {
-			continue
-		}
-		responses, err := operationResponses(document, operation)
-		if err != nil {
-			continue
-		}
-		for _, response := range responses {
-			if strings.HasPrefix(response.Status, "2") {
-				continue
-			}
-			for _, media := range response.Content {
-				schema, _ := media.Schema.(map[string]any)
-				visitSchema(schema)
-			}
-		}
-	}
-	return result
+	return newExtensionPlanner().ReachableErrorSchemas(document)
 }
 
 func containsErrorContract(contracts []errorContract, candidate errorContract) bool {
@@ -398,25 +373,6 @@ func responseSchemaReferences(response map[string]any) []string {
 		media, _ := value.(map[string]any)
 		schema, _ := media["schema"].(map[string]any)
 		result = append(result, schemaReferences(schema)...)
-	}
-	return result
-}
-
-func schemaReferences(schema map[string]any) []string {
-	var result []string
-	if reference, _ := schema["$ref"].(string); reference != "" {
-		name, err := componentSchemaReferenceName(reference)
-		if err != nil {
-			return nil
-		}
-		return []string{name}
-	}
-	for _, keyword := range []string{"oneOf", "anyOf", "allOf"} {
-		variants, _ := schema[keyword].([]any)
-		for _, value := range variants {
-			variant, _ := value.(map[string]any)
-			result = append(result, schemaReferences(variant)...)
-		}
 	}
 	return result
 }

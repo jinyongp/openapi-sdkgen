@@ -350,21 +350,7 @@ func multipartHasStructuredProperties(document *ir.Document, schema map[string]a
 }
 
 func resolveSchemaReference(document *ir.Document, schema map[string]any, resolving map[string]bool) map[string]any {
-	reference, _ := schema["$ref"].(string)
-	if reference == "" {
-		return schema
-	}
-	name, err := componentSchemaReferenceName(reference)
-	if err != nil || resolving[name] {
-		return schema
-	}
-	resolved, exists := document.ComponentSchemas[name]
-	if !exists {
-		return schema
-	}
-	resolving[name] = true
-	defer delete(resolving, name)
-	return resolveSchemaReference(document, resolved, resolving)
+	return newExtensionPlanner().ResolveSchema(document, schema, resolving)
 }
 
 func sortedAnyKeys(values map[string]any) []string {

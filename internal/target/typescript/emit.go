@@ -13,6 +13,7 @@ import (
 	"openapi-sdkgen/internal/compiler/naming"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
+	httpplan "openapi-sdkgen/internal/http/plan"
 )
 
 //go:embed runtime
@@ -1381,24 +1382,9 @@ func exactOperationCall(document *ir.Document, operation ir.Operation, inputSect
 	return "api.$routes[" + quoteTS(operationRouteKey(operation)) + "]" + callInput(operation, inputSections, false, operation.PathParameterOrder, pathBindings)
 }
 
-func resourcePathParts(path string) []string {
-	trimmed := strings.Trim(path, "/")
-	if trimmed == "" {
-		return nil
-	}
-	return strings.Split(trimmed, "/")
-}
+func resourcePathParts(path string) []string { return httpplan.ResourcePathParts(path) }
 
-func resourcePathPart(part string) (string, bool, bool) {
-	if !strings.ContainsAny(part, "{}") {
-		return part, false, true
-	}
-	if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") &&
-		strings.Count(part, "{") == 1 && strings.Count(part, "}") == 1 && len(part) > 2 {
-		return strings.TrimSuffix(strings.TrimPrefix(part, "{"), "}"), true, true
-	}
-	return "", false, false
-}
+func resourcePathPart(part string) (string, bool, bool) { return httpplan.ResourcePathPart(part) }
 
 func hasDuplicateStrings(values []string) bool {
 	seen := make(map[string]bool, len(values))
@@ -1411,48 +1397,10 @@ func hasDuplicateStrings(values []string) bool {
 	return false
 }
 
-// resourceTerminalName keeps literal path segments as namespaces. For example,
-// POST /auth/login becomes api.auth.login.post(), rather than api.auth.login().
 func resourceTerminalName(operation ir.Operation, parts []string) (string, error) {
-	terminal, err := terminalName(operation, parts)
-	if err != nil {
-		return "", err
-	}
-	if len(parts) == 0 {
-		return terminal, nil
-	}
-	last := parts[len(parts)-1]
-	if strings.HasPrefix(last, "{") {
-		return terminal, nil
-	}
-	property, err := naming.Property(last)
-	if err != nil {
-		return "", err
-	}
-	if terminal != property {
-		return terminal, nil
-	}
-	return methodTerminal(operation.Method)
+	return httpplan.ResourceTerminal(operation, parts)
 }
-
-func methodTerminal(method string) (string, error) {
-	switch method {
-	case "GET":
-		return "get", nil
-	case "POST":
-		return "post", nil
-	case "PUT":
-		return "replace", nil
-	case "PATCH":
-		return "patch", nil
-	case "DELETE":
-		return "delete", nil
-	case "QUERY":
-		return "query", nil
-	default:
-		return naming.Property(strings.ToLower(method))
-	}
-}
+func methodTerminal(method string) (string, error) { return httpplan.ResourceMethodTerminal(method) }
 
 func operationPathBindings(document *ir.Document, operation ir.Operation) (map[string]string, error) {
 	parameters, err := operationParameters(document, operation)
@@ -1507,50 +1455,6 @@ func callInput(operation ir.Operation, inputSections operationInputSectionList, 
 		arguments = append(arguments, "{ "+strings.Join(fields, ", ")+" }")
 	}
 	return "(" + strings.Join(arguments, ", ") + ")"
-}
-
-func terminalName(operation ir.Operation, parts []string) (string, error) {
-	last := ""
-	if len(parts) > 0 {
-		last = parts[len(parts)-1]
-	}
-	if isTerminalAction(operation, parts, len(parts)-1) {
-		return naming.Property(last)
-	}
-	lowerID := strings.ToLower(operation.OperationID)
-	switch operation.Method {
-	case "GET":
-		if strings.HasPrefix(lowerID, "list") || strings.HasPrefix(lowerID, "search") {
-			return "list", nil
-		}
-		return "get", nil
-	case "POST":
-		if strings.HasPrefix(lowerID, "create") {
-			return "create", nil
-		}
-		return "post", nil
-	case "PUT":
-		return "replace", nil
-	case "PATCH":
-		return "patch", nil
-	case "DELETE":
-		return "delete", nil
-	case "QUERY":
-		return "query", nil
-	default:
-		return naming.Property(strings.ToLower(operation.Method))
-	}
-}
-
-func isTerminalAction(operation ir.Operation, parts []string, index int) bool {
-	if index < 0 || index != len(parts)-1 || operation.Method == "GET" || len(parts) < 2 {
-		return false
-	}
-	last := parts[index]
-	if last == "" || strings.HasPrefix(last, "{") {
-		return false
-	}
-	return strings.Contains(operation.OperationID, strings.ToUpper(last[:1])+last[1:]) || !strings.HasPrefix(strings.ToLower(operation.OperationID), "create")
 }
 
 // Every operation owns one module. Its private semantic type family therefore

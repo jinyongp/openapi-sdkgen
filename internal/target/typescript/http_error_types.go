@@ -14,14 +14,14 @@ func operationHTTPErrorType(document *ir.Document, operation ir.Operation, scope
 	var result []string
 	for _, branch := range responseStatusBranches(responses, false) {
 		data, media := "void", "undefined"
-		if branch.media != nil {
-			media = quoteTS(branch.media.ContentType)
-			data, err = schemaTypeForScope(document, branch.media.Schema, projectionOutput, scope)
+		if branch.Media != nil {
+			media = quoteTS(branch.Media.ContentType)
+			data, err = schemaTypeForScope(document, branch.Media.Schema, projectionOutput, scope)
 			if err != nil {
 				return "", err
 			}
 		}
-		result = append(result, "HTTPErrorFor<"+responseStatusUnion(branch.statuses)+", "+data+", "+media+">")
+		result = append(result, "HTTPErrorFor<"+responseStatusUnion(branch.Statuses)+", "+data+", "+media+">")
 	}
 	if len(result) == 0 {
 		return "never", nil

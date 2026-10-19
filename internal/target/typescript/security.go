@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	httpplan "openapi-sdkgen/internal/http/plan"
 )
 
 type operationSecurityRequirement struct {
@@ -22,25 +23,9 @@ func operationSecurityRequirements(document *ir.Document, operation ir.Operation
 
 func plannedSecurityRequirements(values []ir.SecurityRequirement) []operationSecurityRequirement {
 	result := make([]operationSecurityRequirement, 0, len(values))
-	ids := make(map[string]int, len(values))
-	for _, value := range values {
-		names := make([]string, 0, len(value.Schemes))
-		for _, scheme := range value.Schemes {
-			name := scheme.Name
-			if scheme.Reference != "" {
-				name = scheme.Reference
-			}
-			names = append(names, name)
-		}
-		id := "anonymous"
-		if len(names) > 0 {
-			id = strings.Join(names, "__")
-		}
-		baseID := id
-		if count := ids[baseID]; count > 0 {
-			id = fmt.Sprintf("%s__%d", baseID, count+1)
-		}
-		ids[baseID]++
+	ids := httpplan.SecurityRequirementIDs(values)
+	for index, value := range values {
+		id := ids[index]
 		result = append(result, operationSecurityRequirement{id: id, schemes: append([]ir.SecurityRequirementScheme(nil), value.Schemes...)})
 	}
 	return result

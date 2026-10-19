@@ -9,12 +9,10 @@ import (
 
 // OperationInspection reports the callable surfaces of the prepared client.
 // Expressions come from the same collision-resolved manifest as emission.
-type OperationInspection struct {
-	Status           string  `json:"status"`
-	ResourceCall     *string `json:"resourceCall"`
-	Routes           bool    `json:"routes"`
-	Operations       bool    `json:"operations"`
-	ResourceOmission string  `json:"resourceOmission,omitempty"`
+type OperationInspection = generator.OperationInspection
+
+func (Generator) InspectPlan(plan generator.Plan) (map[string]generator.OperationInspection, error) {
+	return InspectPlan(plan)
 }
 
 // InspectPlan reads the target-owned preparation result without emitting code.

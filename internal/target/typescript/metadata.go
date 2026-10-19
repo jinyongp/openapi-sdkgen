@@ -3,10 +3,10 @@ package typescript
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/json/jsontext"
 	"fmt"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	"openapi-sdkgen/internal/generator"
 )
 
 // emitMetadata always publishes the declared version. The optional document is
@@ -19,18 +19,9 @@ func emitMetadata(document *ir.Document, typescript, includeDocument bool) ([]by
 		}
 		return []byte(fmt.Sprintf("/** Declared OpenAPI version. */\nexport const openapi = Object.freeze({ version: %s, versionLine: %s })\n", quoteTS(document.OpenAPIVersion), quoteTS(document.OpenAPIVersionLine))), nil
 	}
-	data := document.SourceMetadataJSON
-	if len(data) == 0 {
-		var err error
-		data, err = json.Marshal(document.Raw)
-		if err != nil {
-			return nil, fmt.Errorf("encode OpenAPI metadata: %w", err)
-		}
-	}
-	// Format owns its buffer: never rewrite the compiler's source snapshot.
-	compact := jsontext.Value(bytes.Clone(data))
-	if err := compact.Format(jsontext.ReorderRawObjects(true)); err != nil {
-		return nil, fmt.Errorf("encode OpenAPI metadata: %w", err)
+	compact, err := generator.SourceMetadata(document)
+	if err != nil {
+		return nil, err
 	}
 	raw := "/* @__PURE__ */ JSON.parse(" + quoteTS(string(compact)) + ")"
 	if typescript {

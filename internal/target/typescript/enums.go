@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
 
 type enumMemberDocumentation struct {
@@ -229,69 +230,26 @@ func enumValuesPlans(document *ir.Document) ([]enumValuesPlan, error) {
 	return plans, nil
 }
 
-var annotatedEnumBranchAnnotations = map[string]bool{
-	"title": true, "description": true, "default": true, "deprecated": true,
-	"readOnly": true, "writeOnly": true, "examples": true, "example": true,
-	"externalDocs": true,
-}
-
 func annotatedEnumValues(document *ir.Document, schema map[string]any) ([]any, map[string]enumMemberDocumentation, bool, error) {
-	if document == nil || (document.OpenAPIVersionLine != "3.1" && document.OpenAPIVersionLine != "3.2") {
+	if document == nil {
 		return nil, nil, false, nil
 	}
-	var branches []any
-	compositions := 0
-	for _, keyword := range []string{"oneOf", "anyOf"} {
-		value, exists := schema[keyword]
-		if !exists {
-			continue
-		}
-		compositions++
-		values, ok := value.([]any)
-		if !ok || len(values) == 0 {
-			return nil, nil, false, nil
-		}
-		branches = values
-	}
-	if compositions != 1 {
-		return nil, nil, false, nil
-	}
-
-	values := make([]any, 0, len(branches))
-	memberDocs := make(map[string]enumMemberDocumentation)
-	seen := make(map[string]bool, len(branches))
-	for _, item := range branches {
-		branch, ok := item.(map[string]any)
-		if !ok {
-			return nil, nil, false, nil
-		}
-		value, hasConst := branch["const"]
-		if !hasConst {
-			return nil, nil, false, nil
-		}
-		for key := range branch {
-			if key != "const" && !annotatedEnumBranchAnnotations[key] {
-				return nil, nil, false, nil
-			}
-		}
+	members, recognized, err := schemaplan.AnnotatedEnum(document.OpenAPIVersionLine, schema, func(value any) (string, error) {
 		identity, _, err := enumRuntimeJSONExpression(value)
-		if err != nil {
-			return nil, nil, false, err
-		}
-		if seen[identity] {
-			return nil, nil, false, nil
-		}
-		seen[identity] = true
-		values = append(values, value)
-		if member, ok := value.(string); ok {
-			title, _ := branch["title"].(string)
-			description, _ := branch["description"].(string)
-			memberDocs[member] = enumMemberDocumentation{
-				title: title, description: description, deprecated: boolValue(branch, "deprecated"),
-			}
+		return identity, err
+	})
+	if err != nil || !recognized {
+		return nil, nil, false, err
+	}
+	values := make([]any, 0, len(members))
+	docs := make(map[string]enumMemberDocumentation)
+	for _, member := range members {
+		values = append(values, member.Value)
+		if name, ok := member.Value.(string); ok {
+			docs[name] = enumMemberDocumentation{title: member.Documentation.Title, description: member.Documentation.Description, deprecated: member.Documentation.Deprecated}
 		}
 	}
-	return values, memberDocs, true, nil
+	return values, docs, true, nil
 }
 
 // enumRuntimeJSONExpression keeps enum literals inferable under an outer

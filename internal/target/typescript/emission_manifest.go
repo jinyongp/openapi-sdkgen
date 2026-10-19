@@ -48,3 +48,24 @@ func SelectionDetails(plan generator.Plan) (*GenerationSelection, error) {
 	}
 	return &GenerationSelection{Routes: sortedStringKeys(prepared.selection.direct), DependencyRoutes: sortedStringKeys(prepared.selection.dependencies)}, nil
 }
+
+// EmissionInbound snapshots the receive definitions used by server emission.
+// Call only after successful emission when reporting delivered contracts.
+func EmissionInbound(plan generator.Plan) ([]generator.InboundOperationInspection, error) {
+	value, err := plan.Value("typescript")
+	if err != nil {
+		return nil, err
+	}
+	prepared, ok := value.(*sourcePlan)
+	if !ok || prepared == nil {
+		return nil, fmt.Errorf("TypeScript plan has no inbound emission manifest")
+	}
+	result := make([]generator.InboundOperationInspection, 0, len(prepared.webhooks)+len(prepared.callbacks))
+	for _, definition := range prepared.webhooks {
+		result = append(result, generator.InboundOperationInspection{Kind: "webhook", Identity: definition.schemaSource.path, Name: definition.name, Method: definition.method})
+	}
+	for _, definition := range prepared.callbacks {
+		result = append(result, generator.InboundOperationInspection{Kind: "callback", Identity: definition.schemaSource.path, Name: definition.callbackName, Method: definition.method, Expression: definition.expression, SourceRoute: definition.sourceRouteKey, SourceOperationID: definition.sourceOperationID, ComponentName: definition.componentName})
+	}
+	return result, nil
+}

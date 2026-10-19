@@ -34,15 +34,15 @@ func TestResponseStatusReachabilityPlan(t *testing.T) {
 			var actual []string
 			for _, branch := range responseStatusBranches(test.responses, test.status >= 200 && test.status < 300) {
 				media := ""
-				if branch.media != nil {
-					media = branch.media.ContentType
+				if branch.Media != nil {
+					media = branch.Media.ContentType
 				}
 				if media != test.media {
 					continue
 				}
-				for _, status := range branch.statuses {
+				for _, status := range branch.Statuses {
 					if status == test.status {
-						actual = append(actual, branch.response.Status)
+						actual = append(actual, branch.Response.Status)
 					}
 				}
 			}
@@ -52,8 +52,8 @@ func TestResponseStatusReachabilityPlan(t *testing.T) {
 		})
 	}
 	for _, branch := range responseStatusBranches([]ir.Response{response("default", "application/json")}, true) {
-		if len(branch.statuses) != 100 || branch.statuses[0] != 200 || branch.statuses[99] != 299 {
-			t.Fatalf("success domain: %v", branch.statuses)
+		if len(branch.Statuses) != 100 || branch.Statuses[0] != 200 || branch.Statuses[99] != 299 {
+			t.Fatalf("success domain: %v", branch.Statuses)
 		}
 	}
 }

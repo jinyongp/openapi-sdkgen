@@ -139,10 +139,10 @@ func verifyResponseStatusSelector(t *testing.T, output string) {
 		allowed := map[string][]int{}
 		for _, branch := range responseStatusBranches(responses, true) {
 			media := ""
-			if branch.media != nil {
-				media = branch.media.ContentType
+			if branch.Media != nil {
+				media = branch.Media.ContentType
 			}
-			allowed[branch.response.Status+" "+media] = branch.statuses
+			allowed[branch.Response.Status+" "+media] = branch.Statuses
 		}
 		data, err := json.Marshal(allowed)
 		if err != nil {

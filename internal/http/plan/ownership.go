@@ -1,0 +1,273 @@
+package plan
+
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"path/filepath"
+	"strings"
+
+	"openapi-sdkgen/internal/compiler/ir"
+)
+
+var errMissingOwnershipIndex = errors.New("source ownership index is unavailable")
+
+type sourceRestrictionKey struct {
+	source  string
+	pointer string
+}
+
+type OwnershipIndex struct {
+	document             *ir.Document
+	operations           []ir.Operation
+	operationsByPointer  map[string]int
+	operationsBySource   map[sourceRestrictionKey]int
+	operationsByID       map[string]int
+	operationsByPath     map[string]int
+	restrictionsByPoint  map[string][]ir.SemanticRestriction
+	restrictionsBySource map[sourceRestrictionKey][]ir.SemanticRestriction
+}
+
+func NewOwnershipIndex(document *ir.Document) *OwnershipIndex {
+	index := &OwnershipIndex{
+		document:             document,
+		operations:           document.Operations,
+		operationsByPointer:  make(map[string]int, len(document.Operations)),
+		operationsBySource:   make(map[sourceRestrictionKey]int, len(document.Operations)),
+		operationsByID:       make(map[string]int, len(document.Operations)),
+		operationsByPath:     make(map[string]int, len(document.Operations)),
+		restrictionsByPoint:  make(map[string][]ir.SemanticRestriction),
+		restrictionsBySource: make(map[sourceRestrictionKey][]ir.SemanticRestriction),
+	}
+	for operationIndex := range document.Operations {
+		operation := document.Operations[operationIndex]
+		pointer := operation.Pointer
+		if pointer == "" {
+			pointer = "#/paths/" + PointerToken(operation.Path) + "/" + strings.ToLower(operation.Method)
+		}
+		index.operationsByPointer[pointer] = operationIndex
+		if provenance, found := document.LookupProvenance(pointer); found {
+			locations := append([]ir.SourceLocation{provenance.Primary}, provenance.Related...)
+			for _, location := range locations {
+				key := sourceRestrictionKey{source: location.Source, pointer: location.Pointer}
+				if existing, exists := index.operationsBySource[key]; exists && existing != operationIndex {
+					index.operationsBySource[key] = -1
+					continue
+				}
+				if _, exists := index.operationsBySource[key]; !exists {
+					index.operationsBySource[key] = operationIndex
+				}
+			}
+		}
+		if operation.OperationID != "" {
+			index.operationsByID[operation.OperationID] = operationIndex
+		}
+		index.operationsByPath[operationPathMethodKey(operation.Path, operation.Method)] = operationIndex
+	}
+	for _, restriction := range document.SemanticRestrictions {
+		index.restrictionsByPoint[restriction.Location.Pointer] = append(index.restrictionsByPoint[restriction.Location.Pointer], restriction)
+		key := sourceRestrictionKey{source: restriction.Location.Source, pointer: restriction.Location.Pointer}
+		index.restrictionsBySource[key] = append(index.restrictionsBySource[key], restriction)
+	}
+	return index
+}
+
+func (index *OwnershipIndex) operation(operationIndex int) (ir.Operation, bool) {
+	if index == nil || operationIndex < 0 || operationIndex >= len(index.operations) {
+		return ir.Operation{}, false
+	}
+	return index.operations[operationIndex], true
+}
+
+func (index *OwnershipIndex) OperationByExactPointer(pointer string) (ir.Operation, bool) {
+	if index == nil || pointer == "" {
+		return ir.Operation{}, false
+	}
+	operationIndex, exists := index.operationsByPointer[pointer]
+	if !exists {
+		return ir.Operation{}, false
+	}
+	return index.operation(operationIndex)
+}
+
+func (index *OwnershipIndex) OperationAt(pointer string) (ir.Operation, bool) {
+	if index == nil {
+		return ir.Operation{}, false
+	}
+	for candidate := pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
+		if operationIndex, exists := index.operationsByPointer[candidate]; exists {
+			return index.operation(operationIndex)
+		}
+		if candidate == "#" {
+			break
+		}
+	}
+	return ir.Operation{}, false
+}
+
+func (index *OwnershipIndex) OperationAtLocation(location ir.SourceLocation) (ir.Operation, bool) {
+	if index == nil {
+		return ir.Operation{}, false
+	}
+	for candidate := location.Pointer; candidate != ""; candidate = parentSourcePointer(candidate) {
+		key := sourceRestrictionKey{source: location.Source, pointer: candidate}
+		if operationIndex, exists := index.operationsBySource[key]; exists {
+			if operationIndex < 0 {
+				return ir.Operation{}, false
+			}
+			return index.operation(operationIndex)
+		}
+		if candidate == "#" {
+			break
+		}
+	}
+	if location.Source == "" {
+		return index.OperationAt(location.Pointer)
+	}
+	return ir.Operation{}, false
+}
+
+func (index *OwnershipIndex) LinkTarget(link map[string]any, pointer string) (ir.Operation, error) {
+	if index == nil {
+		return ir.Operation{}, errMissingOwnershipIndex
+	}
+	if operationID, _ := link["operationId"].(string); operationID != "" {
+		operationIndex, ok := index.operationsByID[operationID]
+		if !ok {
+			return ir.Operation{}, fmt.Errorf("operationId %q does not name a generated operation", operationID)
+		}
+		operation, _ := index.operation(operationIndex)
+		return operation, nil
+	}
+	operationRef, _ := link["operationRef"].(string)
+	reference, err := url.Parse(operationRef)
+	if err != nil || !strings.HasPrefix(reference.Fragment, "/") || reference.RawQuery != "" || reference.User != nil {
+		return ir.Operation{}, fmt.Errorf("operationRef %q must target one path operation", operationRef)
+	}
+	tokens := strings.Split(strings.TrimPrefix(reference.Fragment, "/"), "/")
+	if len(tokens) != 3 || tokens[0] != "paths" {
+		return ir.Operation{}, fmt.Errorf("operationRef %q must target one path operation", operationRef)
+	}
+	path, err := JSONPointerToken(tokens[1])
+	if err != nil {
+		return ir.Operation{}, err
+	}
+	method, err := JSONPointerToken(tokens[2])
+	if err != nil {
+		return ir.Operation{}, err
+	}
+	canonicalPointer := "#/paths/" + PointerToken(path) + "/" + PointerToken(method)
+	provenance, found := index.document.LookupProvenance(pointer)
+	if !found && strings.HasPrefix(operationRef, "#/") {
+		if operation, exists := index.OperationByExactPointer(canonicalPointer); exists {
+			return operation, nil
+		}
+	}
+	if found {
+		source := provenance.Primary.Source
+		// Entry-document fragment references address physical mounted paths,
+		// while source-document references retain exact external identity.
+		if root, ok := index.document.LookupProvenance("#"); ok && source == root.Primary.Source && strings.HasPrefix(operationRef, "#/") {
+			if operation, exists := index.OperationByExactPointer(canonicalPointer); exists {
+				return operation, nil
+			}
+		}
+		reference.Fragment, reference.RawFragment = "", ""
+		if reference.String() != "" {
+			if base, err := url.Parse(source); err == nil && (base.Scheme == "http" || base.Scheme == "https" || base.Scheme == "file") {
+				source = base.ResolveReference(reference).String()
+			} else if reference.IsAbs() {
+				source = reference.String()
+			} else if source != "" && !strings.HasPrefix(source, "<") {
+				source = filepath.Clean(filepath.Join(filepath.Dir(source), filepath.FromSlash(reference.Path)))
+			} else {
+				return ir.Operation{}, fmt.Errorf("operationRef %q has no source base", operationRef)
+			}
+		}
+		// Exact source identities from the compiled closure only. An operationRef
+		// never loads a document, and multiple mounts deliberately stay ambiguous.
+		if operationIndex, exists := index.operationsBySource[sourceRestrictionKey{source: source, pointer: canonicalPointer}]; exists && operationIndex >= 0 {
+			operation, _ := index.operation(operationIndex)
+			if operation.Path != path || !strings.EqualFold(operation.Method, method) {
+				return ir.Operation{}, fmt.Errorf("operationRef %q target path does not match its generated route", operationRef)
+			}
+			return operation, nil
+		}
+	}
+	return ir.Operation{}, fmt.Errorf("operationRef %q does not uniquely name a generated operation in the compiled document closure", operationRef)
+}
+
+func (index *OwnershipIndex) RestrictionsAt(document *ir.Document, pointer string) []ir.SemanticRestriction {
+	if index == nil {
+		return nil
+	}
+	if document == nil {
+		return append([]ir.SemanticRestriction(nil), index.restrictionsByPoint[pointer]...)
+	}
+	provenance, found := document.LookupProvenance(pointer)
+	if !found {
+		return append([]ir.SemanticRestriction(nil), index.restrictionsByPoint[pointer]...)
+	}
+	var result []ir.SemanticRestriction
+	locations := append([]ir.SourceLocation{provenance.Primary}, provenance.Related...)
+	for _, location := range locations {
+		key := sourceRestrictionKey{source: location.Source, pointer: location.Pointer}
+		for _, restriction := range index.restrictionsBySource[key] {
+			if !containsSemanticRestriction(result, restriction) {
+				result = append(result, restriction)
+			}
+		}
+	}
+	return result
+}
+
+func parentSourcePointer(pointer string) string {
+	if pointer == "" || pointer == "#" {
+		return ""
+	}
+	index := strings.LastIndex(pointer, "/")
+	if index < 1 {
+		return "#"
+	}
+	return pointer[:index]
+}
+
+func containsSemanticRestriction(values []ir.SemanticRestriction, wanted ir.SemanticRestriction) bool {
+	for _, value := range values {
+		if value.RuleID == wanted.RuleID && value.Scope == wanted.Scope && value.Effect == wanted.Effect &&
+			value.Location == wanted.Location {
+			return true
+		}
+	}
+	return false
+}
+
+func operationPathMethodKey(path, method string) string {
+	return path + "\x00" + strings.ToUpper(method)
+}
+func PointerToken(value string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(value, "~", "~0"), "/", "~1")
+}
+
+func JSONPointerToken(token string) (string, error) {
+	var output strings.Builder
+	for index := 0; index < len(token); index++ {
+		if token[index] != '~' {
+			output.WriteByte(token[index])
+			continue
+		}
+		if index+1 >= len(token) {
+			return "", fmt.Errorf("invalid JSON Pointer escape")
+		}
+		index++
+		switch token[index] {
+		case '0':
+			output.WriteByte('~')
+		case '1':
+			output.WriteByte('/')
+		default:
+			return "", fmt.Errorf("invalid JSON Pointer escape")
+		}
+	}
+	return output.String(), nil
+}

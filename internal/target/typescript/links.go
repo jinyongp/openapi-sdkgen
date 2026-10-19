@@ -2,19 +2,17 @@ package typescript
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"net/url"
 	"regexp"
 	"sort"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/failure"
+	httpplan "openapi-sdkgen/internal/http/plan"
 )
 
 var (
-	serverVariablePattern       = regexp.MustCompile(`\{[^{}]+\}`)
 	linkRequestParameterPattern = regexp.MustCompile(`^\$request\.(path|query|header|cookie)\.([^#]+)(#.*)?$`)
 	exactResponseStatusPattern  = regexp.MustCompile(`^[1-5][0-9][0-9]$`)
 	rangeResponseStatusPattern  = regexp.MustCompile(`^[1-5][Xx][Xx]$`)
@@ -56,148 +54,31 @@ func generatedLinks(document *ir.Document, manifest Manifest) ([]generatedLink, 
 }
 
 func generatedLinksDiagnostics(document *ir.Document, manifest Manifest, ownership *sourceOwnershipIndex) ([]generatedLink, []linkPreparationFailure) {
-	visible := map[string]ManifestOperation{}
+	visible := make(map[string]bool)
+	plans := make(map[string]ManifestOperation)
 	for _, operation := range manifest.Operations {
 		if operation.Visibility != "hidden" {
-			visible[manifestRouteKey(operation)] = operation
+			visible[manifestRouteKey(operation)] = true
+			plans[manifestRouteKey(operation)] = operation
 		}
 	}
-	var result []generatedLink
-	var failures []linkPreparationFailure
-	for _, source := range document.Operations {
-		sourcePlan, sourceVisible := visible[operationRouteKey(source)]
-		if !sourceVisible {
-			continue
-		}
-		responses, err := operationResponses(document, source)
-		if err != nil {
-			failures = append(failures, newLinkPreparationFailure(source, source.Pointer+"/responses", "", fmt.Errorf("responses %s: %w", operationLabel(source), err), true))
-			continue
-		}
-		for _, response := range responses {
-			status := response.Status
-			linksPointer, err := componentObjectFieldPointer(document, response.SourceRaw, "responses", response.Pointer, "links")
-			if err != nil {
-				failures = append(failures, newLinkPreparationFailure(source, response.Pointer+"/links", "", fmt.Errorf("response %s %s: %w", operationLabel(source), status, err), true))
-				continue
-			}
-			links, _ := response.Raw["links"].(map[string]any)
-			for _, name := range sortedAnyKeys(links) {
-				linkPointer := linksPointer + "/" + escapePointerToken(name)
-				if linkCapabilityRestricted(ownership.restrictionsAt(document, linkPointer)) {
-					continue
-				}
-				link, _ := links[name].(map[string]any)
-				parametersPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "parameters")
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
-					continue
-				}
-				requestBodyPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "requestBody")
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
-					continue
-				}
-				operationRefPointer, err := componentObjectFieldPointer(document, link, "links", linkPointer, "operationRef")
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, err, true))
-					continue
-				}
-				link, err = resolveComponentObject(document, link, "links")
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), true))
-					continue
-				}
-				target, err := ownership.linkTarget(link, operationRefPointer)
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
-					continue
-				}
-				targetPlan, targetVisible := visible[operationRouteKey(target)]
-				if !targetVisible {
-					reason := "unavailable"
-					if target.Visibility == "hidden" {
-						reason = "hidden"
-					}
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s targets %s operation %q", operationLabel(source), name, reason, operationLabel(target)), false))
-					continue
-				}
-				definition, err := linkDefinition(sourcePlan.prepared.parameters, targetPlan.prepared.parameters, link, linkDefinitionPointers{
-					parameters:  parametersPointer,
-					requestBody: requestBodyPointer,
-				})
-				if err != nil {
-					if !strings.HasPrefix(err.Error(), "#") {
-						err = fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err)
-					}
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, err, false))
-					continue
-				}
-				serverURL, err := linkServerURL(link)
-				serverSource := ""
-				if provenance, found := document.LookupProvenance(operationRefPointer); found {
-					serverSource = provenance.Primary.Source
-				}
-				if err == nil && serverURL == "" {
-					operationRef, _ := link["operationRef"].(string)
-					targetSource := ""
-					if provenance, found := document.LookupProvenance(target.Pointer); found {
-						targetSource = provenance.Primary.Source
-					}
-					rootSource := ""
-					if provenance, found := document.LookupProvenance("#"); found {
-						rootSource = provenance.Primary.Source
-					}
-					if (operationRef != "" && !strings.HasPrefix(operationRef, "#")) || (targetSource != "" && targetSource != rootSource) {
-						serverSource = targetSource
-						var server map[string]any
-						values, exists := target.Raw["servers"].([]any)
-						if !exists {
-							values, exists = target.PathItemRaw["servers"].([]any)
-						}
-						if !exists {
-							if provenance, found := document.LookupProvenance(target.Pointer); found {
-								values = document.SourceServers[provenance.Primary.Source]
-							}
-						}
-						if len(values) != 0 {
-							server, _ = values[0].(map[string]any)
-						}
-						if len(server) != 0 {
-							serverURL, err = linkServerURL(map[string]any{"server": server})
-						}
-					}
-				}
-				if err == nil && serverURL != "" {
-					if base, parseErr := url.Parse(serverSource); parseErr == nil && (base.Scheme == "http" || base.Scheme == "https") {
-						if relative, parseErr := url.Parse(serverURL); parseErr == nil {
-							serverURL = base.ResolveReference(relative).String()
-						} else {
-							err = parseErr
-						}
-					}
-				}
-				if err != nil {
-					failures = append(failures, newLinkPreparationFailure(source, linkPointer, name, fmt.Errorf("response link %s %s: %w", operationLabel(source), name, err), false))
-					continue
-				}
-				result = append(result, generatedLink{
-					SourceOperation: source, Status: status, Name: name, TargetOperation: target, Definition: definition, ServerURL: serverURL,
-					SourceHasInput: len(sourcePlan.InputSections) != 0, TargetHasInput: len(targetPlan.InputSections) != 0,
-					TargetOptionsRequired: targetPlan.optionsRequired,
-				})
-			}
-		}
+	var shared *httpplan.OwnershipIndex
+	if ownership != nil {
+		shared = ownership.shared
 	}
-	sort.Slice(result, func(left, right int) bool {
-		if operationRouteKey(result[left].SourceOperation) == operationRouteKey(result[right].SourceOperation) {
-			if result[left].Name == result[right].Name {
-				return result[left].Status < result[right].Status
-			}
-			return result[left].Name < result[right].Name
-		}
-		return operationRouteKey(result[left].SourceOperation) < operationRouteKey(result[right].SourceOperation)
-	})
+	prepared, failed := (&httpplan.LinkPlanner{Visible: visible, Ownership: shared, Responses: operationResponses, Definition: func(source, target ir.Operation, link map[string]any, pointers httpplan.LinkDefinitionPointers) (any, error) {
+		return linkDefinition(plans[operationRouteKey(source)].prepared.parameters, plans[operationRouteKey(target)].prepared.parameters, link, linkDefinitionPointers{parameters: pointers.Parameters, requestBody: pointers.RequestBody})
+	}}).Prepare(document)
+	result := make([]generatedLink, 0, len(prepared))
+	for _, link := range prepared {
+		source, target := plans[operationRouteKey(link.SourceOperation)], plans[operationRouteKey(link.TargetOperation)]
+		definition, _ := link.Definition.(string)
+		result = append(result, generatedLink{SourceOperation: link.SourceOperation, Status: link.Status, Name: link.Name, TargetOperation: link.TargetOperation, Definition: definition, ServerURL: link.ServerURL, SourceHasInput: len(source.InputSections) != 0, TargetHasInput: len(target.InputSections) != 0, TargetOptionsRequired: target.optionsRequired})
+	}
+	failures := make([]linkPreparationFailure, 0, len(failed))
+	for _, failure := range failed {
+		failures = append(failures, newLinkPreparationFailure(failure.SourceOperation, failure.Pointer, failure.Name, failure.Err, failure.Blocking))
+	}
 	return result, failures
 }
 
@@ -235,32 +116,7 @@ func operationPathMethodKey(path, method string) string {
 	return path + "\x00" + strings.ToUpper(method)
 }
 
-func linkServerURL(link map[string]any) (string, error) {
-	server, _ := link["server"].(map[string]any)
-	if len(server) == 0 {
-		return "", nil
-	}
-	serverURL, _ := server["url"].(string)
-	if serverURL == "" {
-		return "", errors.New("Link Server Object has no URL")
-	}
-	variables, _ := server["variables"].(map[string]any)
-	var missing string
-	serverURL = serverVariablePattern.ReplaceAllStringFunc(serverURL, func(token string) string {
-		name := strings.TrimSuffix(strings.TrimPrefix(token, "{"), "}")
-		definition, _ := variables[name].(map[string]any)
-		value, exists := definition["default"].(string)
-		if !exists {
-			missing = name
-			return token
-		}
-		return url.PathEscape(value)
-	})
-	if missing != "" {
-		return "", fmt.Errorf("Link Server variable %q has no default", missing)
-	}
-	return serverURL, nil
-}
+func linkServerURL(link map[string]any) (string, error) { return httpplan.LinkServerURL(link) }
 
 func linkTargetOperation(byID, byPathMethod map[string]ir.Operation, link map[string]any) (ir.Operation, error) {
 	if operationID, _ := link["operationId"].(string); operationID != "" {
@@ -380,28 +236,7 @@ func linkRequestParameterExpression(expression string, sourceParameters []operat
 	return nil, fmt.Errorf("request runtime expression %q references unknown source %s parameter %q", expression, location, name)
 }
 
-func linkJSONPointerToken(token string) (string, error) {
-	var output strings.Builder
-	for index := 0; index < len(token); index++ {
-		if token[index] != '~' {
-			output.WriteByte(token[index])
-			continue
-		}
-		if index+1 >= len(token) {
-			return "", fmt.Errorf("invalid JSON Pointer escape")
-		}
-		index++
-		switch token[index] {
-		case '0':
-			output.WriteByte('~')
-		case '1':
-			output.WriteByte('/')
-		default:
-			return "", fmt.Errorf("invalid JSON Pointer escape")
-		}
-	}
-	return output.String(), nil
-}
+func linkJSONPointerToken(token string) (string, error) { return httpplan.JSONPointerToken(token) }
 
 func emitLinkInterface(output *bytes.Buffer, document *ir.Document, links []generatedLink) error {
 	if len(links) == 0 {

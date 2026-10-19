@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
+	httpplan "openapi-sdkgen/internal/http/plan"
 	"openapi-sdkgen/internal/openapiwalk"
 	schemaplan "openapi-sdkgen/internal/schema/plan"
 )
@@ -234,53 +235,16 @@ func componentSchemaValue(document *ir.Document, name string) any {
 }
 
 func schemaIsAlwaysDeprecated(document *ir.Document, value any) bool {
-	return schemaIsAlwaysDeprecatedSeen(document, value, make(map[string]bool))
-}
-
-func schemaIsAlwaysDeprecatedSeen(document *ir.Document, value any, seen map[string]bool) bool {
-	schema, ok := value.(map[string]any)
-	if !ok {
-		return false
-	}
-	if boolValue(schema, "deprecated") {
-		return true
-	}
-	if document != nil {
-		if reference, _ := schema["$ref"].(string); reference != "" {
-			if name, err := componentSchemaReferenceName(reference); err == nil && !seen[name] {
-				seen[name] = true
-				deprecated := schemaIsAlwaysDeprecatedSeen(document, componentSchemaValue(document, name), seen)
-				delete(seen, name)
-				if deprecated {
-					return true
-				}
-			}
+	return schemaplan.AlwaysDeprecated(value, func(reference string) any {
+		if document == nil {
+			return nil
 		}
-	}
-	if branches, ok := schema["allOf"].([]any); ok {
-		for _, branch := range branches {
-			if schemaIsAlwaysDeprecatedSeen(document, branch, seen) {
-				return true
-			}
+		name, err := componentSchemaReferenceName(reference)
+		if err != nil {
+			return nil
 		}
-	}
-	for _, keyword := range []string{"oneOf", "anyOf"} {
-		branches, ok := schema[keyword].([]any)
-		if !ok || len(branches) == 0 {
-			continue
-		}
-		allDeprecated := true
-		for _, branch := range branches {
-			if !schemaIsAlwaysDeprecatedSeen(document, branch, seen) {
-				allDeprecated = false
-				break
-			}
-		}
-		if allDeprecated {
-			return true
-		}
-	}
-	return false
+		return componentSchemaValue(document, name)
+	})
 }
 
 func emitSchemaValueJSDoc(output *bytes.Buffer, document *ir.Document, indent string, schema map[string]any, fallback string) {
@@ -320,13 +284,7 @@ func emitSchemaValueJSDoc(output *bytes.Buffer, document *ir.Document, indent st
 // a static type, so the generated declaration records the contract rather than
 // silently discarding it.
 func schemaConstraintSummary(schema map[string]any) string {
-	keys := []string{
-		"multipleOf", "maximum", "exclusiveMaximum", "minimum", "exclusiveMinimum",
-		"maxLength", "minLength", "pattern", "maxItems", "minItems", "uniqueItems",
-		"contains", "minContains", "maxContains", "maxProperties", "minProperties",
-		"dependentRequired", "propertyNames", "unevaluatedItems", "unevaluatedProperties",
-		"contentEncoding", "contentMediaType", "contentSchema",
-	}
+	keys := schemaplan.ConstraintKeywords()
 	items := make([]string, 0, len(keys))
 	for _, key := range keys {
 		if value, ok := schema[key]; ok {
@@ -868,17 +826,17 @@ func operationRawResponseTypeForScope(document *ir.Document, operation ir.Operat
 	}
 	var result []string
 	for _, branch := range responseStatusBranches(responses, true) {
-		response := branch.response
-		statusType := responseStatusUnion(branch.statuses)
+		response := branch.Response
+		statusType := responseStatusUnion(branch.Statuses)
 		headerType, err := responseHeaderType(document, response.Raw, scope)
 		if err != nil {
 			return "", err
 		}
-		if branch.media == nil {
+		if branch.Media == nil {
 			result = append(result, "RawResponseFor<"+statusType+", undefined, void, "+headerType+">")
 			continue
 		}
-		for _, media := range []ir.MediaType{*branch.media} {
+		for _, media := range []ir.MediaType{*branch.Media} {
 			schemaObject, _ := media.Schema.(map[string]any)
 			_, hasItemSchema := media.Raw["itemSchema"]
 			valueType := "unknown"
@@ -941,20 +899,7 @@ func responseHeaderType(document *ir.Document, response map[string]any, scope ty
 }
 
 func responseHeaderSchema(document *ir.Document, header map[string]any) (any, string, error) {
-	content, _ := header["content"].(map[string]any)
-	if len(content) == 0 {
-		return header["schema"], "", nil
-	}
-	if len(content) != 1 {
-		return nil, "", fmt.Errorf("Header Object content must define exactly one media type")
-	}
-	mediaType := sortedAnyKeys(content)[0]
-	media, _ := content[mediaType].(map[string]any)
-	media, err := resolveMediaTypeObject(document, media)
-	if err != nil {
-		return nil, "", err
-	}
-	return media["schema"], mediaType, nil
+	return httpplan.HeaderSchema(document, header)
 }
 
 func operationMediaOutputTypes(document *ir.Document, operation ir.Operation) (map[string]string, error) {
@@ -1032,17 +977,7 @@ func isBinaryMediaForDocument(document *ir.Document, mediaType string, schema ma
 }
 
 func isBinaryMediaForVersion(version, mediaType string, schema map[string]any) bool {
-	mediaType = strings.ToLower(mediaType)
-	if strings.HasPrefix(mediaType, "text/") || isJSONMediaType(mediaType) || strings.Contains(mediaType, "xml") {
-		return false
-	}
-	format, _ := schema["format"].(string)
-	contentEncoding, _ := schema["contentEncoding"].(string)
-	legacyFormatBinary := version == "" || version == "3.0"
-	contentEncodingBinary := version == "" || version == "3.1" || version == "3.2"
-	return legacyFormatBinary && strings.EqualFold(format, "binary") ||
-		contentEncodingBinary && strings.EqualFold(contentEncoding, "binary") ||
-		mediaType == "application/octet-stream"
+	return httpplan.IsBinaryMedia(version, mediaType, schema)
 }
 
 func isTextMedia(mediaType string) bool {
@@ -1056,55 +991,7 @@ func isJSONMediaType(mediaType string) bool {
 }
 
 func envelopeDataSchema(document *ir.Document, schema map[string]any, seen map[string]bool) map[string]any {
-	if reference, _ := schema["$ref"].(string); reference != "" {
-		name, err := componentSchemaReferenceName(reference)
-		if err != nil {
-			return nil
-		}
-		if seen[name] {
-			return nil
-		}
-		seen[name] = true
-		return envelopeDataSchema(document, document.ComponentSchemas[name], seen)
-	}
-	properties, _ := schema["properties"].(map[string]any)
-	if data, ok := properties["data"].(map[string]any); ok {
-		return data
-	}
-	for _, keyword := range []string{"allOf", "oneOf", "anyOf"} {
-		variants, _ := schema[keyword].([]any)
-		if len(variants) == 0 {
-			continue
-		}
-		dataSchemas := make([]any, 0, len(variants))
-		for _, variant := range variants {
-			item, _ := variant.(map[string]any)
-			data := envelopeDataSchema(document, item, copyStringBoolMap(seen))
-			if len(data) == 0 {
-				if keyword == "allOf" {
-					continue
-				}
-				return nil
-			}
-			dataSchemas = append(dataSchemas, data)
-		}
-		if len(dataSchemas) == 1 {
-			data, _ := dataSchemas[0].(map[string]any)
-			return data
-		}
-		if len(dataSchemas) > 1 {
-			return map[string]any{keyword: dataSchemas}
-		}
-	}
-	return nil
-}
-
-func copyStringBoolMap(source map[string]bool) map[string]bool {
-	result := make(map[string]bool, len(source))
-	for key, value := range source {
-		result[key] = value
-	}
-	return result
+	return newExtensionPlanner().EnvelopeSchema(document, schema, seen)
 }
 
 func operationSuccessSchema(document *ir.Document, operation ir.Operation) (map[string]any, bool, error) {
