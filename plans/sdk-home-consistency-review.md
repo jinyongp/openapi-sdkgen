@@ -1,24 +1,26 @@
-# Compact shared documentation homes
+# Product and SDK home boundaries
 
 The TypeScript homes used VitePress `layout: home`, a hero, three primary actions,
 four feature groups and usage links. The Go homes were plain Markdown documents,
 so they rendered a sidebar and an entirely different reading layout. This was a
 documentation composition mismatch unrelated to SDK capabilities.
 
-The first fix aligned SDK homes with VitePress hero/cards in `b047c98`. The user
-then explicitly requested a simpler design across the product and SDK homes.
-This supersedes the hero/card direction; keep the cause above as historical context.
+The first fix aligned SDK homes with VitePress hero/cards in `b047c98`. The next
+request asked for simpler SDK home pages. Commit `94869aa` incorrectly applied
+that simplification to the product home as well. The user clarified that the
+product home should retain its prior presentation; only SDK homes should be compact.
 
-All six EN/KO root and SDK home routes now use `SDKHome.vue`: one title, one short
-description and guide/example/playground/reference links. Product homes show both
-targets; SDK homes show only that target. Installation and detailed usage stay in
-the starting guides. Four SDK Markdown pages retain their historical anchors and
-declare `layout: page`. Removed the unused hero-specific theme styles.
+Product homes use `SDKHome.vue`, restored byte-for-byte from `b047c98`: product
+introduction, overview, CLI installation and both language rows. SDK homes use
+`SDKOverview.vue`: one title, one short description and four scoped links. Both
+targets/locales share that compact SDK component, with an explicit typed SDK prop.
+Four SDK Markdown pages retain their historical anchors and `layout: page`.
 
-Reviewed route-derived SDK state, locale handling, link destinations, headings,
+Reviewed explicit SDK props, locale handling, link destinations, headings,
 focus styling and responsive layout. `devtools run build:docs`, documentation
 TypeScript checks and built route/link/anchor validation passed. Browser checks
-at 1280px and 390px covered all six routes: root has eight links, SDK homes have
-four, each targets the correct SDK, and none has horizontal page overflow. One
-shared component now owns the composition, preventing independent home templates
-from drifting apart again. No new dependencies or permanent cosmetic tests.
+at 1280px and 390px covered all six routes: product homes have introduction and
+installation sections plus eight document links; SDK homes have neither section
+and retain four correctly scoped links. None has horizontal page overflow.
+Separating product and SDK presentation prevents changes to SDK simplicity from
+also replacing the product overview. No new dependencies or cosmetic tests.
