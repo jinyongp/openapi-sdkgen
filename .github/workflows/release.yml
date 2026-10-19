@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
       - id: existing
         if: github.ref_type == 'tag'
-        uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
+        uses: releaseway/actions/prepare@1c0b9237f61ee66f68db880963ec03da46c8a6ed # v0.5.0
         with:
           mode: ${{ contains(github.ref_name, '-') && 'tag' || 'resolve' }}
           tag: ${{ github.ref_name }}
@@ -72,7 +72,7 @@ jobs:
         run: bash scripts/release/check.sh
       - id: release
         if: github.ref_type != 'tag'
-        uses: releaseway/actions/prepare@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
+        uses: releaseway/actions/prepare@1c0b9237f61ee66f68db880963ec03da46c8a6ed # v0.5.0
         with:
           mode: ${{ inputs.mode == 'release' && 'prepare' || 'plan' }}
           prerelease-id: ${{ inputs.prerelease-id }}
@@ -106,7 +106,7 @@ jobs:
           fetch-depth: 0
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@680948414bbe6bfe64e94f776c3514ad44f3dd69 # v0.5.1
+        uses: releaseway/npm-actions@3972d333a5651cc04ceed6975ef5b01409052289 # v0.6.0
         with:
           release-commit: ${{ needs.prepare-release.outputs.release-commit }}
 
@@ -121,7 +121,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [prepare-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@5e6570fec2e5d16ad61868877da3a175fac99479 # v0.3.5
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@5ff7e261e32542dde8902ef16483405c2bf4ca12 # v0.4.0
     permissions:
       contents: read
     with:
@@ -187,7 +187,7 @@ jobs:
           version: "v2.18.3"
           args: release --clean --skip=publish --config .goreleaser.yaml
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@5841e545ff259790a3b2461299e741d62c69a73d # v0.4.1
+        uses: releaseway/actions@1c0b9237f61ee66f68db880963ec03da46c8a6ed # v0.5.0
         with:
           tag: ${{ needs.prepare-release.outputs.tag }}
           commit: ${{ needs.prepare-release.outputs.commit }}
