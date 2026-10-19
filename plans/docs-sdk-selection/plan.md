@@ -1,5 +1,8 @@
 # SDK 언어를 선택하는 문서·Playground 개편 계획
 
+> Go 의존성·HTTP 전송 안내의 후속 변경은 [무의존성 전환 계획](../golang-zero-dependencies/plan.md)을 따른다.
+> 기존 문서 개편 완료 기록은 당시 구현 기준이며 새 전환의 검증 증거로 재사용하지 않는다.
+
 구현 완료: W01–W10의 단위별 결과와 최종 리뷰는 [구현 기록](implementation.md),
 검증 범위·수치·제약은 [최종 검증](final-verification.json)에 기록했다.
 아래 내용은 승인된 설계와 완료 기준이며, 실제 배포 실행은 별도 출시 단계다.
