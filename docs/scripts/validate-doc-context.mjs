@@ -1,5 +1,5 @@
-import { access, readdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { access, readdir, readFile, stat } from "node:fs/promises";
+import { resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { topics, sdkTargets, displayLocales, sdkPath, publishedTargets } from "../.vitepress/docs-catalog.mjs";
 import { legacyRoutes } from "../.vitepress/legacy-routes.mjs";
@@ -35,7 +35,24 @@ export async function validateMaterializedDocs(docsRoot, targets = publishedTarg
     const prefix = locale === "ko" ? `ko/${sdk}` : sdk;
     const expected = new Set(topics.filter(topic => topic.targets.includes(sdk)).map(topic => `${prefix}${topic.suffix === "/" || topic.suffix.endsWith("/") ? topic.suffix + "index" : topic.suffix}.md`));
     const actual = await markdownFiles(docsRoot, prefix);
-    for (const path of expected) { await access(resolve(docsRoot, path)); count++; }
+    for (const path of expected) {
+      await access(resolve(docsRoot, path));
+      const source = await readFile(resolve(docsRoot, path), "utf8");
+      for (const match of source.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
+        const link = match[1].split(/[?#]/)[0];
+        if (!link || /^[a-z][a-z0-9+.-]*:|^\/\//i.test(link)) continue;
+        let file;
+        if (link.startsWith("/")) {
+          const route = link.replace(/^\/openapi-sdkgen/, "");
+          const sdkRoute = route.replace(/^\//, "");
+          file = /^(ko\/)?(typescript|golang)(\/|$)/.test(sdkRoute)
+            ? resolve(docsRoot, `${sdkRoute.endsWith("/") ? sdkRoute + "index" : sdkRoute}.md`)
+            : resolve(docsRoot, "public", `.${route}`);
+        } else if (link.endsWith(".md")) file = resolve(docsRoot, dirname(path), link);
+        if (file && !(await stat(file).catch(() => null))?.isFile()) throw new Error(`${path}: missing link ${link}`);
+      }
+      count++;
+    }
     for (const path of actual) if (!expected.has(path)) throw new Error(`Undeclared SDK documentation page: ${path}`);
   }
   return { pages: count, targets };
@@ -50,6 +67,6 @@ async function markdownFiles(root, directory) {
   return files;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  validateCatalog();
-  console.log("ok documentation context catalog");
+  const result = await validateMaterializedDocs(resolve(import.meta.dirname, ".."));
+  console.log(`ok documentation context: ${result.pages} SDK pages`);
 }

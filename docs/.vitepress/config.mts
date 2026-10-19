@@ -1,18 +1,22 @@
-import { defineConfig } from "vitepress";
+import { defineConfig, type DefaultTheme, type LocaleConfig } from "vitepress";
+import type { DisplayLocale, SDKTarget } from "./doc-context";
+interface DocumentationScope { readonly key: string; readonly locale: DisplayLocale; readonly sdk: SDKTarget | null; }
 
-import { buildDocsNavigation } from "./navigation.mjs";
+import { buildDocsNavigation, buildSDKNavigation } from "./navigation.mjs";
 
-const socialLinks = [
+import { documentationScopes } from "./docs-catalog.mjs";
+
+const socialLinks: DefaultTheme.SocialLink[] = [
   {
     icon: "github",
     link: "https://github.com/jinyongp/openapi-sdkgen",
   },
 ];
 
-const englishNavigation = buildDocsNavigation("en");
-const koreanNavigation = buildDocsNavigation("ko");
+const englishNavigation: Pick<DefaultTheme.Config, "nav" | "sidebar"> = buildDocsNavigation("en");
+const koreanNavigation: Pick<DefaultTheme.Config, "nav" | "sidebar"> = buildDocsNavigation("ko");
 
-const englishTheme = {
+const englishTheme: DefaultTheme.Config = {
   socialLinks,
   ...englishNavigation,
   aside: false,
@@ -27,7 +31,7 @@ const englishTheme = {
   },
 };
 
-const koreanTheme = {
+const koreanTheme: DefaultTheme.Config = {
   socialLinks,
   ...koreanNavigation,
   aside: false,
@@ -82,22 +86,14 @@ export default defineConfig({
     "openapi-feature-matrix.md",
     "openapi-compatibility-architecture.md",
     "architecture.md",
+    "_shared/**",
   ],
   lastUpdated: true,
   themeConfig: englishTheme,
-  locales: {
-    root: {
-      label: "English",
-      lang: "en-US",
-      themeConfig: englishTheme,
-    },
-    ko: {
-      label: "한국어",
-      lang: "ko-KR",
-      link: "/ko/",
-      title: "openapi-sdkgen",
-      description: "OpenAPI 3.x 문서에서 애플리케이션 SDK 소스를 생성.",
-      themeConfig: koreanTheme,
-    },
-  },
+  locales: Object.fromEntries(documentationScopes.map((scope: DocumentationScope): [string, LocaleConfig<DefaultTheme.Config>[string]] => [scope.key, {
+    label: "",
+    lang: scope.locale === "ko" ? "ko-KR" : "en-US",
+    link: scope.key === "root" ? "/" : `/${scope.key}/`,
+    themeConfig: { ...(scope.locale === "ko" ? koreanTheme : englishTheme), ...(scope.sdk ? buildSDKNavigation(scope.locale, scope.sdk) : {}) },
+  }])),
 });

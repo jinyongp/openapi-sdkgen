@@ -1,0 +1,33 @@
+# 선택 방식 고르기
+
+생성할 API를 선택하면 생성 파일을 줄일 수 있습니다. 가져오는 방식에 따라
+애플리케이션이 코드를 불러오는 시점과 배포 방법도 달라집니다.
+
+| 목표 | 사용할 기능 |
+| --- | --- |
+| 애플리케이션에서 쓰는 API만 생성하기 | [API 선택](/ko/typescript/guide/selective-client#generation) |
+| 페이지나 기능마다 별도 API 묶음 제공하기 | [기능별 클라이언트](/ko/typescript/guide/named-clients) |
+| 실행 중에 필요한 API 고르기 | [`loadOperations`](/ko/typescript/guide/selective-client#prepare) |
+
+## 생성과 배포
+
+생성 단계에서 API를 선택하면 지정한 API와 Link에 필요한 API만 포함합니다.
+모든 API를 선택하면 생성 파일이 줄어들지 않습니다.
+
+정적 가져오기를 사용하면 번들러가 쓰지 않는 코드를 제거할 수 있습니다.
+전체 SDK를 생성해도 일부 API만 가져오면 애플리케이션 번들은 작을 수 있습니다.
+생성 단계에서 API를 선택하면 컴파일러가 처리할 소스도 줄어듭니다.
+
+동적 조회는 필요한 API 모듈을 나중에 불러옵니다. ESM 모듈을 직접 배포할 때는
+생성한 선택 범위의 조회용 코드를 모두 컴파일해 배포해야 합니다.
+처음 내려받는 코드가 작아도 전체 배포 용량이 작다는 뜻은 아닙니다.
+
+애플리케이션의 초기 다운로드, 배포 파일, 빌드 시간을 함께 비교하세요.
+번들러가 의존 코드를 찾아야 한다면 [정적 가져오기](/ko/typescript/guide/selective-client#bundlers)를,
+ESM 모듈을 직접 제공한다면 [배포 가이드](/ko/typescript/guide/selective-client#deployment)를 참고하세요.
+
+## 공개 측정 결과
+
+[호환성 검증 결과](/ko/typescript/reference/compatibility)에서 GitHub Actions로 측정한
+생성 API 수와 시간을 확인할 수 있습니다. 측정한 실행과 입력 문서도 함께 제공합니다.
+서버 응답 시간을 측정한 결과는 아닙니다.
