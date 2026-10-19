@@ -17,7 +17,7 @@ Upload a client-side NDJSON file to a separate HTTP server and read its processi
 
 ## AI streaming
 
-Read SSE through a generated client, without an external model.
+Ask a model through an AI SDK server and read its response with a generated client.
 [Download ZIP](/downloads/typescript-ai-streaming-app.zip) · [Key code](./ai-streaming.md)
 
 ## Webhook receiver

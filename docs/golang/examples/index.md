@@ -9,7 +9,7 @@ Run API calls, raw responses, Links, resource paths, NDJSON, selected calls and 
 
 ## AI streaming
 
-Read events from a local SSE server. No external model or API key is required.
+Ask a model through an OpenAI Go server and read its response with a generated client.
 [Download ZIP](/downloads/golang-ai-streaming-app.zip) · [Key code](./ai-streaming.md)
 
 For feature-specific clients, see [Named clients](../guide/named-clients.md).

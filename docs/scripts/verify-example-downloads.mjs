@@ -43,8 +43,14 @@ async function unpack(name) {
   }
   return resolve(scratch, name);
 }
-async function startServer(directory, env, markers) {
-  const server = spawn(process.execPath, ["dist/server.js"], {
+async function startServer(
+  directory,
+  env,
+  markers,
+  command = process.execPath,
+  args = ["dist/server.js"],
+) {
+  const server = spawn(command, args, {
     cwd: directory,
     env: { ...process.env, ...env },
     stdio: ["ignore", "pipe", "pipe"],
@@ -81,7 +87,96 @@ async function startServer(directory, env, markers) {
   }
 }
 
+async function stopServer(server) {
+  if (server.exitCode !== null || server.signalCode !== null) return;
+  const stopped = new Promise((resolve) => server.once("exit", resolve));
+  server.kill();
+  await stopped;
+}
+
+const aiOutput = "An OpenAPI SDK turns your API contract into typed calls.";
+function verifyAIClientFailures(command, args, directory, env) {
+  for (const prompt of ["upstream-error", "upstream-disconnect"]) {
+    const result = spawnSync(command, [...args, prompt], {
+      cwd: directory,
+      env: { ...process.env, ...env },
+      encoding: "utf8",
+      timeout: 10_000,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.signal, null);
+    assert.notEqual(
+      result.status,
+      0,
+      "The generated client must report stream errors",
+    );
+    assert.ok(result.stderr.length > 0);
+    if (prompt === "upstream-disconnect")
+      assert.equal(result.stdout, "An OpenAPI SDK ");
+  }
+}
+async function verifyAIServer(baseURL, providerURL) {
+  const post = (body) =>
+    fetch(`${baseURL}/generate`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+      signal: AbortSignal.timeout(5_000),
+    });
+  for (const body of ["{", '{"prompt":""}', '{"prompt":"unused"}{}']) {
+    const invalid = await post(body);
+    assert.equal(invalid.status, 400);
+    await invalid.text();
+  }
+  const upstreamError = await post(
+    JSON.stringify({ prompt: "upstream-error" }),
+  );
+  assert.equal(upstreamError.status, 502);
+  assert.equal((await upstreamError.text()).trim(), "AI generation failed");
+
+  const disconnected = await post(
+    JSON.stringify({ prompt: "upstream-disconnect" }),
+  );
+  assert.equal(disconnected.status, 200);
+  await assert.rejects(
+    disconnected.text(),
+    "Truncated model streams must fail",
+  );
+
+  const before = await (await fetch(`${providerURL}/stats`)).json();
+  const abort = new AbortController();
+  const pending = await fetch(`${baseURL}/generate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ prompt: "upstream-wait" }),
+    signal: abort.signal,
+  });
+  const reader = pending.body.getReader();
+  assert.ok((await reader.read()).value.length > 0);
+  abort.abort();
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const after = await (await fetch(`${providerURL}/stats`)).json();
+    if (after.cancellations > before.cancellations) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.fail("Client cancellation did not reach the provider request");
+}
+
+let aiProvider;
 try {
+  const providerURL = "http://127.0.0.1:18976";
+  const aiEnv = {
+    OPENAI_API_KEY: "example-test-key",
+    OPENAI_MODEL: "example-test-model",
+    OPENAI_BASE_URL: `${providerURL}/v1`,
+  };
+  aiProvider = await startServer(
+    root,
+    { AI_PROVIDER_PORT: "18976" },
+    ["AI provider fixture listening"],
+    process.execPath,
+    [resolve(root, "docs/scripts/ai-provider-fixture.mjs")],
+  );
   const generator = resolve(scratch, "generator");
   run("go", ["build", "-o", generator, "./cmd/openapi-sdkgen"], root);
   for (const [name, module, addons, expected] of [
@@ -95,7 +190,7 @@ try {
       "golang-ai-streaming-app",
       "example.com/sdkgen-go-stream-example",
       [],
-      "hello",
+      aiOutput,
     ],
   ]) {
     const directory = await unpack(name);
@@ -128,12 +223,43 @@ try {
     );
     assert.equal(modules.Path, module);
     assert.ok(modules.Main && !modules.Replace);
-    assert.equal(
-      run("go", ["run", "-mod=readonly", "."], directory, env),
-      expected,
-    );
+    let server;
+    try {
+      if (name === "golang-ai-streaming-app") {
+        const serverDirectory = resolve(directory, "server");
+        const executable = resolve(scratch, "go-ai-server");
+        run(
+          "go",
+          ["build", "-mod=readonly", "-o", executable, "."],
+          serverDirectory,
+        );
+        server = await startServer(
+          serverDirectory,
+          { ...aiEnv, AI_API_PORT: "18977" },
+          ["AI API listening"],
+          executable,
+          [],
+        );
+        env.AI_API_BASE_URL = "http://127.0.0.1:18977";
+      }
+      assert.equal(
+        run("go", ["run", "-mod=readonly", "."], directory, env),
+        expected,
+      );
+      if (server) {
+        verifyAIClientFailures(
+          "go",
+          ["run", "-mod=readonly", "."],
+          directory,
+          env,
+        );
+        await verifyAIServer(env.AI_API_BASE_URL, providerURL);
+      }
+    } finally {
+      if (server) await stopServer(server);
+    }
     console.log(
-      `ok downloaded ${name}: generated and ran offline over local HTTP`,
+      `ok downloaded ${name}: standard-library client ran over local HTTP${server ? "; provider SDK stream, errors and cancellation verified" : ""}`,
     );
   }
   const tooling = resolve(root, "test/typescript/node_modules");
@@ -181,7 +307,17 @@ try {
       },
       ["Import API listening"],
     ],
-    ["typescript-ai-streaming-app", "api", [], {}, []],
+    [
+      "typescript-ai-streaming-app",
+      "api",
+      [],
+      {
+        ...aiEnv,
+        AI_API_PORT: "18978",
+        AI_API_BASE_URL: "http://127.0.0.1:18978",
+      },
+      ["AI API listening"],
+    ],
     ["typescript-webhook-app", "api", ["--with", "server"], {}, []],
   ]) {
     const directory = await unpack(name);
@@ -204,7 +340,13 @@ try {
       ],
       directory,
     );
-    await symlink(tooling, resolve(directory, "node_modules"), "dir");
+    if (name === "typescript-ai-streaming-app")
+      run(
+        "corepack",
+        ["pnpm@12.14.0", "install", "--frozen-lockfile"],
+        directory,
+      );
+    else await symlink(tooling, resolve(directory, "node_modules"), "dir");
     run(process.execPath, [compiler, "--project", "tsconfig.json"], directory);
     let server;
     try {
@@ -216,9 +358,16 @@ try {
         assert.deepEqual(data.listed.items, [data.created]);
       } else if (name === "typescript-request-streaming-app")
         assert.equal(result, "Imported 2 todos");
-      else if (name === "typescript-ai-streaming-app")
-        assert.equal(result, "Hello\nworld");
-      else if (name === "typescript-webhook-app")
+      else if (name === "typescript-ai-streaming-app") {
+        assert.equal(result, aiOutput);
+        verifyAIClientFailures(
+          process.execPath,
+          ["dist/client.js"],
+          directory,
+          env,
+        );
+        await verifyAIServer(env.AI_API_BASE_URL, providerURL);
+      } else if (name === "typescript-webhook-app")
         assert.deepEqual(JSON.parse(result.split("\n").slice(1).join("\n")), {
           accepted: 204,
           invalidCredentials: 401,
@@ -228,12 +377,11 @@ try {
       console.log(`ok downloaded ${name}: generated, compiled and ran`);
     } finally {
       if (server) {
-        const stopped = new Promise((resolve) => server.once("exit", resolve));
-        server.kill();
-        await stopped;
+        await stopServer(server);
       }
     }
   }
 } finally {
+  if (aiProvider) await stopServer(aiProvider);
   await rm(scratch, { recursive: true, force: true });
 }

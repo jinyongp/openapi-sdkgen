@@ -9,7 +9,7 @@
 
 ## AI 응답 스트리밍
 
-로컬 SSE 서버에서 이벤트를 읽습니다. 외부 모델이나 API 키는 필요하지 않습니다.
+OpenAI Go 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.
 [예제 ZIP](/downloads/golang-ai-streaming-app.zip) · [핵심 코드](./ai-streaming.md)
 
 기능별 클라이언트는 [이름 있는 클라이언트](../guide/named-clients.md),

@@ -37,14 +37,17 @@ export const exampleDownloads = [
   { name: "typescript-openapi-capabilities-app", files: tsFiles },
   {
     name: "typescript-ai-streaming-app",
-    files: [...standaloneTSFiles, "integration/server.ts"],
+    files: [...standaloneTSFiles, "src/server.ts"],
   },
   {
     name: "typescript-webhook-app",
     files: [...standaloneTSFiles, "src/worker.ts"],
   },
   { name: "golang-todo-app", files: goFiles },
-  { name: "golang-ai-streaming-app", files: goFiles },
+  {
+    name: "golang-ai-streaming-app",
+    files: [...goFiles, "server/go.mod", "server/go.sum", "server/main.go"],
+  },
 ];
 
 export async function buildExampleDownloads(

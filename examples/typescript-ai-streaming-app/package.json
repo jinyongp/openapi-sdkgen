@@ -4,7 +4,12 @@
   "type": "module",
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "server": "node dist/server.js",
     "start": "node dist/client.js"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.96",
+    "ai": "7.0.143"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

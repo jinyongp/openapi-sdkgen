@@ -21,7 +21,7 @@
 
 ## AI 응답 스트리밍
 
-SSE 응답을 생성된 클라이언트로 읽습니다. 외부 모델 없이 실행할 수 있습니다.
+AI SDK 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.
 [예제 ZIP](/downloads/typescript-ai-streaming-app.zip) · [핵심 코드](./ai-streaming.md)
 
 ## 웹훅 수신

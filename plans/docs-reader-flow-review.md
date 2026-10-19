@@ -60,8 +60,10 @@ outside this reader-facing rewrite.
   run the canonical Go Todo consumer without extracting code from a guide.
 - Browser: both locales/SDK first-use pages at 1280px and 390px, correct ZIP paths,
   no page-level horizontal overflow; all seven ZIP URLs return HTTP 200.
-- Optional AI provider integration remains application-owned and is not executed
-  against an external model. The downloaded SSE consumers run without provider credentials.
+- Superseded by the AI streaming example revision: both downloads now include
+  separate, runnable provider-backed servers and require server-side credentials.
+  See [the provider integration review](ai-streaming-example-review.md) for current
+  scope and verification; the original consumer-only evidence above is historical.
 
 ## Page coverage
 
