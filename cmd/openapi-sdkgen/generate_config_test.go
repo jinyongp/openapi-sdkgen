@@ -236,6 +236,8 @@ func TestGenerateProjectConfigCoversPersistentGenerateFlags(t *testing.T) {
 		"selection.operations":      "operation",
 		"selection.routes":          "route",
 		"typescript.typecheck":      "typecheck",
+		"golang.package":            "go-package",
+		"golang.import_path":        "go-import-path",
 	}
 	configured := make(map[string]bool, len(configToCLI))
 	for _, key := range generateProjectConfigKeys(reflect.TypeOf(generateProjectConfig{}), "") {

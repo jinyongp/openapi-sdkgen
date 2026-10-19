@@ -30,6 +30,12 @@ type generateProjectConfig struct {
 	Selection              *generateProjectSelectionConfig        `toml:"selection"`
 	Clients                map[string]generateProjectClientConfig `toml:"clients"`
 	TypeScript             generateProjectTypeScriptConfig        `toml:"typescript"`
+	Golang                 *generateProjectGoConfig               `toml:"golang"`
+}
+
+type generateProjectGoConfig struct {
+	Package    *string `toml:"package"`
+	ImportPath *string `toml:"import_path"`
 }
 
 type generateProjectTypeScriptConfig struct {
@@ -91,6 +97,21 @@ func applyGenerateProjectConfig(
 	values *generateFlagValues,
 	visited map[string]bool,
 ) {
+	if config.Golang != nil {
+		values.goExplicit = true
+		if config.Golang.Package != nil && !visited["go-package"] {
+			if values.goPackage == nil {
+				values.goPackage = new(string)
+			}
+			*values.goPackage = *config.Golang.Package
+		}
+		if config.Golang.ImportPath != nil && !visited["go-import-path"] {
+			if values.goImportPath == nil {
+				values.goImportPath = new(string)
+			}
+			*values.goImportPath = *config.Golang.ImportPath
+		}
+	}
 	if config.TypeScript.TypeCheck != nil && !visited["typecheck"] {
 		if values.typeCheck == nil {
 			values.typeCheck = new(bool)

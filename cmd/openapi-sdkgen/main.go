@@ -19,6 +19,7 @@ import (
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
 	sdkoutput "openapi-sdkgen/internal/output"
+	"openapi-sdkgen/internal/target/golang"
 	"openapi-sdkgen/internal/target/typescript"
 )
 
@@ -98,6 +99,9 @@ type generateFlagValues struct {
 	clients                map[string]generator.Client
 	typeCheck              *bool
 	typeCheckExplicit      bool
+	goPackage              *string
+	goImportPath           *string
+	goExplicit             bool
 	remoteRefs             repeatedStrings
 	schemaExtensions       repeatedStrings
 	httpHeaderEnv          rawStrings
@@ -308,6 +312,16 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 		return generateUsageError(err.Error())
 	}
 	visited := visitedGenerateFlags(flags.Flags)
+	if target.Name() == "golang" || values.goExplicit || visited["go-package"] || visited["go-import-path"] {
+		options.Golang = &generator.GoOptions{Package: *values.goPackage, ImportPath: *values.goImportPath}
+		if target.Name() == "golang" {
+			canonical, err := generator.CanonicalGoOptions(options.Golang)
+			if err != nil {
+				return generateUsageError(err.Error())
+			}
+			options.Golang = &canonical
+		}
+	}
 	if values.typeCheckExplicit || visited["typecheck"] {
 		options.TypeScriptTypeCheck = values.typeCheck
 	}
@@ -423,7 +437,7 @@ func generateWithRegistries(args []string, runtime generationRuntime, registries
 }
 
 func newCLIRegistries() (cliRegistries, error) {
-	targets, err := generator.NewRegistry(typescript.Generator{})
+	targets, err := generator.NewRegistry(typescript.Generator{}, golang.Generator{})
 	if err != nil {
 		return cliRegistries{}, err
 	}
@@ -479,6 +493,12 @@ func newGenerateFlagSet(registries cliRegistries) (*commandFlagSet, *generateFla
 	values.typeCheck = flags.Bool(generationGroup, helpOption{
 		Name: "typecheck", Summary: "Remove @ts-nocheck for your compiler; does not run tsc (default false)",
 	}, false)
+	values.goPackage = flags.String(generationGroup, helpOption{
+		Name: "go-package", Metavariable: "name", Summary: "Go root package name (default api)",
+	}, "api")
+	values.goImportPath = flags.String(generationGroup, helpOption{
+		Name: "go-import-path", Metavariable: "path", Summary: "Go SDK import root; required for golang",
+	}, "")
 	flags.Var(generationGroup, helpOption{
 		Name: "with", Metavariable: "addon", Summary: "Add generated artifacts",
 		Repeatable: true, Available: registries.addons.Names,
@@ -584,7 +604,7 @@ func writeGenerateHelpWithFlags(registries cliRegistries, flags *commandFlagSet)
 		Description: "Generate application SDK source from an OpenAPI document.",
 		Usage:       "openapi-sdkgen generate [options]",
 		Groups:      flags.Groups,
-		Footer:      "In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named TypeScript client. Root [selection] and CLI selection overrides remain independent.",
+		Footer:      "In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named client. Root [selection] and CLI selection overrides remain independent.",
 		Examples: []string{`openapi-sdkgen generate \
   --input ./openapi.yaml \
   --target typescript \
@@ -735,6 +755,10 @@ func newArtifactGeneration(identity, target string, options generator.Options, i
 		addonNames[index] = string(addon)
 	}
 	result := &artifactGeneration{Generator: identity, Target: target, Addons: addonNames, InputSHA256: inputDigest}
+	if options.Golang != nil {
+		value := *options.Golang
+		result.Golang = &value
+	}
 	if options.TypeScriptTypeCheck != nil && *options.TypeScriptTypeCheck {
 		checked := true
 		result.TypeScriptTypeCheck = &checked

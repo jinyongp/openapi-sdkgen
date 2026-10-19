@@ -13,7 +13,6 @@ import (
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
-	"openapi-sdkgen/internal/target/typescript"
 )
 
 type inspectFilter struct {
@@ -24,7 +23,8 @@ type inspectFilter struct {
 
 type inspectOperation struct {
 	compiler.InventoryOperation
-	TypeScript *typescript.OperationInspection `json:"typescript,omitempty"`
+	TypeScript *generator.OperationInspection `json:"typescript,omitempty"`
+	Golang     *generator.OperationInspection `json:"golang,omitempty"`
 }
 type inspectDocument struct {
 	Title          string `json:"title"`
@@ -50,6 +50,7 @@ func newInspectFlagSet(registries cliRegistries) (*commandFlagSet, *generateFlag
 	flags := newCommandFlagSet("inspect", "Input", "Filters", "Output", "Options", "Analysis")
 	groups := map[string]int{"config": 0, "input": 0, "input-base": 0, "http-header-env": 0, "tls-client-cert": 0, "tls-client-key": 0, "tls-ca-file": 0, "allow-remote-ref": 0, "ref-lock": 0, "offline": 0, "operation": 1, "route": 1, "diagnostics-format": 3, "diagnostic-mode": 3, "help": 3}
 	groups["target"], groups["schema-extension"] = 4, 4
+	groups["go-package"], groups["go-import-path"] = 4, 4
 	for _, group := range original.Groups {
 		for _, option := range group.Options {
 			index, ok := groups[option.Name]
@@ -65,7 +66,7 @@ func newInspectFlagSet(registries cliRegistries) (*commandFlagSet, *generateFlag
 				option.Summary = "Match an exact METHOD and OpenAPI path template"
 			case "target":
 				option.Summary = "Analyze actual client call paths before filtering"
-				option.Available = func() []string { return []string{"typescript"} }
+				option.Available = registries.targets.Names
 			}
 			flags.addOption(index, option)
 			flag := original.Flags.Lookup(option.Name)
@@ -108,6 +109,7 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 		return inspectUsageError("unexpected positional arguments")
 	}
 	visited := visitedGenerateFlags(flags.Flags)
+	explicitGoOptions := visited["go-package"] || visited["go-import-path"]
 	if visited["deprecated"] && *filter.deprecated == "" {
 		return inspectUsageError("--deprecated requires true or false")
 	}
@@ -119,6 +121,7 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 		// Selection and target are explicit inspect options, independent of the
 		// project's generation scope. Reuse only the input-side settings.
 		visited["operation"], visited["route"], visited["target"] = true, true, true
+		visited["go-package"], visited["go-import-path"] = true, true
 		applyGenerateProjectConfig(config, base, values, visited)
 	}
 	if *values.input == "" {
@@ -135,15 +138,27 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 	if err := filter.validate(values.operations, values.routes); err != nil {
 		return inspectUsageError(err.Error())
 	}
-	if *values.targetName != "" && *values.targetName != "typescript" {
-		return inspectUsageError("--target supports typescript")
-	}
 	if visited["schema-extension"] && *values.targetName == "" {
-		return inspectUsageError("--schema-extension requires --target typescript")
+		return inspectUsageError("--schema-extension requires --target")
+	}
+	if explicitGoOptions && *values.targetName != "golang" {
+		return inspectUsageError("Go options require --target golang")
+	}
+	analysisOptions := generator.Options{DiagnosticMode: mode}
+	if *values.targetName == "golang" {
+		importPath := *values.goImportPath
+		if importPath == "" {
+			importPath = "example.invalid/inspect"
+		}
+		canonical, err := generator.CanonicalGoOptions(&generator.GoOptions{Package: *values.goPackage, ImportPath: importPath})
+		if err != nil {
+			return inspectUsageError(err.Error())
+		}
+		analysisOptions.Golang = &canonical
 	}
 	options := compiler.CompileOptions{DiagnosticMode: mode, InputBase: *values.inputBase, InputReader: standardInput, RemoteRefAllowlist: values.remoteRefs, RefLockPath: *values.refLock, Offline: *values.offline, HTTPHeaderEnv: values.httpHeaderEnv, TLSClientCert: *values.tlsClientCert, TLSClientKey: *values.tlsClientKey, TLSCAFile: *values.tlsCAFile}
 	var inventory *compiler.Inventory
-	var inspected map[string]typescript.OperationInspection
+	var inspected map[string]generator.OperationInspection
 	if *values.targetName == "" {
 		compiled, err := compiler.InspectInputResult(*values.input, options)
 		if err != nil {
@@ -162,16 +177,16 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 		if err != nil {
 			return internalFailure("internal compiler failure", err)
 		}
-		target, err := registries.targets.Lookup("typescript")
+		target, err := registries.targets.Lookup(*values.targetName)
 		if err != nil {
 			return err
 		}
-		prepared, err := runtime.prepare(target, compiled, generator.Options{DiagnosticMode: mode})
+		prepared, err := runtime.prepare(target, compiled, analysisOptions)
 		if renderErr := writeDiagnostics(prepared.Diagnostics, prepared.SkippedPhases, prepared.Coverage, mode, format); renderErr != nil {
 			return renderErr
 		}
 		if err != nil {
-			return internalFailure("internal TypeScript analysis failure", err)
+			return internalFailure("internal "+target.Name()+" analysis failure", err)
 		}
 		if diagnostic.HasErrors(prepared.Diagnostics) {
 			return errReportedDiagnostics
@@ -180,7 +195,11 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 		if err != nil {
 			return err
 		}
-		inspected, err = typescript.InspectPlan(prepared.Plan)
+		inspector, ok := target.(generator.PlanInspector)
+		if !ok {
+			return fmt.Errorf("target %q does not support inspection", target.Name())
+		}
+		inspected, err = inspector.InspectPlan(prepared.Plan)
 		if err != nil {
 			return err
 		}
@@ -193,13 +212,17 @@ func inspectWithRegistries(args []string, runtime generationRuntime, registries 
 		return inspectUsageError(err.Error())
 	}
 	if inspected != nil {
-		report.Target, report.AnalysisScope = "typescript", "full-document-client"
+		report.Target, report.AnalysisScope = *values.targetName, "full-document-client"
 		for index := range report.Operations {
 			value, exists := inspected[report.Operations[index].Route]
 			if !exists {
-				value = typescript.OperationInspection{Status: "omitted"}
+				value = generator.OperationInspection{Status: "omitted"}
 			}
-			report.Operations[index].TypeScript = &value
+			if report.Target == "typescript" {
+				report.Operations[index].TypeScript = &value
+			} else if report.Target == "golang" {
+				report.Operations[index].Golang = &value
+			}
 		}
 	}
 	return writeInspectReport(standardOutput, report, *filter.format)
@@ -384,7 +407,11 @@ func writeInspectReport(output io.Writer, report inspectReport, format string) e
 			row := []string{operation.Method, operation.Path, id, strings.Join(operation.Tags, ", "), strconv.FormatBool(operation.Deprecated), string(summary)}
 			if report.Target != "" {
 				call, status := "—", "omitted"
-				if inspection := operation.TypeScript; inspection != nil {
+				inspection := operation.TypeScript
+				if report.Target == "golang" {
+					inspection = operation.Golang
+				}
+				if inspection != nil {
 					if inspection.ResourceCall != nil {
 						call = *inspection.ResourceCall
 					}

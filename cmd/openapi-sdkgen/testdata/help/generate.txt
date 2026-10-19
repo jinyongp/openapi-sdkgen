@@ -9,7 +9,7 @@ Configuration:
 
 Required:
   --input <source>                OpenAPI file, file:// URL, HTTP(S) URL, or -
-  --target <name>                 SDK target (available: typescript)
+  --target <name>                 SDK target (available: golang, typescript)
 
 Generation:
   --output <directory>            Generated-code directory; with --check, verify this
@@ -18,6 +18,8 @@ Generation:
   --incremental                   Update a manifest-owned output directory
   --typecheck                     Remove @ts-nocheck for your compiler; does not run tsc
                                   (default false)
+  --go-package <name>             Go root package name (default api)
+  --go-import-path <path>         Go SDK import root; required for golang
   --with <addon>                  Add generated artifacts (available: metadata, server)
                                   (repeatable)
   --operation <id>                Generate an exact OpenAPI operationId; combine with
@@ -59,5 +61,5 @@ Examples:
     --target typescript \
     --output ./src/generated/api
 
-In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named
-TypeScript client. Root [selection] and CLI selection overrides remain independent.
+In TOML, [clients.<name>.selection] assigns operation IDs and routes to a named client.
+Root [selection] and CLI selection overrides remain independent.
