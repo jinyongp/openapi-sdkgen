@@ -1,0 +1,76 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "Signed Order Webhooks", "version": "1.0.0" },
+  "paths": {
+    "/fulfillments": {
+      "get": {
+        "operationId": "getFulfillments",
+        "responses": {
+          "200": {
+            "description": "Orders processed by the receiver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["processed", "orders"],
+                  "properties": {
+                    "processed": { "type": "integer", "minimum": 0 },
+                    "orders": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "orderPaid": {
+      "post": {
+        "parameters": [
+          {
+            "name": "x-webhook-id",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1 }
+          },
+          {
+            "name": "x-webhook-timestamp",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9]+$" }
+          },
+          {
+            "name": "x-webhook-signature",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["orderID", "amountCents"],
+                "additionalProperties": false,
+                "properties": {
+                  "orderID": { "type": "string", "minLength": 1 },
+                  "amountCents": { "type": "integer", "minimum": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Processed or already processed" },
+          "409": {
+            "description": "Delivery ID was already used for different data"
+          }
+        }
+      }
+    }
+  }
+}

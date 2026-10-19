@@ -29,6 +29,10 @@ const goFiles = ["README.md", "openapi.json", "go.mod", "setup.sh", "main.go"];
 // Keep archives limited to reviewed source; never include generated output or local files.
 export const exampleDownloads = [
   { name: "typescript-todo-app", files: tsFiles },
+  {
+    name: "typescript-signed-webhook-app",
+    files: [...tsFiles, "src/signature.ts"],
+  },
   { name: "typescript-report-jobs-app", files: [...tsFiles, "orders.json"] },
   {
     name: "typescript-file-conversion-app",
@@ -49,6 +53,14 @@ export const exampleDownloads = [
     files: [...standaloneTSFiles, "src/worker.ts"],
   },
   { name: "golang-todo-app", files: goFiles },
+  {
+    name: "golang-signed-webhook-app",
+    files: [
+      ...goFiles,
+      "cmd/server/main.go",
+      "internal/signature/signature.go",
+    ],
+  },
   {
     name: "golang-file-conversion-app",
     files: [...goFiles, "contacts.json", "cmd/server/main.go"],

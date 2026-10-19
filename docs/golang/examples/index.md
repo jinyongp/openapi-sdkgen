@@ -12,6 +12,11 @@ Run API calls, raw responses, Links, resource paths, NDJSON, selected calls and 
 Upload a JSON contacts file and save the NDJSON converted by the server.
 [Download ZIP](/downloads/golang-file-conversion-app.zip) · [Key code](./file-conversion.md)
 
+## Signed webhooks
+
+Verify a separate sender's HMAC signature and prevent duplicate processing.
+[Download ZIP](/downloads/golang-signed-webhook-app.zip) · [Key code](./signed-webhooks.md)
+
 ## AI streaming
 
 Ask a model through an OpenAI Go server and read its response with a generated client.

@@ -19,6 +19,11 @@ import {
   verifyConversionClient,
   verifyConversionServer,
 } from "./file-conversion-checks.mjs";
+import {
+  webhookSecret,
+  verifySignedWebhookClient,
+  verifySignedWebhookServer,
+} from "./signed-webhook-checks.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const scratch = await mkdtemp(resolve(root, ".tmp/downloaded-examples-"));
@@ -189,6 +194,12 @@ try {
   run("go", ["build", "-o", generator, "./cmd/openapi-sdkgen"], root);
   for (const [name, module, addons, expected] of [
     [
+      "golang-signed-webhook-app",
+      "example.com/sdkgen-go-signed-webhook",
+      ["--with", "server"],
+      null,
+    ],
+    [
       "golang-todo-app",
       "example.com/sdkgen-go-example",
       ["--with", "server"],
@@ -258,6 +269,12 @@ try {
         env.AI_API_BASE_URL = "http://127.0.0.1:18977";
       }
       const localServer = {
+        "golang-signed-webhook-app": {
+          port: "18984",
+          portKey: "WEBHOOK_API_PORT",
+          baseKey: "WEBHOOK_API_BASE_URL",
+          marker: "Signed webhook API listening",
+        },
         "golang-report-jobs-app": {
           port: "18979",
           portKey: "REPORT_API_PORT",
@@ -281,12 +298,17 @@ try {
         );
         server = await startServer(
           directory,
-          { [localServer.portKey]: localServer.port },
+          {
+            [localServer.portKey]: localServer.port,
+            WEBHOOK_SECRET: webhookSecret,
+          },
           [localServer.marker],
           executable,
           [],
         );
         env[localServer.baseKey] = `http://127.0.0.1:${localServer.port}`;
+        if (name === "golang-signed-webhook-app")
+          env.WEBHOOK_SECRET = webhookSecret;
       }
       const result = run("go", ["run", "-mod=readonly", "."], directory, env);
       if (name === "golang-report-jobs-app") {
@@ -295,6 +317,9 @@ try {
       } else if (name === "golang-file-conversion-app") {
         await verifyConversionClient(directory, result);
         await verifyConversionServer(env.CONVERSION_API_BASE_URL);
+      } else if (name === "golang-signed-webhook-app") {
+        verifySignedWebhookClient(result);
+        await verifySignedWebhookServer(env.WEBHOOK_API_BASE_URL);
       } else assert.equal(result, expected);
       if (name === "golang-ai-streaming-app") {
         verifyAIClientFailures(
@@ -315,6 +340,17 @@ try {
   const tooling = resolve(root, "test/typescript/node_modules");
   const compiler = resolve(tooling, "typescript/bin/tsc");
   for (const [name, output, addons, env, markers] of [
+    [
+      "typescript-signed-webhook-app",
+      "api",
+      ["--with", "server"],
+      {
+        WEBHOOK_API_PORT: "18985",
+        WEBHOOK_API_BASE_URL: "http://127.0.0.1:18985",
+        WEBHOOK_SECRET: webhookSecret,
+      },
+      ["Signed webhook API listening"],
+    ],
     [
       "typescript-todo-app",
       "todo-sdk",
@@ -434,6 +470,9 @@ try {
       } else if (name === "typescript-file-conversion-app") {
         await verifyConversionClient(directory, result);
         await verifyConversionServer(env.CONVERSION_API_BASE_URL);
+      } else if (name === "typescript-signed-webhook-app") {
+        verifySignedWebhookClient(result);
+        await verifySignedWebhookServer(env.WEBHOOK_API_BASE_URL);
       } else if (name === "typescript-ai-streaming-app") {
         assert.equal(result, aiOutput);
         verifyAIClientFailures(

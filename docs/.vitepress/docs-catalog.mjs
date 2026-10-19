@@ -247,6 +247,13 @@ export const topics = Object.freeze([
     "targets": ["typescript", "golang"]
   },
   {
+    "id": "signed-webhooks",
+    "suffix": "/examples/signed-webhooks",
+    "labels": { "en": "Signed webhooks", "ko": "웹훅 서명과 중복 처리" },
+    "group": "examples",
+    "targets": ["typescript", "golang"]
+  },
+  {
     "id": "webhook-server",
     "suffix": "/examples/webhook-server",
     "labels": {

@@ -25,6 +25,11 @@ Submit a job, poll its progress and save the computed CSV; cancel a second job.
 Upload a JSON contacts file and save the NDJSON converted by the server.
 [Download ZIP](/downloads/typescript-file-conversion-app.zip) · [Key code](./file-conversion.md)
 
+## Signed webhooks
+
+Verify a separate sender's HMAC signature and prevent duplicate processing.
+[Download ZIP](/downloads/typescript-signed-webhook-app.zip) · [Key code](./signed-webhooks.md)
+
 ## AI streaming
 
 Ask a model through an AI SDK server and read its response with a generated client.

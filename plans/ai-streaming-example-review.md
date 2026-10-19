@@ -53,9 +53,8 @@ execution are separately checked with an empty module cache and network disabled
    progress → download a real generated file and a separate cancel path.
 2. File conversion: implemented in [the file conversion applications](file-conversion-example-review.md),
    covering upload → JSON-to-NDJSON conversion → saved download and readable result.
-3. Signed webhook delivery: a separate sender signs bytes, the receiver verifies
-   them and ignores duplicate delivery IDs. Existing webhook examples cover token
-   authentication and schema validation, not signatures or idempotent effects.
+3. Signed webhook delivery: implemented in [the signed webhook applications](signed-webhook-example-review.md),
+   covering separate signed delivery, generated receiver validation and deduplicated effects.
 
 Implement each as a complete small application for both clients, with observable
 results and a short documentation overview. Keep application-level job state,

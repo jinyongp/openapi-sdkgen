@@ -24,6 +24,11 @@
 JSON 연락처 파일을 업로드하고 서버가 변환한 NDJSON 파일을 저장합니다.
 [예제 ZIP](/downloads/typescript-file-conversion-app.zip) · [주요 코드](./file-conversion.md)
 
+## 웹훅 서명과 중복 처리
+
+별도 발신자의 HMAC 서명을 검증하고 같은 전송의 중복 처리를 막습니다.
+[예제 ZIP](/downloads/typescript-signed-webhook-app.zip) · [주요 코드](./signed-webhooks.md)
+
 ## AI 응답 스트리밍
 
 AI SDK 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.
