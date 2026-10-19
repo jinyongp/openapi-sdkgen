@@ -11,16 +11,17 @@ that simplification to the product home as well. The user clarified that the
 product home should retain its prior presentation; only SDK homes should be compact.
 
 Product homes use `SDKHome.vue`, restored byte-for-byte from `b047c98`: product
-introduction, overview, CLI installation and both language rows. SDK homes use
-`SDKOverview.vue`: one title, one short description and four scoped links. Both
-targets/locales share that compact SDK component, with an explicit typed SDK prop.
-Four SDK Markdown pages retain their historical anchors and `layout: page`.
+introduction, overview, CLI installation and both language rows. The subsequent
+request removes even the compact SDK overview: all four SDK entry URLs now use
+`SDKEntry.vue` to open their own getting-started guide. The interim `SDKOverview`
+component was removed. Four entry Markdown pages retain historical anchors and
+`layout: page` for compatibility. SDK/locale destination construction uses the
+existing context helpers, with a normal link as the unmounted fallback.
 
-Reviewed explicit SDK props, locale handling, link destinations, headings,
-focus styling and responsive layout. `devtools run build:docs`, documentation
-TypeScript checks and built route/link/anchor validation passed. Browser checks
-at 1280px and 390px covered all six routes: product homes have introduction and
-installation sections plus eight document links; SDK homes have neither section
-and retain four correctly scoped links. None has horizontal page overflow.
-Separating product and SDK presentation prevents changes to SDK simplicity from
-also replacing the product overview. No new dependencies or cosmetic tests.
+Reviewed explicit SDK props, locale handling, deployment base, native replacement
+navigation and fallback links. Final `devtools run build:docs`, documentation
+TypeScript and built route/link/anchor checks passed. Browser checks opened all
+four entry URLs and confirmed the matching guide heading, SDK and locale after
+navigation. Selecting Go from the product home's SDK selector also opened its
+getting-started guide. The root product overview and installation still render;
+its source component remains unchanged. No new dependencies or source-literal tests.
