@@ -262,9 +262,9 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP"
           gh release download "$RELEASE_TAG" --pattern install.sh --pattern checksums.txt
-          grep '  install.sh$' checksums.txt | shasum -a 256 --check --strict
+          grep '  install\.sh$' checksums.txt | shasum -a 256 --check --strict
           sh install.sh --install-dir "$RUNNER_TEMP/sdkgen-bin"
-          "$RUNNER_TEMP/sdkgen-bin/openapi-sdkgen" --version | grep -F "$RELEASE_VERSION"
+          test "$("$RUNNER_TEMP/sdkgen-bin/openapi-sdkgen" --version)" = "openapi-sdkgen $RELEASE_VERSION"
       - name: Install and execute on Windows
         if: runner.os == 'Windows'
         shell: powershell
@@ -273,11 +273,11 @@ jobs:
           Set-Location $env:RUNNER_TEMP
           gh release download $env:RELEASE_TAG --pattern install.ps1 --pattern checksums.txt
           if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
-          $entries = @(Get-Content checksums.txt | Where-Object { $_ -match '^[0-9a-fA-F]{64}  install.ps1$' })
+          $entries = @(Get-Content checksums.txt | Where-Object { $_ -cmatch '^[0-9a-fA-F]{64}  install\.ps1$' })
           if ($entries.Count -ne 1 -or (Get-FileHash install.ps1 -Algorithm SHA256).Hash -ine ($entries[0] -split '\s+')[0]) { throw 'Installer checksum mismatch' }
           & ./install.ps1 -InstallDir "$env:RUNNER_TEMP/sdkgen-bin"
           $version = & "$env:RUNNER_TEMP/sdkgen-bin/openapi-sdkgen.exe" --version
-          if ($LASTEXITCODE -ne 0 -or -not $version.Contains($env:RELEASE_VERSION)) { throw 'Installed version mismatch' }
+          if ($LASTEXITCODE -ne 0 -or $version -cne "openapi-sdkgen $env:RELEASE_VERSION") { throw 'Installed version mismatch' }
 
   verify-homebrew-release:
     name: Verify Homebrew Go support

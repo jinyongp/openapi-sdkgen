@@ -22,6 +22,7 @@ try {
     New-Item -ItemType Directory -Path $files | Out-Null
     [IO.File]::WriteAllText((Join-Path $files 'openapi-sdkgen.exe'), 'fixture executable')
     [IO.Compression.ZipFile]::CreateFromDirectory($files, (Join-Path $root 'archive.zip'))
+    $archiveBytes = [IO.File]::ReadAllBytes((Join-Path $root 'archive.zip'))
     $hash = (Get-FileHash -LiteralPath (Join-Path $root 'archive.zip') -Algorithm SHA256).Hash
     foreach ($arch in @('AMD64', 'ARM64')) {
         $env:PROCESSOR_ARCHITECTURE = $arch
@@ -31,6 +32,7 @@ try {
         1..2 | ForEach-Object {
             & $installer -Version v1.2.3 | Out-Null
             Assert-True ((Get-Content -LiteralPath $destination -Raw) -ceq 'fixture executable') 'Install/reinstall content mismatch'
+            Assert-True (@(Get-ChildItem -LiteralPath (Split-Path $destination) -Force).Count -eq 1) 'Reinstall left staged files'
         }
     }
     $env:PROCESSOR_ARCHITECTURE = 'x86'
@@ -41,13 +43,19 @@ try {
     & $stamped -InstallDir $custom | Out-Null
     $destination = Join-Path $custom 'openapi-sdkgen.exe'
     Assert-True ((Get-Content -LiteralPath $destination -Raw) -ceq 'fixture executable') 'Stamped default/native architecture failed'
-    foreach ($mode in @('download', 'tamper', 'missing', 'duplicate')) {
+    foreach ($mode in @('download', 'tamper', 'missing', 'duplicate', 'bad-archive')) {
         $global:SdkgenInstallFixture.Mode = $mode
+        [IO.File]::WriteAllBytes((Join-Path $root 'archive.zip'), $archiveBytes)
         [IO.File]::WriteAllText($destination, 'old installation')
         $checksum = "$hash  $($global:SdkgenInstallFixture.Asset)`n"
         if ($mode -eq 'tamper') { $checksum = ('0' * 64) + "  $($global:SdkgenInstallFixture.Asset)`n" }
         if ($mode -eq 'missing') { $checksum = "$hash  different.zip`n" }
         if ($mode -eq 'duplicate') { $checksum += $checksum }
+        if ($mode -eq 'bad-archive') {
+            [IO.File]::WriteAllText((Join-Path $root 'archive.zip'), 'not an archive')
+            $badHash = (Get-FileHash -LiteralPath (Join-Path $root 'archive.zip') -Algorithm SHA256).Hash
+            $checksum = "$badHash  $($global:SdkgenInstallFixture.Asset)`n"
+        }
         [IO.File]::WriteAllText((Join-Path $root 'checksums.txt'), $checksum)
         $failed = $false
         try { & $installer -Version 1.2.3 -InstallDir $custom | Out-Null } catch { $failed = $true }
@@ -63,6 +71,10 @@ try {
     $failed = $false
     try { & $installer -Version 1.2.3 -InstallDir $custom | Out-Null } catch { $failed = $true }
     Assert-True $failed 'Accepted unsupported architecture'
+    $env:PROCESSOR_ARCHITECTURE = 'AMD64'
+    $failed = $false
+    try { & $installer -Version 1.2.3 -InstallDir '' | Out-Null } catch { $failed = $true }
+    Assert-True $failed 'Accepted empty install directory'
     Write-Output 'ok PowerShell installer: architectures, defaults, pinned version, reinstall and failure preservation'
 } finally {
     foreach ($key in $saved.Keys) { [Environment]::SetEnvironmentVariable($key, $saved[$key]) }
