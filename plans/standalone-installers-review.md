@@ -61,6 +61,9 @@
 - Current review rechecked download/integrity/extraction/replacement and their
   unchanged callers; added actionable download and destination errors. PowerShell
   failures identify the stage and preserve native error detail.
+- Final precedence recheck includes npm's existing `.ps1` command shim:
+  `ExternalScript` is reported with its actual path rather than mislabeled as an
+  alias/function. This and the affected PowerShell tests were rechecked.
 - Latest Releaseway tags were checked again after the updates. Four workflow
   lint checks passed, including the new exact-source sparse checkout, hash
   outputs and post-deployment verification step.

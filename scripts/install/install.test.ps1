@@ -66,7 +66,7 @@ try {
     $output = (& $stamped -InstallDir $custom) -join "`n"
     $destination = Join-Path $custom 'openapi-sdkgen.exe'
     Assert-True ((Get-Content -LiteralPath $destination -Raw) -ceq 'fixture executable') 'Stamped default/native architecture failed'
-    Assert-True ($output.Contains('Another executable currently takes precedence: old executable')) 'Missing old-command warning'
+    Assert-True ($output.Contains('Another command currently takes precedence: old executable')) 'Missing old-command warning'
     $pathLine = ($output -split "`n" | Where-Object { $_.TrimStart().StartsWith('$env:Path = ') }).Trim()
     Invoke-Expression $pathLine
     Assert-True ($env:Path.StartsWith("$custom;")) 'Printed PATH command did not preserve literal directory'
@@ -80,6 +80,10 @@ try {
     $output = (& $stamped -InstallDir $custom) -join "`n"
     Assert-True ($output.Contains("Verify installation:`n  openapi-sdkgen --version")) 'Missing ready-to-run confirmation'
     Assert-True (-not $output.Contains('$env:Path = ')) 'Unneeded PATH change when command already resolves correctly'
+    $global:SdkgenInstallFixture.CurrentCommand = [pscustomobject]@{ CommandType = 'ExternalScript'; Source = 'old npm/openapi-sdkgen.ps1' }
+    $output = (& $stamped -InstallDir $custom) -join "`n"
+    Assert-True ($output.Contains('Another command currently takes precedence: old npm/openapi-sdkgen.ps1')) 'Missing npm PowerShell shim location'
+    Assert-True (-not $output.Contains('alias or function')) 'Misidentified npm PowerShell shim'
     $global:SdkgenInstallFixture.CurrentCommand = $null
     foreach ($mode in @('download', 'tamper', 'missing', 'duplicate', 'bad-archive')) {
         $global:SdkgenInstallFixture.Mode = $mode

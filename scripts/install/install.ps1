@@ -96,8 +96,8 @@ param(
         $quotedExecutable = $destination.Replace("'", "''")
         $quotedDir = $InstallDir.Replace("'", "''")
         Write-Output "Run now:`n  & '$quotedExecutable' --version"
-        if ($current -and $current.CommandType -eq 'Application') {
-            Write-Output "Another executable currently takes precedence: $($current.Source)"
+        if ($current -and $current.CommandType -in @('Application', 'ExternalScript')) {
+            Write-Output "Another command currently takes precedence: $($current.Source)"
         } elseif ($current) {
             Write-Output 'A PowerShell alias or function named openapi-sdkgen takes precedence. Use the full path above.'
         }
