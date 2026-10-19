@@ -1,0 +1,33 @@
+{
+  "unit": "W04",
+  "scope": "Pattern compiler only; matcher and generated SDK integration pending",
+  "syntaxCases": 3930,
+  "valid": 3606,
+  "invalid": 324,
+  "sourceFiles": 2119,
+  "staticSourceFiles": 710,
+  "unicodeMode": "u",
+  "tests": [
+    "independent syntax contract",
+    "existing 42 plus synthetic Node syntax oracle",
+    "3930 pinned static Test262 constructor patterns",
+    "100000 nested groups and depth/cancellation errors",
+    "race (compiler and Unicode)",
+    "fuzz: 78037 executions in 5-second requested run, no failure",
+    "fixture regeneration: exact hash match"
+  ],
+  "sourceSha256": {
+    "internal/goruntime/ecmaregexp/program.go": "581a320bb27ef6d960a76fd932ccdd8e68aaa4de629836979fb9cc4974dd9ed9",
+    "internal/goruntime/ecmaregexp/classes.go": "93fcc993c7fcde17f8b6e5d764f624c3634ebeee8ac257a9bd83b7253c638c36",
+    "internal/goruntime/ecmaregexp/compile.go": "7d9e287e9aa6dcd621660a4dc3b1baabc4242a463290564749ebcde753d7b4ba",
+    "internal/goruntime/ecmaregexp/text.go": "e9d438298f92459e10bc764f906d2448b1e7d1461f8b913358c05e8f25c4e2c4",
+    "internal/goruntime/ecmaregexp/compile_test.go": "51c88dbb0ce83ed1da5f8ae1673243ef6acf176bdbc55b1ad1f9297337aeb235",
+    "internal/goruntime/unicode17/fold.go": "43a7da8159fbde435e1c9a5297063c961225f136bc449995ad1af8b8a24ff0af",
+    "scripts/goruntime-data/extract-regexp-syntax.mjs": "11527d5748818de6dc9b6e95eb32ff5b53654ece40acf87fd6a654200f3af379"
+  },
+  "classSharingDiagnostic": {
+    "scope": "Local one-iteration engineering samples, not statistically validated latency claims. Before source hash was not captured; W10 remains the matched performance comparison.",
+    "before": "goos: linux\ngoarch: amd64\npkg: openapi-sdkgen/internal/goruntime/ecmaregexp\ncpu: AMD Ryzen 7 9800X3D 8-Core Processor           \nBenchmarkCompileRepeatedProperties-16    \t       1\t  12847624 ns/op\t    684000 ranges\t39660288 B/op\t    3057 allocs/op\nBenchmarkCompileRepeatedProperties-16    \t       1\t   7457310 ns/op\t    684000 ranges\t39660080 B/op\t    3056 allocs/op\nBenchmarkCompileRepeatedProperties-16    \t       1\t  11233385 ns/op\t    684000 ranges\t39659968 B/op\t    3055 allocs/op\nPASS\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t0.036s\n",
+    "after": "goos: linux\ngoarch: amd64\npkg: openapi-sdkgen/internal/goruntime/ecmaregexp\ncpu: AMD Ryzen 7 9800X3D 8-Core Processor           \nBenchmarkCompileRepeatedProperties-16    \t       1\t   2023421 ns/op\t       684.0 ranges\t 6321832 B/op\t    3025 allocs/op\nBenchmarkCompileRepeatedProperties-16    \t       1\t   1175027 ns/op\t       684.0 ranges\t 6327264 B/op\t    3032 allocs/op\nBenchmarkCompileRepeatedProperties-16    \t       1\t   1286823 ns/op\t       684.0 ranges\t 6322072 B/op\t    3028 allocs/op\nPASS\nok  \topenapi-sdkgen/internal/goruntime/ecmaregexp\t0.010s\n"
+  }
+}

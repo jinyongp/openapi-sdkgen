@@ -24,3 +24,10 @@ func FoldEquivalents(value rune, destination []rune) []rune {
 	}
 	return destination
 }
+
+// VisitSimpleFolds exposes the immutable simple-fold relation to compilers.
+func VisitSimpleFolds(visit func(from, to rune)) {
+	for _, entry := range caseFolds {
+		visit(entry.from, entry.to)
+	}
+}

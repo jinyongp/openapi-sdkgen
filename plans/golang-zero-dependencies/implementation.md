@@ -73,3 +73,24 @@ opaque binary Raw·custom codec·필수 헤더 실패·close/cancel/race 통과.
 (`.tmp/golang-zero-w02-perf-check`). 이는 성능 비교용 표본이 아니다.
 사용자 HTTP 계층/SDK 의미 경계·수명·보안 capability·기존 호출부·측정 도구 리뷰와 영향 재검사를 마쳤다.
 실제 모듈·문서의 예전 설치 안내 정리는 W08/W09에서 수행한다. 정규식·URL 외부 의존성은 아직 남아 있다.
+
+## W04 — 자체 정규식 parser/compiler
+
+`internal/goruntime/ecmaregexp`에 Unicode `u` grammar, scoped i/m/s, 캡처·전후방 assertion·참조·
+반복·Unicode class 컴파일을 구현했다. 명시적 group stack과 평평한 versioned instruction/edge/range
+자료를 쓰며 100,000중첩도 Go stack 재귀 없이 컴파일한다. 문법·복잡도·context 오류를 구분한다.
+같은 class source/flags의 자료를 공유하고 class 내부 중복 범위를 누적하지 않는다.
+일반 문자열·WTF8 서로게이트의 캐시 키가 섞이지 않도록 code point를 고정 폭으로 직렬화한다.
+
+고정 Test262의 정적 `u` pattern 3,930개(정상3,606/오류324)의 Node 컴파일 결과와 일치한다.
+710개 원본 파일에서 추출했으며 전체 2,119개 파일의 동적/API scope 상태는 별도 manifest에 남겼다.
+upstream JS를 실행한 적합성 통과로 표현하지 않는다. 추출은 기존 TypeScript 개발 API로 구문만 읽고
+원본 SHA를 검사한다. 패턴 UTF16 units를 보존하며 정상 Go 테스트는 TS 설치·네트워크를 요구하지 않는다.
+
+리뷰에서 Unicode property의 빈 이름 `\p{=Letter}` 허용과 `(?i-:...)` modifier 허용 차이를 고쳤다.
+비캡처 괄호 뒤 중첩 quantifier, 중복 이름의 disjoint alternative 판정, 거대한 반복 범위,
+\W의 Unicode ignore-case 집합 순서, modifier 상속 제거, 긴 escape의 취소 확인도 검토했다.
+독립 구문 기대값·Node 비교·전체 정적 fixture·race·fuzz 통과. 마지막 fuzz는78,037회 무실패.
+반복 property 자료의 저장 중복을 로컬 진단해 684,000 range를684개로 공유했다. 원시 1회×3표본은
+`w04-evidence.json`에 남겼으며 기준 source hash 미수집 등 한계를 명시했다. 전체 성능 판단은 W10이다.
+범위·실패·불변 자료·Unicode·생성 가능한 구조를 재검토했다. 매칭 실행과 SDK 연결은 W05/W07의 pending 작업이다.
