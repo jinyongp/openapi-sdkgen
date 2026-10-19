@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: openapi-sdkgen
-  text: Generate SDK source from OpenAPI
+  text: TypeScript SDKs from OpenAPI
   tagline: Read OpenAPI 3.0, 3.1, and 3.2 documents and generate application SDK source as TypeScript files you own and build with your application.
   actions:
     - theme: brand

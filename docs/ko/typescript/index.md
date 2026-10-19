@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: openapi-sdkgen
-  text: OpenAPI에서 SDK 소스 생성
+  text: OpenAPI에서 TypeScript SDK 생성
   tagline: OpenAPI 3.0, 3.1, 3.2 문서로 애플리케이션에서 사용할 SDK 소스를 생성합니다. 생성한 TypeScript 코드를 애플리케이션 소스로 관리합니다.
   actions:
     - theme: brand
