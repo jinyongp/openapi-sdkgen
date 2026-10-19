@@ -54,3 +54,16 @@ EN/KO 시작·생성·inspect·원격 입력·호출/오류·모델·인증/전�
 리뷰: 모듈/출력/import 경계, Go 버전과 의존성 소유권, 취소·응답 소유권, 오류와 presence,
 CLI 분석과 생성의 구분, EN/KO 코드 대응을 확인했다. Korean inspect에 남은 TS 전용 절을 제거했다.
 심화·참조 목적지의 파일 및 전체 링크 검사는 W05/W06에서 내용이 완성된 뒤 수행한다.
+
+## W05 — Go 심화와 API 참조
+
+파일/Link/stream·named/static/generation selection·빌드 비용·스키마 어휘·수신 가이드와
+CLI·client·types·streaming·server 참조 24개 페이지를 추가했다. 공개 옵션은 실제 runtime
+계약과 대조했다. metadata의 독립 package, Document 복사, source/stream 소유권과 소비 속도,
+수신 한도·인증·duplex·헤더 전송 뒤 실패를 설명한다.
+
+검증: `go test ./internal/target/golang -run 'TestGenerated(Pagination|InboundRuntimeBoundary|LiteralsAndUnionSnapshots|BinarySourceOwnership|CustomMediaDirections|LinkCalls)$' -count=1`
+통과(실제 생성·컴파일·HTTP 경계). 40개 Go 페이지 EN/KO 코드 블록 일치 확인.
+리뷰: template/runtime와 public namespace·옵션·모델 codec·metadata·static/dynamic 선택,
+파일/stream close·취소·수신 오류 및 CLI 호출자를 확인했다. 변환 중 CLI target 표가 오염된 것을
+수정하고 Go 전용 분석 필드로 보완했다. 전체 페이지·링크·검색 검사는 W06/W08에서 완성한다.
