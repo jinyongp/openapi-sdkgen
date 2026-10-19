@@ -39,6 +39,9 @@ try {
     $env:PROCESSOR_ARCHITEW6432 = 'ARM64'
     $stamped = Join-Path $root 'install.ps1'
     [IO.File]::WriteAllText($stamped, ([IO.File]::ReadAllText($installer).Replace('@VERSION@', '1.2.3')))
+    [IO.File]::ReadAllText($stamped) | Invoke-Expression | Out-Null
+    $defaultDestination = Join-Path $env:LOCALAPPDATA 'Programs/openapi-sdkgen/bin/openapi-sdkgen.exe'
+    Assert-True ((Get-Content -LiteralPath $defaultDestination -Raw) -ceq 'fixture executable') 'Piped installer default failed'
     $custom = Join-Path $root 'custom path'
     & $stamped -InstallDir $custom | Out-Null
     $destination = Join-Path $custom 'openapi-sdkgen.exe'

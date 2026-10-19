@@ -32,14 +32,16 @@ function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "
     <section class="installation" aria-labelledby="install-title">
       <h2 id="install-title">{{ korean ? 'CLI 설치' : 'Install the CLI' }}</h2>
       <p>macOS / Linux</p>
-      <pre><code>curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh &amp;&amp; sh install.sh</code></pre>
+      <pre><code>curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh | sh</code></pre>
       <p>Windows PowerShell</p>
-      <pre><code>Invoke-WebRequest https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1 -ErrorAction Stop
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1</code></pre>
+      <pre><code>irm https://jinyongp.dev/openapi-sdkgen/install.ps1 | iex</code></pre>
       <p>{{ korean ? '안내된 설치 경로를 필요에 따라' : 'Add the printed installation directory to' }} <code>PATH</code>{{ korean ? '에 추가한 뒤' : ' if needed, then run' }} <code>openapi-sdkgen --version</code>{{ korean ? '으로 확인하세요.' : '.' }}</p>
-      <p><a href="https://github.com/jinyongp/openapi-sdkgen/releases">{{ korean ? '실행 파일 직접 다운로드' : 'Download an executable' }}</a>{{ korean ? ', npm 또는 Homebrew로도 설치할 수 있습니다.' : ', npm and Homebrew are also available.' }}</p>
-      <p>npm (Node.js 22+): <code>npm install -g openapi-sdkgen</code></p>
-      <p>Homebrew: <code>brew install jinyongp/tap/openapi-sdkgen</code></p>
+      <details>
+        <summary>{{ korean ? '다른 설치 방법' : 'Other installation methods' }}</summary>
+        <p><a href="https://github.com/jinyongp/openapi-sdkgen/releases">{{ korean ? '실행 파일 직접 다운로드' : 'Download an executable' }}</a></p>
+        <p>npm (Node.js 22+): <code>npm install -g openapi-sdkgen</code></p>
+        <p>Homebrew: <code>brew install jinyongp/tap/openapi-sdkgen</code></p>
+      </details>
     </section>
 
     <section id="start" class="start" aria-labelledby="start-title">
@@ -78,6 +80,7 @@ li + li { margin-top:6px; }
 pre { padding:16px 20px; border-radius:6px; background:var(--vp-c-bg-soft); font-size:14px; line-height:1.7; overflow-x:auto; }
 code { font-family:var(--vp-font-family-mono); }
 .installation p { margin:12px 0; font-size:14px; }
+.installation summary { cursor:pointer; color:var(--vp-c-text-2); font-size:14px; }
 .start { scroll-margin-top:88px; padding-bottom:0; }
 .language-links { margin-top:20px; }
 .language-row { display:flex; align-items:baseline; gap:32px; padding:16px 0; }

@@ -24,7 +24,7 @@
 | Release build and retries | Reviewed | Scripts are stamped after GoReleaser, included in checksums and immutable assets. Retries download and verify those existing scripts rather than regenerating them. Version smoke checks compare the complete output. |
 | Release and CI gates | Reviewed | Ordinary CI includes required Linux/macOS fixtures and Windows PowerShell 5.1/7 fixtures. Published installers execute on Linux/macOS/Windows before stable documentation deployment. Linux also runs the generated Go consumer. Workflow lint and existing release tests passed. |
 | Site composition | Reviewed and exercised | Pinned Releaseway `distribute` uses exact tag/commit and the existing site baseline. Executed its actual v0.5.0 bundle locally and compared every built documentation file and both stamped scripts byte-for-byte. The baseline is preserved. |
-| Documentation and locale parity | Reviewed | Same commands in English/Korean; independent executable installs are first. PATH setup, pinned version/directory, upgrade by downloading a new installer and uninstall by deleting the executable are documented. Windows command permits this process's script without persistent policy changes. |
+| Documentation and locale parity | Reviewed and simplified | Same commands in English/Korean; default installation is one line per OS (`curl ... \| sh`, `irm ... \| iex`). PATH guidance remains visible; version, directory and alternative methods are collapsed. Saved-file commands remain in the optional section. No persistent execution-policy changes are needed. |
 | Browser entry routes and layout | Reviewed | Product home in both locales and all four SDK entry routes show installer instructions. Existing getting-started redirects remain. Desktop and 390px mobile checks found no page-wide overflow; long shell commands scroll inside code blocks. |
 
 ## Local validation
@@ -43,6 +43,10 @@
 - `devtools run validate:docs`, `devtools run build:docs`, documentation type
   checks and built-route/historical-anchor checks passed.
 - Real Releaseway distribution bundle preserved the built site and script bytes.
+- Follow-up installation UX checks: stamped shell script passed on stdin, and
+  the stamped PowerShell script passed via `Invoke-Expression`. Docs build,
+  type/route checks and collapsed-section browser checks were repeated for the
+  simplified instructions. The actual installer templates remain unchanged.
 - Scoped diffs and combined callers were reviewed; no unresolved in-scope defect.
 
 ## Execution limits

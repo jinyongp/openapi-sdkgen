@@ -61,7 +61,7 @@ test("stamped installer defaults to its release version and accepts a custom dir
   const build = spawnSync("bash", [resolve(import.meta.dirname, "build.sh"), "1.2.3", f.root], { encoding: "utf8" });
   assert.equal(build.status, 0, build.stderr);
   assert.equal(readFileSync(join(f.root, "install.ps1"), "utf8").includes("@VERSION@"), false);
-  const result = spawnSync("sh", [stamped, "--install-dir", "relative path"], { cwd: f.home, env: f.env, encoding: "utf8" });
+  const result = spawnSync("sh", ["-s", "--", "--install-dir", "relative path"], { input: readFileSync(stamped), cwd: f.home, env: f.env, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(join(f.home, "relative path/openapi-sdkgen"), "utf8"), f.executable);
 });
