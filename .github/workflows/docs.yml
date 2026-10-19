@@ -113,11 +113,22 @@ jobs:
               "version": os.environ["RELEASE_VERSION"], "targets": ["typescript", "golang"]
           }) + "\n")
           PY
+      - name: Merge installers from the exact public release
+        id: distribution
+        if: inputs.release-ref != ''
+        uses: releaseway/actions/distribute@1c0b9237f61ee66f68db880963ec03da46c8a6ed # v0.5.0
+        with:
+          tag: ${{ inputs.release-ref }}
+          commit: ${{ inputs.release-commit }}
+          files: |
+            install.sh
+            install.ps1
+          site: docs/.vitepress/dist
       - name: Upload GitHub Pages artifact
         if: inputs.release-ref != ''
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: docs/.vitepress/dist
+          path: ${{ steps.distribution.outputs.path }}
 
   deploy:
     name: Deploy documentation

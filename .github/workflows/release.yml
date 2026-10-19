@@ -165,6 +165,7 @@ jobs:
           mkdir -p dist
           gh release download "$TAG" --dir dist \
             --pattern checksums.txt \
+            --pattern install.sh --pattern install.ps1 \
             --pattern "openapi-sdkgen_${VERSION}_*.tar.gz" \
             --pattern "openapi-sdkgen_${VERSION}_*.zip"
           (cd dist && sha256sum --check --strict checksums.txt)
@@ -186,6 +187,13 @@ jobs:
           distribution: goreleaser
           version: "v2.18.3"
           args: release --clean --skip=publish --config .goreleaser.yaml
+      - name: Prepare versioned installers and checksums
+        if: steps.assets.outputs.build == 'true'
+        env:
+          RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+        run: |
+          bash scripts/install/build.sh "$RELEASE_VERSION" dist
+          (cd dist && sha256sum install.sh install.ps1 >> checksums.txt)
       - name: Publish immutable GitHub Release
         uses: releaseway/actions@1c0b9237f61ee66f68db880963ec03da46c8a6ed # v0.5.0
         with:
@@ -197,6 +205,8 @@ jobs:
           upload-concurrency: "4"
           assets: |
             dist/checksums.txt
+            dist/install.sh
+            dist/install.ps1
             dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.tar.gz
             dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.zip
 
@@ -213,7 +223,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - name: Download, verify and execute the published native distribution
+      - name: Verify the published installer and generate a Go consumer
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
@@ -221,12 +231,53 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/native-smoke"
-          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/native-smoke" --pattern checksums.txt --pattern "openapi-sdkgen_${RELEASE_VERSION}_linux_amd64.tar.gz"
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/native-smoke" --pattern checksums.txt --pattern install.sh
           cd "$RUNNER_TEMP/native-smoke"
           sha256sum --check --ignore-missing checksums.txt
-          tar -xzf "openapi-sdkgen_${RELEASE_VERSION}_linux_amd64.tar.gz"
+          sh install.sh --install-dir "$RUNNER_TEMP/native-smoke/bin"
           cd "$GITHUB_WORKSPACE"
-          bash scripts/release/smoke-go.sh native "$RUNNER_TEMP/native-smoke/openapi-sdkgen" "$RELEASE_VERSION"
+          bash scripts/release/smoke-go.sh native "$RUNNER_TEMP/native-smoke/bin/openapi-sdkgen" "$RELEASE_VERSION"
+
+  verify-installers:
+    name: Verify published installer on ${{ matrix.os }}
+    needs: [prepare-release, publish-github-release]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ needs.prepare-release.outputs.tag }}
+      RELEASE_VERSION: ${{ needs.prepare-release.outputs.version }}
+    steps:
+      - name: Install and execute on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          gh release download "$RELEASE_TAG" --pattern install.sh --pattern checksums.txt
+          grep '  install.sh$' checksums.txt | shasum -a 256 --check --strict
+          sh install.sh --install-dir "$RUNNER_TEMP/sdkgen-bin"
+          "$RUNNER_TEMP/sdkgen-bin/openapi-sdkgen" --version | grep -F "$RELEASE_VERSION"
+      - name: Install and execute on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-Location $env:RUNNER_TEMP
+          gh release download $env:RELEASE_TAG --pattern install.ps1 --pattern checksums.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
+          $entries = @(Get-Content checksums.txt | Where-Object { $_ -match '^[0-9a-fA-F]{64}  install.ps1$' })
+          if ($entries.Count -ne 1 -or (Get-FileHash install.ps1 -Algorithm SHA256).Hash -ine ($entries[0] -split '\s+')[0]) { throw 'Installer checksum mismatch' }
+          & ./install.ps1 -InstallDir "$env:RUNNER_TEMP/sdkgen-bin"
+          $version = & "$env:RUNNER_TEMP/sdkgen-bin/openapi-sdkgen.exe" --version
+          if ($LASTEXITCODE -ne 0 -or -not $version.Contains($env:RELEASE_VERSION)) { throw 'Installed version mismatch' }
 
   verify-homebrew-release:
     name: Verify Homebrew Go support
@@ -253,7 +304,7 @@ jobs:
 
   publish-documentation:
     name: Publish matching documentation
-    needs: [prepare-release, verify-native-release, verify-npm-release, verify-homebrew-release]
+    needs: [prepare-release, verify-native-release, verify-installers, verify-npm-release, verify-homebrew-release]
     if: needs.prepare-release.outputs.tag != '' && !contains(needs.prepare-release.outputs.tag, '-')
     uses: ./.github/workflows/docs.yml
     permissions:

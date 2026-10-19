@@ -8,7 +8,7 @@ from `go.mod`, `.node-version`,
 and each package's `packageManager` and lockfile.
 
 Scripts are grouped by responsibility: `dev`, `generate`, `compatibility`,
-`verification`, `perf`, `security`, `examples`, `release`, and `npm`.
+`verification`, `perf`, `security`, `examples`, `release`, `install`, and `npm`.
 Documentation commands stay in `docs/scripts`. Go measurement helpers and
 TypeScript verification implementations stay with the code they exercise.
 
@@ -23,6 +23,7 @@ TypeScript verification implementations stay with the code they exercise.
 | `examples` | `todo:examples`, `advanced:examples`, `capabilities:examples` |
 | `release` | `check:release`, `cross-build:release`, `test:release`, `publish:release` |
 | `npm` | `source-check:npm` |
+| `install` | `build:install VERSION OUTPUT`, `test:install` |
 | `docs` | `validate:docs`, `build:docs`, `dev:docs` |
 
 Use `devtools command list` for the full command list. TypeScript runtime checks,
@@ -41,6 +42,7 @@ to distinguish generator options from the check script's arguments.
 | `security` | Pinned vulnerability scanners and SARIF interpretation | Explicit audit; fixture checks require no database calls |
 | `examples` | Runnable example server/client smoke checks | Integrated `check`; temporary servers are stopped on exit |
 | `release` / `npm` | Cross-builds, release safety, source packaging and publication | Tools suite uses disposable simulations; publication is explicit |
+| `install` | Standalone shell and PowerShell installers | Fixture checks on Linux/macOS and Windows PowerShell 5.1/7; no live installation in source checks |
 | `docs/scripts` | Documentation install, validation, build and servers | Separate build workflow; dev/preview are managed local servers |
 
 `scripts/lib/commands.sh` owns summaries and diagnostic capture. Successful
@@ -118,6 +120,25 @@ preserves the plan as an artifact even when a push fails;
 rerunning the same source resumes preparation. Local edits and commits are not
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
+
+`scripts/install/build.sh VERSION OUTPUT` stamps the shell and PowerShell
+installers with an exact release version. After GoReleaser builds the archives,
+the release workflow prepares both scripts, appends their hashes to
+`checksums.txt`, and publishes them with the six native archives. Published
+asset retries reuse the original scripts and verify the complete checksum file.
+The installers default to that embedded version; explicit version arguments
+select another release. Downloads always use that release's GitHub asset URLs.
+They verify the archive checksum before replacing an executable, stage beside
+the destination, and leave PATH configuration to the user.
+
+Ordinary CI requires installer fixtures on Linux, macOS and Windows. The release
+workflow additionally executes the published installers and native commands on
+Linux, macOS and Windows before documentation deployment. Linux also generates
+and runs the existing Go consumer. `releaseway/actions/distribute` merges the
+exact release's digest-verified scripts with the documentation build; the existing
+Pages workflow deploys the complete site. The source templates are not copied
+directly to the public site. Prereleases retain their GitHub script assets and do
+not replace the stable site's installers.
 
 Before publication, compare the public CLI help and generated exports with the
 English and Korean guides and references. Confirm that released features are
