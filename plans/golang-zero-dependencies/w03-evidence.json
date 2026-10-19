@@ -1,0 +1,38 @@
+{
+  "unit": "W03",
+  "unicode": "17.0.0",
+  "inputCount": 15,
+  "propertyCount": 441,
+  "propertyAliasCount": 867,
+  "nodeBoundaryChecks": 137353,
+  "nodeMismatches": 0,
+  "goData": [
+    {
+      "path": "internal/goruntime/unicode17/fold_data.go",
+      "sha256": "6d5251acec5394c57360709bbd0cebb30363d4b983b14ba8c5a3c7cdf087357d",
+      "bytes": 28400
+    },
+    {
+      "path": "internal/goruntime/unicode17/idna_data.go",
+      "sha256": "2ccb4252f02ce23b6fc8cc3b45645bb34be4d08aeee4f66f90d7da8d01a654bd",
+      "bytes": 399368
+    },
+    {
+      "path": "internal/goruntime/unicode17/normalization_data.go",
+      "sha256": "942b44e6be8ba79263d1f653d56de2088e4ea330b05d2e8a1e0b12f7de7b79c6",
+      "bytes": 95549
+    },
+    {
+      "path": "internal/goruntime/unicode17/properties_data.go",
+      "sha256": "7acbf04e3cd4d554ddba4322650118253422766a122aed45615bdeb4d7d1ac3d",
+      "bytes": 464663
+    }
+  ],
+  "checks": {
+    "officialConformance": "pass",
+    "exactRegeneration": "pass",
+    "race": "pass",
+    "fuzzNFC": "311848 executions in 3s, no failure; earlier candidate before alias-only correction"
+  },
+  "scope": "Unicode data, properties/folding/NFC; URL/regex engines remain pending"
+}
