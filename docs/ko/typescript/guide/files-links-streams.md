@@ -129,7 +129,6 @@ OpenAPI 3.2 요청 본문에 `itemSchema`가 있으면
 전달할 수 있습니다.
 
 ```ts
-
 async function* todoEvents() {
   yield { todoID: "todo-1", completed: false };
   yield { todoID: "todo-1", completed: true };

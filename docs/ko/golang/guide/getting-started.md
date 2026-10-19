@@ -42,42 +42,42 @@ openapi-sdkgen generate \
 package main
 
 import (
-    "context"
-    "fmt"
-    "net/http"
-    "net/http/httptest"
-    "time"
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"time"
 
-    api "example.com/consumer/internal/api"
+	api "example.com/consumer/internal/api"
 )
 
 func main() {
-    if err := run(); err != nil {
-        panic(err)
-    }
+	if err := run(); err != nil {
+		panic(err)
+	}
 }
 
 func run() error {
-    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        w.WriteHeader(http.StatusCreated)
-        fmt.Fprint(w, `{"id":"todo-1","title":"Ship the SDK"}`)
-    }))
-    defer server.Close()
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
-    client, err := api.NewClient(api.ClientOptions{BaseURL: server.URL})
-    if err != nil {
-        return err
-    }
-    todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
-        Body: api.CreateTodoBody{Title: "Ship the SDK"},
-    }).Do(ctx)
-    if err != nil {
-        return err
-    }
-    fmt.Println(todo.ID, todo.Title)
-    return nil
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprint(w, `{"id":"todo-1","title":"Ship the SDK"}`)
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client, err := api.NewClient(api.ClientOptions{BaseURL: server.URL})
+	if err != nil {
+		return err
+	}
+	todo, err := client.Operations.CreateTodo(api.CreateTodoInput{
+		Body: api.CreateTodoBody{Title: "Ship the SDK"},
+	}).Do(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Println(todo.ID, todo.Title)
+	return nil
 }
 ```
 

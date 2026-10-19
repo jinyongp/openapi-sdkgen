@@ -9,15 +9,15 @@
 ref := operations.GetTodo()
 prepared, err := selective.Prepare(ref)
 if err != nil {
-    return err
+	return err
 }
 client, err := selective.NewClient(selective.ClientOptions{BaseURL: "https://api.example.com"}, prepared)
 if err != nil {
-    return err
+	return err
 }
 operation, err := selective.Bind(client, ref)
 if err != nil {
-    return err
+	return err
 }
 todo, err := operation.Call(api.GetTodoInput{Path: api.GetTodoPath{ID: "todo-1"}}).Do(ctx)
 ```

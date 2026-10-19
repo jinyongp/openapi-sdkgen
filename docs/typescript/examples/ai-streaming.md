@@ -100,13 +100,21 @@ export async function handleGenerate(request: Request) {
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
-  if (typeof input !== "object" || input === null ||
-      !("prompt" in input) || typeof input.prompt !== "string") {
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    !("prompt" in input) ||
+    typeof input.prompt !== "string"
+  ) {
     return new Response("Expected a prompt string", { status: 400 });
   }
   const result = streamText({
-    model, prompt: input.prompt, abortSignal: request.signal,
-    onError: ({ error }) => { console.error(error); },
+    model,
+    prompt: input.prompt,
+    abortSignal: request.signal,
+    onError: ({ error }) => {
+      console.error(error);
+    },
   });
   const encoder = new TextEncoder();
 
@@ -177,11 +185,12 @@ interface TextDelta {
 
 const api = createClient({
   baseURL: "https://api.example.test",
-  fetch: async () => new Response(
-    'data: {"type":"text-delta","text":"Hello"}\n\n' +
-    'data: {"type":"text-delta","text":"world"}\n\n',
-    { headers: { "content-type": "text/event-stream" } },
-  ),
+  fetch: async () =>
+    new Response(
+      'data: {"type":"text-delta","text":"Hello"}\n\n' +
+        'data: {"type":"text-delta","text":"world"}\n\n',
+      { headers: { "content-type": "text/event-stream" } },
+    ),
 });
 
 const stream = api.$operations.generate.stream({

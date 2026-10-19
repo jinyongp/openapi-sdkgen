@@ -14,8 +14,8 @@ Go's default HTTP transport can negotiate and decode gzip itself. To control tha
 transport := http.DefaultTransport.(*http.Transport).Clone()
 transport.DisableCompression = true
 client, err := api.NewClient(api.ClientOptions{
-    BaseURL: "https://api.example.com",
-    HTTPClient: &http.Client{Transport: transport},
+	BaseURL:    "https://api.example.com",
+	HTTPClient: &http.Client{Transport: transport},
 })
 ```
 

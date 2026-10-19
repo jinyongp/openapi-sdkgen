@@ -5,12 +5,12 @@
 
 ```go
 handler, err := webhooks.NewCreatedPostHandler("/hooks/created", webhooks.Options{},
-    func(ctx context.Context, input webhooks.CreatedPostInput) (webhooks.CreatedPostResponse, error) {
-        fmt.Println(input.Body.ID)
-        return webhooks.NewCreatedPost204NoContentResponse(), nil
-    })
+	func(ctx context.Context, input webhooks.CreatedPostInput) (webhooks.CreatedPostResponse, error) {
+		fmt.Println(input.Body.ID)
+		return webhooks.NewCreatedPost204NoContentResponse(), nil
+	})
 if err != nil {
-    return err
+	return err
 }
 mux.Handle("/hooks/created", handler)
 ```
@@ -39,15 +39,15 @@ mux.Handle("/hooks/created", handler)
 schemaJSON := []byte(`{"types":["object"],"properties":{"count":{"types":["integer"]}},"required":["count"]}`)
 normalized, err := types.ParseValue(schemaJSON)
 if err != nil {
-    return err
+	return err
 }
 contract, err := runtime.CompileSchema(normalized, nil)
 if err != nil {
-    return err
+	return err
 }
 value, err := contract.Decode(ctx, []byte(`{"count":2}`))
 if err != nil {
-    return err
+	return err
 }
 return contract.Validate(ctx, value)
 ```

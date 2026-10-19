@@ -8,7 +8,7 @@ text omits private request/response data:
 ```go
 var failure *types.APIError
 if errors.As(err, &failure) {
-    fmt.Println(failure.Code)
+	fmt.Println(failure.Code)
 }
 ```
 

@@ -985,21 +985,21 @@ is:
 type CompatibilityAction string
 
 const (
-    Preserve          CompatibilityAction = "preserve"
-    Ignore            CompatibilityAction = "ignore"
-    Normalize         CompatibilityAction = "normalize"
-    PreserveExtension CompatibilityAction = "preserve-extension"
-    Reject            CompatibilityAction = "reject"
+	Preserve          CompatibilityAction = "preserve"
+	Ignore            CompatibilityAction = "ignore"
+	Normalize         CompatibilityAction = "normalize"
+	PreserveExtension CompatibilityAction = "preserve-extension"
+	Reject            CompatibilityAction = "reject"
 )
 
 type CompatibilityRule struct {
-    ID                   string
-    Versions             VersionSet
-    Context              ObjectContext
-    NormativeDisposition NormativeDisposition
-    Action               CompatibilityAction
-    Impact               SemanticImpact
-    Conformance          ConformanceClass
+	ID                   string
+	Versions             VersionSet
+	Context              ObjectContext
+	NormativeDisposition NormativeDisposition
+	Action               CompatibilityAction
+	Impact               SemanticImpact
+	Conformance          ConformanceClass
 }
 ```
 
@@ -1126,17 +1126,19 @@ for example:
 ```json
 {
   "schemaVersion": 3,
-  "features": [{
-    "id": "parameter.header.reserved",
-    "versions": ["3.0", "3.1", "3.2"],
-    "state": "metadata",
-    "normativeDisposition": "ignored",
-    "compatibilityAction": "ignore",
-    "conformance": "conforming",
-    "semanticImpact": "wire",
-    "proof": "runtime",
-    "evidence": "internal/...::Test..."
-  }]
+  "features": [
+    {
+      "id": "parameter.header.reserved",
+      "versions": ["3.0", "3.1", "3.2"],
+      "state": "metadata",
+      "normativeDisposition": "ignored",
+      "compatibilityAction": "ignore",
+      "conformance": "conforming",
+      "semanticImpact": "wire",
+      "proof": "runtime",
+      "evidence": "internal/...::Test..."
+    }
+  ]
 }
 ```
 

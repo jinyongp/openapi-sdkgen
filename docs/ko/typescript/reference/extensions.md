@@ -122,7 +122,7 @@ x-pagination:
 합니다. 생성된 클라이언트에서는 다음과 같은 값으로 전달할 수 있습니다.
 
 ```ts
-{ field: "createdAt", direction: "desc" }
+const sort = { field: "createdAt", direction: "desc" } as const;
 ```
 
 `x-sort`는 클라이언트 API의 정렬 쿼리 매개변수에 사용합니다.

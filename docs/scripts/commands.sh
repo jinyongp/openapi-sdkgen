@@ -4,7 +4,7 @@ set -- "${SCRIPT_ARGS[@]}"
 command="${1:-help}"
 shift || true
 if [[ "$command" == help || "$command" == --help || "${1:-}" == --help ]]; then
-  printf 'Documentation commands: install, lock, validate, verify, dev, build, preview\ninstall/lock use the network; lock updates the lockfile. validate/build write documentation assets. dev/preview serve on DOCS_PORT.\n' >&2
+  printf 'Documentation commands: install, lock, format, format-check, validate, verify, dev, build, preview\ninstall/lock use the network; lock updates the lockfile. format rewrites code blocks; format-check is read-only. validate/build write documentation assets. dev/preview serve on DOCS_PORT.\n' >&2
   exit 0
 fi
 require_system_node
@@ -12,6 +12,8 @@ pnpm_docs() { corepack pnpm --dir "$ROOT/docs" "$@"; }
 case "$command" in
   install) run_step 'Documentation dependencies' pnpm_docs install --frozen-lockfile "$@" ;;
   lock) run_step 'Documentation lockfile' pnpm_docs install --lockfile-only "$@" ;;
+  format) run_step 'Documentation code format' pnpm_docs run docs:format "$@" ;;
+  format-check) run_step 'Documentation code format check' pnpm_docs run docs:format:check "$@" ;;
   validate) run_step 'Documentation validation' pnpm_docs run docs:validate "$@" ;;
   build) run_step 'Documentation build' pnpm_docs run docs:build "$@" ;;
   verify)

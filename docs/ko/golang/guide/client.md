@@ -6,14 +6,14 @@
 ```go
 client, err := api.NewClient(api.ClientOptions{BaseURL: "https://api.example.com"})
 if err != nil {
-    return err
+	return err
 }
 call := client.Operations.CreateTodo(api.CreateTodoInput{
-    Body: api.CreateTodoBody{Title: "Ship the SDK"},
+	Body: api.CreateTodoBody{Title: "Ship the SDK"},
 })
 todo, err := call.Do(ctx)
 if err != nil {
-    return err
+	return err
 }
 fmt.Println(todo.ID, todo.Title)
 ```
@@ -34,12 +34,12 @@ fmt.Println(todo.ID, todo.Title)
 ```go
 raw, err := call.Raw(ctx)
 if err != nil {
-    return err
+	return err
 }
 fmt.Println(raw.Status, raw.Headers.Get("Content-Type"))
 todo, err := client.Links.CreateTodo.GetTodo.Follow(raw).Do(ctx)
 if err != nil {
-    return err
+	return err
 }
 fmt.Println(todo.ID)
 ```
@@ -58,6 +58,6 @@ SDK 패키지 경로를 빠뜨리면 생성 오류입니다. 빠진 의존성은
 ```go
 var failure *types.APIError
 if errors.As(err, &failure) {
-    fmt.Println(failure.Code)
+	fmt.Println(failure.Code)
 }
 ```

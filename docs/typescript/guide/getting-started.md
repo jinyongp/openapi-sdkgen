@@ -151,13 +151,15 @@ const todo = {
   title: "Write documentation",
   completed: false,
 };
-async function mockFetch(
-  _input: RequestInfo | URL,
-  init?: RequestInit,
-) {
-  if (init?.method === "POST") return Response.json(todo, { status: 201 });
+
+async function mockFetch(_input: RequestInfo | URL, init?: RequestInit) {
+  if (init?.method === "POST") {
+    return Response.json(todo, { status: 201 });
+  }
+
   return Response.json({ items: [todo] }, { status: 200 });
 }
+
 const api = createClient({
   baseURL: "https://api.example.test",
   fetch: mockFetch,
@@ -167,6 +169,7 @@ const created = await api.todos.create({
   body: { title: "Write documentation" },
 });
 const todos = await api.todos.list();
+
 console.log(created.title);
 console.log(todos.items.length);
 ```

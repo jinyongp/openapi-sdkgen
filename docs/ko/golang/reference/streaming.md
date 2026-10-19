@@ -10,10 +10,10 @@
 events := client.Operations.WatchTodos().Stream(ctx)
 defer events.Close()
 for events.Next() {
-    fmt.Println(events.Item().Title)
+	fmt.Println(events.Item().Title)
 }
 if err := events.Err(); err != nil {
-    return err
+	return err
 }
 ```
 

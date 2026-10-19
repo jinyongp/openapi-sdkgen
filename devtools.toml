@@ -119,6 +119,12 @@ DOCS_PORT = { port = "docs-preview" }
 exec = ["bash", "-c", 'curl --noproxy "*" --fail --silent --output /dev/null "http://127.0.0.1:$DOCS_PORT/openapi-sdkgen/"']
 timeout = "2s"
 
+[commands."format:docs"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "format"]
+
+[commands."format-check:docs"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "format-check"]
+
 [commands."validate:docs"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "docs/scripts/commands.sh", "validate"]
 

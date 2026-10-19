@@ -121,7 +121,6 @@ so an async iterable and a Web `ReadableStream` use the same generated input
 type.
 
 ```ts
-
 async function* todoEvents() {
   yield { todoID: "todo-1", completed: false };
   yield { todoID: "todo-1", completed: true };

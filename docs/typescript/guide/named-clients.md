@@ -64,7 +64,8 @@ and has its own URL, authentication, Fetch implementation, and request state.
 To load the page's client on demand, use a dynamic import:
 
 ```ts
-const { createClient } = await import("./generated/api/clients/catalog/index.js");
+const { createClient } =
+  await import("./generated/api/clients/catalog/index.js");
 const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.$routes["GET /products/{id}"]({
   path: { id: "product-1" },

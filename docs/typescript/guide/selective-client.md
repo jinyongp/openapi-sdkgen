@@ -193,14 +193,20 @@ Import the opt-in names-only entry for enumeration and filtering:
 
 ```ts
 import { routes as allRoutes } from "./generated/api/selective/all.js";
-import { createClient, loadOperations } from "./generated/api/selective/index.js";
+import {
+  createClient,
+  loadOperations,
+} from "./generated/api/selective/index.js";
 
 const taskRoutes = Object.entries(allRoutes)
   .filter(([route]) => route.startsWith("GET /tasks"))
   .map(([, operation]) => operation);
 
 const preparedTasks = await loadOperations(taskRoutes);
-const api = createClient({ baseURL: "https://api.example.test/v1", operations: preparedTasks });
+const api = createClient({
+  baseURL: "https://api.example.test/v1",
+  operations: preparedTasks,
+});
 await api.$operations.listTasks?.({ query: { limit: 20 } });
 ```
 

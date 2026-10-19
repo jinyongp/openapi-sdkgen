@@ -115,21 +115,22 @@ import { createReceiver } from "./worker.js";
 const router = createReceiver("local-example-token");
 
 async function send(token: string, body: unknown) {
-  const response = await router.fetch(new Request(
-    "http://localhost/hooks/todos/completed",
-    {
+  const response = await router.fetch(
+    new Request("http://localhost/hooks/todos/completed", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-webhook-token": token,
       },
       body: JSON.stringify(body),
-    },
-  ));
+    }),
+  );
   return response.status;
 }
 
-console.log(await send("local-example-token", { todoID: "todo-1", completed: true }));
+console.log(
+  await send("local-example-token", { todoID: "todo-1", completed: true }),
+);
 console.log(await send("wrong-token", { todoID: "todo-1", completed: true }));
 console.log(await send("local-example-token", { todoID: "todo-1" }));
 ```

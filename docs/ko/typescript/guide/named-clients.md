@@ -64,7 +64,8 @@ const product = await api.products("product-1").get();
 페이지를 열 때 클라이언트 코드를 불러오려면 동적 `import()`를 사용하세요.
 
 ```ts
-const { createClient } = await import("./generated/api/clients/catalog/index.js");
+const { createClient } =
+  await import("./generated/api/clients/catalog/index.js");
 const api = createClient({ baseURL: "https://api.example.test/v1" });
 const product = await api.$routes["GET /products/{id}"]({
   path: { id: "product-1" },

@@ -119,7 +119,7 @@ The schema must be an array of unique `field:asc` or `field:desc` enum values.
 The generated client accepts values such as:
 
 ```ts
-{ field: "createdAt", direction: "desc" }
+const sort = { field: "createdAt", direction: "desc" } as const;
 ```
 
 Use `x-sort` on client operations.

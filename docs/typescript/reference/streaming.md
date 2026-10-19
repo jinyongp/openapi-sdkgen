@@ -158,7 +158,8 @@ const jsonSSEAdapter: StreamAdapter<ServerSentEvent, unknown> = {
   async *encode(items) {
     for await (const item of items) {
       const data = JSON.stringify(item);
-      if (data === undefined) throw new TypeError("Item must be JSON-serializable");
+      if (data === undefined)
+        throw new TypeError("Item must be JSON-serializable");
       yield { data };
     }
   },
@@ -175,10 +176,7 @@ A `StreamProtocol` owns byte framing for a custom sequential media type:
 
 ```ts
 interface StreamProtocol<Frame> {
-  decode(
-    reader: StreamReader,
-    context: StreamContext,
-  ): AsyncIterable<Frame>;
+  decode(reader: StreamReader, context: StreamContext): AsyncIterable<Frame>;
 
   encode(
     frames: AsyncIterable<Frame>,

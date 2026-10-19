@@ -8,7 +8,7 @@ SDK 패키지 경로를 빠뜨리면 생성 오류입니다. 빠진 의존성은
 ```go
 var failure *types.APIError
 if errors.As(err, &failure) {
-    fmt.Println(failure.Code)
+	fmt.Println(failure.Code)
 }
 ```
 

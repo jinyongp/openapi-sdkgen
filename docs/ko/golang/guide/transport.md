@@ -16,8 +16,8 @@ Go 기본 HTTP 전송은 gzip을 협상하고 해제할 수 있습니다. 기본
 transport := http.DefaultTransport.(*http.Transport).Clone()
 transport.DisableCompression = true
 client, err := api.NewClient(api.ClientOptions{
-    BaseURL: "https://api.example.com",
-    HTTPClient: &http.Client{Transport: transport},
+	BaseURL:    "https://api.example.com",
+	HTTPClient: &http.Client{Transport: transport},
 })
 ```
 

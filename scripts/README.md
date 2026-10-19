@@ -154,6 +154,13 @@ both WASM targets and checks every exported ZIP path/byte. Playground verificati
 requires installed docs dependencies and does not execute a generated consumer.
 
 
+`devtools run format:docs` formats code blocks in the root README and Markdown files
+under `docs/`, including both display languages. TypeScript/JavaScript, JSON and YAML
+use the pinned documentation Prettier version; Go uses `gofmt`, including statement
+fragments. Markdown prose, shell commands, TOML and literal output are left unchanged.
+`devtools run format-check:docs` checks without writing. Documentation validation and
+builds run the same check, so the documentation CI rejects unformatted code examples.
+
 `devtools run verify:docs` follows `build:docs` and checks TypeScript/Vue setup source, rendered SDK scopes,
 historical anchors, search indexes, documentation tool contracts and the actual Go
 first-call/SSE/webhook code blocks. It uses disposable modules and local HTTP servers. Install the existing verification

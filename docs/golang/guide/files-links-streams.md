@@ -14,12 +14,12 @@ a Link; the generated Link resolves inputs and validates the target before a lat
 ```go
 raw, err := call.Raw(ctx)
 if err != nil {
-    return err
+	return err
 }
 fmt.Println(raw.Status, raw.Headers.Get("Content-Type"))
 todo, err := client.Links.CreateTodo.GetTodo.Follow(raw).Do(ctx)
 if err != nil {
-    return err
+	return err
 }
 fmt.Println(todo.ID)
 ```
@@ -40,10 +40,10 @@ after the loop:
 events := client.Operations.WatchTodos().Stream(ctx)
 defer events.Close()
 for events.Next() {
-    fmt.Println(events.Item().Title)
+	fmt.Println(events.Item().Title)
 }
 if err := events.Err(); err != nil {
-    return err
+	return err
 }
 ```
 

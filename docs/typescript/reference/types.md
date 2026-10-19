@@ -96,7 +96,9 @@ import {
 
 type Product = ComponentOutput<"Product">;
 type GetProductInput = Parameters<Client["$routes"]["GET /products/{id}"]>[0];
-type GetProductOutput = Awaited<ReturnType<Client["$routes"]["GET /products/{id}"]>>;
+type GetProductOutput = Awaited<
+  ReturnType<Client["$routes"]["GET /products/{id}"]>
+>;
 ```
 
 `ComponentInput` describes a model's request representation and
@@ -178,11 +180,7 @@ type CreateBody = OperationBody<"createTodo">;
 type UpdateInput = RouteInput<"PATCH /todos/{todoID}">;
 type UpdateOutput = RouteOutput<"PATCH /todos/{todoID}">;
 type UpdateBody = RouteBody<"PATCH /todos/{todoID}">;
-type TodoID = RouteParameter<
-  "PATCH /todos/{todoID}",
-  "path",
-  "todoID"
->;
+type TodoID = RouteParameter<"PATCH /todos/{todoID}", "path", "todoID">;
 ```
 
 ## Request and response helpers
