@@ -1,31 +1,89 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type ComputedRef, type Ref } from "vue";
+import { computed, type ComputedRef } from "vue";
 import { useData } from "vitepress";
-import { contextDestination, readSDKPreference, withDocsBase, type SDKTarget } from "../../doc-context";
+import { contextDestination, withDocsBase, type SDKTarget } from "../../doc-context";
 const { lang } = useData();
 const korean: ComputedRef<boolean> = computed((): boolean => lang.value === "ko-KR");
-const preference: Ref<SDKTarget | null> = ref(null);
-onMounted((): void => { try { preference.value = readSDKPreference(window.localStorage); } catch { /* Optional preference. */ } });
-function destination(sdk: SDKTarget): string { return withDocsBase(contextDestination({ sdk: null, locale: korean.value ? "ko" : "en", topic: "getting-started" }, sdk, korean.value ? "ko" : "en").path); }
+const targets: readonly SDKTarget[] = ["typescript", "golang"];
+function destination(sdk: SDKTarget, topic: "getting-started" | "playground" | "reference"): string {
+  return withDocsBase(contextDestination({ sdk: null, locale: korean.value ? "ko" : "en", topic }, sdk, korean.value ? "ko" : "en").path);
+}
 </script>
+
 <template>
-  <section class="sdk-home">
-    <h1>{{ korean ? 'OpenAPI로 애플리케이션 SDK 만들기' : 'Application SDKs from OpenAPI' }}</h1>
-    <p>{{ korean ? '사용할 SDK 언어를 선택하세요. 문서·예제·검색·플레이그라운드가 선택한 언어에 맞춰 표시됩니다.' : 'Choose your SDK language. Guides, examples, search and the Playground follow your selection.' }}</p>
-    <div class="sdk-cards">
-      <a :href="destination('typescript')"><strong>TypeScript</strong><span>{{ korean ? '타입이 있는 Fetch 호출·스트림·수신 처리기' : 'Typed Fetch calls, streams and inbound handlers' }}</span></a>
-      <a :href="destination('golang')"><strong>Go</strong><span>{{ korean ? 'context 기반 호출·타입이 있는 모델·net/http 처리기' : 'Context-aware calls, typed models and net/http handlers' }}</span></a>
-    </div>
-    <p v-if="preference"><a :href="destination(preference)">{{ korean ? '이어서 보기' : 'Continue with' }} · {{ preference === 'golang' ? 'Go' : 'TypeScript' }}</a></p>
-  </section>
+  <div class="product-home">
+    <header class="introduction">
+      <h1>openapi-sdkgen</h1>
+      <p class="description">{{ korean ? 'OpenAPI 명세에서 SDK 소스를 생성합니다.' : 'Generate SDK source from OpenAPI.' }}</p>
+      <p class="summary">{{ korean ? 'OpenAPI 3.0·3.1·3.2 명세를 TypeScript 또는 Go 코드로 변환합니다. 생성된 클라이언트와 모델을 애플리케이션에 넣고 함께 빌드하세요.' : 'Turn OpenAPI 3.0, 3.1 and 3.2 definitions into TypeScript or Go code. Add the generated clients and models to your application and build them together.' }}</p>
+      <a class="start-link" href="#start">{{ korean ? '시작하기' : 'Get started' }} <span aria-hidden="true">→</span></a>
+    </header>
+
+    <section class="overview" aria-labelledby="overview-title">
+      <h2 id="overview-title">{{ korean ? '생성되는 코드' : 'What it generates' }}</h2>
+      <ul>
+        <li>{{ korean ? 'API 호출에 사용할 클라이언트, 요청·응답 모델과 스키마 검증 코드' : 'API clients, request and response models, and schema validation' }}</li>
+        <li>{{ korean ? 'JSON·XML·파일 전송과 SSE·NDJSON 스트림 처리 코드' : 'JSON, XML, file transfer, SSE and NDJSON stream handling' }}</li>
+        <li>{{ korean ? '웹훅과 콜백을 받는 처리기, Link를 따라 후속 API를 호출하는 코드' : 'Webhook and callback handlers, and follow-up API calls through Links' }}</li>
+      </ul>
+      <p>{{ korean ? '필요한 API를 선택해 생성할 수 있습니다. 명세가 바뀌면 SDK를 다시 생성하고, CI에서 생성 결과의 변경 여부를 확인할 수 있습니다.' : 'Select which APIs to generate. When the definition changes, regenerate the SDK and check for changes in CI.' }}</p>
+    </section>
+
+    <section class="installation" aria-labelledby="install-title">
+      <h2 id="install-title">{{ korean ? 'CLI 설치' : 'Install the CLI' }}</h2>
+      <pre><code>brew install jinyongp/tap/openapi-sdkgen</code></pre>
+      <p>{{ korean ? 'npm으로 설치하려면:' : 'Or install with npm:' }}</p>
+      <pre><code>npm install -g openapi-sdkgen</code></pre>
+      <p>{{ korean ? '실행 파일은' : 'Precompiled binaries are available from' }} <a href="https://github.com/jinyongp/openapi-sdkgen/releases">GitHub Releases</a>{{ korean ? '에서도 내려받을 수 있습니다.' : '.' }}</p>
+    </section>
+
+    <section id="start" class="start" aria-labelledby="start-title">
+      <h2 id="start-title">{{ korean ? '문서와 플레이그라운드' : 'Documentation and Playground' }}</h2>
+      <p>{{ korean ? '시작 가이드에서 SDK를 생성하고 첫 요청을 실행해보세요. 플레이그라운드에서는 설치 없이 생성된 소스를 확인할 수 있습니다.' : 'Follow a getting started guide to generate an SDK and run your first request. Preview the generated source in the Playground without installing the CLI.' }}</p>
+      <div class="language-links">
+        <div v-for="sdk in targets" :key="sdk" class="language-row">
+          <h3>{{ sdk === 'golang' ? 'Go' : 'TypeScript' }}</h3>
+          <div class="links">
+            <a :href="destination(sdk, 'getting-started')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} ${korean ? '시작 가이드' : 'getting started'}`">{{ korean ? '시작 가이드' : 'Get started' }}</a>
+            <a :href="destination(sdk, 'playground')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} Playground`">{{ korean ? '플레이그라운드' : 'Playground' }}</a>
+            <a :href="destination(sdk, 'reference')" :aria-label="`${sdk === 'golang' ? 'Go' : 'TypeScript'} ${korean ? '레퍼런스' : 'reference'}`">{{ korean ? '레퍼런스' : 'Reference' }}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>
+
 <style scoped>
-.sdk-home { max-width:960px; padding:64px 24px; margin:auto; }
-h1 { font-size:clamp(26px,4vw,46px); line-height:1.2; font-weight:700; margin-bottom:24px; }
-p { margin:20px 0; color:var(--vp-c-text-2); }
-.sdk-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:20px; }
-a { color:var(--vp-c-brand-1); }
-.sdk-cards a { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:24px; background:var(--vp-c-bg-soft); border:1px solid var(--vp-c-divider); border-radius:12px; }
-strong { font-size:24px; line-height:32px; } span { line-height:1.6; color:var(--vp-c-text-2); }
-a:focus-visible { outline:2px solid var(--vp-c-brand-1); outline-offset:4px; }
+.product-home { max-width:960px; padding:64px 32px 80px; margin:auto; }
+:global(.dark .product-home) { --vp-c-brand-1:#5eead4; --vp-c-brand-2:#99f6e4; }
+.introduction { padding-bottom:36px; }
+h1 { font-size:clamp(32px,5vw,48px); line-height:1.2; font-weight:700; letter-spacing:-.03em; }
+.description { margin-top:16px; font-size:24px; line-height:1.5; font-weight:500; }
+.summary { max-width:680px; margin-top:16px; }
+p, li { font-size:16px; line-height:1.8; color:var(--vp-c-text-2); }
+a { color:var(--vp-c-brand-1); text-decoration:underline; text-underline-offset:4px; }
+a:hover { color:var(--vp-c-brand-2); }
+a:focus-visible { outline:2px solid var(--vp-c-brand-1); outline-offset:5px; }
+.start-link { display:inline-block; margin-top:20px; font-weight:600; }
+section { padding:28px 0; border-top:1px solid var(--vp-c-divider); }
+h2 { margin-bottom:16px; font-size:22px; font-weight:600; line-height:1.4; }
+ul { padding-left:22px; list-style:disc; margin-bottom:16px; }
+li + li { margin-top:6px; }
+pre { padding:16px 20px; border-radius:6px; background:var(--vp-c-bg-soft); font-size:14px; line-height:1.7; overflow-x:auto; }
+code { font-family:var(--vp-font-family-mono); }
+.installation p { margin:12px 0; font-size:14px; }
+.start { scroll-margin-top:88px; padding-bottom:0; }
+.language-links { margin-top:20px; }
+.language-row { display:flex; align-items:baseline; gap:32px; padding:16px 0; }
+.language-row + .language-row { border-top:1px solid var(--vp-c-divider); }
+h3 { min-width:110px; font-size:17px; font-weight:600; }
+.links { display:flex; flex-wrap:wrap; gap:12px 28px; font-size:14px; }
+:lang(ko) :is(h1,h2,p,li) { word-break:keep-all; overflow-wrap:break-word; }
+@media (max-width:639px) {
+  .product-home { padding:36px 24px 48px; }
+  .description { font-size:21px; }
+  .language-row { flex-direction:column; gap:10px; }
+  .links { gap:12px 24px; }
+}
 </style>
