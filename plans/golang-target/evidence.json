@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 2,
+  "scope": "Design probes only; generated Go SDK parity and performance remain unimplemented",
+  "runID": "run-onr6htz1",
+  "startedAt": "2026-10-17T13:55:56.983922+00:00",
+  "sourceSha256": {
+    "docs/architecture.md": "0e48f0f6ac614da11df0333013d255231e80a52f73dbb50ac5d54efece641ba0",
+    "docs/openapi-feature-manifest.json": "45b1fc576ca1080cb7b5c0b094df005d2e79fc4ecc1d63ccfcff199c2575e01c",
+    "internal/compiler/compatibility/consumer_test.go": "853ef1911af01da4820d0e1914f4f88924abeca8b7c02c2b9b47966773b70217",
+    "internal/compiler/compatibility_reference_sibling_io_test.go": "590af18b8ee086fc017934b818f8110fa9609be746aa43abf405389a2b3b910a",
+    "internal/compiler/compatibility_semantics_test.go": "73f0022f6aa1ce4b5eedd796f85183d6110f580d888cf0c14ef6a6e133a82a8a",
+    "internal/compiler/compiler_test.go": "51bcc0ff17139840d1b495d51468d4593f2886ff6884525ecdcc112a1861c70a",
+    "internal/compiler/ir/build_test.go": "7ebb241a09b4dce515528e7d750c26df400ee8a5721189701c36cc6ee9954b51",
+    "internal/compiler/link_compatibility_test.go": "a5d74cce9346a486dac9ba59ebd0a4e0b8eb42455d660e645c533c2a5f849c15",
+    "internal/compiler/openapi/read_test.go": "7a1a0e9ab88b4e4ee72e6c23163a72cdd9c0f209449ddf6491b8f4be4bb76695",
+    "internal/compiler/operation_conformance_test.go": "37dab9bcd1129650aadb7225fbb4764bed60ca43edc836ef3f45fc151929bf82",
+    "internal/compiler/references_test.go": "803175372b8bc7528a18175ab396d8f429300ca33b10d6b69a4a9c90a54f5cde",
+    "internal/compiler/request_body_compatibility_test.go": "addbb49bcfb8f1263ef004be331ccc19553a9b6edb95b3988bd3f2c22073661b",
+    "internal/compiler/schema_compatibility_test.go": "bb3a1ca0457487d78af1be0a3f4ddef337096cb3de793e0c7110298c06aa61d5",
+    "internal/compiler/version_compatibility_test.go": "28f15093f765438db594907579c5a4fc92d84f32fc22da1ac4f9287e1232e2ff",
+    "internal/compiler/version_reject_diagnostic_test.go": "d7ef1214cc1d92d6300e26a8e30b7161ddd5700e04f2866ff619d785b4d80e1b",
+    "internal/generator/generator.go": "7dd91084e04138669cd0253a1ba97d3c5000e1fed4234df5005cca4b65ab5372",
+    "internal/generator/pipeline.go": "caad6669c873533d140e8f79acca0ec7a167c1024fa44ac0b217d77879af8830",
+    "internal/target/typescript/allow_empty_value_runtime_test.go": "b266a760a57ef610bd29846965a23d6ad2917062c5f6bc5a30c188a5c8f84367",
+    "internal/target/typescript/client_test.go": "4e68dfd65a6be0bc73f72df3bf3c19b4eba985e050ae6a2046910d68aaf81e5c",
+    "internal/target/typescript/compatibility_test.go": "adff32325020358fb66ce6dea4ee720fcf0849adf762db2e5259d49ac81c7e7e",
+    "internal/target/typescript/deprecation_test.go": "ccca3302de69176b2a09a7b736eae4e2612f25aee3bcbdaea6a59951bd622eea",
+    "internal/target/typescript/emit.go": "26f706178045749925fae147cb92bdc0fd22dc16b45ca186dbbb1dbb74fce5ca",
+    "internal/target/typescript/emit_test.go": "427e35e6bbec8ffb3c6ced6530d28c0cd07e9548ca8d574e94ea8674ea38a0fe",
+    "internal/target/typescript/encoding_runtime_compatibility_test.go": "d0ce2fc3bf36244c813fcc114e5c7f5aa8bec7cb9adab4c8fa7aef74e3340c39",
+    "internal/target/typescript/enums.go": "47b8a704e43d4f7ad70616dba8358a5536fe9f1814fe3dc16c0f4967406998c0",
+    "internal/target/typescript/external_links_test.go": "0c3ce03cdffde9e78febd558feec8adc8cc8035dbf1e44ddaa1d6bf3a6d00e79",
+    "internal/target/typescript/links.go": "8f26b2691d1c10cb159c6999b196205e933e77cdd1cd602bd91d02d1d66697e6",
+    "internal/target/typescript/media_context_runtime_test.go": "3298f6dc1cb5a85da1fac0571586590af4690f9db55eb2789c26e5a161c99f3a",
+    "internal/target/typescript/media_version_test.go": "2e27a9b0cfe3cfe4e4fd7821fededbcfb655779784596154e6d6e88684b778a5",
+    "internal/target/typescript/metadata_test.go": "d4f5cb1f6a84a80719481aa50640a3a1d9e3b94d71bd8e27cf394bf99b2d9fd8",
+    "internal/target/typescript/openapi_support_test.go": "ed1c8e1fed685e9525bbf9c23c3900ae71b1076fafbdf6b4f47045b8b5dd800c",
+    "internal/target/typescript/operation_omission_test.go": "f998a46f1f13dbe4747495b1ec60c546be3cb0809b826190e2455fa3aeaf900b",
+    "internal/target/typescript/path_restriction_test.go": "2758ed509f4423735b40783a9631188bed2ff699a8a2ec44d596cf324d3e1889",
+    "internal/target/typescript/recursive_type_regression_test.go": "84355ccad04a2b5dcef201a856fae094861ac3f97294462d213c57052cf7295c",
+    "internal/target/typescript/references_test.go": "831e491380e20f83443fa042b27fe354b299778cfce57edc3ac302a71faf0856",
+    "internal/target/typescript/request_body_compatibility_test.go": "b307031c873674d9a0daa1ca8add474c8d4daab557a0f2498d7f3a1b409e3619",
+    "internal/target/typescript/runtime/client/links-types.ts": "3006b7ab198d45e381254c4204783f48e3295bab0dd2abff1cc226f5067e3d3f",
+    "internal/target/typescript/runtime/client/links.ts": "e929732c6137b20ea87e3d66f12c4c82ee8f434d92fea5b24ac9efc73dde95fa",
+    "internal/target/typescript/runtime/media/media-codec-types.ts": "b8b13bda42a79ddb76df50eaa5c13b8d1b22d2ca41512fb17fb3749c3fc97017",
+    "internal/target/typescript/runtime/server/runtime-types.ts": "53200951842466780ed4017433795ae4be96cda5c0dee7042ebc707f4c323801",
+    "internal/target/typescript/runtime_parity_test.go": "47d70dade5c80e07524fe9fe28351a259e55459bd67b5223a1277709c17b0b91",
+    "internal/target/typescript/schema/plan/node.go": "62b0f5ae4991cbee7b93a967b62306dc43a199d8867980bbfd5253bdff9796e6",
+    "internal/target/typescript/schema_compatibility_test.go": "7a08e1d0d0a8d29cc88e58504870f7e78910005aaf3fb68b7453b25dfefac6dc",
+    "internal/target/typescript/schema_support_test.go": "7effd77243d559c02e5bab68625fec87fbc9591fc30c67777424e08c1d2c3944",
+    "internal/target/typescript/security_restriction_test.go": "4e0c34956f645fbe2627ca5af8c0d8c2b17a3c17688fc10009fa0719405ce912",
+    "internal/target/typescript/server.go": "481c805944bbb839bac9807c0a1a7f32a3eba1e164d635a6e7236e06b5894d18",
+    "internal/target/typescript/server_body_test.go": "18ca58bae0c6ad3cd8765083dd4b8381b70f9c2cfe9d2de8b806340d34ac9780",
+    "internal/target/typescript/server_failure_scope_test.go": "f5a07aeb894b890e919ec4f3b898f7805a880510df20bd36b403dc0df13a31e1",
+    "internal/target/typescript/server_test.go": "33da638d9a5c28d0cd589044bddd46b75d1c80fcb71f29d43901ad0212cdda6e",
+    "internal/target/typescript/support_gaps_test.go": "9d5292f129af40940b6edf0541e16f0c9d77030eb8089e8006484b50de732a9e",
+    "internal/target/typescript/types_test.go": "7606ac4b3db32eced5f4f948b034dbdb451a6db729d93e92b88dce55f8041a57",
+    "internal/target/typescript/version_matrix_test.go": "8401b09601acfbe1c21a6ca731f49f6a92d9b954535919abcae591728bc38d9b",
+    "plans/golang-target/feature-parity.json": "ffe5d504a07579b8571afa3266ee4580d0904347329338e1e33f77264c565c32",
+    "plans/golang-target/plan.md": "5ae2a051392d44b2d7c31d3cca7a1e46443c634f335ac7252af71ac03f74c7a4",
+    "plans/golang-target/probes/api_contracts_test.go": "170e8cd9a6cff1190500b66beaa3d360a914982379f382644dd11349449a3997",
+    "plans/golang-target/probes/compression_test.go": "7ea7b371d77a8901cfd71ca0cc42e95c84252911711e6861f05c6572a10a4d6d",
+    "plans/golang-target/probes/contracts_test.go": "66405593aab404b0ca99718e7ec710340a3ab7b99b0959569f107899687cdc30",
+    "plans/golang-target/probes/go.mod": "a44ac0d09b86aa73bd0234e5f4c34d04d311e0d3268721fc3ba51037862c4a8e",
+    "plans/golang-target/probes/go.sum": "8ebd4db2e7dd31c076fe4efcd678f88a060f4c11c564649f2eb58348a6e0b4fe",
+    "plans/golang-target/probes/http_test.go": "f4bb56bf828720cda1fafe0e76744ec9f8791d88e3361592db031d55bf6d8220",
+    "plans/golang-target/probes/linker_test.go": "a706a04821c589ce55954b9e9c656963fb3e67cf6eaedf76b0d638b438456eee",
+    "plans/golang-target/probes/regex-cases.json": "1d9879c619dcff41336720e1611862d7af8d909a4844a568e209abb8bde003d8",
+    "plans/golang-target/probes/regex_test.go": "2e215b25e2cfd66fc717b9058bc5cdf8ebe9bd2cea25f80397a0681446b49c03",
+    "plans/golang-target/probes/run.sh": "d92ab11010ef93ca19928032bd1b53b26e03183d29bd41ed232bc93aec2243c4",
+    "plans/golang-target/record_evidence.py": "44ceef1dce2c7b71b4941cc7c319b1d30504603bd09f69fdab880d4336df9b59",
+    "plans/golang-target/research.md": "a0633390eeb70d1170e32c10f23408c177ebf49a7b2e089b8293aeec042e30b7",
+    "plans/golang-target/review.md": "2aa58b6fe2d1f3df8bef0c56d237128b4e9eab447c1d080fc79d8fc6fa549663",
+    "plans/golang-target/test_evidence.py": "54f799773a159f6862afb9af1dc0d7e61a0e89d89c015f335b79ad67bdae1a7b",
+    "plans/golang-target/verify_plan.py": "6fbfcada9d45ddf2d8e67d9d2ed6a545b0684ff1a09d90e4647f8150c7a36cf4",
+    "scripts/lib/commands.sh": "3db290ed6441ea8ffa83042fc7cd7ce7d44bfdb9bea8dd0ce4a00ed689913379",
+    "scripts/lib/redact.py": "502eb4e00f6d90d45dd7aa9056adc198c68c76f47ff104491ade41f55bb8cd52",
+    "test/typescript/tests/runtime.test.ts": "bf000deb9576204828bd260742be97a64085f1e34b6cea67c82372e155e1311e"
+  },
+  "checks": {
+    "list": {
+      "status": "pass",
+      "command": [
+        "go",
+        "test",
+        "-list",
+        "^Test",
+        "."
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "eb4e067e6653e976d11655e565dea053c6e355d3463aabb461b6101ce00f3ac8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tests": {
+      "status": "pass",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "120s",
+        "-json",
+        "."
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "a1acd9689303a46a78ecff2cdc2d0940fd0296a03cc192242aa2bf8305b32e6f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "topLevelTests": 16,
+      "packageElapsedSeconds": 1.096
+    },
+    "race": {
+      "status": "pass",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout",
+        "120s",
+        "-json",
+        "."
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "f07a4757d37a04c56ab599dee0918cd9ec761a76dd447710d2cce8f033f66881",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "topLevelTests": 16,
+      "packageElapsedSeconds": 7.329
+    },
+    "purego": {
+      "status": "pass",
+      "command": [
+        "env",
+        "CGO_ENABLED=0",
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "120s",
+        "-json",
+        "."
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "7d66095278328fba3ed1e7bd4fc9a47b23df9e7120322df42be9c49fcb7c9646",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "topLevelTests": 16,
+      "packageElapsedSeconds": 1.161
+    },
+    "benchmark": {
+      "status": "pass",
+      "command": [
+        "go",
+        "test",
+        "-run",
+        "^$",
+        "-bench",
+        "BenchmarkRegexEngines",
+        "-benchmem",
+        "-benchtime=100ms",
+        "-count=3"
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "ac446fb6bdcf356139d66c7d47b420c8a4c8de740b3e49292b94452251567315",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "deps": {
+      "status": "pass",
+      "command": [
+        "env",
+        "CGO_ENABLED=0",
+        "go",
+        "list",
+        "-deps",
+        "-json",
+        "github.com/go-quickjs/go-quickjs/jsregexp",
+        "github.com/andybalholm/brotli",
+        "github.com/klauspost/compress/zstd"
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "8432e1d9e308e6701456c1de0e7ab7f4a0eaf850a1948a0b6d93b0fa143be884",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "vet": {
+      "status": "pass",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "go": {
+      "status": "pass",
+      "command": [
+        "go",
+        "env",
+        "-json",
+        "GOVERSION",
+        "GOOS",
+        "GOARCH",
+        "CGO_ENABLED"
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "95fd0bfbe408cb2a67b1fa92cc98a6c0b0d051b4b3bf04cae472e95694be4207",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "node": {
+      "status": "pass",
+      "command": [
+        "node",
+        "-p",
+        "JSON.stringify(process.versions)"
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "b15c15d9b5ba20b331ce7f9a4e33e45ab7a1746acdc24382c341a7d3fe5dbfb2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "evidence-tests": {
+      "status": "pass",
+      "command": [
+        "/home/linuxbrew/.linuxbrew/opt/python@3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "..",
+        "-p",
+        "test_evidence.py"
+      ],
+      "exitCode": 0,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "95d1c8f31c1f53a4d2b892f8c4df74b11200a51212a69e23650230f7e5965142"
+    }
+  },
+  "environment": {
+    "go": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "amd64",
+      "GOOS": "linux",
+      "GOVERSION": "go1.27.1"
+    },
+    "node": {
+      "node": "24.21.0",
+      "acorn": "8.18.0",
+      "ada": "4.0.0",
+      "amaro": "1.1.11",
+      "ares": "1.34.8",
+      "brotli": "1.2.0",
+      "cldr": "48.0",
+      "icu": "78.3",
+      "llhttp": "9.4.3",
+      "merve": "1.2.2",
+      "modules": "137",
+      "napi": "10",
+      "nbytes": "0.1.4",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.70.0",
+      "nghttp3": "",
+      "ngtcp2": "",
+      "openssl": "3.5.8",
+      "simdjson": "4.6.7",
+      "simdutf": "6.4.0",
+      "sqlite": "3.53.4",
+      "tz": "2026c",
+      "undici": "7.29.1",
+      "unicode": "17.0",
+      "uv": "1.52.1",
+      "uvwasi": "0.0.23",
+      "v8": "13.6.233.17-node.53",
+      "zlib": "1.3.2.1-motley-8002e91",
+      "zstd": "1.5.7"
+    }
+  },
+  "regex": {
+    "cases": 42,
+    "standardEngineDifferences": 29,
+    "regexp2Differences": 7,
+    "gojaDifferences": 3,
+    "selectedEngineDifferences": 0,
+    "basis": "All discovered comparison tests passed; finite samples only"
+  },
+  "dependencyInspection": {
+    "nonStandardPackages": [
+      "github.com/andybalholm/brotli",
+      "github.com/andybalholm/brotli/matchfinder",
+      "github.com/go-quickjs/go-quickjs/internal/regexp",
+      "github.com/go-quickjs/go-quickjs/internal/wtf8",
+      "github.com/go-quickjs/go-quickjs/jsregexp",
+      "github.com/klauspost/compress",
+      "github.com/klauspost/compress/fse",
+      "github.com/klauspost/compress/huff0",
+      "github.com/klauspost/compress/internal/cpuinfo",
+      "github.com/klauspost/compress/internal/le",
+      "github.com/klauspost/compress/internal/regmask",
+      "github.com/klauspost/compress/internal/snapref",
+      "github.com/klauspost/compress/zstd",
+      "github.com/klauspost/compress/zstd/internal/xxhash"
+    ],
+    "cgoPackages": []
+  },
+  "observations": [
+    "api_contracts_test.go:52: OBSERVATION mixed null/string/number/object/array enum factories isolate mutable projections and compare structural values",
+    "api_contracts_test.go:124: OBSERVATION typed Link invocation preserves explicit source input, target overrides, HTTP error sources and per-status dispatch",
+    "api_contracts_test.go:170: OBSERVATION complete-media callbacks receive status, headers, URL/method and cancellation while SDK owns body closure",
+    "api_contracts_test.go:226: OBSERVATION inbound authentication can inspect an explicit body clone and reject with status/headers without consuming downstream body",
+    "compression_test.go:181: OBSERVATION 8 compressed-response fixtures preserve decoded bytes and original headers against Node Fetch",
+    "compression_test.go:231: OBSERVATION standard Go automatic gzip decoding removes original encoding/length headers; explicit Accept-Encoding prevents this"
+  ],
+  "microbenchmark": {
+    "scope": "Local ASCII regex probe only",
+    "samples": [
+      {
+        "variant": "standard",
+        "nsPerOp": 67.81,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "standard",
+        "nsPerOp": 67.42,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "standard",
+        "nsPerOp": 65.78,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript",
+        "nsPerOp": 75.04,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript",
+        "nsPerOp": 88.3,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript",
+        "nsPerOp": 75.05,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript-utf8",
+        "nsPerOp": 76.74,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript-utf8",
+        "nsPerOp": 76.92,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      },
+      {
+        "variant": "ecmascript-utf8",
+        "nsPerOp": 76.64,
+        "bytesPerOp": 0,
+        "allocsPerOp": 0
+      }
+    ]
+  },
+  "runDirectory": ".tmp/golang-target-plan/run-onr6htz1"
+}

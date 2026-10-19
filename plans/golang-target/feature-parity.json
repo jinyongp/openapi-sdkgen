@@ -1,0 +1,2637 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Implementation assignments, not completed support evidence",
+  "baseline": {
+    "commit": "fe010a8dea006a35f9d03cfd33b8749d718e0fc7",
+    "manifest": "docs/openapi-feature-manifest.json",
+    "manifestSha256": "45b1fc576ca1080cb7b5c0b094df005d2e79fc4ecc1d63ccfcff199c2575e01c",
+    "featureCount": 302,
+    "states": {
+      "generated": 190,
+      "metadata": 96,
+      "error": 11,
+      "omitted": 5
+    },
+    "conditionalBranches": 5
+  },
+  "acceptanceRules": {
+    "baseline-state-and-conditions": "Read the exact feature entry from the hashed baseline, including versions, conditions, failure scopes, generation effects and evidence. Implement the Go expression of that contract and add Go consumer/runtime evidence; metadata-only state is not an excuse to drop an independently documented runtime validation.",
+    "golang-http-method-capability": "Apply plan section 6; compare common supported operations and report Fetch-only omissions as a target capability difference."
+  },
+  "features": [
+    {
+      "id": "response.links-external-closure",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.links-locked-remote-closure",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.title",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.multipleOf",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.maximum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.exclusiveMaximum",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.minimum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.exclusiveMinimum",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.maxLength",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.minLength",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.pattern",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.maxItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.minItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.uniqueItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.maxProperties",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.minProperties",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.required",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.enum",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.type",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.allOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.oneOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.anyOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.not",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.items",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.properties",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.additionalProperties.schema",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.additionalProperties.true",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.additionalProperties.false",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "schema.recursive-components",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.format",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.default",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.nullable",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.discriminator",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.readOnly",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.writeOnly",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.xml",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.externalDocs",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.example",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas30.schema.deprecated",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.ref.direct-component",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.ref.nested-pointer",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.boolean",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.id",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.schema",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.anchor",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.dynamicAnchor",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.dynamicRef",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.vocabulary",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.comment",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.defs",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.type",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.const",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.enum",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.annotated-enum",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.annotated-enum.member-deprecated",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "enum.component-deprecated",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.allOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.anyOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.oneOf",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.not",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.if",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.then",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.else",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.prefixItems",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.items",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.contains",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.minContains",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.maxContains",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.properties",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.patternProperties",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.additionalProperties.schema",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.additionalProperties.false",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.propertyNames",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.unevaluatedItems",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.unevaluatedProperties",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.dependentSchemas",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.dependentRequired",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.contentSchema",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.readOnly",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.writeOnly",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.discriminator",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.xml",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.multipleOf",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.maximum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.exclusiveMaximum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.minimum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.exclusiveMinimum",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.maxLength",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.minLength",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.pattern",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.maxItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.minItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.uniqueItems",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.maxProperties",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.minProperties",
+      "workItems": [
+        "W02",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.required",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.title",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.default",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.deprecated",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.examples",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.format",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.contentEncoding",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.contentMediaType",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.externalDocs",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.openapi",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.info",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.servers.url",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.servers.variables",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.paths",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.components",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.security",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.tags",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.externalDocs",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.extensions",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.webhooks",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.jsonSchemaDialect",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "root.self",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.schemas",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.responses",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.parameters",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.examples",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.requestBodies",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.headers",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.securitySchemes",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.links",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.callbacks",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.pathItems",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "components.mediaTypes",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.standard-methods",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.query",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.additionalOperations",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.operationId",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.tags",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.summary",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.externalDocs",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.deprecated",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.callbacks",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.security",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "operation.scoped-server-alternatives",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.in.path",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.in.query",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.in.header",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.header.fetch-managed",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions",
+      "adaptation": "Use declared Go transport capabilities for explicit cookie and managed-header access; preserve collision and security checks."
+    },
+    {
+      "id": "parameter.in.cookie",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.querystring",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.required",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.allowReserved",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.allowEmptyValue",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.cookie-style",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.styles",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.delimited-object",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.structured-non-json-content",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media.json",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media.text",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media.binary",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media.form-urlencoded",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media.multipart",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.media-wildcard",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.encoding",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.xml",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.itemSchema",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.prefixEncoding",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.itemEncoding",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.default-media-negotiation",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.headers",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "header.deprecated",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.links",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.links.fetch-managed-request-headers",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions",
+      "adaptation": "Use declared Go transport capabilities for explicit cookie and managed-header access; preserve collision and security checks."
+    },
+    {
+      "id": "response.streams",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.sequential-untyped",
+      "workItems": [
+        "W03",
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.sse-event-default",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.sse-inbound-event-default",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.schema.discriminator.defaultMapping",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.schema.xml.nodeType",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.schema.xml.legacy-compatibility",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.schema.xml.nodeType-legacy-conflict",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.optional-paths",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oas32.streaming-media",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.title",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.summary",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.termsOfService",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.contact.name",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.contact.url",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.contact.email",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.license.name",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.license.url",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.license.identifier",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "info.version",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.url",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.variable.enum",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.variable.default",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.variable.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "server.name",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.name",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.externalDocs",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.summary",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.parent",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "tag.kind",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "externalDocs.url",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "externalDocs.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.name",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.in",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.deprecated",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.style",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.explode",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.schema",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.content.single-media",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.content.multi-media",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.example",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "parameter.examples",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.required",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.content",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.schema",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.example",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.examples",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.encoding",
+      "workItems": [
+        "W03",
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.description",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.summary",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "example.dataValue",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "example.serializedValue",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.content",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.status.exact",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.status.default",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.status.range",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.media-wildcard",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.type",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.name",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.in",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.apiKey.fetch-managed-header",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions",
+      "adaptation": "Use declared Go transport capabilities for explicit cookie and managed-header access; preserve collision and security checks."
+    },
+    {
+      "id": "securityScheme.scheme",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.bearerFormat",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.flows",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.openIdConnectUrl",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.oauth2MetadataUrl",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "securityScheme.deprecated",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oauthFlow.authorizationUrl",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oauthFlow.tokenUrl",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oauthFlow.refreshUrl",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oauthFlow.scopes",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "oauthFlow.deviceAuthorization",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.case-insensitive-json",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.structured-multipart-default",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.unknown-runtime-codec",
+      "workItems": [
+        "W03",
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "mediaType.unknown-stream-runtime-codec",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "pathItem.ref-siblings",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "input.yaml",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "input.yaml.flow-mapping",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "pathItem.ref.local-pointer",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "jsonschema.ref.sibling-wire-semantics",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.streaming-request",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.streaming-request-source",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.stream-protocol-adapter",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.operation-stream",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.stream-frame-limit",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "requestBody.inbound-complete-byte-limit",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.stream-raw-body",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "response.stream-type-helpers",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.sse-content-schema",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.stream-provider-neutral-boundary",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.unknown-stream-request-codec",
+      "workItems": [
+        "W06",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "media.case-insensitive-binary",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.reference.oas30-siblings",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.reference.oas31-siblings",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.path-item-siblings.nonconflict",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.path-item-siblings.conflict",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.parameter.reserved-header",
+      "workItems": [
+        "W03",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.parameter.allow-empty-value",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.parameter.path-binding",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.security.requirement-operation",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.security.requirement-root",
+      "workItems": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.body30.empty",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.body30.delete-extension",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.body30.options-extension",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.body30.unsafe",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.method.fetch-capability",
+      "workItems": [
+        "W03",
+        "W11"
+      ],
+      "acceptance": "golang-http-method-capability",
+      "adaptation": "A valid method token is emitted for the Go HTTP transport; Fetch-only operation omissions do not apply. CONNECT tunnel protocols are outside this contract."
+    },
+    {
+      "id": "compat.link.target-identity",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.response.content-type",
+      "workItems": [
+        "W03",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.encoding.headers",
+      "workItems": [
+        "W05",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.encoding.fields",
+      "workItems": [
+        "W05",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.encoding.entry-applicability",
+      "workItems": [
+        "W05",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.version.oas30-metadata",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.version.pre32-metadata",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.version.invalid-feature",
+      "workItems": [
+        "W01",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.boolean-true",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.boolean-false",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.const",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.nullable-type-array",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.type-array-reject",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.exclusive-bound",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.exclusive-bound-reject",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30.annotations",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema30-keyword-reject",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema.binary-version",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    },
+    {
+      "id": "compat.schema.content-media-context",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "baseline-state-and-conditions"
+    }
+  ],
+  "supplementalContracts": [
+    {
+      "id": "calls-and-types",
+      "workItems": [
+        "W02",
+        "W03",
+        "W07",
+        "W11"
+      ],
+      "acceptance": "Resource, operation ID and exact route access; enums, typed inputs, outputs, headers and HTTP errors."
+    },
+    {
+      "id": "extensions",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "x-envelope, x-pagination, x-sort, x-sdk-visibility and x-error-category preserve their observable contracts."
+    },
+    {
+      "id": "static-and-runtime-selection",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "Generation selection, typed reference preparation and computed name/route lookup all work without a network call during preparation."
+    },
+    {
+      "id": "named-clients",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "Distinct public method sets and type aliases, shared operation/schema implementations and root union semantics."
+    },
+    {
+      "id": "metadata",
+      "workItems": [
+        "W08",
+        "W11"
+      ],
+      "acceptance": "Explicit addon, original entry source and unknown extensions, no implicit metadata dependency."
+    },
+    {
+      "id": "generation-management",
+      "workItems": [
+        "W01",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "Atomic publication, check, incremental updates, fingerprint options, lock and rollback behavior preserve user files."
+    },
+    {
+      "id": "cli-and-inspect",
+      "workItems": [
+        "W01",
+        "W08",
+        "W11"
+      ],
+      "acceptance": "TOML and flags, target-aware inspection, diagnostic modes, failure scopes and redaction."
+    },
+    {
+      "id": "media-and-transport-hooks",
+      "workItems": [
+        "W04",
+        "W05",
+        "W06",
+        "W11"
+      ],
+      "acceptance": "HTTP client and custom transport, whole-media codecs, stream protocols and adapters, context and timeout precedence."
+    },
+    {
+      "id": "server-runtime",
+      "workItems": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": "Typed webhooks/callbacks plus generic normalized-schema decoding, validation and response encoding."
+    },
+    {
+      "id": "source-delivery",
+      "workItems": [
+        "W01",
+        "W10",
+        "W11"
+      ],
+      "acceptance": "Application-owned source, explicit import path, no user module edits, conditional regex dependency and license guidance."
+    },
+    {
+      "id": "playground-and-distribution",
+      "workItems": [
+        "W10",
+        "W11"
+      ],
+      "acceptance": "Go generation through distributed CLI and browser-safe WASM playground; no compiler or Node needed for source generation."
+    },
+    {
+      "id": "concurrency-and-lifetime",
+      "workItems": [
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W09",
+        "W11"
+      ],
+      "acceptance": "Shared clients and compiled plans are race-free; cancellation, raw ownership and one-shot inputs are checked."
+    },
+    {
+      "id": "performance-and-platforms",
+      "workItems": [
+        "W11"
+      ],
+      "acceptance": "Fixed generation/build/runtime workloads, dependency reachability, CGO-free cross builds and current TypeScript regressions."
+    },
+    {
+      "id": "json-boundaries",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "Absence/null/zero/empty collections, binary64, decimal multipleOf, exact keys, additional values and lone surrogates."
+    },
+    {
+      "id": "mixed-composite-enums",
+      "workItems": [
+        "W02",
+        "W11"
+      ],
+      "acceptance": "Plan 4.5: null/scalar/object/array enums and const, structural equality, fresh value lists and isolated mutable projections."
+    },
+    {
+      "id": "link-invocation",
+      "workItems": [
+        "W07",
+        "W11"
+      ],
+      "acceptance": "Plan 7.1: explicit source input, optional field overrides, HTTP error sources, status-specific targets/options/output and default dispatch."
+    },
+    {
+      "id": "compressed-responses",
+      "workItems": [
+        "W03",
+        "W04",
+        "W05",
+        "W06",
+        "W11"
+      ],
+      "acceptance": "Plan 6.1: gzip/x-gzip/zlib/raw-deflate/br/zstd, stacked/unknown/bodyless responses, original headers, bounded pull decoding, injected transport capability."
+    },
+    {
+      "id": "hook-metadata-ownership",
+      "workItems": [
+        "W05",
+        "W09",
+        "W11"
+      ],
+      "acceptance": "Plans 6 and 9: concrete callback signatures, complete HTTP metadata, parameter codecs, context, rejection responses and body ownership."
+    }
+  ]
+}
