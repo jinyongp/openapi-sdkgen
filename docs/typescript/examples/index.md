@@ -20,6 +20,11 @@ Upload a client-side NDJSON file to a separate HTTP server and read its processi
 Submit a job, poll its progress and save the computed CSV; cancel a second job.
 [Download ZIP](/downloads/typescript-report-jobs-app.zip) · [Key code](./report-jobs.md)
 
+## File conversion
+
+Upload a JSON contacts file and save the NDJSON converted by the server.
+[Download ZIP](/downloads/typescript-file-conversion-app.zip) · [Key code](./file-conversion.md)
+
 ## AI streaming
 
 Ask a model through an AI SDK server and read its response with a generated client.

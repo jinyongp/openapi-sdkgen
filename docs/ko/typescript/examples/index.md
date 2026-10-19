@@ -19,6 +19,11 @@
 클라이언트의 NDJSON 파일을 별도 HTTP 서버에 전송하고 처리 결과를 받습니다.
 [예제 ZIP](/downloads/typescript-request-streaming-app.zip) · [주요 코드](../guide/files-links-streams.md#send-streaming-request-bodies)
 
+## 파일 변환
+
+JSON 연락처 파일을 업로드하고 서버가 변환한 NDJSON 파일을 저장합니다.
+[예제 ZIP](/downloads/typescript-file-conversion-app.zip) · [주요 코드](./file-conversion.md)
+
 ## AI 응답 스트리밍
 
 AI SDK 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.

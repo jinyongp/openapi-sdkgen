@@ -1,0 +1,15 @@
+{
+  "name": "typescript-file-conversion-app-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "server": "node dist/server.js",
+    "client": "node dist/client.js"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "7.0.2"
+  },
+  "engines": { "node": "24.x", "pnpm": "12.x" }
+}

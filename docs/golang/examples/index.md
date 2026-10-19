@@ -7,6 +7,11 @@ Download complete applications as ZIP files. Each README explains generation and
 Run API calls, raw responses, Links, resource paths, NDJSON, selected calls and a webhook on local servers.
 [Download ZIP](/downloads/golang-todo-app.zip) · [First call](../guide/getting-started.md) · [Webhook code](./webhook-server.md)
 
+## File conversion
+
+Upload a JSON contacts file and save the NDJSON converted by the server.
+[Download ZIP](/downloads/golang-file-conversion-app.zip) · [Key code](./file-conversion.md)
+
 ## AI streaming
 
 Ask a model through an OpenAI Go server and read its response with a generated client.

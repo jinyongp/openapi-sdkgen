@@ -51,8 +51,8 @@ execution are separately checked with an empty module cache and network disabled
 1. Background report job: implemented in the follow-up
    [report application work](report-jobs-example-review.md), covering submit → poll
    progress → download a real generated file and a separate cancel path.
-2. File conversion: upload a real file → server transforms its contents → download
-   and inspect the result. Existing advanced examples cover binary transport only.
+2. File conversion: implemented in [the file conversion applications](file-conversion-example-review.md),
+   covering upload → JSON-to-NDJSON conversion → saved download and readable result.
 3. Signed webhook delivery: a separate sender signs bytes, the receiver verifies
    them and ignores duplicate delivery IDs. Existing webhook examples cover token
    authentication and schema validation, not signatures or idempotent effects.

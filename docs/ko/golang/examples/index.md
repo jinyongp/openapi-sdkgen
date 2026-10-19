@@ -7,6 +7,11 @@
 로컬 서버에서 API 호출, raw 응답, Link, 리소스 경로, NDJSON, 선택형 호출과 웹훅을 실행합니다.
 [예제 ZIP](/downloads/golang-todo-app.zip) · [첫 호출](../guide/getting-started.md) · [웹훅 코드](./webhook-server.md)
 
+## 파일 변환
+
+JSON 연락처 파일을 업로드하고 서버가 변환한 NDJSON 파일을 저장합니다.
+[예제 ZIP](/downloads/golang-file-conversion-app.zip) · [주요 코드](./file-conversion.md)
+
 ## AI 응답 스트리밍
 
 OpenAI Go 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.

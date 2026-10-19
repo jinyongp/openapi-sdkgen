@@ -31,6 +31,10 @@ export const exampleDownloads = [
   { name: "typescript-todo-app", files: tsFiles },
   { name: "typescript-report-jobs-app", files: [...tsFiles, "orders.json"] },
   {
+    name: "typescript-file-conversion-app",
+    files: [...tsFiles, "contacts.json"],
+  },
+  {
     name: "typescript-request-streaming-app",
     files: [...tsFiles, "todos.ndjson", "src/todo.ts"],
   },
@@ -45,6 +49,10 @@ export const exampleDownloads = [
     files: [...standaloneTSFiles, "src/worker.ts"],
   },
   { name: "golang-todo-app", files: goFiles },
+  {
+    name: "golang-file-conversion-app",
+    files: [...goFiles, "contacts.json", "cmd/server/main.go"],
+  },
   {
     name: "golang-report-jobs-app",
     files: [...goFiles, "orders.json", "cmd/server/main.go"],

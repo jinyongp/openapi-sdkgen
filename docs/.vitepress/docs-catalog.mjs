@@ -240,6 +240,13 @@ export const topics = Object.freeze([
     "targets": ["typescript", "golang"]
   },
   {
+    "id": "file-conversion",
+    "suffix": "/examples/file-conversion",
+    "labels": { "en": "File conversion", "ko": "파일 변환" },
+    "group": "examples",
+    "targets": ["typescript", "golang"]
+  },
+  {
     "id": "webhook-server",
     "suffix": "/examples/webhook-server",
     "labels": {

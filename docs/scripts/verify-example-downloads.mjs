@@ -15,6 +15,10 @@ import {
   verifyReportClient,
   verifyReportServer,
 } from "./report-jobs-checks.mjs";
+import {
+  verifyConversionClient,
+  verifyConversionServer,
+} from "./file-conversion-checks.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const scratch = await mkdtemp(resolve(root, ".tmp/downloaded-examples-"));
@@ -197,6 +201,12 @@ try {
       aiOutput,
     ],
     ["golang-report-jobs-app", "example.com/sdkgen-go-report-jobs", [], null],
+    [
+      "golang-file-conversion-app",
+      "example.com/sdkgen-go-file-conversion",
+      [],
+      null,
+    ],
   ]) {
     const directory = await unpack(name);
     run(
@@ -247,8 +257,22 @@ try {
         );
         env.AI_API_BASE_URL = "http://127.0.0.1:18977";
       }
-      if (name === "golang-report-jobs-app") {
-        const executable = resolve(scratch, "go-report-server");
+      const localServer = {
+        "golang-report-jobs-app": {
+          port: "18979",
+          portKey: "REPORT_API_PORT",
+          baseKey: "REPORT_API_BASE_URL",
+          marker: "Report API listening",
+        },
+        "golang-file-conversion-app": {
+          port: "18982",
+          portKey: "CONVERSION_API_PORT",
+          baseKey: "CONVERSION_API_BASE_URL",
+          marker: "Conversion API listening",
+        },
+      }[name];
+      if (localServer) {
+        const executable = resolve(scratch, `${name}-server`);
         run(
           "go",
           ["build", "-mod=readonly", "-o", executable, "./cmd/server"],
@@ -257,17 +281,20 @@ try {
         );
         server = await startServer(
           directory,
-          { REPORT_API_PORT: "18979" },
-          ["Report API listening"],
+          { [localServer.portKey]: localServer.port },
+          [localServer.marker],
           executable,
           [],
         );
-        env.REPORT_API_BASE_URL = "http://127.0.0.1:18979";
+        env[localServer.baseKey] = `http://127.0.0.1:${localServer.port}`;
       }
       const result = run("go", ["run", "-mod=readonly", "."], directory, env);
       if (name === "golang-report-jobs-app") {
         await verifyReportClient(directory, result);
         await verifyReportServer(env.REPORT_API_BASE_URL);
+      } else if (name === "golang-file-conversion-app") {
+        await verifyConversionClient(directory, result);
+        await verifyConversionServer(env.CONVERSION_API_BASE_URL);
       } else assert.equal(result, expected);
       if (name === "golang-ai-streaming-app") {
         verifyAIClientFailures(
@@ -341,6 +368,16 @@ try {
       ["Report API listening"],
     ],
     [
+      "typescript-file-conversion-app",
+      "api",
+      [],
+      {
+        CONVERSION_API_PORT: "18983",
+        CONVERSION_API_BASE_URL: "http://127.0.0.1:18983",
+      },
+      ["Conversion API listening"],
+    ],
+    [
       "typescript-ai-streaming-app",
       "api",
       [],
@@ -394,6 +431,9 @@ try {
       else if (name === "typescript-report-jobs-app") {
         await verifyReportClient(directory, result);
         await verifyReportServer(env.REPORT_API_BASE_URL);
+      } else if (name === "typescript-file-conversion-app") {
+        await verifyConversionClient(directory, result);
+        await verifyConversionServer(env.CONVERSION_API_BASE_URL);
       } else if (name === "typescript-ai-streaming-app") {
         assert.equal(result, aiOutput);
         verifyAIClientFailures(

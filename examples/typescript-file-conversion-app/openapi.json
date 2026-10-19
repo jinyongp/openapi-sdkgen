@@ -1,0 +1,58 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "Contact File Conversion", "version": "1.0.0" },
+  "paths": {
+    "/convert/contacts": {
+      "post": {
+        "operationId": "convertContacts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": { "type": "string", "format": "binary" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Converted contacts.ndjson",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Invalid" },
+          "413": { "$ref": "#/components/responses/TooLarge" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      }
+    },
+    "responses": {
+      "Invalid": {
+        "description": "Expected a JSON array of contacts with non-empty name and email strings",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      },
+      "TooLarge": {
+        "description": "Upload exceeds 64 KiB",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      }
+    }
+  }
+}
