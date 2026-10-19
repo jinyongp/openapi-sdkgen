@@ -1,0 +1,149 @@
+{
+  "openapi": "3.2.0",
+  "info": { "title": "Monthly Sales Reports", "version": "1.0.0" },
+  "paths": {
+    "/reports": {
+      "post": {
+        "operationId": "createReport",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["month"],
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Report queued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportJob" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidInput" }
+        }
+      }
+    },
+    "/reports/{reportID}": {
+      "parameters": [{ "$ref": "#/components/parameters/ReportID" }],
+      "get": {
+        "operationId": "getReport",
+        "responses": {
+          "200": {
+            "description": "Current progress",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportJob" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/reports/{reportID}/file": {
+      "parameters": [{ "$ref": "#/components/parameters/ReportID" }],
+      "get": {
+        "operationId": "downloadReport",
+        "responses": {
+          "200": {
+            "description": "Computed CSV report",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/reports/{reportID}/cancel": {
+      "parameters": [{ "$ref": "#/components/parameters/ReportID" }],
+      "post": {
+        "operationId": "cancelReport",
+        "responses": {
+          "200": {
+            "description": "Job cancelled; repeated cancellation is safe",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportJob" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ReportID": {
+        "name": "reportID",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    },
+    "schemas": {
+      "ReportJob": {
+        "type": "object",
+        "required": ["id", "month", "status", "processed", "total"],
+        "properties": {
+          "id": { "type": "string" },
+          "month": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "running", "completed", "cancelled"]
+          },
+          "processed": { "type": "integer", "format": "int32", "minimum": 0 },
+          "total": { "type": "integer", "format": "int32", "minimum": 0 }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
+      }
+    },
+    "responses": {
+      "InvalidInput": {
+        "description": "Invalid month or JSON body",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Unknown report",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "The job state does not allow this action",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -46,10 +46,11 @@ No paid model calls are made. Live inference with a user's key/model is unverifi
 Provider installation needs network/cache access; Go consumer generation and
 execution are separately checked with an empty module cache and network disabled.
 
-## Suggested next examples (not implemented)
+## Suggested next examples
 
-1. Background report job: submit → poll progress → download a real generated file,
-   with an alternate cancel path. No current example completes this workflow.
+1. Background report job: implemented in the follow-up
+   [report application work](report-jobs-example-review.md), covering submit → poll
+   progress → download a real generated file and a separate cancel path.
 2. File conversion: upload a real file → server transforms its contents → download
    and inspect the result. Existing advanced examples cover binary transport only.
 3. Signed webhook delivery: a separate sender signs bytes, the receiver verifies

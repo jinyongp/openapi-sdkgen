@@ -1,0 +1,6 @@
+[
+  { "date": "2026-10-01", "region": "APAC", "amountCents": 12000 },
+  { "date": "2026-10-02", "region": "EMEA", "amountCents": 9000 },
+  { "date": "2026-10-03", "region": "APAC", "amountCents": 6000 },
+  { "date": "2026-09-30", "region": "AMER", "amountCents": 9900 }
+]

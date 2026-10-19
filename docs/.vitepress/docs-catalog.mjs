@@ -230,6 +230,16 @@ export const topics = Object.freeze([
     ]
   },
   {
+    "id": "report-jobs",
+    "suffix": "/examples/report-jobs",
+    "labels": {
+      "en": "Background reports",
+      "ko": "백그라운드 보고서"
+    },
+    "group": "examples",
+    "targets": ["typescript", "golang"]
+  },
+  {
     "id": "webhook-server",
     "suffix": "/examples/webhook-server",
     "labels": {

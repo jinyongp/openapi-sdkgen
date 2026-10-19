@@ -24,6 +24,11 @@
 AI SDK 서버를 통해 모델에 질문하고 생성된 클라이언트로 답변을 읽습니다.
 [예제 ZIP](/downloads/typescript-ai-streaming-app.zip) · [핵심 코드](./ai-streaming.md)
 
+## 백그라운드 매출 보고서
+
+작업을 제출하고 진행 상황을 조회한 뒤 집계된 CSV를 저장합니다. 별도 작업은 취소합니다.
+[예제 ZIP](/downloads/typescript-report-jobs-app.zip) · [주요 코드](./report-jobs.md)
+
 ## 웹훅 수신
 
 생성된 수신 처리기를 연결하고 인증과 입력 검증을 확인합니다.

@@ -23,7 +23,7 @@ test("blocked or invalid storage cannot choose an unsupported SDK", () => {
   assert.equal(readSDKPreference({getItem(){return "golang";}}),"golang");
 });
 test("catalog covers historical routes and specific scopes precede ko", () => {
-  assert.equal(topics.length,28);assert.equal(new Set(topics.map(x=>x.id)).size,28);
+  assert.equal(new Set(topics.map(x=>x.id)).size,topics.length);
   assert.equal(legacyRoutes.length,52);assert.equal(new Set(legacyRoutes.map(x=>x.route)).size,52);
   assert.equal(legacyRoutes.reduce((n,x)=>n+x.anchors.length,0),430);
   assert.ok(documentationScopes.findIndex(x=>x.key==="ko/golang")<documentationScopes.findIndex(x=>x.key==="ko"));

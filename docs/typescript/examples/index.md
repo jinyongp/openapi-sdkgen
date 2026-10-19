@@ -15,6 +15,11 @@ Create and list items against a local HTTP server.
 Upload a client-side NDJSON file to a separate HTTP server and read its processing result.
 [Download ZIP](/downloads/typescript-request-streaming-app.zip) · [Key code](../guide/files-links-streams.md#send-streaming-request-bodies)
 
+## Background sales report
+
+Submit a job, poll its progress and save the computed CSV; cancel a second job.
+[Download ZIP](/downloads/typescript-report-jobs-app.zip) · [Key code](./report-jobs.md)
+
 ## AI streaming
 
 Ask a model through an AI SDK server and read its response with a generated client.

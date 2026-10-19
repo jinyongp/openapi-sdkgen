@@ -12,5 +12,10 @@ Run API calls, raw responses, Links, resource paths, NDJSON, selected calls and 
 Ask a model through an OpenAI Go server and read its response with a generated client.
 [Download ZIP](/downloads/golang-ai-streaming-app.zip) · [Key code](./ai-streaming.md)
 
+## Background sales report
+
+Submit a job, poll its progress and save the computed CSV; cancel a second job.
+[Download ZIP](/downloads/golang-report-jobs-app.zip) · [Key code](./report-jobs.md)
+
 For feature-specific clients, see [Named clients](../guide/named-clients.md).
 For cancellation and stream cleanup, see [Streaming API](../reference/streaming.md).

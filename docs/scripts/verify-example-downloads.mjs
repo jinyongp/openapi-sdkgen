@@ -11,6 +11,10 @@ import { resolve, dirname } from "node:path";
 import { spawnSync, spawn } from "node:child_process";
 import { unzipSync } from "fflate";
 import { exampleDownloads } from "./build-example-downloads.mjs";
+import {
+  verifyReportClient,
+  verifyReportServer,
+} from "./report-jobs-checks.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const scratch = await mkdtemp(resolve(root, ".tmp/downloaded-examples-"));
@@ -192,6 +196,7 @@ try {
       [],
       aiOutput,
     ],
+    ["golang-report-jobs-app", "example.com/sdkgen-go-report-jobs", [], null],
   ]) {
     const directory = await unpack(name);
     run(
@@ -242,11 +247,29 @@ try {
         );
         env.AI_API_BASE_URL = "http://127.0.0.1:18977";
       }
-      assert.equal(
-        run("go", ["run", "-mod=readonly", "."], directory, env),
-        expected,
-      );
-      if (server) {
+      if (name === "golang-report-jobs-app") {
+        const executable = resolve(scratch, "go-report-server");
+        run(
+          "go",
+          ["build", "-mod=readonly", "-o", executable, "./cmd/server"],
+          directory,
+          env,
+        );
+        server = await startServer(
+          directory,
+          { REPORT_API_PORT: "18979" },
+          ["Report API listening"],
+          executable,
+          [],
+        );
+        env.REPORT_API_BASE_URL = "http://127.0.0.1:18979";
+      }
+      const result = run("go", ["run", "-mod=readonly", "."], directory, env);
+      if (name === "golang-report-jobs-app") {
+        await verifyReportClient(directory, result);
+        await verifyReportServer(env.REPORT_API_BASE_URL);
+      } else assert.equal(result, expected);
+      if (name === "golang-ai-streaming-app") {
         verifyAIClientFailures(
           "go",
           ["run", "-mod=readonly", "."],
@@ -259,7 +282,7 @@ try {
       if (server) await stopServer(server);
     }
     console.log(
-      `ok downloaded ${name}: standard-library client ran over local HTTP${server ? "; provider SDK stream, errors and cancellation verified" : ""}`,
+      `ok downloaded ${name}: standard-library client ran over local HTTP`,
     );
   }
   const tooling = resolve(root, "test/typescript/node_modules");
@@ -306,6 +329,16 @@ try {
         IMPORT_API_BASE_URL: "http://127.0.0.1:18975",
       },
       ["Import API listening"],
+    ],
+    [
+      "typescript-report-jobs-app",
+      "api",
+      [],
+      {
+        REPORT_API_PORT: "18980",
+        REPORT_API_BASE_URL: "http://127.0.0.1:18980",
+      },
+      ["Report API listening"],
     ],
     [
       "typescript-ai-streaming-app",
@@ -358,7 +391,10 @@ try {
         assert.deepEqual(data.listed.items, [data.created]);
       } else if (name === "typescript-request-streaming-app")
         assert.equal(result, "Imported 2 todos");
-      else if (name === "typescript-ai-streaming-app") {
+      else if (name === "typescript-report-jobs-app") {
+        await verifyReportClient(directory, result);
+        await verifyReportServer(env.REPORT_API_BASE_URL);
+      } else if (name === "typescript-ai-streaming-app") {
         assert.equal(result, aiOutput);
         verifyAIClientFailures(
           process.execPath,
