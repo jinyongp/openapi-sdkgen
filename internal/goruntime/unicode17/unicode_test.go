@@ -234,3 +234,15 @@ func FuzzNFCIdempotence(f *testing.F) {
 		}
 	})
 }
+
+func TestIDNAMarkTable(t *testing.T) {
+	property, ok := LookupProperty("", "Mark")
+	if !ok {
+		t.Fatal("Mark property missing")
+	}
+	for point := rune(0); point <= 0x10ffff; point++ {
+		if IsMark(point) != property.Contains(point) {
+			t.Fatalf("IDNA mark table differs at U+%04X", point)
+		}
+	}
+}

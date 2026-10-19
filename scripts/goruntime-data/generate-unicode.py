@@ -176,6 +176,7 @@ def main():
         text += f'{{0x{lo:x},0x{hi:x},{statuses[fields[1]]},{quoted(mapping)}}},\n'
     text += '}\nvar joiningTypes = [...]joiningEntry{\n' + ''.join(f'{{0x{span(f[0])[0]:x},0x{span(f[0])[1]:x},{quoted(f[1])}}},\n' for f in sorted(records(ucd / 'extracted/DerivedJoiningType.txt'), key=lambda f: span(f[0])[0])) + '}\n'
     text += 'var bidiClasses = [...]bidiEntry{\n' + ''.join(f'{{0x{lo:x},0x{hi:x},{quoted(value)}}},\n' for lo, hi, value in collapse(bidi)) + '}\n'
+    text += 'var idnaMarks = [...]idnaMarkEntry{\n' + ''.join(f'{{0x{lo:x},0x{hi:x}}},\n' for lo, hi in categories['M']) + '}\n'
     emit(args.output / 'idna_data.go', text)
     print(json.dumps({'unicode': manifest['unicode'], 'properties': len(properties), 'propertyRanges': property_range_count, 'verifiedInputs': len(manifest['inputs'])}))
 

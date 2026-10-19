@@ -1,7 +1,7 @@
 # Go 무의존성 구현 기록
 
 현재 실행: [계획](plan.md), [devtools ID](workstream.json).
-계획 단위별로 리뷰·재검증·커밋한다. W01–W05를 구현·검증했고 URL·방출·의존 정리·출시 통합 검증을 이어간다.
+계획 단위별로 리뷰·재검증·커밋한다. W01–W06를 구현·검증했고 방출·의존 정리·출시 통합 검증을 이어간다.
 
 ## W01 — 기준과 적합성 입력
 
@@ -120,3 +120,29 @@ Kelvin matrix 기대값 두 개만 규격값으로 명시적으로 보정하고 
 원본 archive를 보존했다. 짧은 단일 스레드 microbenchmark이며 SDK 전체 성능 개선으로 확대하지 않는다.
 의미·복원·캡처/역방향·수명·경쟁·오류 전파·자료 소유권을 리뷰하고 추가 회귀와 race를 재실행했다.
 제품 QuickJS 교체는 W07, 의존 모듈 제거는 W08의 pending 작업이다.
+
+## W06 — 자체 URL·IDNA runtime
+
+`internal/goruntime/urlstd`에 URL constructor 파싱·상대 해석·직렬화·hostname/origin을 구현했다.
+HTTP/nonHTTP/file/opaque, credentials/default port, IPv4 legacy 표기, IPv6, dot segment,
+query/fragment의 빈 값 구분, USVString 경계를 포함한다. IPv6 값 검증에 표준 net/netip을 쓰고
+URL 표현으로 직접 직렬화한다. net/url 재해석은 W07 HTTP adapter의 마지막 변환만 허용한다.
+
+Unicode17 비전환 mapping/NFC/Punycode와 ContextJ/Bidi를 자체 구현했다. ASCII domain 호환 경로,
+CheckHyphens/STD3/DNS-length 해제는 고정 WHATWG 정책이다. URL delimiter 거부는 host 단계다.
+Mark 판정은 IDNA 전용 작은 표로 분리해 전체 regex property 자료를 요구하지 않는다.
+공식 해시 확인 재생성 결과4개 파일이 byte 단위로 일치하고 전체 코드포인트의 Mark 판정도 일치한다.
+
+고정 WPT constructor 파싱·직렬화/명시된 origin 전 사례, IDNA 및 이전 removed 사례,
+UTF8 percent encoding, 기존 Node URL28개 통과. 공식 Unicode17 IDNA6,391개를 relaxed URL
+정책으로 독립 검사했다. WPT7개가 U+3F8CD/U+3E8AC를 허용하지만 고정 Unicode17 mapping은
+금지한다. 원본은 그대로 두고 source/input 해시·기존 결과·규격상 거부를 override manifest에 명시했다.
+이 변경은 자체 결과를 정답으로 삼은 제외가 아니다. 구체적 이전 Unicode 버전 원인은 단정하지 않는다.
+
+리뷰·회귀에서 opaque 마지막 space, empty port의 빈 host, 무시 문자로 빈 host가 되는 경우,
+path caret encoding, overflow hex IPv4-like suffix를 고쳤다. 불변 base를32개 동시 호출로 확인했고
+race 통과. URL왕복 fuzz593,911회, Punycode왕복 fuzz201,674회 무실패. 원시 실패·최종·fuzz·해시를
+w06-evidence.json에 보존했다. 최종 URL/Unicode/정규식 원본 패키지 회귀가 통과했다.
+setter/DOM/SearchParams/HTML의 비UTF8 encoding 인자는 SDK 범위 밖이며 통과로 주장하지 않는다.
+인증 origin/중복해석·소유권·정수 경계·잘못된 입력·결정성·버전·링크 도달성 구조를 리뷰했다.
+전체 성능·생성 SDK 소비자 연결은 W07/W10에서 이어서 검사한다.

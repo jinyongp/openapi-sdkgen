@@ -1,0 +1,63 @@
+{
+  "sourceSha256": "84de621e5239676e59e5a3e68ef3e2b1acde9da5480a633d2ef446ef03238b76",
+  "basis": "Pinned Unicode17 IdnaMappingTable.txt: 3347A..3FFFD; disallowed. These WPT entries conflict with the fixed Unicode17 contract; original fixtures are unchanged. No matcher-derived expected values.",
+  "mappingSHA256": "87f05505dc026fdb2bff16132bdc68a8014675836882a9a2b1844540ad3be382",
+  "overrides": [
+    {
+      "index": 1483,
+      "inputSHA256": "82dbbbda05edf2c5512fcc821c01eefd2cbd2184a4d40dfececbcc984416236d",
+      "input": "\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e",
+      "upstreamOutput": "xn--5cb172r175fug38a.xn--mlj",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3F8CD"
+    },
+    {
+      "index": 1484,
+      "inputSHA256": "7d0f379278e6734019b0b1ef77ac9dea3abec7f5fb7ecb61f5071704d1ae131a",
+      "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u10be",
+      "upstreamOutput": "xn--5cb172r175fug38a.xn--mlj",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3F8CD"
+    },
+    {
+      "index": 1485,
+      "inputSHA256": "87d32a650972359e8b3e5f5a08d109480cf22e872be2b70096fbb0249f7f2580",
+      "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e",
+      "upstreamOutput": "xn--5cb172r175fug38a.xn--mlj",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3F8CD"
+    },
+    {
+      "index": 2497,
+      "inputSHA256": "991cbdd7cddf7be2a3da54a0de1c59069d039d6a5ba21a7f62494eff3384427f",
+      "input": "\ud8ba\udcac\u3002\u0729\u3002\ucbd95",
+      "upstreamOutput": "xn--t92s.xn--znb.xn--5-y88f",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3E8AC"
+    },
+    {
+      "index": 2498,
+      "inputSHA256": "31417e52fea900d315857df5cab342f1dc744c1a925d1cdf942ea6145b49a88c",
+      "input": "\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5",
+      "upstreamOutput": "xn--t92s.xn--znb.xn--5-y88f",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3E8AC"
+    },
+    {
+      "index": 2500,
+      "inputSHA256": "621d79ddb7c85cdabe9500829c2c769540f2d32b6724e612ab5e4e3839e3a5bb",
+      "input": "\ud8ba\udcac.\u0729.\ucbd95",
+      "upstreamOutput": "xn--t92s.xn--znb.xn--5-y88f",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3E8AC"
+    },
+    {
+      "index": 2501,
+      "inputSHA256": "2efb5768a9562b007d4a5f300d06e906458cf7e6a865cb7efbeaee4fec88a299",
+      "input": "\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5",
+      "upstreamOutput": "xn--t92s.xn--znb.xn--5-y88f",
+      "output": null,
+      "reason": "Contains unassigned disallowed U+3E8AC"
+    }
+  ]
+}

@@ -14,6 +14,8 @@ const (
 	IDNASTD3Mapped
 )
 
+type idnaMarkEntry struct{ lo, hi rune }
+
 type idnaEntry struct {
 	lo, hi  rune
 	status  IDNAStatus
@@ -50,4 +52,10 @@ func BidiClass(value rune) string {
 		return bidiClasses[index].value
 	}
 	return "L"
+}
+
+// IsMark reads the small IDNA-specific mark table without retaining all regex properties.
+func IsMark(value rune) bool {
+	index := sort.Search(len(idnaMarks), func(index int) bool { return idnaMarks[index].hi >= value })
+	return index < len(idnaMarks) && idnaMarks[index].lo <= value
 }
