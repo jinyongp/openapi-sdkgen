@@ -1,0 +1,6 @@
+func formatDigits(value string) (int,bool) {
+    number:=0
+    if len(value)==0{return 0,false}
+    for index:=range value{if value[index]<'0'||value[index]>'9'{return 0,false};number=number*10+int(value[index]-'0')}
+    return number,true
+}

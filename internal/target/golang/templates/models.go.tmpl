@@ -1,0 +1,52 @@
+{{range .Operations}}
+{{$operation:=.}}
+{{if .BodyUnion}}
+type {{.Name}}Body struct{
+    branch int
+    mediaType string
+    hasMediaType bool
+    openBinary types.Binary
+    isBinary bool
+    {{range .RequestBodies}}body{{.Name}} {{if .Binary}}types.Binary{{else}}{{.Model}}{{end}}
+    {{end}}
+}
+{{range .RequestBodies}}{{if .Incremental}}type {{.Model}} = types.SourceFactory[{{.Stream.ItemModel}}]
+{{end}}{{if .Binary}}type {{.Model}} = types.Binary
+{{end}}func New{{$operation.Name}}{{.Name}}Body({{if .Wildcard}}contentType string,{{end}}value {{.Model}}) {{$operation.Name}}Body{return {{$operation.Name}}Body{branch:{{.Index}},body{{.Name}}:value{{if .Wildcard}},mediaType:contentType,hasMediaType:true{{end}}}}
+{{if .Open}}func New{{$operation.Name}}{{.Name}}BinaryBody(contentType string,value types.Binary) {{$operation.Name}}Body{return {{$operation.Name}}Body{branch:{{.Index}},mediaType:contentType,hasMediaType:true,openBinary:value,isBinary:true}}
+{{end}}
+{{if .Incremental}}func(body {{$operation.Name}}Body)As{{.Name}}()({{.Model}},bool){return body.body{{.Name}},body.branch=={{.Index}}}
+{{end}}
+{{end}}
+// WithContentType preserves parameters; execution checks the declared media range.
+func(body {{.Name}}Body)WithContentType(contentType string){{.Name}}Body{body.mediaType=contentType;body.hasMediaType=true;return body}
+func (body {{.Name}}Body) MediaType()(string,error){switch body.branch{ {{range .RequestBodies}}case {{.Index}}:if body.hasMediaType{return body.mediaType,nil};return {{if .Wildcard}}body.mediaType{{else}}{{quote .MediaType}}{{end}},nil
+{{end}} };return "",&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request body media must be selected"}}
+func(body {{.Name}}Body) DeclaredMediaType()string{switch body.branch{ {{range .RequestBodies}}case {{.Index}}:return {{quote .MediaType}}
+{{end}} };return ""}
+func (body {{.Name}}Body) Binary()(types.Binary,bool){if body.isBinary{return body.openBinary,true};switch body.branch{ {{range .RequestBodies}}{{if .Binary}}case {{.Index}}:return body.body{{.Name}},true
+{{end}}{{end}} };return types.Binary{},false}
+func (body {{.Name}}Body) Encode(ctx context.Context)(types.Value,error){switch body.branch{ {{range .RequestBodies}}{{if and (not .Binary) (not .Incremental)}}case {{.Index}}:return Encode{{.Model}}(ctx,body.body{{.Name}})
+{{end}}{{end}} };return types.Value{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request body has no JSON representation"}}
+{{if .LinkSource}}func(body {{.Name}}Body)EncodeBound(ctx context.Context)(types.Value,error){switch body.branch{ {{range .RequestBodies}}{{if and (not .Binary) (not .Incremental)}}case {{.Index}}:return EncodeBound{{.Model}}(ctx,body.body{{.Name}})
+{{end}}{{end}} };return types.Value{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request body has no JSON representation"}}
+{{if .HasMultipart}}func(body {{.Name}}Body)MultipartBound(ctx context.Context)(types.MultipartData,bool,error){switch body.branch{ {{range .RequestBodies}}{{if .Multipart}}case {{.Index}}:value,err:=EncodeBoundMedia{{.Model}}(ctx,body.body{{.Name}});return value,true,err
+{{end}}{{end}} };return types.MultipartData{},false,nil}
+{{end}}{{end}}
+{{if .HasMultipart}}func(body {{.Name}}Body)Multipart(ctx context.Context)(types.MultipartData,bool,error){switch body.branch{ {{range .RequestBodies}}{{if .Multipart}}case {{.Index}}:value,err:=EncodeMedia{{.Model}}(ctx,body.body{{.Name}});return value,true,err
+{{end}}{{end}} };return types.MultipartData{},false,nil}
+{{end}}
+{{end}}
+{{range .InputFields}}{{if .Binary}}type {{.Type}} = types.Binary
+{{end}}{{end}}
+{{range .InputFields}}{{if .Incremental}}type {{.Type}} = types.SourceFactory[{{.Stream.ItemModel}}]
+{{end}}{{end}}
+{{if .HasInput}}type {{.Name}}Input struct{
+{{range .InputFields}} {{.Name}} {{if not .Required}}types.Optional[{{end}}{{.Type}}{{if not .Required}}]{{end}}
+{{end}} }
+{{end}}
+{{if and .ResourceBound .ResourceHasInput}}type {{.ResourceInputName}} struct{
+{{range .ResourceInputFields}} {{.Name}} {{if not .Required}}types.Optional[{{end}}{{.Type}}{{if not .Required}}]{{end}}
+{{end}} }
+{{end}}
+{{end}}

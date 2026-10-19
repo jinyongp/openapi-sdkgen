@@ -1,0 +1,169 @@
+type Kind uint8
+// ValidationLimitError preserves the engine cause while separating execution
+// limits from an ordinary schema mismatch, without importing an engine here.
+type ValidationLimitError struct { Cause error }
+func(failure *ValidationLimitError) Error()string{return "validation execution limit exceeded"}
+func(failure *ValidationLimitError) Unwrap()error{return failure.Cause}
+func(failure *ValidationLimitError) ValidationLimit()bool{return true}
+const (
+    Null Kind = iota
+    Boolean
+    Number
+    String
+    Array
+    Object
+)
+
+// Value is an immutable JSON tree. Arrays and objects never expose their storage.
+type Value struct {
+    kind Kind
+    text string
+    number float64
+    boolean bool
+    items []Value
+    fields map[string]Value
+}
+
+func (value Value) Kind() Kind { return value.kind }
+func (value Value) Bool() (bool,bool) { return value.boolean,value.kind==Boolean }
+func (value Value) Number() (float64,bool) { return value.number,value.kind==Number }
+func (value Value) String() (string,bool) { return value.text,value.kind==String }
+func (value Value) Get(key string) (Value,bool) { result,ok := value.fields[key]; return result,ok }
+func (value Value) At(index int) (Value,bool) { if index<0||index>=len(value.items) { return Value{},false };return value.items[index],true }
+func (value Value) Keys() []string { keys:=make([]string,0,len(value.fields));for key:=range value.fields { keys=append(keys,key) };sort.Strings(keys);return keys }
+func (value Value) Len() int {
+    if value.kind==Array { return len(value.items) }
+    if value.kind==Object { return len(value.fields) }
+    if value.kind==String { return CodePointLength(value.text) }
+    return 0
+}
+func (value Value) Items() []Value { return append([]Value{},value.items...) }
+func (value Value) Fields() map[string]Value {
+    result:=make(map[string]Value,len(value.fields))
+    for key,item:=range value.fields { result[key]=item }
+    return result
+}
+func Bool(value bool) Value { return Value{kind:Boolean,boolean:value} }
+func Text(value string) Value { result,err:=CheckedText(value);if err!=nil{panic(err)};return result }
+func CheckedText(value string) (Value,error) { text,err:=CanonicalText(value);if err!=nil{return Value{},err};return Value{kind:String,text:text},nil }
+// USVString replaces each preserved unpaired UTF-16 code unit independently.
+// UTF-8 input, including an initial BOM, is otherwise kept exactly.
+func USVString(value string)string{
+    if utf8.ValidString(value){return value}
+    var result strings.Builder
+    for index:=0;index<len(value);{
+        if value[index]==0xed&&index+2<len(value)&&value[index+1]>=0xa0&&value[index+1]<=0xbf&&value[index+2]&0xc0==0x80{result.WriteRune(utf8.RuneError);index+=3;continue}
+        code,size:=utf8.DecodeRuneInString(value[index:]);result.WriteRune(code);index+=size
+    }
+    return result.String()
+}
+// CanonicalText accepts UTF-8 and preserved UTF-16 surrogates. Go strings with
+// other malformed bytes are outside the JSON value domain.
+func CanonicalText(value string) (string,error) {
+    if utf8.ValidString(value){return value,nil}
+    out:=make([]byte,0,len(value))
+    for index:=0;index<len(value);{
+        if value[index]==0xed&&len(value)-index>=3&&value[index+1]>=0xa0&&value[index+1]<=0xbf&&value[index+2]&0xc0==0x80{
+            code:=uint16(value[index]&15)<<12|uint16(value[index+1]&63)<<6|uint16(value[index+2]&63)
+            if code>=0xd800&&code<=0xdbff&&len(value)-index>=6&&value[index+3]==0xed&&value[index+4]>=0xb0&&value[index+4]<=0xbf&&value[index+5]&0xc0==0x80{
+                low:=uint16(0xd000)|uint16(value[index+4]&63)<<6|uint16(value[index+5]&63)
+                out=utf8.AppendRune(out,0x10000+(rune(code)-0xd800)*0x400+rune(low)-0xdc00);index+=6;continue
+            }
+            out=append(out,value[index:index+3]...);index+=3;continue
+        }
+        code,size:=utf8.DecodeRuneInString(value[index:]);if code==utf8.RuneError&&size==1{return "",fmt.Errorf("Go string contains malformed UTF-8 outside WTF-8 at byte %d",index)}
+        out=append(out,value[index:index+size]...);index+=size
+    }
+    return string(out),nil
+}
+func Numeric(value float64) (Value,error) {
+    if math.IsNaN(value)||math.IsInf(value,0) { return Value{},fmt.Errorf("JSON number must be finite") }
+    return Value{kind:Number,number:value},nil
+}
+func List(items []Value) Value { return Value{kind:Array,items:append([]Value{},items...)} }
+func Record(fields map[string]Value) Value {
+    value,err:=CheckedRecord(fields);if err!=nil{panic(err)};return value
+}
+func CheckedRecord(fields map[string]Value) (Value,error) {
+    result:=make(map[string]Value,len(fields))
+    for key,value:=range fields { key,err:=CanonicalText(key);if err!=nil{return Value{},err};if _,exists:=result[key];exists{return Value{},fmt.Errorf("JSON keys collide after surrogate normalization")};result[key]=value }
+    return Value{kind:Object,fields:result},nil
+}
+func (value Value) Equal(other Value) bool {
+    if value.kind!=other.kind { return false }
+    switch value.kind {
+    case Boolean:return value.boolean==other.boolean
+    case Number:return value.number==other.number
+    case String:return value.text==other.text
+    case Array:
+        if len(value.items)!=len(other.items) { return false }
+        for index,item:=range value.items { if !item.Equal(other.items[index]) { return false } }
+    case Object:
+        if len(value.fields)!=len(other.fields) { return false }
+        for key,item:=range value.fields { candidate,ok:=other.fields[key];if !ok||!item.Equal(candidate) { return false } }
+    }
+    return true
+}
+
+func (value Value) MarshalJSON() ([]byte,error) { return value.appendJSON(nil),nil }
+func (value *Value) UnmarshalJSON(data []byte) error {
+    parsed,err:=Parse(data)
+    if err!=nil { return err }
+    *value=parsed
+    return nil
+}
+func (value Value) appendJSON(out []byte) []byte {
+    switch value.kind {
+    case Null:return append(out,"null"...)
+    case Boolean:return strconv.AppendBool(out,value.boolean)
+    case Number:
+        if value.number==0 { return append(out,'0') }
+        magnitude:=math.Abs(value.number)
+        format:=byte('f');if magnitude<1e-6||magnitude>=1e21 { format='e' }
+        number:=strconv.FormatFloat(value.number,format,-1,64)
+        number=strings.Replace(number,"e-0","e-",1)
+        number=strings.Replace(number,"e+0","e+",1)
+        return append(out,number...)
+    case String:return appendString(out,value.text)
+    case Array:
+        out=append(out,'[')
+        for index,item:=range value.items { if index!=0 { out=append(out,',') };out=item.appendJSON(out) }
+        return append(out,']')
+    case Object:
+        keys:=make([]string,0,len(value.fields));for key:=range value.fields { keys=append(keys,key) };sort.Strings(keys)
+        out=append(out,'{')
+        for index,key:=range keys { if index!=0 { out=append(out,',') };out=appendString(out,key);out=append(out,':');out=value.fields[key].appendJSON(out) }
+        return append(out,'}')
+    }
+    panic("invalid internal JSON kind")
+}
+
+func appendString(out []byte,value string) []byte {
+    const hex="0123456789abcdef"
+    out=append(out,'"')
+    for index:=0;index<len(value); {
+        char:=value[index]
+        switch {
+        case char=='"'||char=='\\':out=append(out,'\\',char);index++
+        case char<0x20:out=append(out,'\\','u','0','0',hex[char>>4],hex[char&15]);index++
+        case char==0xed&&index+2<len(value)&&value[index+1]>=0xa0&&value[index+1]<=0xbf&&value[index+2]&0xc0==0x80:
+            code:=uint16(char&15)<<12|uint16(value[index+1]&63)<<6|uint16(value[index+2]&63)
+            out=append(out,'\\','u',hex[code>>12],hex[(code>>8)&15],hex[(code>>4)&15],hex[code&15]);index+=3
+        default:
+            code,size:=utf8.DecodeRuneInString(value[index:])
+            if code==utf8.RuneError&&size==1 { out=utf8.AppendRune(out,utf8.RuneError) } else { out=append(out,value[index:index+size]...) }
+            index+=size
+        }
+    }
+    return append(out,'"')
+}
+
+// CodePointLength counts preserved lone UTF-16 surrogates as one code point.
+func CodePointLength(value string) int {
+    count:=0
+    for index:=0;index<len(value);count++ {
+        if value[index]==0xed&&index+2<len(value)&&value[index+1]>=0xa0&&value[index+1]<=0xbf&&value[index+2]&0xc0==0x80 { index+=3;continue }
+        _,size:=utf8.DecodeRuneInString(value[index:]);index+=size
+    }
+    return count
+}

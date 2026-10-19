@@ -1,0 +1,10 @@
+// DecodeInboundCodec borrows the handler-owned body. The handler validates the
+// returned JSON value and closes its body lease on every terminal path.
+func DecodeInboundCodec(ctx context.Context,request *http.Request,contentType string,codec types.MediaCodec)(types.Value,error){
+    if err:=ctx.Err();err!=nil{return types.Value{},err}
+    if request==nil{return types.Value{},fmt.Errorf("inbound media request is nil")}
+    if codec.DecodeInbound==nil{return types.Value{},fmt.Errorf("inbound media codec is unavailable")}
+    borrowed,metadata:=BorrowInboundRequest(ctx,request)
+    value,err:=codec.DecodeInbound(ctx,borrowed,types.MediaContext{ContentType:contentType,Request:metadata})
+    if err!=nil{return types.Value{},err};if err:=ctx.Err();err!=nil{return types.Value{},err};return value,nil
+}

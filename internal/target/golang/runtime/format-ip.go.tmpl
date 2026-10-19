@@ -1,0 +1,7 @@
+func FormatIP(value string,ipv6 bool) bool {
+    if strings.ContainsRune(value,'%'){return false}
+    address,err:=netip.ParseAddr(value)
+    if err!=nil{return false}
+    if ipv6{return address.Is6()}
+    return address.Is4()
+}

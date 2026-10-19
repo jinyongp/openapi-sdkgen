@@ -1,0 +1,5 @@
+type StreamPartDefinition=multipartcodec.Definition
+func(execution *Execution)partDecoder()multipartcodec.Decoder{return multipartcodec.Decoder{Context:execution.Context,Request:execution.Request,Codec:execution.Codec}}
+func(execution *Execution)ValidateStreamPart(ctx context.Context,part types.MultipartPart,definition StreamPartDefinition)error{return execution.partDecoder().Validate(ctx,part,definition)}
+func(execution *Execution)DecodeStreamPartData(part types.MultipartPart,xml ResponseDecoder,definitions ...StreamPartDefinition)(types.MultipartData,error){definition:=StreamPartDefinition{XML:xml};if len(definitions)!=0{definition=definitions[0]};return execution.partDecoder().Decode(part,definition)}
+func(execution *Execution)DecodeStreamPart(part types.MultipartPart,xml ResponseDecoder)(types.Value,error){data,err:=execution.DecodeStreamPartData(part,xml);if err!=nil{return types.Value{},err};if len(data.Slots)!=0{return types.Value{},&types.SDKError{Code:types.ResponseDecodeFailed,Message:"binary multipart requires a media value view"}};return data.Value,nil}

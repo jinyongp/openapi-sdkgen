@@ -1,0 +1,50 @@
+func ValidHeader(name,value string)bool{
+    if name==""{return false}
+    for index:=0;index<len(name);index++{char:=name[index];if !(char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("!#$%&'*+-.^_`|~",rune(char))){return false}}
+    for index:=0;index<len(value);index++{char:=value[index];if char==0x7f||char<0x20&&char!='\t'{return false}}
+    return true
+}
+
+// Go's HTTP writer reads these fields from Request rather than Header. Bridge
+// explicit declarations here so a host transport still receives the original
+// request contract, while the standard adapter never silently drops a value.
+func configureNativeHeaders(request *http.Request)error{
+    invalid:=func(message string)error{return &types.SDKError{Code:types.RequestOptionsInvalid,Message:message}}
+    lengths:=HeaderValues(request.Header,"Content-Length")
+    transfer:=HeaderValues(request.Header,"Transfer-Encoding")
+    trailers:=HeaderValues(request.Header,"Trailer")
+    if len(lengths)!=0&&(len(transfer)!=0||len(trailers)!=0){return invalid("Content-Length conflicts with explicit transfer encoding or trailers")}
+    if len(lengths)!=0{
+        if len(lengths)!=1||lengths[0]==""{return invalid("Content-Length must be one non-negative decimal integer")}
+        for _,char:=range lengths[0]{if char<'0'||char>'9'{return invalid("Content-Length must be one non-negative decimal integer")}}
+        length,err:=strconv.ParseInt(lengths[0],10,64);if err!=nil{return invalid("Content-Length is outside the supported range")}
+        if request.Body==nil||request.Body==http.NoBody{
+            if length!=0{return invalid("Content-Length differs from the empty request body")}
+            if request.Method!="POST"&&request.Method!="PUT"&&request.Method!="PATCH"{return invalid("the Go HTTP adapter cannot send an explicit zero Content-Length for this bodyless method")}
+        }else if request.ContentLength>=0&&request.ContentLength!=length{return invalid("Content-Length differs from the request body metadata")
+        }else if request.ContentLength<0{
+            checked,err:=types.BinaryFromReader(request.Body,types.BinaryMetadata{Size:types.Some(length)}).Open(request.Context());if err!=nil{return err};request.Body=checked
+            if length==0{var probe [1]byte;count,err:=io.ReadFull(checked,probe[:]);if err!=io.EOF||count!=0{checked.Close();return invalid("Content-Length differs from the request body")};if err:=checked.Close();err!=nil{return err};request.Body=http.NoBody}
+        }
+        request.ContentLength=length
+        if length==0&&(request.Body==nil||request.Body==http.NoBody)&&request.Method!="POST"&&request.Method!="PUT"&&request.Method!="PATCH"{return invalid("the Go HTTP adapter cannot send an explicit zero Content-Length for this bodyless method")}
+    }
+    if len(transfer)!=0{
+        if len(transfer)!=1||!strings.EqualFold(strings.TrimSpace(transfer[0]),"chunked"){return invalid("the Go HTTP adapter supports only explicit chunked transfer encoding")}
+        request.TransferEncoding=[]string{"chunked"}
+    }
+    if len(trailers)!=0{
+        if request.Trailer==nil{request.Trailer=make(http.Header)}
+        for _,value:=range trailers{for _,name:=range strings.Split(value,","){
+            name=http.CanonicalHeaderKey(strings.TrimSpace(name))
+            if !ValidHeader(name,"")||name=="Transfer-Encoding"||name=="Trailer"||name=="Content-Length"{return invalid("invalid request trailer declaration")}
+            if _,present:=request.Trailer[name];!present{request.Trailer[name]=nil}
+        }}
+        request.TransferEncoding=[]string{"chunked"}
+    }
+    if len(request.TransferEncoding)!=0{
+        if request.Body==nil||request.Body==http.NoBody{request.Body=io.NopCloser(strings.NewReader(""))}
+        request.ContentLength=-1
+    }
+    return nil
+}

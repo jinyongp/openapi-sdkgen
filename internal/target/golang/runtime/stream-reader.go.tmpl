@@ -1,0 +1,42 @@
+// Reader applies the extension contract's per-read bound. Its buffer is lent
+// until the next Read; it never prefetches in a goroutine.
+type Reader struct{
+    ctx context.Context
+    body io.ReadCloser
+    maximum int
+    buffer []byte
+    pending error
+    closed atomic.Bool
+    once sync.Once
+    closeErr error
+    stop func()bool
+}
+func NewReader(ctx context.Context,body io.ReadCloser,maximum int)(*Reader,error){
+    if maximum<=0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream frame limit must be positive"}}
+    if body==nil{return nil,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"stream body is nil"}}
+    reader:=&Reader{ctx:ctx,body:body,maximum:maximum}
+    reader.stop=context.AfterFunc(ctx,func(){reader.closeBody()})
+    return reader,nil
+}
+func(reader *Reader)Read(maxBytes int)([]byte,error){
+    if maxBytes<=0||maxBytes>reader.maximum{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream read exceeds its configured bound"}}
+    if err:=reader.ctx.Err();err!=nil{return nil,err}
+    if reader.closed.Load(){return nil,io.ErrClosedPipe}
+    if reader.pending!=nil{err:=reader.pending;reader.pending=nil;return nil,err}
+    if cap(reader.buffer)<maxBytes{reader.buffer=make([]byte,maxBytes)}
+    for empty:=0;empty<100;empty++{
+        count,err:=reader.body.Read(reader.buffer[:maxBytes])
+        if canceled:=reader.ctx.Err();canceled!=nil{return nil,canceled}
+        if count<0||count>maxBytes{return nil,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"stream reader returned an invalid byte count"}}
+        if count>0{reader.pending=err;return reader.buffer[:count],nil}
+        if err!=nil{return nil,err}
+    }
+    return nil,io.ErrNoProgress
+}
+func(reader *Reader)Close()error{
+    if reader.stop!=nil{reader.stop()};return reader.closeBody()
+}
+func(reader *Reader)closeBody()error{reader.once.Do(func(){reader.closed.Store(true);reader.closeErr=reader.body.Close()});return reader.closeErr}
+
+func frameLimit(maximum int)error{return &types.StreamFrameError{Kind:"limit",Maximum:maximum}}
+func sourceFailure(cause,closeError error)error{if cause==io.EOF{cause=nil};return errors.Join(cause,closeError)}

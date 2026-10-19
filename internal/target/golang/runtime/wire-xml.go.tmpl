@@ -1,0 +1,110 @@
+const xmlNamespace = "http://www.w3.org/XML/1998/namespace"
+const xmlnsNamespace = "http://www.w3.org/2000/xmlns/"
+
+type XMLName struct { Local, Prefix, Namespace string }
+type XMLAttribute struct { Name XMLName; Value string }
+type XMLNode struct { Name XMLName; Attributes []XMLAttribute; Children []*XMLNode; Text string; Namespaces map[string]string; text strings.Builder }
+
+func ParseXML(ctx context.Context,source string) (*XMLNode,error) {
+    if err:=ctx.Err();err!=nil{return nil,err}
+    source=strings.TrimPrefix(source,"\ufeff")
+    source=strings.ReplaceAll(strings.ReplaceAll(source,"\r\n","\n"),"\r","\n")
+    source=normalizeXMLAttributes(source)
+    root,err:=parseXMLDocument(ctx,source,nil)
+    if syntax,ok:=err.(*xml.SyntaxError);ok&&strings.HasPrefix(syntax.Msg,"invalid XML name:"){
+        rewritten,aliases,nameError:=prepareXMLNameAliases(ctx,source);if nameError!=nil{return nil,nameError};if len(aliases)!=0{return parseXMLDocument(ctx,rewritten,aliases)}
+    }
+    return root,err
+}
+func parseXMLDocument(ctx context.Context,source string,aliases map[string]string)(*XMLNode,error){
+    originalName:=func(name xml.Name)xml.Name{if value,found:=aliases[name.Space];found{name.Space=value};if value,found:=aliases[name.Local];found{name.Local=value};return name}
+    decoder:=xml.NewDecoder(strings.NewReader(source))
+    // The input is already a decoded string; declarations do not recode it.
+    decoder.CharsetReader=func(_ string,input io.Reader)(io.Reader,error){return input,nil}
+    var root *XMLNode
+    var stack []*XMLNode
+    for {
+        if err:=ctx.Err();err!=nil{return nil,err}
+        offset:=decoder.InputOffset()
+        token,err:=decoder.RawToken()
+        if err==io.EOF{break};if err!=nil{return nil,err}
+        switch token:=token.(type){
+        case xml.StartElement:
+            token.Name=originalName(token.Name);for index:=range token.Attr{token.Attr[index].Name=originalName(token.Attr[index].Name)}
+            namespaces:=map[string]string{"xml":xmlNamespace}
+            if len(stack)>0{for prefix,uri:=range stack[len(stack)-1].Namespaces{namespaces[prefix]=uri}}
+            rawAttributes:=make(map[string]bool)
+            for _,attribute:=range token.Attr{
+                identity:=attribute.Name.Space+":"+attribute.Name.Local
+                if rawAttributes[identity]{return nil,fmt.Errorf("duplicate XML attribute")};rawAttributes[identity]=true
+                if attribute.Name.Space=="xmlns"||attribute.Name.Space==""&&attribute.Name.Local=="xmlns"{
+                    prefix:=attribute.Name.Local;if attribute.Name.Space==""{prefix=""}
+                    uri:=attribute.Value
+                    if prefix=="xmlns"||uri==xmlnsNamespace||(prefix=="xml")!=(uri==xmlNamespace)||prefix!=""&&uri==""{return nil,fmt.Errorf("invalid XML namespace")}
+                    namespaces[prefix]=uri
+                }
+            }
+            name,err:=expandedXMLName(token.Name,namespaces,false);if err!=nil{return nil,err}
+            node:=&XMLNode{Name:name,Namespaces:namespaces}
+            expanded:=make(map[string]bool)
+            for _,attribute:=range token.Attr{
+                if attribute.Name.Space=="xmlns"||attribute.Name.Space==""&&attribute.Name.Local=="xmlns"{continue}
+                name,err:=expandedXMLName(attribute.Name,namespaces,true);if err!=nil{return nil,err}
+                identity:=name.Namespace+"\x00"+name.Local
+                if expanded[identity]{return nil,fmt.Errorf("duplicate expanded XML attribute")};expanded[identity]=true
+                node.Attributes=append(node.Attributes,XMLAttribute{Name:name,Value:attribute.Value})
+            }
+            if len(stack)==0{if root!=nil{return nil,fmt.Errorf("multiple XML roots")};root=node}else{parent:=stack[len(stack)-1];parent.Children=append(parent.Children,node)}
+            stack=append(stack,node)
+        case xml.EndElement:
+            token.Name=originalName(token.Name)
+            if len(stack)==0{return nil,fmt.Errorf("unmatched XML closing element")}
+            current:=stack[len(stack)-1]
+            if token.Name.Space!=current.Name.Prefix||token.Name.Local!=current.Name.Local{return nil,fmt.Errorf("mismatched XML closing element")}
+            current.Text=current.text.String();current.text=strings.Builder{}
+            stack=stack[:len(stack)-1]
+        case xml.CharData:
+            if len(stack)==0&&strings.HasPrefix(source[offset:],"<![CDATA["){return nil,fmt.Errorf("XML CDATA outside root")}
+            if len(stack)==0{if strings.TrimSpace(string(token))!=""{return nil,fmt.Errorf("XML text outside root")}}else{stack[len(stack)-1].text.Write(token)}
+        case xml.Directive:return nil,fmt.Errorf("XML declarations are unsupported")
+        }
+    }
+    if root==nil||len(stack)!=0{return nil,fmt.Errorf("XML document must have one balanced root")}
+    return root,nil
+}
+
+func normalizeXMLAttributes(source string) string {
+    var output strings.Builder
+    copied:=0
+    for index:=0;index<len(source);index++{
+        if source[index]!='<'{continue}
+        skip:=""
+        if strings.HasPrefix(source[index:],"<!--"){skip="-->"}else if strings.HasPrefix(source[index:],"<![CDATA["){skip="]]>"}else if strings.HasPrefix(source[index:],"<?"){skip="?>"}
+        if skip!=""{end:=strings.Index(source[index:],skip);if end<0{break};index+=end+len(skip)-1;continue}
+        var quote byte
+        for index++;index<len(source);index++{
+            char:=source[index]
+            if quote!=0{
+                if char==quote{quote=0}else if char=='\t'||char=='\n'{output.WriteString(source[copied:index]);output.WriteByte(' ');copied=index+1}
+            }else if char=='\''||char=='"'{quote=char}else if char=='>'{break}
+        }
+    }
+    if copied==0{return source};output.WriteString(source[copied:]);return output.String()
+}
+
+func expandedXMLName(name xml.Name,namespaces map[string]string,attribute bool) (XMLName,error) {
+    if strings.Contains(name.Local,":")||name.Local==""{return XMLName{},fmt.Errorf("invalid XML name")}
+    uri:=namespaces[name.Space]
+    if attribute&&name.Space==""{uri=""}
+    if name.Space!=""&&uri==""{return XMLName{},fmt.Errorf("undeclared XML prefix")}
+    return XMLName{Local:name.Local,Prefix:name.Space,Namespace:uri},nil
+}
+
+// XMLMatches resolves explicit namespaces independently of the document's prefix choice.
+func XMLMatches(name XMLName,node *XMLNode,local,prefix,namespace string,hasPrefix,hasNamespace,attribute bool) bool {
+    if !hasPrefix&&!hasNamespace{return name.Local==local}
+    expectedNamespace:=""
+    if hasNamespace{expectedNamespace=namespace}else if !(attribute&&prefix==""){expectedNamespace=node.Namespaces[prefix]}
+    if prefix!=""&&expectedNamespace==""{return false}
+    return name.Local==local&&name.Namespace==expectedNamespace
+}

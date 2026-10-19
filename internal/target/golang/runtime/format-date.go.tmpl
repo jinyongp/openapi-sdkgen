@@ -1,0 +1,8 @@
+func FormatDate(value string) bool {
+    if len(value)!=10||value[4]!='-'||value[7]!='-'{return false}
+    year,yearOK:=formatDigits(value[:4]);month,monthOK:=formatDigits(value[5:7]);day,dayOK:=formatDigits(value[8:])
+    if !yearOK||!monthOK||!dayOK||month<1||month>12||day<1{return false}
+    days:=[12]int{31,28,31,30,31,30,31,31,30,31,30,31}
+    if year%400==0||year%4==0&&year%100!=0{days[1]=29}
+    return day<=days[month-1]
+}

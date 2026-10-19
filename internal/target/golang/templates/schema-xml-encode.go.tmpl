@@ -1,0 +1,17 @@
+type xmlEncodeBinding struct { Anchor string; Encode func(context.Context,wire.Value,string,*xmlEncodeState)(*wire.XMLMapping,error) }
+type xmlEncodeState struct { validation *State; scope []xmlEncodeBinding;queries map[string]bool;mediaOnly bool }
+type xmlPartMapping struct{Mapping *wire.XMLMapping;Fallback string;Count int;ContentType string;Binary bool}
+func mergeXMLPart(target *xmlPartMapping,source xmlPartMapping)error{
+    if source.Count!=0{if target.Count==0{target.Fallback=source.Fallback}else{target.Fallback="root"};target.Count+=source.Count}
+    if !target.Binary&&source.Binary{target.Binary=true;target.ContentType=source.ContentType}
+    if !target.Binary&&!source.Binary&&(target.ContentType==""||target.ContentType=="application/octet-stream"){target.ContentType=source.ContentType}
+    var err error;target.Mapping,err=wire.MergeXMLMappings(target.Mapping,source.Mapping);return err
+}
+func splitMultipartIndex(value string)(string,string){for index:=0;index<len(value);index++{if value[index]=='/'{return value[:index],value[index+1:]}};return value,""}
+{{range .XMLEncodePrograms}}
+func {{.Name}}(ctx context.Context,value wire.Value,path string,state *xmlEncodeState)(*wire.XMLMapping,error){
+    if err:=ctx.Err();err!=nil{return nil,err}
+    {{.Body}}
+}
+{{end}}
+{{.Prepared}}

@@ -1,0 +1,26 @@
+type CredentialsMode string
+const (
+    Omit CredentialsMode = "omit"
+    SameOrigin CredentialsMode = "same-origin"
+    Include CredentialsMode = "include"
+)
+type ResponseBodyMode uint8
+const (
+    Encoded ResponseBodyMode = iota+1
+    DecodedWithOriginalHeaders
+)
+type TransportCapabilities struct {
+    ResponseBody ResponseBodyMode
+    MutualTLS bool
+    CookieJar bool
+    CookieHeaders bool
+}
+type TransportOptions struct {
+    Credentials CredentialsMode
+    Origin string
+    AllowRedirects bool
+}
+type Transport interface {
+    Do(*http.Request,TransportOptions) (*http.Response,error)
+    Capabilities() TransportCapabilities
+}

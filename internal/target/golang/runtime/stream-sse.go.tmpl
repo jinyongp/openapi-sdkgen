@@ -1,0 +1,80 @@
+type SSEProtocol struct{}
+func(SSEProtocol)Decode(ctx context.Context,reader types.StreamReader,info types.StreamContext)(types.Source[types.Value],error){
+    if info.MaxFrameBytes<=0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream frame limit must be positive"}}
+    return &sseSource{ctx:ctx,reader:reader,maximum:info.MaxFrameBytes},nil
+}
+func(SSEProtocol)Encode(ctx context.Context,source types.Source[types.Value],info types.StreamContext)(io.ReadCloser,error){return newFrameEncoder(ctx,source,info.MaxFrameBytes,func(value types.Value)([]byte,error){return encodeSSE(value,info.MaxFrameBytes)})}
+type sseSource struct{
+    ctx context.Context
+    reader types.StreamReader
+    decoder wire.TextDecoder
+    maximum,frameBytes int
+    chunk string
+    offset int
+    line []byte
+    data strings.Builder
+    event,id string
+    retry float64
+    hasData,hasEvent,hasID,hasRetry bool
+    afterCR,countLF,eof,done bool
+    closed atomic.Bool
+    item types.Value
+    failure error
+}
+func(source *sseSource)Next()bool{
+    if source.done||source.closed.Load(){return false}
+    for{
+        if err:=source.ctx.Err();err!=nil{return source.fail(err)}
+        for source.offset<len(source.chunk){
+            char:=source.chunk[source.offset];source.offset++
+            if source.afterCR{source.afterCR=false;if char=='\n'{if source.countLF{source.frameBytes++;if source.frameBytes>source.maximum{return source.fail(frameLimit(source.maximum))}};continue}}
+            if char!='\r'&&char!='\n'{source.line=append(source.line,char);if len(source.line)>source.maximum-source.frameBytes{return source.fail(frameLimit(source.maximum))};continue}
+            source.afterCR=char=='\r';source.countLF=len(source.line)!=0
+            if len(source.line)==0{source.frameBytes=0;if source.dispatch(){return true};continue}
+            source.frameBytes+=len(source.line)+1;if source.frameBytes>source.maximum{return source.fail(frameLimit(source.maximum))}
+            source.process(string(source.line));source.line=source.line[:0]
+        }
+        if source.eof{return source.fail(io.EOF)}
+        count:=4096;if count>source.maximum{count=source.maximum};data,err:=source.reader.Read(count)
+        if err!=nil&&err!=io.EOF{return source.fail(err)}
+        source.eof=err==io.EOF;source.chunk=source.decoder.Decode(data,source.eof);source.offset=0
+    }
+}
+func(source *sseSource)process(line string){
+    if strings.HasPrefix(line,":"){return}
+    name,value,_:=strings.Cut(line,":");value=strings.TrimPrefix(value," ")
+    switch name{
+    case "data":source.data.WriteString(value);source.data.WriteByte('\n');source.hasData=true
+    case "event":source.event=value;source.hasEvent=true
+    case "id":if !strings.ContainsRune(value,0){source.id=value;source.hasID=true}
+    case "retry":
+        if value==""{return};for index:=0;index<len(value);index++{if value[index]<'0'||value[index]>'9'{return}}
+        parsed,err:=strconv.ParseFloat(value,64);if err==nil&&!math.IsInf(parsed,0){source.retry=parsed;source.hasRetry=true}
+    }
+}
+func(source *sseSource)dispatch()bool{
+    hasData:=source.hasData
+    if hasData{
+        data:=source.data.String();fields:=map[string]types.Value{"data":wire.Text(data[:len(data)-1])}
+        if source.hasEvent{fields["event"]=wire.Text(source.event)};if source.hasID{fields["id"]=wire.Text(source.id)};if source.hasRetry{retry,_:=wire.Numeric(source.retry);fields["retry"]=retry}
+        source.item=wire.Record(fields)
+    }
+    source.data.Reset();source.event="";source.retry=0;source.hasData=false;source.hasEvent=false;source.hasRetry=false
+    return hasData
+}
+func(source *sseSource)Item()types.Value{return source.item}
+func(source *sseSource)Err()error{return source.failure}
+func(source *sseSource)Close()error{source.closed.Store(true);return source.reader.Close()}
+func(source *sseSource)fail(err error)bool{source.done=true;source.failure=sourceFailure(err,source.reader.Close());return false}
+func encodeSSE(value types.Value,maximum int)([]byte,error){
+    data,present:=value.Get("data");text,stringData:=data.String();if value.Kind()!=types.ValueObject||!present||!stringData{return nil,&types.StreamFrameError{Kind:"sse"}}
+    for _,key:=range value.Keys(){if key!="data"&&key!="event"&&key!="id"&&key!="retry"{return nil,&types.StreamFrameError{Kind:"sse"}}}
+    var result strings.Builder
+    for _,field:=range []string{"event","data","id","retry"}{
+        item,present:=value.Get(field);if !present{continue}
+        if field=="data"{text=strings.NewReplacer("\r\n","\n","\r","\n").Replace(wire.USVString(text));for _,line:=range strings.Split(text,"\n"){result.WriteString("data: "+line+"\n")};continue}
+        if field=="retry"{number,ok:=item.Number();if !ok||number<0||number>9007199254740991||math.Trunc(number)!=number{return nil,&types.StreamFrameError{Kind:"sse"}};result.WriteString("retry: "+strconv.FormatFloat(number,'f',-1,64)+"\n");continue}
+        text,ok:=item.String();if !ok||strings.ContainsAny(text,"\r\n")||field=="id"&&strings.ContainsRune(text,0){return nil,&types.StreamFrameError{Kind:"sse"}};result.WriteString(field+": "+wire.USVString(text)+"\n")
+    }
+    result.WriteByte('\n');if result.Len()>maximum{return nil,frameLimit(maximum)};return []byte(result.String()),nil
+}

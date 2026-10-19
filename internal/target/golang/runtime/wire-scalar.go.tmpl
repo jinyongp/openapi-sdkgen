@@ -1,0 +1,18 @@
+// ScalarNumber follows finite ECMAScript Number coercion used by wire scalar decoding.
+func ScalarNumber(text string) (Value,bool) {
+    text=TrimScalarSpace(text)
+    if text==""{value,_:=Numeric(0);return value,true}
+    if len(text)>2&&text[0]=='0'{
+        base:=0
+        switch text[1]{case 'x','X':base=16;case 'o','O':base=8;case 'b','B':base=2}
+        if base!=0{
+            integer:=new(big.Int);if _,ok:=integer.SetString(text[2:],base);!ok{return Value{},false}
+            number,_:=new(big.Float).SetInt(integer).Float64();value,err:=Numeric(number);return value,err==nil
+        }
+    }
+    // ParseFloat also accepts hexadecimal floats and underscores; Number does not.
+    if strings.ContainsAny(text,"xX_pP"){return Value{},false}
+    number,err:=strconv.ParseFloat(text,64);if err!=nil{return Value{},false}
+    value,err:=Numeric(number);return value,err==nil
+}
+func TrimScalarSpace(text string)string{return strings.TrimFunc(text,func(r rune)bool{return r=='\t'||r=='\v'||r=='\f'||r=='\n'||r=='\r'||r=='\u2028'||r=='\u2029'||r=='\ufeff'||unicode.Is(unicode.Zs,r)})}

@@ -1,0 +1,33 @@
+type modelState struct { ctx context.Context; active map[any]bool; path string; binaries map[string]types.Binary;consumed map[string]bool }
+func(state *modelState)consumeBinary(path string){if state.consumed!=nil{state.consumed[path]=true}}
+func decodeState(states []*modelState)*modelState{if len(states)!=0&&states[0]!=nil{return states[0]};return &modelState{ctx:context.Background()}}
+func(state *modelState)Child(key string)*modelState{if state.binaries==nil{return state};child:=*state;child.path=schema.ChildPath(state.path,key);return &child}
+func(state *modelState)Index(index int)*modelState{if state.binaries==nil{return state};child:=*state;child.path=schema.IndexPath(state.path,index);return &child}
+func(state *modelState)binary(value types.Binary)(types.Value,error){
+    if state.binaries==nil{return types.Value{},fmt.Errorf("binary media value has no JSON representation")}
+    var logical types.Value
+    if text,present:=value.Text();present{encoded,err:=types.ValueFrom(text);if err!=nil{return types.Value{},err};logical=encoded}else{logical=wire.Record(nil)}
+    state.binaries[state.path]=value;return logical,nil
+}
+func(state *modelState)relativeBinaries()map[string]types.Binary{
+    var result map[string]types.Binary
+    for path,binary:=range state.binaries{if path==state.path||strings.HasPrefix(path,state.path+"/"){if result==nil{result=make(map[string]types.Binary)};result[strings.TrimPrefix(path,state.path)]=binary;state.consumeBinary(path)}}
+    return result
+}
+func(state *modelState)absorbMedia(value wire.MediaValue[types.Binary])(types.Value,error){
+    if len(value.Slots)!=0&&state.binaries==nil{return types.Value{},fmt.Errorf("binary media value has no JSON representation")}
+    for path,binary:=range value.Slots{state.binaries[state.path+path]=binary};return value.Value,nil
+}
+func mediaBinaryFlags(values map[string]types.Binary)map[string]bool{
+    if len(values)==0{return nil};result:=make(map[string]bool,len(values));for path,binary:=range values{_,text:=binary.Text();result[path]=!text};return result
+}
+func mergeMediaObjects(current,replacement wire.MediaValue[types.Binary],evaluated schema.Evaluation)(wire.MediaValue[types.Binary],error){
+    _,currentBinary:=current.Slots[""];_,replacementBinary:=replacement.Slots[""]
+    if currentBinary||replacementBinary||current.Value.Kind()!=wire.Object||replacement.Value.Kind()!=wire.Object{return replacement,nil}
+    fields:=current.Value.Fields();slots:=make(map[string]types.Binary,len(current.Slots)+len(replacement.Slots));for path,binary:=range current.Slots{slots[path]=binary}
+    remove:=func(key string){prefix:=schema.ChildPath("",key);for path:=range slots{if path==prefix||strings.HasPrefix(path,prefix+"/"){delete(slots,path)}}}
+    for key:=range evaluated.Keys{delete(fields,key);remove(key)}
+    for key,value:=range replacement.Value.Fields(){fields[key]=value;remove(key)}
+    for path,binary:=range replacement.Slots{slots[path]=binary}
+    value,err:=wire.CheckedRecord(fields);return wire.MediaValue[types.Binary]{Value:value,Slots:slots},err
+}

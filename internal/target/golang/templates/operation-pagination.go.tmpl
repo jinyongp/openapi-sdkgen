@@ -1,0 +1,19 @@
+{{range .Operations}}{{$operation:=.}}{{$page:=.Pagination}}
+type {{.Name}}PaginationMode string
+const ({{.Name}}PaginationCursor {{.Name}}PaginationMode="cursor";{{.Name}}PaginationOffset {{.Name}}PaginationMode="offset")
+func(call {{.Name}}Call)Paginate(ctx context.Context,{{if eq $page.Mode "both"}}mode {{.Name}}PaginationMode{{else}}modes ...{{.Name}}PaginationMode{{end}})*types.Paginator[models.{{$page.ItemModel}}]{
+ requested:="";var modeError error
+ {{if eq $page.Mode "both"}}requested=string(mode){{else}}if len(modes)>1{modeError=&types.SDKError{Code:types.RequestOptionsInvalid,Message:"expected zero or one pagination mode"}}else if len(modes)==1{requested=string(modes[0])}{{end}}
+ return types.NewPaginator(ctx,{{$page.Configuration}},requested,func(ctx context.Context)(types.Value,error){
+  if call.err!=nil{return types.Value{},call.err};if modeError!=nil{return types.Value{},modeError}
+  {{if .LinkTarget}}if call.prepareLink!=nil{if err:=call.prepareLink(ctx,&call);err!=nil{return types.Value{},err};call.prepareLink=nil}
+  {{end}}
+  {{if $page.Query.Required}}return models.Encode{{$page.Query.Type}}(ctx,call.input.Query)
+  {{else}}if query,present:=call.input.Query.Get();present{return models.Encode{{$page.Query.Type}}(ctx,query)};return types.ValueFrom(map[string]types.Value{}){{end}}
+ },func(ctx context.Context,query types.Value)(types.Value,error){
+  next:=call;decoded,err:=models.Decode{{$page.Query.Type}}(ctx,query);if err!=nil{return types.Value{},err}
+  next.input.Query={{if $page.Query.Required}}decoded{{else}}types.Some(decoded){{end}}
+  response,err:=next.Raw(ctx);if err!=nil{return types.Value{},err};return response.Data,nil
+ },models.DecodeValidated{{$page.ItemModel}})
+}
+{{end}}

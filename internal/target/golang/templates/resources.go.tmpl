@@ -1,0 +1,29 @@
+{{range .Resources}}
+{{$resource:=.}}
+type {{.Name}} struct{
+    client *core.Client
+    {{if .Bound}}path types.Value
+    err error{{end}}
+    {{range .Children}}{{.Name}} {{.Target}}
+    {{end}}
+}
+func {{if eq .Identity "/"}}NewRoot{{else}}new{{.Name}}{{end}}(client *core.Client{{if .Bound}},path types.Value,failure error{{end}}){{.Name}}{
+    return {{.Name}}{client:client{{if .Bound}},path:path,err:failure{{end}}{{range .Children}},{{.Name}}:new{{.Target}}(client{{if $resource.Bound}},path,failure{{end}}){{end}} }
+}
+{{if .Selector}}
+func(resource {{$resource.Name}}){{.Selector.Name}}(argument {{.Selector.Argument}}){{.Selector.Child}}{
+    fields:=make(map[string]types.Value){{if .Bound}};fields=resource.path.Fields();if fields==nil{fields=make(map[string]types.Value)}{{end}}
+    value,err:={{if .Selector.Model}}models.EncodeBound{{.Selector.Model}}(context.Background(),argument){{else}}types.ValueFrom(argument){{end}}
+    if err==nil{fields[{{quote .Selector.Key}}]=value}
+    path,pathError:=types.ValueFrom(fields)
+    return new{{.Selector.Child}}(resource.client,path,errors.Join({{if .Bound}}resource.err,{{end}}err,pathError))
+}
+{{end}}
+{{range .Calls}}
+{{$operation:=.Operation}}
+{{$operation.Documentation}}func(resource {{$resource.Name}}){{.Method}}({{if $operation.ResourceHasInput}}{{if $operation.ResourceRequiredInput}}input models.{{$operation.ResourceInputName}}{{else}}inputs ...models.{{$operation.ResourceInputName}}{{end}}{{end}})operations.{{$operation.Name}}Call{
+    {{if $operation.ResourceBound}}return operations.NewBound{{$operation.Name}}(resource.client,resource.path,resource.err{{if $operation.ResourceHasInput}},{{if $operation.ResourceRequiredInput}}input{{else}}inputs...{{end}}{{end}})
+    {{else}}return operations.New(resource.client).{{$operation.Name}}({{if $operation.HasInput}}{{if $operation.RequiredInput}}input{{else}}inputs...{{end}}{{end}}){{end}}
+}
+{{end}}
+{{end}}

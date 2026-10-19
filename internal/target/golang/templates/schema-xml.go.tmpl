@@ -1,0 +1,10 @@
+type xmlDynamicBinding struct { Anchor string; Decode func(context.Context,*wire.XMLNode,string,*xmlState)(wire.Value,error) }
+type xmlState struct { validation *State; scope []xmlDynamicBinding }
+{{range .XMLPrograms}}
+func {{.Name}}(ctx context.Context,node *wire.XMLNode,path string,state *xmlState) (wire.Value,error) {
+    if err:=ctx.Err();err!=nil{return wire.Value{},err}
+    {{.Body}}
+}
+{{end}}
+
+{{.Prepared}}

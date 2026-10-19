@@ -1,0 +1,48 @@
+// Sources remain alive through response transmission, including a response
+// that transforms the inbound item source.
+func newExecution(request *http.Request,options Options,definition Definition)*Execution{
+ ctx,cancel:=context.WithCancel(request.Context());owned:=request.Clone(ctx);body:=request.Body;if body==nil{body=http.NoBody};lease:=&inboundBody{ReadCloser:body};owned.Body=lease
+ streaming:=definition.Streaming!=nil&&definition.Streaming(request.Header.Get("Content-Type"))
+ execution:=&Execution{Context:ctx,cancel:cancel,Request:owned,Options:options,definition:definition,Streaming:streaming,body:lease,bodyEnded:body==http.NoBody,bodyMissing:body==http.NoBody}
+ lease.complete=func(){execution.mu.Lock();execution.bodyEnded=true;owned.Trailer=request.Trailer.Clone();execution.mu.Unlock()}
+ lease.completeClose=func(){execution.mu.Lock();execution.bodyEnded=true;execution.mu.Unlock()}
+ execution.mu.Lock();execution.stop=context.AfterFunc(ctx,func(){execution.Close()});execution.mu.Unlock();return execution
+}
+func(execution *Execution)Own(source io.Closer)error{
+ if source==nil{return fmt.Errorf("inbound source is nil")};execution.mu.Lock();closed:=execution.closed;if !closed{execution.sources=append(execution.sources,source)};execution.mu.Unlock();if closed{return errors.Join(execution.Context.Err(),source.Close())};return nil
+}
+func(execution *Execution)Close()error{
+ execution.closeOnce.Do(func(){execution.mu.Lock();execution.closed=true;sources:=execution.sources;execution.sources=nil;execution.bodyBytes=nil;stop:=execution.stop;execution.mu.Unlock();if stop!=nil{stop()};execution.cancel();for index:=len(sources)-1;index>=0;index--{execution.closeFailure=errors.Join(execution.closeFailure,sources[index].Close())};execution.closeFailure=errors.Join(execution.closeFailure,execution.body.Close())})
+ return execution.closeFailure
+}
+func(execution *Execution)completeBody(ctx context.Context)([]byte,error){
+ if execution.Streaming{return nil,&Error{Status:400,Code:InboundInputInvalid,Cause:fmt.Errorf("incremental input cannot be cloned as a complete body")}}
+ execution.bodyOnce.Do(func(){
+  var body []byte;var failure error
+  defer func(){execution.mu.Lock();if execution.closed{body=nil;failure=errors.Join(failure,execution.Context.Err())};execution.bodyBytes=body;execution.bodyFailure=failure;execution.mu.Unlock()}()
+  if err:=ctx.Err();err!=nil{failure=err;return}
+  maximum:=execution.Options.MaxBodyBytes
+  if execution.Request.ContentLength>maximum{failure=&Error{Status:413,Code:InboundBodyTooLarge};return}
+  stop:=context.AfterFunc(ctx,func(){execution.cancel();execution.body.Close()});defer stop()
+  value,err:=io.ReadAll(io.LimitReader(execution.body,maximum+1))
+  if canceled:=ctx.Err();canceled!=nil{failure=inputFailure(errors.Join(canceled,err));return}
+  if int64(len(value))>maximum{failure=&Error{Status:413,Code:InboundBodyTooLarge};return}
+  if err!=nil{failure=inputFailure(err);return};body=value
+ })
+ execution.mu.Lock();body,failure:=execution.bodyBytes,execution.bodyFailure;execution.mu.Unlock();if failure!=nil{return nil,failure};if err:=execution.Context.Err();err!=nil{return nil,inputFailure(err)};return body,nil
+}
+func(execution *Execution)CloneBody(ctx context.Context)(io.ReadCloser,error){if err:=ctx.Err();err!=nil{return nil,err};body,err:=execution.completeBody(ctx);if err!=nil{return nil,err};return io.NopCloser(bytes.NewReader(body)),nil}
+func(execution *Execution)BodyRequest()(request *http.Request,failure error){
+ body,err:=execution.completeBody(execution.Context);if err!=nil{return nil,err};request=execution.Request.Clone(execution.Context);request.Header=execution.Request.Header.Clone();request.Body=io.NopCloser(bytes.NewReader(body));request.GetBody=nil;return request,nil
+}
+func(execution *Execution)Codec(contentType string)(types.MediaCodec,bool){codec,present:=execution.Options.Codecs[bareMedia(contentType)];return codec,present}
+func(execution *Execution)bodyError()error{execution.mu.Lock();defer execution.mu.Unlock();return execution.bodyFailure}
+func(execution *Execution)HasBody()bool{return !execution.bodyMissing}
+func(execution *Execution)inputError()error{execution.mu.Lock();sources:=append([]interface{Err()error}(nil),execution.inputs...);execution.mu.Unlock();for _,source:=range sources{if err:=source.Err();err!=nil{return inputFailure(err)}};return nil}
+func(execution *Execution)needsDuplex()bool{execution.mu.Lock();ended:=execution.bodyEnded;execution.mu.Unlock();return execution.Streaming&&execution.Request.ProtoMajor<2&&!ended}
+func(execution *Execution)StreamCodec(contentType string)types.StreamCodec{return execution.Options.StreamCodecs[bareMedia(contentType)]}
+func(execution *Execution)StreamContext(contentType string)types.StreamContext{return types.StreamContext{ContentType:contentType,MaxFrameBytes:execution.Options.MaxStreamFrameBytes}}
+func(execution *Execution)InboundContext()InboundRequestContext{execution.mu.Lock();snapshot:=media.SnapshotRequest(execution.Request);execution.mu.Unlock();return InboundRequestContext{Request:snapshot,OperationID:execution.definition.OperationID,Method:execution.definition.Method,Path:execution.Request.URL.Path,Params:execution.params,Security:execution.definition.Security,SecurityCandidates:collectSecurityCandidates(execution.Request,execution.definition.Schemes),CloneBody:execution.CloneBody}}
+type inboundBody struct{io.ReadCloser;once,eof sync.Once;failure error;complete,completeClose func()}
+func(body *inboundBody)Read(value []byte)(int,error){count,err:=body.ReadCloser.Read(value);if err==io.EOF&&body.complete!=nil{body.eof.Do(body.complete)};return count,err}
+func(body *inboundBody)Close()error{body.once.Do(func(){body.failure=body.ReadCloser.Close();if body.completeClose!=nil{body.completeClose()}});return body.failure}

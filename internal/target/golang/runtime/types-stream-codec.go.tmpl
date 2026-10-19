@@ -1,0 +1,110 @@
+// StreamCodec erases registered frame/item types only inside the registry.
+// NewStreamCodec checks protocol/adapter frame agreement at compile time.
+type StreamCodec struct{
+    decode func(context.Context,StreamReader,StreamContext,any)(any,error)
+    encode func(context.Context,any,StreamContext,any)(io.ReadCloser,error)
+    accepts func(any)bool
+}
+type StreamFrameError struct{Kind string;Maximum int;Cause error}
+func(failure *StreamFrameError)Error()string{if failure.Kind=="limit"{return "stream frame exceeds configured byte limit"};return "invalid stream "+failure.Kind+" frame"}
+func(failure *StreamFrameError)Unwrap()error{return failure.Cause}
+func NewStreamCodec[Frame,Item any](protocol StreamProtocol[Frame],adapter StreamAdapter[Frame,Item])StreamCodec{
+    resolve:=func(native any)(StreamProtocol[Frame],error){
+        if !nilInterface(protocol){return protocol,nil}
+        if fallback,ok:=any(native).(StreamProtocol[Frame]);ok&&!nilInterface(fallback){return fallback,nil}
+        return nil,&SDKError{Code:RequestOptionsInvalid,Message:"stream protocol is unavailable or its frame type does not match the adapter"}
+    }
+    return StreamCodec{
+        accepts:func(value any)bool{if nilInterface(adapter){_,ok:=value.(Source[Frame]);return ok};_,ok:=value.(Source[Item]);return ok},
+        decode:func(ctx context.Context,reader StreamReader,info StreamContext,native any)(any,error){
+            running,cancel:=context.WithCancel(ctx)
+            selected,err:=resolve(native);if err!=nil{cancel();return nil,errors.Join(err,reader.Close())}
+            framing,stopFrames:=context.WithCancel(running)
+            frames,err:=selected.Decode(framing,reader,info)
+            if err!=nil{stopFrames();cancel();if !nilInterface(frames){err=errors.Join(err,frames.Close())};return nil,errors.Join(err,reader.Close())}
+            if nilInterface(frames){stopFrames();cancel();return nil,errors.Join(&SDKError{Code:ResponseDecodeFailed,Message:"protocol returned a nil source"},reader.Close())}
+            owned:=ownCancelableStreamSource(frames,stopFrames,reader.Close)
+            if nilInterface(adapter){return ownCancelableStreamSource(owned,cancel,nil),nil}
+            items,err:=adapter.Decode(running,owned,info)
+            if err!=nil{cancel();if !nilInterface(items){err=errors.Join(err,items.Close())};return nil,errors.Join(err,owned.Close())}
+            if nilInterface(items){cancel();return nil,errors.Join(&SDKError{Code:ResponseDecodeFailed,Message:"adapter returned a nil source"},owned.Close())}
+            return ownCancelableStreamSource(items,cancel,owned.Close),nil
+        },
+        encode:func(ctx context.Context,source any,info StreamContext,native any)(io.ReadCloser,error){
+            running,cancel:=context.WithCancel(ctx)
+            selected,err:=resolve(native);if err!=nil{cancel();return nil,err}
+            var frames Source[Frame]
+            if nilInterface(adapter){var ok bool;frames,ok=source.(Source[Frame]);if !ok{cancel();return nil,streamItemTypeError()}
+            }else{
+                items,ok:=source.(Source[Item]);if !ok{cancel();return nil,streamItemTypeError()}
+                adapting,stopAdapter:=context.WithCancel(running)
+                prepared,err:=adapter.Encode(adapting,items,info)
+                if err!=nil{stopAdapter();cancel();if !nilInterface(prepared){err=errors.Join(err,prepared.Close())};return nil,err}
+                if nilInterface(prepared){stopAdapter();cancel();return nil,&SDKError{Code:RequestEncodeFailed,Message:"adapter returned a nil source"}}
+                frames=ownCancelableStreamSource(prepared,stopAdapter,items.Close)
+            }
+            reader,err:=selected.Encode(running,frames,info)
+            if err!=nil{cancel();if !nilInterface(reader){err=errors.Join(err,reader.Close())};return nil,errors.Join(err,frames.Close())}
+            if nilInterface(reader){cancel();return nil,errors.Join(&SDKError{Code:RequestEncodeFailed,Message:"protocol returned a nil reader"},frames.Close())}
+            return &streamCodecReader{ReadCloser:reader,release:frames.Close,cancel:cancel},nil
+        },
+    }
+}
+func streamItemTypeError()error{return &SDKError{Code:RequestOptionsInvalid,Message:"registered stream item type does not match the operation contract"}}
+
+type ownedStreamSource[T any] struct{Source[T];release func()error;once sync.Once;closeErr error}
+func ownStreamSource[T any](source Source[T],release func()error)*ownedStreamSource[T]{return &ownedStreamSource[T]{Source:source,release:release}}
+func(source *ownedStreamSource[T])Close()error{source.once.Do(func(){source.closeErr=source.Source.Close();if source.release!=nil{source.closeErr=errors.Join(source.closeErr,source.release())}});return source.closeErr}
+func ownCancelableStreamSource[T any](source Source[T],cancel context.CancelFunc,release func()error)*ownedStreamSource[T]{return ownStreamSource(&factoryStreamSource[T]{Source:source,cancel:cancel},release)}
+type streamCodecReader struct{io.ReadCloser;release func()error;cancel context.CancelFunc;once sync.Once;closeErr error}
+func(reader *streamCodecReader)Close()error{reader.once.Do(func(){if reader.cancel!=nil{reader.cancel()};reader.closeErr=reader.ReadCloser.Close();if reader.release!=nil{reader.closeErr=errors.Join(reader.closeErr,reader.release())}});return reader.closeErr}
+
+type mappedStreamSource[From,To any] struct{Source[From];ctx context.Context;convert func(context.Context,From)(To,error);item To;failure error;done bool}
+func(source *mappedStreamSource[From,To])Next()bool{
+    if source.done{return false}
+    if err:=source.ctx.Err();err!=nil{source.done=true;source.failure=errors.Join(err,source.Close());return false}
+    if !source.Source.Next(){source.done=true;source.failure=errors.Join(source.Source.Err(),source.Close());return false}
+    value,err:=source.convert(source.ctx,source.Source.Item());if err!=nil{source.done=true;source.failure=errors.Join(err,source.Close());return false};source.item=value;return true
+}
+func(source *mappedStreamSource[From,To])Item()To{return source.item}
+func(source *mappedStreamSource[From,To])Err()error{if source.done{return source.failure};return source.Source.Err()}
+// MapSource converts one item at a time and retains ownership of its input.
+func MapSource[From,To any](ctx context.Context,source Source[From],convert func(context.Context,From)(To,error))Source[To]{if nilInterface(source)||convert==nil{return &failedStreamSource[To]{failure:&SDKError{Code:RequestOptionsInvalid,Message:"stream mapping requires a source and converter"}}};return &mappedStreamSource[From,To]{Source:ownStreamSource(source,nil),ctx:ctx,convert:convert}}
+type failedStreamSource[T any] struct{failure error}
+func(source *failedStreamSource[T])Next()bool{return false}
+func(source *failedStreamSource[T])Item()(value T){return value}
+func(source *failedStreamSource[T])Err()error{return source.failure}
+func(source *failedStreamSource[T])Close()error{return nil}
+
+// DecodeStreamCodec preserves registered concrete items. Native wire values
+// pass through the operation's schema/DTO decoder one item at a time.
+func DecodeStreamCodec[Frame,T any](ctx context.Context,codec StreamCodec,native StreamProtocol[Frame],reader StreamReader,info StreamContext,decode func(context.Context,Frame)(T,error),validate ...func(context.Context,T)(T,error))(Source[T],error){
+    if codec.decode==nil{codec=NewStreamCodec[Frame,Frame](native,nil)}
+    source,err:=codec.decode(ctx,reader,info,native);if err!=nil{return nil,err}
+    if values,ok:=source.(Source[Frame]);ok&&decode!=nil{return MapSource(ctx,values,decode),nil}
+    if typed,ok:=source.(Source[T]);ok{if len(validate)!=0{return MapSource(ctx,typed,validate[0]),nil};return typed,nil}
+    if closer,ok:=source.(io.Closer);ok{return nil,errors.Join(streamItemTypeError(),closer.Close())}
+    return nil,streamItemTypeError()
+}
+func EncodeStreamCodec[Frame,T any](ctx context.Context,codec StreamCodec,native StreamProtocol[Frame],source Source[T],info StreamContext,encode func(context.Context,T)(Frame,error),validate ...func(context.Context,T)(T,error))(io.ReadCloser,error){
+    if nilInterface(source){return nil,&SDKError{Code:RequestEncodeFailed,Message:"stream source is nil"}}
+    owned:=ownStreamSource(source,nil)
+    if codec.encode==nil{codec=NewStreamCodec[Frame,Frame](native,nil)}
+    var items any=owned
+    if !codec.accepts(items){items=MapSource(ctx,owned,encode)}else if len(validate)!=0{items=MapSource(ctx,owned,validate[0])}
+    reader,err:=codec.encode(ctx,items,info,native)
+    if err!=nil{return nil,errors.Join(err,owned.Close())}
+    return &streamCodecReader{ReadCloser:reader,release:owned.Close},nil
+}
+func OpenSourceFactory[T any](ctx context.Context,factory SourceFactory[T])(Source[T],error){
+    if factory==nil{return nil,&SDKError{Code:RequestEncodeFailed,Message:"stream source factory is nil"}}
+    if err:=ctx.Err();err!=nil{return nil,err}
+    running,cancel:=context.WithCancel(ctx)
+    source,err:=factory(running);if err!=nil{cancel();if !nilInterface(source){err=errors.Join(err,source.Close())};return nil,err}
+    if nilInterface(source){cancel();return nil,&SDKError{Code:RequestEncodeFailed,Message:"stream factory returned a nil source"}}
+    if err:=ctx.Err();err!=nil{cancel();return nil,errors.Join(err,source.Close())}
+    return &factoryStreamSource[T]{Source:source,cancel:cancel},nil
+}
+type factoryStreamSource[T any] struct{Source[T];cancel context.CancelFunc;once sync.Once;closeErr error}
+func(source *factoryStreamSource[T])Close()error{source.once.Do(func(){source.cancel();source.closeErr=source.Source.Close()});return source.closeErr}
+func(codec StreamCodec)IsZero()bool{return codec.decode==nil&&codec.encode==nil}

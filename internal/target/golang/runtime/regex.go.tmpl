@@ -1,0 +1,27 @@
+// Pattern compiles one prepared JavaScript Unicode pattern on first use.
+// The engine's execution errors remain separate from a schema mismatch.
+type Pattern struct {
+    source string
+    once sync.Once
+    compiled *jsregexp.Regexp
+    err error
+}
+func NewPattern(source string) *Pattern { return &Pattern{source:source} }
+func PreparePattern(source string)(*Pattern,error){pattern:=NewPattern(source);pattern.once.Do(func(){pattern.compiled,pattern.err=jsregexp.Compile(source,"u")});if pattern.err!=nil{return nil,pattern.err};return pattern,nil}
+func (pattern *Pattern) Match(ctx context.Context,value string) (bool,error) {
+    if err:=ctx.Err();err!=nil{return false,err}
+    pattern.once.Do(func(){pattern.compiled,pattern.err=jsregexp.Compile(pattern.source,"u")})
+    if pattern.err!=nil{return false,pattern.err}
+    matched,err:=pattern.compiled.MatchString(value)
+    if err!=nil{if errors.Is(err,jsregexp.ErrComplexity){return false,&wire.ValidationLimitError{Cause:err}};return false,err}
+    if err:=ctx.Err();err!=nil{return false,err}
+    return matched,nil
+}
+
+func FormatRegex(ctx context.Context,value string) (bool,error) {
+    if err:=ctx.Err();err!=nil{return false,err}
+    _,err:=jsregexp.Compile(value,"u")
+    if errors.Is(err,jsregexp.ErrComplexity){return false,&wire.ValidationLimitError{Cause:err}}
+    if contextErr:=ctx.Err();contextErr!=nil{return false,contextErr}
+    return err==nil,nil
+}

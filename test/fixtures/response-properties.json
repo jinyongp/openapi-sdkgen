@@ -1,0 +1,147 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Response properties",
+    "version": "1"
+  },
+  "components": {
+    "schemas": {
+      "Closed": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Choice": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "left"
+            ],
+            "properties": {
+              "left": {
+                "type": "string"
+              },
+              "right": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "right"
+            ],
+            "properties": {
+              "right": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/closed": {
+      "get": {
+        "operationId": "readClosed",
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Closed"
+                }
+              }
+            },
+            "links": {
+              "Extra": {
+                "operationId": "echo",
+                "parameters": {
+                  "id": "$response.body#/extra"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "sendClosed",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Closed"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          }
+        }
+      }
+    },
+    "/choice": {
+      "get": {
+        "operationId": "readChoice",
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Choice"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/echo/{id}": {
+      "get": {
+        "operationId": "echo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+func cloneServer(server types.ServerSelection)types.ServerSelection{
+    variables:=make(map[string]string,len(server.Variables));for key,value:=range server.Variables{variables[key]=value};server.Variables=variables;return server
+}
+func (execution *Execution) serverBase(servers []types.ServerDefinition)(*url.URL,error){
+    if value,present:=execution.Options.BaseURL.Get();present{return parseBaseURL(value)}
+    if execution.client.baseURL!=nil{return execution.client.baseURL,nil}
+    if len(servers)==0{servers=[]types.ServerDefinition{ {ID:"#",URL:"/"}}}
+    selection:=execution.client.server
+    chosen:=servers[0];if selection.ID!=""{
+        found:=false;for _,server:=range servers{if server.ID==selection.ID{chosen=server;found=true;break}}
+        if !found{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"selected server is not declared for this operation"}}
+    }
+    definitions:=make(map[string]types.ServerVariable,len(chosen.Variables));for _,variable:=range chosen.Variables{definitions[variable.Name]=variable}
+    value:=chosen.URL
+    var expanded strings.Builder
+    for {
+        start:=strings.IndexByte(value,'{');if start<0{expanded.WriteString(value);break}
+        expanded.WriteString(value[:start]);value=value[start+1:];end:=strings.IndexByte(value,'}')
+        if end<0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"server template is invalid"}}
+        variable,found:=definitions[value[:end]];if !found{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"server variable is not declared"}}
+        replacement:=variable.Default;if override,present:=selection.Variables[variable.Name];present{replacement=override}
+        if len(variable.Enum)>0{allowed:=false;for _,item:=range variable.Enum{if replacement==item{allowed=true;break}};if !allowed{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"server variable is outside its declared enum"}}}
+        expanded.WriteString(replacement);value=value[end+1:]
+    }
+    origin:="";if execution.client.origin!=""{origin=execution.client.origin+"/"}
+    parsed,err:=transport.ParseHTTPURL(expanded.String(),"")
+    if err!=nil&&origin!=""{parsed,err=transport.ParseHTTPURL(expanded.String(),origin)}
+    if err!=nil{return nil,err}
+    return parseBaseURL(parsed.String())
+}

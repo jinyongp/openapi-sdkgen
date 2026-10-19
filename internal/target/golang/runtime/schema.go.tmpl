@@ -1,0 +1,40 @@
+func DecodeJSON(data []byte) (wire.Value, error) {return wire.ParseTransportJSON(data)}
+
+type ValidationError struct { Keyword,Path string }
+func (failure *ValidationError) Error() string { return fmt.Sprintf("schema %s failed at %s",failure.Keyword,failure.Path) }
+func Failure(keyword,path string) error { return &ValidationError{Keyword:keyword,Path:path} }
+func IsValidationError(err error) bool { var failure *ValidationError;return errors.As(err,&failure) }
+
+type Validator func(context.Context,wire.Value,string,*State) (Evaluation,error)
+type responseContextKey struct{}
+// ResponseContext preserves undeclared object properties at the HTTP boundary.
+// Standalone model operations and request encoders retain strict validation.
+func ResponseContext(ctx context.Context)context.Context{if IsResponseContext(ctx){return ctx};return context.WithValue(ctx,responseContextKey{},true)}
+func IsResponseContext(ctx context.Context)bool{value,_:=ctx.Value(responseContextKey{}).(bool);return value}
+func strictContext(ctx context.Context)context.Context{if !IsResponseContext(ctx){return ctx};return context.WithValue(ctx,responseContextKey{},false)}
+func ControlFlow(ctx context.Context,value wire.Value,path string,state *State,validate Validator)(Evaluation,error){
+ if IsResponseContext(ctx){evaluated,err:=validate(strictContext(ctx),value,path,state);if err==nil||!IsValidationError(err){return evaluated,err}}
+ return validate(ctx,value,path,state)
+}
+type DynamicBinding struct { Anchor string; Validate Validator }
+type validationVisit struct { Program,Path string }
+type State struct { active map[validationVisit]bool; scope []DynamicBinding; MediaType,RootPath string; Binaries,OpaqueAncestors map[string]bool }
+func ContentMediaConflict(actual,declared string) bool {
+    if actual==""||declared==""{return false}
+    actual,_,_=strings.Cut(actual,";");declared,_,_=strings.Cut(declared,";")
+    return !strings.EqualFold(strings.TrimSpace(actual),strings.TrimSpace(declared))
+}
+
+type Evaluation struct { Keys map[string]bool; Items map[int]bool }
+func NewEvaluation() Evaluation { return Evaluation{} }
+func (evaluation *Evaluation) MarkKey(key string) { if evaluation.Keys==nil {evaluation.Keys=make(map[string]bool)};evaluation.Keys[key]=true }
+func (evaluation *Evaluation) MarkItem(index int) { if evaluation.Items==nil {evaluation.Items=make(map[int]bool)};evaluation.Items[index]=true }
+func Merge(target *Evaluation,source Evaluation) { for key:=range source.Keys { target.MarkKey(key) };for index:=range source.Items { target.MarkItem(index) } }
+func ChildPath(path,key string) string { return path+"/"+strings.ReplaceAll(strings.ReplaceAll(key,"~","~0"),"/","~1") }
+func IndexPath(path string,index int) string { return path+"/"+strconv.Itoa(index) }
+
+func opaqueMediaAncestors(binaries map[string]bool)map[string]bool{
+    if len(binaries)==0{return nil};result:=make(map[string]bool)
+    for path,opaque:=range binaries{if !opaque{continue};for{result[path]=true;index:=strings.LastIndex(path,"/");if index<0{break};path=path[:index]}}
+    return result
+}

@@ -1,0 +1,50 @@
+type JSONProtocol struct{Sequence bool}
+func(protocol JSONProtocol)Decode(ctx context.Context,reader types.StreamReader,info types.StreamContext)(types.Source[types.Value],error){
+    if info.MaxFrameBytes<=0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream frame limit must be positive"}}
+    separator:=byte('\n');if protocol.Sequence{separator=0x1e}
+    return &jsonSource{ctx:ctx,reader:reader,maximum:info.MaxFrameBytes,separator:separator},nil
+}
+func(protocol JSONProtocol)Encode(ctx context.Context,source types.Source[types.Value],info types.StreamContext)(io.ReadCloser,error){
+    return newFrameEncoder(ctx,source,info.MaxFrameBytes,func(value types.Value)([]byte,error){data,err:=value.MarshalJSON();if err!=nil{return nil,err};if protocol.Sequence{data=append([]byte{0x1e},data...)};data=append(data,'\n');if len(data)>info.MaxFrameBytes{return nil,frameLimit(info.MaxFrameBytes)};return data,nil})
+}
+type jsonSource struct{
+    ctx context.Context
+    reader types.StreamReader
+    decoder wire.TextDecoder
+    maximum int
+    separator byte
+    chunk string
+    offset int
+    pending []byte
+    item types.Value
+    eof,done bool
+    closed atomic.Bool
+    failure error
+}
+func(source *jsonSource)Next()bool{
+    if source.done||source.closed.Load(){return false}
+    for{
+        if err:=source.ctx.Err();err!=nil{return source.fail(err)}
+        if source.offset<len(source.chunk){
+            fragment:=source.chunk[source.offset:];end:=strings.IndexByte(fragment,source.separator);complete:=end>=0;if complete{fragment=fragment[:end]}
+            if len(fragment)>source.maximum-len(source.pending){return source.fail(frameLimit(source.maximum))}
+            source.pending=append(source.pending,fragment...);source.offset+=len(fragment)
+            if complete{source.offset++;if source.emit(false){return true};if source.done{return false};continue}
+        }
+        if source.eof{if len(source.pending)!=0{if source.emit(true){return true};if source.done{return false}};return source.fail(io.EOF)}
+        count:=4096;if count>source.maximum{count=source.maximum};data,err:=source.reader.Read(count)
+        if err!=nil&&err!=io.EOF{return source.fail(err)}
+        source.eof=err==io.EOF;source.chunk=source.decoder.Decode(data,source.eof);source.offset=0
+    }
+}
+func(source *jsonSource)emit(final bool)bool{
+    text:=string(source.pending);source.pending=source.pending[:0]
+    if source.separator==0x1e||final{text=trimStreamSpace(text)}else{text=strings.TrimSuffix(text,"\r")}
+    if trimStreamSpace(text)==""{return false}
+    value,err:=types.ParseValue([]byte(text));if err!=nil{return source.fail(&types.StreamFrameError{Kind:"json",Cause:err})};source.item=value;return true
+}
+func(source *jsonSource)Item()types.Value{return source.item}
+func(source *jsonSource)Err()error{return source.failure}
+func(source *jsonSource)Close()error{source.closed.Store(true);return source.reader.Close()}
+func(source *jsonSource)fail(err error)bool{source.done=true;source.failure=sourceFailure(err,source.reader.Close());return false}
+func trimStreamSpace(value string)string{return strings.TrimFunc(value,func(code rune)bool{return code==0x09||code==0x0a||code==0x0b||code==0x0c||code==0x0d||code==0x20||code==0xa0||code==0x1680||code>=0x2000&&code<=0x200a||code==0x2028||code==0x2029||code==0x202f||code==0x205f||code==0x3000||code==0xfeff})}

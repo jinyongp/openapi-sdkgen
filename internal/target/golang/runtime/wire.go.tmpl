@@ -1,0 +1,147 @@
+type parser struct { data []byte; offset int; preserveSurrogates bool }
+type frame struct { kind Kind; state uint8; key string; items []Value; fields map[string]Value }
+
+// Parse reads the JSON tree once. The explicit stack does not impose a new
+// nesting limit or consume the Go call stack for deeply nested input.
+func Parse(data []byte) (Value,error) {
+    return parse(data,false)
+}
+func ParseTransportJSON(data []byte)(Value,error){if len(data)>=3&&data[0]==0xef&&data[1]==0xbb&&data[2]==0xbf{data=data[3:]};return Parse(data)}
+func ParseText(text string) (Value,error) {return parse([]byte(text),true)}
+func parse(data []byte,preserveSurrogates bool) (Value,error) {
+    parser:=parser{data:data,preserveSurrogates:preserveSurrogates}
+    var result Value
+    stack:=make([]frame,0)
+    complete:=false
+    accept:=func(value Value) {
+        if len(stack)==0 { result=value;complete=true;return }
+        parent:=&stack[len(stack)-1]
+        if parent.kind==Array { parent.items=append(parent.items,value);parent.state=1 } else { parent.fields[parent.key]=value;parent.state=3 }
+    }
+    for {
+        parser.space()
+        if len(stack)==0&&complete {
+            if parser.offset!=len(data) { return Value{},parser.failure("unexpected trailing content") }
+            return result,nil
+        }
+        if len(stack)!=0 {
+            parent:=&stack[len(stack)-1]
+            if parent.kind==Array {
+                if (parent.state==0||parent.state==1)&&parser.take(']') { value:=Value{kind:Array,items:parent.items};stack=stack[:len(stack)-1];accept(value);continue }
+                if parent.state==1 { if !parser.take(',') { return Value{},parser.failure("expected array comma or close") };parent.state=2;continue }
+            } else {
+                if (parent.state==0||parent.state==3)&&parser.take('}') { value:=Value{kind:Object,fields:parent.fields};stack=stack[:len(stack)-1];accept(value);continue }
+                switch parent.state {
+                case 0,4:
+                    key,err:=parser.string();if err!=nil { return Value{},err };parent.key=key;parent.state=1;continue
+                case 1:if !parser.take(':') { return Value{},parser.failure("expected object colon") };parent.state=2;continue
+                case 3:if !parser.take(',') { return Value{},parser.failure("expected object comma or close") };parent.state=4;continue
+                }
+            }
+        }
+        if parser.offset==len(data) { return Value{},parser.failure("expected JSON value") }
+        switch data[parser.offset] {
+        case '[':parser.offset++;stack=append(stack,frame{kind:Array})
+        case '{':parser.offset++;stack=append(stack,frame{kind:Object,fields:make(map[string]Value)})
+        case '"':text,err:=parser.string();if err!=nil { return Value{},err };accept(Text(text))
+        case 't':if !parser.literal("true") { return Value{},parser.failure("invalid literal") };accept(Bool(true))
+        case 'f':if !parser.literal("false") { return Value{},parser.failure("invalid literal") };accept(Bool(false))
+        case 'n':if !parser.literal("null") { return Value{},parser.failure("invalid literal") };accept(Value{})
+        default:
+            value,err:=parser.number();if err!=nil { return Value{},err };accept(value)
+        }
+    }
+}
+func (parser *parser) failure(message string) error { return fmt.Errorf("invalid JSON at byte %d: %s",parser.offset,message) }
+func (parser *parser) space() { for parser.offset<len(parser.data)&&strings.ContainsRune(" \t\r\n",rune(parser.data[parser.offset])) { parser.offset++ } }
+func (parser *parser) take(char byte) bool { if parser.offset<len(parser.data)&&parser.data[parser.offset]==char { parser.offset++;return true };return false }
+func (parser *parser) literal(text string) bool {
+    if len(parser.data)-parser.offset<len(text) { return false }
+    for index:=range text { if parser.data[parser.offset+index]!=text[index] { return false } }
+    parser.offset+=len(text)
+    return true
+}
+func (parser *parser) digit() bool { return parser.offset<len(parser.data)&&parser.data[parser.offset]>='0'&&parser.data[parser.offset]<='9' }
+func (parser *parser) number() (Value,error) {
+    start:=parser.offset
+    parser.take('-')
+    if !parser.take('0') {
+        if !parser.digit() { return Value{},parser.failure("expected number") }
+        for parser.digit() { parser.offset++ }
+    }
+    if parser.take('.') { if !parser.digit() { return Value{},parser.failure("expected fraction") };for parser.digit() { parser.offset++ } }
+    if parser.take('e')||parser.take('E') { if !parser.take('+') { parser.take('-') };if !parser.digit() { return Value{},parser.failure("expected exponent") };for parser.digit() { parser.offset++ } }
+    number,err:=strconv.ParseFloat(string(parser.data[start:parser.offset]),64)
+    if err!=nil { return Value{},parser.failure("number outside finite binary64 range") }
+    return Numeric(number)
+}
+func (parser *parser) hex() (uint16,error) {
+    if len(parser.data)-parser.offset<4 { return 0,parser.failure("incomplete unicode escape") }
+    var result uint16
+    for count:=0;count<4;count++ {
+        char:=parser.data[parser.offset];parser.offset++
+        var digit uint16
+        switch { case char>='0'&&char<='9':digit=uint16(char-'0');case char>='a'&&char<='f':digit=uint16(char-'a'+10);case char>='A'&&char<='F':digit=uint16(char-'A'+10);default:return 0,parser.failure("invalid unicode escape") }
+        result=result<<4|digit
+    }
+    return result,nil
+}
+func (parser *parser) string() (string,error) {
+    if !parser.take('"') { return "",parser.failure("expected string") }
+    out:=make([]byte,0)
+    for parser.offset<len(parser.data) {
+        char:=parser.data[parser.offset];parser.offset++
+        if char=='"' { return CanonicalText(string(out)) }
+        if char<0x20 { return "",parser.failure("unescaped control character") }
+        if char=='\\' {
+            if parser.offset==len(parser.data) { return "",parser.failure("incomplete escape") }
+            escape:=parser.data[parser.offset];parser.offset++
+            switch escape {
+            case '"','\\','/':out=append(out,escape)
+            case 'b':out=append(out,'\b')
+            case 'f':out=append(out,'\f')
+            case 'n':out=append(out,'\n')
+            case 'r':out=append(out,'\r')
+            case 't':out=append(out,'\t')
+            case 'u':
+                code,err:=parser.hex();if err!=nil { return "",err }
+                if code>=0xd800&&code<=0xdbff&&len(parser.data)-parser.offset>=6&&parser.data[parser.offset]=='\\'&&parser.data[parser.offset+1]=='u' {
+                    saved:=parser.offset;parser.offset+=2
+                    low,err:=parser.hex()
+                    if err==nil&&low>=0xdc00&&low<=0xdfff { out=utf8.AppendRune(out,0x10000+(rune(code)-0xd800)*0x400+rune(low)-0xdc00);continue }
+                    parser.offset=saved
+                }
+                if code>=0xd800&&code<=0xdfff { out=append(out,byte(0xe0|code>>12),byte(0x80|(code>>6)&63),byte(0x80|code&63)) } else { out=utf8.AppendRune(out,rune(code)) }
+            default:return "",parser.failure("invalid escape")
+            }
+            continue
+        }
+        if char<0x80 { out=append(out,char);continue }
+        parser.offset--
+        if parser.preserveSurrogates&&char==0xed&&len(parser.data)-parser.offset>=3&&parser.data[parser.offset+1]>=0xa0&&parser.data[parser.offset+1]<=0xbf&&parser.data[parser.offset+2]&0xc0==0x80{
+            out=append(out,parser.data[parser.offset:parser.offset+3]...);parser.offset+=3;continue
+        }
+        code,size:=decodeUTF8Rune(parser.data[parser.offset:])
+        out=utf8.AppendRune(out,code);parser.offset+=size
+    }
+    return "",parser.failure("unterminated string")
+}
+
+func decodeUTF8Rune(data []byte) (rune,int) {
+    code,size:=utf8.DecodeRune(data)
+    if code!=utf8.RuneError||size!=1{return code,size}
+    char:=data[0];width:=0
+    if char>=0xc2&&char<=0xdf{width=2};if char>=0xe0&&char<=0xef{width=3};if char>=0xf0&&char<=0xf4{width=4}
+    for size<width&&size<len(data){next:=data[size];if next&0xc0!=0x80||size==1&&(char==0xe0&&next<0xa0||char==0xed&&next>=0xa0||char==0xf0&&next<0x90||char==0xf4&&next>=0x90){break};size++}
+    return code,size
+}
+
+// UTF8Text matches the transport text decoder, including maximal malformed
+// prefixes and its initial BOM handling. Escaped JSON surrogates use ParseText.
+func UTF8Text(data []byte) string {
+    if len(data)>=3&&data[0]==0xef&&data[1]==0xbb&&data[2]==0xbf{data=data[3:]}
+    if utf8.Valid(data){return string(data)}
+    out:=make([]byte,0,len(data))
+    for len(data)!=0{code,size:=decodeUTF8Rune(data);out=utf8.AppendRune(out,code);data=data[size:]}
+    return string(out)
+}

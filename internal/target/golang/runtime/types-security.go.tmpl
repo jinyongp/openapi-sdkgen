@@ -1,0 +1,32 @@
+// SecurityRequirement is implemented by each generated operation's selection type.
+// Selection is checked against that operation before a provider or transport runs.
+type SecurityRequirement interface { SecurityRequirementID() string }
+type SecurityRequirementDefinition struct { ID string; Schemes []SecuritySchemeDefinition }
+type SecuritySchemeDefinition struct {
+    Name,Type,Location,ParameterName,Scheme,BearerFormat string
+    Scopes []string
+    Flows Value
+    OpenIDConnectURL,OAuth2MetadataURL string
+    Deprecated bool
+}
+type SecurityCredentialContext struct {
+    Operation OperationInfo
+    Requirement SecurityRequirementDefinition
+    Origin string
+}
+// SecurityCredential uses the same kinds as the TypeScript target: api-key,
+// http-basic, http-bearer, http, oauth2, openIdConnect and mutual-tls.
+// Fields containing credentials are never serialized by the SDK.
+type SecurityCredential struct {
+    Kind string `json:"kind"`
+    Value string `json:"-"`
+    Token string `json:"-"`
+    Username string `json:"-"`
+    Password string `json:"-"`
+}
+type SecurityCredentials map[string]SecurityCredential
+type SecurityProvider func(context.Context,SecurityCredentialContext)(SecurityCredentials,error)
+
+type ServerSelection struct { ID string; Variables map[string]string }
+type ServerDefinition struct { ID,URL string; Variables []ServerVariable }
+type ServerVariable struct { Name,Default string; Enum []string }

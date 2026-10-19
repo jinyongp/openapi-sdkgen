@@ -1,0 +1,67 @@
+{{range .Operations}}
+{{$operation:=.}}
+{{if .StreamUnion}}
+type {{.Name}}StreamItem struct{branch int;value types.Value;multipart types.MultipartData;hasMultipart bool}
+func(value {{.Name}}StreamItem)AsMultipart()(types.MultipartValue,bool){if !value.hasMultipart{return types.MultipartValue{},false};return types.MultipartFromWireValue(value.multipart),true}
+func(value {{.Name}}StreamItem)AsBinary()([]byte,bool){if !value.hasMultipart{return nil,false};binary,present:=value.multipart.Slots[""];if !present{return nil,false};return binary.Bytes()}
+{{range .Responses}}{{if .TypedStream}}
+func(value {{$operation.Name}}StreamItem)As{{.Name}}()(models.{{.ItemModel}},bool){var zero models.{{.ItemModel}};if value.branch!={{.Index}}||len(value.multipart.Slots)!=0{return zero,false};decoded,err:=models.DecodeResponse{{.ItemModel}}(context.Background(),value.value);return decoded,err==nil}
+{{end}}{{end}}
+{{end}}
+{{range .Responses}}{{if .ItemValidation}}
+{{if eq .Framing "multipart"}}
+func streamSourceFor{{$operation.Name}}{{.Name}}(execution *core.Execution)(types.Source[types.MultipartData],error){
+    source,err:=completeSourceFor{{$operation.Name}}{{.Name}}(execution,true);if err!=nil{return nil,err}
+    return types.MapSource(execution.Context,source,func(ctx context.Context,data types.MultipartData)(types.MultipartData,error){if _,err:=models.DecodeResponse{{.ItemModel}}(ctx,data.Value);err!=nil{return types.MultipartData{},err};return types.CopyMultipartBuffers(ctx,data)}),nil
+}
+{{else}}
+func streamSourceFor{{$operation.Name}}{{.Name}}(execution *core.Execution)(types.Source[models.{{.ItemModel}}],error){
+    info:=execution.StreamContext(execution.Response.Header.Get("Content-Type"))
+    reader,err:=stream.NewReader(execution.Context,execution.Response.Body,info.MaxFrameBytes);if err!=nil{return nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    {{if eq .Framing "line-delimited-json"}}native:=stream.JSONProtocol{}
+    {{else if eq .Framing "json-sequence"}}native:=stream.JSONProtocol{Sequence:true}
+    {{else if eq .Framing "sse"}}native:=stream.SSEProtocol{}
+    {{else}}var native types.StreamProtocol[types.Value]
+    {{end}}decode:=models.DecodeResponse{{.ItemModel}}
+    source,err:=types.DecodeStreamCodec(execution.Context,execution.StreamCodec(info.ContentType),native,reader,info,decode,func(ctx context.Context,value models.{{.ItemModel}})(models.{{.ItemModel}},error){_,err:=models.Encode{{.ItemModel}}(schema.ResponseContext(ctx),value);return value,err})
+    if err!=nil{reader.Close();return nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    return core.BindStreamSource(source,execution),nil
+}
+{{end}}
+func completeSourceFor{{$operation.Name}}{{.Name}}(execution *core.Execution,incremental ...bool)(types.Source[types.MultipartData],error){
+    info:=execution.StreamContext(execution.Response.Header.Get("Content-Type"))
+    reader,err:=stream.NewReader(execution.Context,execution.Response.Body,info.MaxFrameBytes);if err!=nil{return nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    {{if eq .Framing "multipart"}}definition:=func(index int)core.StreamPartDefinition{if len(incremental)!=0&&incremental[0]{return {{.ItemParts}}(execution,index)};return {{.CompleteParts}}(execution,index)}
+    native:=stream.MultipartProtocol{Validate:func(ctx context.Context,part types.MultipartPart,index int)error{return execution.ValidateStreamPart(ctx,part,definition(index))}}
+    index:=0
+    decode:=func(ctx context.Context,part types.MultipartPart)(types.MultipartData,error){selected:=definition(index);index++;return execution.DecodeStreamPartData(part,selected.XML,selected)}
+    {{else}}{{if eq .Framing "line-delimited-json"}}native:=stream.JSONProtocol{}
+    {{else if eq .Framing "json-sequence"}}native:=stream.JSONProtocol{Sequence:true}
+    {{else if eq .Framing "sse"}}native:=stream.SSEProtocol{}
+    {{else}}var native types.StreamProtocol[types.Value]
+    {{end}}decode:=func(_ context.Context,value types.Value)(types.MultipartData,error){return types.MultipartData{Value:value},nil}
+    {{end}}
+    source,err:=types.DecodeStreamData(execution.Context,execution.StreamCodec(info.ContentType),native,reader,info,decode,func(ctx context.Context,value models.{{.ItemModel}})(types.Value,error){return models.Encode{{.ItemModel}}(schema.ResponseContext(ctx),value)})
+    if err!=nil{reader.Close();return nil,execution.Failure(types.ResponseDecodeFailed,err)};return core.BindStreamSource(source,execution),nil
+}
+{{end}}{{end}}
+{{if .HasTypedStream}}
+func(call {{.Name}}Call)Stream(ctx context.Context)*types.Stream[{{.StreamType}}]{
+    info:=types.OperationInfo{OperationID:{{quote .OperationID}},Route:{{quote .Route}},Method:{{quote .Method}},Path:{{quote .Path}}}
+    return types.NewStream(ctx,func(running context.Context)(types.Source[{{.StreamType}}],*http.Response,error){
+        result,execution,err:=call.execute(running,nil,true)
+        if err!=nil{var response *http.Response;if result!=nil{response=result.OriginalResponse};return nil,response,err}
+        switch result.branch{
+        {{range .Responses}}{{if .TypedStream}}case {{.Index}}:
+            source,err:=streamSourceFor{{$operation.Name}}{{.Name}}(execution);if err!=nil{execution.Close();return nil,result.OriginalResponse,err}
+            execution.TransferStream()
+            {{if $operation.StreamUnion}}
+            mapped:=types.MapSource(execution.Context,source,{{if eq .Framing "multipart"}}func(ctx context.Context,value types.MultipartData)({{$operation.Name}}StreamItem,error){return {{$operation.Name}}StreamItem{branch:{{.Index}},value:value.Value,multipart:value,hasMultipart:true},nil}{{else}}func(ctx context.Context,value models.{{.ItemModel}})({{$operation.Name}}StreamItem,error){encoded,err:=models.Encode{{.ItemModel}}(schema.ResponseContext(ctx),value);return {{$operation.Name}}StreamItem{branch:{{.Index}},value:encoded},err}{{end}})
+            return mapped,result.OriginalResponse,nil
+            {{else}}return source,result.OriginalResponse,nil{{end}}
+        {{end}}{{end}} }
+        execution.Close();return nil,result.OriginalResponse,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response has no declared stream item contract"})
+    },func(cause error,response *http.Response)error{return core.StreamFailure(ctx,info,cause,response)})
+}
+{{end}}
+{{end}}

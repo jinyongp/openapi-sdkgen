@@ -1,0 +1,67 @@
+// HTTPTransport copies client settings per invocation while sharing its pool.
+type HTTPTransport struct { client http.Client; capabilities types.TransportCapabilities }
+
+func NewHTTPClient(provided *http.Client) *HTTPTransport {
+    var client http.Client
+    if provided==nil{
+        client=*http.DefaultClient
+        selected:=client.Transport;if selected==nil{selected=http.DefaultTransport}
+        if standard,ok:=selected.(*http.Transport);ok{owned:=standard.Clone();owned.DisableCompression=true;client.Transport=owned}else{client.Transport=selected}
+    }else{client=*provided}
+    roundTripper:=client.Transport;if roundTripper==nil{roundTripper=http.DefaultTransport}
+    capabilities:=types.TransportCapabilities{ResponseBody:types.Encoded,CookieJar:client.Jar!=nil,CookieHeaders:true}
+    if standard,ok:=roundTripper.(*http.Transport);ok&&standard.TLSClientConfig!=nil{capabilities.MutualTLS=len(standard.TLSClientConfig.Certificates)!=0||standard.TLSClientConfig.GetClientCertificate!=nil}
+    client.Transport=guardedRoundTripper{inner:roundTripper}
+    return &HTTPTransport{client:client,capabilities:capabilities}
+}
+func (transport *HTTPTransport) Capabilities() types.TransportCapabilities { return transport.capabilities }
+func (transport *HTTPTransport) Do(request *http.Request,options types.TransportOptions) (*http.Response,error) {
+    if request==nil{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request is nil"}}
+    credentials:=options.Credentials;if credentials==""{credentials=types.SameOrigin}
+    if credentials!=types.Omit&&credentials!=types.SameOrigin&&credentials!=types.Include{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"invalid credentials mode"}}
+    var origin *url.URL
+    if options.Origin!=""{
+        parsed,err:=ParseHTTPURL(options.Origin,"")
+        if err!=nil||parsed.Host==""||parsed.User!=nil||!strings.EqualFold(parsed.Scheme,"http")&&!strings.EqualFold(parsed.Scheme,"https"){return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"Origin must be an absolute HTTP(S) URL"}}
+        parsed.Scheme=strings.ToLower(parsed.Scheme)
+        origin=parsed
+    }
+    client:=transport.client
+    if client.Jar!=nil{client.Jar=policyJar{inner:client.Jar,mode:credentials,origin:origin}}
+    if !options.AllowRedirects{client.CheckRedirect=func(*http.Request,[]*http.Request)error{return errors.New("request redirect is disabled")}}
+    outgoing:=request.Clone(request.Context())
+    if outgoing.Header==nil{outgoing.Header=make(http.Header)}
+    if len(HeaderValues(outgoing.Header,"Accept-Encoding"))==0{
+        encoding:="gzip, deflate";if outgoing.URL.Scheme=="https"{encoding="br, gzip, deflate"};if len(HeaderValues(outgoing.Header,"Range"))!=0{encoding="identity"}
+        outgoing.Header.Set("Accept-Encoding",encoding)
+    }
+    if err:=configureNativeHeaders(outgoing);err!=nil{var detail *types.SDKError;if errors.As(err,&detail){return nil,err};return nil,&types.SDKError{Code:types.RequestEncodeFailed,Message:"native request header preparation failed",Cause:err}}
+    response,err:=client.Do(outgoing)
+    if err!=nil{return response,err}
+    if response.Uncompressed{return response,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"HTTPClient implicitly decoded and may have removed original headers"}}
+    return response,nil
+}
+
+type policyJar struct {inner http.CookieJar;mode types.CredentialsMode;origin *url.URL}
+func (jar policyJar) allowed(target *url.URL)bool {
+    if jar.mode==types.Include{return true}
+    return jar.mode==types.SameOrigin&&jar.origin!=nil&&sameHTTPOrigin(jar.origin,target)
+}
+func (jar policyJar) Cookies(target *url.URL) []*http.Cookie { if !jar.allowed(target){return nil};return jar.inner.Cookies(target) }
+func (jar policyJar) SetCookies(target *url.URL,cookies []*http.Cookie) { if jar.allowed(target){jar.inner.SetCookies(target,cookies)} }
+func sameHTTPOrigin(left,right *url.URL)bool {
+    normalizedLeft,leftError:=ParseHTTPURL(left.String(),"");normalizedRight,rightError:=ParseHTTPURL(right.String(),"");if leftError!=nil||rightError!=nil{return false};left,right=normalizedLeft,normalizedRight
+    port:=func(value *url.URL)string{if port:=value.Port();port!=""{return port};if strings.EqualFold(value.Scheme,"https"){return "443"};return "80"}
+    return strings.EqualFold(left.Scheme,right.Scheme)&&strings.EqualFold(left.Hostname(),right.Hostname())&&port(left)==port(right)
+}
+
+// The client itself can close a redirect response before returning an error.
+// Guard at RoundTrip so subsequent SDK cleanup still closes the source once.
+type guardedRoundTripper struct{ inner http.RoundTripper }
+func (transport guardedRoundTripper) RoundTrip(request *http.Request)(*http.Response,error){
+    response,err:=transport.inner.RoundTrip(request)
+    if response!=nil&&response.Body!=nil{response.Body=&onceBody{ReadCloser:response.Body}}
+    return response,err
+}
+type onceBody struct{io.ReadCloser;once sync.Once;err error}
+func(body *onceBody)Close()error{body.once.Do(func(){body.err=body.ReadCloser.Close()});return body.err}

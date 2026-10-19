@@ -1,0 +1,90 @@
+// CloneOptions is shared by request construction and execution. DTOs and byte
+// buffers remain host-owned; only SDK option containers are copied.
+func CloneOptions(options types.RequestOptions) types.RequestOptions {
+    options.Headers=cloneHeader(options.Headers)
+    if options.StreamCodec!=nil{codec:=*options.StreamCodec;options.StreamCodec=&codec}
+    var headers map[string]http.Header;if options.MultipartHeaders!=nil{headers=make(map[string]http.Header,len(options.MultipartHeaders))}
+    for name,value:=range options.MultipartHeaders{headers[name]=cloneHeader(value)}
+    options.MultipartHeaders=headers
+    var contentTypes map[string]string;if options.MultipartContentTypes!=nil{contentTypes=make(map[string]string,len(options.MultipartContentTypes))}
+    for name,value:=range options.MultipartContentTypes{contentTypes[name]=value}
+    options.MultipartContentTypes=contentTypes
+    return options
+}
+func MergeOptions(base,overrides types.RequestOptions) types.RequestOptions {
+    result:=CloneOptions(base)
+    if overrides.SecurityRequirement!=nil{result.SecurityRequirement=overrides.SecurityRequirement}
+    if overrides.BaseURL.IsSet(){result.BaseURL=overrides.BaseURL}
+    if overrides.Accept.IsSet(){result.Accept=overrides.Accept}
+    if overrides.Authorization.IsSet(){result.Authorization=overrides.Authorization}
+    if overrides.CSRFToken.IsSet(){result.CSRFToken=overrides.CSRFToken}
+    if overrides.RequestID.IsSet(){result.RequestID=overrides.RequestID}
+    if overrides.Timeout.IsSet(){result.Timeout=overrides.Timeout}
+    if overrides.MaxStreamFrameBytes.IsSet(){result.MaxStreamFrameBytes=overrides.MaxStreamFrameBytes}
+    if overrides.StreamCodec!=nil{codec:=*overrides.StreamCodec;result.StreamCodec=&codec}
+    if overrides.Credentials!=""{result.Credentials=overrides.Credentials}
+    if result.Headers==nil{result.Headers=make(http.Header)}
+    for name,values:=range cloneHeader(overrides.Headers){result.Headers[name]=values}
+    if overrides.MultipartHeaders!=nil&&result.MultipartHeaders==nil{result.MultipartHeaders=make(map[string]http.Header,len(overrides.MultipartHeaders))};for name,value:=range overrides.MultipartHeaders{result.MultipartHeaders[name]=cloneHeader(value)}
+    if overrides.MultipartContentTypes!=nil&&result.MultipartContentTypes==nil{result.MultipartContentTypes=make(map[string]string,len(overrides.MultipartContentTypes))};for name,value:=range overrides.MultipartContentTypes{result.MultipartContentTypes[name]=value}
+    return result
+}
+func cloneHeader(header http.Header)http.Header{
+    if header==nil{return nil}
+    names:=make([]string,0,len(header));for name:=range header{names=append(names,name)};sort.Strings(names)
+    result:=make(http.Header,len(header));for _,name:=range names{canonical:=http.CanonicalHeaderKey(name);result[canonical]=append(result[canonical],header[name]...)}
+    return result
+}
+func validateOptions(options types.RequestOptions) error {
+    invalid:=func(message string)error{return &types.SDKError{Code:types.RequestOptionsInvalid,Message:message}}
+    if timeout,present:=options.Timeout.Get();present&&timeout<=0{return invalid("Timeout must be positive")}
+    if limit,present:=options.MaxStreamFrameBytes.Get();present&&limit<=0{return invalid("MaxStreamFrameBytes must be positive")}
+    if options.Credentials!=""&&options.Credentials!=types.Omit&&options.Credentials!=types.SameOrigin&&options.Credentials!=types.Include{return invalid("invalid credentials mode")}
+    if base,present:=options.BaseURL.Get();present{if _,err:=parseBaseURL(base);err!=nil{return err}}
+    return nil
+}
+
+func parseBaseURL(value string) (*url.URL,error) {
+    base,err:=transport.ParseHTTPURL(value,"")
+    if err!=nil||base.Host==""||!strings.EqualFold(base.Scheme,"http")&&!strings.EqualFold(base.Scheme,"https")||base.User!=nil||base.RawQuery!=""||base.Fragment!=""{
+        return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"BaseURL must be an absolute HTTP(S) URL without credentials, query, or fragment"}
+    }
+    base.Scheme=strings.ToLower(base.Scheme)
+    if base.Hostname()==""{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"BaseURL host is empty"}}
+    segments:=strings.Split(base.EscapedPath(),"/");normalized:=make([]string,0,len(segments))
+    for _,segment:=range segments{
+        dots:=strings.ReplaceAll(strings.ToLower(segment),"%2e",".")
+        if dots=="."{continue};if dots==".."{if len(normalized)>1{normalized=normalized[:len(normalized)-1]};continue}
+        normalized=append(normalized,segment)
+    }
+    escaped:=strings.Join(normalized,"/");decoded,err:=url.PathUnescape(escaped);if err!=nil{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"BaseURL path encoding is invalid"}}
+    base.Path=decoded;base.RawPath=escaped
+    return base,nil
+}
+
+func requestDefaults(options types.ClientOptions) types.RequestOptions {
+    return CloneOptions(types.RequestOptions{Accept:options.Accept,Headers:options.Headers,Authorization:options.Authorization,Credentials:options.Credentials,CSRFToken:options.CSRFToken,RequestID:options.RequestID,Timeout:options.Timeout,MultipartHeaders:options.MultipartHeaders,MultipartContentTypes:options.MultipartContentTypes,MaxStreamFrameBytes:options.MaxStreamFrameBytes})
+}
+
+func RequestFailure(ctx context.Context,operation types.OperationInfo,code string,cause error,request *http.Request,response *http.Response) error {
+    if cause==nil{return nil}
+    var limit interface{ValidationLimit()bool}
+    if errors.As(cause,&limit)&&limit.ValidationLimit(){cause=&types.SDKError{Code:types.ValidationLimitExceeded,Message:"validation execution limit exceeded",Cause:cause}}
+    if contextError:=ctx.Err();contextError!=nil{cause=errors.Join(cause,contextError)}
+    var timeout net.Error
+    if errors.Is(cause,context.DeadlineExceeded)||errors.As(cause,&timeout)&&timeout.Timeout(){code=types.RequestTimeout}else if errors.Is(cause,context.Canceled){code=types.RequestAborted}
+    var detail *types.SDKError
+    if errors.As(cause,&detail)&&ctx.Err()==nil{switch detail.Code{case types.TransportCapabilityRequired,types.SecurityRequirementRequired,types.SecurityRequirementInvalid,types.SecurityCredentialsRequired,types.SecurityCredentialsInvalid:code=detail.Code}}
+    category:="transport";if code==types.RequestEncodeFailed{category="request"};if code==types.ResponseDecodeFailed{category="response"}
+    failure:=&types.APIError{Code:code,Category:category,OperationID:operation.OperationID,Route:operation.Route,Method:operation.Method,Path:operation.Path,Cause:cause}
+    if request!=nil{failure.Request=SnapshotRequest(request)}
+    if response!=nil{failure.Status=response.StatusCode;failure.Response=SnapshotResponse(response)}
+    return failure
+}
+
+func SnapshotRequest(request *http.Request) *http.Request {
+    return media.SnapshotRequest(request)
+}
+func SnapshotResponse(response *http.Response) *http.Response {
+    return media.SnapshotResponse(response)
+}

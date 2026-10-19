@@ -1,0 +1,24 @@
+func collectSecurityCandidates(request *http.Request,schemes []InboundScheme)[]SecurityCandidate{
+ result:=make([]SecurityCandidate,0,len(schemes));seen:=make(map[string]bool,len(schemes));query:=formValues(request.URL.RawQuery);_,cookies:=cookieValues(headerValue(request.Header,"Cookie"))
+ for _,scheme:=range schemes{
+  identity:=scheme.Identity;if identity==""{identity=scheme.Definition.Name};if seen[identity]{continue};seen[identity]=true
+  definition:=scheme.Definition;candidate:=SecurityCandidate{Scheme:identity,Type:definition.Type,Location:definition.Location,Name:definition.ParameterName,Scopes:append([]string(nil),definition.Scopes...)}
+  switch definition.Type{
+  case "apiKey":switch definition.Location{case "header":candidate.Value,candidate.Present=headerPresent(request.Header,definition.ParameterName);case "query":values,present:=query[definition.ParameterName];candidate.Present=present;if len(values)!=0{candidate.Value=values[0]};case "cookie":values,present:=cookies[definition.ParameterName];candidate.Present=present;if len(values)!=0{candidate.Value=values[0]}}
+  case "http","oauth2","openIdConnect":candidate.Location="header";candidate.Name="Authorization";candidate.Value,candidate.Present=headerPresent(request.Header,"Authorization")
+  default:candidate.Value,candidate.Present=headerPresent(request.Header,"Authorization")
+  }
+  result=append(result,candidate)
+ };return result
+}
+func headerValue(headers http.Header,name string)string{value,_:=headerPresent(headers,name);return value}
+func headerPresent(headers http.Header,name string)(string,bool){keys:=make([]string,0);for key:=range headers{if strings.EqualFold(key,name){keys=append(keys,key)}};sort.Strings(keys);values:=make([]string,0);for _,key:=range keys{values=append(values,headers[key]...)};return strings.Join(values,", "),len(keys)!=0}
+// Form queries follow URLSearchParams, including semicolons, invalid percent
+// sequences and replacement of malformed UTF-8. Cookie decoding keeps '+' literal.
+func formValues(query string)map[string][]string{result:=make(map[string][]string);for _,pair:=range strings.Split(query,"&"){if pair==""{continue};key,value,_:=strings.Cut(pair,"=");key=formDecode(key);result[key]=append(result[key],formDecode(value))};return result}
+func formObject(query string)wire.Value{fields:=make(map[string]wire.Value);for name,items:=range formValues(query){if len(items)==1{fields[name]=wire.Text(items[0])}else{values:=make([]wire.Value,len(items));for index,item:=range items{values[index]=wire.Text(item)};fields[name]=wire.List(values)}};return wire.Record(fields)}
+func formDecode(value string)string{
+ decoded:=make([]byte,0,len(value));for index:=0;index<len(value);index++{char:=value[index];if char=='+'{decoded=append(decoded,' ');continue};if char=='%'&&index+2<len(value){high,low:=hexDigit(value[index+1]),hexDigit(value[index+2]);if high>=0&&low>=0{decoded=append(decoded,byte(high*16+low));index+=2;continue}};decoded=append(decoded,char)};return wire.UTF8Text(decoded)
+}
+func hexDigit(value byte)int{switch{case value>='0'&&value<='9':return int(value-'0');case value>='a'&&value<='f':return int(value-'a')+10;case value>='A'&&value<='F':return int(value-'A')+10};return -1}
+func cookieValues(header string)(map[string][]string,map[string][]string){raw,decoded:=make(map[string][]string),make(map[string][]string);for _,pair:=range strings.Split(header,";"){key,value,present:=strings.Cut(pair,"=");key=strings.TrimSpace(key);value=strings.TrimSpace(value);if !present||key==""{continue};raw[key]=append(raw[key],value);name,nameErr:=url.PathUnescape(key);text,textErr:=url.PathUnescape(value);if nameErr!=nil||textErr!=nil||!utf8.ValidString(name)||!utf8.ValidString(text){name,text=key,value};decoded[name]=append(decoded[name],text)};return raw,decoded}

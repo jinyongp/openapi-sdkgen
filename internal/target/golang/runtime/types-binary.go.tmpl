@@ -1,0 +1,108 @@
+type Source[T any] interface {
+    Next() bool
+    Item() T
+    Err() error
+    Close() error
+}
+type SourceFactory[T any] func(context.Context) (Source[T],error)
+
+type BinaryMetadata struct {
+    Filename string
+    ContentType string
+    Size Optional[int64]
+}
+type BinarySource interface {
+    Metadata() BinaryMetadata
+    Open(context.Context) (io.ReadCloser,error)
+}
+
+// Binary's zero value is empty bytes. Byte-backed values borrow their input;
+// the host must not change it while an execution is using it.
+type Binary struct { source BinarySource; bytes []byte; text,encodedText string; fromSource,fromText bool;metadata *BinaryMetadata }
+func BinaryFromBytes(value []byte) Binary { return Binary{bytes:value} }
+// BinaryFromBytesWithMetadata retains file metadata while keeping the buffered
+// Bytes view available. Like BinaryFromBytes it borrows the supplied bytes.
+func BinaryFromBytesWithMetadata(value []byte,metadata BinaryMetadata)Binary{if _,present:=metadata.Size.Get();!present{metadata.Size=Some(int64(len(value)))};return Binary{bytes:value,metadata:&metadata}}
+// Bytes returns a snapshot only for an already buffered binary. Sources are
+// never opened implicitly by an output accessor or model conversion.
+func(value Binary)Bytes()([]byte,bool){if value.fromSource{return nil,false};if value.fromText{return []byte(value.encodedText),true};return append([]byte{},value.bytes...),true}
+// BinaryFromString retains text assertions for a raw multipart text part.
+func BinaryFromString(value string)Binary{return Binary{text:value,encodedText:wire.USVString(value),fromText:true}}
+func(value Binary)Text()(string,bool){return value.text,value.fromText}
+func BinaryFromSource(source BinarySource) Binary { return Binary{source:source,fromSource:true} }
+func BinaryFromReader(reader io.ReadCloser,metadata BinaryMetadata) Binary {
+    return BinaryFromSource(&oneShotBinary{reader:reader,metadata:metadata})
+}
+func (value Binary) Metadata() BinaryMetadata {
+    if value.metadata!=nil{return *value.metadata}
+    if value.fromText{return BinaryMetadata{Size:Some(int64(len(value.encodedText)))}}
+    if !value.fromSource{return BinaryMetadata{Size:Some(int64(len(value.bytes)))}}
+    if nilInterface(value.source){return BinaryMetadata{}}
+    return value.source.Metadata()
+}
+// Validate checks source identity and metadata without opening or reading it.
+func(value Binary)Validate()error{_,err:=value.prepareMetadata();return err}
+func(value Binary)prepareMetadata()(BinaryMetadata,error){
+    if value.fromSource&&nilInterface(value.source){return BinaryMetadata{},&SDKError{Code:RequestOptionsInvalid,Message:"binary source is nil"}}
+    metadata:=value.Metadata()
+    if size,known:=metadata.Size.Get();known&&size<0{return BinaryMetadata{},&SDKError{Code:RequestOptionsInvalid,Message:"binary size must not be negative"}}
+    return metadata,nil
+}
+func (value Binary) Open(ctx context.Context) (io.ReadCloser,error) {
+    if err:=ctx.Err();err!=nil{return nil,err}
+    metadata,err:=value.prepareMetadata();if err!=nil{return nil,err}
+    var reader io.ReadCloser
+    if value.fromSource {
+        opened,err:=value.source.Open(ctx)
+        if err!=nil{if !nilInterface(opened){err=errors.Join(err,opened.Close())};return nil,err}
+        if nilInterface(opened){return nil,&SDKError{Code:RequestOptionsInvalid,Message:"binary source returned a nil reader"}}
+        reader=opened
+    } else if value.fromText {reader=io.NopCloser(strings.NewReader(value.encodedText))}else { reader=io.NopCloser(bytes.NewReader(value.bytes)) }
+    if err:=ctx.Err();err!=nil{return nil,errors.Join(err,reader.Close())}
+    size,known:=metadata.Size.Get()
+    return &binaryReader{reader:reader,ctx:ctx,size:size,known:known},nil
+}
+
+func nilInterface(value any) bool {
+    if value==nil{return true}
+    reflected:=reflect.ValueOf(value)
+    switch reflected.Kind(){case reflect.Chan,reflect.Func,reflect.Interface,reflect.Map,reflect.Pointer,reflect.Slice:return reflected.IsNil()}
+    return false
+}
+
+type oneShotBinary struct { reader io.ReadCloser; metadata BinaryMetadata; consumed atomic.Bool }
+func (source *oneShotBinary) Metadata() BinaryMetadata { return source.metadata }
+func (source *oneShotBinary) Open(ctx context.Context) (io.ReadCloser,error) {
+    if err:=ctx.Err();err!=nil{return nil,err}
+    if !source.consumed.CompareAndSwap(false,true){return nil,&SDKError{Code:RequestBodyConsumed,Message:"binary reader was already opened"}}
+    if nilInterface(source.reader){return nil,&SDKError{Code:RequestOptionsInvalid,Message:"binary reader is nil"}}
+    return source.reader,nil
+}
+
+type binaryReader struct {
+    reader io.ReadCloser
+    ctx context.Context
+    size,read int64
+    known bool
+    failure error
+    once sync.Once
+    closeError error
+}
+func (reader *binaryReader) Read(buffer []byte) (int,error) {
+    if reader.failure!=nil{return 0,reader.failure}
+    if err:=reader.ctx.Err();err!=nil{return 0,err}
+    if reader.known {
+        remaining:=reader.size-reader.read
+        if remaining<int64(len(buffer)){buffer=buffer[:int(remaining)+1]}
+    }
+    count,err:=reader.reader.Read(buffer);reader.read+=int64(count)
+    if reader.known&&(reader.read>reader.size||err==io.EOF&&reader.read!=reader.size){
+        reader.failure=&SDKError{Code:RequestOptionsInvalid,Message:"binary reader length differs from its declared size"}
+        return count,reader.failure
+    }
+    return count,err
+}
+func (reader *binaryReader) Close() error {
+    reader.once.Do(func(){reader.closeError=reader.reader.Close()})
+    return reader.closeError
+}

@@ -1,0 +1,30 @@
+func(execution *Execution)StreamCodec(contentType string)types.StreamCodec{
+    if execution.Options.StreamCodec!=nil{return *execution.Options.StreamCodec}
+    return execution.client.streamCodecs[bareMedia(contentType)]
+}
+func(execution *Execution)StreamContext(contentType string)types.StreamContext{
+    maximum:=1048576;if selected,present:=execution.Options.MaxStreamFrameBytes.Get();present{maximum=selected}
+    return types.StreamContext{ContentType:contentType,MaxFrameBytes:maximum}
+}
+func StreamFailure(ctx context.Context,operation types.OperationInfo,cause error,response *http.Response)error{
+    if cause==nil{return nil};var existing *types.APIError;if errors.As(cause,&existing){return cause}
+    code:=types.ResponseDecodeFailed;var detail *types.SDKError;if errors.As(cause,&detail)&&detail.Code==types.StreamAlreadyConsumed{code=types.StreamAlreadyConsumed}
+    var request *http.Request;if response!=nil{request=response.Request};return RequestFailure(context.WithoutCancel(ctx),operation,code,cause,request,response)
+}
+type responseSource[T any] struct{types.Source[T];execution *Execution}
+func(source *responseSource[T])Err()error{if err:=source.Source.Err();err!=nil{return source.execution.Failure(types.ResponseDecodeFailed,err)};return nil}
+func(source *responseSource[T])Close()error{err:=source.Source.Close();if source.execution.transferred{err=errors.Join(err,source.execution.FinishStream())};if err!=nil{return source.execution.Failure(types.ResponseDecodeFailed,err)};return nil}
+func BindStreamSource[T any](source types.Source[T],execution *Execution)types.Source[T]{return &responseSource[T]{Source:source,execution:execution}}
+func CollectStream[T any](ctx context.Context,source types.Source[T],encode func(context.Context,T)(types.Value,error))(value types.Value,failure error){
+    defer func(){failure=errors.Join(failure,source.Close())}()
+    values:=make([]types.Value,0)
+    for source.Next(){item,err:=encode(ctx,source.Item());if err!=nil{return types.Value{},err};values=append(values,item)}
+    if err:=source.Err();err!=nil{return types.Value{},err};return types.ValueFrom(values)
+}
+
+func CollectStreamData(ctx context.Context,source types.Source[types.MultipartData])(value types.MultipartData,failure error){
+    defer func(){failure=errors.Join(failure,source.Close())}()
+    values:=make([]types.Value,0);var slots map[string]types.Binary
+    for source.Next(){data,err:=types.CopyMultipartBuffers(ctx,source.Item());if err!=nil{return types.MultipartData{},err};prefix:="/"+strconv.Itoa(len(values));values=append(values,data.Value);for path,binary:=range data.Slots{if slots==nil{slots=make(map[string]types.Binary)};slots[prefix+path]=binary}}
+    if err:=source.Err();err!=nil{return types.MultipartData{},err};logical,err:=types.ValueFrom(values);return types.MultipartData{Value:logical,Slots:slots},err
+}

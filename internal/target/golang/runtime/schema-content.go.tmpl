@@ -1,0 +1,19 @@
+func DecodeContent(text,encoding,mediaType,path string) (wire.Value,error) {
+    switch strings.ToLower(encoding){
+    case "base64","base64url":
+        normalized:=text
+        if strings.EqualFold(encoding,"base64url"){normalized=strings.NewReplacer("-","+","_","/").Replace(normalized)}
+        normalized=strings.Map(func(char rune)rune{if char=='\t'||char=='\n'||char=='\f'||char=='\r'||char==' '{return -1};return char},normalized)
+        if len(normalized)%4==0{if strings.HasSuffix(normalized,"=="){normalized=normalized[:len(normalized)-2]}else if strings.HasSuffix(normalized,"="){normalized=normalized[:len(normalized)-1]}}
+        data,err:=base64.RawStdEncoding.DecodeString(normalized);if err!=nil{return wire.Value{},Failure("contentEncoding",path)}
+        text=wire.UTF8Text(data)
+    case "","7bit","8bit","binary":
+    default:return wire.Value{},Failure("contentEncoding",path)
+    }
+    if mediaType==""||strings.HasPrefix(strings.ToLower(mediaType),"text/"){return wire.Text(text),nil}
+    bare,_,_:=strings.Cut(strings.ToLower(mediaType),";");bare=strings.TrimSpace(bare)
+    if bare=="application/json"||strings.HasSuffix(bare,"+json"){
+        value,err:=wire.ParseText(text);if err!=nil{return wire.Value{},Failure("contentMediaType",path)};return value,nil
+    }
+    return wire.Value{},Failure("contentMediaType",path)
+}

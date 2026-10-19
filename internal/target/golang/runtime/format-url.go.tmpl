@@ -1,0 +1,21 @@
+var formatURLBase struct { once sync.Once; value *url.Url }
+
+func urlFormatBase() *url.Url {
+    formatURLBase.once.Do(func(){base,err:=url.Parse("https://format.invalid/");if err!=nil{panic(err)};formatURLBase.value=base})
+    return formatURLBase.value
+}
+
+func FormatURL(value string,absolute bool) bool {
+    if absolute {
+        colon:=strings.IndexByte(value,':');if colon<=0{return false}
+        for index:=0;index<colon;index++{char:=value[index];letter:=char>='A'&&char<='Z'||char>='a'&&char<='z';if !letter&&(index==0||!(char>='0'&&char<='9'||char=='+'||char=='-'||char=='.')){return false}}
+    }
+    _,err:=urlFormatBase().Parse(value)
+    return err==nil
+}
+func FormatIDNHostname(value string) (string,bool) {
+    if value==""{return "",false}
+    parsed,err:=url.Parse("http://"+value)
+    if err!=nil{return "",false}
+    return parsed.Hostname(),true
+}

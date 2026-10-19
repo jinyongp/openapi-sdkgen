@@ -1,0 +1,29 @@
+// DecodeJSON and DecodeText share the wire parser and transport UTF-8 policy.
+func DecodeJSON(data []byte)(types.Value,error){return wire.ParseTransportJSON(data)}
+func DecodeText(data []byte)(types.Value,error){return types.ValueFrom(wire.UTF8Text(data))}
+func EncodeJSON(value types.Value)(types.Binary,error){data,err:=value.MarshalJSON();if err!=nil{return types.Binary{},err};return types.BinaryFromBytes(data),nil}
+func EncodeText(value types.Value)(types.Binary,error){return types.BinaryFromBytes([]byte(wire.USVString(String(value)))),nil}
+func String(value types.Value)string{
+    if value.Kind()==types.ValueNull{return "null"}
+    if text,ok:=value.String();ok{return text}
+    if value.Kind()==types.ValueArray{parts:=make([]string,0,value.Len());for _,item:=range value.Items(){text:="";if item.Kind()!=types.ValueNull{text=String(item)};parts=append(parts,text)};return strings.Join(parts,",")}
+    if value.Kind()==types.ValueObject{return "[object Object]"}
+    encoded,_:=value.MarshalJSON();return string(encoded)
+}
+
+func Form(value types.Value)string{
+    if value.Kind()!=types.ValueObject{return String(value)}
+    pairs:=make([]string,0,value.Len())
+    pair:=func(key string,item types.Value){pairs=append(pairs,formEscape(key)+"="+formEscape(String(item)))}
+    for _,key:=range value.Keys(){item,_:=value.Get(key);if item.Kind()==types.ValueArray{for _,entry:=range item.Items(){pair(key,entry)}}else{pair(key,item)}}
+    return strings.Join(pairs,"&")
+}
+
+
+func formEscape(text string)string{
+        text=wire.USVString(text)
+        const hex="0123456789ABCDEF"
+        var result strings.Builder
+        for index:=0;index<len(text);index++{char:=text[index];if char==' '{result.WriteByte('+')}else if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("*-._",rune(char)){result.WriteByte(char)}else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}}
+        return result.String()
+    }

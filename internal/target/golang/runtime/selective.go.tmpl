@@ -1,0 +1,19 @@
+type ClientOptions = core.ClientOptions
+type Prepared struct{routes map[string]bool}
+func Prepare(refs ...operations.Reference)(Prepared,error){
+ result:=Prepared{routes:make(map[string]bool,len(refs))}
+ if len(refs)==0{return Prepared{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"prepare requires at least one operation"}}
+ for _,ref:=range refs{info,valid:=operations.ReferenceInfo(ref);if !valid{return Prepared{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"invalid operation reference"}};result.routes[info.Route]=true}
+ return result,nil
+}
+func(prepared Prepared)Routes()[]string{result:=make([]string,0,len(prepared.routes));for route:=range prepared.routes{result=append(result,route)};sort.Strings(result);return result}
+type Client struct{client *core.Client;prepared Prepared}
+func NewClient(options ClientOptions,prepared Prepared)(*Client,error){
+ if len(prepared.routes)==0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"operations must be prepared before creating the client"}}
+ client,err:=core.NewClient(options);if err!=nil{return nil,err};return &Client{client:client,prepared:prepared},nil
+}
+func Bind[C any](client *Client,ref operations.Ref[C])(C,error){
+ var zero C;info,valid:=operations.ReferenceInfo(ref)
+ if client==nil||client.client==nil||!valid||!client.prepared.routes[info.Route]{return zero,&types.SDKError{Code:types.OperationNotPrepared,Message:"operation was not prepared"}}
+ return ref.BindCore(client.client),nil
+}

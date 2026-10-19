@@ -1,0 +1,28 @@
+func SnapshotRequest(request *http.Request)*http.Request{
+    if request==nil{return nil}
+    result:=request.Clone(context.WithoutCancel(request.Context()));result.Body=http.NoBody;result.GetBody=nil
+    return result
+}
+func SnapshotResponse(response *http.Response)*http.Response{
+    if response==nil{return nil}
+    result:=new(http.Response);*result=*response;result.Header=response.Header.Clone();result.Trailer=response.Trailer.Clone();result.TransferEncoding=append([]string(nil),response.TransferEncoding...);result.Body=http.NoBody;result.Request=SnapshotRequest(response.Request)
+    return result
+}
+
+// Trailers become available at EOF. Mirror that final metadata into independent
+// hook snapshots while keeping body ownership with the SDK's existing lease.
+type borrowedHTTPBody struct{io.ReadCloser;complete func()}
+func(body *borrowedHTTPBody)Read(buffer []byte)(int,error){count,err:=body.ReadCloser.Read(buffer);if err==io.EOF{body.complete()};return count,err}
+func copyTrailers(destination *http.Header,source http.Header){if *destination==nil&&source!=nil{*destination=make(http.Header,len(source))};clear(*destination);for name,values:=range source{(*destination)[name]=append([]string(nil),values...)}}
+func BorrowResponse(response *http.Response)(*http.Response,*http.Response){
+    borrowed,metadata:=SnapshotResponse(response),SnapshotResponse(response)
+    raw:=response.Body;if raw==nil{raw=http.NoBody}
+    body:=&borrowedHTTPBody{ReadCloser:raw,complete:func(){copyTrailers(&borrowed.Trailer,response.Trailer);copyTrailers(&metadata.Trailer,response.Trailer)}}
+    borrowed.Body=body;metadata.Body=body;return borrowed,metadata
+}
+func BorrowInboundRequest(ctx context.Context,request *http.Request)(*http.Request,*http.Request){
+    borrowed,metadata:=SnapshotRequest(request).WithContext(ctx),SnapshotRequest(request)
+    raw:=request.Body;if raw==nil{raw=http.NoBody}
+    body:=&borrowedHTTPBody{ReadCloser:raw,complete:func(){copyTrailers(&borrowed.Trailer,request.Trailer);copyTrailers(&metadata.Trailer,request.Trailer)}}
+    borrowed.Body=body;metadata.Body=body;return borrowed,metadata
+}

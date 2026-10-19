@@ -31,7 +31,7 @@ type Options struct {
 	// DiagnosticMode must match the compiler result for one generation
 	// invocation. The zero value preserves fail-fast behavior.
 	DiagnosticMode diagnostic.Mode
-	// FailOnResourceOmission promotes TypeScript resource-capability omission
+	// FailOnResourceOmission promotes target resource-capability omission
 	// warnings to blocking target diagnostics.
 	FailOnResourceOmission bool
 	// Selection restricts public API generation. Nil generates the full SDK.
@@ -41,7 +41,9 @@ type Options struct {
 	// TypeScriptTypeCheck enables checking generated source with the consumer's
 	// compiler. Nil and false retain the default @ts-nocheck directive.
 	TypeScriptTypeCheck *bool
-	addons              map[Addon]struct{}
+	// Golang configures the generated Go package and its explicit import root.
+	Golang *GoOptions
+	addons map[Addon]struct{}
 }
 
 // HasAddon reports whether an optional artifact set was selected.
@@ -120,6 +122,14 @@ type ClientTarget interface {
 // ValidateTargetOptions rejects a selected add-on before document compilation
 // when the chosen target cannot generate it.
 func ValidateTargetOptions(target Target, options Options) error {
+	if options.Golang != nil && target.Name() != "golang" {
+		return fmt.Errorf("SDK target %q does not support Go options", target.Name())
+	}
+	if target.Name() == "golang" {
+		if _, err := CanonicalGoOptions(options.Golang); err != nil {
+			return err
+		}
+	}
 	if options.TypeScriptTypeCheck != nil && target.Name() != "typescript" {
 		return fmt.Errorf("SDK target %q does not support --typecheck", target.Name())
 	}

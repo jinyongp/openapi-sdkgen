@@ -1,0 +1,25 @@
+type HeaderScalarRule struct{Validate Validator;Types uint8;MediaType string}
+const (HeaderNumber uint8=1<<iota;HeaderBoolean)
+func HeaderAccept(ctx context.Context,value wire.Value,validate Validator,mediaType string)(bool,error){
+    _,err:=validate(ctx,value,"",&State{active:make(map[validationVisit]bool),MediaType:mediaType})
+    if err==nil{return true,nil};if IsValidationError(err){return false,nil};return false,err
+}
+func HeaderScalar(ctx context.Context,text string,rules []HeaderScalarRule)(wire.Value,error){
+    flags:=uint8(0);for _,rule:=range rules{flags|=rule.Types}
+    candidates:=make([]wire.Value,0,3)
+    if flags&HeaderNumber!=0{if number,ok:=wire.ScalarNumber(text);ok{candidates=append(candidates,number)}}
+    if flags&HeaderBoolean!=0&&(text=="true"||text=="false"){candidates=append(candidates,wire.Bool(text=="true"))}
+    stringValue,err:=wire.CheckedText(text);if err!=nil{return wire.Value{},err};candidates=append(candidates,stringValue)
+    for _,value:=range candidates{
+        accepted:=true
+        for _,rule:=range rules{ok,err:=HeaderAccept(ctx,value,rule.Validate,rule.MediaType);if err!=nil{return wire.Value{},err};if !ok{accepted=false;break}}
+        if accepted{return value,nil}
+    }
+    return wire.Value{},Failure("header","")
+}
+func HeaderObjectTokens(text string,explode bool)(map[string]string,error){
+    tokens:=strings.Split(text,",");fields:=make(map[string]string,len(tokens)/2)
+    if explode{for _,token:=range tokens{key,value,found:=strings.Cut(token,"=");if !found{return nil,Failure("header","")};fields[key]=value}
+    }else{if len(tokens)%2!=0{return nil,Failure("header","")};for index:=0;index<len(tokens);index+=2{fields[tokens[index]]=tokens[index+1]}}
+    return fields,nil
+}

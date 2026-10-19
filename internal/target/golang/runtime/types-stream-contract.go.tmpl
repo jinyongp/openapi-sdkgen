@@ -1,0 +1,15 @@
+// StreamReader lends a bounded byte slice until the next Read. Closing it
+// releases the SDK-owned response or inbound body lease.
+type StreamReader interface{Read(maxBytes int)([]byte,error);Close()error}
+type StreamContext struct{ContentType string;MaxFrameBytes int}
+// MultipartPart is one bounded wire frame. Data and header containers belong
+// to the item and remain valid after the next frame is consumed.
+type MultipartPart struct{Headers http.Header;Data []byte}
+type StreamProtocol[Frame any] interface{
+    Decode(context.Context,StreamReader,StreamContext)(Source[Frame],error)
+    Encode(context.Context,Source[Frame],StreamContext)(io.ReadCloser,error)
+}
+type StreamAdapter[Frame,Item any] interface{
+    Decode(context.Context,Source[Frame],StreamContext)(Source[Item],error)
+    Encode(context.Context,Source[Item],StreamContext)(Source[Frame],error)
+}

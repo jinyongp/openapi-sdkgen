@@ -1,0 +1,135 @@
+type bodyClose func() error
+
+// BodyLease owns the original body and all selected decoding layers. Decoder
+// construction is lazy, so receiving headers never reads a streaming body.
+type BodyLease struct {
+    raw io.ReadCloser
+    reader io.Reader
+    ctx context.Context
+    codings []string
+    decoders []bodyClose
+    mutex sync.Mutex
+    initialized bool
+    initializationError error
+    closed atomic.Bool
+    finishedEOF atomic.Bool
+    once sync.Once
+    closeError error
+    stop func() bool
+    cancel context.CancelFunc
+}
+
+// BindCancel transfers the request lifetime to a sequential response handle.
+// Buffered callers retain their cancel until decoding and projection finish.
+func (body *BodyLease) BindCancel(cancel context.CancelFunc) {
+    body.mutex.Lock()
+    if body.closed.Load(){body.mutex.Unlock();if cancel!=nil{cancel()};return}
+    body.cancel=cancel
+    body.mutex.Unlock()
+}
+
+func (body *BodyLease) Read(buffer []byte) (int,error) {
+    if body.finishedEOF.Load(){return 0,io.EOF}
+    if err:=body.ctx.Err();err!=nil{body.Close();return 0,err}
+    if body.closed.Load(){return 0,io.EOF}
+    body.mutex.Lock()
+    if body.closed.Load(){body.mutex.Unlock();return 0,io.EOF}
+    if !body.initialized{body.initialized=true;body.reader,body.initializationError=body.decode()}
+    var count int
+    err:=body.initializationError
+    if err==nil{count,err=body.reader.Read(buffer)}
+    body.mutex.Unlock()
+    if contextError:=body.ctx.Err();contextError!=nil{body.Close();return count,contextError}
+    if err!=nil{closeError:=body.Close();if err==io.EOF{if closeError!=nil{return count,closeError};body.finishedEOF.Store(true)}}
+    return count,err
+}
+
+func (body *BodyLease) Close() error {
+    body.once.Do(func(){
+        body.closed.Store(true)
+        // Closing the network body first interrupts a blocked Read before we
+        // wait for the decoder lock. Decoder Close never races decoder Read.
+        result:=body.raw.Close()
+        body.mutex.Lock()
+        if body.stop!=nil{body.stop()}
+        for index:=len(body.decoders)-1;index>=0;index--{result=errors.Join(result,body.decoders[index]())}
+        cancel:=body.cancel
+        body.decoders=nil;body.reader=nil
+        body.mutex.Unlock()
+        if cancel!=nil{cancel()}
+        body.closeError=result
+    })
+    return body.closeError
+}
+
+func (body *BodyLease) decode() (io.Reader,error) {
+    if len(body.codings)==0{return body.raw,nil}
+    first:=bufio.NewReader(body.raw)
+    if _,err:=first.Peek(1);err!=nil{return nil,err}
+    var reader io.Reader=first
+    for index:=len(body.codings)-1;index>=0;index--{
+        switch body.codings[index]{
+        case "identity":
+        case "gzip","x-gzip":
+            decoded,err:=gzip.NewReader(reader);if err!=nil{return nil,err}
+            body.decoders=append(body.decoders,decoded.Close);reader=decoded
+        case "deflate":
+            prefix:=bufio.NewReader(reader)
+            header,err:=prefix.Peek(2);if err!=nil&&err!=io.EOF{return nil,err}
+            zlibHeader:=len(header)==2&&header[0]&15==8&&header[0]>>4<=7&&(uint16(header[0])<<8|uint16(header[1]))%31==0
+            var decoded io.ReadCloser
+            if zlibHeader{decoded,err=zlib.NewReader(prefix);if err!=nil{return nil,err}}else{decoded=flate.NewReader(prefix)}
+            body.decoders=append(body.decoders,decoded.Close);reader=decoded
+        case "br":reader=brotli.NewReader(reader)
+        case "zstd":
+            decoded,err:=zstd.NewReader(reader,zstd.WithDecoderConcurrency(1));if err!=nil{return nil,err}
+            body.decoders=append(body.decoders,func()error{decoded.Close();return nil});reader=decoded
+        }
+    }
+    return reader,nil
+}
+
+// NewResponseBody takes ownership of the response body, including on failure.
+// Header values stay original while the returned Body yields decoded bytes.
+func NewResponseBody(ctx context.Context,response *http.Response,method string,mode types.ResponseBodyMode) (*http.Response,*BodyLease,error) {
+    if response==nil{return nil,nil,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"transport returned a nil response"}}
+    raw:=response.Body;if raw==nil{raw=http.NoBody}
+    body:=&BodyLease{raw:raw,ctx:ctx}
+    normalized:=new(http.Response);*normalized=*response;normalized.Header=response.Header.Clone();normalized.Body=body
+    if mode!=types.Encoded&&mode!=types.DecodedWithOriginalHeaders{
+        body.Close();return nil,nil,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"transport must declare its response body state"}
+    }
+    if mode==types.Encoded&&response.Uncompressed{
+        body.Close();return nil,nil,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"decoded transport response requires original-header capability"}
+    }
+    if err:=ctx.Err();err!=nil{body.Close();return nil,nil,err}
+    if method=="HEAD"||response.StatusCode>=100&&response.StatusCode<200||response.StatusCode==204||response.StatusCode==205||response.StatusCode==304{
+        body.finishedEOF.Store(true)
+        err:=body.Close();return normalized,body,err
+    }
+    if mode==types.Encoded{
+        codings:=strings.Split(strings.ToLower(strings.Join(HeaderValues(normalized.Header,"Content-Encoding"),",")),",")
+        known,decoded:=true,false
+        for index,coding:=range codings{
+            coding=strings.TrimSpace(coding);codings[index]=coding
+            switch coding{case "gzip","x-gzip","deflate","br","zstd":decoded=true;case "identity":default:known=false}
+        }
+        if known&&decoded{body.codings=codings;normalized.Uncompressed=true;normalized.ContentLength=-1}
+    }else if len(HeaderValues(normalized.Header,"Content-Encoding"))!=0{
+        normalized.Uncompressed=true;normalized.ContentLength=-1
+    }
+    body.mutex.Lock()
+    body.stop=context.AfterFunc(ctx,func(){body.Close()})
+    body.mutex.Unlock()
+    return normalized,body,nil
+}
+
+// HeaderValues also handles host-built Header maps with noncanonical key case.
+func HeaderValues(header http.Header,name string) []string {
+    var keys []string
+    for key:=range header{if strings.EqualFold(key,name){keys=append(keys,key)}}
+    if len(keys)==0{return nil};if len(keys)==1{return header[keys[0]]}
+    sort.Strings(keys)
+    var values []string;for _,key:=range keys{values=append(values,header[key]...)}
+    return values
+}

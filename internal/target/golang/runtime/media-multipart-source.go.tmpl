@@ -1,0 +1,18 @@
+// EncodeMultipartSource keeps only the current part and its header frame. It
+// opens payloads as they are read and never materializes a file as a byte frame.
+func EncodeMultipartSource(contentType string,factory types.SourceFactory[MultipartPart])(types.Binary,error){
+    if factory==nil{return types.Binary{},fmt.Errorf("multipart source factory is nil")}
+    empty,err:=EncodeMultipart(contentType,nil);if err!=nil{return types.Binary{},err};contentType=empty.Metadata().ContentType
+    _,parameters,err:=mime.ParseMediaType(contentType);if err!=nil{return types.Binary{},err}
+    return types.BinaryFromSource(&multipartSourceFactory{contentType:contentType,boundary:parameters["boundary"],factory:factory}),nil
+}
+type multipartSourceFactory struct{contentType,boundary string;factory types.SourceFactory[MultipartPart]}
+func(source *multipartSourceFactory)Metadata()types.BinaryMetadata{return types.BinaryMetadata{ContentType:source.contentType}}
+func(source *multipartSourceFactory)Open(ctx context.Context)(io.ReadCloser,error){
+    running,cancel:=context.WithCancel(ctx)
+    values,err:=types.OpenSourceFactory(running,source.factory);if err!=nil{cancel();return nil,err}
+    reader:=&multipartReader{ctx:running,cancel:cancel,source:&multipartSource{contentType:source.contentType,closing:"--"+source.boundary+"--\r\n"},release:values.Close}
+    reader.next=func(index int)(preparedMultipartPart,bool,error){if !values.Next(){return preparedMultipartPart{},false,values.Err()};part,err:=prepareMultipartPart(source.boundary,index,values.Item());return part,true,err}
+    reader.stop=context.AfterFunc(running,func(){reader.closeWith(running.Err())})
+    return reader,nil
+}

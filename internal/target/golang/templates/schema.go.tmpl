@@ -1,0 +1,31 @@
+{{range .Programs}}
+{{range .Literals}}
+var {{.Name}} wire.LazyValue
+{{end}}
+{{range .Patterns}}
+var {{.Name}} = Pattern{source:{{quote .Pattern}}}
+{{end}}
+{{if .Public}}
+func {{.Name}}(ctx context.Context,value wire.Value,path string) (Evaluation,error) {
+    {{if .RejectNull}}if err:=ctx.Err();err!=nil{return NewEvaluation(),err};if value.Kind()==wire.Null{return NewEvaluation(),Failure("type",path)}{{end}}
+    return {{if .ViewTarget}}{{.ViewTarget}}{{else}}check{{.Name}}{{end}}(ctx,value,path,&State{active:make(map[validationVisit]bool),MediaType:{{quote .MediaType}},RootPath:path})
+}
+func ValidateMedia__{{.Name}}__(ctx context.Context,value wire.Value,path string,binaries map[string]bool)(Evaluation,error){
+    state:=&State{active:make(map[validationVisit]bool),MediaType:{{quote .MediaType}},RootPath:path,Binaries:binaries,OpaqueAncestors:opaqueMediaAncestors(binaries)}
+    {{if .RejectNull}}if err:=ctx.Err();err!=nil{return NewEvaluation(),err};if value.Kind()==wire.Null{return NewEvaluation(),Failure("type",path)}{{end}}
+    return {{if .ViewTarget}}{{.ViewTarget}}{{else}}check{{.Name}}{{end}}(ctx,value,path,state)
+}
+{{end}}
+{{if not .ViewTarget}}
+func check{{.Name}}(ctx context.Context,value wire.Value,path string,state *State) (Evaluation,error) {
+    result:=NewEvaluation()
+    if err:=ctx.Err();err!=nil { return result,err }
+    visit:=validationVisit{Program:{{quote .Name}},Path:path}
+    if state.active[visit] { return result,errors.New("schema recursion made no progress") }
+    state.active[visit]=true
+    defer delete(state.active,visit)
+    {{.Body}}
+    return result,nil
+}
+{{end}}
+{{end}}

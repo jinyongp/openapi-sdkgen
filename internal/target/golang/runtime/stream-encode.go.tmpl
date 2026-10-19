@@ -1,0 +1,32 @@
+// frameEncoder pulls only the next application item when its bytes are needed.
+type frameEncoder[T any] struct{
+    ctx context.Context
+    source types.Source[T]
+    encode func(T)([]byte,error)
+    current []byte
+    offset int
+    closed atomic.Bool
+    once sync.Once
+    closeErr error
+    done,ended bool
+    ending func()[]byte
+}
+func newFrameEncoder[T any](ctx context.Context,source types.Source[T],maximum int,encode func(T)([]byte,error),ending ...func()[]byte)(io.ReadCloser,error){
+    if maximum<=0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream frame limit must be positive"}}
+    if source==nil{return nil,&types.SDKError{Code:types.RequestEncodeFailed,Message:"stream source is nil"}}
+    reader:=&frameEncoder[T]{ctx:ctx,source:source,encode:encode};if len(ending)!=0{reader.ending=ending[0]};return reader,nil
+}
+func(reader *frameEncoder[T])Read(buffer []byte)(int,error){
+    if len(buffer)==0{return 0,nil}
+    for{
+        if reader.done{return 0,io.EOF};if reader.closed.Load(){return 0,io.ErrClosedPipe}
+        if err:=reader.ctx.Err();err!=nil{return 0,errors.Join(err,reader.Close())}
+        if reader.offset<len(reader.current){count:=copy(buffer,reader.current[reader.offset:]);reader.offset+=count;return count,nil}
+        if reader.ended{reader.done=true;return 0,reader.endRead()}
+        if !reader.source.Next(){reader.ended=true;err:=errors.Join(reader.source.Err(),reader.release());if err!=nil{return 0,err};if reader.ending!=nil{reader.current=reader.ending();reader.offset=0;reader.ending=nil;continue};reader.done=true;return 0,io.EOF}
+        data,err:=reader.encode(reader.source.Item());if err!=nil{return 0,errors.Join(err,reader.Close())};reader.current=data;reader.offset=0
+    }
+}
+func(reader *frameEncoder[T])release()error{reader.once.Do(func(){reader.closeErr=reader.source.Close()});return reader.closeErr}
+func(reader *frameEncoder[T])endRead()error{if err:=reader.Close();err!=nil{return err};return io.EOF}
+func(reader *frameEncoder[T])Close()error{reader.closed.Store(true);return reader.release()}

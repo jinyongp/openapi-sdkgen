@@ -1,0 +1,15 @@
+// MediaItems indexes slots once for a complete input. Traversing N items does
+// not rescan all N binary slots for every item.
+type mediaItems struct{value types.Value;groups map[int]map[string]types.Binary;index int;item types.MultipartData;closed atomic.Bool}
+func MediaItems(value types.MultipartData)types.Source[types.MultipartData]{
+    groups:=make(map[int]map[string]types.Binary)
+    for path,binary:=range value.Slots{head,tail,found:=strings.Cut(strings.TrimPrefix(path,"/"),"/");index,err:=strconv.Atoi(head);if err!=nil{continue};if groups[index]==nil{groups[index]=make(map[string]types.Binary)};relative:="";if found{relative="/"+tail};groups[index][relative]=binary}
+    return &mediaItems{value:value.Value,groups:groups}
+}
+func(source *mediaItems)Next()bool{if source.closed.Load(){return false};value,present:=source.value.At(source.index);if !present{return false};source.item=types.MultipartData{Value:value,Slots:source.groups[source.index]};source.index++;return true}
+func(source *mediaItems)Item()types.MultipartData{return source.item}
+func(*mediaItems)Err()error{return nil}
+func(source *mediaItems)Close()error{source.closed.Store(true);return nil}
+
+func(execution *Execution)prepareMultipartStreamPart(ctx context.Context,value types.MultipartData,index int,definitions []FormField)(media.MultipartPart,error){return execution.multipartEncoder().Item(ctx,value,index,definitions)}
+func(execution *Execution)EncodeMultipartStreamPart(ctx context.Context,value types.MultipartData,index int,definitions []FormField)(types.MultipartPart,error){return execution.multipartEncoder().Frame(ctx,value,index,definitions,execution.StreamContext("").MaxFrameBytes)}

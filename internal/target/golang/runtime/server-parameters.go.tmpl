@@ -1,0 +1,39 @@
+// Parameter is an immutable, generated inverse of a declared wire parameter.
+type Parameter struct{
+ Name,Property,Location,Style,ContentType string
+ Required,Explode,AllowEmptyValue bool
+ Schema *ParameterSchema
+ DecodeContent func(context.Context,string)(types.Value,error)
+}
+func DecodeParameters(execution *Execution,path map[string]string,definitions []Parameter)(types.Value,error){
+ query:=formValues(execution.Request.URL.RawQuery);rawCookies,decodedCookies:=cookieValues(execution.Request.Header.Get("Cookie"))
+ sections:=make(map[string]map[string]types.Value);for _,location:=range []string{"path","query","header","cookie","querystring"}{sections[location]=make(map[string]types.Value)}
+ for _,definition:=range definitions{
+  if err:=execution.Context.Err();err!=nil{return types.Value{},err};var values []string
+  switch definition.Location{case "path":if value,ok:=path[definition.Name];ok{values=[]string{value}};case "query":values=query[definition.Name];case "header":if value,present:=headerPresent(execution.Request.Header,definition.Name);present{values=[]string{value}};case "cookie":cookies:=decodedCookies;if definition.Style=="cookie"{cookies=rawCookies};values=cookies[definition.Name];case "querystring":values=[]string{execution.Request.URL.RawQuery};default:return types.Value{},inputFailure(fmt.Errorf("invalid parameter location"))}
+  if definition.Location=="query"&&definition.ContentType==""&&definition.Style=="form"&&len(values)==1&&values[0]==""&&!definition.AllowEmptyValue{return types.Value{},inputFailure(fmt.Errorf("empty query parameter"))}
+  raw,_:=types.ValueFrom(values);preserve:=true;object:=definition.Schema!=nil&&definition.Schema.Kinds&ParameterObject!=0
+  if definition.ContentType==""&&object&&((definition.Location=="query"&&(definition.Style=="deepObject"||definition.Style=="form"&&definition.Explode))||(definition.Location=="cookie"&&definition.Style=="cookie"&&definition.Explode)){
+   fields:=make(map[string]types.Value)
+   if definition.Location=="query"&&definition.Style=="deepObject"{prefix:=definition.Name+"[";for name,entries:=range query{if strings.HasPrefix(name,prefix)&&strings.HasSuffix(name,"]")&&len(entries)>0{fields[name[len(prefix):len(name)-1]],_=types.ValueFrom(entries[len(entries)-1])}}}else{entries:=query;if definition.Location=="cookie"{entries=rawCookies};for name,items:=range entries{fields[name],_=types.ValueFrom(items)};preserve=false}
+   raw,_=types.ValueFrom(fields)
+  }else if definition.ContentType==""&&object&&len(values)>0{raw,_=types.ValueFrom(parameterObject(values[0],definition));preserve=true}
+  if !preserve&&raw.Kind()==types.ValueObject{alternatives,err:=parameterAlternatives(execution.Context,definition.Schema,make(map[*ParameterSchema]bool));if err!=nil{return types.Value{},err};fields:=make(map[string]types.Value);for _,name:=range raw.Keys(){known:=false;for _,alternative:=range alternatives{_,present,err:=parameterProperty(execution.Context,alternative,name);if err!=nil{return types.Value{},err};known=known||present};if known{fields[name],_=raw.Get(name)}};raw,_=types.ValueFrom(fields)}
+  absent:=raw.Kind()==types.ValueArray&&len(raw.Items())==0||raw.Kind()==types.ValueObject&&len(raw.Keys())==0
+  if absent{if definition.Required{return types.Value{},inputFailure(fmt.Errorf("missing required parameter"))};continue}
+  value:=raw;var err error
+  if definition.ContentType!=""&&len(values)>0{
+   contentType:=bareMedia(definition.ContentType)
+   switch{case contentType=="application/json"||strings.HasSuffix(contentType,"+json"):value,err=types.ParseValue([]byte(values[0]));case definition.DecodeContent!=nil:value,err=definition.DecodeContent(execution.Context,values[0]);case contentType=="application/x-www-form-urlencoded":value=formObject(values[0]);value,err=CoerceParameter(execution.Context,definition.Schema,value,true);case !strings.HasPrefix(contentType,"text/")&&contentType!="application/octet-stream":codec,present:=execution.Codec(contentType);if !present||codec.DecodeParameter==nil{return types.Value{},&Error{Status:415,Code:InboundInputInvalid}};value,err=codec.DecodeParameter(execution.Context,values[0],types.MediaContext{ContentType:definition.ContentType,Request:execution.InboundContext().Request});default:value,err=CoerceParameter(execution.Context,definition.Schema,raw,preserve)}
+  }else{if definition.Location=="path"&&!object&&len(values)>0{value:=values[0];if definition.Style=="label"{value=strings.TrimPrefix(value,".")};if definition.Style=="matrix"{value=strings.TrimPrefix(value,";"+definition.Name+"=")};raw,_=types.ValueFrom(value)};value,err=CoerceParameter(execution.Context,definition.Schema,raw,preserve)}
+  if err!=nil{return types.Value{},inputFailure(err)};if definition.Schema!=nil&&definition.Schema.Validate!=nil{if err:=definition.Schema.Validate(execution.Context,value);err!=nil{return types.Value{},inputFailure(err)}}
+  property:=definition.Property;if property==""{property=definition.Name};sections[definition.Location][property]=value
+ }
+ return types.ValueFrom(sections)
+}
+func parameterObject(source string,definition Parameter)map[string]string{
+ result:=make(map[string]string);pair:=func(entry string){name,value,ok:=strings.Cut(entry,"=");if ok{result[name]=value}}
+ if definition.Style=="label"{source=strings.TrimPrefix(source,".")};if definition.Style=="matrix"&&!definition.Explode{source=strings.TrimPrefix(source,";"+definition.Name+"=")}
+ if definition.Explode{separator:=",";if definition.Style=="matrix"{separator=";"};if definition.Style=="label"{separator="."};for _,entry:=range strings.Split(source,separator){pair(entry)}}else{tokens:=strings.Split(source,",");for index:=0;index+1<len(tokens);index+=2{result[tokens[index]]=tokens[index+1]}}
+ return result
+}

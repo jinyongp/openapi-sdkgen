@@ -1,0 +1,58 @@
+type NoContent struct{}
+
+const (
+    RequestEncodeFailed = "REQUEST_ENCODE_FAILED"
+    NetworkError = "NETWORK_ERROR"
+    RequestAborted = "REQUEST_ABORTED"
+    RequestTimeout = "REQUEST_TIMEOUT"
+    ResponseDecodeFailed = "RESPONSE_DECODE_FAILED"
+    SecurityRequirementRequired = "SECURITY_REQUIREMENT_REQUIRED"
+    SecurityRequirementInvalid = "SECURITY_REQUIREMENT_INVALID"
+    SecurityCredentialsRequired = "SECURITY_CREDENTIALS_REQUIRED"
+    SecurityCredentialsInvalid = "SECURITY_CREDENTIALS_INVALID"
+    TransportCapabilityRequired = "TRANSPORT_CAPABILITY_REQUIRED"
+    RequestBodyConsumed = "REQUEST_BODY_CONSUMED"
+    ValidationLimitExceeded = "VALIDATION_LIMIT_EXCEEDED"
+    OperationNotPrepared = "OPERATION_NOT_PREPARED"
+    StreamAlreadyConsumed = "STREAM_ALREADY_CONSUMED"
+    RequestOptionsInvalid = "REQUEST_OPTIONS_INVALID"
+)
+
+// SDKError identifies a detail without replacing its enclosing request phase.
+type SDKError struct { Code string `json:"code"`; Message string `json:"message,omitempty"`; Cause error `json:"-"` }
+func (failure *SDKError) Error() string {
+    if failure==nil{return "<nil>"}
+    if failure.Message==""{return failure.Code}
+    return failure.Code+": "+failure.Message
+}
+func (failure *SDKError) Unwrap() error { if failure==nil{return nil};return failure.Cause }
+
+type APIError struct {
+    Code string `json:"code"`
+    Category string `json:"category,omitempty"`
+    OperationID string `json:"operationId,omitempty"`
+    Route string `json:"route,omitempty"`
+    Method string `json:"method,omitempty"`
+    Path string `json:"path,omitempty"`
+    Status int `json:"status,omitempty"`
+    Request *http.Request `json:"-"`
+    Response *http.Response `json:"-"`
+    Cause error `json:"-"`
+    Message string `json:"-"`
+    ContentType string `json:"-"`
+    Data Value `json:"-"`
+    Details Optional[Value] `json:"-"`
+    Fields Optional[Value] `json:"-"`
+}
+// Error excludes request URLs, credentials, response bodies and cause text.
+func (failure *APIError) Error() string {
+    if failure==nil{return "<nil>"}
+    if failure.Route!=""{return failure.Code+" ("+failure.Route+")"}
+    return failure.Code
+}
+func (failure *APIError) Unwrap() error { if failure==nil{return nil};return failure.Cause }
+
+func IsAPIError(cause error)bool{var failure *APIError;return errors.As(cause,&failure)&&failure!=nil}
+func GetErrorCode(cause error)(string,bool){var failure *APIError;if !errors.As(cause,&failure)||failure==nil{return "",false};return failure.Code,true}
+func IsErrorCode(cause error,code string)bool{actual,present:=GetErrorCode(cause);return present&&actual==code}
+func GetRequestID(cause error)(string,bool){var failure *APIError;if !errors.As(cause,&failure)||failure==nil||failure.Response==nil{return "",false};var names []string;for name:=range failure.Response.Header{if strings.EqualFold(name,"x-request-id"){names=append(names,name)}};if len(names)==0{return "",false};sort.Strings(names);var values []string;for _,name:=range names{values=append(values,failure.Response.Header[name]...)};return strings.Join(values,", "),true}

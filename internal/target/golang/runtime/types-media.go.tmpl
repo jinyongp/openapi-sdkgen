@@ -1,0 +1,20 @@
+// MediaValue is the concrete-media union of a declared JSON-shaped contract
+// and buffered binary data for an open media range. Every projection is a copy.
+type MediaValue[T any] struct {
+    contentType string
+    value Value
+    binary []byte
+    isBinary bool
+    decode func(context.Context,Value)(T,error)
+    multipart *MultipartData
+    decodeMedia func(context.Context,MultipartData)(T,error)
+}
+func MediaValueFromValue[T any](contentType string,value Value,decode func(context.Context,Value)(T,error))MediaValue[T]{return MediaValue[T]{contentType:contentType,value:value,decode:decode}}
+func MediaValueFromBytes[T any](contentType string,value []byte)MediaValue[T]{return MediaValue[T]{contentType:contentType,binary:append([]byte{},value...),isBinary:true}}
+func(value MediaValue[T])ContentType()string{return value.contentType}
+func(value MediaValue[T])AsValue()(T,bool){var zero T;if value.multipart!=nil{if value.decodeMedia==nil{return zero,false};decoded,err:=value.decodeMedia(context.Background(),copyMultipartWire(*value.multipart));return decoded,err==nil};if value.isBinary||value.decode==nil{return zero,false};decoded,err:=value.decode(context.Background(),value.value);return decoded,err==nil}
+func(value MediaValue[T])AsBinary()([]byte,bool){if !value.isBinary{return nil,false};return append([]byte{},value.binary...),true}
+
+// MediaValueFromMultipart retains native files separately from the JSON validation tree.
+func MediaValueFromMultipart[T any](contentType string,value MultipartData,decode func(context.Context,MultipartData)(T,error))MediaValue[T]{copied:=copyMultipartWire(value);return MediaValue[T]{contentType:contentType,multipart:&copied,decodeMedia:decode}}
+func(value MediaValue[T])AsMultipart()(MultipartData,bool){if value.multipart==nil{return MultipartData{},false};return copyMultipartWire(*value.multipart),true}

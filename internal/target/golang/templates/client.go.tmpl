@@ -1,0 +1,60 @@
+type ClientOptions = core.ClientOptions
+const OpenAPIVersion = {{quote .OpenAPIVersion}}
+const OpenAPIVersionLine = {{quote .OpenAPIVersionLine}}
+type RequestOptions = types.RequestOptions
+type APIError = types.APIError
+type SDKError = types.SDKError
+func IsAPIError(cause error)bool{return types.IsAPIError(cause)}
+func GetErrorCode(cause error)(string,bool){return types.GetErrorCode(cause)}
+func IsErrorCode(cause error,code string)bool{return types.IsErrorCode(cause,code)}
+func GetRequestID(cause error)(string,bool){return types.GetRequestID(cause)}
+
+{{range .Operations}}
+{{if .Pagination}}type {{.Pagination.ItemModel}} = models.{{.Pagination.ItemModel}}
+type {{.Name}}PaginationMode = operations.{{.Name}}PaginationMode
+const ({{.Name}}PaginationCursor = operations.{{.Name}}PaginationCursor;{{.Name}}PaginationOffset = operations.{{.Name}}PaginationOffset)
+{{end}}
+{{$securityOp:=.}}{{if .Security}}type {{.Name}}SecurityRequirement = operations.{{.Name}}SecurityRequirement
+const ({{range .Security}}{{$securityOp.Name}}Security{{.Name}} = operations.{{$securityOp.Name}}Security{{.Name}}
+{{end}})
+{{end}}
+{{if .HasInput}}type {{.Name}}Input = models.{{.Name}}Input
+{{range .InputFields}}type {{.Type}} = models.{{.Type}}
+{{end}}{{end}}
+{{if and .ResourceBound .ResourceHasInput}}type {{.ResourceInputName}} = models.{{.ResourceInputName}}
+{{end}}
+{{$operation:=.}}
+{{range .RequestStreams}}{{if .ItemValidation}}type {{.ItemModel}} = models.{{.ItemModel}}
+{{end}}{{end}}
+{{range .RequestBodies}}type {{.Model}} = models.{{.Model}}
+func New{{$operation.Name}}{{.Name}}Body({{if .Wildcard}}contentType string,{{end}}value {{.Model}}) {{$operation.Name}}Body{return models.New{{$operation.Name}}{{.Name}}Body({{if .Wildcard}}contentType,{{end}}value)}
+{{if .Open}}func New{{$operation.Name}}{{.Name}}BinaryBody(contentType string,value types.Binary) {{$operation.Name}}Body{return models.New{{$operation.Name}}{{.Name}}BinaryBody(contentType,value)}
+{{end}}
+{{end}}
+type {{.Name}}Output = {{if .OutputUnion}}operations.{{.Name}}Output{{else}}{{.OutputType}}{{end}}
+type {{.Name}}RawResponse = operations.{{.Name}}RawResponse
+type {{.Name}}HTTPError = operations.{{.Name}}HTTPError
+{{if .HasTypedStream}}type {{.Name}}StreamItem = {{if .StreamUnion}}operations.{{.Name}}StreamItem{{else}}{{.StreamType}}{{end}}
+{{end}}
+{{range .Headers}}{{if .Model}}type {{.Model}} = models.{{.Model}}
+{{end}}{{end}}
+{{end}}
+
+{{if not .ExportsOnly}}type Operations struct {value operations.Operations}
+type Routes struct {value operations.Routes}
+{{range .ClientOperations}}
+{{.Documentation}}func(group Operations){{.Name}}({{if .HasInput}}{{if .RequiredInput}}input models.{{.Name}}Input{{else}}inputs ...models.{{.Name}}Input{{end}}{{end}})operations.{{.Name}}Call{return group.value.{{.Name}}({{if .HasInput}}{{if .RequiredInput}}input{{else}}inputs...{{end}}{{end}})}
+{{.Documentation}}func(group Routes){{.RouteName}}({{if .HasInput}}{{if .RequiredInput}}input models.{{.Name}}Input{{else}}inputs ...models.{{.Name}}Input{{end}}{{end}})operations.{{.Name}}Call{return group.value.{{.RouteName}}({{if .HasInput}}{{if .RequiredInput}}input{{else}}inputs...{{end}}{{end}})}
+{{end}}
+{{if .LinkSources}}type Links struct{ {{range .LinkSources}}{{.Operation.Name}} operations.{{.Operation.Name}}Links
+{{end}} }
+{{end}}
+type Client struct { {{if .Resources}}resources.ResourceRoot;{{end}}Operations Operations;Routes Routes{{if .LinkSources}};Links Links{{end}} }
+
+func NewClient(options ClientOptions) (*Client, error) {
+    client, err := core.NewClient(options)
+    if err != nil { return nil, err }
+    {{if .LinkSources}}links:=operations.NewLinks(client)
+    {{end}}return &Client{Operations:Operations{value:operations.New(client)},Routes:Routes{value:operations.NewRoutes(client)}{{if .Resources}},ResourceRoot:resources.NewRoot(client){{end}}{{if .LinkSources}},Links:Links{ {{range .LinkSources}}{{.Operation.Name}}:links.{{.Operation.Name}},{{end}} }{{end}}}, nil
+}
+{{end}}

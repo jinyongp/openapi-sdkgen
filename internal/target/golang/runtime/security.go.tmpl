@@ -1,0 +1,117 @@
+func failure(code,message string)error{return &types.SDKError{Code:code,Message:message}}
+func collision()error{return failure(types.SecurityCredentialsInvalid,"security credentials conflict with an existing source")}
+
+// Apply mutates only the request owned by the current execution. The provider
+// receives a separate requirement snapshot and may run concurrently with others.
+func Apply(ctx context.Context,request *http.Request,operation types.OperationInfo,options types.RequestOptions,provider types.SecurityProvider,capabilities types.TransportCapabilities,requirements []types.SecurityRequirementDefinition)(bool,error){
+    requested:="";selectedExplicitly:=options.SecurityRequirement!=nil
+    if selectedExplicitly{requested=options.SecurityRequirement.SecurityRequirementID()}
+    if len(requirements)==0{if selectedExplicitly{return false,failure(types.SecurityRequirementInvalid,"operation has no security requirement")};return false,nil}
+    var selected types.SecurityRequirementDefinition
+    if !selectedExplicitly{
+        if len(requirements)!=1{return false,failure(types.SecurityRequirementRequired,"select one declared security requirement")};selected=requirements[0]
+    }else{
+        found:=false;for _,requirement:=range requirements{if requirement.ID==requested{selected=requirement;found=true;break}}
+        if !found{return false,failure(types.SecurityRequirementInvalid,"selected security requirement is not declared")}
+    }
+    satisfied:=true
+    for _,scheme:=range selected.Schemes{state,_,_:=source(request,options,capabilities,scheme);if state!=1{satisfied=false}}
+    credentials:=types.SecurityCredentials(nil);returned:=false
+    if !satisfied&&provider!=nil{
+        snapshot:=selected;snapshot.Schemes=append([]types.SecuritySchemeDefinition(nil),selected.Schemes...)
+        for index:=range snapshot.Schemes{snapshot.Schemes[index].Scopes=append([]string(nil),snapshot.Schemes[index].Scopes...)}
+        if err:=ctx.Err();err!=nil{return false,err}
+        var err error;credentials,err=provider(ctx,types.SecurityCredentialContext{Operation:operation,Requirement:snapshot,Origin:request.URL.Scheme+"://"+request.URL.Host})
+        if err!=nil{return false,err};if err:=ctx.Err();err!=nil{return false,err}
+        if credentials==nil{return false,failure(types.SecurityCredentialsInvalid,"security provider returned nil credentials")};returned=true
+    }
+    names:=make(map[string]bool,len(selected.Schemes));for _,scheme:=range selected.Schemes{names[scheme.Name]=true}
+    for name:=range credentials{if !names[name]{return false,failure(types.SecurityCredentialsInvalid,"security provider returned an undeclared scheme")}}
+    for _,scheme:=range selected.Schemes{
+        state,name,value:=source(request,options,capabilities,scheme)
+        credential,present:=credentials[scheme.Name]
+        if state==2{return false,collision()}
+        if state==1{
+            if !present{continue}
+            header,encoded,err:=encode(scheme,credential);if err!=nil{return false,err}
+            if scheme.Type=="mutualTLS"{continue}
+            if header!=""&&strings.EqualFold(header,name)&&strings.Trim(encoded," \t")==value{continue}
+            return false,collision()
+        }
+        if !present{if returned{return false,failure(types.SecurityCredentialsInvalid,"security provider omitted a required scheme")};return false,failure(types.SecurityCredentialsRequired,"security requirement needs credentials")}
+        name,value,err:=encode(scheme,credential);if err!=nil{return false,err}
+        if name!=""{
+            if _,present:=request.Header[http.CanonicalHeaderKey(name)];present{return false,collision()}
+            if !validHeader(name,value){return false,failure(types.SecurityCredentialsInvalid,"security credential is not a valid header")}
+            request.Header.Set(name,strings.Trim(value," \t"));continue
+        }
+        switch scheme.Type{
+        case "mutualTLS":if !capabilities.MutualTLS{return false,failure(types.TransportCapabilityRequired,"security requires mutual TLS capability")}
+        case "apiKey":
+            switch scheme.Location{
+            case "query":
+                query,err:=appendQueryCredential(request.URL.RawQuery,scheme.ParameterName,credential.Value);if err!=nil{return false,err};request.URL.RawQuery=query
+            case "cookie":
+                if !capabilities.CookieHeaders{return false,failure(types.TransportCapabilityRequired,"security requires CookieHeaders capability")}
+                if _,present:=request.Header["Cookie"];present{return false,collision()}
+                request.Header.Set("Cookie",encodeCookie(scheme.ParameterName)+"="+encodeCookie(credential.Value))
+            }
+        }
+    }
+    return len(selected.Schemes)>0,nil
+}
+
+// state: 0 missing, 1 satisfied, 2 conflicting. Ordinary explicit parameters
+// remain collisions; only dedicated SDK credential options are direct sources.
+func source(request *http.Request,options types.RequestOptions,capabilities types.TransportCapabilities,scheme types.SecuritySchemeDefinition)(int,string,string){
+    authorization:=scheme.Type=="http"||scheme.Type=="oauth2"||scheme.Type=="openIdConnect"||scheme.Type=="apiKey"&&scheme.Location=="header"&&strings.EqualFold(scheme.ParameterName,"Authorization")
+    if authorization&&options.Authorization.IsSet(){
+        value:=request.Header.Get("Authorization");matches:=value!=""
+        if scheme.Type!="apiKey"{protocol,rest,found:=strings.Cut(value," ");expected:=scheme.Scheme;if scheme.Type!="http"{expected="bearer"};matches=found&&strings.TrimSpace(rest)!=""&&strings.EqualFold(protocol,expected)}
+        if matches{return 1,"Authorization",value};return 2,"Authorization",value
+    }
+    if scheme.Type=="apiKey"&&scheme.Location=="header"&&strings.EqualFold(scheme.ParameterName,"X-CSRF-Token")&&options.CSRFToken.IsSet(){value:=request.Header.Get("X-CSRF-Token");if value!=""{return 1,"X-CSRF-Token",value};return 2,"X-CSRF-Token",value}
+    if scheme.Type=="apiKey"&&scheme.Location=="cookie"&&options.Credentials==types.Include&&capabilities.CookieJar{return 1,"",""}
+    if scheme.Type=="mutualTLS"&&capabilities.MutualTLS{return 1,"",""}
+    return 0,"",""
+}
+func encode(scheme types.SecuritySchemeDefinition,credential types.SecurityCredential)(string,string,error){
+    invalid:=func()(string,string,error){return "","",failure(types.SecurityCredentialsInvalid,"security credential has an invalid kind or value")}
+    switch scheme.Type{
+    case "apiKey":if credential.Kind!="api-key"||credential.Value==""{return invalid()};if scheme.Location=="header"{return scheme.ParameterName,credential.Value,nil};return "","",nil
+    case "http":
+        switch strings.ToLower(scheme.Scheme){
+        case "basic":if credential.Kind!="http-basic"{return invalid()};return "Authorization","Basic "+base64.StdEncoding.EncodeToString([]byte(credential.Username+":"+credential.Password)),nil
+        case "bearer":if credential.Kind!="http-bearer"||credential.Token==""{return invalid()};return "Authorization","Bearer "+credential.Token,nil
+        default:if credential.Kind!="http"||credential.Value==""{return invalid()};return "Authorization",scheme.Scheme+" "+credential.Value,nil
+        }
+    case "oauth2","openIdConnect":if credential.Kind!=scheme.Type||credential.Token==""{return invalid()};return "Authorization","Bearer "+credential.Token,nil
+    case "mutualTLS":if credential.Kind!="mutual-tls"{return invalid()};return "","",nil
+    }
+    return invalid()
+}
+func validHeader(name,value string)bool{
+    if name==""{return false};for _,char:=range name{if !(char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("!#$%&'*+-.^_`|~",char)){return false}}
+    for _,char:=range value{if char<32&&char!='\t'||char==127{return false}};return true
+}
+func encodeCookie(value string)string{
+    const hex="0123456789ABCDEF";var result strings.Builder
+    for index:=0;index<len(value);index++{char:=value[index];if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("-_.!~*'()",rune(char)){result.WriteByte(char)}else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}}
+    return result.String()
+}
+
+// URLSearchParams serializes ordered decoded pairs using form encoding. Go's
+// Values.Encode sorts names, treats semicolons as invalid, and escapes '*'/'~'
+// differently, so retain order and decode each component independently.
+func appendQueryCredential(raw,name,value string)(string,error){
+    form:=func(value string)string{return strings.ReplaceAll(strings.ReplaceAll(url.QueryEscape(value),"~","%7E"),"%2A","*")}
+    pairs:=make([]string,0,strings.Count(raw,"&")+2)
+    for _,pair:=range strings.Split(raw,"&"){
+        if pair==""{continue};key,text,_:=strings.Cut(pair,"=")
+        decodedKey,keyError:=url.QueryUnescape(key);decodedValue,valueError:=url.QueryUnescape(text)
+        if keyError!=nil||valueError!=nil{return "",failure(types.SecurityCredentialsInvalid,"query encoding is invalid")}
+        if decodedKey==name{return "",collision()}
+        pairs=append(pairs,form(decodedKey)+"="+form(decodedValue))
+    }
+    pairs=append(pairs,form(name)+"="+form(value));return strings.Join(pairs,"&"),nil
+}

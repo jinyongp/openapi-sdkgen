@@ -1,0 +1,121 @@
+type Encoder struct{Options types.RequestOptions;Encode func(context.Context,types.Value,string)(types.Binary,error)}
+func(encoder Encoder)Body(ctx context.Context,value wire.MediaValue[types.Binary],contentType string,definitions []media.FormField,supplied bool)(types.Binary,error){parts,err:=encoder.Parts(ctx,value,definitions,supplied);if err!=nil{return types.Binary{},err};return media.EncodeMultipart(contentType,parts)}
+func(encoder Encoder)Parts(ctx context.Context,value wire.MediaValue[types.Binary],definitions []media.FormField,suppliedOptions bool)([]media.MultipartPart,error){
+    if err:=ctx.Err();err!=nil{return nil,err}
+    if value.Value.Kind()!=wire.Object&&value.Value.Kind()!=wire.Array{return nil,fmt.Errorf("multipart body must be an object or array")}
+    fields:=make(map[string]media.FormField,len(definitions));positional:=value.Value.Kind()==wire.Array;fallbackField:=media.FormField{Explode:true};for _,field:=range definitions{if field.Positional==positional{if field.Default{fallbackField=field}else{fields[field.Name]=field}}}
+    manual:=suppliedOptions&&encoder.Options.MultipartHeaders!=nil;for _,field:=range definitions{if !field.Positional&&len(field.Headers)!=0{manual=true}}
+    var parts []media.MultipartPart
+    appendPart:=func(name,path,index string,item wire.Value,definition media.FormField)error{
+        if definition.Key!=""{name=definition.Key}
+        binary,present:=value.Slots[path]
+        var nestedSlots map[string]types.Binary;var binaryFlags map[string]bool
+        if present{if err:=binary.Validate();err!=nil{return err};_,text:=binary.Text();binaryFlags=map[string]bool{"":!text}
+        }else{for slot,source:=range value.Slots{if strings.HasPrefix(slot,path+"/"){if nestedSlots==nil{nestedSlots=make(map[string]types.Binary);binaryFlags=make(map[string]bool)};relative:=strings.TrimPrefix(slot,path);nestedSlots[relative]=source;_,text:=source.Text();binaryFlags[relative]=!text}}}
+        binaryContentType,binaryContract:=definition.BinaryContentType,definition.BinaryContentType!=""
+        if definition.MediaInfo!=nil{var err error;binaryContentType,binaryContract,err=definition.MediaInfo(ctx,item,name,index,binaryFlags);if err!=nil{return err}}
+        if binaryContract&&!present{if text,ok:=item.String();ok{binary=types.BinaryFromString(text);present=true}}
+        fallback:=definition.DefaultContentType;declaredContentType:=definition.ContentType
+        if !binaryContract&&binaryContentType!=""{fallback=binaryContentType}
+        if present||binaryContract {fallback=binaryContentType;if fallback==""{fallback="application/octet-stream"};if declaredContentType==""&&binaryContract{declaredContentType=binaryContentType}
+        }else if !positional&&definition.ContentType==""||fallback==""{switch item.Kind(){case wire.Object,wire.Array:fallback="application/json";default:fallback="text/plain"}}
+        candidate,explicit:="",false
+        if suppliedOptions{candidate,explicit=encoder.Options.MultipartContentTypes[name]}
+        binaryMedia:="";if present{binaryMedia=binary.Metadata().ContentType}
+        selected,err:=multipartContentType(declaredContentType,candidate,explicit,fallback,binaryMedia);if err!=nil{return err}
+        headers:=make(textproto.MIMEHeader)
+        var supplied map[string][]string;if suppliedOptions{supplied=encoder.Options.MultipartHeaders[name]};declared:=make(map[string]bool,len(definition.Headers))
+        for _,field:=range definition.Headers{
+            declared[strings.ToLower(field.Name)]=true
+            text,present:=partHeader(supplied,field.Name)
+            if !present{if field.Required{return fmt.Errorf("missing required multipart header %s.%s",name,field.Name)};continue}
+            if field.Decode!=nil{if _,err:=field.Decode(ctx,text);err!=nil{return err}}
+        }
+        for headerName,values:=range supplied{normalized:=strings.ToLower(headerName);if !declared[normalized]||normalized=="content-type"||value.Value.Kind()==wire.Object&&normalized=="content-disposition"{return fmt.Errorf("multipart header %s.%s is not declared by the Encoding Object",name,headerName)};headers[headerName]=append([]string(nil),values...)}
+        filename:="";if present{filename=binary.Metadata().Filename}
+        omitContentType:=!positional&&!explicit&&definition.ContentType==""&&!present&&!binaryContract&&item.Kind()!=wire.Object&&item.Kind()!=wire.Array
+        if !positional&&!manual&&!omitContentType&&filename==""{filename="blob"}
+        if strings.ContainsAny(name+filename,"\r\n\x00"){return fmt.Errorf("multipart names and filenames cannot contain line breaks")}
+        if value.Value.Kind()==wire.Object{disposition:="form-data; name=\""+multipartToken(name)+"\"";if filename!=""{disposition+="; filename=\""+multipartToken(filename)+"\""};headers.Set("Content-Disposition",disposition)}else if filename!=""&&headers.Get("Content-Disposition")==""{headers.Set("Content-Disposition","attachment; filename=\""+multipartToken(filename)+"\"")}
+        if selected!=""&&!omitContentType{headers.Set("Content-Type",selected)}
+        if !present{
+            switch{
+            case isXML(selected)&&definition.Encoder!=nil:
+                encoded,err:=definition.Encoder(ctx,item,selected,name,index);if err!=nil{return err};binary=encoded
+            case isXML(selected):return fmt.Errorf("XML multipart part encoder is unavailable")
+            case strings.HasPrefix(bareMedia(selected),"multipart/"):
+                if item.Kind()!=wire.Array{return fmt.Errorf("nested multipart part must be an array")}
+                children:=definition.Children;if definition.Nested!=nil{children=definition.Nested(name,index)}
+                encoded,err:=encoder.Body(ctx,wire.MediaValue[types.Binary]{Value:item,Slots:nestedSlots},selected,children,false);if err!=nil{return err};binary=encoded;headers.Set("Content-Type",encoded.Metadata().ContentType)
+            case len(nestedSlots)!=0:return fmt.Errorf("nested binary part requires a multipart encoding")
+            case multipartCustomMedia(selected):
+                encoded,err:=encoder.Encode(ctx,item,selected);if err!=nil{return err};binary=encoded
+            case bareMedia(selected)=="application/json"||strings.HasSuffix(bareMedia(selected),"+json")||item.Kind()==wire.Object||item.Kind()==wire.Array:
+                encoded,err:=item.MarshalJSON();if err!=nil{return err};binary=types.BinaryFromBytes(encoded)
+            case strings.HasPrefix(bareMedia(selected),"text/")||bareMedia(selected)=="application/octet-stream":binary=types.BinaryFromString(media.String(item))
+            default:encoded,err:=encoder.Encode(ctx,item,selected);if err!=nil{return err};binary=encoded
+            }
+        }
+        parts=append(parts,media.MultipartPart{Header:headers,Body:binary});return nil
+    }
+    if value.Value.Kind()==wire.Object{
+        for _,name:=range value.Value.Keys(){
+            item,_:=value.Value.Get(name);definition,exists:=fields[name];if !exists{definition=fallbackField}
+            path:="/"+strings.ReplaceAll(strings.ReplaceAll(name,"~","~0"),"/","~1")
+            if item.Kind()==wire.Array&&definition.Explode{for index,entry:=range item.Items(){if err:=appendPart(name,path+"/"+strconv.Itoa(index),strconv.Itoa(index),entry,definition);err!=nil{return nil,err}}}else if err:=appendPart(name,path,"",item,definition);err!=nil{return nil,err}
+        }
+    }else{
+        for index,item:=range value.Value.Items(){name:=strconv.Itoa(index);definition,exists:=fields[name];if !exists{definition=fallbackField};if err:=appendPart(name,"/"+name,"",item,definition);err!=nil{return nil,err}}
+    }
+    return parts,nil
+}
+func multipartToken(value string)string{return strings.NewReplacer("\\","\\\\","\"","\\\"").Replace(wire.USVString(value))}
+func multipartCustomMedia(value string)bool{value=bareMedia(value);return value!="application/json"&&!strings.HasSuffix(value,"+json")&&!isXML(value)&&!strings.HasPrefix(value,"text/")&&value!="application/x-www-form-urlencoded"&&value!="application/octet-stream"&&!strings.HasPrefix(value,"image/")&&!strings.HasPrefix(value,"audio/")&&!strings.HasPrefix(value,"video/")}
+func multipartContentType(declared,candidate string,explicit bool,fallback,binaryMedia string)(string,error){
+    var allowed []string;for _,item:=range strings.Split(declared,","){if strings.TrimSpace(item)!=""{allowed=append(allowed,strings.TrimSpace(item))}}
+    if !explicit{candidate=binaryMedia;if candidate==""{candidate=fallback}}
+    var exact []string;for _,item:=range allowed{if !strings.Contains(item,"*"){exact=append(exact,item)}}
+    if !explicit&&len(allowed)==1&&len(exact)==1{candidate=exact[0]}
+    if _,_,err:=mime.ParseMediaType(candidate);err!=nil||strings.ContainsAny(candidate,"\r\n\x00"){return "",fmt.Errorf("invalid multipart part media type")}
+    if len(allowed)!=0{matched:=false;for _,pattern:=range allowed{matched=matched||matchesMedia(candidate,pattern)};if !matched{if !explicit&&len(exact)==1{return exact[0],nil};return "",fmt.Errorf("multipart part media type does not match its declared range")}}
+    return candidate,nil
+}
+
+func matchesMedia(actual,pattern string)bool{actual=bareMedia(actual);pattern=bareMedia(pattern);if actual==pattern{return true};left,right:=strings.SplitN(pattern,"/",2),strings.SplitN(actual,"/",2);if len(left)!=2||len(right)!=2||left[0]!="*"&&left[0]!=right[0]{return false};return left[1]=="*"||strings.HasPrefix(left[1],"*+")&&strings.HasSuffix(right[1],left[1][1:])}
+
+func(encoder Encoder)Item(ctx context.Context,value types.MultipartData,index int,definitions []media.FormField)(media.MultipartPart,error){
+    name:=strconv.Itoa(index);definition:=media.FormField{Name:"0",Key:name,Positional:true,DefaultContentType:"application/octet-stream"}
+    for _,field:=range definitions{if field.Positional&&field.Default{definition=field}}
+    for _,field:=range definitions{if field.Positional&&!field.Default&&field.Name==name{definition=field;break}}
+    definition.Name="0";definition.Key=name;definition.Default=false
+    slots:=make(map[string]types.Binary,len(value.Slots));for path,binary:=range value.Slots{slots["/0"+path]=binary}
+    parts,err:=encoder.Parts(ctx,types.MultipartData{Value:wire.List([]types.Value{value.Value}),Slots:slots},[]media.FormField{definition},true)
+    if err!=nil{return media.MultipartPart{},err};if len(parts)!=1{return media.MultipartPart{},&types.SDKError{Code:types.RequestEncodeFailed,Message:"multipart stream item must produce one part"}}
+    return parts[0],nil
+}
+func(encoder Encoder)Frame(ctx context.Context,value types.MultipartData,index int,definitions []media.FormField,maximum int)(result types.MultipartPart,failure error){
+    part,err:=encoder.Item(ctx,value,index,definitions);if err!=nil{return types.MultipartPart{},err}
+    opened,err:=part.Body.Open(ctx);if err!=nil{return types.MultipartPart{},err};defer func(){failure=errors.Join(failure,opened.Close())}()
+    data,err:=io.ReadAll(&io.LimitedReader{R:opened,N:int64(maximum)});if err!=nil{return types.MultipartPart{},err}
+    if len(data)==maximum{var probe [1]byte;count,err:=io.ReadFull(opened,probe[:]);if count!=0{return types.MultipartPart{},&types.StreamFrameError{Kind:"limit",Maximum:maximum}};if err!=nil&&err!=io.EOF{return types.MultipartPart{},err}}
+    return types.MultipartPart{Headers:http.Header(part.Header),Data:data},nil
+}
+
+func BoundPart(part media.MultipartPart,maximum int)(media.MultipartPart,error){
+    if err:=part.Body.Validate();err!=nil{return media.MultipartPart{},err}
+    if size,known:=part.Body.Metadata().Size.Get();known&&size>int64(maximum){return media.MultipartPart{},&types.StreamFrameError{Kind:"limit",Maximum:maximum}}
+    headerBytes:=0
+    for name,values:=range part.Header{for _,value:=range values{if len(name)>8192||len(value)>8192{return media.MultipartPart{},&types.StreamFrameError{Kind:"multipart headers"}};headerBytes+=len(name)+len(value)+4;if headerBytes>8194{return media.MultipartPart{},&types.StreamFrameError{Kind:"multipart headers"}}}}
+    part.Body=types.BinaryFromSource(&boundedPartSource{body:part.Body,maximum:maximum});return part,nil
+}
+type boundedPartSource struct{body types.Binary;maximum int}
+func(source *boundedPartSource)Metadata()types.BinaryMetadata{return source.body.Metadata()}
+func(source *boundedPartSource)Open(ctx context.Context)(io.ReadCloser,error){reader,err:=source.body.Open(ctx);if err!=nil{return nil,err};return &boundedPartReader{ReadCloser:reader,maximum:source.maximum},nil}
+type boundedPartReader struct{io.ReadCloser;maximum,read int}
+func(reader *boundedPartReader)Read(buffer []byte)(int,error){
+    if len(buffer)==0{return 0,nil}
+    remaining:=reader.maximum-reader.read
+    if remaining==0{var probe [1]byte;count,err:=io.ReadFull(reader.ReadCloser,probe[:]);if count!=0{return 0,&types.StreamFrameError{Kind:"limit",Maximum:reader.maximum}};return 0,err}
+    if len(buffer)>remaining{buffer=buffer[:remaining]}
+    count,err:=reader.ReadCloser.Read(buffer);reader.read+=count;return count,err
+}

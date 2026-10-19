@@ -1,0 +1,87 @@
+type MultipartProtocol struct{Validate func(context.Context,types.MultipartPart,int)error;HeaderLimit int}
+func MultipartContentType(contentType string)(string,error){body,err:=media.EncodeMultipart(contentType,nil);if err!=nil{return "",err};return body.Metadata().ContentType,nil}
+func multipartBoundary(contentType string)(string,error){
+    name,parameters,err:=mime.ParseMediaType(contentType);if err!=nil||!strings.HasPrefix(strings.ToLower(name),"multipart/"){return "",&types.StreamFrameError{Kind:"multipart boundary",Cause:err}}
+    boundary:=parameters["boundary"];if boundary==""{return "",&types.StreamFrameError{Kind:"multipart boundary"}}
+    if _,err:=MultipartContentType(contentType);err!=nil{return "",&types.StreamFrameError{Kind:"multipart boundary",Cause:err}};return boundary,nil
+}
+func(protocol MultipartProtocol)Decode(ctx context.Context,reader types.StreamReader,info types.StreamContext)(types.Source[types.MultipartPart],error){
+    boundary,err:=multipartBoundary(info.ContentType);if err!=nil{return nil,err}
+    if info.MaxFrameBytes<=0{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"stream frame limit must be positive"}}
+    headerMaximum:=8192;if protocol.HeaderLimit>0{headerMaximum=protocol.HeaderLimit}
+    return &multipartSource{ctx:ctx,reader:reader,maximum:info.MaxFrameBytes,headerMaximum:headerMaximum,opening:[]byte("--"+boundary),marker:[]byte("\r\n--"+boundary),headerEnd:-1,validate:protocol.Validate},nil
+}
+func(MultipartProtocol)Encode(ctx context.Context,source types.Source[types.MultipartPart],info types.StreamContext)(io.ReadCloser,error){
+    boundary,err:=multipartBoundary(info.ContentType);if err!=nil{return nil,err};first:=true;closing:=[]byte("\r\n--"+boundary+"--\r\n")
+    return newFrameEncoder(ctx,source,info.MaxFrameBytes,func(part types.MultipartPart)([]byte,error){
+        if len(part.Data)>info.MaxFrameBytes{return nil,frameLimit(info.MaxFrameBytes)}
+        if len(part.Headers)==0{return nil,&types.StreamFrameError{Kind:"multipart headers"}}
+        body,err:=media.EncodeMultipart(info.ContentType,[]media.MultipartPart{ {Header:textproto.MIMEHeader(part.Headers),Body:types.BinaryFromBytes(part.Data)} });if err!=nil{return nil,err}
+        size,_:=body.Metadata().Size.Get();if size-int64(len(closing))-int64(len(part.Data))-int64(len(boundary)+4)>8196{return nil,&types.StreamFrameError{Kind:"multipart headers"}}
+        opened,err:=body.Open(ctx);if err!=nil{return nil,err};data,readError:=io.ReadAll(opened);if err:=errors.Join(readError,opened.Close());err!=nil{return nil,err}
+        data=data[:len(data)-len(closing)];if !first{data=append([]byte("\r\n"),data...)};first=false;return data,nil
+    },func()[]byte{if first{return closing[2:]};return closing})
+}
+type multipartSource struct{
+    validate func(context.Context,types.MultipartPart,int)error
+    index int
+    ctx context.Context
+    reader types.StreamReader
+    maximum,headerMaximum int
+    opening,marker,buffer []byte
+    scan,headerEnd,headerScan int
+    started,closing,done bool
+    closed atomic.Bool
+    item types.MultipartPart
+    failure error
+}
+func(source *multipartSource)Next()bool{
+    if source.done||source.closed.Load(){return false}
+    for{
+        if err:=source.ctx.Err();err!=nil{return source.fail(err)}
+        if source.closing{return source.fail(io.EOF)}
+        if !source.started{
+            index:=bytes.Index(source.buffer[source.scan:],source.opening)
+            if index>=0{
+                index+=source.scan;if index>source.headerMaximum{return source.fail(frameLimit(source.maximum))}
+                end:=index+len(source.opening)
+                if len(source.buffer)>=end+2{
+                    suffix:=string(source.buffer[end:end+2]);if suffix!="--"&&suffix!="\r\n"{return source.fail(&types.StreamFrameError{Kind:"multipart opening"})};source.closing=suffix=="--";source.buffer=source.buffer[end+2:];source.scan=0;source.started=true;continue
+                };source.scan=index
+            }else{if len(source.buffer)>source.headerMaximum+len(source.opening)+2{return source.fail(frameLimit(source.maximum))};source.scan=max(0,len(source.buffer)-len(source.opening)+1)}
+        }else{
+            if source.headerEnd<0{if index:=bytes.Index(source.buffer[source.headerScan:],[]byte("\r\n\r\n"));index>=0{source.headerEnd=source.headerScan+index}else{source.headerScan=max(0,len(source.buffer)-3)}}
+            headerEnd:=source.headerEnd;if headerEnd>source.headerMaximum||headerEnd<0&&len(source.buffer)>source.headerMaximum+4{return source.fail(&types.StreamFrameError{Kind:"multipart headers"})}
+            index:=bytes.Index(source.buffer[source.scan:],source.marker)
+            if index>=0{
+                index+=source.scan;end:=index+len(source.marker)
+                if len(source.buffer)>=end+2{
+                    suffix:=string(source.buffer[end:end+2]);if suffix!="--"&&suffix!="\r\n"{return source.fail(&types.StreamFrameError{Kind:"multipart boundary"})}
+                    if headerEnd<0||headerEnd>index{return source.fail(&types.StreamFrameError{Kind:"multipart headers"})}
+                    if index-headerEnd-4>source.maximum{return source.fail(frameLimit(source.maximum))}
+                    headers,err:=parsePartHeaders(source.buffer[:headerEnd]);if err!=nil{return source.fail(err)}
+                    source.item=types.MultipartPart{Headers:headers,Data:append([]byte{},source.buffer[headerEnd+4:index]...)}
+                    if source.validate!=nil{if err:=source.validate(source.ctx,source.item,source.index);err!=nil{return source.fail(err)}};source.index++
+                    source.buffer=source.buffer[end+2:];source.scan=0;source.headerEnd=-1;source.headerScan=0;source.closing=suffix=="--";return true
+                };source.scan=index
+            }else{if headerEnd>=0{pending:=len(source.buffer)-headerEnd-4;if pending>source.maximum&&pending-source.maximum>len(source.marker)+2{return source.fail(frameLimit(source.maximum))}};if len(source.buffer)>source.maximum&&len(source.buffer)-source.maximum>source.headerMaximum+len(source.marker)+4{return source.fail(frameLimit(source.maximum))};source.scan=max(0,len(source.buffer)-len(source.marker)+1)}
+        }
+        count:=4096;if count>source.maximum{count=source.maximum};data,err:=source.reader.Read(count)
+        if err!=nil{if err==io.EOF{err=&types.StreamFrameError{Kind:"incomplete multipart"}};return source.fail(err)}
+        source.buffer=append(source.buffer,data...)
+    }
+}
+func(source *multipartSource)Item()types.MultipartPart{return source.item}
+func(source *multipartSource)Err()error{return source.failure}
+func(source *multipartSource)Close()error{source.closed.Store(true);return source.reader.Close()}
+func(source *multipartSource)fail(err error)bool{source.done=true;source.failure=sourceFailure(err,source.reader.Close());return false}
+func parsePartHeaders(data []byte)(http.Header,error){
+    headers:=make(http.Header)
+    for _,line:=range strings.Split(wire.UTF8Text(data),"\r\n"){
+        name,value,found:=strings.Cut(line,":");name=strings.TrimSpace(name);value=strings.TrimSpace(value)
+        if !found||name==""{return nil,&types.StreamFrameError{Kind:"multipart headers"}}
+        for index:=0;index<len(name);index++{char:=name[index];if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("!#$%&'*+-.^_`|~",rune(char)){continue};return nil,&types.StreamFrameError{Kind:"multipart headers"}}
+        for index:=0;index<len(value);index++{char:=value[index];if char==0x7f||char<0x20&&char!='\t'{return nil,&types.StreamFrameError{Kind:"multipart headers"}}}
+        headers.Add(name,value)
+    };return headers,nil
+}

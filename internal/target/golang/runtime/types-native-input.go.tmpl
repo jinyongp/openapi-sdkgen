@@ -1,0 +1,24 @@
+// NativeInput keeps binary and item sources beside their immutable JSON shape.
+// Map keys are JSON Pointers into Value. Sources open only during execution.
+type NativeInput struct{
+ Value Value
+ Binaries map[string]Binary
+ Sources map[string]SourceFactory[MultipartData]
+}
+// Snapshot copies containers; binary buffers and factories keep their normal
+// ownership and replay contracts.
+func(input NativeInput)Snapshot()NativeInput{
+ result:=NativeInput{Value:input.Value}
+ if input.Binaries!=nil{result.Binaries=make(map[string]Binary,len(input.Binaries));for path,binary:=range input.Binaries{result.Binaries[path]=binary}}
+ if input.Sources!=nil{result.Sources=make(map[string]SourceFactory[MultipartData],len(input.Sources));for path,factory:=range input.Sources{result.Sources[path]=factory}}
+ return result
+}
+// CheckNativeInput checks source locations without opening sources or validating
+// an operation's schema. The selected operation owns schema validation.
+func CheckNativeInput(ctx context.Context,input NativeInput)error{
+ if len(input.Binaries)==0&&len(input.Sources)==0{return ctx.Err()}
+ flags:=make(map[string]bool,len(input.Binaries)+len(input.Sources))
+ for path:=range input.Binaries{flags[path]=true}
+ for path,factory:=range input.Sources{if factory==nil{return fmt.Errorf("item source factory is nil")};if flags[path]{return fmt.Errorf("binary and item sources overlap")};flags[path]=true}
+ return wire.CheckMediaSlots(ctx,wire.MediaValue[bool]{Value:input.Value,Slots:flags})
+}

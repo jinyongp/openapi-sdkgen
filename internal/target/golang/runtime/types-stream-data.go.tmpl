@@ -1,0 +1,28 @@
+// DecodeStreamData preserves native multipart buffers separately from JSON.
+// Portable Value adapters and concrete schema DTO adapters remain supported.
+func DecodeStreamData[Frame,Item any](ctx context.Context,codec StreamCodec,native StreamProtocol[Frame],reader StreamReader,info StreamContext,decode func(context.Context,Frame)(MultipartData,error),encodeItem func(context.Context,Item)(Value,error))(Source[MultipartData],error){
+    return DecodeStreamMediaData(ctx,codec,native,reader,info,decode,func(ctx context.Context,item Item)(MultipartData,error){value,err:=encodeItem(ctx,item);return MultipartData{Value:value},err})
+}
+func DecodeStreamMediaData[Frame,Item any](ctx context.Context,codec StreamCodec,native StreamProtocol[Frame],reader StreamReader,info StreamContext,decode func(context.Context,Frame)(MultipartData,error),encodeItem func(context.Context,Item)(MultipartData,error))(Source[MultipartData],error){
+    if codec.decode==nil{codec=NewStreamCodec[Frame,Frame](native,nil)}
+    source,err:=codec.decode(ctx,reader,info,native);if err!=nil{return nil,errors.Join(err,reader.Close())}
+    if data,ok:=source.(Source[MultipartData]);ok{return data,nil}
+    if frames,ok:=source.(Source[Frame]);ok{return MapSource(ctx,frames,decode),nil}
+    if values,ok:=source.(Source[Value]);ok{return MapSource(ctx,values,func(_ context.Context,value Value)(MultipartData,error){return MultipartData{Value:value},nil}),nil}
+    if items,ok:=source.(Source[Item]);ok{return MapSource(ctx,items,encodeItem),nil}
+    if closer,ok:=source.(io.Closer);ok{return nil,errors.Join(streamItemTypeError(),closer.Close())};return nil,streamItemTypeError()
+}
+func CopyMultipartBuffers(ctx context.Context,value MultipartData)(MultipartData,error){
+    if err:=wire.CheckMediaSlots(ctx,value);err!=nil{return MultipartData{},err}
+    var slots map[string]Binary
+    for path,binary:=range value.Slots{if err:=ctx.Err();err!=nil{return MultipartData{},err};data,buffered:=binary.Bytes();if !buffered{return MultipartData{},&SDKError{Code:ResponseDecodeFailed,Message:"response multipart contains an unbuffered source"}};if slots==nil{slots=make(map[string]Binary,len(value.Slots))};slots[path]=BinaryFromBytesWithMetadata(data,binary.Metadata())}
+    return MultipartData{Value:value.Value,Slots:slots},nil
+}
+// EncodeStreamMediaData retains native binary slots through a MultipartData
+// adapter. Portable Value adapters remain available for JSON-shaped items.
+func EncodeStreamMediaData[Frame,Item any](ctx context.Context,codec StreamCodec,native StreamProtocol[Frame],source Source[Item],info StreamContext,encode func(context.Context,Item)(MultipartData,error),frame func(context.Context,MultipartData)(Frame,error),validate func(context.Context,Item)(Item,error))(io.ReadCloser,error){
+ if nilInterface(source){return nil,streamItemTypeError()};owned:=ownStreamSource(source,nil);if codec.encode==nil{codec=NewStreamCodec[Frame,Frame](native,nil)}
+ var items any
+ if codec.accepts(owned){items=MapSource(ctx,owned,validate)}else{data:=MapSource(ctx,owned,encode);if codec.accepts(data){items=data}else{values:=MapSource(ctx,data,func(_ context.Context,value MultipartData)(Value,error){if len(value.Slots)!=0{return Value{},&SDKError{Code:RequestEncodeFailed,Message:"binary multipart requires a native media adapter"}};return value.Value,nil});if codec.accepts(values){items=values}else{items=MapSource(ctx,data,frame)}}}
+ reader,err:=codec.encode(ctx,items,info,native);if err!=nil{return nil,errors.Join(err,owned.Close())};return &streamCodecReader{ReadCloser:reader,release:owned.Close},nil
+}

@@ -1,0 +1,30 @@
+package golang
+
+import (
+	compiler "openapi-sdkgen/internal/compiler"
+	"openapi-sdkgen/internal/generator"
+	"testing"
+)
+
+func TestGeneratedLinkPresenceAndPointers(t *testing.T) {
+	document, err := compiler.Compile([]byte(`{"openapi":"3.1.0","info":{"title":"Link presence","version":"1"},"paths":{"/source":{"get":{"operationId":"source","responses":{"200":{"description":"Source","content":{"application/json":{"schema":{"type":"object","required":["values","weird~2"],"properties":{"values":{"type":"array","items":{"type":"string"}},"weird~2":{"type":"string"}},"additionalProperties":false}}},"links":{"Null":{"operationId":"targetNullable","requestBody":null},"Fill":{"operationId":"targetNullable","requestBody":{"left":"default","right":"keep"}},"Missing":{"operationId":"targetNullable"},"Array":{"operationId":"targetArray","requestBody":[1,2]},"Scalar":{"operationId":"targetScalar","requestBody":true},"Huge":{"operationId":"echo","parameters":{"q":"$response.body#/values/999999999999999999999999999999999999999999999999"}},"Bad":{"operationId":"echo","parameters":{"q":"$response.body#/values/01"}},"Weird":{"operationId":"echo","parameters":{"q":"$response.body#/weird~2"}}}}}}},"/echo":{"get":{"operationId":"echo","parameters":[{"name":"q","in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":"Echo","content":{"text/plain":{"schema":{"type":"string"}}}}}}},"/nullable":{"post":{"operationId":"targetNullable","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":["object","null"],"required":["left","right"],"properties":{"left":{"type":"string"},"right":{"type":"string"}},"additionalProperties":false}}}},"responses":{"204":{"description":"Done"}}}},"/array":{"post":{"operationId":"targetArray","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"array","items":{"type":"number"}}}}},"responses":{"204":{"description":"Done"}}}},"/scalar":{"post":{"operationId":"targetScalar","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"boolean"}}}},"responses":{"204":{"description":"Done"}}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, diagnostics, err := (Generator{}).Prepare(document, generator.Options{Golang: &generator.GoOptions{ImportPath: "example.test/consumer/api"}})
+	if err != nil || len(diagnostics) != 0 {
+		t.Fatalf("prepare %v %v", err, diagnostics)
+	}
+	testGeneratedModule(t, plan, map[string]string{"link_presence_test.go": linkPresenceConsumer})
+}
+
+const linkPresenceConsumer = `package consumer_test
+import("context";"encoding/json";"io";"net/http";"net/http/httptest";"sync/atomic";"testing";sdk "example.test/consumer/api";"example.test/consumer/api/models";"example.test/consumer/api/types")
+func TestLinkMissingNullScalarArrayAndPointers(t *testing.T){var requests atomic.Int32;var body atomic.Value;server:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){requests.Add(1);switch r.URL.Path{case "/source":w.Header().Set("Content-Type","application/json");io.WriteString(w,"{\"values\":[\"first\"],\"weird~2\":\"literal\"}");case "/echo":w.Header().Set("Content-Type","text/plain");io.WriteString(w,r.URL.Query().Get("q"));default:raw,err:=io.ReadAll(r.Body);if err!=nil{t.Error(err)};body.Store(string(raw));w.WriteHeader(204)}}));defer server.Close();client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:server.URL});if err!=nil{t.Fatal(err)};source,err:=client.Operations.Source().Raw(context.Background());if err!=nil{t.Fatal(err)}
+ if _,err:=client.Links.Source.Null.Follow(source).Do(context.Background());err!=nil||body.Load()!="null"{t.Fatal("literal null lost presence",body.Load(),err)};before:=requests.Load();if _,err:=client.Links.Source.Missing.Follow(source).Do(context.Background());err==nil||requests.Load()!=before{t.Fatal("missing nullable required body became null",err)}
+ partial:=models.TargetNullableLinkOverrideBodyFromNullable(types.NonNull(models.TargetNullableLinkOverrideBodyNonNull{Left:types.Some("changed")}));if _,err:=client.Links.Source.Fill.Follow(source,sdk.SourceFillLinkInvocation{Input:types.Some(sdk.TargetNullableLinkOverride{Body:types.Some(partial)})}).Do(context.Background());err!=nil{t.Fatal(err)};var merged map[string]string;if err:=json.Unmarshal([]byte(body.Load().(string)),&merged);err!=nil||merged["left"]!="changed"||merged["right"]!="keep"{t.Fatal("nullable object partial merge",merged,err)}
+ null:=models.TargetNullableLinkOverrideBodyFromNullable(types.Null[models.TargetNullableLinkOverrideBodyNonNull]());if _,err:=client.Links.Source.Fill.Follow(source,sdk.SourceFillLinkInvocation{Input:types.Some(sdk.TargetNullableLinkOverride{Body:types.Some(null)})}).Do(context.Background());err!=nil||body.Load()!="null"{t.Fatal("explicit null did not replace object",body.Load(),err)}
+ if _,err:=client.Links.Source.Array.Follow(source,sdk.SourceArrayLinkInvocation{Input:types.Some(sdk.TargetArrayLinkOverride{Body:types.Some(sdk.TargetArrayLinkOverrideBody{0})})}).Do(context.Background());err!=nil||body.Load()!="[0]"{t.Fatal("array did not replace",body.Load(),err)};if _,err:=client.Links.Source.Scalar.Follow(source,sdk.SourceScalarLinkInvocation{Input:types.Some(sdk.TargetScalarLinkOverride{Body:types.Some(sdk.TargetScalarLinkOverrideBody(false))})}).Do(context.Background());err!=nil||body.Load()!="false"{t.Fatal("false did not replace",body.Load(),err)}
+ override:=sdk.EchoLinkOverride{Query:types.Some(sdk.EchoLinkOverrideQuery{Q:types.Some("fill")})};value,err:=client.Links.Source.Huge.Follow(source,sdk.SourceHugeLinkInvocation{Input:types.Some(override)}).Do(context.Background());if err!=nil||value!="fill"{t.Fatal("large valid array index must be absent",value,err)};before=requests.Load();if _,err:=client.Links.Source.Bad.Follow(source,sdk.SourceBadLinkInvocation{Input:types.Some(override)}).Do(context.Background());err==nil||requests.Load()!=before{t.Fatal("invalid leading-zero array index accepted",err)};value,err=client.Links.Source.Weird.Follow(source).Do(context.Background());if err!=nil||value!="literal"{t.Fatal("literal tilde token changed",value,err)}
+}
+`

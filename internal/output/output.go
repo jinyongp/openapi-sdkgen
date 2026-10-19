@@ -61,13 +61,14 @@ func (value *StageError) Unwrap() error { return value.Err }
 
 // Generation fingerprints the generator inputs that produced a managed output.
 type Generation struct {
-	Generator           string             `json:"generator"`
-	Target              string             `json:"target"`
-	Addons              []string           `json:"addons,omitempty"`
-	InputSHA256         string             `json:"inputSha256"`
-	SelectionRoutes     []string           `json:"selectionRoutes,omitempty"`
-	Clients             []ClientGeneration `json:"clients,omitempty"`
-	TypeScriptTypeCheck *bool              `json:"tsTypecheck,omitempty"`
+	Generator           string               `json:"generator"`
+	Target              string               `json:"target"`
+	Addons              []string             `json:"addons,omitempty"`
+	InputSHA256         string               `json:"inputSha256"`
+	SelectionRoutes     []string             `json:"selectionRoutes,omitempty"`
+	Clients             []ClientGeneration   `json:"clients,omitempty"`
+	TypeScriptTypeCheck *bool                `json:"tsTypecheck,omitempty"`
+	Golang              *generator.GoOptions `json:"golang,omitempty"`
 }
 
 // ClientGeneration preserves API assignment, independently of the shared union.
@@ -337,6 +338,9 @@ func GenerationEqual(left, right *Generation) bool {
 		return left == right
 	}
 	typeCheck := func(value *Generation) bool { return value.TypeScriptTypeCheck != nil && *value.TypeScriptTypeCheck }
+	if (left.Golang == nil) != (right.Golang == nil) || left.Golang != nil && *left.Golang != *right.Golang {
+		return false
+	}
 	if typeCheck(left) != typeCheck(right) {
 		return false
 	}
@@ -362,6 +366,15 @@ func GenerationEqual(left, right *Generation) bool {
 }
 
 func validateGeneration(generation Generation) error {
+	if generation.Golang != nil {
+		canonical, err := generator.CanonicalGoOptions(generation.Golang)
+		if generation.Target != "golang" || err != nil || canonical != *generation.Golang {
+			return fmt.Errorf("Go generation options require the golang target and canonical package/import path")
+		}
+	}
+	if generation.Target == "golang" && generation.Golang == nil {
+		return fmt.Errorf("Go generation options are required for the golang target")
+	}
 	if generation.TypeScriptTypeCheck != nil && generation.Target != "typescript" {
 		return fmt.Errorf("TypeScript directive policy requires the typescript target")
 	}

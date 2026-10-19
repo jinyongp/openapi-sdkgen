@@ -1,0 +1,21 @@
+type FormField = media.FormField
+type MultipartHeader = media.MultipartHeader
+func IsMultipartMedia(value string)bool{return strings.HasPrefix(bareMedia(value),"multipart/")}
+
+func (execution *Execution) EncodeBody(value types.Value,contentType string,request *http.Request,definitions ...[]FormField)(types.Binary,error){
+    return execution.EncodeBodyContext(execution.Context,value,contentType,request,definitions...)
+}
+func(execution *Execution)EncodeBodyContext(ctx context.Context,value types.Value,contentType string,request *http.Request,definitions ...[]FormField)(types.Binary,error){
+    if err:=ctx.Err();err!=nil{return types.Binary{},err}
+    normalized:=bareMedia(contentType)
+    if normalized=="application/json"||strings.HasSuffix(normalized,"+json"){
+        return media.EncodeJSON(value)
+    }
+    if normalized=="application/x-www-form-urlencoded"{var fields []FormField;if len(definitions)!=0{fields=definitions[0]};return media.EncodeFormBody(value,fields)}
+    if strings.HasPrefix(normalized,"text/"){return media.EncodeText(value)}
+    if codec,present:=execution.Codec(contentType);present&&codec.Encode!=nil{
+        source,err:=codec.Encode(ctx,value,types.MediaContext{ContentType:contentType,Request:request});if err!=nil{return types.Binary{},err}
+        return types.BinaryFromSource(source),nil
+    }
+    return types.Binary{},fmt.Errorf("request media codec is unavailable")
+}

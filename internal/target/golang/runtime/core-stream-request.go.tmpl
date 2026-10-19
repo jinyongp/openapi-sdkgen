@@ -1,0 +1,32 @@
+type requestStreamSource[Frame,Item any] struct{
+    execution *Execution
+    contentType string
+    native types.StreamProtocol[Frame]
+    factory types.SourceFactory[Item]
+    encode func(context.Context,Item)(Frame,error)
+    validate func(context.Context,Item)(Item,error)
+}
+func NewRequestStream[Frame,Item any](execution *Execution,contentType string,native types.StreamProtocol[Frame],factory types.SourceFactory[Item],encode func(context.Context,Item)(Frame,error),validate ...func(context.Context,Item)(Item,error))(types.Binary,error){
+    if factory==nil{return types.Binary{},&types.SDKError{Code:types.RequestEncodeFailed,Message:"stream source factory is nil"}}
+    source:=&requestStreamSource[Frame,Item]{execution:execution,contentType:contentType,native:native,factory:factory,encode:encode};if len(validate)!=0{source.validate=validate[0]}
+    return types.BinaryFromSource(source),nil
+}
+func(source *requestStreamSource[Frame,Item])Metadata()types.BinaryMetadata{return types.BinaryMetadata{ContentType:source.contentType}}
+func(source *requestStreamSource[Frame,Item])Open(ctx context.Context)(io.ReadCloser,error){
+    running,cancel:=context.WithCancel(ctx)
+    items,err:=types.OpenSourceFactory(running,source.factory);if err!=nil{cancel();return nil,err}
+    var validation []func(context.Context,Item)(Item,error);if source.validate!=nil{validation=append(validation,source.validate)}
+    reader,err:=types.EncodeStreamCodec(running,source.execution.StreamCodec(source.contentType),source.native,items,source.execution.StreamContext(source.contentType),source.encode,validation...)
+    if err!=nil{cancel();return nil,errors.Join(err,items.Close())}
+    return &requestStreamReader{ReadCloser:reader,cancel:cancel},nil
+}
+type requestStreamReader struct{io.ReadCloser;cancel context.CancelFunc;once sync.Once;closeErr error}
+func(reader *requestStreamReader)Close()error{reader.once.Do(func(){reader.cancel();reader.closeErr=reader.ReadCloser.Close()});return reader.closeErr}
+
+type valueItems struct{value types.Value;index int;item types.Value;closed atomic.Bool}
+func ValueItems(value types.Value)types.Source[types.Value]{return &valueItems{value:value}}
+func(source *valueItems)Next()bool{if source.closed.Load(){return false};item,present:=source.value.At(source.index);if !present{return false};source.index++;source.item=item;return true}
+func(source *valueItems)Item()types.Value{return source.item}
+func(*valueItems)Err()error{return nil}
+func(source *valueItems)Close()error{source.closed.Store(true);return nil}
+func CompleteStreamValue(value types.Value)error{if value.Kind()!=types.ValueArray{return &types.SDKError{Code:types.RequestEncodeFailed,Message:"complete sequential request body must be an array"}};return nil}

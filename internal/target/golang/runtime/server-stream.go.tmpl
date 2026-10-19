@@ -1,0 +1,29 @@
+type ownedSource[T any] struct{types.Source[T];once sync.Once;failure error}
+func(source *ownedSource[T])Close()error{source.once.Do(func(){source.failure=source.Source.Close()});return source.failure}
+type inboundSource[T any]struct{*ownedSource[T];required,ended bool;count int}
+func(source *inboundSource[T])Next()bool{if source.Source.Next(){source.count++;return true};source.ended=true;return false}
+func(source *inboundSource[T])Err()error{if err:=source.Source.Err();err!=nil{return inputFailure(err)};if source.required&&source.ended&&source.count==0{return inputFailure(fmt.Errorf("request body is required"))};return nil}
+func DecodeSource[Frame,T any](execution *Execution,contentType string,native types.StreamProtocol[Frame],decode func(context.Context,Frame)(T,error),validate func(context.Context,T)(T,error),required ...bool)(types.Source[T],error){
+ if len(required)>0&&required[0]&&!execution.HasBody(){return nil,inputFailure(fmt.Errorf("request body is required"))}
+ reader,err:=stream.NewReader(execution.Context,execution.Request.Body,execution.Options.MaxStreamFrameBytes);if err!=nil{return nil,inputFailure(err)}
+ source,err:=types.DecodeStreamCodec(execution.Context,execution.StreamCodec(contentType),native,reader,execution.StreamContext(contentType),decode,validate);if err!=nil{return nil,inputFailure(err)}
+ owned:=&inboundSource[T]{ownedSource:&ownedSource[T]{Source:source},required:len(required)>0&&required[0]};if err:=execution.Own(owned);err!=nil{return nil,inputFailure(err)};execution.mu.Lock();execution.inputs=append(execution.inputs,owned);execution.mu.Unlock();return owned,nil
+}
+type responseStream[Frame,T any] struct{execution *Execution;contentType string;native types.StreamProtocol[Frame];source types.Source[T];encode func(context.Context,T)(Frame,error);validate func(context.Context,T)(T,error)}
+func(body *responseStream[Frame,T])Metadata()types.BinaryMetadata{return types.BinaryMetadata{ContentType:body.contentType}}
+func(body *responseStream[Frame,T])Open(ctx context.Context)(io.ReadCloser,error){return types.EncodeStreamCodec(ctx,body.execution.StreamCodec(body.contentType),body.native,body.source,body.execution.StreamContext(body.contentType),body.encode,body.validate)}
+func EncodeSource[Frame,T any](execution *Execution,contentType string,native types.StreamProtocol[Frame],source types.Source[T],encode func(context.Context,T)(Frame,error),validate func(context.Context,T)(T,error))(types.Binary,error){
+ if source==nil{return types.Binary{},fmt.Errorf("response source is nil")};owned:=&ownedSource[T]{Source:source};if err:=execution.Own(owned);err!=nil{return types.Binary{},err};return types.BinaryFromSource(&responseStream[Frame,T]{execution:execution,contentType:contentType,native:native,source:owned,encode:encode,validate:validate}),nil
+}
+func DecodeCompleteStream(execution *Execution,contentType string,native types.StreamProtocol[types.Value],required ...bool)(value types.Value,failure error){
+ if len(required)>0&&required[0]&&!execution.HasBody(){return types.Value{},inputFailure(fmt.Errorf("request body is required"))}
+ request,err:=execution.BodyRequest();if err!=nil{return types.Value{},err};reader,err:=stream.NewReader(execution.Context,request.Body,execution.Options.MaxStreamFrameBytes);if err!=nil{return types.Value{},inputFailure(err)}
+ source,err:=types.DecodeStreamCodec(execution.Context,execution.StreamCodec(contentType),native,reader,execution.StreamContext(contentType),func(_ context.Context,value types.Value)(types.Value,error){return value,nil});if err!=nil{return types.Value{},inputFailure(err)}
+ defer func(){failure=errors.Join(failure,source.Close())}();items:=make([]types.Value,0);for source.Next(){items=append(items,source.Item())};if err:=source.Err();err!=nil{return types.Value{},inputFailure(err)};return types.ValueFrom(items)
+}
+type valueSource struct{items []types.Value;index int}
+func(source *valueSource)Next()bool{if source.index>=len(source.items){return false};source.index++;return true}
+func(source *valueSource)Item()types.Value{return source.items[source.index-1]}
+func(source *valueSource)Err()error{return nil}
+func(source *valueSource)Close()error{source.items=nil;return nil}
+func EncodeCompleteStream(execution *Execution,contentType string,native types.StreamProtocol[types.Value],value types.Value)(types.Binary,error){if value.Kind()!=types.ValueArray{return types.Binary{},fmt.Errorf("complete stream must be an array")};identity:=func(_ context.Context,value types.Value)(types.Value,error){return value,nil};return EncodeSource(execution,contentType,native,&valueSource{items:value.Items()},identity,identity)}

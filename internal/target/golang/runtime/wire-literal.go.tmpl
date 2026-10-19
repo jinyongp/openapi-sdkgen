@@ -1,0 +1,7 @@
+// LazyValue has no package initialization work. Only a reachable literal caller
+// retains its source bytes, and concurrent callers share one immutable parse.
+type LazyValue struct { once sync.Once; value Value }
+func (literal *LazyValue) Load(source string) Value {
+    literal.once.Do(func(){value,err:=Parse([]byte(source));if err!=nil{panic(err)};literal.value=value})
+    return literal.value
+}

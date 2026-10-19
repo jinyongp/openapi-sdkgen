@@ -1,0 +1,79 @@
+const (
+ InboundInputInvalid="INBOUND_INPUT_INVALID"
+ InboundBodyTooLarge="INBOUND_BODY_TOO_LARGE"
+ InboundAuthenticationFailed="INBOUND_AUTHENTICATION_FAILED"
+ InboundHandlerFailed="INBOUND_HANDLER_FAILED"
+ InboundResponseInvalid="INBOUND_RESPONSE_INVALID"
+ InboundRequestAborted="INBOUND_REQUEST_ABORTED"
+)
+// Error exposes the failure phase without including request or response data.
+type Error struct{Status int;Code string;Cause error}
+func(failure *Error)Error()string{return failure.Code}
+func(failure *Error)Unwrap()error{return failure.Cause}
+type SecurityCandidate struct{Scheme,Type,Location,Name,Value string;Present bool;Scopes []string}
+type InboundRequestContext struct{
+ Request *http.Request
+ OperationID,Method,Path string
+ Params,Security types.Value
+ SecurityCandidates []SecurityCandidate
+ CloneBody func(context.Context)(io.ReadCloser,error)
+}
+type InboundRejection struct{Status int;Headers http.Header;Body types.BinarySource}
+type Authenticate func(context.Context,InboundRequestContext)(*InboundRejection,error)
+type Options struct{
+ Authenticate Authenticate
+ Codecs map[string]types.MediaCodec
+ StreamCodecs map[string]types.StreamCodec
+ MaxBodyBytes int64
+ MaxStreamFrameBytes int
+ OnError func(context.Context,error)
+}
+type InboundScheme struct{Identity string;Definition types.SecuritySchemeDefinition}
+type MultipartOptions struct{Headers map[string]http.Header;ContentTypes map[string]string}
+func CopyMultipartOptions(options MultipartOptions)MultipartOptions{result:=MultipartOptions{};if options.Headers!=nil{result.Headers=make(map[string]http.Header,len(options.Headers));for name,headers:=range options.Headers{result.Headers[name]=headers.Clone()}};if options.ContentTypes!=nil{result.ContentTypes=make(map[string]string,len(options.ContentTypes));for name,value:=range options.ContentTypes{result.ContentTypes[name]=value}};return result}
+type ParameterResult struct{Value types.Value;Input any}
+// Execution owns one inbound exchange, including sources used by its response.
+type Execution struct{
+ Context context.Context
+ Request *http.Request
+ Options Options
+ Streaming bool
+ definition Definition
+ params types.Value
+ cancel context.CancelFunc
+ stop func()bool
+ body io.ReadCloser
+ bodyOnce sync.Once
+ bodyBytes []byte
+ bodyFailure error
+ mu sync.Mutex
+ sources []io.Closer
+ inputs []interface{Err()error}
+ ResponseMultipart MultipartOptions
+ closed bool
+ bodyEnded bool
+ bodyMissing bool
+ closeOnce sync.Once
+ closeFailure error
+}
+type Definition struct{
+ OperationID,Method,Identity string
+ Security types.Value
+ Schemes []InboundScheme
+ Streaming func(string)bool
+ DecodeParameters func(*Execution,map[string]string)(ParameterResult,error)
+}
+type Invocation func(*Execution,ParameterResult)(Response,error)
+type Response struct{Status int;Headers http.Header;Body types.Binary;HasBody,Streaming bool}
+type FormField=media.FormField
+type MultipartHeader=media.MultipartHeader
+
+func normalizeOptions(options Options)(Options,error){
+ if options.MaxBodyBytes<0||options.MaxBodyBytes==math.MaxInt64||options.MaxStreamFrameBytes<0||options.MaxStreamFrameBytes==math.MaxInt{return Options{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"inbound byte limits must be positive finite bounds"}}
+ if options.MaxBodyBytes==0{options.MaxBodyBytes=8*1024*1024};if options.MaxStreamFrameBytes==0{options.MaxStreamFrameBytes=1024*1024}
+ if options.Codecs!=nil{cloned:=make(map[string]types.MediaCodec,len(options.Codecs));for key,value:=range options.Codecs{mediaType,_,err:=mime.ParseMediaType(key);if err!=nil||strings.Contains(mediaType,"*"){return Options{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"inbound codec needs a concrete media type"}};key=strings.ToLower(mediaType);if _,present:=cloned[key];present{return Options{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"duplicate inbound media codec"}};cloned[key]=value};options.Codecs=cloned}
+ if options.StreamCodecs!=nil{cloned:=make(map[string]types.StreamCodec,len(options.StreamCodecs));for key,value:=range options.StreamCodecs{mediaType,_,err:=mime.ParseMediaType(key);if err!=nil||strings.Contains(mediaType,"*"){return Options{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"inbound stream codec needs a concrete media type"}};key=strings.ToLower(mediaType);if _,present:=cloned[key];present{return Options{},&types.SDKError{Code:types.RequestOptionsInvalid,Message:"duplicate inbound stream codec"}};cloned[key]=value};options.StreamCodecs=cloned}
+ return options,nil
+}
+func inputFailure(cause error)*Error{var existing *Error;if errors.As(cause,&existing){return existing};if errors.Is(cause,context.Canceled)||errors.Is(cause,context.DeadlineExceeded){return &Error{Code:InboundRequestAborted,Cause:cause}};return &Error{Status:400,Code:InboundInputInvalid,Cause:cause}}
+func bareMedia(contentType string)string{value,_,err:=mime.ParseMediaType(contentType);if err!=nil{return ""};return strings.ToLower(value)}

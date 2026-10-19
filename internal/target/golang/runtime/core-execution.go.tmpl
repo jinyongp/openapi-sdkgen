@@ -1,0 +1,182 @@
+type BodyEncoder func(context.Context,*http.Request) (types.Binary,error)
+type RequestData struct {
+    Servers []types.ServerDefinition
+    Security []types.SecurityRequirementDefinition
+    Path string
+    Query string
+    Headers http.Header
+    HeaderNames []string
+    ContentType string
+    ContentTypePattern string
+    RawBinary bool
+    HasBody bool
+    EncodeBody BodyEncoder
+    RequireCookieHeaders bool
+}
+
+type Execution struct {
+    client *Client
+    Context context.Context
+    parent context.Context
+    cleanupCanceled atomic.Bool
+    Options types.RequestOptions
+    Operation types.OperationInfo
+    Request *http.Request
+    Response *http.Response
+    DecodedBinary,DecodedText bool
+    lease *transport.BodyLease
+    requestBody io.ReadCloser
+    stopRequestBody func() bool
+    cancel context.CancelFunc
+    transferred bool
+    closeOnce sync.Once
+    closeErr error
+    contextError error
+    closed atomic.Bool
+}
+func (client *Client) Begin(ctx context.Context,operation types.OperationInfo,options types.RequestOptions) (*Execution,error) {
+    if client==nil{return nil,RequestFailure(ctx,operation,types.RequestEncodeFailed,&types.SDKError{Code:types.OperationNotPrepared,Message:"client is not initialized"},nil,nil)}
+    merged:=MergeOptions(client.defaults,options)
+    if err:=validateOptions(merged);err!=nil{return nil,RequestFailure(ctx,operation,types.RequestEncodeFailed,err,nil,nil)}
+    if err:=ctx.Err();err!=nil{return nil,RequestFailure(ctx,operation,types.RequestAborted,err,nil,nil)}
+    var running context.Context;var cancel context.CancelFunc
+    if timeout,present:=merged.Timeout.Get();present{running,cancel=context.WithTimeout(ctx,timeout)}else{running,cancel=context.WithCancel(ctx)}
+    execution:=&Execution{client:client,Context:running,parent:ctx,Options:merged,Operation:operation}
+    execution.cancel=func(){execution.cleanupCanceled.Store(true);cancel()}
+    return execution,nil
+}
+func (execution *Execution) failureContext()context.Context{
+    ctx:=execution.Context
+    if execution.cleanupCanceled.Load()&&ctx.Err()==context.Canceled&&execution.parent.Err()==nil{ctx=context.WithoutCancel(ctx)}
+    if execution.closed.Load(){ctx=context.WithoutCancel(ctx)}
+    return ctx
+}
+func (execution *Execution) Failure(code string,cause error)error{
+    ctx:=execution.failureContext()
+    if execution.closed.Load(){cause=errors.Join(cause,execution.contextError)}
+    return RequestFailure(ctx,execution.Operation,code,cause,execution.Request,execution.Response)
+}
+func (execution *Execution) Codec(contentType string) (types.MediaCodec,bool) {
+    bare,_,_:=strings.Cut(contentType,";");codec,present:=execution.client.codecs[strings.ToLower(strings.TrimSpace(bare))];return codec,present
+}
+func (execution *Execution) Close() error {
+    if execution.transferred{return nil}
+    return execution.finish()
+}
+func(execution *Execution)finish()error{
+    execution.closeOnce.Do(func(){
+        execution.contextError=execution.Context.Err()
+        if execution.lease!=nil{execution.closeErr=execution.lease.Close()}
+        if execution.stopRequestBody!=nil{execution.stopRequestBody()}
+        if execution.requestBody!=nil{execution.closeErr=errors.Join(execution.closeErr,execution.requestBody.Close())}
+        execution.cancel()
+        execution.closed.Store(true)
+    })
+    return execution.closeErr
+}
+// Typed framing may still hold the final bytes after the network body reaches
+// EOF. Keep validation alive until the logical source, rather than Body, ends.
+func(execution *Execution)TransferStream(){execution.transferred=true}
+func(execution *Execution)FinishStream()error{return execution.finish()}
+func (execution *Execution) Transfer() {
+    if execution.lease==nil{return}
+    execution.transferred=true
+    execution.lease.BindCancel(func(){if execution.stopRequestBody!=nil{execution.stopRequestBody()};if execution.requestBody!=nil{execution.requestBody.Close()};execution.cancel()})
+}
+
+func (execution *Execution) Send(data RequestData) (*http.Response,error) {
+    if data.HasBody&&data.ContentTypePattern!=""&&(strings.Contains(data.ContentType,"*")||ResponseScore(200,data.ContentType,"200",data.ContentTypePattern)==0){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request body media does not match its declared range"})}
+    if data.HasBody&&data.RawBinary{
+        media:=bareMedia(data.ContentType)
+        if media=="application/json"||strings.HasSuffix(media,"+json")||strings.HasPrefix(media,"text/")||strings.Contains(media,"xml")||media=="application/x-www-form-urlencoded"||strings.HasPrefix(media,"multipart/"){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"binary body requires a binary representation"})}
+    }
+    if data.RequireCookieHeaders&&!execution.client.transport.Capabilities().CookieHeaders{return nil,execution.Failure(types.TransportCapabilityRequired,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"declared cookies require CookieHeaders capability"})}
+    base,err:=execution.serverBase(data.Servers);if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+    target,err:=requestURL(base,data.Path,data.Query)
+    if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+    request,err:=http.NewRequestWithContext(execution.Context,execution.Operation.Method,target.String(),nil)
+    if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+    execution.Request=request
+    headers,err:=requestHeaders(execution.Options,data)
+    if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+    request.Header=headers
+    if len(transport.HeaderValues(headers,"Cookie"))!=0&&!execution.client.transport.Capabilities().CookieHeaders{return nil,execution.Failure(types.TransportCapabilityRequired,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"explicit cookies require CookieHeaders capability"})}
+    secured,err:=security.Apply(execution.Context,request,execution.Operation,execution.Options,execution.client.securityProvider,execution.client.transport.Capabilities(),data.Security)
+    if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+    if values:=transport.HeaderValues(headers,"Host");len(values)!=0{request.Host=values[0]}
+    if data.HasBody{
+        if data.EncodeBody==nil{return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"body encoder is missing"})}
+        binary,err:=data.EncodeBody(execution.Context,SnapshotRequest(request));if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+        if strings.HasPrefix(bareMedia(data.ContentType),"multipart/"){if contentType:=binary.Metadata().ContentType;contentType!=""{request.Header.Set("Content-Type",contentType)}}
+        opened,err:=binary.Open(execution.Context);if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+        outgoing:=&requestBodyReader{ReadCloser:opened}
+        execution.requestBody=outgoing
+        execution.stopRequestBody=context.AfterFunc(execution.Context,func(){opened.Close()})
+        request.Body=outgoing;request.ContentLength=-1
+        if size,known:=binary.Metadata().Size.Get();known{
+            request.ContentLength=size
+            if size==0{
+                var probe [1]byte;count,readError:=io.ReadFull(opened,probe[:])
+                if readError!=io.EOF||count!=0{if readError==nil{readError=errors.New("zero-length body source returned data")};return nil,execution.Failure(types.RequestEncodeFailed,readError)}
+                if closeError:=opened.Close();closeError!=nil{return nil,execution.Failure(types.RequestEncodeFailed,closeError)}
+                request.Body=http.NoBody
+            }
+        }
+    }
+    credentials:=execution.Options.Credentials;if credentials==""{credentials=types.SameOrigin}
+    explicitCredentials:=len(transport.HeaderValues(headers,"Authorization"))!=0||len(transport.HeaderValues(headers,"Cookie"))!=0
+    response,err:=execution.client.transport.Do(request,types.TransportOptions{Credentials:credentials,Origin:execution.client.origin,AllowRedirects:!explicitCredentials&&!secured})
+    execution.Response=response
+    if err!=nil{
+        if response!=nil&&response.Body!=nil{response.Body.Close()}
+        var detail *types.SDKError
+        code:=types.NetworkError;if errors.As(err,&detail)&&(detail.Code==types.RequestEncodeFailed||detail.Code==types.RequestBodyConsumed||detail.Code==types.RequestOptionsInvalid){code=types.RequestEncodeFailed}
+        return nil,execution.Failure(code,err)
+    }
+    normalized,lease,err:=transport.NewResponseBody(execution.Context,response,execution.Operation.Method,execution.client.transport.Capabilities().ResponseBody)
+    execution.lease=lease
+    if normalized!=nil{execution.Response=normalized}
+    if err!=nil{return nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    return normalized,nil
+}
+type requestBodyReader struct{io.ReadCloser}
+func(body *requestBodyReader)Read(buffer []byte)(int,error){
+    count,err:=body.ReadCloser.Read(buffer)
+    if err!=nil&&err!=io.EOF{return count,&types.SDKError{Code:types.RequestEncodeFailed,Message:"request body source failed",Cause:err}}
+    return count,err
+}
+
+func requestHeaders(options types.RequestOptions,data RequestData)(http.Header,error){
+    result:=make(http.Header)
+    invalid:=func(message string)error{return &types.SDKError{Code:types.RequestOptionsInvalid,Message:message}}
+    owned:=make(map[string]bool,len(data.HeaderNames))
+    for _,name:=range data.HeaderNames{owned[strings.ToLower(name)]=true}
+    for name,values:=range options.Headers{
+        lower:=strings.ToLower(name)
+        if owned[lower]||lower=="accept"||lower=="authorization"||lower=="content-type"||lower=="x-csrf-token"||lower=="x-request-id"{return nil,invalid("raw headers must use their typed option or declared parameter")}
+        for _,value:=range values{if !validHeader(name,value){return nil,invalid("invalid HTTP header")};result.Add(name,strings.Trim(value," \t"))}
+    }
+    for name,values:=range data.Headers{for _,value:=range values{if !validHeader(name,value){return nil,invalid("invalid declared HTTP header")};result.Add(name,strings.Trim(value," \t"))}}
+    typed:=func(name string,value types.Optional[string])error{if text,present:=value.Get();present{if !validHeader(name,text){return invalid("invalid typed HTTP header")};result.Set(name,strings.Trim(text," \t"))};return nil}
+    for _,field:=range []struct{name string;value types.Optional[string]}{ {"Accept",options.Accept},{"Authorization",options.Authorization},{"X-CSRF-Token",options.CSRFToken},{"X-Request-Id",options.RequestID}}{if err:=typed(field.name,field.value);err!=nil{return nil,err}}
+    if data.HasBody&&data.ContentType!=""{if !validHeader("Content-Type",data.ContentType){return nil,invalid("invalid request media type")};result.Set("Content-Type",data.ContentType)}
+    return result,nil
+}
+func validHeader(name,value string)bool{return transport.ValidHeader(name,value)}
+
+func requestURL(base *url.URL,path,query string)(*url.URL,error){
+    for _,segment:=range strings.Split(path,"/"){dots:=strings.ReplaceAll(strings.ToLower(segment),"%2e",".");if dots=="."||dots==".."{return nil,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"operation path contains a URL dot segment"}}}
+    if !strings.HasPrefix(path,"/"){path="/"+path}
+    joined:=strings.TrimRight(base.EscapedPath(),"/")+path
+    const hex="0123456789ABCDEF"
+    var escaped strings.Builder
+    for index:=0;index<len(joined);index++{
+        char:=joined[index]
+        if char=='%'&&index+2<len(joined)&&hexDigit(joined[index+1])&&hexDigit(joined[index+2]){escaped.WriteString(joined[index:index+3]);index+=2;continue}
+        if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("/-._~!$&'()*+,;=:@",rune(char)){escaped.WriteByte(char)}else{escaped.WriteByte('%');escaped.WriteByte(hex[char>>4]);escaped.WriteByte(hex[char&15])}
+    }
+    encoded:=escaped.String();decoded,err:=url.PathUnescape(encoded);if err!=nil{return nil,err}
+    target:=*base;target.Path=decoded;target.RawPath=encoded;target.RawQuery=query;target.Fragment="";target.RawFragment=""
+    return &target,nil
+}
+func hexDigit(value byte)bool{return value>='0'&&value<='9'||value>='a'&&value<='f'||value>='A'&&value<='F'}

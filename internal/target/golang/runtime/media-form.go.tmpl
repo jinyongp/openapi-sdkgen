@@ -1,0 +1,24 @@
+type MultipartHeader struct{Name string;Required bool;Decode func(context.Context,string)(types.Value,error)}
+type FormField struct { Name,Key,ContentType,DefaultContentType,BinaryContentType string; Explode,Positional,Default bool; Headers []MultipartHeader;Children []FormField;Nested func(string,string)[]FormField;Encoder func(context.Context,types.Value,string,string,string)(types.Binary,error);MediaInfo func(context.Context,types.Value,string,string,map[string]bool)(string,bool,error) }
+
+// EncodeFormBody is separate from parameter-content Form: complete form bodies
+// flatten exploded objects and honor each declared field's encoding.
+func EncodeFormBody(value types.Value,definitions []FormField)(types.Binary,error){
+    if value.Kind()!=types.ValueObject{return types.Binary{},fmt.Errorf("form body must be an object")}
+    pairs:=make([]string,0,value.Len())
+    pair:=func(name,text string){pairs=append(pairs,formEscape(name)+"="+formEscape(text))}
+    for _,name:=range value.Keys(){
+        item,_:=value.Get(name);definition:=FormField{Explode:true}
+        for _,candidate:=range definitions{if candidate.Name==name{definition=candidate;break}}
+        media,_,_:=strings.Cut(strings.ToLower(definition.ContentType),";");media=strings.TrimSpace(media)
+        if media=="application/json"||strings.HasSuffix(media,"+json"){encoded,err:=item.MarshalJSON();if err!=nil{return types.Binary{},err};pair(name,string(encoded));continue}
+        switch item.Kind(){
+        case types.ValueArray:
+            if definition.Explode{for _,entry:=range item.Items(){pair(name,String(entry))}}else{parts:=make([]string,0,item.Len());for _,entry:=range item.Items(){parts=append(parts,String(entry))};pair(name,strings.Join(parts,","))}
+        case types.ValueObject:
+            if definition.Explode{for _,key:=range item.Keys(){entry,_:=item.Get(key);pair(key,String(entry))}}else{parts:=make([]string,0,item.Len()*2);for _,key:=range item.Keys(){entry,_:=item.Get(key);parts=append(parts,key,String(entry))};pair(name,strings.Join(parts,","))}
+        default:pair(name,String(item))
+        }
+    }
+    return types.BinaryFromBytes([]byte(strings.Join(pairs,"&"))),nil
+}

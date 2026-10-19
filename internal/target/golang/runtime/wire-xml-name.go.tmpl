@@ -1,0 +1,61 @@
+// XMLNamePart follows the XML 1.0 fifth-edition ranges used by the other target.
+func XMLNamePart(value string)bool{
+    if value==""||USVString(value)!=value{return false};first:=true
+    for _,code:=range value{
+        start:=code=='_'||code>='A'&&code<='Z'||code>='a'&&code<='z'||code>=0xc0&&code<=0xd6||code>=0xd8&&code<=0xf6||code>=0xf8&&code<=0x2ff||code>=0x370&&code<=0x37d||code>=0x37f&&code<=0x1fff||code>=0x200c&&code<=0x200d||code>=0x2070&&code<=0x218f||code>=0x2c00&&code<=0x2fef||code>=0x3001&&code<=0xd7ff||code>=0xf900&&code<=0xfdcf||code>=0xfdf0&&code<=0xfffd||code>=0x10000&&code<=0xeffff
+        if !start&&(first||!(code=='-'||code=='.'||code==0xb7||code>='0'&&code<='9'||code>=0x300&&code<=0x36f||code>=0x203f&&code<=0x2040)){return false};first=false
+    };return true
+}
+
+type xmlNameSpan struct { start,end int; parts []string }
+
+// The standard decoder still uses older XML name ranges. Retry only its name
+// rejection with collision-free ASCII aliases; content, values, entities and
+// namespace URIs remain untouched. Ordinary XML uses the first parse directly.
+func prepareXMLNameAliases(ctx context.Context,source string)(string,map[string]string,error){
+    names:=make(map[string]bool);var spans []xmlNameSpan
+    space:=func(char byte)bool{return char==' '||char=='\t'||char=='\r'||char=='\n'}
+    record:=func(start,end int,processing bool)error{
+        raw:=source[start:end];parts:=strings.Split(raw,":")
+        if !processing&&len(parts)>2{return fmt.Errorf("invalid XML name")}
+        for _,part:=range parts{if processing&&part==""{continue};if !XMLNamePart(part){return fmt.Errorf("invalid XML name")};names[part]=true}
+        spans=append(spans,xmlNameSpan{start:start,end:end,parts:parts});return nil
+    }
+    for index:=0;index<len(source);{
+        if err:=ctx.Err();err!=nil{return "",nil,err}
+        next:=strings.IndexByte(source[index:],'<');if next<0{break};index+=next
+        skip:="";if strings.HasPrefix(source[index:],"<!--"){skip="-->"}else if strings.HasPrefix(source[index:],"<![CDATA["){skip="]]>"}
+        if skip!=""{end:=strings.Index(source[index:],skip);if end<0{return "",nil,fmt.Errorf("unterminated XML markup")};index+=end+len(skip);continue}
+        if strings.HasPrefix(source[index:],"<!"){return "",nil,fmt.Errorf("XML declarations are unsupported")}
+        index++;if index>=len(source){return "",nil,fmt.Errorf("unterminated XML element")}
+        processing:=source[index]=='?';closing:=source[index]=='/';if processing||closing{index++}
+        start:=index;for index<len(source)&&!space(source[index])&&source[index]!='>'&&source[index]!='/'&&source[index]!='?'{index++}
+        if err:=record(start,index,processing);err!=nil{return "",nil,err}
+        if processing{end:=strings.Index(source[index:],"?>");if end<0{return "",nil,fmt.Errorf("unterminated XML instruction")};index+=end+2;continue}
+        for index<len(source){
+            for index<len(source)&&space(source[index]){index++}
+            if index>=len(source){return "",nil,fmt.Errorf("unterminated XML element")}
+            if source[index]=='>'{index++;break}
+            if source[index]=='/'&&index+1<len(source)&&source[index+1]=='>'{index+=2;break}
+            if closing{return "",nil,fmt.Errorf("invalid XML closing element")}
+            start:=index;for index<len(source)&&!space(source[index])&&source[index]!='='&&source[index]!='>'&&source[index]!='/'{index++}
+            if err:=record(start,index,false);err!=nil{return "",nil,err}
+            for index<len(source)&&space(source[index]){index++};if index>=len(source)||source[index]!='='{return "",nil,fmt.Errorf("invalid XML attribute")};index++
+            for index<len(source)&&space(source[index]){index++};if index>=len(source)||source[index]!='\''&&source[index]!='"'{return "",nil,fmt.Errorf("unquoted XML attribute")}
+            quote:=source[index];index++;end:=strings.IndexByte(source[index:],quote);if end<0{return "",nil,fmt.Errorf("unterminated XML attribute")};index+=end+1
+        }
+    }
+    aliases:=make(map[string]string);originals:=make(map[string]string);counter:=0
+    var output strings.Builder;copied:=0
+    for _,span:=range spans{
+        changed:=false;parts:=append([]string(nil),span.parts...)
+        for index,part:=range parts{
+            nonASCII:=false;for byteIndex:=0;byteIndex<len(part);byteIndex++{if part[byteIndex]>=128{nonASCII=true;break}}
+            if !nonASCII{continue}
+            alias:=aliases[part];if alias==""{for{alias="SdkgenXMLName"+strconv.Itoa(counter);counter++;if !names[alias]{break}};aliases[part]=alias;originals[alias]=part}
+            parts[index]=alias;changed=true
+        }
+        if changed{output.WriteString(source[copied:span.start]);output.WriteString(strings.Join(parts,":"));copied=span.end}
+    }
+    if len(originals)==0{return source,nil,nil};output.WriteString(source[copied:]);return output.String(),originals,nil
+}

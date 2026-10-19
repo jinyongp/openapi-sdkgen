@@ -1,0 +1,15 @@
+func FormatTime(value string) bool {
+    if len(value)<9||value[2]!=':'||value[5]!=':'{return false}
+    hour,hourOK:=formatDigits(value[:2]);minute,minuteOK:=formatDigits(value[3:5]);second,secondOK:=formatDigits(value[6:8])
+    if !hourOK||!minuteOK||!secondOK||hour>23||minute>59||second>60{return false}
+    offset:=8
+    if value[offset]=='.'{offset++;start:=offset;for offset<len(value)&&value[offset]>='0'&&value[offset]<='9'{offset++};if offset==start{return false}}
+    if offset>=len(value){return false}
+    displacement:=0
+    if value[offset]=='Z'||value[offset]=='z'{if offset!=len(value)-1{return false}}else{
+        if len(value)-offset!=6||(value[offset]!='+'&&value[offset]!='-')||value[offset+3]!=':'{return false}
+        hours,okH:=formatDigits(value[offset+1:offset+3]);minutes,okM:=formatDigits(value[offset+4:]);if !okH||!okM||hours>23||minutes>59{return false}
+        displacement=hours*60+minutes;if value[offset]=='-'{displacement=-displacement}
+    }
+    return second!=60||(hour*60+minute-displacement+1440)%1440==1439
+}

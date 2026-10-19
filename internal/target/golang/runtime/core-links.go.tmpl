@@ -1,0 +1,120 @@
+// LinkSource is captured from an actual exchange. Generated sealed operation
+// interfaces prevent callers from fabricating a source with this internal type.
+type LinkSource struct{
+ Valid bool
+ Status int
+ Headers http.Header
+ URL string
+ Body func(context.Context)(types.Value,bool,error)
+ Binaries map[string]types.Binary
+}
+// Embedded nil sealed interfaces have promoted methods; they are uninitialized
+// sources, just like a zero Raw response.
+func CaptureLinkSource(read func()LinkSource)(source LinkSource){defer func(){if recover()!=nil{source=LinkSource{}}}();if read==nil{return source};return read()}
+// Native values travel beside the immutable JSON shape. Resolving a Link never
+// opens a binary source or a request item factory.
+type LinkData = types.NativeInput
+func PutLinkMultipart(data *LinkData,prefix string,value types.MultipartData){for path,binary:=range value.Slots{if data.Binaries==nil{data.Binaries=make(map[string]types.Binary)};data.Binaries[prefix+path]=binary}}
+func PutLinkBinary(data *LinkData,pointer string,value types.Binary){if data.Binaries==nil{data.Binaries=make(map[string]types.Binary)};data.Binaries[pointer]=value}
+func PutLinkFactory(data *LinkData,pointer string,factory types.SourceFactory[types.MultipartData]){if data.Sources==nil{data.Sources=make(map[string]types.SourceFactory[types.MultipartData])};data.Sources[pointer]=factory}
+type LinkValue struct{
+ Literal types.Value
+ Expression string
+ Parameter bool
+ Section,Name,Pointer string
+}
+type LinkAssignment struct{Section,Name string;Value LinkValue}
+type LinkDefinition struct{Parameters []LinkAssignment;Body *LinkValue}
+
+func LinkFailure(message string)error{return &types.SDKError{Code:types.RequestOptionsInvalid,Message:message}}
+func LinkURL(source LinkSource,server string)(string,error){
+ if !source.Valid{return "",LinkFailure("Link requires an actual HTTP response")}
+ base,err:=url.Parse(source.URL);if err!=nil{return "",err};reference,err:=url.Parse(server);if err!=nil{return "",err};return base.ResolveReference(reference).String(),nil
+}
+func ResolveLink(ctx context.Context,source LinkSource,definition LinkDefinition,input,override types.Value)(types.Value,error){data,err:=ResolveLinkData(ctx,source,definition,LinkData{Value:input},LinkData{Value:override});return data.Value,err}
+
+func ResolveLinkData(ctx context.Context,source LinkSource,definition LinkDefinition,input,override LinkData)(LinkData,error){
+ if !source.Valid{return LinkData{},LinkFailure("Link requires an actual HTTP response")}
+ sections:=make(map[string]types.Value);result:=LinkData{}
+ put:=func(section string,data LinkData){
+  sections[section]=data.Value
+  prefix:="/"+strings.ReplaceAll(strings.ReplaceAll(section,"~","~0"),"/","~1")
+  for path,binary:=range data.Binaries{if result.Binaries==nil{result.Binaries=make(map[string]types.Binary)};result.Binaries[prefix+path]=binary}
+  for path,factory:=range data.Sources{if result.Sources==nil{result.Sources=make(map[string]types.SourceFactory[types.MultipartData])};result.Sources[prefix+path]=factory}
+ }
+ for _,assignment:=range definition.Parameters{
+  value,present,err:=evaluateLinkData(ctx,source,assignment.Value,input);if err!=nil{return LinkData{},err};if !present{continue}
+  fields:=sections[assignment.Section].Fields();fields[assignment.Name]=value.Value;encoded,err:=types.ValueFrom(fields);if err!=nil{return LinkData{},err};sections[assignment.Section]=encoded
+ }
+ if definition.Body!=nil{value,present,err:=evaluateLinkData(ctx,source,*definition.Body,input);if err!=nil{return LinkData{},err};if present{put("body",value)}}
+ var err error;result.Value,err=types.ValueFrom(sections);if err!=nil{return LinkData{},err}
+ for section:=range override.Value.Fields(){
+  pointer:="/"+strings.ReplaceAll(strings.ReplaceAll(section,"~","~0"),"/","~1")
+  incoming,present,err:=LinkDataAt(override,pointer);if err!=nil{return LinkData{},err};if !present{continue}
+  current,currentPresent,err:=LinkDataAt(result,pointer);if err!=nil{return LinkData{},err}
+  _,currentBinary:=current.Binaries[""];_,incomingBinary:=incoming.Binaries[""]
+  _,currentSource:=current.Sources[""];_,incomingSource:=incoming.Sources[""]
+  if currentPresent&&!currentBinary&&!incomingBinary&&!currentSource&&!incomingSource&&current.Value.Kind()==types.ValueObject&&incoming.Value.Kind()==types.ValueObject{
+   fields:=current.Value.Fields();for key,item:=range incoming.Value.Fields(){fields[key]=item;child:="/"+strings.ReplaceAll(strings.ReplaceAll(key,"~","~0"),"/","~1");for path:=range current.Binaries{if path==child||strings.HasPrefix(path,child+"/"){delete(current.Binaries,path)}};for path:=range current.Sources{if path==child||strings.HasPrefix(path,child+"/"){delete(current.Sources,path)}}}
+   incoming.Value,err=types.ValueFrom(fields);if err!=nil{return LinkData{},err}
+   for path,binary:=range current.Binaries{if incoming.Binaries==nil{incoming.Binaries=make(map[string]types.Binary)};incoming.Binaries[path]=binary}
+   for path,factory:=range current.Sources{if incoming.Sources==nil{incoming.Sources=make(map[string]types.SourceFactory[types.MultipartData])};incoming.Sources[path]=factory}
+  }
+  for path:=range result.Binaries{if path==pointer||strings.HasPrefix(path,pointer+"/"){delete(result.Binaries,path)}}
+  for path:=range result.Sources{if path==pointer||strings.HasPrefix(path,pointer+"/"){delete(result.Sources,path)}}
+  put(section,incoming);result.Value,err=types.ValueFrom(sections);if err!=nil{return LinkData{},err}
+ };return result,nil
+}
+func LinkDataAt(data LinkData,pointer string)(LinkData,bool,error){
+ value,present,err:=linkPointer(data.Value,pointer);if err!=nil||!present{return LinkData{},present,err};result:=LinkData{Value:value}
+ for path,binary:=range data.Binaries{if path==pointer||strings.HasPrefix(path,pointer+"/"){if result.Binaries==nil{result.Binaries=make(map[string]types.Binary)};result.Binaries[strings.TrimPrefix(path,pointer)]=binary}}
+ for path,factory:=range data.Sources{if path==pointer||strings.HasPrefix(path,pointer+"/"){if result.Sources==nil{result.Sources=make(map[string]types.SourceFactory[types.MultipartData])};result.Sources[strings.TrimPrefix(path,pointer)]=factory}}
+ return result,true,nil
+}
+func evaluateLinkData(ctx context.Context,source LinkSource,value LinkValue,input LinkData)(LinkData,bool,error){
+ expression:=value.Expression
+ if expression=="$request.body"||strings.HasPrefix(expression,"$request.body#"){pointer:="/body";if expression!="$request.body"{suffix:=strings.TrimPrefix(expression,"$request.body#");if suffix!=""&&!strings.HasPrefix(suffix,"/"){return LinkData{},false,LinkFailure("invalid Link JSON Pointer")};pointer+=suffix};return LinkDataAt(input,pointer)}
+ if expression=="$response.body"||strings.HasPrefix(expression,"$response.body#"){
+  pointer:="";if expression!="$response.body"{pointer=strings.TrimPrefix(expression,"$response.body#")}
+  if len(source.Binaries)!=0{logical,_:=types.ValueFrom(map[string]types.Value{});return LinkDataAt(LinkData{Value:logical,Binaries:source.Binaries},pointer)}
+  if source.Body==nil{return LinkData{},false,nil};body,present,err:=source.Body(ctx);if err!=nil||!present{return LinkData{},present,err};return LinkDataAt(LinkData{Value:body},pointer)
+ }
+ logical,present,err:=evaluateLinkValue(ctx,source,value,input.Value);return LinkData{Value:logical},present,err
+}
+func evaluateLinkValue(ctx context.Context,source LinkSource,value LinkValue,input types.Value)(types.Value,bool,error){
+ if value.Parameter{section,present:=input.Get(value.Section);if !present{return types.Value{},false,nil};item,present:=section.Get(value.Name);if !present{return types.Value{},false,nil};return linkPointer(item,value.Pointer)}
+ expression:=value.Expression
+ if expression==""{return value.Literal,true,nil}
+ switch expression{
+ case "$url":item,err:=types.ValueFrom(source.URL);return item,true,err
+ case "$statusCode","$response.statusCode":item,err:=types.ValueFrom(source.Status);return item,true,err
+ }
+ if expression=="$response.body"||strings.HasPrefix(expression,"$response.body#"){
+  if source.Body==nil{return types.Value{},false,nil};body,present,err:=source.Body(ctx);if err!=nil||!present{return types.Value{},present,err};if expression=="$response.body"{return body,true,nil};return linkPointer(body,strings.TrimPrefix(expression,"$response.body#"))
+ }
+ if expression=="$request.body"||strings.HasPrefix(expression,"$request.body#"){
+  body,present:=input.Get("body");if !present{return types.Value{},false,nil};if expression=="$request.body"{return body,true,nil};return linkPointer(body,strings.TrimPrefix(expression,"$request.body#"))
+ }
+ if len(expression)>len("$response.header.")&&strings.EqualFold(expression[:len("$response.header.")],"$response.header."){
+  name:=expression[len("$response.header."):];for _,char:=range name{if !(char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("!#$%&'*+.^_`|~-",char)){return types.Value{},false,LinkFailure("unsupported Link header expression")}}
+  text,present:=HeaderValue(source.Headers,name);if !present{return types.Value{},true,nil};item,err:=types.ValueFrom(text);return item,true,err
+ }
+ return types.Value{},false,LinkFailure("unsupported OpenAPI Link runtime expression")
+}
+func linkPointer(value types.Value,pointer string)(types.Value,bool,error){
+ if pointer==""{return value,true,nil};if !strings.HasPrefix(pointer,"/"){return types.Value{},false,LinkFailure("invalid Link JSON Pointer")}
+ for _,token:=range strings.Split(pointer[1:],"/"){
+  key:=strings.ReplaceAll(strings.ReplaceAll(token,"~1","/"),"~0","~")
+  var present bool
+  if value.Kind()==types.ValueArray{
+   if key==""||len(key)>1&&key[0]=='0'{return types.Value{},false,LinkFailure("invalid Link JSON Pointer array index")};for _,char:=range key{if char<'0'||char>'9'{return types.Value{},false,LinkFailure("invalid Link JSON Pointer array index")}}
+   index,err:=strconv.Atoi(key);if err!=nil{return types.Value{},false,nil};value,present=value.At(index)
+  }else{value,present=value.Get(key)}
+  if !present{return types.Value{},false,nil}
+ };return value,true,nil
+}
+func LinkStatusScore(actual int,status string)int{
+ if status=="default"{return 1}
+ if len(status)==3&&(status[1]=='X'||status[1]=='x')&&(status[2]=='X'||status[2]=='x'){if actual/100==int(status[0]-'0'){return 2};return 0}
+ expected,err:=strconv.Atoi(status);if err==nil&&expected==actual{return 3};return 0
+}

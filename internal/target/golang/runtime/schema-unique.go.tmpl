@@ -1,0 +1,41 @@
+func UniqueItems(ctx context.Context,value wire.Value) (bool,error) {
+    if value.Kind()!=wire.Array{return true,nil}
+    seed:=maphash.MakeSeed()
+    buckets:=make(map[uint64][]wire.Value,value.Len())
+    for index:=0;index<value.Len();index++{
+        item,_:=value.At(index)
+        hash,err:=wire.Hash(ctx,item,seed);if err!=nil{return false,err}
+        for _,previous:=range buckets[hash]{if item.Equal(previous){if err:=ctx.Err();err!=nil{return false,err};return false,nil}}
+        buckets[hash]=append(buckets[hash],item)
+    }
+    return true,nil
+}
+
+type uniqueMediaValue struct { Value wire.Value; Path string }
+func UniqueMediaItems(ctx context.Context,value wire.Value,path string,state *State)(bool,error){
+    if len(state.Binaries)==0{return UniqueItems(ctx,value)}
+    if value.Kind()!=wire.Array{return true,nil}
+    seed:=maphash.MakeSeed();buckets:=make(map[uint64][]uniqueMediaValue,value.Len())
+    for index:=0;index<value.Len();index++{
+        item,_:=value.At(index);itemPath:=IndexPath(path,index)
+        hash,err:=wire.Hash(ctx,item,seed);if err!=nil{return false,err}
+        for _,previous:=range buckets[hash]{equal,err:=equalMediaValue(ctx,item,itemPath,previous.Value,previous.Path,state);if err!=nil{return false,err};if equal{return false,nil}}
+        buckets[hash]=append(buckets[hash],uniqueMediaValue{Value:item,Path:itemPath})
+    };return true,nil
+}
+func equalMediaValue(ctx context.Context,left wire.Value,leftPath string,right wire.Value,rightPath string,state *State)(bool,error){
+    if err:=ctx.Err();err!=nil{return false,err}
+    leftOpaque,rightOpaque:=state.Binaries[leftPath],state.Binaries[rightPath]
+    if leftOpaque||rightOpaque{return leftOpaque&&rightOpaque,nil}
+    if !state.OpaqueAncestors[leftPath]&&!state.OpaqueAncestors[rightPath]{return left.Equal(right),nil}
+    if left.Kind()!=right.Kind()||left.Len()!=right.Len(){return false,nil}
+    switch left.Kind(){
+    case wire.Array:
+        for index:=0;index<left.Len();index++{a,_:=left.At(index);b,_:=right.At(index);equal,err:=equalMediaValue(ctx,a,IndexPath(leftPath,index),b,IndexPath(rightPath,index),state);if err!=nil||!equal{return equal,err}}
+        return true,nil
+    case wire.Object:
+        for _,key:=range left.Keys(){a,_:=left.Get(key);b,exists:=right.Get(key);if !exists{return false,nil};equal,err:=equalMediaValue(ctx,a,ChildPath(leftPath,key),b,ChildPath(rightPath,key),state);if err!=nil||!equal{return equal,err}}
+        return true,nil
+    default:return left.Equal(right),nil
+    }
+}

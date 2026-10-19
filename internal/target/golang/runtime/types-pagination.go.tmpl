@@ -1,0 +1,78 @@
+// PaginationConfig is generated per operation; no operation registry is retained.
+type PaginationConfig struct{
+ Mode,Cursor,Offset,Limit string
+ Items,NextCursor,ResponseOffset,ResponseLimit,Total []string
+}
+type Paginator[T any] struct{stream *Stream[T]}
+func(paginator *Paginator[T])Next()bool{return paginator.stream.Next()}
+func(paginator *Paginator[T])Item()T{return paginator.stream.Item()}
+func(paginator *Paginator[T])Err()error{return paginator.stream.Err()}
+func(paginator *Paginator[T])Close()error{return paginator.stream.Close()}
+
+func NewPaginator[T any](ctx context.Context,config PaginationConfig,requested string,initial func(context.Context)(Value,error),fetch func(context.Context,Value)(Value,error),decode func(context.Context,Value)(T,error))*Paginator[T]{
+ return &Paginator[T]{stream:NewStream(ctx,func(ctx context.Context)(Source[T],*http.Response,error){
+  mode:=config.Mode;if requested!=""{mode=requested}
+  if (mode!="cursor"&&mode!="offset")||(config.Mode!="both"&&mode!=config.Mode){return nil,nil,&SDKError{Code:RequestOptionsInvalid,Message:"invalid pagination mode"}}
+  query,err:=initial(ctx);if err!=nil{return nil,nil,err}
+  if query.Kind()!=ValueObject{return nil,nil,&SDKError{Code:RequestOptionsInvalid,Message:"pagination query must be an object"}}
+  forbidden:=config.Offset;if mode=="offset"{forbidden=config.Cursor};if forbidden!=""{if _,present:=query.Get(forbidden);present{return nil,nil,&SDKError{Code:RequestOptionsInvalid,Message:"pagination mode does not accept "+forbidden}}}
+  source:=&paginationSource[T]{ctx:ctx,config:config,mode:mode,query:query,fetch:fetch,decode:decode,cursors:make(map[string]bool),offsets:make(map[float64]bool)}
+  if value,present:=query.Get(config.Cursor);present{if text,ok:=value.String();ok{source.cursors[text]=true}}
+  if value,present:=query.Get(config.Offset);present{if number,ok:=value.Number();ok{source.offsets[number]=true}}
+  return source,nil,nil
+ })}
+}
+type paginationSource[T any]struct{
+ mu sync.Mutex
+ closed bool
+ ctx context.Context
+ config PaginationConfig
+ mode string
+ query,page Value
+ index int
+ item T
+ failure error
+ finished bool
+ cursors map[string]bool
+ offsets map[float64]bool
+ fetch func(context.Context,Value)(Value,error)
+ decode func(context.Context,Value)(T,error)
+}
+func(source *paginationSource[T])Next()bool{
+ source.mu.Lock();defer source.mu.Unlock();if source.closed{return false}
+ for {
+  if err:=source.ctx.Err();err!=nil{source.failure=err;return false}
+  if value,present:=source.page.At(source.index);present{source.index++;source.item,source.failure=source.decode(source.ctx,value);return source.failure==nil}
+  if source.finished{return false}
+  page,err:=source.fetch(source.ctx,source.query);if err!=nil{source.failure=err;return false}
+  source.page,_=paginationPointer(page,source.config.Items);source.index=0
+  if source.page.Kind()!=ValueArray{source.page=Value{}}
+  fields:=source.query.Fields()
+  if source.mode=="cursor"{
+   value,_:=paginationPointer(page,source.config.NextCursor);next,ok:=value.String()
+   if !ok||next==""||source.cursors[next]||source.config.Cursor==""{source.finished=true}else{source.cursors[next]=true;fields[source.config.Cursor],err=ValueFrom(next)}
+  }else{
+   requested:=paginationNumber(source.query,[]string{source.config.Offset},0)
+   offset:=paginationNumber(page,source.config.ResponseOffset,requested)
+   limit:=paginationNumber(page,source.config.ResponseLimit,paginationNumber(source.query,[]string{source.config.Limit},float64(source.page.Len())))
+   total,totalPresent:=paginationPointer(page,source.config.Total);totalNumber,totalIsNumber:=total.Number()
+   next:=offset+limit
+   if source.config.Offset==""||limit<=0||source.page.Kind()!=ValueArray||source.page.Len()==0||float64(source.page.Len())<limit||next<=requested||source.offsets[next]||(totalPresent&&totalIsNumber&&next>=totalNumber){source.finished=true}else{source.offsets[next]=true;fields[source.config.Offset],err=ValueFrom(next)}
+  }
+  if err!=nil{source.failure=err;return false}
+  source.query,err=ValueFrom(fields);if err!=nil{source.failure=err;return false}
+ }
+}
+func(source *paginationSource[T])Item()T{source.mu.Lock();defer source.mu.Unlock();return source.item}
+func(source *paginationSource[T])Err()error{source.mu.Lock();defer source.mu.Unlock();return source.failure}
+// The outer stream cancels active HTTP before Close waits for the current Next.
+func(source *paginationSource[T])Close()error{source.mu.Lock();defer source.mu.Unlock();source.closed=true;source.page=Value{};source.query=Value{};source.cursors=nil;source.offsets=nil;source.fetch=nil;source.decode=nil;var zero T;source.item=zero;return nil}
+func paginationPointer(value Value,tokens []string)(Value,bool){
+ if tokens==nil{return Value{},false}
+ for _,token:=range tokens{
+  var present bool
+  if value.Kind()==ValueArray{index,err:=strconv.Atoi(token);if err!=nil||index<0||strconv.Itoa(index)!=token{return Value{},false};value,present=value.At(index)}else{value,present=value.Get(token)}
+  if !present{return Value{},false}
+ };return value,true
+}
+func paginationNumber(value Value,tokens []string,fallback float64)float64{item,present:=paginationPointer(value,tokens);if present{if number,ok:=item.Number();ok{return number}};return fallback}

@@ -1,0 +1,87 @@
+// SourceOnce shares its one-shot state across every copy of the factory.
+func SourceOnce[T any](source Source[T])SourceFactory[T]{
+    var consumed atomic.Bool
+    return func(ctx context.Context)(Source[T],error){
+        if err:=ctx.Err();err!=nil{return nil,err}
+        if nilInterface(source){return nil,&SDKError{Code:RequestOptionsInvalid,Message:"stream source is nil"}}
+        if !consumed.CompareAndSwap(false,true){return nil,&SDKError{Code:RequestBodyConsumed,Message:"stream source was already opened"}}
+        return source,nil
+    }
+}
+
+// Stream is lazy. Response starts the exchange without consuming an item;
+// only one Next may be active. Close can interrupt any phase.
+type Stream[T any] struct{
+    ctx context.Context
+    cancel context.CancelFunc
+    stop func()bool
+    start func(context.Context)(Source[T],*http.Response,error)
+    mapFailure func(error,*http.Response)error
+    startOnce sync.Once
+    advancing atomic.Bool
+    mu sync.Mutex
+    source Source[T]
+    response *http.Response
+    item T
+    failure,startFailure error
+    closed bool
+}
+func NewStream[T any](ctx context.Context,start func(context.Context)(Source[T],*http.Response,error),mapFailure ...func(error,*http.Response)error)*Stream[T]{
+    running,cancel:=context.WithCancel(ctx)
+    stream:=&Stream[T]{ctx:running,cancel:cancel,start:start}
+    if len(mapFailure)!=0{stream.mapFailure=mapFailure[0]}
+    stream.stop=context.AfterFunc(running,func(){stream.finish(running.Err())})
+    return stream
+}
+func(stream *Stream[T])ensureStarted(){
+    stream.startOnce.Do(func(){
+        stream.mu.Lock();closed:=stream.closed;stream.mu.Unlock()
+        if closed{return}
+        var source Source[T];var response *http.Response;var err error
+        if err=stream.ctx.Err();err==nil{
+            if stream.start==nil{err=&SDKError{Code:OperationNotPrepared,Message:"stream is not initialized"}}else{source,response,err=stream.start(stream.ctx)}
+        }
+        if err==nil&&nilInterface(source){err=&SDKError{Code:ResponseDecodeFailed,Message:"stream decoder returned a nil source"}}
+        stream.mu.Lock()
+        if stream.closed{stream.mu.Unlock();if !nilInterface(source){source.Close()};return}
+        stream.response=response;stream.startFailure=err
+        if !nilInterface(source){stream.source=ownStreamSource(source,nil)};stream.mu.Unlock()
+        if err!=nil{closeError:=stream.finish(err);stream.mu.Lock();stream.startFailure=errors.Join(err,closeError);stream.mu.Unlock()}
+    })
+}
+func(stream *Stream[T])Response()(*http.Response,error){
+    stream.ensureStarted();stream.mu.Lock();response,startFailure,failure:=stream.response,stream.startFailure,stream.failure;stream.mu.Unlock()
+    if startFailure!=nil{return response,stream.mapped(startFailure,response)}
+    if response!=nil{return response,nil}
+    if failure!=nil{return nil,stream.mapped(failure,response)}
+    return nil,stream.mapped(&SDKError{Code:RequestAborted,Message:"stream was closed before response headers",Cause:context.Canceled},nil)
+}
+func(stream *Stream[T])Next()bool{
+    if !stream.advancing.CompareAndSwap(false,true){stream.finish(&SDKError{Code:StreamAlreadyConsumed,Message:"concurrent stream consumption"});return false}
+    defer stream.advancing.Store(false)
+    stream.ensureStarted()
+    stream.mu.Lock();source,closed:=stream.source,stream.closed;stream.mu.Unlock()
+    if closed||nilInterface(source){return false}
+    if !source.Next(){stream.finish(source.Err());return false}
+    stream.mu.Lock();defer stream.mu.Unlock()
+    if stream.closed{return false};stream.item=source.Item();return true
+}
+func(stream *Stream[T])Item()T{stream.mu.Lock();defer stream.mu.Unlock();return stream.item}
+func(stream *Stream[T])Err()error{stream.mu.Lock();failure,response:=stream.failure,stream.response;stream.mu.Unlock();return stream.mapped(failure,response)}
+func(stream *Stream[T])mapped(cause error,response *http.Response)error{if cause!=nil&&stream.mapFailure!=nil{return stream.mapFailure(cause,response)};return cause}
+func(stream *Stream[T])finish(cause error)error{
+    stream.mu.Lock()
+    if stream.closed{stream.mu.Unlock();return nil}
+    stream.closed=true;stream.failure=cause;source:=stream.source;stream.mu.Unlock()
+    stream.cancel()
+    var err error;if !nilInterface(source){err=source.Close()}
+    if cause!=nil||err!=nil{stream.mu.Lock();stream.failure=errors.Join(cause,err);stream.mu.Unlock()}
+    return err
+}
+func(stream *Stream[T])Close()error{
+    if stream.stop!=nil{stream.stop()}
+    stream.mu.Lock();already,source:=stream.closed,stream.source;stream.mu.Unlock();if already{if !nilInterface(source){return source.Close()};return nil}
+    // Explicit close does not turn its own cancellation into an iteration error.
+    stream.mu.Lock();if stream.closed{source=stream.source;stream.mu.Unlock();if !nilInterface(source){return source.Close()};return nil};stream.closed=true;source=stream.source;stream.mu.Unlock()
+    stream.cancel();if !nilInterface(source){return source.Close()};return nil
+}

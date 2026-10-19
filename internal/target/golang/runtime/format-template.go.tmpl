@@ -1,0 +1,5 @@
+func FormatTemplate(value string) bool {
+    depth:=0
+    for _,char:=range value{if char=='{'{depth++};if char=='}'{depth--;if depth<0{return false}}}
+    return depth==0
+}

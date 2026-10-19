@@ -1,0 +1,20 @@
+func LinkSourceFactory[T any](factory types.SourceFactory[T],encode func(context.Context,T)(types.MultipartData,error))types.SourceFactory[types.MultipartData]{
+ if factory==nil{return nil}
+ return func(ctx context.Context)(types.Source[types.MultipartData],error){source,err:=types.OpenSourceFactory(ctx,factory);if err!=nil{return nil,err};return types.MapSource(ctx,source,encode),nil}
+}
+func LinkTargetFactory[T any](factory types.SourceFactory[types.MultipartData],decode func(context.Context,types.MultipartData)(T,error))types.SourceFactory[T]{
+ if factory==nil{return nil}
+ return func(ctx context.Context)(types.Source[T],error){source,err:=types.OpenSourceFactory(ctx,factory);if err!=nil{return nil,err};return types.MapSource(ctx,source,decode),nil}
+}
+func LinkArrayFactory(data LinkData)(types.SourceFactory[types.MultipartData],error){
+ if data.Value.Kind()!=types.ValueArray{return nil,LinkFailure("Link stream body requires an item source or array")}
+ return func(ctx context.Context)(types.Source[types.MultipartData],error){return &linkArraySource{ctx:ctx,data:data},nil},nil
+}
+type linkArraySource struct{ctx context.Context;data LinkData;index int;item types.MultipartData;failure error;closed atomic.Bool}
+func(source *linkArraySource)Next()bool{
+ if source.closed.Load(){return false};if source.failure=source.ctx.Err();source.failure!=nil{return false}
+ item,present,err:=LinkDataAt(source.data,"/"+strconv.Itoa(source.index));if err!=nil{source.failure=err;return false};if !present{return false};source.index++;source.item=types.MultipartData{Value:item.Value,Slots:item.Binaries};return true
+}
+func(source *linkArraySource)Item()types.MultipartData{return source.item}
+func(source *linkArraySource)Err()error{return source.failure}
+func(source *linkArraySource)Close()error{source.closed.Store(true);return nil}

@@ -1,0 +1,46 @@
+// MultipartValue holds a JSON value or binary sources without placing host
+// resources inside Value. Its containers and source-slot maps are immutable.
+type MultipartData = wire.MediaValue[Binary]
+type MultipartValue struct { value wire.MediaValue[Binary]; failure error }
+func MultipartFromValue(value Value)MultipartValue{return MultipartValue{value:wire.MediaValue[Binary]{Value:value}}}
+func MultipartFromBinary(value Binary)MultipartValue{
+    logical:=wire.Record(nil);if text,present:=value.Text();present{var err error;logical,err=wire.CheckedText(text);if err!=nil{return MultipartValue{failure:err}}}
+    return MultipartValue{value:wire.MediaValue[Binary]{Value:logical,Slots:map[string]Binary{"":value}}}
+}
+func MultipartFromObject(values map[string]MultipartValue)(MultipartValue,error){
+    fields:=make(map[string]Value,len(values));slots:=make(map[string]Binary)
+    for name,value:=range values{
+        if value.failure!=nil{return MultipartValue{},value.failure}
+        normalized,err:=wire.CanonicalText(name);if err!=nil{return MultipartValue{},err}
+        if _,exists:=fields[normalized];exists{return MultipartValue{},fmt.Errorf("multipart object contains colliding names")}
+        fields[normalized]=value.value.Value;prefix:="/"+strings.ReplaceAll(strings.ReplaceAll(normalized,"~","~0"),"/","~1")
+        for path,binary:=range value.value.Slots{slots[prefix+path]=binary}
+    }
+    value,err:=wire.CheckedRecord(fields);if err!=nil{return MultipartValue{},err}
+    return MultipartValue{value:wire.MediaValue[Binary]{Value:value,Slots:slots}},nil
+}
+func MultipartFromArray(values []MultipartValue)MultipartValue{
+    items:=make([]Value,len(values));slots:=make(map[string]Binary)
+    for index,value:=range values{if value.failure!=nil{return MultipartValue{failure:value.failure}};items[index]=value.value.Value;prefix:="/"+strconv.Itoa(index);for path,binary:=range value.value.Slots{slots[prefix+path]=binary}}
+    return MultipartValue{value:wire.MediaValue[Binary]{Value:wire.List(items),Slots:slots}}
+}
+func(value MultipartValue)JSONValue()(Value,error){if value.failure!=nil{return Value{},value.failure};if len(value.value.Slots)!=0{return Value{},fmt.Errorf("binary media value has no JSON representation")};return value.value.Value,nil}
+func(value MultipartValue)MarshalJSON()([]byte,error){jsonValue,err:=value.JSONValue();if err!=nil{return nil,err};return jsonValue.MarshalJSON()}
+func(value MultipartValue)Binary()(Binary,bool){binary,present:=value.value.Slots[""];return binary,present}
+func(value MultipartValue)Len()int{return value.value.Value.Len()}
+func(value MultipartValue)Keys()[]string{return value.value.Value.Keys()}
+func(value MultipartValue)Get(name string)(MultipartValue,bool){item,present:=value.value.Value.Get(name);if !present{return MultipartValue{},false};return value.child(item,"/"+strings.ReplaceAll(strings.ReplaceAll(name,"~","~0"),"/","~1")),true}
+func(value MultipartValue)At(index int)(MultipartValue,bool){item,present:=value.value.Value.At(index);if !present{return MultipartValue{},false};return value.child(item,"/"+strconv.Itoa(index)),true}
+func(value MultipartValue)child(item Value,prefix string)MultipartValue{
+    var slots map[string]Binary
+    for path,binary:=range value.value.Slots{if path==prefix||strings.HasPrefix(path,prefix+"/"){if slots==nil{slots=make(map[string]Binary)};slots[strings.TrimPrefix(path,prefix)]=binary}}
+    return MultipartValue{value:wire.MediaValue[Binary]{Value:item,Slots:slots}}
+}
+// WireValue and MultipartFromWireValue connect generated media codecs. Each
+// export/import copies the slot container; Binary retains its source contract.
+func(value MultipartValue)WireValue()(MultipartData,error){if value.failure!=nil{return MultipartData{},value.failure};return copyMultipartWire(value.value),nil}
+func MultipartFromWireValue(value MultipartData)MultipartValue{return MultipartValue{value:copyMultipartWire(value)}}
+func copyMultipartWire(value wire.MediaValue[Binary])wire.MediaValue[Binary]{
+    var slots map[string]Binary;if len(value.Slots)!=0{slots=make(map[string]Binary,len(value.Slots));for path,binary:=range value.Slots{slots[path]=binary}}
+    return wire.MediaValue[Binary]{Value:value.Value,Slots:slots}
+}

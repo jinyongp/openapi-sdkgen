@@ -1,0 +1,28 @@
+// Hash uses a call-owned random seed. Object hashes ignore key iteration order;
+// consumers still compare colliding values structurally before deciding equality.
+func Hash(ctx context.Context,value Value,seed maphash.Seed) (uint64,error) {
+    if err:=ctx.Err();err!=nil{return 0,err}
+    var hash maphash.Hash;hash.SetSeed(seed)
+    hash.WriteByte(byte(value.kind))
+    var encoded [8]byte
+    writeNumber:=func(number uint64){binary.LittleEndian.PutUint64(encoded[:],number);hash.Write(encoded[:])}
+    switch value.kind{
+    case Boolean:if value.boolean{hash.WriteByte(1)}else{hash.WriteByte(0)}
+    case Number:number:=value.number;if number==0{number=0};writeNumber(math.Float64bits(number))
+    case String:hash.WriteString(value.text)
+    case Array:
+        writeNumber(uint64(len(value.items)))
+        for _,item:=range value.items{child,err:=Hash(ctx,item,seed);if err!=nil{return 0,err};writeNumber(child)}
+    case Object:
+        writeNumber(uint64(len(value.fields)))
+        var sum,xor uint64
+        for key,item:=range value.fields{
+            child,err:=Hash(ctx,item,seed);if err!=nil{return 0,err}
+            var pair maphash.Hash;pair.SetSeed(seed)
+            binary.LittleEndian.PutUint64(encoded[:],uint64(len(key)));pair.Write(encoded[:]);pair.WriteString(key)
+            binary.LittleEndian.PutUint64(encoded[:],child);pair.Write(encoded[:]);part:=pair.Sum64();sum+=part;xor^=part
+        }
+        writeNumber(sum);writeNumber(xor)
+    }
+    return hash.Sum64(),nil
+}

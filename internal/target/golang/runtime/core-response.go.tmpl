@@ -1,0 +1,96 @@
+func ResponseScore(status int,actual,pattern,media string)int{
+    rank:=0
+    if pattern==strconv.Itoa(status){rank=3
+    }else if len(pattern)==3&&strings.EqualFold(pattern[1:],"XX")&&int(pattern[0]-'0')==status/100{rank=2
+    }else if pattern=="default"{rank=1}
+    if rank==0{return 0}
+    expected:=bareMedia(media);received:=bareMedia(actual)
+    score:=0
+    if expected==received{score=3
+    }else if expected==""{score=1
+    }else if received!=""{
+        left:=strings.SplitN(expected,"/",2);right:=strings.SplitN(received,"/",2)
+        if len(left)!=2||len(right)!=2||left[0]!="*"&&left[0]!=right[0]{return 0}
+        if left[1]=="*"{score=1}else if strings.HasPrefix(left[1],"*+")&&strings.HasSuffix(right[1],left[1][1:]){score=2}else{return 0}
+    }else{return 0}
+    return rank*4+score
+}
+func bareMedia(value string)string{value,_,_=strings.Cut(value,";");return strings.ToLower(strings.TrimSpace(value))}
+func HeaderValue(header http.Header,name string)(string,bool){
+    values:=make([]string,0)
+    present:=false
+    names:=make([]string,0);for key:=range header{if strings.EqualFold(key,name){names=append(names,key)}};sort.Strings(names)
+    for _,key:=range names{values=append(values,header[key]...);present=true}
+    return strings.Join(values,", "),present
+}
+func (execution *Execution) DecodeHeaderContent(text,contentType string,contexts ...context.Context)(types.Value,error){
+    ctx:=execution.Context;if len(contexts)!=0{ctx=contexts[0]}
+    media:=bareMedia(contentType)
+    if media=="application/json"||strings.HasSuffix(media,"+json"){return types.ParseValue([]byte(text))}
+    if strings.HasPrefix(media,"text/"){return types.ValueFrom(text)}
+    if codec,present:=execution.Codec(contentType);present&&codec.DecodeParameter!=nil{return codec.DecodeParameter(ctx,text,types.MediaContext{ContentType:contentType,Request:SnapshotRequest(execution.Request),Response:SnapshotResponse(execution.Response)})}
+    return types.Value{},&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response header media codec is unavailable"}
+}
+
+func IsXMLMedia(value string)bool{value=bareMedia(value);return value=="application/xml"||value=="text/xml"||strings.HasSuffix(value,"+xml")}
+
+type ResponseDecoder func(context.Context,[]byte,string)(types.Value,error)
+
+func (execution *Execution) ReadResponse(kind string,binaryFallback bool,decoder ResponseDecoder)(types.Value,[]byte,error){
+    if kind=="stream"{return types.Value{},nil,nil}
+    allowEmpty:=kind=="none";if allowEmpty{kind="auto"}
+    normalized:=bareMedia(execution.Response.Header.Get("Content-Type"))
+    if normalized==""&&kind=="auto"{return types.Value{},nil,nil}
+    if kind=="custom"||kind=="open"||kind=="auto"{
+        if IsXMLMedia(normalized)&&decoder!=nil{kind="xml"
+        }else if normalized=="application/json"||strings.HasSuffix(normalized,"+json"){kind="json"
+        }else if strings.HasPrefix(normalized,"text/"){kind="text"
+        }else if normalized=="application/octet-stream"||strings.HasPrefix(normalized,"image/")||strings.HasPrefix(normalized,"audio/")||strings.HasPrefix(normalized,"video/")||binaryFallback&&!strings.Contains(normalized,"xml")&&normalized!="application/x-www-form-urlencoded"&&!strings.HasPrefix(normalized,"multipart/"){kind="binary"
+        }else{
+            codec,present:=execution.Codec(normalized)
+            if !present||codec.Decode==nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response media codec is unavailable"})}
+            borrowed,metadata:=media.BorrowResponse(execution.Response)
+            value,err:=codec.Decode(execution.Context,borrowed,types.MediaContext{ContentType:execution.Response.Header.Get("Content-Type"),Request:SnapshotRequest(execution.Request),Response:metadata})
+            if err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)}
+            if err:=execution.Context.Err();err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)}
+            return value,nil,nil
+        }
+    }
+    data,err:=io.ReadAll(execution.Response.Body);if err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    if err:=execution.Context.Err();err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    if allowEmpty&&len(data)==0{return types.Value{},nil,nil}
+    execution.DecodedBinary=kind=="binary";execution.DecodedText=kind=="text"
+    if kind=="xml"{if decoder==nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"XML response decoder is unavailable"})};value,err:=decoder(execution.Context,data,execution.Response.Header.Get("Content-Type"));if err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)};return value,data,nil}
+    if kind=="json" {value,err:=media.DecodeJSON(data);if err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)};return value,data,nil}
+    if kind=="text" {value,err:=media.DecodeText(data);if err!=nil{return types.Value{},nil,execution.Failure(types.ResponseDecodeFailed,err)};return value,data,nil}
+    return types.Value{},data,nil
+}
+
+type rawResponseBody struct{
+    body io.ReadCloser
+    execution *Execution
+    request *http.Request
+    response *http.Response
+}
+func(execution *Execution) RawBody()io.ReadCloser{
+    return &rawResponseBody{body:execution.Response.Body,execution:execution,request:SnapshotRequest(execution.Request),response:SnapshotResponse(execution.Response)}
+}
+func(body *rawResponseBody)Read(buffer []byte)(int,error){
+    count,err:=body.body.Read(buffer)
+    if err!=nil&&err!=io.EOF{err=RequestFailure(body.execution.failureContext(),body.execution.Operation,types.ResponseDecodeFailed,err,body.request,body.response)}
+    return count,err
+}
+func(body *rawResponseBody)Close()error{
+    err:=body.body.Close();if err==nil{return nil}
+    return RequestFailure(body.execution.failureContext(),body.execution.Operation,types.ResponseDecodeFailed,err,body.request,body.response)
+}
+func HTTPFailure(operation types.OperationInfo,response *http.Response,request *http.Request,value types.Value)*types.APIError{
+    envelope:=value;if nested,present:=value.Get("error");present&&nested.Kind()==types.ValueObject{envelope=nested}
+    code:="HTTP_"+strconv.Itoa(response.StatusCode)
+    if field,present:=envelope.Get("code");present{if text,ok:=field.String();ok{code=text}}
+    failure:=&types.APIError{Code:code,Category:"http",OperationID:operation.OperationID,Route:operation.Route,Method:operation.Method,Path:operation.Path,Status:response.StatusCode,Request:SnapshotRequest(request),Response:SnapshotResponse(response),Data:value,ContentType:response.Header.Get("Content-Type")}
+    if message,present:=envelope.Get("message");present{failure.Message,_=message.String()}
+    if fields,present:=envelope.Get("fields");present{failure.Fields=types.Some(fields)}
+    if details,present:=envelope.Get("details");present&&details.Kind()!=types.ValueNull{failure.Details=types.Some(details)}else{failure.Details=failure.Fields}
+    return failure
+}

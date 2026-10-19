@@ -1,0 +1,7 @@
+func MultipleOf(value wire.Value,divisor float64) bool {
+    number,ok:=value.Number();if !ok{return true}
+    if divisor<=0||math.IsInf(divisor,0)||math.IsNaN(divisor){return false}
+    numerator,valid:=new(big.Rat).SetString(strconv.FormatFloat(number,'g',-1,64));if !valid{return false}
+    denominator,valid:=new(big.Rat).SetString(strconv.FormatFloat(divisor,'g',-1,64));if !valid{return false}
+    return new(big.Rat).Quo(numerator,denominator).IsInt()
+}

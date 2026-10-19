@@ -1,0 +1,50 @@
+type RequestOptions struct {
+    SecurityRequirement SecurityRequirement
+    BaseURL Optional[string]
+    Accept Optional[string]
+    Headers http.Header
+    Authorization Optional[string]
+    Credentials CredentialsMode
+    CSRFToken Optional[string]
+    RequestID Optional[string]
+    Timeout Optional[time.Duration]
+    MultipartHeaders map[string]http.Header
+    MultipartContentTypes map[string]string
+    MaxStreamFrameBytes Optional[int]
+    StreamCodec *StreamCodec
+}
+
+type MediaContext struct {
+    ContentType string
+    Request *http.Request
+    Response *http.Response
+}
+type MediaCodec struct {
+    Encode func(context.Context,Value,MediaContext) (BinarySource,error)
+    Decode func(context.Context,*http.Response,MediaContext) (Value,error)
+    EncodeParameter func(context.Context,Value,MediaContext) (string,error)
+    DecodeParameter func(context.Context,string,MediaContext) (Value,error)
+    DecodeInbound func(context.Context,*http.Request,MediaContext) (Value,error)
+}
+
+type ClientOptions struct {
+    Server ServerSelection
+    SecurityProvider SecurityProvider
+    BaseURL string
+    Origin string
+    HTTPClient *http.Client
+    Transport Transport
+    Headers http.Header
+    Accept Optional[string]
+    Authorization Optional[string]
+    Credentials CredentialsMode
+    CSRFToken Optional[string]
+    RequestID Optional[string]
+    Timeout Optional[time.Duration]
+    MultipartHeaders map[string]http.Header
+    MultipartContentTypes map[string]string
+    MaxStreamFrameBytes Optional[int]
+    Codecs map[string]MediaCodec
+    StreamCodecs map[string]StreamCodec
+}
+type OperationInfo struct { OperationID,Route,Method,Path string }

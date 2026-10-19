@@ -1,0 +1,99 @@
+// Value is an immutable JSON value. Its zero value represents null.
+type Value = wire.Value
+
+func ParseValue(data []byte) (Value, error) { return wire.Parse(data) }
+
+type ValueKind = wire.Kind
+const (
+    ValueNull = wire.Null
+    ValueBoolean = wire.Boolean
+    ValueNumber = wire.Number
+    ValueString = wire.String
+    ValueArray = wire.Array
+    ValueObject = wire.Object
+)
+
+// Optional's zero value is absent; a parent codec owns omission of its key.
+type Optional[T any] struct { value T; present bool }
+func Some[T any](value T) Optional[T] { return Optional[T]{value:value,present:true} }
+func (value Optional[T]) Get() (T,bool) { return value.value,value.present }
+func (value Optional[T]) IsSet() bool { return value.present }
+func (value Optional[T]) JSONValue() (Value,error) {
+    if !value.present { return Value{},fmt.Errorf("absent optional value has no JSON representation") }
+    return ValueFrom(value.value)
+}
+func (value Optional[T]) MarshalJSON() ([]byte,error) {
+    encoded,err:=value.JSONValue();if err!=nil { return nil,err };return encoded.MarshalJSON()
+}
+
+// Nullable's zero value is null, independently of an outer Optional's presence.
+type Nullable[T any] struct { value T; nonNull bool }
+func NonNull[T any](value T) Nullable[T] { return Nullable[T]{value:value,nonNull:true} }
+func Null[T any]() Nullable[T] { return Nullable[T]{} }
+func (value Nullable[T]) Get() (T,bool) { return value.value,value.nonNull }
+func (value Nullable[T]) IsNull() bool { return !value.nonNull }
+func (value Nullable[T]) JSONValue() (Value,error) {
+    if !value.nonNull { return Value{},nil }
+    encoded,err:=ValueFrom(value.value);if err!=nil{return Value{},err}
+    if encoded.Kind()==wire.Null{return Value{},fmt.Errorf("non-null value encoded as null")}
+    return encoded,nil
+}
+func (value Nullable[T]) Equal(other Nullable[T]) bool {
+    if value.nonNull!=other.nonNull{return false};if !value.nonNull{return true}
+    if comparable,ok:=any(value.value).(interface{Equal(T)bool});ok{return comparable.Equal(other.value)}
+    left,leftErr:=value.JSONValue();right,rightErr:=other.JSONValue()
+    return leftErr==nil&&rightErr==nil&&left.Equal(right)
+}
+func (value Nullable[T]) MarshalJSON() ([]byte,error) {
+    encoded,err:=value.JSONValue();if err!=nil { return nil,err };return encoded.MarshalJSON()
+}
+
+type valueEncoder interface { JSONValue() (Value,error) }
+type visit struct { kind reflect.Kind; pointer uintptr; length int }
+
+// ValueFrom accepts JSON values and generated DTOs. It snapshots container input,
+// rejects non-finite numbers and cycles, and does not interpret arbitrary structs.
+func ValueFrom[T any](value T) (Value,error) {
+    return encodeValue(reflect.ValueOf(value),make(map[visit]bool))
+}
+
+func encodeValue(value reflect.Value,active map[visit]bool) (Value,error) {
+    if !value.IsValid() { return Value{},nil }
+    if value.Kind()==reflect.Interface {
+        if value.IsNil() { return Value{},nil }
+        return encodeValue(value.Elem(),active)
+    }
+    if value.Kind()==reflect.Pointer&&value.IsNil() { return Value{},fmt.Errorf("nil non-null JSON pointer") }
+    if value.CanInterface() {
+        if immutable,ok:=value.Interface().(Value);ok { return immutable,nil }
+        if encoder,ok:=value.Interface().(valueEncoder);ok { return encoder.JSONValue() }
+    }
+    switch value.Kind() {
+    case reflect.Pointer,reflect.Map,reflect.Slice:
+        identity:=visit{kind:value.Kind(),pointer:uintptr(value.UnsafePointer())}
+        if value.Kind()==reflect.Slice { identity.length=value.Len() }
+        if identity.pointer!=0 {
+            if active[identity] { return Value{},fmt.Errorf("cyclic JSON value") }
+            active[identity]=true;defer delete(active,identity)
+        }
+    }
+    switch value.Kind() {
+    case reflect.Bool:return wire.Bool(value.Bool()),nil
+    case reflect.String:return wire.CheckedText(value.String())
+    case reflect.Float32,reflect.Float64:return wire.Numeric(value.Float())
+    case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:return wire.Numeric(float64(value.Int()))
+    case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:return wire.Numeric(float64(value.Uint()))
+    case reflect.Pointer:return encodeValue(value.Elem(),active)
+    case reflect.Array,reflect.Slice:
+        items:=make([]Value,value.Len())
+        for index:=range items { item,err:=encodeValue(value.Index(index),active);if err!=nil { return Value{},err };items[index]=item }
+        return wire.List(items),nil
+    case reflect.Map:
+        if value.Type().Key().Kind()!=reflect.String { return Value{},fmt.Errorf("JSON object requires string keys") }
+        fields:=make(map[string]Value,value.Len())
+        entries:=value.MapRange()
+        for entries.Next() { item,err:=encodeValue(entries.Value(),active);if err!=nil { return Value{},err };fields[entries.Key().String()]=item }
+        return wire.CheckedRecord(fields)
+    }
+    return Value{},fmt.Errorf("unsupported JSON value type %s",value.Type())
+}

@@ -1,0 +1,20 @@
+// Reference is sealed to generated operation identities.
+type Reference interface{operationInfo()(types.OperationInfo,bool)}
+type DynamicOperation = internalops.DynamicOperation
+type DynamicCall = internalops.DynamicCall
+type DynamicRawResponse = internalops.DynamicRawResponse
+type DynamicLinkInvocation = internalops.DynamicLinkInvocation
+type DynamicLinks = internalops.DynamicLinks
+type Ref[C any]struct{info types.OperationInfo;bind func(*core.Client)C}
+func(ref Ref[C])operationInfo()(types.OperationInfo,bool){return ref.info,ref.bind!=nil}
+func(ref Ref[C])Info()types.OperationInfo{return ref.info}
+func(ref Ref[C])Dynamic()Ref[DynamicOperation]{if ref.bind==nil{return Ref[DynamicOperation]{}};return Ref[DynamicOperation]{info:ref.info,bind:func(client *core.Client)DynamicOperation{binding:=ref.bind(client);dynamic,ok:=any(binding).(interface{Dynamic()DynamicOperation});if !ok{return DynamicOperation{}};return dynamic.Dynamic()}}}
+// BindCore is the bridge used by the selective client.
+func(ref Ref[C])BindCore(client *core.Client)C{return ref.bind(client)}
+func ReferenceInfo(ref Reference)(info types.OperationInfo,valid bool){
+ // An embedded nil Reference has promoted methods too. Reject it as an
+ // uninitialized reference instead of allowing its generated wrapper to panic.
+ defer func(){if recover()!=nil{info=types.OperationInfo{};valid=false}}()
+ if ref==nil{return types.OperationInfo{},false}
+ return ref.operationInfo()
+}

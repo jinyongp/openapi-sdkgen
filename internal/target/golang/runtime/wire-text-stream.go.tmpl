@@ -1,0 +1,14 @@
+// TextDecoder retains at most three bytes between chunks and follows the
+// transport decoder's maximal-invalid-prefix and initial BOM behavior.
+type TextDecoder struct{pending []byte;started bool}
+func(decoder *TextDecoder)Decode(data []byte,final bool)string{
+    if len(decoder.pending)!=0{joined:=make([]byte,0,len(decoder.pending)+len(data));joined=append(joined,decoder.pending...);data=append(joined,data...);decoder.pending=nil}
+    var result []byte
+    for len(data)!=0{
+        if !final&&!utf8.FullRune(data){decoder.pending=append(decoder.pending[:0],data...);break}
+        code,size:=decodeUTF8Rune(data);data=data[size:]
+        if !decoder.started{decoder.started=true;if code==0xfeff{continue}}
+        result=utf8.AppendRune(result,code)
+    }
+    return string(result)
+}

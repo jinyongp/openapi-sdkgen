@@ -1,0 +1,261 @@
+{{range .Operations}}
+{{$operation:=.}}
+{{.BodyEncodings}}
+{{if .Security}}type {{.Name}}SecurityRequirement string
+func(value {{.Name}}SecurityRequirement)SecurityRequirementID()string{return string(value)}
+const ( {{range .Security}}{{$operation.Name}}Security{{.Name}} {{$operation.Name}}SecurityRequirement = {{quote .ID}}
+{{end}} )
+{{end}}
+{{if .SecurityMetadata}}func securityMetadataFor{{.Name}}(value string)types.Value{result,_:=types.ParseValue([]byte(value));return result}
+{{end}}
+type {{.Name}}Call struct { client *core.Client;options types.RequestOptions;err error {{if .HasInput}};input models.{{.Name}}Input{{end}}{{if .ResourceBound}};boundPath types.Value;hasBoundPath bool{{end}}{{if .LinkTarget}};prepareLink func(context.Context,*{{.Name}}Call)error;linkBodyValue types.Optional[types.Value]{{end}} }
+{{if not .DependencyOnly}}{{.Documentation}}func (operations Operations) {{.Name}}({{if .HasInput}}{{if .RequiredInput}}input models.{{.Name}}Input{{else}}inputs ...models.{{.Name}}Input{{end}}{{end}}) {{.Name}}Call {
+    call:={{.Name}}Call{client:operations.client}
+    {{if .HasInput}}{{if .RequiredInput}}call.input=input{{else}}if len(inputs)>1 {call.err=&types.SDKError{Code:types.RequestOptionsInvalid,Message:"expected zero or one operation input"}}else if len(inputs)==1 {call.input=inputs[0]}{{end}}{{end}}
+    return call
+}
+{{.Documentation}}func(routes Routes){{.RouteName}}({{if .HasInput}}{{if .RequiredInput}}input models.{{.Name}}Input{{else}}inputs ...models.{{.Name}}Input{{end}}{{end}}){{.Name}}Call{return (Operations{client:routes.client}).{{.Name}}({{if .HasInput}}{{if .RequiredInput}}input{{else}}inputs...{{end}}{{end}})}
+{{end}}
+{{if .ResourceBound}}
+func NewBound{{.Name}}(client *core.Client,bound types.Value,bindingError error{{if .ResourceHasInput}},{{if .ResourceRequiredInput}}input models.{{.ResourceInputName}}{{else}}inputs ...models.{{.ResourceInputName}}{{end}}{{end}}){{.Name}}Call{
+    call:={{.Name}}Call{client:client,err:bindingError,hasBoundPath:true}
+    {{if and .ResourceHasInput (not .ResourceRequiredInput)}}var input models.{{.ResourceInputName}};if len(inputs)>1{if call.err==nil{call.err=&types.SDKError{Code:types.RequestOptionsInvalid,Message:"expected zero or one resource input"}}}else if len(inputs)==1{input=inputs[0]}
+    {{end}}
+    {{range .ResourceInputFields}}call.input.{{.Name}}=input.{{.Name}}
+    {{end}}
+    fields:=make(map[string]types.Value)
+    {{range .ResourceBindings}}if value,present:=bound.Get({{quote .Key}});present{fields[{{quote .Name}}]=value}
+    {{end}}
+    var err error;call.boundPath,err=types.ValueFrom(fields);if call.err==nil{call.err=err};return call
+}
+{{end}}
+{{if .Security}}func (call {{.Name}}Call) WithSecurityRequirement(selection {{.Name}}SecurityRequirement){{.Name}}Call{call.options.SecurityRequirement=selection;return call}
+{{end}}func (call {{.Name}}Call) WithOptions(options types.RequestOptions) {{.Name}}Call {call.options=core.MergeOptions(call.options,options);return call}
+
+type {{.Name}}RawResponse struct {
+    {{if .LinkSource}}link core.LinkSource{{end}}
+    Status int
+    ContentType string
+    Headers http.Header
+    Data types.Value
+    value types.Value
+    Request *http.Request
+    OriginalResponse *http.Response
+    branch int
+    {{if .HasMultipartStream}}multipart types.MultipartData
+    materialized bool{{end}}
+    body []byte
+    {{if .HasOpenMedia}}binary bool{{end}}
+    {{if .HasSequential}}Body io.ReadCloser
+    sequential bool{{end}}
+    {{if .HasHeaders}}headerValues types.Value
+    headerBranch int{{end}}
+}
+func (response *{{.Name}}RawResponse) Bytes()[]byte{if response==nil{return nil};return append([]byte{},response.body...)}
+{{if .HasMultipartStream}}func(response *{{.Name}}RawResponse)AsMultipart()(types.MultipartValue,bool){if response==nil||!response.materialized{return types.MultipartValue{},false};return types.MultipartFromWireValue(response.multipart),true}
+{{end}}
+{{if .HasSequential}}func(response *{{.Name}}RawResponse)Close()error{if response==nil||response.Body==nil{return nil};return response.Body.Close()}
+{{end}}
+{{range .Responses}}
+{{if or (not .Sequential) .Buffered}}
+func (response *{{$operation.Name}}RawResponse) As{{.Name}}()({{.Type}},bool){
+    var zero {{.Type}};if response==nil||response.branch!={{.Index}}{return zero,false}
+    {{if .Buffered}}if response.sequential{return zero,false}{{if $operation.HasMultipartStream}};if len(response.multipart.Slots)!=0{return zero,false}{{end}}{{end}}
+    {{if .Open}}if response.binary{return types.MediaValueFromBytes[models.{{.Model}}](response.ContentType,response.body),true};return types.MediaValueFromValue(response.ContentType,response.value,models.DecodeResponse{{.Model}}),true
+    {{else if eq .Kind "none"}}return types.NoContent{},true{{else if eq .Kind "binary"}}return response.Bytes(),true{{else}}value,err:=models.DecodeResponse{{.Model}}(context.Background(),response.value);return value,err==nil{{end}}
+}
+{{end}}
+{{end}}
+{{range .Headers}}{{if .Model}}
+func (response *{{$operation.Name}}RawResponse) As{{.Name}}Headers()(models.{{.Model}},bool){var zero models.{{.Model}};if response==nil||response.headerBranch!={{.Index}}{return zero,false};value,err:=models.DecodeResponse{{.Model}}(context.Background(),response.headerValues);return value,err==nil}
+{{end}}{{end}}
+type {{.Name}}HTTPError struct { *types.APIError;Result *{{.Name}}RawResponse `json:"-"` }
+func (failure *{{.Name}}HTTPError) Unwrap()error {if failure==nil{return nil};return failure.APIError}
+{{if .LinkSource}}
+type {{.Name}}LinkSource interface{linkSourceFor{{.Name}}()core.LinkSource}
+func(response *{{.Name}}RawResponse)linkSourceFor{{.Name}}()core.LinkSource{if response==nil{return core.LinkSource{}};return response.link}
+func(failure *{{.Name}}HTTPError)linkSourceFor{{.Name}}()core.LinkSource{if failure==nil||failure.Result==nil{return core.LinkSource{}};return failure.Result.link}
+{{end}}
+{{range .Responses}}{{if or (not .Sequential) .Buffered}}
+func (failure *{{$operation.Name}}HTTPError) As{{.Name}}()({{.Type}},bool){var zero {{.Type}};if failure==nil||failure.Result==nil{return zero,false};return failure.Result.As{{.Name}}()}
+{{end}}{{end}}
+{{if .OutputUnion}}
+type {{.Name}}Output struct { response *{{.Name}}RawResponse }
+{{if .HasMultipartStream}}func(value {{.Name}}Output)AsMultipart()(types.MultipartValue,bool){return value.response.AsMultipart()}{{end}}
+{{range .Responses}}{{if .Success}}
+{{if .DataModel}}
+func(value {{$operation.Name}}Output)As{{.Name}}()({{.DataType}},bool){
+    var zero {{.DataType}};if value.response==nil||value.response.branch!={{.Index}}{return zero,false}
+    {{if .Open}}if value.response.binary{return types.MediaValueFromBytes[models.{{.DataModel}}](value.response.ContentType,value.response.body),true}{{end}}
+    data,present:=value.response.value.Get("data");if !present{return zero,false}
+    {{if .Open}}return types.MediaValueFromValue(value.response.ContentType,data,models.DecodeResponse{{.DataModel}}),true{{else}}decoded,err:=models.DecodeResponse{{.DataModel}}(context.Background(),data);return decoded,err==nil{{end}}
+}
+{{if .EnvelopeFallback}}func(value {{$operation.Name}}Output)As{{.Name}}Envelope()({{.Type}},bool){var zero {{.Type}};if value.response==nil||value.response.branch!={{.Index}}{return zero,false};if _,present:=value.response.value.Get("data");present{return zero,false};{{if .Open}}if value.response.binary{return zero,false};{{end}}return value.response.As{{.Name}}()}
+{{end}}
+{{else}}
+func (value {{$operation.Name}}Output) As{{.Name}}()({{.Type}},bool){return value.response.As{{.Name}}()}
+{{end}}
+{{end}}{{end}}{{end}}
+
+func (call {{.Name}}Call) execute(ctx context.Context,output *{{.OutputType}},incremental ...bool)(result *{{.Name}}RawResponse,execution *core.Execution,failure error){
+    info:=types.OperationInfo{OperationID:{{quote .OperationID}},Route:{{quote .Route}},Method:{{quote .Method}},Path:{{quote .Path}}}
+    {{if .LinkTarget}}if call.prepareLink!=nil{if err:=call.prepareLink(ctx,&call);err!=nil{call.err=err};call.prepareLink=nil}{{end}}
+    if call.err!=nil{return nil,nil,core.RequestFailure(ctx,info,types.RequestEncodeFailed,call.err,nil,nil)}
+    execution,err:=call.client.Begin(ctx,info,call.options);if err!=nil{return nil,nil,err}
+{{if .StreamAccept}}    if len(incremental)!=0&&incremental[0]&&!execution.Options.Accept.IsSet(){execution.Options.Accept=types.Some({{quote .StreamAccept}})}
+{{end}}    // The execution stays owned here on failure and passes to the terminal
+    // caller on success, keeping cancellation alive through DTO validation.
+    defer func(){if failure!=nil{execution.Close()}}()
+    data:=core.RequestData{Servers:{{.Servers}},Security:[]types.SecurityRequirementDefinition{ {{range .Security}}{{.Definition}},{{end}} },Path:{{quote .Path}},RequireCookieHeaders:{{.NeedsCookieHeaders}}}
+    {{range .InputFields}}{{if .Union}}
+    {{if .Required}}{body:=call.input.{{.Name}}{{else}}if body,present:=call.input.{{.Name}}.Get();present{ {{end}}
+        contentType,err:=body.MediaType();if err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+        data.HasBody=true;data.ContentType=contentType;data.ContentTypePattern=body.DeclaredMediaType()
+        _,data.RawBinary=body.Binary()
+        data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){ {{if $operation.LinkTarget}}if value,present:=call.linkBodyValue.Get();present{return execution.EncodeBody(value,contentType,request)};{{end}}if binary,ok:=body.Binary();ok{return binary,nil};{{range $operation.RequestBodies}}{{if .Incremental}}if factory,present:=body.As{{.Name}}();present{return encode{{.Stream.Name}}Source(execution,factory,contentType)};{{end}}{{end}}{{if $operation.HasMultipart}}if value,present,err:=body.Multipart(ctx);present{if err!=nil{return types.Binary{},err};switch body.DeclaredMediaType(){ {{range $operation.RequestStreams}}{{if and .Complete .Multipart}}case {{quote .MediaType}}:return encode{{.Name}}Complete(execution,value,contentType)
+{{end}}{{end}} };return execution.EncodeMultipart(value,contentType,bodyEncodingFor{{$operation.Name}}(execution,body.DeclaredMediaType()),bodyPositionalFor{{$operation.Name}}(body.DeclaredMediaType()))};{{end}}value,err:=body.Encode(ctx);if err!=nil{return types.Binary{},err};switch body.DeclaredMediaType(){ {{range $operation.RequestStreams}}{{if and .Complete (not .Multipart)}}case {{quote .MediaType}}:return encode{{.Name}}Complete(execution,value,contentType)
+{{end}}{{end}} };{{if $operation.HasMultipart}}if core.IsMultipartMedia(contentType){return execution.EncodeMultipart(types.MultipartData{Value:value},contentType,bodyEncodingFor{{$operation.Name}}(execution,body.DeclaredMediaType()),bodyPositionalFor{{$operation.Name}}(body.DeclaredMediaType()))};{{end}}if core.IsXMLMedia(contentType){switch body.DeclaredMediaType(){ {{range $operation.RequestBodies}}{{if .Encoder}}case {{quote .MediaType}}:encoded,err:=schema.{{.Encoder}}(ctx,value,contentType);return types.BinaryFromBytes(encoded),err
+ {{end}}{{end}} }};return execution.EncodeBody(value,contentType,request,bodyEncodingFor{{$operation.Name}}(execution,body.DeclaredMediaType()))}
+    }
+    {{else if .Stream}}
+    {{if .Required}}{input:=call.input.{{.Name}}{{else}}if input,present:=call.input.{{.Name}}.Get();present{ {{end}}
+        data.HasBody=true;data.ContentType={{quote .MediaType}}
+        data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){
+            {{if .Incremental}}return encode{{.Stream.Name}}Source(execution,input,{{quote .MediaType}})
+            {{else}}encoded,err:=models.Encode{{if .Multipart}}Media{{end}}{{.Type}}(ctx,input);if err!=nil{return types.Binary{},err};return encode{{.Stream.Name}}Complete(execution,encoded,{{quote .MediaType}})
+            {{end}}
+        }
+    }
+    {{else}}{{if .Multipart}}
+    {{if .Required}}{input:=call.input.{{.Name}}{{else}}if input,present:=call.input.{{.Name}}.Get();present{ {{end}}
+        data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){value,err:=models.EncodeMedia{{.Type}}(ctx,input);if err!=nil{return types.Binary{},err};return execution.EncodeMultipart(value,{{quote .MediaType}},bodyEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}}),bodyPositionalFor{{$operation.Name}}({{quote .MediaType}}))}
+    }
+    {{else}}{{if .Binary}}{{if $operation.LinkTarget}}if value,present:=call.linkBodyValue.Get();present{data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){return execution.EncodeBody(value,{{quote .MediaType}},request)}}else{ {{end}}{{if .Required}}body{{.Name}}:=call.input.{{.Name}}
+    data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body{{.Name}},nil}
+    {{else}}if body,present:=call.input.{{.Name}}.Get();present{data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body,nil}}
+    {{end}}{{if $operation.LinkTarget}}}{{end}}{{else}}{{if and $operation.ResourceBound (eq .Name "Path")}}
+    var sectionPath types.Value
+    if call.hasBoundPath{sectionPath=call.boundPath;if _,err:=schema.{{.Validation}}(execution.Context,sectionPath,"");err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}}else{
+        {{if .Required}}sectionPath,err=models.Encode{{.Type}}(execution.Context,call.input.Path);if err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+        {{else}}if input,present:=call.input.Path.Get();present{sectionPath,err=models.Encode{{.Type}}(execution.Context,input);if err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}}{{end}}
+    }
+    {{else}}{{if .Required}}section{{.Name}},err:=models.Encode{{.Type}}(execution.Context,call.input.{{.Name}});if err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+    {{else}}var section{{.Name}} types.Value
+    if input,present:=call.input.{{.Name}}.Get();present{section{{.Name}},err=models.Encode{{.Type}}(execution.Context,input);if err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}}
+    {{end}}{{end}}{{if .MediaType}}{{if .Required}}data.HasBody=true{{else}}data.HasBody=call.input.{{.Name}}.IsSet(){{end}}
+    data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){ {{if .Encoder}}encoded,err:=schema.{{.Encoder}}(ctx,section{{.Name}},{{quote .MediaType}});return types.BinaryFromBytes(encoded),err{{else}}return execution.EncodeBody(section{{.Name}},{{quote .MediaType}},request,bodyEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}})){{end}} }
+    {{end}}{{end}}{{end}}{{end}}{{end}}
+    {{range .Parameters}}{{if eq .Location "header"}}data.HeaderNames=append(data.HeaderNames,{{quote .Name}})
+    {{end}}if value,present:=section{{.Section}}.Get({{quote .Name}});present {
+        if err:=execution.AddParameter(&data,value,core.Parameter{Name:{{quote .Name}},Location:{{quote .Location}},Style:{{quote .Style}},ContentType:{{quote .ContentType}},Explode:{{.Explode}},AllowReserved:{{.AllowReserved}},AllowEmptyValue:{{.AllowEmptyValue}}{{if .Encoder}},Encoder:schema.{{.Encoder}}{{end}} });err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+    }
+    {{end}}
+    response,err:=execution.Send(data);if err!=nil{return nil,execution,err}
+    branch,best,kind:=0,0,"auto"
+    binaryFallback:=false
+    contentType:=response.Header.Get("Content-Type")
+    {{range .Responses}}if score:=core.ResponseScore(response.StatusCode,contentType,{{quote .Status}},{{quote .MediaType}});score>best{branch,best,kind,binaryFallback={{.Index}},score,{{quote .Kind}},{{.BinaryFallback}}}
+    {{end}}
+    _=best
+    if len(incremental)!=0&&incremental[0]&&kind!="stream"{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response is not a declared sequential representation"})}
+    if kind=="blocked"{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response contract forbids this representation"})}
+    {{if .HasSequential}}if kind=="stream"&&output!=nil{buffered:=false;switch branch{ {{range .Responses}}{{if .Buffered}}case {{.Index}}:buffered=true
+    {{end}}{{end}} };if !buffered{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"sequential responses require Raw or Stream"})}}{{end}}
+    {{if .HasHeaders}}
+    headerBranch,headerBest:=0,0
+    {{range .Headers}}if score:=core.ResponseScore(response.StatusCode,"",{{quote .Status}},"");score>headerBest{headerBranch,headerBest={{.Index}},score}
+    {{end}}
+    headerFields:=make(map[string]types.Value)
+    switch headerBranch{
+    {{range .Headers}}{{if .Model}}case {{.Index}}:
+        {{range .Fields}}if text,present:=core.HeaderValue(response.Header,{{quote .Name}});present{
+            {{if .ContentType}}decoded,err:={{if .XMLDecoder}}schema.{{.XMLDecoder}}(execution.Context,[]byte(text),{{quote .ContentType}}){{else}}execution.DecodeHeaderContent(text,{{quote .ContentType}}){{end}}
+            if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+            {{if .Text}}if stringValue,isString:=decoded.String();isString {decoded,err=schema.{{.Decoder}}(execution.Context,stringValue,{{.Explode}});if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}}{{end}}
+            {{else}}decoded,err:=schema.{{.Decoder}}(execution.Context,text,{{.Explode}});if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+            {{end}}headerFields[{{quote .Name}}]=decoded
+        }{{if .Required}}else{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"required response header is missing"})}{{end}}
+        {{end}}
+    {{end}}{{end}} }
+    headerValues,err:=types.ValueFrom(headerFields);if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+    switch headerBranch{ {{range .Headers}}{{if .Model}}case {{.Index}}:if _,err:=models.Decode{{.Model}}(execution.Context,headerValues);err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+    {{end}}{{end}} }
+    {{end}}
+    var decoder core.ResponseDecoder
+    switch branch { {{range .Responses}}{{if .Decoder}}case {{.Index}}:decoder=schema.{{.Decoder}}
+    {{end}}{{end}} }
+    value,body,err:=execution.ReadResponse(kind,binaryFallback,decoder);if err!=nil{return nil,execution,err}
+    {{if .HasMultipartStream}}var multipartData types.MultipartData
+    materialized:=false{{end}}
+    {{if .ResponseValidation}}responseContext:=schema.ResponseContext(execution.Context){{end}}
+    switch branch {
+    {{range .Responses}}{{if .Validation}}case {{.Index}}:
+        {{if .Buffered}}if output!=nil{
+            source,err:=completeSourceFor{{$operation.Name}}{{.Name}}(execution);if err!=nil{return nil,execution,err}
+            collected,err:=core.CollectStreamData(responseContext,source);if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)};value=collected.Value
+            {{if eq .Framing "multipart"}}multipartData=collected;materialized=true{{else}}if len(collected.Slots)!=0{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"binary frames require multipart representation"})}{{end}}
+        {{end}}
+        {{if or (eq .Kind "text") .Open}}if execution.DecodedText {if _,validationError:=schema.{{.Validation}}(responseContext,value,"");validationError!=nil {
+            // Valid strings take priority. Only scalar JSON values can supply
+            // the numeric, boolean or null text fallback.
+            text,_:=value.String();parsed,parseError:=types.ParseValue([]byte(text))
+            if parseError!=nil||parsed.Kind()==types.ValueObject||parsed.Kind()==types.ValueArray||parsed.Kind()==types.ValueString{return nil,execution,execution.Failure(types.ResponseDecodeFailed,validationError)}
+            value=parsed
+        }}
+        {{end}}{{if .Open}}
+        if !execution.DecodedBinary{if _,err:=schema.{{.Validation}}(responseContext,value,"");err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}}
+        {{if and .Success (not $operation.OutputUnion)}}if output!=nil{if execution.DecodedBinary{*output=types.MediaValueFromBytes[models.{{if .DataModel}}{{.DataModel}}{{else}}{{.Model}}{{end}}](contentType,body)}else{ordinary:=value;{{if .DataModel}}var present bool;ordinary,present=value.Get("data");if !present{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response envelope has no data"})};{{end}}*output=types.MediaValueFromValue(contentType,ordinary,models.DecodeResponse{{if .DataModel}}{{.DataModel}}{{else}}{{.Model}}{{end}})}}{{end}}
+        {{else}}{{if and .Success (not $operation.OutputUnion)}}if output!=nil{
+            {{if .DataModel}}if _,err:=schema.{{.Validation}}(responseContext,value,"");err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+            ordinary,present:=value.Get("data");if !present{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response envelope has no data"})}
+            decoded,err:=models.Decode{{.DataModel}}(responseContext,ordinary);if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)};*output=decoded
+            {{else}}
+            decoded,err:=models.Decode{{.Model}}(responseContext,value);if err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)};*output=decoded
+            {{end}}
+        }else{if _,err:=schema.{{.Validation}}(responseContext,value,"");err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}}
+        {{else}}if _,err:=schema.{{.Validation}}(responseContext,value,"");err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}{{end}}{{end}}
+        {{if .Buffered}}}{{end}}
+    {{end}}{{end}}
+    }
+    if err:=execution.Context.Err();err!=nil{return nil,execution,execution.Failure(types.ResponseDecodeFailed,err)}
+    result=&{{.Name}}RawResponse{Status:response.StatusCode,ContentType:contentType,Headers:response.Header.Clone(),Data:value,value:value,Request:core.SnapshotRequest(execution.Request),OriginalResponse:core.SnapshotResponse(response),branch:branch,body:body{{if .HasMultipartStream}},multipart:multipartData,materialized:materialized{{end}}{{if .HasHeaders}},headerValues:headerValues,headerBranch:headerBranch{{end}}{{if .HasSequential}},Body:http.NoBody,sequential:kind=="stream"&&output==nil{{end}}{{if .HasOpenMedia}},binary:execution.DecodedBinary{{end}}}
+    {{if .HasSequential}}if result.sequential{result.Body=execution.RawBody()}{{end}}
+    {{if .LinkSource}}
+    linkURL:="";if response.Request!=nil&&response.Request.URL!=nil{linkURL=response.Request.URL.String()}else if execution.Request!=nil&&execution.Request.URL!=nil{linkURL=execution.Request.URL.String()}
+    result.link=core.LinkSource{Valid:true,Status:response.StatusCode,Headers:response.Header.Clone(),URL:linkURL,Body:func(ctx context.Context)(types.Value,bool,error){
+        {{if .HasSequential}}if result.sequential{return types.Value{},false,core.LinkFailure("Link response body has not been materialized")}
+        {{end}}if execution.DecodedBinary{return types.Value{},false,core.LinkFailure("Link binary response body has no JSON representation")}
+        switch branch{
+        {{range .Responses}}{{if .Validation}}{{if not .Sequential}}case {{.Index}}:return value,true,nil
+        {{end}}{{else}}{{if eq .Kind "binary"}}case {{.Index}}:return types.Value{},false,core.LinkFailure("Link binary response body has no JSON representation")
+        {{end}}{{end}}{{end}} }
+        return value,len(body)!=0,nil
+    }}
+    if execution.DecodedBinary{result.link.Binaries=map[string]types.Binary{"":types.BinaryFromBytes(body)}}
+    {{end}}
+    if response.StatusCode<200||response.StatusCode>=300{return result,execution,&{{.Name}}HTTPError{APIError:core.HTTPFailure(info,response,execution.Request,value),Result:result}}
+    if branch==0{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response does not match a declared representation"})}
+    return result,execution,nil
+}
+
+// Raw buffers finite responses and transfers ownership of sequential bodies.
+func (call {{.Name}}Call) Raw(ctx context.Context)(*{{.Name}}RawResponse,error){
+    result,execution,err:=call.execute(ctx,nil);if err!=nil{return result,err}
+    {{if .HasSequential}}if result.sequential{execution.Transfer();return result,nil}{{end}}
+    if err:=execution.Close();err!=nil{return nil,execution.Failure(types.ResponseDecodeFailed,err)}
+    return result,nil
+}
+{{if .CanDo}}func (call {{.Name}}Call) Do(ctx context.Context)(output {{.OutputType}},failure error){
+    var zero {{.OutputType}}
+    result,execution,err:=call.execute(ctx,&output);if err!=nil{return zero,err}
+    defer func(){if err:=execution.Close();err!=nil&&failure==nil{failure=execution.Failure(types.ResponseDecodeFailed,err)}}()
+    {{if .OutputUnion}}return {{.Name}}Output{response:result},nil{{else}}
+    switch result.branch {
+    {{range .Responses}}{{if .Success}}case {{.Index}}:
+        {{if eq .Kind "none"}}return types.NoContent{},nil{{else if eq .Kind "binary"}}return result.body,nil{{else}}return output,nil{{end}}
+    {{end}}{{end}} }
+    return zero,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response has no declared success contract"})
+    {{end}}
+}
+{{end}}
+{{end}}

@@ -1,0 +1,11 @@
+type NoInput struct{}
+type LinkInvocation[SourceInput,TargetOverride,Options any]struct{
+ SourceInput Optional[SourceInput]
+ Input Optional[TargetOverride]
+ Options Optional[Options]
+}
+type RequiredLinkInvocation[SourceInput,TargetOverride,Options any]struct{
+ SourceInput Optional[SourceInput]
+ Input Optional[TargetOverride]
+ Options Options
+}

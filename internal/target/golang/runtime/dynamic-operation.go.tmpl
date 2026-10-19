@@ -1,0 +1,59 @@
+type DynamicOperation struct{info types.OperationInfo;call func(types.Value)DynamicCall;native func(types.NativeInput)DynamicCall;buffered,streaming bool;Links DynamicLinks}
+func(operation DynamicOperation)Info()types.OperationInfo{return operation.info}
+func(operation DynamicOperation)Dynamic()DynamicOperation{return operation}
+func(operation DynamicOperation)CanDo()bool{return operation.buffered}
+func(operation DynamicOperation)CanStream()bool{return operation.streaming}
+func(operation DynamicOperation)Call(input types.Value)DynamicCall{if operation.call==nil{return DynamicCall{failure:&types.SDKError{Code:types.OperationNotPrepared,Message:"operation is not initialized"}}};return operation.call(input)}
+func(operation DynamicOperation)CallNative(input types.NativeInput)DynamicCall{if operation.native==nil{return DynamicCall{failure:&types.SDKError{Code:types.OperationNotPrepared,Message:"operation is not initialized"}}};return operation.native(input.Snapshot())}
+type DynamicCall struct{
+ options types.RequestOptions
+ failure error
+ prepare func(context.Context,*DynamicCall)error
+ do func(context.Context,types.RequestOptions)(types.Value,error)
+ raw func(context.Context,types.RequestOptions)(*DynamicRawResponse,error)
+ stream func(context.Context,types.RequestOptions)*types.Stream[types.Value]
+}
+func(call DynamicCall)WithOptions(options types.RequestOptions)DynamicCall{call.options=core.MergeOptions(call.options,options);return call}
+func(call DynamicCall)Do(ctx context.Context)(types.Value,error){if call.prepare!=nil{prepare:=call.prepare;call.prepare=nil;if err:=prepare(ctx,&call);err!=nil{return types.Value{},err}};if call.failure!=nil{return types.Value{},call.failure};if call.do==nil{return types.Value{},dynamicFailure("operation requires a streaming terminal")};return call.do(ctx,call.options)}
+func(call DynamicCall)Raw(ctx context.Context)(*DynamicRawResponse,error){if call.prepare!=nil{prepare:=call.prepare;call.prepare=nil;if err:=prepare(ctx,&call);err!=nil{return nil,err}};if call.failure!=nil{return nil,call.failure};if call.raw==nil{return nil,dynamicFailure("operation is not initialized")};return call.raw(ctx,call.options)}
+func(call DynamicCall)Stream(ctx context.Context)*types.Stream[types.Value]{if call.prepare!=nil{return types.NewStream(ctx,func(running context.Context)(types.Source[types.Value],*http.Response,error){prepare:=call.prepare;call.prepare=nil;if err:=prepare(running,&call);err!=nil{return nil,nil,err};source:=call.Stream(running);response,err:=source.Response();return source,response,err})};if call.failure==nil&&call.stream!=nil{return call.stream(ctx,call.options)};failure:=call.failure;if failure==nil{failure=dynamicFailure("operation has no declared typed stream")};return types.NewStream(ctx,func(context.Context)(types.Source[types.Value],*http.Response,error){return nil,nil,failure})}
+type DynamicRawResponse struct{
+ Status int
+ ContentType string
+ Headers http.Header
+ Data types.Value
+ Request *http.Request
+ OriginalResponse *http.Response
+ Body io.ReadCloser
+ bytes []byte
+ source core.LinkSource
+ sourceOperation string
+}
+func(response *DynamicRawResponse)Bytes()[]byte{if response==nil{return nil};return append([]byte{},response.bytes...)}
+func(response *DynamicRawResponse)Close()error{if response==nil||response.Body==nil{return nil};return response.Body.Close()}
+func dynamicFailure(message string)error{return &types.SDKError{Code:types.RequestOptionsInvalid,Message:message}}
+type DynamicLinkInvocation struct{SourceInput types.Optional[types.Value];SourceNative types.Optional[types.NativeInput];Input types.Optional[types.Value];InputNative types.Optional[types.NativeInput];Options types.Optional[types.RequestOptions]}
+type DynamicLinks struct{names []string;status string;follow func(string,string,*DynamicRawResponse,DynamicLinkInvocation)DynamicCall}
+func(links DynamicLinks)Names()[]string{return append([]string(nil),links.names...)}
+func(links DynamicLinks)ByStatus(status string)DynamicLinks{links.status=status;return links}
+func(links DynamicLinks)Follow(name string,source *DynamicRawResponse,invocations ...DynamicLinkInvocation)DynamicCall{if links.follow==nil{return DynamicCall{failure:dynamicFailure("operation has no response Links")}};if len(invocations)>1{return DynamicCall{failure:dynamicFailure("expected zero or one Link invocation")}};var invocation DynamicLinkInvocation;if len(invocations)==1{invocation=invocations[0]};if invocation.SourceInput.IsSet()&&invocation.SourceNative.IsSet()||invocation.Input.IsSet()&&invocation.InputNative.IsSet(){return DynamicCall{failure:dynamicFailure("choose JSON or native Link input")}};if data,present:=invocation.SourceNative.Get();present{invocation.SourceNative=types.Some(data.Snapshot())};if data,present:=invocation.InputNative.Get();present{invocation.InputNative=types.Some(data.Snapshot())};return links.follow(name,links.status,source,invocation)}
+func validateDynamicNativeInput(ctx context.Context,data types.NativeInput)error{
+ if err:=types.CheckNativeInput(ctx,data);err!=nil{return err}
+ for path:=range data.Binaries{if path!="/body"&&!strings.HasPrefix(path,"/body/"){return dynamicFailure("native binary input must belong to the request body")}}
+ for path,factory:=range data.Sources{if path!="/body"&&path!="/body/value"{return dynamicFailure("item source must replace a complete body value")};if factory==nil{return dynamicFailure("item source factory is nil")};if _,present,err:=core.LinkDataAt(data,path);err!=nil{return err}else if !present{return dynamicFailure("item source pointer does not exist in input")}}
+ return nil
+}
+func dynamicBinary(value types.Value)(types.Binary,error){
+ if text,ok:=value.String();ok{return types.BinaryFromString(text),nil}
+ if value.Kind()!=types.ValueArray{return types.Binary{},dynamicFailure("binary value must be text or a byte array")}
+ bytes:=make([]byte,value.Len());for index:=range bytes{item,_:=value.At(index);number,ok:=item.Number();if !ok||number<0||number>255||number!=float64(byte(number)){return types.Binary{},dynamicFailure("binary array must contain integer bytes")};bytes[index]=byte(number)};return types.BinaryFromBytes(bytes),nil
+}
+func dynamicMultipartValue(data types.MultipartData)(types.Value,error){
+ var visit func(types.Value,string)(types.Value,error)
+ visit=func(value types.Value,path string)(types.Value,error){
+  if binary,present:=data.Slots[path];present{bytes,buffered:=binary.Bytes();if !buffered{return types.Value{},dynamicFailure("response binary has not been materialized")};return types.ValueFrom(bytes)}
+  if value.Kind()==types.ValueArray{items:=make([]types.Value,value.Len());for index:=range items{item,_:=value.At(index);var err error;items[index],err=visit(item,path+"/"+strconv.Itoa(index));if err!=nil{return types.Value{},err}};return types.ValueFrom(items)}
+  if value.Kind()==types.ValueObject{fields:=value.Fields();for key,item:=range fields{var err error;fields[key],err=visit(item,path+"/"+strings.ReplaceAll(strings.ReplaceAll(key,"~","~0"),"/","~1"));if err!=nil{return types.Value{},err}};return types.ValueFrom(fields)}
+  return value,nil
+ };return visit(data.Value,"")
+}

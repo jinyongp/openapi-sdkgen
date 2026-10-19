@@ -1,0 +1,10 @@
+func(execution *Execution)EncodeMultipart(value wire.MediaValue[types.Binary],contentType string,definitions []FormField,positional bool)(types.Binary,error){
+    if _,binary:=value.Slots[""];binary{return types.Binary{},fmt.Errorf("multipart body must be an object or array, not a binary source")}
+    if positional&&value.Value.Kind()!=wire.Array{return types.Binary{},fmt.Errorf("positional multipart body must be an array")}
+    if !positional&&(bareMedia(contentType)!="multipart/form-data"||value.Value.Kind()!=wire.Object){return types.Binary{},fmt.Errorf("named multipart encoding requires multipart/form-data and an object")}
+    return execution.encodeMultipart(value,contentType,definitions,true)
+}
+func(execution *Execution)encodeMultipart(value wire.MediaValue[types.Binary],contentType string,definitions []FormField,suppliedOptions bool)(types.Binary,error){return execution.encodeMultipartContext(execution.Context,value,contentType,definitions,suppliedOptions)}
+func(execution *Execution)encodeMultipartContext(ctx context.Context,value wire.MediaValue[types.Binary],contentType string,definitions []FormField,suppliedOptions bool)(types.Binary,error){parts,err:=execution.prepareMultipartParts(ctx,value,definitions,suppliedOptions);if err!=nil{return types.Binary{},err};return media.EncodeMultipart(contentType,parts)}
+func(execution *Execution)multipartEncoder()multipartcodec.Encoder{return multipartcodec.Encoder{Options:execution.Options,Encode:func(ctx context.Context,value types.Value,contentType string)(types.Binary,error){return execution.EncodeBodyContext(ctx,value,contentType,SnapshotRequest(execution.Request))}}}
+func(execution *Execution)prepareMultipartParts(ctx context.Context,value wire.MediaValue[types.Binary],definitions []FormField,suppliedOptions bool)([]media.MultipartPart,error){return execution.multipartEncoder().Parts(ctx,value,definitions,suppliedOptions)}

@@ -1,0 +1,42 @@
+{{range .Operations}}
+{{$operation:=.}}
+{{range .RequestStreams}}
+{{$request:=.}}
+{{if .ItemValidation}}
+func encode{{.Name}}Source(execution *core.Execution,factory types.SourceFactory[models.{{.ItemModel}}],contentType string)(types.Binary,error){
+    {{if .Multipart}}definitions:=itemEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}})
+    if execution.StreamCodec(contentType).IsZero(){return core.NewNativeMultipartStream(execution,contentType,factory,models.EncodeMedia{{.ItemModel}},definitions)}
+    contentType,err:=stream.MultipartContentType(contentType);if err!=nil{return types.Binary{},err};native:=stream.MultipartProtocol{}
+    index:=0
+    encode:=func(ctx context.Context,value models.{{.ItemModel}})(types.MultipartPart,error){encoded,err:=models.EncodeMedia{{.ItemModel}}(ctx,value);if err!=nil{return types.MultipartPart{},err};part,err:=execution.EncodeMultipartStreamPart(ctx,encoded,index,definitions);index++;return part,err}
+    validate:=func(ctx context.Context,value models.{{.ItemModel}})(models.{{.ItemModel}},error){_,err:=models.EncodeMedia{{.ItemModel}}(ctx,value);return value,err}
+    {{else}}{{if eq .Framing "line-delimited-json"}}native:=stream.JSONProtocol{}
+    {{else if eq .Framing "json-sequence"}}native:=stream.JSONProtocol{Sequence:true}
+    {{else if eq .Framing "sse"}}native:=stream.SSEProtocol{}
+    {{else}}var native types.StreamProtocol[types.Value]
+    {{end}}encode:=models.Encode{{.ItemModel}}
+    validate:=func(ctx context.Context,value models.{{.ItemModel}})(models.{{.ItemModel}},error){_,err:=models.Encode{{.ItemModel}}(ctx,value);return value,err}
+    {{end}}
+    return core.NewRequestStream(execution,contentType,native,factory,encode,validate)
+}
+{{end}}
+{{if .Complete}}func encode{{.Name}}Complete(execution *core.Execution,value {{if .Multipart}}types.MultipartData{{else}}types.Value{{end}},contentType string)(types.Binary,error){
+    if err:=core.CompleteStreamValue({{if .Multipart}}value.Value{{else}}value{{end}});err!=nil{return types.Binary{},err}
+    {{if .Multipart}}definitions:=bodyEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}})
+    if execution.StreamCodec(contentType).IsZero(){return execution.EncodeNativeCompleteMultipart(execution.Context,value,contentType,definitions)}
+    contentType,err:=stream.MultipartContentType(contentType);if err!=nil{return types.Binary{},err};native:=stream.MultipartProtocol{}
+    factory:=func(context.Context)(types.Source[types.MultipartData],error){return core.MediaItems(value),nil}
+    index:=0
+    encode:=func(ctx context.Context,item types.MultipartData)(types.MultipartPart,error){part,err:=execution.EncodeMultipartStreamPart(ctx,item,index,definitions);index++;return part,err}
+    {{else}}{{if eq .Framing "line-delimited-json"}}native:=stream.JSONProtocol{}
+    {{else if eq .Framing "json-sequence"}}native:=stream.JSONProtocol{Sequence:true}
+    {{else if eq .Framing "sse"}}native:=stream.SSEProtocol{}
+    {{else}}var native types.StreamProtocol[types.Value]
+    {{end}}factory:=func(context.Context)(types.Source[types.Value],error){return core.ValueItems(value),nil}
+    encode:=func(_ context.Context,item types.Value)(types.Value,error){return item,nil}
+    {{end}}
+    return core.NewRequestStream(execution,contentType,native,factory,encode)
+}
+{{end}}
+{{end}}
+{{end}}

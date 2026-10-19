@@ -1,0 +1,23 @@
+func NewNativeMultipartStream[Item any](execution *Execution,contentType string,factory types.SourceFactory[Item],encode func(context.Context,Item)(types.MultipartData,error),definitions []FormField)(types.Binary,error){
+    if factory==nil{return types.Binary{},&types.SDKError{Code:types.RequestEncodeFailed,Message:"stream source factory is nil"}}
+    parts:=func(ctx context.Context)(types.Source[media.MultipartPart],error){
+        items,err:=types.OpenSourceFactory(ctx,factory);if err!=nil{return nil,err};index:=0
+        return types.MapSource(ctx,items,func(ctx context.Context,item Item)(media.MultipartPart,error){
+            value,err:=encode(ctx,item);if err!=nil{return media.MultipartPart{},err}
+            part,err:=execution.prepareMultipartStreamPart(ctx,value,index,definitions);index++;if err!=nil{return media.MultipartPart{},err};return execution.boundMultipartPart(part)
+        }),nil
+    }
+    return media.EncodeMultipartSource(contentType,parts)
+}
+func(execution *Execution)EncodeNativeCompleteMultipart(ctx context.Context,value types.MultipartData,contentType string,definitions []FormField)(types.Binary,error){
+    running,cancel:=context.WithCancel(ctx)
+    parts,err:=execution.prepareMultipartParts(running,value,definitions,true);if err!=nil{cancel();return types.Binary{},err}
+    for index,part:=range parts{bounded,err:=execution.boundMultipartPart(part);if err!=nil{cancel();return types.Binary{},err};parts[index]=bounded}
+    // Existing complete MIME preflight validates every known header/source
+    // before transport. The payload readers remain unopened until pulled.
+    body,err:=media.EncodeMultipart(contentType,parts);if err!=nil{cancel();return types.Binary{},err};return types.BinaryFromSource(&scopedMultipartSource{body:body,cancel:cancel}),nil
+}
+type scopedMultipartSource struct{body types.Binary;cancel context.CancelFunc}
+func(source *scopedMultipartSource)Metadata()types.BinaryMetadata{return source.body.Metadata()}
+func(source *scopedMultipartSource)Open(ctx context.Context)(io.ReadCloser,error){reader,err:=source.body.Open(ctx);if err!=nil{source.cancel();return nil,err};return &requestStreamReader{ReadCloser:reader,cancel:source.cancel},nil}
+func(execution *Execution)boundMultipartPart(part media.MultipartPart)(media.MultipartPart,error){return multipartcodec.BoundPart(part,execution.StreamContext("").MaxFrameBytes)}

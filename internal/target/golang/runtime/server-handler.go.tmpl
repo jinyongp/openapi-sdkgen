@@ -1,0 +1,97 @@
+type Route struct{Path,Method string;Handler http.Handler}
+type inboundHandler struct{path string;pattern *regexp.Regexp;names []string;definition Definition;options Options;invoke Invocation}
+func NewHandler(path string,definition Definition,options Options,invoke Invocation)(http.Handler,error){
+ if err:=validateInboundDefinition(definition);err!=nil{return nil,err}
+ if invoke==nil{return nil,fmt.Errorf("inbound handler is nil")};prepared,err:=normalizeOptions(options);if err!=nil{return nil,err};pattern,names,err:=routePattern(path);if err!=nil{return nil,err}
+ schemes:=make([]InboundScheme,len(definition.Schemes));for index,scheme:=range definition.Schemes{schemes[index]=scheme;schemes[index].Definition.Scopes=append([]string(nil),scheme.Definition.Scopes...)};definition.Schemes=schemes
+ return &inboundHandler{path:path,pattern:pattern,names:names,definition:definition,options:prepared,invoke:invoke},nil
+}
+func(handler *inboundHandler)ServeHTTP(writer http.ResponseWriter,request *http.Request){
+ path,present:=matchRoute(handler.pattern,handler.names,request.URL.EscapedPath());if !present||request.Method!=handler.definition.Method{http.NotFound(writer,request);return}
+ execution:=newExecution(request,handler.options,handler.definition)
+ // The native server must not drain a live request before the handler can
+ // produce a response. Unsupported adapters are rejected if duplex is needed.
+ if execution.Streaming&&request.ProtoMajor<2{_ = http.NewResponseController(writer).EnableFullDuplex()}
+ sent,failure:=handler.run(writer,execution,path)
+ abort:=sent&&failure!=nil
+ if failure!=nil&&request.Context().Err()!=nil{failure=&Error{Code:InboundRequestAborted,Cause:errors.Join(request.Context().Err(),failure)}}
+ // Publish a finite error before closing an unread request. HTTP/1 body Close
+ // may drain, and the peer may be waiting for this response before sending.
+ if failure!=nil&&!sent{var err error;sent,err=writeFailure(writer,request,execution,failure);if err!=nil{failure=errors.Join(failure,ResponseError(err))}}
+ if err:=execution.Close();err!=nil{if failure==nil{failure=&Error{Status:500,Code:InboundResponseInvalid,Cause:err}}else{failure=errors.Join(failure,err)}}
+ if failure==nil{return};if handler.options.OnError!=nil{handler.options.OnError(request.Context(),failure)}
+ // Returning normally would write the final HTTP/1 chunk or HTTP/2 END_STREAM,
+ // making a failed partial response look successful. net/http owns the abort.
+ if abort{panic(http.ErrAbortHandler)}
+ if !sent{_,_=writeFailure(writer,request,execution,failure)}
+}
+func writeFailure(writer http.ResponseWriter,request *http.Request,execution *Execution,failure error)(bool,error){
+ var detail *Error;status:=500;if errors.As(failure,&detail)&&detail.Status!=0{status=detail.Status};if request.Context().Err()!=nil||detail!=nil&&detail.Code==InboundRequestAborted{return false,nil};if status<400||status>599{status=500}
+ execution.mu.Lock();unread:=!execution.bodyEnded;execution.mu.Unlock()
+ if unread&&request.ProtoMajor<2{writer.Header().Set("Connection","close")}
+ value:=http.StatusText(status)+"\n";writer.Header().Set("Content-Type","text/plain; charset=utf-8");writer.Header().Set("Content-Length",strconv.Itoa(len(value)));writer.Header().Set("X-Content-Type-Options","nosniff");writer.WriteHeader(status)
+ _,err:=io.WriteString(writer,value);if err==nil&&unread&&supportsFlush(writer){err=http.NewResponseController(writer).Flush()};return true,err
+}
+func(handler *inboundHandler)run(writer http.ResponseWriter,execution *Execution,path map[string]string)(bool,error){
+ if err:=execution.Context.Err();err!=nil{return false,inputFailure(err)}
+ params:=ParameterResult{}
+ if handler.definition.DecodeParameters!=nil{decoded,err:=handler.definition.DecodeParameters(execution,path);if err!=nil{return false,InputError(err)};params=decoded}
+ normalized,err:=normalizeParameters(params.Value);if err!=nil{return false,inputFailure(err)};params.Value=normalized
+ execution.params=params.Value
+ if requiresAuthentication(handler.definition.Security){
+  if handler.options.Authenticate==nil{return false,&Error{Status:401,Code:InboundAuthenticationFailed}}
+  rejected,err:=handler.options.Authenticate(execution.Context,execution.InboundContext());if err!=nil{var input *Error;if errors.As(err,&input)&&input.Status==413{return false,input};if canceled:=execution.Context.Err();canceled!=nil{return false,inputFailure(errors.Join(canceled,err))};return false,&Error{Status:500,Code:InboundAuthenticationFailed,Cause:err}}
+  if bodyFailure:=execution.bodyError();bodyFailure!=nil{return false,bodyFailure}
+  if rejected!=nil{response:=Response{Status:rejected.Status,Headers:rejected.Headers.Clone()};if rejected.Body!=nil{response.Body=types.BinaryFromSource(rejected.Body);response.HasBody=true};sent,err:=Send(execution.Context,writer,response,execution.needsDuplex());if err!=nil{return sent,&Error{Status:500,Code:InboundAuthenticationFailed,Cause:err}};return sent,nil}
+ }
+ if err:=execution.Context.Err();err!=nil{return false,inputFailure(err)}
+ response,err:=handler.invoke(execution,params);if canceled:=execution.Context.Err();canceled!=nil{return false,inputFailure(errors.Join(canceled,err))};if err!=nil{return false,HandlerError(err)};if err:=execution.inputError();err!=nil{return false,err}
+ return Send(execution.Context,writer,response,execution.needsDuplex())
+}
+func validateInboundDefinition(definition Definition)error{if !validHeaderName(definition.Method){return fmt.Errorf("inbound method must be an HTTP token")};security:=definition.Security;if security.Kind()==types.ValueNull{return nil};if security.Kind()!=types.ValueArray{return fmt.Errorf("inbound security must be an array")};for _,requirement:=range security.Items(){if requirement.Kind()!=types.ValueObject{return fmt.Errorf("inbound security requirement must be an object")};for _,name:=range requirement.Keys(){scopes,_:=requirement.Get(name);if name==""||scopes.Kind()!=types.ValueArray{return fmt.Errorf("inbound security scopes must be an array")};for _,scope:=range scopes.Items(){if _,ok:=scope.String();!ok{return fmt.Errorf("inbound security scope must be a string")}}}};return nil}
+var emptyInboundParameters=func()types.Value{value,_:=types.ParseValue([]byte(`{"path":{},"query":{},"querystring":{},"header":{},"cookie":{}}`));return value}()
+func normalizeParameters(value types.Value)(types.Value,error){if value.Kind()==types.ValueNull{return emptyInboundParameters,nil};if value.Kind()!=types.ValueObject{return types.Value{},fmt.Errorf("inbound parameters must be grouped objects")};fields:=make(map[string]types.Value,5);for _,name:=range []string{"path","query","querystring","header","cookie"}{section,present:=value.Get(name);if !present{section,_=emptyInboundParameters.Get(name)};if section.Kind()!=types.ValueObject{return types.Value{},fmt.Errorf("inbound parameter section must be an object")};fields[name]=section};return types.ValueFrom(fields)}
+func InputError(cause error)error{if cause==nil{return nil};return inputFailure(cause)}
+func HandlerError(cause error)error{if cause==nil{return nil};var existing *Error;if errors.As(cause,&existing){return cause};return &Error{Status:500,Code:InboundHandlerFailed,Cause:cause}}
+func ResponseError(cause error)error{if cause==nil{return nil};var existing *Error;if errors.As(cause,&existing){return cause};return &Error{Status:500,Code:InboundResponseInvalid,Cause:cause}}
+func requiresAuthentication(value types.Value)bool{if value.Kind()!=types.ValueArray||value.Len()==0{return false};for index:=0;index<value.Len();index++{requirement,_:=value.At(index);if requirement.Kind()==types.ValueObject&&requirement.Len()==0{return false}};return true}
+func Send(ctx context.Context,writer http.ResponseWriter,response Response,requireDuplex bool)(sent bool,failure error){
+ fail:=func(cause error)(bool,error){return false,ResponseError(cause)}
+ if err:=ctx.Err();err!=nil{return fail(err)};if response.Status<200||response.Status>599{return fail(fmt.Errorf("inbound response status is invalid"))}
+ if response.HasBody&&(response.Status==204||response.Status==205||response.Status==304){return fail(fmt.Errorf("response status forbids a body"))}
+ headers:=response.Headers.Clone();if headers==nil{headers=make(http.Header)}
+ for name,values:=range headers{if !validHeaderName(name){return fail(fmt.Errorf("response header name is invalid"))};for _,value:=range values{if !validHeaderValue(value){return fail(fmt.Errorf("response header value is invalid"))}}}
+ flush:=response.Streaming||requireDuplex
+ if flush&&!supportsFlush(writer){return fail(&types.SDKError{Code:types.TransportCapabilityRequired,Message:"inbound streaming response requires flushing"})}
+ if requireDuplex{if err:=http.NewResponseController(writer).EnableFullDuplex();err!=nil{return fail(&types.SDKError{Code:types.TransportCapabilityRequired,Message:"inbound bidirectional streaming requires full duplex",Cause:err})}}
+ var body io.ReadCloser;expectedLength:=int64(0);hasLength:=false
+ if value,present:=headerPresent(headers,"Content-Length");present{length,err:=strconv.ParseInt(value,10,64);if err!=nil||length<0{return fail(fmt.Errorf("response content length is invalid"))};expectedLength,hasLength=length,true;canonicalHeader(headers,"Content-Length",value)}
+ if response.HasBody{
+  if err:=response.Body.Validate();err!=nil{return fail(err)};metadata:=response.Body.Metadata()
+  if value,present:=headerPresent(headers,"Content-Type");present{actual,parameters,err:=mime.ParseMediaType(value);if err!=nil||strings.Contains(actual,"*"){return fail(fmt.Errorf("response content type is invalid"))};if metadata.ContentType!=""{declared,expected,err:=mime.ParseMediaType(metadata.ContentType);if err!=nil||!strings.EqualFold(actual,declared)||expected["boundary"]!=""&&parameters["boundary"]!=expected["boundary"]{return fail(fmt.Errorf("response content type conflicts with body"))}};canonicalHeader(headers,"Content-Type",value)
+  }else if metadata.ContentType!=""{actual,_,err:=mime.ParseMediaType(metadata.ContentType);if err!=nil||strings.Contains(actual,"*"){return fail(fmt.Errorf("response content type is invalid"))};headers.Set("Content-Type",metadata.ContentType)}
+  if size,known:=metadata.Size.Get();known{if hasLength&&expectedLength!=size{return fail(fmt.Errorf("response content length conflicts with body"))};expectedLength,hasLength=size,true;if headers.Get("Content-Length")==""{headers.Set("Content-Length",strconv.FormatInt(size,10))}}
+  running,cancel:=context.WithCancel(ctx);opened,err:=response.Body.Open(running);if err!=nil{cancel();return fail(err)};body=opened
+  stop:=context.AfterFunc(running,func(){body.Close()})
+  defer func(){stop();cancel();if err:=body.Close();err!=nil{failure=errors.Join(failure,ResponseError(err))}}()
+ }
+ if err:=ctx.Err();err!=nil{return fail(err)}
+ for name,values:=range headers{writer.Header()[name]=append([]string(nil),values...)};writer.WriteHeader(response.Status);sent=true
+ if flush{if err:=http.NewResponseController(writer).Flush();err!=nil{return true,ResponseError(err)}}
+ if !response.HasBody{return true,nil}
+ var destination io.Writer=writer;if flush{destination=&flushingWriter{writer:writer,controller:http.NewResponseController(writer)}}
+ written,err:=io.Copy(destination,body);if err!=nil{return true,ResponseError(err)};if hasLength&&written!=expectedLength{return true,ResponseError(fmt.Errorf("response body length differs from Content-Length"))};return true,nil
+}
+func canonicalHeader(headers http.Header,name,value string){for key:=range headers{if strings.EqualFold(key,name){delete(headers,key)}};headers.Set(name,value)}
+type flushingWriter struct{writer http.ResponseWriter;controller *http.ResponseController}
+func(writer *flushingWriter)Write(value []byte)(int,error){count,err:=writer.writer.Write(value);if err==nil&&count!=0{err=writer.controller.Flush()};return count,err}
+func supportsFlush(writer http.ResponseWriter)bool{for{switch value:=writer.(type){case interface{FlushError()error}:return true;case http.Flusher:return true;case interface{Unwrap()http.ResponseWriter}:writer=value.Unwrap();default:return false}}}
+func validHeaderName(name string)bool{if name==""{return false};for _,char:=range name{if char>127||!strings.ContainsRune("!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",char){return false}};return true}
+func validHeaderValue(value string)bool{for _,char:=range value{if char=='\r'||char=='\n'||char==0||char<32&&char!='\t'||char==127{return false}};return true}
+func routePattern(path string)(*regexp.Regexp,[]string,error){
+ if !strings.HasPrefix(path,"/"){return nil,nil,fmt.Errorf("inbound route needs an absolute path template")}
+ var pattern strings.Builder;pattern.WriteByte('^');var names []string
+ for path!=""{prefix,tail,found:=strings.Cut(path,"{");parts:=strings.Split(prefix,"/");for index:=range parts{parts[index]=url.PathEscape(parts[index])};pattern.WriteString(regexp.QuoteMeta(strings.Join(parts,"/")));if !found{path="";break};name,remainder,closed:=strings.Cut(tail,"}");if !closed||name==""||strings.ContainsAny(name,"/{"){return nil,nil,fmt.Errorf("inbound path parameter is invalid")};names=append(names,name);pattern.WriteString("([^/]+)");path=remainder}
+ pattern.WriteByte('$');compiled,err:=regexp.Compile(pattern.String());return compiled,names,err
+}
+func matchRoute(pattern *regexp.Regexp,names []string,path string)(map[string]string,bool){parts:=strings.Split(path,"/");for index,part:=range parts{decoded,err:=url.PathUnescape(part);if err!=nil{return nil,false};parts[index]=url.PathEscape(decoded)};matches:=pattern.FindStringSubmatch(strings.Join(parts,"/"));if matches==nil{return nil,false};result:=make(map[string]string,len(names));for index,name:=range names{value,err:=url.PathUnescape(matches[index+1]);if err!=nil{return nil,false};result[name]=value};return result,true}

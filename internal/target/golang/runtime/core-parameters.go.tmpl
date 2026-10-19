@@ -1,0 +1,116 @@
+// Parameter is prepared serialization metadata, not an OpenAPI schema.
+type Parameter struct {
+    Name,Location,Style,ContentType string
+    Explode,AllowReserved,AllowEmptyValue bool
+    Encoder func(context.Context,types.Value,string)([]byte,error)
+}
+
+func (execution *Execution) AddParameter(data *RequestData,value types.Value,parameter Parameter) error {
+    if err:=execution.Context.Err();err!=nil{return err}
+    if parameter.ContentType!=""&&!(parameter.Location=="querystring"&&bareMedia(parameter.ContentType)=="application/x-www-form-urlencoded") {
+        normalized:=bareMedia(parameter.ContentType)
+        var text string
+        var err error
+        if parameter.Encoder!=nil{var encoded []byte;encoded,err=parameter.Encoder(execution.Context,value,parameter.ContentType);text=string(encoded)
+        }else if normalized=="application/json"||strings.HasSuffix(normalized,"+json") { var encoded []byte;encoded,err=value.MarshalJSON();text=string(encoded)
+        }else if normalized=="application/x-www-form-urlencoded"{text=media.Form(value)
+        }else if strings.HasPrefix(normalized,"text/"){text=media.String(value)
+        }else if codec,present:=execution.Codec(normalized);present&&codec.EncodeParameter!=nil {metadata,metadataError:=execution.parameterMetadata(data,parameter.ContentType);if metadataError!=nil{return metadataError};text,err=codec.EncodeParameter(execution.Context,value,metadata)
+        }else{return fmt.Errorf("parameter media codec is unavailable")}
+        if err!=nil{return err}
+        value,err=types.ValueFrom(text);if err!=nil{return err}
+    }
+    encode:=func(text string)(string,error){return encodeParameter(text,parameter.AllowReserved&&parameter.Location=="query")}
+    simple:=func(separator string,explode bool)(string,error){return simpleParameter(value,separator,explode,encode)}
+    name,err:=encodeParameter(parameter.Name,false);if err!=nil{return err}
+    pair:=func(key string,item types.Value)error{
+        key,err:=encodeParameter(key,false);if err!=nil{return err};text,err:=encode(parameterItem(item));if err!=nil{return err}
+        if data.Query!=""{data.Query+="&"};data.Query+=key+"="+text;return nil
+    }
+    switch parameter.Location {
+    case "path":
+        separator:=",";if parameter.Style=="label"&&parameter.Explode{separator="."}
+        text,err:=simple(separator,parameter.Explode);if err!=nil{return err}
+        switch parameter.Style{
+        case "label":text="."+text
+        case "matrix":
+            if parameter.Explode&&value.Kind()==types.ValueArray{parts:=make([]string,0,value.Len());for _,item:=range value.Items(){encoded,err:=encode(media.String(item));if err!=nil{return err};parts=append(parts,";"+name+"="+encoded)};text=strings.Join(parts,"")
+            }else if parameter.Explode&&value.Kind()==types.ValueObject{parts:=make([]string,0,value.Len());for _,key:=range value.Keys(){item,_:=value.Get(key);encodedKey,err:=encode(key);if err!=nil{return err};encoded,err:=encode(media.String(item));if err!=nil{return err};parts=append(parts,";"+encodedKey+"="+encoded)};text=strings.Join(parts,"")
+            }else{text=";"+name+"="+text}
+        }
+        data.Path=strings.ReplaceAll(data.Path,"{"+parameter.Name+"}",text)
+    case "query":
+        if text,isString:=value.String();isString&&text==""&&parameter.ContentType==""&&!parameter.AllowEmptyValue{return fmt.Errorf("empty query parameter requires allowEmptyValue")}
+        if parameter.ContentType!=""{return pair(parameter.Name,value)}
+        if parameter.Style=="deepObject"&&value.Kind()==types.ValueObject{for _,key:=range value.Keys(){item,_:=value.Get(key);if err:=pair(parameter.Name+"["+key+"]",item);err!=nil{return err}};return nil}
+        if parameter.Style=="form"&&parameter.Explode{
+            switch value.Kind(){
+            case types.ValueArray:for _,item:=range value.Items(){if err:=pair(parameter.Name,item);err!=nil{return err}};return nil
+            case types.ValueObject:for _,key:=range value.Keys(){item,_:=value.Get(key);if err:=pair(key,item);err!=nil{return err}};return nil
+            }
+        }
+        separator:=",";if parameter.Style=="spaceDelimited"{separator=" "};if parameter.Style=="pipeDelimited"{separator="|"}
+        raw:=func(text string)(string,error){return text,nil}
+        serialized,err:=simpleParameter(value,separator,parameter.Explode&&value.Kind()==types.ValueObject,raw);if err!=nil{return err}
+        text,err:=encode(serialized);if err!=nil{return err}
+        if data.Query!=""{data.Query+="&"};data.Query+=name+"="+text
+    case "querystring":
+        if bareMedia(parameter.ContentType)=="application/x-www-form-urlencoded"{
+            if value.Kind()!=types.ValueObject{return fmt.Errorf("querystring form content must be an object")}
+            scalarPair:=func(key string,item types.Value)error{converted,err:=types.ValueFrom(media.String(item));if err!=nil{return err};return pair(key,converted)}
+            for _,key:=range value.Keys(){item,_:=value.Get(key);if item.Kind()==types.ValueArray{for _,entry:=range item.Items(){if err:=scalarPair(key,entry);err!=nil{return err}}}else if err:=scalarPair(key,item);err!=nil{return err}};return nil
+        }
+        text,err:=encode(media.String(value));if err!=nil{return err};if data.Query!=""{data.Query+="&"};data.Query+=text
+    case "header":
+        if data.Headers==nil{data.Headers=make(http.Header)}
+        raw:=func(text string)(string,error){return text,nil}
+        text,err:=simpleParameter(value,",",parameter.Explode,raw);if err!=nil{return err};data.Headers.Add(parameter.Name,text)
+    case "cookie":
+        if data.Headers==nil{data.Headers=make(http.Header)}
+        cookieEncode:=encode
+        if parameter.Style=="cookie"{cookieEncode=func(text string)(string,error){return text,nil}}
+        cookiePair:=func(key string,item types.Value)error{if !execution.client.transport.Capabilities().CookieHeaders{return &types.SDKError{Code:types.TransportCapabilityRequired,Message:"explicit cookie parameters require CookieHeaders capability"}};key,err:=cookieEncode(key);if err!=nil{return err};scalar:=media.String(item);if item.Kind()==types.ValueNull{scalar=""};text,err:=cookieEncode(scalar);if err!=nil{return err};current:=data.Headers.Get("Cookie");if current!=""{current+="; "};data.Headers.Set("Cookie",current+key+"="+text);return nil}
+        if parameter.Explode&&value.Kind()==types.ValueArray{for _,item:=range value.Items(){if err:=cookiePair(parameter.Name,item);err!=nil{return err}};return nil}
+        if parameter.Explode&&value.Kind()==types.ValueObject{for _,key:=range value.Keys(){item,_:=value.Get(key);if err:=cookiePair(key,item);err!=nil{return err}};return nil}
+        if !execution.client.transport.Capabilities().CookieHeaders{return &types.SDKError{Code:types.TransportCapabilityRequired,Message:"explicit cookie parameters require CookieHeaders capability"}}
+        raw:=func(text string)(string,error){return text,nil}
+        serialized,err:=simpleParameter(value,",",false,raw);if err!=nil{return err}
+        text,err:=cookieEncode(serialized);if err!=nil{return err}
+        current:=data.Headers.Get("Cookie");if current!=""{current+="; "};key,err:=cookieEncode(parameter.Name);if err!=nil{return err};data.Headers.Set("Cookie",current+key+"="+text)
+    default:return fmt.Errorf("unknown parameter location")
+    }
+    return nil
+}
+
+// Parameter encoders run before the request URL is complete. Their request is
+// a snapshot of the selected server, route and values prepared so far.
+func(execution *Execution)parameterMetadata(data *RequestData,contentType string)(types.MediaContext,error){
+    base,err:=execution.serverBase(data.Servers);if err!=nil{return types.MediaContext{},err}
+    target,err:=requestURL(base,data.Path,data.Query);if err!=nil{return types.MediaContext{},err}
+    request,err:=http.NewRequestWithContext(execution.Context,execution.Operation.Method,target.String(),nil);if err!=nil{return types.MediaContext{},err}
+    headers,err:=requestHeaders(execution.Options,*data);if err!=nil{return types.MediaContext{},err};request.Header=headers
+    return types.MediaContext{ContentType:contentType,Request:SnapshotRequest(request)},nil
+}
+
+func parameterItem(value types.Value)string{
+    if value.Kind()==types.ValueObject||value.Kind()==types.ValueArray{encoded,_:=value.MarshalJSON();return string(encoded)}
+    return media.String(value)
+}
+func simpleParameter(value types.Value,separator string,explode bool,encode func(string)(string,error))(string,error){
+    parts:=make([]string,0,value.Len())
+    if value.Kind()==types.ValueArray{for _,item:=range value.Items(){text,err:=encode(media.String(item));if err!=nil{return "",err};parts=append(parts,text)}
+    }else if value.Kind()==types.ValueObject{for _,key:=range value.Keys(){item,_:=value.Get(key);encodedKey,err:=encode(key);if err!=nil{return "",err};encoded,err:=encode(media.String(item));if err!=nil{return "",err};if explode{parts=append(parts,encodedKey+"="+encoded)}else{parts=append(parts,encodedKey,encoded)}}
+    }else{return encode(media.String(value))}
+    return strings.Join(parts,separator),nil
+}
+func encodeParameter(value string,allowReserved bool)(string,error){
+    if !utf8.ValidString(value){return "",fmt.Errorf("parameter contains an unpaired UTF-16 surrogate")}
+    const hex="0123456789ABCDEF"
+    var result strings.Builder
+    for index:=0;index<len(value);index++{char:=value[index]
+        if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("-_.!~*'()",rune(char))||allowReserved&&strings.ContainsRune(":/?@$;,=",rune(char)){result.WriteByte(char)
+        }else if allowReserved&&char=='%'&&index+2<len(value)&&hexDigit(value[index+1])&&hexDigit(value[index+2]){result.WriteString(value[index:index+3]);index+=2
+        }else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}
+    }
+    return result.String(),nil
+}

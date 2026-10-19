@@ -1,0 +1,38 @@
+type BodyDecoder func(context.Context,[]byte,string)(types.Value,error)
+type BodyEncoder func(context.Context,types.Value,string)([]byte,error)
+// DecodeBody reads a complete body only through the execution's byte bound.
+func DecodeBody(execution *Execution,contentType,kind string,shape *ParameterSchema,decode BodyDecoder)(types.Value,error){
+ request,err:=execution.BodyRequest();if err!=nil{return types.Value{},err};defer request.Body.Close()
+ actual:=bareMedia(contentType)
+ if kind=="open"{switch{case actual=="application/json"||strings.HasSuffix(actual,"+json"):kind="json";case strings.HasPrefix(actual,"text/"):kind="text";default:kind="custom"}}
+ if kind=="custom"&&actual!="application/x-www-form-urlencoded"&&!(decode!=nil&&isXMLMedia(actual)){codec,present:=execution.Codec(actual);if !present||codec.DecodeInbound==nil{return types.Value{},&Error{Status:415,Code:InboundInputInvalid}};value,err:=media.DecodeInboundCodec(execution.Context,request,contentType,codec);if err!=nil{return types.Value{},inputFailure(err)};return value,nil}
+ data,err:=io.ReadAll(request.Body);if err!=nil{return types.Value{},inputFailure(err)}
+ var value types.Value
+ switch{case actual=="application/x-www-form-urlencoded":raw:=formObject(wire.UTF8Text(data));value,err=CoerceParameter(execution.Context,shape,raw,true);case decode!=nil&&isXMLMedia(actual):value,err=decode(execution.Context,data,contentType);case kind=="json":value,err=media.DecodeJSON(data);case kind=="text":value,err=media.DecodeText(data);default:return types.Value{},&Error{Status:415,Code:InboundInputInvalid}}
+ if err!=nil{return types.Value{},inputFailure(err)};return value,nil
+}
+func DecodeBinaryBody(execution *Execution,required ...bool)(types.Binary,error){body,err:=execution.completeBody(execution.Context);if err!=nil{return types.Binary{},err};if len(required)>0&&required[0]&&len(body)==0{return types.Binary{},inputFailure(fmt.Errorf("request body is required"))};return types.BinaryFromBytesWithMetadata(body,types.BinaryMetadata{ContentType:execution.Request.Header.Get("Content-Type")}),nil}
+func BodyPresent(execution *Execution,contentType string,required bool)(bool,error){actual:=bareMedia(contentType);native:=actual=="application/json"||strings.HasSuffix(actual,"+json")||strings.HasPrefix(actual,"text/")||isXMLMedia(actual)||actual=="application/x-www-form-urlencoded";if !native{return true,nil};body,err:=execution.completeBody(execution.Context);if err!=nil{return false,err};text:=wire.UTF8Text(body);if actual!="text/plain"{text=wire.TrimScalarSpace(text)};if text==""{if required{return false,inputFailure(fmt.Errorf("request body is required"))};return false,nil};return true,nil}
+func EncodeBody(execution *Execution,value types.Value,contentType,kind string,encode BodyEncoder,fields []FormField)(types.Binary,error){
+ return EncodeBodyContext(execution.Context,execution,value,contentType,kind,encode,fields)
+}
+func EncodeBodyContext(ctx context.Context,execution *Execution,value types.Value,contentType,kind string,encode BodyEncoder,fields []FormField)(types.Binary,error){
+ actual:=bareMedia(contentType)
+ if kind=="open"{switch{case actual=="application/json"||strings.HasSuffix(actual,"+json"):kind="json";case strings.HasPrefix(actual,"text/"):kind="text";default:kind="custom"}}
+ var body types.Binary;var err error
+ switch{case actual=="application/x-www-form-urlencoded":body,err=media.EncodeFormBody(value,fields);case encode!=nil&&isXMLMedia(actual):var data []byte;data,err=encode(ctx,value,contentType);body=types.BinaryFromBytes(data);case kind=="json":body,err=media.EncodeJSON(value);case kind=="text":body,err=media.EncodeText(value);default:codec,present:=execution.Codec(actual);if !present||codec.Encode==nil{return types.Binary{},fmt.Errorf("inbound response media codec is unavailable")};var source types.BinarySource;source,err=codec.Encode(ctx,value,types.MediaContext{ContentType:contentType,Request:execution.InboundContext().Request});if err==nil{if source==nil{return types.Binary{},fmt.Errorf("inbound response codec returned no source")};body=types.BinaryFromSource(source)}}
+ if err!=nil{return types.Binary{},err};return BinaryContentType(body,contentType),nil
+}
+type contentTypedBinary struct{body types.Binary;contentType string}
+func(source *contentTypedBinary)Metadata()types.BinaryMetadata{metadata:=source.body.Metadata();metadata.ContentType=source.contentType;return metadata}
+func(source *contentTypedBinary)Open(ctx context.Context)(io.ReadCloser,error){return source.body.Open(ctx)}
+func BinaryContentType(body types.Binary,contentType string)types.Binary{return types.BinaryFromSource(&contentTypedBinary{body:body,contentType:contentType})}
+func MediaMatches(actual,declared string)bool{actual=bareMedia(actual);declared=bareMedia(declared);if strings.Contains(actual,"*"){return false};if actual==""||declared==""{return actual==declared};if actual==declared{return true};left,right:=strings.SplitN(declared,"/",2),strings.SplitN(actual,"/",2);if len(left)!=2||len(right)!=2||left[0]!="*"&&left[0]!=right[0]{return false};return left[1]=="*"||strings.HasPrefix(left[1],"*+")&&strings.HasSuffix(right[1],left[1][1:])}
+func SelectMedia(actual string,declared []string)int{selected,score:=-1,-1;for index,media:=range declared{if !MediaMatches(actual,media){continue};rank:=3;if strings.Contains(media,"*"){rank=1;if strings.Contains(media,"*+"){rank=2}};if rank>score{selected,score=index,rank}};return selected}
+func ResponseStatus(status int,expected string,declared []string)bool{if status<200||status>599{return false};selected:="";score:=0;for _,candidate:=range declared{rank:=0;if candidate==strconv.Itoa(status){rank=3}else if len(candidate)==3&&strings.EqualFold(candidate[1:],"XX")&&int(candidate[0]-'0')==status/100{rank=2}else if candidate=="default"{rank=1};if rank>score{selected,score=candidate,rank}};return selected==expected}
+
+func isXMLMedia(contentType string)bool{value:=bareMedia(contentType);return value=="application/xml"||value=="text/xml"||strings.HasSuffix(value,"+xml")}
+
+func BinaryMedia(contentType string,fallback bool)bool{value:=bareMedia(contentType);if value=="application/octet-stream"||strings.HasPrefix(value,"image/")||strings.HasPrefix(value,"audio/")||strings.HasPrefix(value,"video/"){return true};return fallback&&!strings.HasPrefix(value,"text/")&&value!="application/json"&&!strings.HasSuffix(value,"+json")&&!isXMLMedia(value)&&value!="application/x-www-form-urlencoded"&&!strings.HasPrefix(value,"multipart/")}
+
+func MultipartMedia(contentType string)bool{return bareMedia(contentType)=="multipart/form-data"}

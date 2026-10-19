@@ -1,0 +1,4 @@
+type Operations struct { client *core.Client }
+func New(client *core.Client) Operations { return Operations{client:client} }
+type Routes struct { client *core.Client }
+func NewRoutes(client *core.Client) Routes { return Routes{client:client} }

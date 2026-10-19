@@ -1,0 +1,124 @@
+const (
+    XMLDefinedName uint8 = 1<<iota
+    XMLDefinedPrefix
+    XMLDefinedNamespace
+    XMLDefinedAttribute
+    XMLDefinedWrapped
+    XMLDefinedNodeType
+)
+// XMLMapping is an actual value's prepared XML projection. It contains neither
+// schemas nor runtime validators; generated functions populate its known fields.
+type XMLMapping struct {
+    Value Value
+    Path string
+    Metadata XMLOutputMetadata
+    Fields,Items []*XMLMapping
+}
+type XMLOutputMetadata struct { Name,Prefix,Namespace,NodeType string; Attribute,Wrapped bool; Defined uint8 }
+
+func MergeXMLMappings(left,right *XMLMapping)(*XMLMapping,error){
+    if left==nil{return right,nil};if right==nil{return left,nil}
+    if left.Path!=right.Path{return nil,fmt.Errorf("XML mapping paths differ")}
+    merge:=func(flag uint8,equal bool,apply func())error{if right.Metadata.Defined&flag==0{return nil};if left.Metadata.Defined&flag!=0&&!equal{return fmt.Errorf("XML schemas have an ambiguous representation")};apply();left.Metadata.Defined|=flag;return nil}
+    for _,err:=range []error{
+        merge(XMLDefinedName,left.Metadata.Name==right.Metadata.Name,func(){left.Metadata.Name=right.Metadata.Name}),
+        merge(XMLDefinedPrefix,left.Metadata.Prefix==right.Metadata.Prefix,func(){left.Metadata.Prefix=right.Metadata.Prefix}),
+        merge(XMLDefinedNamespace,left.Metadata.Namespace==right.Metadata.Namespace,func(){left.Metadata.Namespace=right.Metadata.Namespace}),
+        merge(XMLDefinedAttribute,left.Metadata.Attribute==right.Metadata.Attribute,func(){left.Metadata.Attribute=right.Metadata.Attribute}),
+        merge(XMLDefinedWrapped,left.Metadata.Wrapped==right.Metadata.Wrapped,func(){left.Metadata.Wrapped=right.Metadata.Wrapped}),
+        merge(XMLDefinedNodeType,left.Metadata.NodeType==right.Metadata.NodeType,func(){left.Metadata.NodeType=right.Metadata.NodeType}),
+    }{if err!=nil{return nil,err}}
+    mergeChildren:=func(target,source []*XMLMapping)([]*XMLMapping,error){
+        indices:=make(map[string]int,len(target));for index,child:=range target{indices[child.Path]=index}
+        for _,child:=range source{if index,found:=indices[child.Path];found{merged,err:=MergeXMLMappings(target[index],child);if err!=nil{return nil,err};target[index]=merged}else{indices[child.Path]=len(target);target=append(target,child)}}
+        return target,nil
+    }
+    var err error;left.Fields,err=mergeChildren(left.Fields,right.Fields);if err!=nil{return nil,err};left.Items,err=mergeChildren(left.Items,right.Items);return left,err
+}
+
+func RenderXML(ctx context.Context,mapping *XMLMapping,fallback string)([]byte,error){
+    text,err:=renderXMLMapping(ctx,mapping,fallback,map[string]string{"xml":xmlNamespace});if err!=nil{return nil,err};return []byte(text),nil
+}
+func renderXMLMapping(ctx context.Context,node *XMLMapping,fallback string,parent map[string]string)(string,error){
+    if err:=ctx.Err();err!=nil{return "",err};if node==nil{return "",nil}
+    metadata:=node.Metadata
+    if metadata.NodeType=="none"{return "",nil}
+    if metadata.NodeType=="text"||metadata.NodeType=="cdata"{return xmlOutputText(node.Value,metadata.NodeType=="cdata")}
+    namespaces:=make(map[string]string,len(parent)+1);for prefix,uri:=range parent{namespaces[prefix]=uri}
+    declarations,err:=xmlOutputNamespace(metadata,namespaces);if err!=nil{return "",err}
+    name:=fallback;if metadata.Defined&XMLDefinedName!=0{name=metadata.Name};if metadata.Prefix!=""{name=metadata.Prefix+":"+name}
+    wrap:=func(content string,attributes []string)(string,error){if _,err:=xmlOutputExpanded(name,namespaces,false);err!=nil{return "",err};suffix:="";if len(attributes)!=0{suffix=" "+strings.Join(attributes," ")};return "<"+name+suffix+">"+content+"</"+name+">",nil}
+    if node.Value.Kind()==Array{
+        wrapped:=metadata.Wrapped||metadata.NodeType=="element"
+        var content strings.Builder
+        for _,item:=range node.Items{
+            child:=*item;itemName:=fallback
+            childNamespaces:=namespaces
+            if !wrapped{
+                if metadata.Defined&XMLDefinedName!=0{itemName=metadata.Name}
+                if child.Metadata.Defined&XMLDefinedPrefix==0&&metadata.Defined&XMLDefinedPrefix!=0{child.Metadata.Prefix=metadata.Prefix;child.Metadata.Defined|=XMLDefinedPrefix}
+                if child.Metadata.Defined&XMLDefinedNamespace==0&&metadata.Defined&XMLDefinedNamespace!=0{child.Metadata.Namespace=metadata.Namespace;child.Metadata.Defined|=XMLDefinedNamespace}
+                // An unwrapped array emits no namespace declaration itself.
+                childNamespaces=parent
+            }
+            text,err:=renderXMLMapping(ctx,&child,itemName,childNamespaces);if err!=nil{return "",err};content.WriteString(text)
+        }
+        if !wrapped{return content.String(),nil};return wrap(content.String(),declarations)
+    }
+    if node.Value.Kind()!=Object{text,err:=xmlOutputText(node.Value,false);if err!=nil{return "",err};return wrap(text,declarations)}
+    attributes:=append([]string(nil),declarations...)
+    declaredNamespaces:=make(map[string]string)
+    if metadata.Defined&XMLDefinedNamespace!=0&&metadata.Namespace!=""{declaredNamespaces[metadata.Prefix]=metadata.Namespace}
+    expandedAttributes:=make(map[string]bool)
+    usedFields:=make(map[string]bool)
+    var text strings.Builder
+    var children []*XMLMapping
+    for _,child:=range node.Fields{
+        if child.Value.Kind()==Null||child.Metadata.NodeType=="none"{continue}
+        childName:=xmlOutputFieldName(child)
+        fieldIdentity:="element:"+child.Metadata.Namespace+":"+childName
+        if child.Metadata.Attribute||child.Metadata.NodeType=="attribute"{fieldIdentity="attribute:"+child.Metadata.Namespace+":"+childName}else if child.Metadata.NodeType=="text"||child.Metadata.NodeType=="cdata"{fieldIdentity="content"}
+        if usedFields[fieldIdentity]{return "",fmt.Errorf("XML properties have an ambiguous representation")};usedFields[fieldIdentity]=true
+        switch{
+        case child.Metadata.Attribute||child.Metadata.NodeType=="attribute":
+            if child.Metadata.Defined&XMLDefinedNamespace!=0&&child.Metadata.Namespace!=""{
+                if previous,present:=declaredNamespaces[child.Metadata.Prefix];present&&previous!=child.Metadata.Namespace{return "",fmt.Errorf("XML namespace declarations conflict on one element")}
+                declaredNamespaces[child.Metadata.Prefix]=child.Metadata.Namespace
+            }
+            declarations,err:=xmlOutputNamespace(child.Metadata,namespaces);if err!=nil{return "",err};attributes=append(attributes,declarations...)
+            qualified:=childName;if child.Metadata.Prefix!=""{qualified=child.Metadata.Prefix+":"+qualified}
+            expanded,err:=xmlOutputExpanded(qualified,namespaces,true);if err!=nil{return "",err};if expandedAttributes[expanded]{return "",fmt.Errorf("duplicate expanded XML attribute")};expandedAttributes[expanded]=true
+            value,err:=xmlOutputScalar(child.Value);if err!=nil{return "",err};attributes=append(attributes,qualified+"=\""+xmlOutputAttribute(value)+"\"")
+        case child.Metadata.NodeType=="text"||child.Metadata.NodeType=="cdata":
+            value,err:=xmlOutputText(child.Value,child.Metadata.NodeType=="cdata");if err!=nil{return "",err};text.WriteString(value)
+        default:children=append(children,child)
+        }
+    }
+    for _,child:=range children{value,err:=renderXMLMapping(ctx,child,xmlOutputFieldName(child),namespaces);if err!=nil{return "",err};text.WriteString(value)}
+    return wrap(text.String(),attributes)
+}
+func xmlOutputFieldName(node *XMLMapping)string{
+    if node.Metadata.Defined&XMLDefinedName!=0{return node.Metadata.Name}
+    index:=strings.LastIndex(node.Path,"/");value:=node.Path[index+1:];return strings.ReplaceAll(strings.ReplaceAll(value,"~1","/"),"~0","~")
+}
+func xmlOutputNamespace(metadata XMLOutputMetadata,namespaces map[string]string)([]string,error){
+    if metadata.Defined&XMLDefinedNamespace==0||metadata.Namespace==""{return nil,nil}
+    prefix,uri:=metadata.Prefix,metadata.Namespace
+    if prefix!=""&&!xmlOutputNamePart(prefix)||strings.Contains(prefix,":")||prefix=="xmlns"||uri==xmlnsNamespace||(prefix=="xml")!=(uri==xmlNamespace)||prefix!=""&&uri==""{return nil,fmt.Errorf("invalid XML namespace declaration")}
+    if namespaces[prefix]==uri{return nil,nil};namespaces[prefix]=uri
+    name:="xmlns";if prefix!=""{name+=":"+prefix};return []string{name+"=\""+xmlOutputAttribute(uri)+"\""},nil
+}
+func xmlOutputExpanded(name string,namespaces map[string]string,attribute bool)(string,error){
+    parts:=strings.Split(name,":");if len(parts)>2{return "",fmt.Errorf("invalid XML name")};for _,part:=range parts{if !xmlOutputNamePart(part){return "",fmt.Errorf("invalid XML name")}}
+    prefix,local:="",parts[0];if len(parts)==2{prefix,local=parts[0],parts[1]}
+    uri:=namespaces[prefix];if attribute&&prefix==""{uri=""};if prefix!=""&&uri==""{return "",fmt.Errorf("undeclared XML prefix")};return uri+"\x00"+local,nil
+}
+func xmlOutputNamePart(value string)bool{return XMLNamePart(value)}
+func xmlOutputScalar(value Value)(string,error){
+    if text,ok:=value.String();ok{return USVString(text),nil}
+    if value.Kind()==Null{return "",nil}
+    if value.Kind()==Number||value.Kind()==Boolean{encoded,err:=value.MarshalJSON();return string(encoded),err}
+    return "",fmt.Errorf("XML scalar node requires a scalar value")
+}
+func xmlOutputText(value Value,cdata bool)(string,error){text,err:=xmlOutputScalar(value);if err!=nil{return "",err};if cdata{return "<![CDATA["+strings.ReplaceAll(text,"]]>","]]]]><![CDATA[>")+"]]>",nil};return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(text,"&","&amp;"),"<","&lt;"),">","&gt;"),nil}
+func xmlOutputAttribute(value string)string{return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(USVString(value),"&","&amp;"),"<","&lt;"),">","&gt;"),"\"","&quot;"),"'","&apos;")}

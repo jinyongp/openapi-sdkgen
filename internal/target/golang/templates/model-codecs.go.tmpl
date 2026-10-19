@@ -1,0 +1,183 @@
+{{range .Models}}
+{{.Documentation}}type {{.Name}}{{if and (not .Named) (not .Wrapper)}} ={{end}} {{.Type}}
+{{$model := .}}
+{{if .NullableRoot}}
+func (value {{.Name}}) Get() ({{.NullableInner}},bool) {return types.Nullable[{{.NullableInner}}](value).Get()}
+func (value {{.Name}}) IsNull() bool {return types.Nullable[{{.NullableInner}}](value).IsNull()}
+func {{.Name}}FromNullable(value types.Nullable[{{.NullableInner}}]) {{.Name}} {return {{.Name}}(value)}
+{{end}}
+{{if .Literals}}
+{{if .NullableLiteral}}
+{{range .Literals}}{{.Documentation}}func {{.Name}}() {{$model.Name}} {return {{.Expression}}}
+{{end}}
+{{if .NullableRoot}}
+func (value {{.Name}}) Equal(other {{.Name}}) bool {
+    state:=&modelState{ctx:context.Background(),active:make(map[any]bool)}
+    left,leftErr:=encode{{.Name}}(value,state);right,rightErr:=encode{{.Name}}(other,state)
+    return leftErr==nil&&rightErr==nil&&left.Equal(right)
+}
+{{end}}
+{{else if .ScalarLiteral}}
+const (
+{{range .Literals}}{{.Documentation}}{{.Name}} {{$model.Name}} = {{.Expression}}
+{{end}}
+)
+func (value {{.Name}}) Equal(other {{.Name}}) bool { return value==other }
+{{else}}
+{{range .Literals}}
+var literal{{.Name}} wire.LazyValue
+{{.Documentation}}func {{.Name}}() {{$model.Name}} { return {{$model.Name}}{value:literal{{.Name}}.Load({{quote .JSON}})} }
+{{end}}
+func (value {{.Name}}) Equal(other {{.Name}}) bool { return value.value.Equal(other.value) }
+func (value {{.Name}}) Value() types.Value { return value.value }
+{{end}}
+func {{.Name}}Values() []{{.Name}} {
+    return []{{.Name}}{ {{range .Literals}}{{.Name}}{{if not $model.ScalarLiteral}}(){{end}},{{end}} }
+}
+func Is{{.Name}}(value types.Value) bool {
+    for _,literal:=range {{.Name}}Values() {
+        {{if or .ScalarLiteral .NullableLiteral}}encoded,err:=encode{{.Name}}(literal,&modelState{ctx:context.Background(),active:make(map[any]bool)});if err==nil&&encoded.Equal(value){return true}{{else}}if literal.value.Equal(value){return true}{{end}}
+    }
+    return false
+}
+func Parse{{.Name}}(value types.Value) ({{.Name}},error) { return {{if .Validation}}Decode{{.Name}}(context.Background(),value){{else}}decode{{.Name}}(value){{end}} }
+{{end}}
+{{range .Branches}}
+{{if .Predicate}}
+func {{.Predicate}}(value types.Value) bool {
+    if value.Kind()!=types.ValueObject{return false}
+    candidate,present:=value.Get({{quote .Tag}})
+    tag,isString:=candidate.String()
+    {{if .Default}}
+    if !present||!isString{return true}
+    switch tag{ {{range .Known}}case {{quote .}}:return false
+    {{end}} }
+    return true
+    {{else}}return present&&isString&&tag=={{quote .TagValue}}{{end}}
+}
+{{end}}
+{{if $model.Media}}
+func {{.Constructor}}(item {{.Type}})({{$model.Name}},error){
+    encoded,err:=EncodeMedia{{.Codec}}(context.Background(),item);if err!=nil{return {{$model.Name}}{},err}
+    {{if .Predicate}}if !{{.Predicate}}(encoded.Value){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    return DecodeMedia{{$model.Name}}(context.Background(),encoded)
+}
+func(value {{$model.Name}})As{{.Name}}()({{.Type}},bool){
+    var zero {{.Type}}
+    {{if .Predicate}}if !{{.Predicate}}(value.value){return zero,false}{{end}}
+    encoded,err:=EncodeMedia{{$model.Name}}(context.Background(),value);if err!=nil{return zero,false}
+    decoded,err:=DecodeMedia{{.Codec}}(context.Background(),encoded);return decoded,err==nil
+}
+func(value {{$model.Name}})With{{.Name}}(item {{.Type}})({{$model.Name}},error){
+    ctx:=context.Background()
+    {{if .Predicate}}if !{{.Predicate}}(value.value){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    current:=wire.MediaValue[types.Binary]{Value:value.value,Slots:value.binaries}
+    evaluated,err:=schema.ValidateMedia__{{.Validation}}__(ctx,value.value,"",mediaBinaryFlags(value.binaries));if err!=nil{return {{$model.Name}}{},err}
+    encoded,err:=EncodeMedia{{.Codec}}(ctx,item);if err!=nil{return {{$model.Name}}{},err}
+    {{if .Predicate}}if !{{.Predicate}}(encoded.Value){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    merged,err:=mergeMediaObjects(current,encoded,evaluated);if err!=nil{return {{$model.Name}}{},err}
+    return DecodeMedia{{$model.Name}}(ctx,merged)
+}
+{{else}}
+func {{.Constructor}}(item {{.Type}}) ({{$model.Name}},error) {
+    encoded,err:=Encode{{.Codec}}(context.Background(),item);if err!=nil{return {{$model.Name}}{},err}
+    {{if .Predicate}}if !{{.Predicate}}(encoded){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    return Decode{{$model.Name}}(context.Background(),encoded)
+}
+func (value {{$model.Name}}) As{{.Name}}() ({{.Type}},bool) {
+    var zero {{.Type}}
+    {{if .Predicate}}if !{{.Predicate}}(value.value){return zero,false}{{end}}
+    if _,err:=value.JSONValue();err!=nil{return zero,false}
+    ctx:=context.Background();if value.response{ctx=schema.ResponseContext(ctx)}
+    decoded,err:=Decode{{.Codec}}(ctx,value.value)
+    return decoded,err==nil
+}
+func (value {{$model.Name}}) With{{.Name}}(item {{.Type}}) ({{$model.Name}},error) {
+    ctx:=context.Background()
+    {{if .Predicate}}if !{{.Predicate}}(value.value){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    evaluated,err:=schema.{{.Validation}}(ctx,value.value,"");if err!=nil{return {{$model.Name}}{},err}
+    encoded,err:=Encode{{.Codec}}(ctx,item);if err!=nil{return {{$model.Name}}{},err}
+    {{if .Predicate}}if !{{.Predicate}}(encoded){return {{$model.Name}}{},schema.Failure("discriminator","")}{{end}}
+    if value.value.Kind()==types.ValueObject && encoded.Kind()==types.ValueObject {
+        fields:=value.value.Fields()
+        for key:=range evaluated.Keys {delete(fields,key)}
+        for key,item:=range encoded.Fields(){fields[key]=item}
+        encoded,err=types.ValueFrom(fields);if err!=nil{return {{$model.Name}}{},err}
+    }
+    return Decode{{$model.Name}}(ctx,encoded)
+}
+{{end}}
+{{end}}
+{{if and .Wrapper (not .Literals) (not .Media)}}
+func (value {{.Name}}) Value() types.Value {return value.value}
+{{end}}
+
+func encode{{.Name}}(value {{.Name}},state *modelState) (types.Value,error) {
+    if err:=state.ctx.Err();err!=nil{return types.Value{},err}
+    {{.Encode}}
+}
+func decode{{.Name}}(value types.Value,states ...*modelState) ({{.Name}},error) {
+    state:=decodeState(states);_=state
+    if err:=state.ctx.Err();err!=nil{var zero {{.Name}};return zero,err}
+    var zero {{.Name}}
+    _=zero
+    {{.Decode}}
+}
+{{if .Binding}}
+// EncodeBound snapshots a selector value; the operation validates its own path contract.
+func EncodeBound{{.Name}}(ctx context.Context,value {{.Name}})(types.Value,error){return encode{{.Name}}(value,&modelState{ctx:ctx,active:make(map[any]bool)})}
+{{end}}
+{{if .ValidatedView}}
+// DecodeValidated projects an item from its already validated response contract.
+func DecodeValidated{{.Name}}(ctx context.Context,value types.Value)({{.Name}},error){return decode{{.Name}}(value,&modelState{ctx:schema.ResponseContext(ctx)})}
+{{end}}
+{{if .ResponseView}}
+func DecodeResponse{{.Name}}(ctx context.Context,value types.Value)({{.Name}},error){return {{if .Validation}}Decode{{.Name}}(schema.ResponseContext(ctx),value){{else}}decode{{.Name}}(value,&modelState{ctx:schema.ResponseContext(ctx)}){{end}}}
+{{end}}
+{{if .Media}}
+{{if .Binding}}func EncodeBoundMedia{{.Name}}(ctx context.Context,value {{.Name}})(types.MultipartData,error){state:=&modelState{ctx:ctx,active:make(map[any]bool),binaries:make(map[string]types.Binary)};encoded,err:=encode{{.Name}}(value,state);return types.MultipartData{Value:encoded,Slots:state.binaries},err}
+{{end}}
+func EncodeMedia{{.Name}}(ctx context.Context,value {{.Name}})(types.MultipartData,error){
+    state:=&modelState{ctx:ctx,active:make(map[any]bool),binaries:make(map[string]types.Binary)}
+    encoded,err:=encode{{.Name}}(value,state);if err!=nil{return wire.MediaValue[types.Binary]{},err}
+    if err:=wire.CheckMediaSlots(ctx,wire.MediaValue[types.Binary]{Value:encoded,Slots:state.binaries});err!=nil{return wire.MediaValue[types.Binary]{},err}
+    {{if .Validation}}if _,err:=schema.ValidateMedia__{{.Validation}}__(ctx,encoded,"",mediaBinaryFlags(state.binaries));err!=nil{return wire.MediaValue[types.Binary]{},err}{{end}}
+    return wire.MediaValue[types.Binary]{Value:encoded,Slots:state.binaries},nil
+}
+func DecodeMedia{{.Name}}(ctx context.Context,value types.MultipartData)({{.Name}},error){
+    if err:=wire.CheckMediaSlots(ctx,value);err!=nil{var zero {{.Name}};return zero,err}
+    {{if .Validation}}if _,err:=schema.ValidateMedia__{{.Validation}}__(ctx,value.Value,"",mediaBinaryFlags(value.Slots));err!=nil{var zero {{.Name}};return zero,err}{{end}}
+    var consumed map[string]bool;if len(value.Slots)!=0{consumed=make(map[string]bool,len(value.Slots))};state:=&modelState{ctx:ctx,binaries:value.Slots,consumed:consumed}
+    decoded,err:=decode{{.Name}}(value.Value,state);if err!=nil{var zero {{.Name}};return zero,err}
+    for path:=range value.Slots{if !consumed[path]{var zero {{.Name}};return zero,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"binary media source cannot be represented by this DTO"}}}
+    return decoded,nil
+}
+{{end}}
+{{if .Validation}}
+func Encode{{.Name}}(ctx context.Context,value {{.Name}}) (types.Value,error) {
+    encoded,err:=encode{{.Name}}(value,&modelState{ctx:ctx,active:make(map[any]bool)})
+    if err!=nil{return types.Value{},err}
+    if _,err:=schema.{{.Validation}}(ctx,encoded,"");err!=nil{return types.Value{},err}
+    return encoded,nil
+}
+func Decode{{.Name}}(ctx context.Context,value types.Value) ({{.Name}},error) {
+    var zero {{.Name}}
+    if _,err:=schema.{{.Validation}}(ctx,value,"");err!=nil{return zero,err}
+    return decode{{.Name}}(value,&modelState{ctx:ctx})
+}
+{{end}}
+{{if or .Named .Wrapper}}
+func (value {{.Name}}) JSONValue() (types.Value,error) {
+    ctx:=context.Background();{{if and .Wrapper (not .Literals)}}if value.response{ctx=schema.ResponseContext(ctx)}{{end}}
+    {{if .Validation}}return Encode{{.Name}}(ctx,value){{else}}return encode{{.Name}}(value,&modelState{ctx:ctx,active:make(map[any]bool)}){{end}}
+}
+func (value {{.Name}}) MarshalJSON() ([]byte,error) {
+    encoded,err:=value.JSONValue();if err!=nil{return nil,err};return encoded.MarshalJSON()
+}
+func (value *{{.Name}}) UnmarshalJSON(data []byte) error {
+    parsed,err:=types.ParseValue(data);if err!=nil{return err}
+    decoded,err:={{if .Validation}}Decode{{.Name}}(context.Background(),parsed){{else}}decode{{.Name}}(parsed){{end}}
+    if err!=nil{return err};*value=decoded;return nil
+}
+{{end}}
+{{end}}

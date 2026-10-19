@@ -1,0 +1,107 @@
+// MultipartPart is a prepared wire occurrence, not a schema descriptor. The
+// encoder owns each opened reader until EOF, failure, cancellation or Close.
+type MultipartPart struct { Header textproto.MIMEHeader; Body types.Binary }
+type preparedMultipartPart struct{frame string;body types.Binary}
+type multipartSource struct { contentType,closing string; parts []preparedMultipartPart;size types.Optional[int64] }
+
+func EncodeMultipart(contentType string,parts []MultipartPart)(types.Binary,error){
+    mediaType,parameters,err:=mime.ParseMediaType(contentType)
+    if err!=nil||!strings.HasPrefix(strings.ToLower(mediaType),"multipart/"){return types.Binary{},fmt.Errorf("invalid multipart content type")}
+    writer:=multipart.NewWriter(io.Discard)
+    if boundary,exists:=parameters["boundary"];exists {if err:=writer.SetBoundary(boundary);err!=nil{return types.Binary{},err}}
+    boundary:=writer.Boundary();parameters["boundary"]=boundary
+    prepared:=make([]preparedMultipartPart,len(parts));total:=int64(0);known:=true
+    addSize:=func(size int64){if !known{return};if size>int64(^uint64(0)>>1)-total{known=false;return};total+=size}
+    for index,part:=range parts{
+        item,err:=prepareMultipartPart(boundary,index,part);if err!=nil{return types.Binary{},err};prepared[index]=item;addSize(int64(len(item.frame)))
+        if size,present:=part.Body.Metadata().Size.Get();present{addSize(size)}else{known=false}
+    }
+    closing:="--"+boundary+"--\r\n";if len(parts)!=0{closing="\r\n"+closing};addSize(int64(len(closing)))
+    var size types.Optional[int64];if known{size=types.Some(total)}
+    return types.BinaryFromSource(&multipartSource{contentType:mime.FormatMediaType(mediaType,parameters),closing:closing,parts:prepared,size:size}),nil
+}
+func prepareMultipartPart(boundary string,index int,part MultipartPart)(preparedMultipartPart,error){
+        header:=make(textproto.MIMEHeader,len(part.Header))
+        for name,values:=range part.Header{
+            if !multipartHeaderName(name){return preparedMultipartPart{},fmt.Errorf("invalid multipart header name")}
+            for _,value:=range values{for index:=0;index<len(value);index++{char:=value[index];if char==0x7f||char<0x20&&char!='\t'{return preparedMultipartPart{},fmt.Errorf("invalid multipart header value")}}}
+            header[name]=append([]string(nil),values...)
+        }
+        if err:=part.Body.Validate();err!=nil{return preparedMultipartPart{},err}
+        var frame strings.Builder;if index!=0{frame.WriteString("\r\n")};frame.WriteString("--"+boundary+"\r\n")
+        names:=make([]string,0,len(header));for name:=range header{names=append(names,name)};sort.Strings(names)
+        for _,name:=range names{for _,value:=range header[name]{frame.WriteString(name+": "+value+"\r\n")}};frame.WriteString("\r\n")
+    return preparedMultipartPart{frame:frame.String(),body:part.Body},nil
+}
+func multipartHeaderName(value string)bool{
+    if value==""{return false};for index:=0;index<len(value);index++{c:=value[index];if c>='a'&&c<='z'||c>='A'&&c<='Z'||c>='0'&&c<='9'||strings.ContainsRune("!#$%&'*+-.^_`|~",rune(c)){continue};return false};return true
+}
+func(source *multipartSource)Metadata()types.BinaryMetadata{return types.BinaryMetadata{ContentType:source.contentType,Size:source.size}}
+func(source *multipartSource)Open(ctx context.Context)(io.ReadCloser,error){
+    if err:=ctx.Err();err!=nil{return nil,err}
+    running,cancel:=context.WithCancel(ctx)
+    reader:=&multipartReader{ctx:running,cancel:cancel,source:source}
+    reader.stop=context.AfterFunc(running,func(){reader.closeWith(running.Err())})
+    return reader,nil
+}
+type multipartReader struct{
+    ctx context.Context
+    cancel context.CancelFunc
+    source *multipartSource
+    index int
+    frame *strings.Reader
+    partReady,finished bool
+    current preparedMultipartPart
+    next func(int)(preparedMultipartPart,bool,error)
+    release func()error
+    valuesOnce sync.Once
+    valuesError error
+    active io.ReadCloser
+    mu sync.Mutex
+    closeOnce sync.Once
+    closed bool
+    failure error
+    stop func()bool
+}
+func(reader *multipartReader)closeWith(cause error)error{
+    reader.closeOnce.Do(func(){
+        reader.mu.Lock();reader.closed=true;active:=reader.active;reader.active=nil;reader.failure=cause;reader.mu.Unlock()
+        reader.cancel()
+        var err error;if active!=nil{err=active.Close()};err=errors.Join(err,reader.releaseValues())
+        reader.mu.Lock();reader.failure=errors.Join(reader.failure,err);reader.mu.Unlock()
+    })
+    reader.mu.Lock();result:=reader.failure;reader.mu.Unlock();return result
+}
+func(reader *multipartReader)Close()error{if reader.stop!=nil{reader.stop()};return reader.closeWith(nil)}
+func(reader *multipartReader)Read(buffer []byte)(int,error){
+    if len(buffer)==0{return 0,nil}
+    for{
+        reader.mu.Lock();closed,failure:=reader.closed,reader.failure;reader.mu.Unlock()
+        if closed{if failure!=nil{return 0,failure};return 0,io.ErrClosedPipe}
+        if err:=reader.ctx.Err();err!=nil{return 0,reader.closeWith(err)}
+        if reader.frame!=nil{count,err:=reader.frame.Read(buffer);if count!=0{return count,nil};if err!=io.EOF{return count,err};reader.frame=nil;if reader.finished{if reader.stop!=nil{reader.stop()};return 0,io.EOF}}
+        if reader.finished{return 0,io.EOF}
+        reader.mu.Lock();active:=reader.active;reader.mu.Unlock()
+        if active!=nil{
+            count,err:=active.Read(buffer)
+            if err!=nil{
+                closeError:=active.Close();reader.mu.Lock();if reader.active==active{reader.active=nil};reader.mu.Unlock()
+                if err!=io.EOF||closeError!=nil{return count,reader.closeWith(errors.Join(nonEOF(err),closeError))}
+                reader.index++;reader.partReady=false
+            }
+            if count!=0{return count,nil};continue
+        }
+        if !reader.partReady{
+            part,present:=preparedMultipartPart{},false
+            if reader.next!=nil{var err error;part,present,err=reader.next(reader.index);if err!=nil{return 0,reader.closeWith(err)}}else if reader.index<len(reader.source.parts){part=reader.source.parts[reader.index];present=true}
+            if !present{if err:=reader.releaseValues();err!=nil{return 0,reader.closeWith(err)};closing:=reader.source.closing;if reader.next!=nil&&reader.index!=0{closing="\r\n"+closing};reader.frame=strings.NewReader(closing);reader.finished=true;continue}
+            reader.current=part;reader.frame=strings.NewReader(part.frame);reader.partReady=true;continue
+        }
+        part:=reader.current
+        opened,err:=part.body.Open(reader.ctx);if err!=nil{return 0,reader.closeWith(err)}
+        reader.mu.Lock();if reader.closed{failure:=reader.failure;reader.mu.Unlock();return 0,errors.Join(failure,opened.Close(),io.ErrClosedPipe)};reader.active=opened;reader.mu.Unlock()
+    }
+}
+func nonEOF(err error)error{if err==io.EOF{return nil};return err}
+
+func(reader *multipartReader)releaseValues()error{reader.valuesOnce.Do(func(){if reader.release!=nil{reader.valuesError=reader.release()}});return reader.valuesError}

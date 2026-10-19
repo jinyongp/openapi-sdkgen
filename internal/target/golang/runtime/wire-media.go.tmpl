@@ -1,0 +1,21 @@
+// MediaValue keeps a JSON validation projection separate from non-JSON parts.
+// Slots use escaped JSON Pointer paths and never become JSON object properties.
+type MediaValue[T any] struct { Value Value; Slots map[string]T }
+
+func CheckMediaSlots[T any](ctx context.Context,value MediaValue[T])error{
+    for path:=range value.Slots{
+        if err:=ctx.Err();err!=nil{return err};if path==""{continue}
+        if !strings.HasPrefix(path,"/"){return fmt.Errorf("binary media path must be a JSON pointer")}
+        current,prefix:=value.Value,""
+        for _,raw:=range strings.Split(path[1:],"/"){
+            if _,binary:=value.Slots[prefix];binary{return fmt.Errorf("binary media paths overlap")}
+            if err:=ctx.Err();err!=nil{return err}
+            var token strings.Builder
+            for index:=0;index<len(raw);index++{if raw[index]!='~'{token.WriteByte(raw[index]);continue};index++;if index>=len(raw)||raw[index]!='0'&&raw[index]!='1'{return fmt.Errorf("invalid binary media JSON pointer escape")};if raw[index]=='0'{token.WriteByte('~')}else{token.WriteByte('/')}}
+            name:=token.String();var present bool
+            if current.Kind()==Object{current,present=current.Get(name)}else if current.Kind()==Array{index,err:=strconv.Atoi(name);if err==nil&&index>=0&&strconv.Itoa(index)==name{current,present=current.At(index)}}
+            if !present{return fmt.Errorf("binary media path does not name a value")};prefix+="/"+raw
+        }
+    }
+    return ctx.Err()
+}
