@@ -10,7 +10,8 @@ case "$suite" in
   go)
     for check in fmt-check vet mod-tidy-check mod-verify; do bash "$ROOT/scripts/dev/go.sh" "$check"; done
     # Runtime and declaration matrices run in their dedicated suites.
-    bash "$ROOT/scripts/dev/go.sh" test -skip '^TestRuntimeFeature(Native|Declaration)MatrixRegression$' ;;
+    bash "$ROOT/scripts/dev/go.sh" test -skip '^TestRuntimeFeature(Native|Declaration)MatrixRegression$'
+    bash "$ROOT/scripts/generate/go-check-test.sh" ;;
   typescript-runtime)
     bash "$ROOT/scripts/verification/typescript.sh" test
     bash "$ROOT/scripts/dev/go.sh" test -run '^TestRuntimeFeatureNativeMatrixRegression$' ;;

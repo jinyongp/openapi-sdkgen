@@ -126,3 +126,29 @@ and migration guidance matches the released behavior. Review time-sensitive
 support claims and link to the current release instead of maintaining a fixed
 "latest version" in policy pages. This is a semantic review, not a literal-text
 test gate.
+
+
+`devtools run golang:verify [test|race|coverage]` runs the Go target's focused suite.
+Generated consumers already run their own race/lifetime checks; the `race` mode also
+checks the generator. Coverage is optional and writes `.tmp/golang/coverage.out`.
+`devtools run golang:perf micro [GO_BENCHMARK_ARGUMENTS...]` records repeated
+prepare/emit measurements for a fixed100-operation workload with allocation counts.
+The `runtime`, `generation`, `providers`, `builds`, and `platform` modes exercise
+fixed generated consumers and original pinned provider inputs. See
+[the Go measurement guide](perf/golang/README.md) for sample counts, cache states,
+raw evidence and limits. Run these optional checks sequentially; they impose no
+ordinary CI timing, percentage or source-size gate.
+
+`check:generate INPUT golang -- --go-import-path example.com/consumer/internal/api`
+retains the input snapshot and invokes a Go verifier. The verifier copies source into
+an owned module, pins the imported runtime dependencies, compiles and runs a consumer,
+and removes the directory on success or failure. It does not use Node or TypeScript.
+The Go CI suite owns its real no-Node/config/failure/cleanup integration test. The
+TypeScript tool suite retains the existing TypeScript verifier and module/checking profiles.
+`sdk:generate INPUT OUTPUT [TARGET] [-- GENERATOR_OPTIONS...]` accepts Go package/import
+options and addons while retaining ownership of input/output/target arguments.
+
+`devtools run go:example` regenerates and runs the Go Todo example in a disposable
+module with loopback servers. `devtools run playground:verify` builds and executes
+both WASM targets and checks every exported ZIP path/byte. Playground verification
+requires installed docs dependencies and does not execute a generated consumer.

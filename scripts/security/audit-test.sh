@@ -102,6 +102,13 @@ if ! grep -Fqx "$ROOT/go.mod" "$osv_args"; then
   exit 1
 fi
 
+while IFS= read -r module; do
+  if ! grep -Fqx "$ROOT/$module" "$osv_args"; then
+    echo "OSV scanner arguments missed source Go module: $module" >&2
+    exit 1
+  fi
+done < <(git -C "$ROOT" ls-files -co --exclude-standard -- 'go.mod' '*/go.mod')
+
 run_case 1 findings clean "GO-TEST-0001"
 run_case 1 clean findings "fixture OSV vulnerability"
 run_case 2 fail clean "govulncheck execution failed"

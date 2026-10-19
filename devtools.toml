@@ -273,3 +273,6 @@ range = [28200, 28399]
 
 [ports.capabilities-webhook]
 range = [28200, 28399]
+
+[commands."golang:verify"]
+exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" bash \"$@\"", "sdkgen", "scripts/verification/golang.sh"]

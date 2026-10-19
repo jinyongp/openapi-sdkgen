@@ -3,7 +3,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/commands.sh"
 set -- "${SCRIPT_ARGS[@]}"
 if [[ "${1:-}" == --help || "${2:-}" == --help ]]; then
-  printf '%s\n' 'audit.sh' 'May install pinned scanners and query vulnerability databases. Reads tracked dependency inventories; exit 0=clean, 1=findings, 2=incomplete.' >&2
+  printf '%s\n' 'audit.sh' 'May install pinned scanners and query vulnerability databases. Reads source dependency inventories; exit 0=clean, 1=findings, 2=incomplete.' >&2
   exit 0
 fi
 
@@ -94,7 +94,11 @@ if ((${#pnpm_locks[@]} == 0)); then
   echo "vulnerability audit incomplete: no tracked pnpm lockfiles found" >&2
   audit_failed=1
 else
-  osv_args=(scan source --format=vertical --verbosity=error -L "$ROOT/go.mod")
+  osv_args=(scan source --format=vertical --verbosity=error)
+  mapfile -t go_modules < <(git -C "$ROOT" ls-files -co --exclude-standard -- 'go.mod' '*/go.mod')
+  for module in "${go_modules[@]}"; do
+    osv_args+=(-L "$ROOT/$module")
+  done
   for lockfile in "${pnpm_locks[@]}"; do
     osv_args+=(-L "$ROOT/$lockfile")
   done
@@ -107,7 +111,7 @@ else
   if [[ "$SCRIPT_VERBOSE" == 1 ]]; then cat "$osv_stdout" "$osv_stderr" >&2; fi
   case "$osv_status" in
     0)
-      script_note "ok osv-scanner: no known vulnerabilities in tracked dependency inventories"
+      script_note "ok osv-scanner: no known vulnerabilities in source dependency inventories"
       ;;
     1)
       echo "osv-scanner found known dependency vulnerabilities:" >&2
