@@ -62,3 +62,19 @@ it("keeps URI schemes and IPvFuture literals ASCII even for IRIs", (): void => {
       expect(matchesWireFormat(value, format)).toBe(true);
   }
 });
+
+it("validates the complete URI including fragment and port endings", (): void => {
+  for (const format of ["uri", "uri-reference", "iri", "iri-reference"]) {
+    for (const value of [
+      "http://example.test/#fragment\n",
+      "http://example.test:80\n",
+      "http://[::1]:80\n",
+      "http://[v1.x\n]",
+      "http://example.test:80\u2028",
+      "http://[v1.x\u2028]",
+    ])
+      expect(matchesWireFormat(value, format)).toBe(false);
+  }
+  expect(matchesWireFormat("http://example.test/#\u2028", "iri")).toBe(true);
+  expect(matchesWireFormat("http://example.test/#\u2028", "uri")).toBe(false);
+});
