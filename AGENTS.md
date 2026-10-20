@@ -81,13 +81,13 @@ devtools run publish:release [--dry-run|-n | --yes|-y] [--prerelease ID] [--resu
 The command requests a version plan for remote `main` without running product
 checks. `--yes` requires successful push CI for the exact source commit, waits
 for a running CI, and checks release builds and examples before publication.
-Local edits and commits are not pushed. Releaseway creates a marker commit and
-atomically pushes `main` and a lightweight tag using the repository-scoped release
-App in a separate job after verification. Main runs only plan or prepare;
-publication runs at the tag. App bootstrap and protection rules are documented
-in [scripts/README.md](scripts/README.md#release-app-setup). `.github/releaseway.yml` owns
-version-series and bump policy. Plans are saved
-as workflow artifacts; rerunning the same source resumes preparation.
+Local edits and commits are not pushed. Releaseway calculates the version, then
+its tag mode binds a lightweight tag directly to the verified source without
+changing `main`. The built-in `GITHUB_TOKEN` creates the tag and explicitly
+dispatches publication at that tag; no release App or new credential is needed.
+Main runs only plan or tag; publication runs at the tag. `.github/releaseway.yml`
+owns version-series and bump policy. Source-bound tag plans are saved as workflow
+artifacts; retries reuse the same tag for the same source and channel.
 `--resume` dispatches the workflow at the existing tag for exact npm provenance.
 Releaseway standard generates GitHub release notes. Add breaking-change and
 migration explanations there; retries preserve published release bodies.

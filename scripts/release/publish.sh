@@ -48,4 +48,4 @@ else
   dispatch+=(-f "mode=$mode" -f "prerelease-id=$prerelease")
 fi
 run_step "request release $mode on $ref" "${dispatch[@]}"
-script_note 'Releaseway plans and prepares on main; publication runs at the release tag. Inspect the release workflow for results.'
+script_note 'Releaseway plans a version on main and tags the verified source; publication runs separately at that tag. Inspect both Release runs for results.'

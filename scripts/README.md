@@ -119,53 +119,43 @@ selection. npm channels live in `.github/npm/packages.yml`.
 without running product checks.
 Add `--yes` to prepare and publish, or `--prerelease rc` to select a prerelease
 channel. `--resume TAG` dispatches at the existing tag so npm provenance remains
-bound to that commit. Releaseway owns version calculation, marker commits,
-lightweight tags, atomic pushes and retry validation. Publication waits for the
-latest successful push CI for the exact source, then runs release cross-builds
-and example clients. The full product suites are not repeated. An unchanged
-Releaseway marker reuses CI from its verified, identical-tree parent. Preparation
-allows up to 30 minutes for source CI and has a 45-minute job budget including
+bound to that commit. Releaseway owns version calculation and source-bound tag
+creation. Publication waits for the latest successful push CI for the exact
+source, then runs release cross-builds and example clients. The full product
+suites are not repeated. A legacy Releaseway marker reuses CI from its verified,
+identical-tree parent. Preparation allows up to 30 minutes for source CI and has
+a 45-minute job budget including
 release build checks. The workflow preserves the verified plan as an artifact.
-A separate five-minute job uses the release App to resume that exact plan and
-atomically push the marker and tag. The App token is limited to this repository's
-contents, is not available to build checks, and is revoked when its job ends.
-Only tag runs publish packages or documentation; the main run ends after
-preparation. The App's tag push starts publication automatically. A plan-only run
-needs no App credentials and performs no writes. If preparation is interrupted,
-rerun its failed job using the saved plan. If the tag already exists, use
+A separate five-minute job uses Releaseway `mode: tag` to bind the selected version
+directly to the verified source commit. It creates no marker and never pushes
+`main`. The built-in `GITHUB_TOKEN` has `contents: write` and `actions: write`
+only in that job; build checks retain read-only permissions. No release App,
+personal token, new secret, or branch protection exception is required.
+Only tag runs publish packages or documentation. Since `GITHUB_TOKEN` tag pushes
+do not start push workflows, the main run explicitly dispatches the Release
+workflow at the new tag and ends without waiting for it. Both runs share the
+release concurrency group; waiting inside the main run would block publication.
+A plan-only run performs no remote writes. The saved `tag-plan.json` contains
+the source, tag and version, rather than Releaseway's unused marker binding.
+Rerunning the tag job reuses that exact binding. Replanning the same source and
+channel reuses its existing tag; ambiguous bindings fail and require an explicit
+`--resume TAG`. Once main has advanced, use
 `--resume TAG` to retry publication at the same commit. Local edits and commits are not
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
 
-### Release App setup
+### Repository release settings
 
-Register a private GitHub App owned by the repository owner, with repository
-`Contents: read and write`, no webhook, and no additional write permissions.
-Install it only on `openapi-sdkgen`. A prefilled
-[registration form](https://github.com/settings/apps/new?name=openapi-sdkgen-release-jinyongp&url=https%3A%2F%2Fgithub.com%2Fjinyongp%2Fopenapi-sdkgen&description=Prepare%20verified%20openapi-sdkgen%20releases&public=false&webhook_active=false&contents=write)
-provides these settings. GitHub account authentication and the installation
-confirmation must be completed by the owner.
-
-In the repository's Actions settings, set configuration variable
-`RELEASE_APP_CLIENT_ID` to the App's Client ID and secret `RELEASE_APP_PRIVATE_KEY`
-to its generated private key. Store the key directly in GitHub Secrets; never
-paste it into an issue, chat, source file, or command argument. The numeric App ID
-is separate from the Client ID and identifies the App in ruleset bypass entries.
-
-Keep required PRs and status checks in `main protection`; grant only the release
-App an additional `Always allow` bypass there. Before adding that exception,
-keep the existing force-push and deletion prohibitions in a separate active
-`main history protection` ruleset targeting `main`. Preserve the original bypass
-actors in that ruleset and do not add the release App to it. A ruleset exception
-applies to the whole ruleset, so this split keeps history protection in force for
-the App. Source CI and same-tree marker verification still run before its push.
+Keep the existing `main protection` ruleset unchanged. Tag preparation needs
+neither a branch write nor a bypass. If tag protection is added later, ensure
+the release workflow may create version tags without replacing existing ones.
 
 In the `github-pages` environment, retain the `main` branch policy and use a tag
 policy named `v*`. The pattern also matches prereleases; the release caller and
 Pages deployment job both restrict publication to stable releases. Release
 identity and published distribution checks must pass before the site is deployed.
 
-After connecting the App, use `devtools run publish:release --dry-run` to verify
+Use `devtools run publish:release --dry-run` to verify
 planning. The next `--yes` prepares the tag; follow the tag's Release run for
 publication results. A successful main preparation run alone does not establish
 that all packages and the site have been published.

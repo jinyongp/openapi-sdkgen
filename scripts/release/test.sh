@@ -9,6 +9,7 @@ fi
 if [[ "${SDKGEN_RELEASE_FIXTURE_CHILD:-0}" != 1 ]]; then
   run_step 'release workflow dispatch tests' env SDKGEN_RELEASE_FIXTURE_CHILD=1 bash "$ROOT/scripts/release/test.sh" "$@"
   run_step 'release CI reuse tests' python3 -B "$ROOT/.github/scripts/release_ci_test.py"
+  run_step 'source-bound tag plan tests' node --test "$ROOT/.github/scripts/release_tag_plan_test.mjs"
   exit 0
 fi
 

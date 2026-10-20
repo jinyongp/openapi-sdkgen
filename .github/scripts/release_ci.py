@@ -20,7 +20,7 @@ def ci_source(commit):
     if not re.fullmatch(r"chore\(release\): v\S+\n\nReleaseway-Config: [0-9a-f]{64}", message):
         return commit
     # Releaseway's marker adds no source changes. Reuse its unchanged parent's
-    # exact CI even when an App push also triggers a run for the marker itself.
+    # exact CI when retrying a release made by the earlier marker-based workflow.
     parents = git("show", "-s", "--format=%P", commit).split()
     if len(parents) != 1 or git("rev-parse", f"{commit}^{{tree}}") != git("rev-parse", f"{parents[0]}^{{tree}}"):
         raise ValueError("Release marker must have one parent with an identical source tree")

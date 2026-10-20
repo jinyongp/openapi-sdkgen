@@ -39,23 +39,14 @@ jobs:
       contents: read
       actions: read
     outputs:
-      tag: ${{ steps.release.outputs.tag || steps.existing.outputs.tag }}
-      version: ${{ steps.release.outputs.version || steps.existing.outputs.version }}
-      commit: ${{ steps.release.outputs.commit || steps.existing.outputs.commit }}
+      tag: ${{ steps.tag-plan.outputs.tag || steps.existing.outputs.tag }}
+      version: ${{ steps.tag-plan.outputs.version || steps.existing.outputs.version }}
+      commit: ${{ steps.tag-plan.outputs.commit || steps.existing.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Check release App configuration
-        if: github.ref == 'refs/heads/main' && inputs.mode == 'release'
-        env:
-          RELEASE_APP_CLIENT_ID: ${{ vars.RELEASE_APP_CLIENT_ID }}
-        run: |
-          if [[ -z "$RELEASE_APP_CLIENT_ID" ]]; then
-            echo '::error::Configure RELEASE_APP_CLIENT_ID and RELEASE_APP_PRIVATE_KEY for the release GitHub App. See scripts/README.md.'
-            exit 1
-          fi
       - id: existing
         if: github.ref_type == 'tag'
         uses: releaseway/actions/prepare@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
@@ -87,12 +78,16 @@ jobs:
           mode: plan
           prerelease-id: ${{ inputs.prerelease-id }}
           plan-path: ${{ runner.temp }}/release-plan.json
+      - name: Bind the version plan to the verified source
+        id: tag-plan
+        if: github.ref_type != 'tag'
+        run: node .github/scripts/release_tag_plan.mjs "$RUNNER_TEMP/release-plan.json" "$RUNNER_TEMP/tag-plan.json"
       - name: Preserve release plan
-        if: always() && steps.release.outputs.plan-path != ''
+        if: steps.tag-plan.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-plan
-          path: ${{ steps.release.outputs.plan-path }}
+          path: ${{ runner.temp }}/tag-plan.json
           retention-days: 7
       - name: Preserve check diagnostics
         if: failure()
@@ -103,46 +98,46 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  commit-release:
-    name: Commit verified release
+  tag-release:
+    name: Tag verified source and request publication
     needs: prepare-release
     if: github.ref == 'refs/heads/main' && inputs.mode == 'release'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
-      contents: read
-      actions: read
+      contents: write
+      actions: write
     steps:
       - name: Restore verified release plan
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-plan
           path: ${{ runner.temp }}
-      - name: Create repository-scoped release token
-        id: app
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-          token: ${{ steps.app.outputs.token }}
-      - name: Commit and tag the verified plan
+      - name: Read the verified tag plan
+        id: plan
+        run: |
+          jq -e --arg source "$GITHUB_SHA" '.source == $source' "$RUNNER_TEMP/tag-plan.json" >/dev/null
+          jq -er '"tag=" + .tag, "commit=" + .source' "$RUNNER_TEMP/tag-plan.json" >> "$GITHUB_OUTPUT"
+      - name: Tag the verified source without changing main
         id: release
         uses: releaseway/actions/prepare@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
         with:
-          mode: resume
-          plan-path: ${{ runner.temp }}/release-plan.json
-      - name: Report publication entry point
+          mode: tag
+          tag: ${{ steps.plan.outputs.tag }}
+          commit: ${{ steps.plan.outputs.commit }}
+      # GITHUB_TOKEN tag pushes do not trigger push workflows. Dispatch at the
+      # tag so npm provenance and every distribution use the same release ref.
+      - name: Request publication at the release tag
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
-          printf 'Prepared %s. Publication runs from that tag; use --resume %s to retry publication.\n' "$RELEASE_TAG" "$RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run release.yml --ref "$RELEASE_TAG" -f "tag=$RELEASE_TAG"
+          printf 'Tagged %s and requested publication. Follow its separate Release run; use --resume %s to retry.\n' "$RELEASE_TAG" "$RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
 
   publish-npm:
     name: Publish npm package
