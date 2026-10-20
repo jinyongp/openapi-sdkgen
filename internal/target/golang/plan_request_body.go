@@ -1,6 +1,7 @@
 package golang
 
 import (
+	"fmt"
 	"strings"
 
 	"openapi-sdkgen/internal/compiler/ir"
@@ -87,6 +88,9 @@ func prepareRequestBodyInput(planned *operationPlan, operation ir.Operation, sch
 	for _, shape := range shapes {
 		media := shape.Media
 		identity := body.Pointer + "/content/" + pointerToken(media.ContentType)
+		if strings.TrimSpace(media.ContentType) == "" {
+			return fmt.Errorf("request body content requires a non-empty media type or media range at %s", identity)
+		}
 		multipart := strings.HasPrefix(strings.ToLower(media.ContentType), "multipart/")
 		var stream *requestStreamPlan
 		if shape.Sequential {
