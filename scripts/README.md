@@ -98,6 +98,12 @@ runs its version of the strict source and declaration consumer matrix
 (`TestRuntimeFeatureDeclarationMatrixRegression`). Both matrices are excluded
 from the Go suite. `test:dev` still runs every Go test across all compilers.
 
+`test:dev` uses a 20-minute timeout per Go test package, including the cumulative
+cost of compiling and running generated SDK consumers. Pass `-timeout=...` to
+override it for a local run. Generated Go consumer tests retain their 45-second
+test timeout and one-minute subprocess deadline. The Go CI job allows 30 minutes
+for setup, source checks, tests, and diagnostics; other suite budgets are unchanged.
+
 ## Release documentation review
 
 Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.

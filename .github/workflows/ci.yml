@@ -21,7 +21,9 @@ jobs:
   suites:
     name: ${{ matrix.suite }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Go compiles generated consumers within a 20-minute package budget.
+    # Leave room for toolchain setup, source checks and diagnostics.
+    timeout-minutes: ${{ matrix.suite == 'go' && 30 || 15 }}
     strategy:
       fail-fast: false
       matrix:

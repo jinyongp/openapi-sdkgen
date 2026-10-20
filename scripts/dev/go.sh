@@ -17,7 +17,10 @@ case "$command" in
   build)
     mkdir -p "$ROOT/.tmp/bin"
     run_step 'Go build' go build -o "$ROOT/.tmp/bin/openapi-sdkgen" "$@" ./cmd/openapi-sdkgen ;;
-  test|vet|fmt) run_step "Go $command" go "$command" "$@" ./... ;;
+  # Generated SDK consumer tests share one package's cumulative timeout.
+  # Keep their individual subprocess limits in the test helpers.
+  test) run_step 'Go test' go test -timeout=20m "$@" ./... ;;
+  vet|fmt) run_step "Go $command" go "$command" "$@" ./... ;;
   fmt-check)
     files=()
     while IFS= read -r -d '' file; do [[ -f "$file" ]] && files+=("$file"); done < <(git ls-files -co --exclude-standard -z -- '*.go')
