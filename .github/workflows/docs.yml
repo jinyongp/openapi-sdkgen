@@ -145,7 +145,7 @@ jobs:
   deploy:
     name: Deploy documentation
     timeout-minutes: 10
-    if: inputs.release-ref != ''
+    if: inputs.release-ref != '' && !contains(inputs.release-ref, '-')
     needs: build
     runs-on: ubuntu-24.04
     permissions:

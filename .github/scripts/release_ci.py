@@ -19,8 +19,8 @@ def ci_source(commit):
     message = git("show", "-s", "--format=%B", commit)
     if not re.fullmatch(r"chore\(release\): v\S+\n\nReleaseway-Config: [0-9a-f]{64}", message):
         return commit
-    # Releaseway's marker adds no source changes and has no push-triggered CI
-    # when created with GITHUB_TOKEN. Reuse its unchanged parent's exact CI.
+    # Releaseway's marker adds no source changes. Reuse its unchanged parent's
+    # exact CI even when an App push also triggers a run for the marker itself.
     parents = git("show", "-s", "--format=%P", commit).split()
     if len(parents) != 1 or git("rev-parse", f"{commit}^{{tree}}") != git("rev-parse", f"{parents[0]}^{{tree}}"):
         raise ValueError("Release marker must have one parent with an identical source tree")
@@ -47,7 +47,7 @@ def fetch_runs(repository, commit):
     return [run for page in json.loads(result) for run in page["workflow_runs"]]
 
 
-def require_ci(repository, commit, timeout=1200):
+def require_ci(repository, commit, timeout=1800):
     deadline = time.monotonic() + timeout
     announced = None
     while True:

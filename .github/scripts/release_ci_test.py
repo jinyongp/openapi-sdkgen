@@ -51,9 +51,9 @@ class CIReuseTests(unittest.TestCase):
 
     def test_pending_ci_has_a_bounded_wait(self):
         with (mock.patch.object(ci, "fetch_runs", return_value=[run_record(status="queued", conclusion=None)]),
-              mock.patch.object(ci.time, "monotonic", side_effect=[0, 1201])):
+              mock.patch.object(ci.time, "monotonic", side_effect=[0, 2])):
             with self.assertRaises(TimeoutError):
-                ci.require_ci(REPOSITORY, SOURCE)
+                ci.require_ci(REPOSITORY, SOURCE, timeout=1)
 
     def test_new_run_started_while_waiting_supersedes_old_success(self):
         responses = [[run_record(status="queued", conclusion=None)],

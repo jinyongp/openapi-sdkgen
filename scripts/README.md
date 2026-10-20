@@ -123,11 +123,52 @@ bound to that commit. Releaseway owns version calculation, marker commits,
 lightweight tags, atomic pushes and retry validation. Publication waits for the
 latest successful push CI for the exact source, then runs release cross-builds
 and example clients. The full product suites are not repeated. An unchanged
-Releaseway marker reuses CI from its verified, identical-tree parent. The workflow
-preserves the plan as an artifact even when a push fails;
-rerunning the same source resumes preparation. Local edits and commits are not
+Releaseway marker reuses CI from its verified, identical-tree parent. Preparation
+allows up to 30 minutes for source CI and has a 45-minute job budget including
+release build checks. The workflow preserves the verified plan as an artifact.
+A separate five-minute job uses the release App to resume that exact plan and
+atomically push the marker and tag. The App token is limited to this repository's
+contents, is not available to build checks, and is revoked when its job ends.
+Only tag runs publish packages or documentation; the main run ends after
+preparation. The App's tag push starts publication automatically. A plan-only run
+needs no App credentials and performs no writes. If preparation is interrupted,
+rerun its failed job using the saved plan. If the tag already exists, use
+`--resume TAG` to retry publication at the same commit. Local edits and commits are not
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
+
+### Release App setup
+
+Register a private GitHub App owned by the repository owner, with repository
+`Contents: read and write`, no webhook, and no additional write permissions.
+Install it only on `openapi-sdkgen`. A prefilled
+[registration form](https://github.com/settings/apps/new?name=openapi-sdkgen-release-jinyongp&url=https%3A%2F%2Fgithub.com%2Fjinyongp%2Fopenapi-sdkgen&description=Prepare%20verified%20openapi-sdkgen%20releases&public=false&webhook_active=false&contents=write)
+provides these settings. GitHub account authentication and the installation
+confirmation must be completed by the owner.
+
+In the repository's Actions settings, set configuration variable
+`RELEASE_APP_CLIENT_ID` to the App's Client ID and secret `RELEASE_APP_PRIVATE_KEY`
+to its generated private key. Store the key directly in GitHub Secrets; never
+paste it into an issue, chat, source file, or command argument. The numeric App ID
+is separate from the Client ID and identifies the App in ruleset bypass entries.
+
+Keep required PRs and status checks in `main protection`; grant only the release
+App an additional `Always allow` bypass there. Before adding that exception,
+keep the existing force-push and deletion prohibitions in a separate active
+`main history protection` ruleset targeting `main`. Preserve the original bypass
+actors in that ruleset and do not add the release App to it. A ruleset exception
+applies to the whole ruleset, so this split keeps history protection in force for
+the App. Source CI and same-tree marker verification still run before its push.
+
+In the `github-pages` environment, retain the `main` branch policy and use a tag
+policy named `v*`. The pattern also matches prereleases; the release caller and
+Pages deployment job both restrict publication to stable releases. Release
+identity and published distribution checks must pass before the site is deployed.
+
+After connecting the App, use `devtools run publish:release --dry-run` to verify
+planning. The next `--yes` prepares the tag; follow the tag's Release run for
+publication results. A successful main preparation run alone does not establish
+that all packages and the site have been published.
 
 `scripts/install/build.sh VERSION OUTPUT` stamps the shell and PowerShell
 installers with an exact release version. After GoReleaser builds the archives,
