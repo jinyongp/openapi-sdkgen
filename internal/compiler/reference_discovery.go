@@ -76,6 +76,13 @@ func (discovery *referenceDiscovery) scanValue(
 	remoteBase *url.URL,
 	rootContext openapiwalk.ObjectContext,
 ) ([]diagnostic.Diagnostic, error) {
+	if remoteBase != nil {
+		view, err := schemaReferenceView(value, rootContext, remoteBase.String())
+		if err != nil {
+			return nil, err
+		}
+		value = view
+	}
 	var occurrences []externalReferenceOccurrence
 	collectExternalReferenceOccurrencesAtRoot(value, nil, rootContext, &occurrences)
 	sort.Slice(occurrences, func(i, j int) bool {
@@ -166,7 +173,7 @@ func (discovery *referenceDiscovery) scanLocalOccurrence(
 
 	result := reservedExtensionDiagnosticsValue(effective.value, target)
 	result = append(result, pathItemReferenceDiagnostics(effective.value, target, true)...)
-	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, target)...)
+	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, target, occurrence.Context)...)
 	nested, err := discovery.scanValue(effective.value, target, filepath.Dir(target), nil, occurrence.Context)
 	if err != nil {
 		return nil, err
@@ -219,7 +226,7 @@ func (discovery *referenceDiscovery) scanRemoteOccurrence(
 
 	result := reservedExtensionDiagnosticsValue(effective.value, canonical)
 	result = append(result, pathItemReferenceDiagnostics(effective.value, canonical, true)...)
-	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, canonical)...)
+	result = append(result, unresolvedLocalReferenceDiagnostics(effective.value, canonical, occurrence.Context)...)
 	nested, err := discovery.scanValue(effective.value, canonical, "", remoteBase, occurrence.Context)
 	if err != nil {
 		return nil, err

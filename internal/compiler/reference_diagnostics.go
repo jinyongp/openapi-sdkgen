@@ -11,7 +11,14 @@ import (
 	"openapi-sdkgen/internal/openapiwalk"
 )
 
-func unresolvedLocalReferenceDiagnostics(value any, source string) []diagnostic.Diagnostic {
+func unresolvedLocalReferenceDiagnostics(value any, source string, contexts ...openapiwalk.ObjectContext) []diagnostic.Diagnostic {
+	context := openapiwalk.ObjectOpenAPI
+	if len(contexts) > 0 {
+		context = contexts[0]
+	}
+	if view, err := schemaReferenceView(value, context, source); err == nil {
+		value = view
+	}
 	var result []diagnostic.Diagnostic
 	scanUnresolvedLocalReferences(value, value, nil, source, &result)
 	return diagnostic.Sort(result)
@@ -23,7 +30,10 @@ func scanUnresolvedLocalReferences(root, value any, path []string, source string
 		if openapiwalk.ObjectContextAt(path) == openapiwalk.ObjectSchema {
 			scanDiscriminatorLocalReferences(root, typed, path, source, result)
 		}
-		if reference, _ := typed["$ref"].(string); strings.HasPrefix(reference, "#/") {
+		reference, _ := typed["$ref"].(string)
+		if reference != "" && openapiwalk.ObjectContextAt(path) == openapiwalk.ObjectOperation {
+			*result = append(*result, diagnostic.Diagnostic{Severity: diagnostic.SeverityError, Code: "SDKGEN-E120", Phase: diagnostic.PhaseReferences, Scope: failure.ScopeDocument, Effect: failure.EffectBlock, Location: diagnostic.Location{Source: source, Pointer: sourceJSONPointer(append(path, "$ref"))}, Message: "Operation Object does not support $ref.", Hint: "Bundle the author's operation files into a complete OpenAPI document before generation."})
+		} else if strings.HasPrefix(reference, "#/") {
 			if _, found := resolveLocalReference(root, reference); !found {
 				*result = append(*result, diagnostic.Diagnostic{
 					Severity: diagnostic.SeverityError,

@@ -705,7 +705,18 @@ func (r *remoteReferenceResolver) responseForSource(data []byte, source string) 
 	if err := r.scanRemoteSource(effective.data, source); err != nil {
 		return nil, err
 	}
-	referenceView, err := r.opaqueReferences.data(effective.value, effective.data)
+	view, changed, err := schemaResourceView(effective.value, r.compatibility.sourceContext(source), source)
+	if err != nil {
+		return nil, err
+	}
+	if changed {
+		effective.value = view
+		effective.data, err = json.Marshal(view)
+		if err != nil {
+			return nil, err
+		}
+	}
+	referenceView, err := r.opaqueReferences.data(effective.value, effective.data, r.compatibility.sourceContext(source))
 	if err != nil {
 		return nil, err
 	}

@@ -30,7 +30,24 @@ func newOpaqueReferenceEscaper() *opaqueReferenceEscaper {
 	}
 }
 
-func (escaper *opaqueReferenceEscaper) data(value any, original []byte) ([]byte, error) {
+func (escaper *opaqueReferenceEscaper) data(value any, original []byte, contexts ...openapiwalk.ObjectContext) ([]byte, error) {
+	context := openapiwalk.ObjectOpenAPI
+	if len(contexts) > 0 {
+		context = contexts[0]
+	}
+	view, changed, err := schemaResourceView(value, context)
+	if err != nil {
+		return nil, err
+	}
+	if changed {
+		encoded, encodeErr := json.Marshal(view)
+		if encodeErr != nil {
+			return nil, encodeErr
+		}
+		value = view
+		original = encoded
+	}
+
 	if escaper == nil {
 		return original, nil
 	}

@@ -119,6 +119,18 @@ func compilePreparedInputValue(source inputSource, sourceMetadata, data []byte, 
 		location := diagnostic.NewSourceRegistry([]string{findings[0].Location.Source}).Display(findings[0].Location.Source)
 		return nil, phaseError(diagnostic.PhaseOpenAPI, fmt.Errorf("%s at %s%s", findings[0].Message, location, findings[0].Location.Pointer))
 	}
+	var viewErr error
+	var viewChanged bool
+	value, viewChanged, viewErr = schemaResourceView(value, openapiwalk.ObjectOpenAPI, source.effective)
+	if viewErr != nil {
+		return nil, phaseError(diagnostic.PhaseReferences, viewErr)
+	}
+	if viewChanged {
+		data, viewErr = json.Marshal(value)
+		if viewErr != nil {
+			return nil, phaseError(diagnostic.PhaseReferences, viewErr)
+		}
+	}
 	if source.remoteBase != nil {
 		var err error
 		value, err = absolutizeRelativeRemoteReferencesValue(value, source.remoteBase)

@@ -66,7 +66,7 @@ func newReferenceSourceFS(root string, filters []string, cache *decodedSourceCac
 		if err != nil {
 			return nil, err
 		}
-		referenceData, err := opaqueReferences.data(effective.value, effective.data)
+		referenceData, err := opaqueReferences.data(effective.value, effective.data, session.sourceContext(resolved))
 		if err != nil {
 			return nil, fmt.Errorf("prepare OpenAPI reference-resolution view %s: %w", resolved, err)
 		}

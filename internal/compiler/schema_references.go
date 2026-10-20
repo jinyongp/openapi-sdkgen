@@ -42,37 +42,71 @@ func normalizeNestedSchemaReferences(document any) (any, error) {
 // equivalent to the canonical pointer selected here; references that cannot
 // be bound locally remain an explicit compilation error.
 func normalizeSchemaAnchorReferences(document map[string]any) (any, error) {
-	base := schemaDocumentResourceURI(document)
-	index := schemaAnchorIndex{anchors: map[string]string{}, resources: map[string]string{base: ""}}
-	if err := index.collect(document, "", base); err != nil {
-		return nil, err
+	return schemaReferenceView(document, openapiwalk.ObjectOpenAPI)
+}
+
+// schemaReferenceView binds contained resources before any file/network discovery.
+// Source trees remain immutable; identifiers are consumed only in this resolver view.
+func schemaReferenceView(value any, context openapiwalk.ObjectContext, bases ...string) (any, error) {
+	view, _, err := schemaResourceView(value, context, bases...)
+	return view, err
+}
+func schemaResourceView(value any, context openapiwalk.ObjectContext, bases ...string) (any, bool, error) {
+	document, ok := value.(map[string]any)
+	if !ok {
+		return value, false, nil
 	}
-	return index.rewrite(document, "", base)
+	base := schemaDocumentResourceURI(document)
+	if len(bases) > 0 && (strings.HasPrefix(bases[0], "https://") || strings.HasPrefix(bases[0], "http://")) {
+		base = bases[0]
+		if self, _ := document["$self"].(string); self != "" {
+			base = resolveSchemaResourceURI(base, self)
+		}
+	}
+	index := schemaAnchorIndex{anchors: map[string]string{}, resources: map[string]string{base: ""}, context: context}
+	if err := index.collect(document, "", base); err != nil {
+		return nil, false, err
+	}
+	if !index.active {
+		return value, false, nil
+	}
+	view, err := index.rewrite(document, "", base)
+	return view, true, err
 }
 
 type schemaAnchorIndex struct {
+	context   openapiwalk.ObjectContext
+	active    bool
 	anchors   map[string]string
 	resources map[string]string
 }
 
-func (index schemaAnchorIndex) collect(value any, pointer, resource string) error {
+func (index *schemaAnchorIndex) collect(value any, pointer, resource string) error {
 	switch typed := value.(type) {
 	case map[string]any:
 		tokens, tokenErr := schemaPointerTokens(pointer)
 		current := resource
-		if tokenErr == nil && openapiwalk.ObjectContextAt(tokens) == openapiwalk.ObjectSchema {
+		if tokenErr == nil && openapiwalk.StructuralPositionAtRoot(index.context, tokens).Object == openapiwalk.ObjectSchema {
 			if identifier, _ := typed["$id"].(string); identifier != "" {
+				index.active = true
 				current = resolveSchemaResourceURI(resource, identifier)
 				if existing, exists := index.resources[current]; exists && existing != pointer {
 					return fmt.Errorf("duplicate JSON Schema resource %q", current)
 				}
 				index.resources[current] = pointer
 			}
+			if reference, _ := typed["$ref"].(string); reference == "#" {
+				index.active = true
+			}
+			if _, exists := typed["$dynamicRef"]; exists {
+				index.active = true
+			}
 			for _, keyword := range []string{"$anchor", "$dynamicAnchor"} {
 				anchor, _ := typed[keyword].(string)
 				if anchor == "" {
 					continue
 				}
+				index.active = true
 				name := schemaAnchorURI(current, anchor)
 				if existing, exists := index.anchors[name]; exists && existing != schemaLocalReference(pointer) {
 					return fmt.Errorf("duplicate JSON Schema anchor %q at %s and %s", anchor, existing, "#"+pointer)
@@ -81,7 +115,7 @@ func (index schemaAnchorIndex) collect(value any, pointer, resource string) erro
 			}
 		}
 		for key, child := range typed {
-			if tokenErr != nil || openapiwalk.ReferenceChildOpaque(tokens, key, child) {
+			if tokenErr != nil || schemaReferenceChildOpaque(index.context, tokens, key, child) {
 				continue
 			}
 			if err := index.collect(child, appendSchemaPointer(pointer, key), current); err != nil {
@@ -103,7 +137,7 @@ func (index schemaAnchorIndex) rewrite(value any, pointer, resource string) (any
 	case map[string]any:
 		tokens, tokenErr := schemaPointerTokens(pointer)
 		current := resource
-		candidate := tokenErr == nil && openapiwalk.ObjectContextAt(tokens) == openapiwalk.ObjectSchema
+		candidate := tokenErr == nil && openapiwalk.StructuralPositionAtRoot(index.context, tokens).Object == openapiwalk.ObjectSchema
 		if candidate {
 			if identifier, _ := typed["$id"].(string); identifier != "" {
 				current = resolveSchemaResourceURI(resource, identifier)
@@ -111,7 +145,7 @@ func (index schemaAnchorIndex) rewrite(value any, pointer, resource string) (any
 		}
 		result := make(map[string]any, len(typed))
 		for key, child := range typed {
-			if candidate && key == "$anchor" {
+			if candidate && (key == "$anchor" || key == "$id") {
 				continue
 			}
 			if candidate && key == "$dynamicRef" {
@@ -137,8 +171,16 @@ func (index schemaAnchorIndex) rewrite(value any, pointer, resource string) (any
 					result[key] = resolved
 					continue
 				}
+				before, _, _ := strings.Cut(reference, "#")
+				if _, contained := index.resources[resolveSchemaResourceURI(current, before)]; contained && reference != "" {
+					return nil, fmt.Errorf("unresolved contained JSON Schema reference %q at #%s", reference, pointer)
+				}
+				if !strings.HasPrefix(current, "urn:") {
+					result[key] = resolveSchemaResourceURI(current, reference)
+					continue
+				}
 			}
-			if tokenErr != nil || openapiwalk.ReferenceChildOpaque(tokens, key, child) {
+			if tokenErr != nil || schemaReferenceChildOpaque(index.context, tokens, key, child) {
 				result[key] = child
 				continue
 			}
@@ -253,7 +295,11 @@ func resolveSchemaResourceURI(base, identifier string) string {
 	if baseErr != nil || identifierErr != nil || strings.HasPrefix(base, "urn:") {
 		return identifier
 	}
-	return baseURL.ResolveReference(identifierURL).String()
+	resolved := baseURL.ResolveReference(identifierURL).String()
+	if baseURL.Scheme == "" && !strings.HasPrefix(baseURL.Path, "/") && !identifierURL.IsAbs() && !strings.HasPrefix(identifierURL.Path, "/") {
+		resolved = strings.TrimPrefix(resolved, "/")
+	}
+	return resolved
 }
 
 func appendSchemaPointer(pointer, token string) string {
@@ -478,4 +524,9 @@ func decodeJSONPointerToken(token string) (string, error) {
 		}
 	}
 	return result.String(), nil
+}
+
+func schemaReferenceChildOpaque(context openapiwalk.ObjectContext, path []string, name string, value any) bool {
+	position := openapiwalk.StructuralPositionAtRoot(context, path)
+	return !position.NamedMapContainer && (strings.HasPrefix(strings.ToLower(name), "x-") || openapiwalk.IsOpaqueDataField(name, value))
 }

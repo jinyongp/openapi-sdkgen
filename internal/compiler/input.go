@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -237,16 +236,7 @@ func parseInputBase(value string) (inputSource, error) {
 
 func documentURLBase(value *url.URL) *url.URL {
 	base := *value
-	base.RawQuery = ""
 	base.Fragment = ""
-	base.Path = path.Dir(base.Path)
-	if base.Path == "." {
-		base.Path = "/"
-	}
-	if !strings.HasSuffix(base.Path, "/") {
-		base.Path += "/"
-	}
-	base.RawPath = ""
 	return &base
 }
 

@@ -336,6 +336,10 @@ func buildOperation(document map[string]any, path, method, pointer string, pathI
 }
 
 func buildOperationAt(document map[string]any, path, method, pointer, pathItemPointer string, pathItemRaw, raw map[string]any) (Operation, error) {
+	if reference, _ := raw["$ref"].(string); reference != "" {
+		return Operation{}, fmt.Errorf("Operation Object at %s does not support $ref; bundle operation files before generation", pointer)
+	}
+
 	operationPointer := "#" + pointer
 	pathParameterOrder := templateParameters(path)
 	parameters, err := readOperationParameters(document, pathItemRaw, raw, pathItemPointer, operationPointer, pathParameterOrder)

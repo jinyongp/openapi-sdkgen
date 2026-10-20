@@ -199,6 +199,12 @@ func collectExternalReferenceOccurrences(value any, path []string, result *[]ext
 }
 
 func collectExternalReferenceOccurrencesAtRoot(value any, path []string, root openapiwalk.ObjectContext, result *[]externalReferenceOccurrence) {
+	if len(path) == 0 {
+		if view, err := schemaReferenceView(value, root); err == nil {
+			value = view
+		}
+	}
+
 	if path == nil {
 		path = make([]string, 0, 64)
 	}
