@@ -60,6 +60,19 @@ def check_report(manifest, report, document=None, resources=None, selection_dire
         raise ValueError("report has missing, duplicate or unexpected documents")
     failures = []
     for item in report["documents"]:
+        if manifest_sha is not None:
+            original = next(entry for entry in manifest["corpora"] if entry["id"] == item["id"])
+            expected_preparation = original.get("preparation")
+            evidence = item.get("inputPreparation")
+            if expected_preparation:
+                if (not evidence or evidence.get("kind") != expected_preparation["kind"]
+                    or evidence.get("sha256") != expected_preparation["sha256"]
+                    or evidence.get("sourceSha256") != item["inputSha256"]
+                    or evidence.get("operations") != expected_preparation["operations"]
+                    or item["generation"]["status"] == "pass" and not evidence.get("contractsVerified")):
+                    raise ValueError("input preparation proof mismatch")
+            elif evidence is not None:
+                raise ValueError("unexpected input preparation proof")
         if "generationAddons" in item:
             addons = item["generationAddons"]
             if addons not in ([], ["metadata"]):

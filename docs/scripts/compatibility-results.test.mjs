@@ -34,7 +34,7 @@ function fixture(t) {
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   for (const id of corpusNames) {
     for (const name of [`${id}.json`, `${id}-results.json`]) {
-      copyFileSync(new URL(name, sourceDirectory), resolve(directory, name));
+      copyFileSync(new URL(name === "regression.json" ? "regression-manifest.json" : name, sourceDirectory), resolve(directory, name));
     }
   }
   mkdirSync(resolve(directory, "selections"));

@@ -6,6 +6,7 @@ import Layout from "./Layout.vue";
 import DefaultTheme from "vitepress/theme";
 import Playground from "./components/Playground.vue";
 import CompatibilityResults from "./components/CompatibilityResults.vue";
+import GoCompatibilityResults from "./components/GoCompatibilityResults.vue";
 import GraphSelection from "./components/GraphSelection.vue";
 import "./style.css";
 
@@ -19,5 +20,6 @@ export default {
     app.component("LegacyRedirect", LegacyRedirect);
     app.component("CompatibilityResults", CompatibilityResults);
     app.component("GraphSelection", GraphSelection);
+    app.component("GoCompatibilityResults", GoCompatibilityResults);
   },
 } satisfies Theme;

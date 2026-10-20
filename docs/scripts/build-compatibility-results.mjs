@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
@@ -8,6 +8,17 @@ import { corpusNames, readCIMeasurements } from "./ci-measurements.mjs";
 export { corpusNames };
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+function measuredManifest(directory, id, hash, archiveDirectory = directory) {
+  const current = readFileSync(resolve(directory, `${id}.json`));
+  if (sha256(current) === hash) return current;
+  const archive = existsSync(resolve(archiveDirectory, `${id}-manifest.json`)) ? resolve(archiveDirectory, `${id}-manifest.json`) : resolve(directory, `${id}-manifest.json`);
+  if (existsSync(archive)) {
+    const bytes = readFileSync(archive);
+    if (sha256(bytes) === hash) return bytes;
+  }
+  return current; // The caller reports the mismatch with its own context.
+}
+
 const documentPath = (entry) => `documents/${encodeURIComponent(entry.id)}/${encodeURIComponent(basename(entry.input))}`;
 
 function upstreamDocumentUrl(manifest, entry) {
@@ -22,13 +33,45 @@ function upstreamDocumentUrl(manifest, entry) {
   return url.href;
 }
 
+export function readGoCIMeasurements(directory, ci) {
+  const report = ci.reports.golang?.report;
+  if (!report) return null;
+  const expected = new Map(corpusNames.flatMap(corpus => JSON.parse(readFileSync(resolve(directory, `${corpus}.json`))).corpora
+    .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => [`${corpus}/${entry.id}`, entry])));
+  const seen = new Set();
+  const documents = report.documents.map(document => {
+    const key = `${document.corpus}/${document.id}`;
+    const entry = expected.get(key);
+    const profile = document.golang;
+    const compiled = profile?.compilation?.status;
+    const passed = profile?.blocked === false && compiled === "pass";
+    if (!entry || seen.has(key) || document.inputSha256 !== entry.sha256 || document.input !== entry.input ||
+        document.sourceCommit !== ci.provenance.sourceCommit || document.sourceDirty !== false ||
+        document.verificationRequested !== true || document.mode !== "golang-generation" || document.selection?.length ||
+        JSON.stringify(document.addons) !== '["server"]' || document.pass !== passed ||
+        ![true, false].includes(profile?.blocked) || (profile.blocked ? compiled !== undefined : !["pass", "fail"].includes(compiled)) ||
+        (!passed && !document.failure)) throw new Error("Go measurement identity or verification mismatch");
+    const prep = document.inputPreparation;
+    if (entry.preparation ? (!prep || prep.kind !== entry.preparation.kind || prep.sha256 !== entry.preparation.sha256 ||
+        prep.sourceSha256 !== entry.sha256 || prep.operations !== entry.preparation.operations || passed && prep.contractsVerified !== true) : prep !== undefined) {
+      throw new Error("Go measurement preparation mismatch");
+    }
+    seen.add(key);
+    return { id: document.id, corpus: document.corpus, generated: !profile.blocked,
+      routes: profile.blocked ? null : (profile.routes ?? []).length, compilation: compiled ?? "blocked",
+      preparation: Boolean(document.inputPreparation), failure: profile.generationError ?? profile.compilation?.detail ?? document.failure };
+  });
+  if (seen.size !== expected.size) throw new Error("Go measurement membership mismatch");
+  return { documents, runUrl: ci.provenance.runUrl, sourceCommit: ci.provenance.sourceCommit };
+}
+
 export function readCompatibilityResults(directory, { reportDirectory = directory, compressed = false } = {}) {
   return corpusNames.map((id) => {
-    const manifestBytes = readFileSync(resolve(directory, `${id}.json`));
     const storedReport = readFileSync(resolve(reportDirectory, `${id}-results.json${compressed ? ".gz" : ""}`));
     const reportBytes = compressed ? gunzipSync(storedReport) : storedReport;
-    const manifest = JSON.parse(manifestBytes);
     const report = JSON.parse(reportBytes);
+    const manifestBytes = measuredManifest(directory, id, report.manifestSha256, reportDirectory);
+    const manifest = JSON.parse(manifestBytes);
     const fail = (message) => { throw new Error(`${id}: ${message}`); };
 
     if (report.schemaVersion !== 2) fail("an emission-aware report is required");
@@ -161,7 +204,7 @@ export function publishCompatibilityDocuments(directory, outputDirectory) {
 
 export function readGraphSelection(directory, reportName = "graph-selected-results.json", selectionName = "microsoft-graph-beta", evidence = {}) {
   const report = evidence.report ?? JSON.parse(readFileSync(resolve(directory, reportName)));
-  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const manifestBytes = measuredManifest(directory, "regression", report.manifestSha256);
   const manifest = JSON.parse(manifestBytes);
   const baseline = evidence.baseline ?? JSON.parse(readFileSync(resolve(directory, "graph-full-baseline.json")));
   const full = baseline.document;
@@ -224,7 +267,7 @@ export function readGraphCIMeasurements(directory, ci) {
   if (!full && !selected) return readGraphSelection(directory, "graph-selected-ci-results.json");
   if (!full || !selected) throw new Error("Graph CI measurements require both generation scopes");
   const item = full.report.documents?.[0];
-  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const manifestBytes = measuredManifest(directory, "regression", full.report.manifestSha256);
   const entry = JSON.parse(manifestBytes).corpora.find(item => item.id === "microsoft-graph-beta");
   if (full.report.schemaVersion !== 2 || full.report.manifestSha256 !== sha256(manifestBytes) ||
       full.report.documents.length !== 1 || item?.inputSha256 !== entry.sha256 ||
@@ -354,7 +397,7 @@ export function readRuntimeQuality(directory) {
 
 export function readInspectMeasurements(directory) {
   const data = JSON.parse(readFileSync(resolve(directory, "inspect-results.json")));
-  const manifestBytes = readFileSync(resolve(directory, "regression.json"));
+  const manifestBytes = measuredManifest(directory, "regression", data.measurement?.manifestSha256);
   const manifest = JSON.parse(manifestBytes);
   const fail = () => { throw new Error("Inspect measurement provenance or sample mismatch"); };
   const measurement = data.measurement;
@@ -408,6 +451,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     corpus.measurement = { ...corpus.measurement, provider: ci.provenance.provider,
       runner: ci.provenance.runner, runUrl: ci.provenance.runUrl };
   }
+  const goResults = readGoCIMeasurements(sourceDirectory, ci);
   const selection = readGraphCIMeasurements(sourceDirectory, ci);
   if (!/^https:\/\/github\.com\/jinyongp\/openapi-sdkgen\/actions\/runs\/\d+$/.test(selection.ciRunUrl)) {
     throw new Error("Graph selection has no GitHub Actions provenance");
@@ -421,10 +465,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   mkdirSync(generatedDirectory, { recursive: true });
   mkdirSync(publicDirectory, { recursive: true });
   writeFileSync(resolve(generatedDirectory, "compatibility-results.json"), `${JSON.stringify(data, null, 2)}\n`);
+  writeFileSync(resolve(generatedDirectory, "golang-compatibility.json"), `${JSON.stringify(goResults, null, 2)}\n`);
+  if (ci.reports.golang) writeFileSync(resolve(publicDirectory, "golang-results.json"), ci.reports.golang.bytes);
   writeFileSync(resolve(generatedDirectory, "graph-selection.json"), `${JSON.stringify(graph, null, 2)}\n`);
   writeFileSync(resolve(publicDirectory, "provenance.json"), `${JSON.stringify(ci.provenance, null, 2)}\n`);
   for (const id of corpusNames) {
-    copyFileSync(resolve(sourceDirectory, `${id}.json`), resolve(publicDirectory, `${id}.json`));
+    writeFileSync(resolve(publicDirectory, `${id}.json`), measuredManifest(sourceDirectory, id, ci.reports[id].report.manifestSha256));
     writeFileSync(resolve(publicDirectory, `${id}-results.json`), ci.reports[id].bytes);
   }
   const graphReport = ci.reports["graph-selected"]?.report ?? JSON.parse(readFileSync(resolve(sourceDirectory, "graph-selected-ci-results.json")));

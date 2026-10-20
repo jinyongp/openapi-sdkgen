@@ -106,3 +106,42 @@ test("Graph CI publication binds both scopes to the pinned input and skips verif
   const missing = { ...ci, reports: { "graph-selected": ci.reports["graph-selected"] } };
   assert.throws(() => readGraphCIMeasurements(directory, missing), /both generation scopes/);
 });
+
+test("independent Go evidence is optional and bound to the same Actions commit", t => {
+  const options = fixture(t);
+  const path = resolve(options.input, "golang-results.json");
+  const report = { measurement: { sourceCommit: options.sourceCommit, sourceDirty: false, measuredAt: "2026-10-20T00:00:00Z" },
+    documents: [{ id: "provider", pass: false, failure: "generation blocked" }] };
+  writeFileSync(path, JSON.stringify(report));
+  exportCIMeasurements(options);
+  const ci = readCIMeasurements(options.output);
+  assert.deepEqual(ci.reports.golang.report.documents, report.documents);
+  report.measurement.sourceCommit = "f".repeat(40);
+  writeFileSync(path, JSON.stringify(report));
+  assert.throws(() => exportCIMeasurements(options), /benchmark commit/);
+});
+
+test("Go publication keeps failed outcomes and rejects missing, stale or altered identities", async () => {
+  const { readGoCIMeasurements } = await import("./build-compatibility-results.mjs");
+  const directory = resolve(import.meta.dirname, "../../test/compatibility");
+  const sourceCommit = "a".repeat(40);
+  const documents = corpusNames.flatMap(corpus => JSON.parse(readFileSync(resolve(directory, `${corpus}.json`))).corpora
+    .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => ({ corpus, id: entry.id, input: entry.input, inputSha256: entry.sha256,
+      sourceCommit, sourceDirty: false, verificationRequested: true, mode: "golang-generation", addons: ["server"], pass: true,
+      golang: { blocked: false, compilation: { status: "pass" } },
+      ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256, contractsVerified: true } } : {}),
+    })));
+  const ci = { provenance: { sourceCommit, runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: { golang: { report: { documents } } } };
+  assert.equal(readGoCIMeasurements(directory, ci).documents.length, documents.length);
+  const blocked = structuredClone(ci);
+  Object.assign(blocked.reports.golang.report.documents[0], { pass: false, failure: "blocked", golang: { blocked: true, generationError: "invalid pattern" } });
+  assert.equal(readGoCIMeasurements(directory, blocked).documents[0].compilation, "blocked");
+  for (const mutate of [list => list.pop(), list => list.push(list[0]), list => { list[0].inputSha256 = "bad"; },
+    list => { list[0].sourceDirty = true; }, list => { list[0].verificationRequested = false; },
+    list => { list.find(item => item.inputPreparation).inputPreparation.contractsVerified = false; }]) {
+    const invalid = structuredClone(ci);
+    mutate(invalid.reports.golang.report.documents);
+    assert.throws(() => readGoCIMeasurements(directory, invalid), /Go measurement/);
+  }
+  assert.equal(readGoCIMeasurements(directory, { reports: {} }), null);
+});

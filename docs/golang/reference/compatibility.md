@@ -5,9 +5,20 @@ The [support contract](./capabilities.md) describes implemented Go behavior. Sta
 
 ## Provider measurements
 
-This page has no published GitHub Actions provider measurement for Go. It does not reuse another
-SDK's generation/typechecking tables as Go evidence. A generation pass alone also does not establish
-that a provider's server accepts every request or that every generated call was executed.
+<GoCompatibilityResults />
+
+Generation and compilation do not establish that a provider's server accepts every request
+or that every generated call was executed.
+
+The measurement workflow separately generates Go clients and server handlers, then runs
+`go test ./...` on the emitted module. Results record generation blocks and compiler failures
+as failures. Microsoft Graph generation-only measurements are excluded from this Go profile.
+These checks do not call a provider API.
+
+DigitalOcean publishes authoring sources with references in Operation Objects. These require
+bundling before generation. The measurement keeps both the original and prepared input hashes,
+and checks operation identities, required parameters and response representations after compilation.
+It does not repair invalid schemas or establish full schema equivalence.
 
 ## Verify your own document
 

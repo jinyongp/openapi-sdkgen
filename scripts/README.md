@@ -253,3 +253,28 @@ and builds create the ignored `docs/public/downloads/` archives. Each ZIP includ
 its own README, contract, toolchain configuration, source and license; generated
 SDKs, installed dependencies and local output are excluded. Keep runnable setup
 and verification in example files, and keep public guides focused on key calls.
+
+### Provider authoring preparation and Go verification
+
+`preparation` in a compatibility corpus explicitly opts into a pinned input transform.
+`operation-references-v1` expands local Operation authoring references and reusable
+non-schema objects, rebases moved schema references/discriminator mappings, and leaves
+example/extension data opaque. Both source and prepared SHA256 values are recorded.
+The runner checks operation IDs, effective required parameters, request-body presence,
+response media/schema presence and direct response types against the compiled IR.
+This is a loss guard, not full schema-equivalence verification. It never rewrites invalid
+patterns or silently treats Operation Object references as supported generator input.
+
+For an independent Go measurement, run `scripts/golang-compat` with
+`--mode golang-generation --verify --server`, the corpus `--manifest`, `--corpus-root`,
+`--document`, and `--output`. `--verify` compiles the emitted module with `go test ./...`;
+without it, the result proves generation only. Blocked generation still writes a failing
+report; tool/input integrity failures return without claiming a completed measurement.
+The Actions combiner requires exact clean-source provenance and complete per-document
+outcomes. A valid measurement can contain failed SDKs; it is not an all-provider success
+claim. Graph is excluded from this profile.
+
+Historical public reports retain their matching `*-manifest.json` when the active corpus
+changes. Documentation verifies the archived manifest hash against the report; historical
+results do not become evidence for the current source. Fresh public results must come
+from the manual compatibility Actions workflow, not local runs.

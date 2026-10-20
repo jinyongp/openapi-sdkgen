@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
@@ -17,14 +19,17 @@ import (
 	"sync"
 	"time"
 
+	"openapi-sdkgen/internal/compatinput"
 	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
 	"openapi-sdkgen/internal/target/golang"
 	"openapi-sdkgen/internal/target/typescript"
+	"openapi-sdkgen/internal/tscheck"
 )
 
 type corpus struct {
+	Preparation                *compatinput.Spec `json:"preparation,omitempty"`
 	ID, Input, SHA256, GitBlob string
 	Bytes                      int64
 }
@@ -33,28 +38,38 @@ type manifest struct {
 	Files   []struct{ Input, SHA256 string }
 }
 type profile struct {
-	Blocked        bool                                     `json:"blocked"`
-	Diagnostics    []diagnostic.Diagnostic                  `json:"diagnostics,omitempty"`
-	Routes         []string                                 `json:"routes,omitempty"`
-	Inbound        []generator.InboundOperationInspection   `json:"inbound,omitempty"`
-	Files          int                                      `json:"files"`
-	Bytes          int64                                    `json:"bytes"`
-	ArtifactSHA256 string                                   `json:"artifactSha256,omitempty"`
-	Surfaces       map[string]generator.OperationInspection `json:"surfaces,omitempty"`
+	GenerationError string                                   `json:"generationError,omitempty"`
+	Compilation     *compilationResult                       `json:"compilation,omitempty"`
+	Blocked         bool                                     `json:"blocked"`
+	Diagnostics     []diagnostic.Diagnostic                  `json:"diagnostics,omitempty"`
+	Routes          []string                                 `json:"routes,omitempty"`
+	Inbound         []generator.InboundOperationInspection   `json:"inbound,omitempty"`
+	Files           int                                      `json:"files"`
+	Bytes           int64                                    `json:"bytes"`
+	ArtifactSHA256  string                                   `json:"artifactSha256,omitempty"`
+	Surfaces        map[string]generator.OperationInspection `json:"surfaces,omitempty"`
+}
+type compilationResult struct {
+	Status string `json:"status"`
+	Detail string `json:"detail,omitempty"`
 }
 type report struct {
-	Mode          string   `json:"mode"`
-	Selection     []string `json:"selection,omitempty"`
-	ID            string   `json:"id"`
-	Input         string   `json:"input"`
-	InputSHA256   string   `json:"inputSha256"`
-	Addons        []string `json:"addons"`
-	GoVersion     string   `json:"goVersion"`
-	TypeScript    profile  `json:"typescript"`
-	Go            profile  `json:"golang"`
-	GoExtraRoutes []string `json:"goExtraRoutes,omitempty"`
-	Pass          bool     `json:"pass"`
-	Failure       string   `json:"failure,omitempty"`
+	VerificationRequested bool                  `json:"verificationRequested"`
+	SourceCommit          string                `json:"sourceCommit"`
+	SourceDirty           bool                  `json:"sourceDirty"`
+	InputPreparation      *compatinput.Evidence `json:"inputPreparation,omitempty"`
+	Mode                  string                `json:"mode"`
+	Selection             []string              `json:"selection,omitempty"`
+	ID                    string                `json:"id"`
+	Input                 string                `json:"input"`
+	InputSHA256           string                `json:"inputSha256"`
+	Addons                []string              `json:"addons"`
+	GoVersion             string                `json:"goVersion"`
+	TypeScript            profile               `json:"typescript"`
+	Go                    profile               `json:"golang"`
+	GoExtraRoutes         []string              `json:"goExtraRoutes,omitempty"`
+	Pass                  bool                  `json:"pass"`
+	Failure               string                `json:"failure,omitempty"`
 }
 
 func main() {
@@ -64,6 +79,8 @@ func main() {
 	}
 }
 func run() error {
+	verify := flag.Bool("verify", false, "compile emitted modules; generation alone is not compilation evidence")
+	typescriptRoot := flag.String("typescript-root", "test/typescript", "installed consumer TypeScript compiler directory")
 	mode := flag.String("mode", "parity", "parity or golang-generation; generation mode proves no cross-target parity")
 	selectCount := flag.Int("select-count", 0, "select first N exact original route keys, sorted; zero selects all")
 	partialOutput := flag.String("partial-output", "", "optional partial report before Go; pass is false until both targets finish")
@@ -151,22 +168,47 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	result := report{Mode: *mode, ID: selected.ID, Input: selected.Input, InputSHA256: digest(input), GoVersion: runtime.Version()}
+	result := report{VerificationRequested: *verify, Mode: *mode, ID: selected.ID, Input: selected.Input, InputSHA256: digest(input), GoVersion: runtime.Version()}
 	if *server {
 		result.Addons = []string{"server"}
 	}
+	head, headErr := exec.Command("git", "rev-parse", "HEAD").Output()
+	if headErr != nil {
+		return headErr
+	}
+	result.SourceCommit = strings.TrimSpace(string(head))
+	status, statusErr := exec.Command("git", "status", "--porcelain").Output()
+	if statusErr != nil {
+		return statusErr
+	}
+	result.SourceDirty = len(status) != 0
+	preparedInput, err := compatinput.Prepare(absolute, selected.Preparation)
+	if err != nil {
+		return err
+	}
+	defer preparedInput.Close()
+	absolute = preparedInput.Path
+	result.InputPreparation = preparedInput.Evidence
 	phase("compile-start")
 	compiled, err := compiler.CompileFileResultWithOptions(absolute, compiler.CompileOptions{DiagnosticMode: diagnostic.ModeCollect})
 	if err != nil {
 		return err
 	}
 	phase("compile-finished")
+	if compiled.Document != nil {
+		if err := preparedInput.Verify(compiled.Document); err != nil {
+			return err
+		}
+	}
+
 	registry, _ := generator.NewAddonRegistry(generator.AddonServer, generator.AddonMetadata)
 	options, err := registry.Resolve(result.Addons)
 	if err != nil {
 		return err
 	}
 	options.DiagnosticMode = diagnostic.ModeCollect
+	options.TypeScriptTypeCheck = verify
+
 	if len(exactRoutes) != 0 {
 		if *selectCount != 0 {
 			return fmt.Errorf("route and select-count cannot be combined")
@@ -197,7 +239,7 @@ func run() error {
 		return fmt.Errorf("diagnostic-go-only requires a profile and bounded deadline")
 	}
 	if !*goOnly && *mode == "parity" {
-		result.TypeScript, err = prepareAndEmit(typescript.Generator{}, compiled, options)
+		result.TypeScript, err = prepareAndEmitVerified(typescript.Generator{}, compiled, options, *verify, *typescriptRoot)
 		if err != nil {
 			return fmt.Errorf("TypeScript: %w", err)
 		}
@@ -212,11 +254,14 @@ func run() error {
 		}
 	}
 	runtime.GC()
+	options.TypeScriptTypeCheck = nil
 	options.Golang = &generator.GoOptions{ImportPath: "example.test/corpus/api"}
-	result.Go, err = prepareAndEmit(golang.Generator{}, compiled, options)
+	result.Go, err = prepareAndEmitVerified(golang.Generator{}, compiled, options, *verify, *typescriptRoot)
 	if err != nil {
 		return fmt.Errorf("Go: %w", err)
 	}
+	normalizeDiagnostics(&result.TypeScript, *root, absolute, selected.Input)
+	normalizeDiagnostics(&result.Go, *root, absolute, selected.Input)
 	if *goOnly {
 		result.Failure = "Go-only diagnostic; not a parity audit"
 	} else if *mode == "golang-generation" {
@@ -228,6 +273,12 @@ func run() error {
 		result.Failure = err.Error()
 	} else {
 		result.Pass = true
+	}
+	if *verify && (result.Go.Compilation == nil || result.Go.Compilation.Status != "pass" || *mode == "parity" && (result.TypeScript.Compilation == nil || result.TypeScript.Compilation.Status != "pass")) {
+		result.Pass = false
+		if result.Failure == "" {
+			result.Failure = "generated module compilation failed"
+		}
 	}
 	encoded, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
@@ -275,10 +326,13 @@ func verifiedInput(root string, item corpus) ([]byte, error) {
 	return data, nil
 }
 func prepareAndEmit(target generator.Target, compiled compiler.Result, options generator.Options) (profile, error) {
+	return prepareAndEmitVerified(target, compiled, options, false, "")
+}
+func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, options generator.Options, verify bool, typescriptRoot string) (profile, error) {
 	phase(target.Name() + "-prepare-start")
 	prepared, err := generator.PrepareCompilation(target, compiled, options)
 	if err != nil {
-		return profile{}, err
+		return profile{Blocked: true, GenerationError: err.Error()}, nil
 	}
 	phase(target.Name() + "-prepare-finished")
 	result := profile{Diagnostics: prepared.Diagnostics, Blocked: diagnostic.HasErrors(prepared.Diagnostics)}
@@ -293,9 +347,33 @@ func prepareAndEmit(target generator.Target, compiled compiler.Result, options g
 	if err != nil {
 		return result, err
 	}
+	work := ""
+	if verify {
+		work, err = os.MkdirTemp("", "sdkgen-compat-*")
+		if err != nil {
+			return result, err
+		}
+		defer os.RemoveAll(work)
+	}
 	hashes := make(map[string]string)
 	phase(target.Name() + "-emit-start")
 	err = generator.EmitTo(target, prepared.Plan, generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		if verify {
+			clean := filepath.Clean(filepath.FromSlash(artifact.Path))
+			if filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+				return fmt.Errorf("unsafe generated artifact path")
+			}
+			path := filepath.Join(work, clean)
+			if target.Name() == "golang" {
+				path = filepath.Join(work, "api", filepath.FromSlash(artifact.Path))
+			}
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return err
+			}
+			if err := os.WriteFile(path, artifact.Data, 0600); err != nil {
+				return err
+			}
+		}
 		result.Files++
 		result.Bytes += int64(len(artifact.Data))
 		hashes[artifact.Path] = digest(artifact.Data)
@@ -305,6 +383,10 @@ func prepareAndEmit(target generator.Target, compiled compiler.Result, options g
 		return result, err
 	}
 	phase(target.Name() + "-emit-finished")
+	if verify {
+		result.Compilation = verifyModule(target.Name(), work, typescriptRoot)
+	}
+
 	names := make([]string, 0, len(hashes))
 	for name := range hashes {
 		names = append(names, name)
@@ -422,4 +504,83 @@ func phase(name string) {
 	var memory runtime.MemStats
 	runtime.ReadMemStats(&memory)
 	fmt.Fprintf(os.Stderr, "phase=%s at=%s liveHeap=%d heapSys=%d GC=%d\n", name, time.Now().UTC().Format(time.RFC3339), memory.HeapAlloc, memory.HeapSys, memory.NumGC)
+}
+
+func verifyModule(target, directory, typescriptRoot string) *compilationResult {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+	var command *exec.Cmd
+	if target == "golang" {
+		if err := os.WriteFile(filepath.Join(directory, "go.mod"), []byte("module example.test/corpus\n\ngo 1.27.0\n"), 0600); err != nil {
+			return &compilationResult{Status: "fail", Detail: err.Error()}
+		}
+		command = exec.CommandContext(ctx, "go", "test", "./...")
+	} else {
+		options := tscheck.CompilerOptions()
+		for key, value := range map[string]any{"target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "lib": []string{"ES2022", "DOM", "DOM.Iterable"}, "noEmit": true} {
+			options[key] = value
+		}
+		config, err := json.Marshal(map[string]any{"compilerOptions": options, "include": []string{"**/*.ts"}})
+		if err != nil {
+			return &compilationResult{Status: "fail", Detail: err.Error()}
+		}
+		for name, data := range map[string][]byte{"tsconfig.json": config, "package.json": []byte("{\"type\":\"module\",\"private\":true}")} {
+			if err := os.WriteFile(filepath.Join(directory, name), data, 0600); err != nil {
+				return &compilationResult{Status: "fail", Detail: err.Error()}
+			}
+		}
+		root, err := filepath.Abs(typescriptRoot)
+		if err != nil {
+			return &compilationResult{Status: "fail", Detail: err.Error()}
+		}
+		args := []string{filepath.Join(root, "node_modules/typescript/lib/tsc.js"), "--project", filepath.Join(directory, "tsconfig.json")}
+		var metadata struct{ Version string }
+		raw, err := os.ReadFile(filepath.Join(root, "node_modules/typescript/package.json"))
+		if err != nil {
+			return &compilationResult{Status: "fail", Detail: err.Error()}
+		}
+		if err := json.Unmarshal(raw, &metadata); err != nil {
+			return &compilationResult{Status: "fail", Detail: err.Error()}
+		}
+		if strings.HasPrefix(metadata.Version, "7.") {
+			args = append(args, "--singleThreaded")
+		}
+		command = exec.CommandContext(ctx, "node", args...)
+	}
+	command.Dir = directory
+	output, err := command.CombinedOutput()
+	if err != nil {
+		detail := strings.ReplaceAll(strings.TrimSpace(string(output)), directory, "<generated>")
+		if detail == "" {
+			detail = err.Error()
+		}
+		if len(detail) > 4000 {
+			detail = detail[:4000]
+		}
+		return &compilationResult{Status: "fail", Detail: detail}
+	}
+	return &compilationResult{Status: "pass"}
+}
+
+func normalizeDiagnostics(profile *profile, root, input, logicalInput string) {
+	absolute, err := filepath.Abs(root)
+	if err != nil {
+		return
+	}
+	source := func(value string) string {
+		if value == input {
+			return filepath.ToSlash(logicalInput)
+		}
+		if strings.HasPrefix(value, absolute+string(filepath.Separator)) {
+			return filepath.ToSlash(strings.TrimPrefix(value, absolute+string(filepath.Separator)))
+		}
+		return value
+	}
+	for index := range profile.Diagnostics {
+		value := &profile.Diagnostics[index]
+		value.Location.Source = source(value.Location.Source)
+		for related := range value.Related {
+			value.Related[related].Source = source(value.Related[related].Source)
+		}
+	}
 }

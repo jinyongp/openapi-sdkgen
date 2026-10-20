@@ -68,6 +68,9 @@ func mergeBenchmarkReports(manifestPath string, paths []string, outputPath strin
 				(corpus.OpenAPIVersion != "" && document.OpenAPIVersion != corpus.OpenAPIVersion) {
 				return fmt.Errorf("shard document %q provenance differs from the original input", document.ID)
 			}
+			if err := validatePreparationEvidence(corpus, document); err != nil {
+				return err
+			}
 			var selection *benchmarkSelection
 			if document.GenerationScope == "selected" {
 				selection, err = loadBenchmarkSelection(filepath.Join(filepath.Dir(manifestPath), "selections", corpus.ID+".toml"))
@@ -170,6 +173,21 @@ func validateGenerationAddons(document documentResult) error {
 		if profile.GenerationAddons == nil || !slices.Equal(*profile.GenerationAddons, expected) {
 			return fmt.Errorf("server add-on settings differ for %s", document.ID)
 		}
+	}
+	return nil
+}
+
+func validatePreparationEvidence(corpus corpusSpec, document documentResult) error {
+	evidence := document.InputPreparation
+	if corpus.Preparation == nil {
+		if evidence != nil {
+			return fmt.Errorf("unexpected input preparation for %s", corpus.ID)
+		}
+		return nil
+	}
+	expected := corpus.Preparation
+	if evidence == nil || evidence.Kind != expected.Kind || evidence.SHA256 != expected.SHA256 || evidence.SourceSHA256 != document.InputSHA256 || expected.Operations > 0 && evidence.Operations != expected.Operations || document.Generation.Status == "pass" && !evidence.ContractsVerified {
+		return fmt.Errorf("input preparation proof missing or inconsistent for %s", corpus.ID)
 	}
 	return nil
 }

@@ -26,7 +26,7 @@ func TestSelectBenchmarkCorpora(t *testing.T) {
 
 func mergeFixture(t *testing.T) (string, benchmarkReport, []benchmarkReport) {
 	t.Helper()
-	manifest := filepath.Join("..", "..", "test", "compatibility", "regression.json")
+	manifest := filepath.Join("..", "..", "test", "compatibility", "regression-manifest.json")
 	data, err := os.ReadFile(filepath.Join("..", "..", "test", "compatibility", "regression-results.json"))
 	if err != nil {
 		t.Fatal(err)

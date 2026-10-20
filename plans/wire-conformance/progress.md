@@ -11,7 +11,7 @@ Preserve documented unsupported features and OpenAPI's ambiguous space/pipe data
 | Reference resources and diagnostics | complete | complete: resource identity, opaque data, source immutability, containment, remote locks, direct and CLI callers | compiler/IR/CLI suites; file/stdin/URL and both diagnostic modes passed | reference-resources commit |
 | XML and JSON-seq | complete | complete: XML escaping order/CDATA, JSON whitespace and RS boundaries, NDJSON EOF and cleanup | TypeScript full; generated Go XML independent parser and protocol suites passed | media-conformance commit |
 | Format assertions | complete | complete: syntax without URL repair, UTS46/A-label/context/Bidi checks, mailbox grammar, selected runtime dependencies and licensing | 369 pinned official cases in both targets; TypeScript full/lint and Go format/URL/IDNA suites passed | format-assertions commit |
-| Provider evidence | pending | pending | pending | pending |
+| Provider evidence | complete: pinned authoring preparation, independent Go compilation, source-bound measurement gates and historical manifest preservation | reviewed: containment, opaque data, operation overrides, evidence integrity and failure semantics | preparation/runner/merge and Python/docs evidence tests passed; DigitalOcean TypeScript generated and strictly typechecked all 739 contracts, Go explicitly blocked by its invalid Unicode pattern; Zenith Go generated and compiled 40 routes | pending commit |
 | Combined review | pending | pending | pending | pending |
 
 Each unit requires relevant generated SDK checks, caller review and no outstanding

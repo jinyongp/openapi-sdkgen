@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync, gzipSync } from "node:zlib";
@@ -37,7 +37,7 @@ function validSource(report, sourceCommit) {
 export function readCIMeasurements(directory) {
   const provenance = JSON.parse(readFileSync(resolve(directory, "provenance.json")));
   validateProvenance(provenance);
-  const names = [...corpusNames, ...graphNames.filter(id => provenance.reports?.[id])];
+  const names = [...corpusNames, ...[...graphNames, "golang"].filter(id => provenance.reports?.[id])];
   const reports = Object.fromEntries(names.map(id => {
     const bytes = gunzipSync(readFileSync(resolve(directory, `${id}-results.json.gz`)));
     const report = JSON.parse(bytes);
@@ -57,7 +57,7 @@ export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runn
     runUrl, sourceCommit, runner, reports: {},
   };
   validateProvenance(provenance);
-  const reports = [...corpusNames, ...graphNames].map(id => {
+  const reports = [...corpusNames, ...graphNames, ...(existsSync(resolve(input, "golang-results.json")) ? ["golang"] : [])].map(id => {
     const report = publicMeasurement(JSON.parse(readFileSync(resolve(input, `${id}-results.json`))));
     if (!validSource(report, sourceCommit)) {
       throw new Error(`${id}: benchmark commit does not match the Actions run`);

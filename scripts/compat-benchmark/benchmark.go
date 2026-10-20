@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"openapi-sdkgen/internal/compatinput"
 	sdkgen "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/compiler/ir"
 	"openapi-sdkgen/internal/diagnostic"
@@ -67,19 +68,20 @@ type sizeStratum struct {
 }
 
 type corpusSpec struct {
-	SHA256         string `json:"sha256,omitempty"`
-	OpenAPIVersion string `json:"openapiVersion,omitempty"`
-	EvidenceKind   string `json:"evidenceKind,omitempty"`
-	SourceURL      string `json:"sourceUrl,omitempty"`
-	Revision       string `json:"revision,omitempty"`
-	Trust          string `json:"trust,omitempty"`
-	ID             string `json:"id"`
-	Provider       string `json:"provider,omitempty"`
-	Cohort         string `json:"cohort"`
-	Input          string `json:"input"`
-	GitBlob        string `json:"gitBlob,omitempty"`
-	Bytes          int64  `json:"bytes,omitempty"`
-	SizeClass      string `json:"sizeClass,omitempty"`
+	Preparation    *compatinput.Spec `json:"preparation,omitempty"`
+	SHA256         string            `json:"sha256,omitempty"`
+	OpenAPIVersion string            `json:"openapiVersion,omitempty"`
+	EvidenceKind   string            `json:"evidenceKind,omitempty"`
+	SourceURL      string            `json:"sourceUrl,omitempty"`
+	Revision       string            `json:"revision,omitempty"`
+	Trust          string            `json:"trust,omitempty"`
+	ID             string            `json:"id"`
+	Provider       string            `json:"provider,omitempty"`
+	Cohort         string            `json:"cohort"`
+	Input          string            `json:"input"`
+	GitBlob        string            `json:"gitBlob,omitempty"`
+	Bytes          int64             `json:"bytes,omitempty"`
+	SizeClass      string            `json:"sizeClass,omitempty"`
 }
 
 type benchmarkReport struct {
@@ -107,6 +109,7 @@ type benchmarkMeasurement struct {
 }
 
 type documentResult struct {
+	InputPreparation          *compatinput.Evidence         `json:"inputPreparation,omitempty"`
 	GenerationAddons          *[]string                     `json:"generationAddons,omitempty"`
 	GenerationScope           string                        `json:"generationScope,omitempty"`
 	Selection                 *generationSelectionEvidence  `json:"generationSelection,omitempty"`
@@ -424,6 +427,9 @@ func validateManifest(manifest benchmarkManifest) error {
 	ids := map[string]bool{}
 	providers := map[string]bool{}
 	for _, corpus := range manifest.Corpora {
+		if corpus.Preparation != nil && (corpus.Preparation.Kind != compatinput.OperationReferencesV1 || !validSHA256(corpus.Preparation.SHA256) || corpus.Preparation.Operations <= 0) {
+			return fmt.Errorf("invalid input preparation for %s", corpus.ID)
+		}
 		if manifest.Pinned {
 			if !validSHA256(corpus.SHA256) || corpus.OpenAPIVersion == "" || corpus.Trust == "" || corpus.SourceURL == "" || corpus.Revision == "" {
 				return fmt.Errorf("pinned corpus %q requires sha256, openapiVersion, sourceUrl, revision and trust", corpus.ID)
@@ -532,6 +538,18 @@ func benchmarkDocumentWithOptions(corpus corpusSpec, inputPath string, typecheck
 	if selection != nil && (selection.Document != corpus.ID || selection.InputSHA256 != hex.EncodeToString(sum[:])) {
 		return documentResult{}, fmt.Errorf("selection does not match pinned document %s", corpus.ID)
 	}
+	preparedInput, err := compatinput.Prepare(inputPath, corpus.Preparation)
+	if err != nil {
+		return documentResult{}, err
+	}
+	defer preparedInput.Close()
+	inputPath = preparedInput.Path
+	if preparedInput.Evidence != nil {
+		data, err = os.ReadFile(inputPath)
+		if err != nil {
+			return documentResult{}, err
+		}
+	}
 	decoded, err := decodeFeatureInput(data)
 	if err != nil {
 		return documentResult{}, fmt.Errorf("decode feature input: %w", err)
@@ -539,6 +557,7 @@ func benchmarkDocumentWithOptions(corpus corpusSpec, inputPath string, typecheck
 	features, version := detectFeatures(decoded)
 	data, decoded = nil, nil
 	result := documentResult{
+		InputPreparation:  preparedInput.Evidence,
 		GenerationAddons:  generationAddons(options),
 		EvidenceKind:      corpus.EvidenceKind,
 		ID:                corpus.ID,
@@ -566,6 +585,12 @@ func benchmarkDocumentWithOptions(corpus corpusSpec, inputPath string, typecheck
 	if err != nil {
 		result.Generation.Detail = boundedDetail(fmt.Sprintf("internal compile failure: %v", err))
 		return result, nil
+	}
+	if compiled.Document != nil {
+		if err := preparedInput.Verify(compiled.Document); err != nil {
+			result.Generation.Detail = boundedDetail(err.Error())
+			return result, nil
+		}
 	}
 	compileDuration := time.Since(compileStarted)
 	prepareStarted := time.Now()

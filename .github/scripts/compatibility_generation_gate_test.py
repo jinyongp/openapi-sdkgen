@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2] / "test/compatibility"
 
 class GenerationGateTests(unittest.TestCase):
     def fixture(self, scope):
-        manifest = (ROOT / "regression.json").read_bytes()
+        manifest = (ROOT / "regression-manifest.json").read_bytes()
         if scope == "selected":
             report = json.loads((ROOT / "graph-selected-results.json").read_text())
         else:
