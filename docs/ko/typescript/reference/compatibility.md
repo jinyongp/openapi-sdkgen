@@ -17,6 +17,12 @@ GitHub Actions에서 측정한 결과입니다. 표에서 측정한 실행을 �
 
 <CompatibilityResults locale="ko" />
 
+DigitalOcean의 작성용 입력은 측정 전에 번들링합니다. Operation Object 참조와 재사용 객체를
+펼치고, 이동한 스키마 참조의 기준 경로를 조정합니다. 결과에는 두 입력의 해시를 보존하며,
+컴파일된 문서에서 작업 식별자·필수 매개변수·응답 표현이 유지됐는지 검사합니다.
+생성기는 번들링하지 않은 Operation Object 참조를 거부합니다.
+Go는 별도로 측정하며, [Go 결과](/ko/golang/reference/compatibility)에서 확인할 수 있습니다.
+
 웹훅·콜백이 있는 문서는 `--with server`로 수신용 코드를 함께 생성할 수 있습니다.
 수신 코드는 들어온 요청을 파싱·검증하고 타입이 지정된 핸들러에 전달합니다.
 사용 방법은 [웹훅·콜백 수신 가이드](/ko/typescript/guide/server)를 참고하세요.

@@ -58,7 +58,7 @@ export function readGoCIMeasurements(directory, ci) {
     }
     seen.add(key);
     return { id: document.id, corpus: document.corpus, generated: !profile.blocked,
-      routes: profile.blocked ? null : (profile.routes ?? []).length, compilation: compiled ?? "blocked",
+      routes: profile.blocked ? null : (profile.routes ?? []).length, handlers: profile.blocked ? null : (profile.inbound ?? []).length, compilation: compiled ?? "blocked",
       preparation: Boolean(document.inputPreparation), failure: profile.generationError ?? profile.compilation?.detail ?? document.failure };
   });
   if (seen.size !== expected.size) throw new Error("Go measurement membership mismatch");

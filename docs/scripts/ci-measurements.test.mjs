@@ -132,7 +132,11 @@ test("Go publication keeps failed outcomes and rejects missing, stale or altered
       ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256, contractsVerified: true } } : {}),
     })));
   const ci = { provenance: { sourceCommit, runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: { golang: { report: { documents } } } };
-  assert.equal(readGoCIMeasurements(directory, ci).documents.length, documents.length);
+  documents[0].golang.inbound = [{ identity: "#/webhooks/notice/post" }];
+  const published = readGoCIMeasurements(directory, ci);
+  assert.equal(published.documents.length, documents.length);
+  assert.equal(published.documents[0].routes, 0);
+  assert.equal(published.documents[0].handlers, 1);
   const blocked = structuredClone(ci);
   Object.assign(blocked.reports.golang.report.documents[0], { pass: false, failure: "blocked", golang: { blocked: true, generationError: "invalid pattern" } });
   assert.equal(readGoCIMeasurements(directory, blocked).documents[0].compilation, "blocked");

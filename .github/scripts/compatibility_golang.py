@@ -59,5 +59,5 @@ if __name__ == "__main__":
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as output:
         output.write("## Go generation and compilation\n\nAll rows include the server addon; no provider API calls were made.\n\n")
         output.write(table(["Corpus", "Document", "Generated API calls", "Go compiler"],
-                           [(item["corpus"], item["id"], len(item["golang"].get("routes", [])), item["golang"].get("compilation", {}).get("status", "blocked"))
+                           [(item["corpus"], item["id"], ("—" if item["golang"]["blocked"] else len(item["golang"].get("routes", []))), item["golang"].get("compilation", {}).get("status", "blocked"))
                             for item in report["documents"]]))

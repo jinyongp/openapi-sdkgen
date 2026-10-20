@@ -166,7 +166,7 @@ jobs:
           wait "$compatibility_process"
       - name: Generate and compile the independent Go SDK profile
         continue-on-error: true
-        if: always() && matrix.typecheck && steps.benchmark.outcome != 'skipped'
+        if: ${{ !cancelled() && matrix.typecheck && steps.benchmark.outcome != 'skipped' }}
         timeout-minutes: 30
         shell: bash
         run: |

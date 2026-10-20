@@ -17,6 +17,12 @@ The summary shows the sum of the individual document times.
 
 <CompatibilityResults />
 
+DigitalOcean's authoring input is bundled before measurement: Operation Object references and
+reusable objects are expanded, and moved schema references are rebased. The results retain both
+input hashes and check operation IDs, required parameters and response representations against the
+compiled document. The generator rejects unbundled Operation Object references.
+See the separately measured [Go results](/golang/reference/compatibility).
+
 For documents with Webhooks or Callbacks, use `--with server` to generate the
 receiving code alongside the client. This code parses and validates incoming
 requests before passing typed values to your handlers.
