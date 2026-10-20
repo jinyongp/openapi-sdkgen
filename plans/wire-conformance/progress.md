@@ -4,10 +4,10 @@ Baseline: `65558c4`. Scope: query send/receive, URLencoded bodies, schema refere
 XML/JSON-seq, format assertions, provider evidence and unsupported operation refs.
 Preserve documented unsupported features and OpenAPI's ambiguous space/pipe data delimiters.
 
-Current follow-up status: the five-provider implementation is complete. Source
-`60de0a5` passed all 11 ordinary CI jobs; its complete Go 1.27.2 Cloudflare
-compiler measurement is pending. The other four providers completed full Go
-compilation and their exact independent HTTP tests at that source. The current
+Current follow-up status: all five provider cases are resolved and verified.
+Source `60de0a5` passed all 11 ordinary CI jobs and all 38 complete Go 1.27.2
+provider modules. All five required independent HTTP contract tests completed,
+including Cloudflare's full 3,595-operation SDK. The current
 measurement policy is serial packages, four CPU threads, a 6 GiB soft Go memory
 limit and a 60-minute compiler deadline. Earlier checkpoints below retain their
 original failures and budgets; they do not describe the current implementation.
@@ -118,10 +118,10 @@ the generated clients against separately specified request/response contracts.
 | Area | Completion criterion | State |
 | --- | --- | --- |
 | Spoonacular | explicitly pinned correction of invalid parameter-body metadata; complete Go generation/compilation and HTTP contract checks | input unit complete: 99 operations compiled; independent HTTP contract test passed |
-| DigitalOcean | explicitly pinned tag-pattern correction without loosening the Unicode regex contract; 739 operations and successful Go compilation | input unit complete: 739 operations compiled; independent HTTP contract test passed; compiler cost remains in the performance unit |
-| Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | multipart unit complete; pinned upload operation compiled and passed independent HTTP checks; full SDK compilation belongs to the performance unit |
-| Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | implementation and targeted review complete; committed-source full compiler checks pending |
-| Delivery | refresh actual Actions evidence, review all five areas together, commit and leave a clean tree | pending |
+| DigitalOcean | explicitly pinned tag-pattern correction without loosening the Unicode regex contract; 739 operations and successful Go compilation | complete: 739 operations compiled; independent HTTP contract test passed |
+| Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | complete: full 663-operation SDK compiled and passed its independent HTTP contract |
+| Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | complete: full 559/3,595-operation SDKs compiled and passed their independent HTTP contracts at `60de0a5` |
+| Delivery | refresh actual Actions evidence, review all five areas together, commit and leave a clean tree | complete: source-bound snapshot imported and validated; combined review complete; snapshot and record included in the delivery commit |
 
 Stripe baseline output at `fa9e685`: 17,448 files / 248.7 MB, including 153.1 MB
 models and 81.7 MB validators. A local compiler run using the recorded 3 GiB soft
@@ -335,10 +335,49 @@ the revised policy. Final Actions compiler/HTTP evidence remains required.
 | Original query/form, reference, XML/JSON-seq and format fixes | reviewed; shared callers and additional boundary fixes retained | all 11 ordinary CI jobs passed at `60de0a5` |
 | Provider input preparation | reviewed; corrections remain explicit, pinned and loss-checked; original hashes retained | complete Spoonacular/DigitalOcean compiler and exact HTTP results at `60de0a5` |
 | Complete binary multipart bodies | reviewed; framing, boundary validation, replay/close ownership and server declarations covered | required/optional and single/union generated modules across three OpenAPI versions; complete Loket compiler and exact HTTP result at `60de0a5` |
-| Large Go package layout | reviewed; dependency cycles, public aliases, private symbols, import collisions/shadowing and direct implementation bindings covered | recursive/dynamic, XML and multipart checks in ordinary CI; complete Stripe and local Cloudflare module/HTTP checks; fixed-toolchain Cloudflare result pending |
-| Compiler lifecycle and evidence | reviewed; process groups, interrupt/deadline distinction, offline toolchain, exact source/policy/input identities and completed HTTP test names covered | Go verifier, Linux descendant cancellation, Python and documentation evidence tests passed; final aggregate pending |
-| Documentation and delivery | reviewed; historical failures are retained and marked as superseded; representative HTTP coverage is distinct from whole-module compilation | documentation validation and 33 evidence tests passed; final snapshot import and commit pending |
+| Large Go package layout | reviewed; dependency cycles, public aliases, private symbols, import collisions/shadowing and direct implementation bindings covered | recursive/dynamic, XML and multipart checks in ordinary CI; all 38 full Go modules passed, including Stripe and Cloudflare with exact HTTP tests |
+| Compiler lifecycle and evidence | reviewed; process groups, interrupt/deadline distinction, offline toolchain, exact source/policy/input identities and completed HTTP test names covered | Go verifier, Linux descendant cancellation, Python and documentation evidence tests passed; final Actions aggregate verified |
+| Documentation and delivery | reviewed; historical failures are retained and marked as superseded; representative HTTP coverage is distinct from whole-module compilation | actual Actions snapshot imported; documentation and evidence checks recorded below |
 
-No additional eligible code defect remains in this review scope. Completion still
-requires the pending fixed-toolchain measurement and the source-bound public
-snapshot; local passes and successful job status cannot substitute for them.
+No additional eligible code defect remains in this review scope. Local passes
+and successful job status were not substituted for compiler evidence.
+
+## Completed provider evidence
+
+[Ordinary CI run 39456857325](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39456857325)
+passed all 11 jobs, and
+[compatibility run 39456862841](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39456862841)
+completed successfully: 46 jobs passed and the alternative revalidation job was
+skipped. Both workflows used clean source
+`60de0a577051b3d751861816198523801c5bc092`.
+
+- Go: 38/38 full modules generated and compiled on Go 1.27.2, with the server
+  addon and no route selections. All five exact independent HTTP tests passed:
+  Spoonacular 99 operations, DigitalOcean 739, Loket 663, Stripe 559 and
+  Cloudflare 3,595. No provider API was called.
+- TypeScript: all 38 documents generated and strictly typechecked under their
+  supported profiles. The default profile passed 34; four documents require the
+  independently verified server addon profile. Existing operation/helper
+  omissions remain visible and are not counted as exercised HTTP calls.
+- Microsoft Graph: full and selected generation-only scopes passed; these
+  measurements are excluded from the 38 Go/TypeScript compiler documents.
+
+The Cloudflare report explicitly records `pass: true`, compilation `pass`,
+`TestCloudflareHTTPContract`, Go 1.27.2 and the 60-minute/four-thread/6-GiB-soft
+serial compiler policy. The large complete SDK still has substantial build cost;
+neither this pass nor the changed deadline establishes a speedup. Earlier
+20/40-minute failures remain historical evidence.
+
+The public snapshot was regenerated with the SSOT exporter from the actual
+Actions aggregate. Its seven uncompressed reports, four archived manifests and
+provenance are checked against the published `public-compatibility-measurements`
+artifact. Follow-up commits after measured source `60de0a5` change only
+documentation, this record and the source-bound measurement snapshot.
+
+Final delivery validation passed: 33 documentation/evidence tests, 22 Python
+compatibility tests, documentation validation and documentation build. All 12
+snapshot files exactly match the published artifact after decompression; the
+exporter also verified each archived manifest against its measured hash. The
+final review checked every changed snapshot path and the provenance/record diff;
+`git diff --check` passed. No pre-existing user changes or unrelated untracked
+files were present. No SDK source changed after the successful CI measurement.

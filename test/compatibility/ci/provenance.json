@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "provider": "github-actions",
   "verification": "passed",
-  "runUrl": "https://github.com/jinyongp/openapi-sdkgen/actions/runs/39391326397",
-  "sourceCommit": "2042d8b2207574824360bc5d30a79ad757bd6281",
+  "runUrl": "https://github.com/jinyongp/openapi-sdkgen/actions/runs/39456862841",
+  "sourceCommit": "60de0a577051b3d751861816198523801c5bc092",
   "runner": "ubuntu-24.04",
   "reports": {
-    "regression": "83de20d07235bf529045e36d22195e8bb17ea27078767269ce8433736ab955de",
-    "holdout": "e6f9826a16d09f4daa0a7977fb733204b8e170ccba59fdc47b2ca6d912820215",
-    "production32": "0e7e47b43d86346fafd82d25ac3748496ffa01df1f17d3b08a846e6ac6eae1dd",
-    "modern": "76c413c73c74031ee6019b09de0f087a61df843e203c9a154d46d7ab4cff9e61",
-    "graph-full": "578ecf7fb73b7009bdf49db7daa3af9fa4a49e2504f8de4770aaebdd0037c2e7",
-    "graph-selected": "8a0a58213ba2ea093360b8e353eb493a5e71f2c495fceab52e02f6738e23bd18",
-    "golang": "3dc9d2f179c547f5e7eb15c579e8cea14608d847cb37509e7873dd548ecbb5b6"
+    "regression": "9293122eb41574cf47f0ff891f846b9df7722e2266122be59abe5d7424a551a4",
+    "holdout": "50b797f24a285133a6affc753d51a2a4f1dd4f3774f94cdd86ee281d8542c421",
+    "production32": "9355a206e4df90875cd40fe9689cd41938747d09361e2833aa9f281b8a58daff",
+    "modern": "bf33d564f1f217c3ee21c8ce0907bd4e3bceefd0b4d9a8ac2cc344086ff36902",
+    "graph-full": "ca25ebffa2c1b3d502a0b02948fcaa8ae413a578367ffa683c631ee96a5866d5",
+    "graph-selected": "f6ed0698f75b1f4871190cf7662de1c17f97c6c0f0dcf470de5f9eb8bf2a143c",
+    "golang": "417c420bc3fccd5fdb6048b9c8fa403dd8ea47f5268f6ffff2cfa83e85e9d0b7"
   }
 }
