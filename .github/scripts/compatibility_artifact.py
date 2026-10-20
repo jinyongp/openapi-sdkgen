@@ -10,7 +10,7 @@ import subprocess
 import time
 from urllib.parse import quote
 
-from compatibility_matrix import CORPORA
+from compatibility_matrix import CORPORA, corpus_matrix
 from compatibility_summary import render_preparation
 
 
@@ -19,17 +19,38 @@ def select_artifact(artifacts, name):
     return max(matching, key=lambda item: item["created_at"], default=None)
 
 
-def find_artifact(name, required=False):
+def lookup_artifact(name):
     repository = os.environ["GITHUB_REPOSITORY"]
     result = subprocess.run(["gh", "api", f"repos/{repository}/actions/artifacts?name={quote(name)}&per_page=100"],
                             capture_output=True, text=True)
-    artifact = select_artifact(json.loads(result.stdout)["artifacts"], name) if result.returncode == 0 else None
+    return select_artifact(json.loads(result.stdout)["artifacts"], name) if result.returncode == 0 else None
+
+
+def find_artifact(name, required=False):
+    artifact = lookup_artifact(name)
     if required and artifact is None:
         raise RuntimeError("verified corpus artifact unavailable")
     with open(os.environ["GITHUB_OUTPUT"], "a") as output:
         output.write(f"artifact-id={artifact['id'] if artifact else ''}\n")
         output.write(f"source-run={artifact['workflow_run']['id'] if artifact else ''}\n")
     print("Pinned corpus artifact found" if artifact else "No reusable artifact; prepare fresh inputs", file=sys.stderr)
+
+
+def download_legacy_inputs(root, target):
+    if not target.resolve().is_relative_to((root / ".tmp").resolve()):
+        raise ValueError("input destination must stay inside workspace .tmp")
+    for row in corpus_matrix(root)["include"]:
+        manifest = json.loads((root / f"test/compatibility/{row['corpus']}.json").read_text())
+        if not any(entry.get("gitBlob") and not entry.get("sha256") for entry in manifest["corpora"]):
+            continue
+        artifact = lookup_artifact(row["artifact"])
+        if artifact is None:
+            raise ValueError(f"immutable inputs unavailable: {row['corpus']}")
+        destination = target / row["corpus"]
+        if destination.exists():
+            raise ValueError("input destination already exists")
+        subprocess.run(["gh", "run", "download", str(artifact["workflow_run"]["id"]),
+                        "--name", row["artifact"], "--dir", str(destination)], check=True)
 
 
 def restore_corpus(corpus, root):
@@ -62,11 +83,13 @@ def prepare_local(corpus, root):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("find", "restore", "local", "summary"))
+    parser.add_argument("mode", choices=("find", "restore", "local", "summary", "download-legacy"))
     parser.add_argument("value")
     parser.add_argument("--required", action="store_true")
     args = parser.parse_args()
-    if args.mode == "find":
+    if args.mode == "download-legacy":
+        download_legacy_inputs(Path.cwd(), Path(args.value))
+    elif args.mode == "find":
         find_artifact(args.value, args.required)
     else:
         if args.value not in CORPORA:

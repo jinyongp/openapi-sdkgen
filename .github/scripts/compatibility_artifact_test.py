@@ -4,11 +4,27 @@ import tempfile
 import unittest
 from unittest import mock
 
-from compatibility_artifact import restore_corpus, select_artifact
+from compatibility_artifact import download_legacy_inputs, restore_corpus, select_artifact
 from compatibility_matrix import corpus_matrix, document_matrix
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_legacy_inputs_are_selected_from_each_manifest(self):
+        original = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifests = root / 'test/compatibility'
+            manifests.mkdir(parents=True)
+            for name in ('holdout', 'modern', 'production32', 'regression'):
+                (manifests / f'{name}.json').write_bytes((original / f'test/compatibility/{name}.json').read_bytes())
+            target = root / '.tmp/inputs'
+            with mock.patch('compatibility_artifact.lookup_artifact', return_value=dict(workflow_run=dict(id=123))) as lookup:
+                with mock.patch('compatibility_artifact.subprocess.run') as run:
+                    download_legacy_inputs(root, target)
+            self.assertEqual(lookup.call_count, 1)
+            self.assertTrue(lookup.call_args.args[0].startswith('pinned-corpus-holdout-'))
+            self.assertEqual(run.call_args.args[0][-1], str(target / 'holdout'))
+
     def test_only_latest_matching_unexpired_artifact_is_used(self):
         older = dict(name="inputs", expired=False, created_at="2026-10-01T01:00:00Z", id=1)
         newest = dict(older, id=2, created_at="2026-10-01T02:00:00Z")
