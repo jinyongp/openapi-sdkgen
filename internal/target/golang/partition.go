@@ -35,6 +35,10 @@ type partitionSymbol struct {
 	users []int
 }
 
+type partitionReference struct {
+	path, name string
+}
+
 type packagePartition struct {
 	root, directory, packageName string
 	files                        []partitionFile
@@ -43,7 +47,7 @@ type packagePartition struct {
 	sharedTypes                  map[string]bool
 }
 
-func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink) error {
+func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink, bindings map[string]partitionReference) error {
 	size := 0
 	for _, file := range files {
 		size += len(file.artifact.Data)
@@ -56,10 +60,14 @@ func emitPartitioned(files []partitionFile, root, directory string, sink generat
 		}
 		return nil
 	}
-	return partitionPackage(files, root, directory, sink, partitionBatch)
+	return partitionPackageBound(files, root, directory, sink, partitionBatch, bindings)
 }
 
 func partitionPackage(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int) error {
+	return partitionPackageBound(files, root, directory, sink, batch, nil)
+}
+
+func partitionPackageBound(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int, bindings map[string]partitionReference) error {
 	p := packagePartition{root: root, directory: directory, packageName: path.Base(directory), files: files,
 		symbols: make(map[string]partitionSymbol), fields: make(map[string]string), methods: make(map[string]string), sharedTypes: make(map[string]bool)}
 	for index, file := range files {
@@ -154,7 +162,80 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 		}
 		p.files[index].artifact.Data = nil
 	}
+	if bindings != nil {
+		for name, symbol := range p.symbols {
+			if ast.IsExported(name) {
+				bindings[name] = partitionReference{path: p.importPath(p.files[symbol.file].group), name: symbol.name}
+			}
+		}
+	}
 	return nil
+}
+
+// Generated callers use implementation bindings directly. Importing the complete
+// validator facade from every model otherwise reloads its duplicate export data,
+// including aliases used in model state. The facade remains available internally.
+func bindPartitionImports(artifact generator.Artifact, source string, bindings map[string]partitionReference) (generator.Artifact, error) {
+	if len(bindings) == 0 || !bytes.Contains(artifact.Data, []byte(strconv.Quote(source))) {
+		return artifact, nil
+	}
+	set := token.NewFileSet()
+	file, err := parser.ParseFile(set, artifact.Path, artifact.Data, parser.ParseComments)
+	if err != nil {
+		return artifact, err
+	}
+	alias := ""
+	for _, imported := range file.Imports {
+		location, _ := strconv.Unquote(imported.Path.Value)
+		if location == source {
+			alias = path.Base(source)
+			if imported.Name != nil {
+				alias = imported.Name.Name
+			}
+		}
+	}
+	if alias == "" {
+		return artifact, nil
+	}
+	used := make(map[string]bool)
+	ast.Inspect(file, func(node ast.Node) bool {
+		if id, ok := node.(*ast.Ident); ok {
+			used[id.Name] = true
+		}
+		return true
+	})
+	imports := make(map[string]string)
+	ast.Inspect(file, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		qualifier, ok := selector.X.(*ast.Ident)
+		if !ok || qualifier.Name != alias || qualifier.Obj != nil {
+			return true
+		}
+		reference, exists := bindings[selector.Sel.Name]
+		if !exists {
+			return true
+		}
+		name := imports[reference.path]
+		if name == "" {
+			name = fmt.Sprintf("sdkgenSchema%d", len(imports))
+			for used[name] {
+				name += "_"
+			}
+			used[name] = true
+			imports[reference.path] = name
+		}
+		qualifier.Name = name
+		selector.Sel.Name = reference.name
+		return true
+	})
+	for _, location := range sortedKeys(imports) {
+		addPartitionImport(file, imports[location], location)
+	}
+	artifact.Data, err = formatPartitionFile(set, file)
+	return artifact, err
 }
 
 func partitionGlobal(file *ast.File, id *ast.Ident) bool {
@@ -374,7 +455,7 @@ func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
 	used := make(map[string]bool)
 	ast.Inspect(file, func(n ast.Node) bool {
 		if selector, ok := n.(*ast.SelectorExpr); ok {
-			if id, ok := selector.X.(*ast.Ident); ok {
+			if id, ok := selector.X.(*ast.Ident); ok && id.Obj == nil {
 				used[id.Name] = true
 			}
 		}

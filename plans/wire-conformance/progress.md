@@ -216,3 +216,23 @@ all 11 jobs. Compatibility run `39414236568` completed all three repaired inputs
 HTTP tests. Stripe and Cloudflare exceeded the old compiler timeout; successful
 workflow status alone is not compiler success. Fresh complete Actions evidence is
 required for the updated layout and policy before delivery.
+
+At `9dc84f6`, Actions CI run `39425215741` passed all 11 jobs. Full Actions
+reports from run `39425219559` confirm Spoonacular 99, Loket 663, DigitalOcean
+739 and Stripe 559 operations compiled and completed their exact HTTP contract
+tests at that clean source. Cloudflare's local complete-module check still
+exceeded 20 minutes at the public model facade; one observed compiler RSS was
+12,445,128 KiB. Its orphaned task-owned compiler was stopped after timeout.
+The subsequent extended diagnostic was superseded and interrupted, not passed.
+
+Review traced another duplicate import path: model state and generated calls
+loaded the complete internal schema facade, which forwards to the same physical
+validators. Generated callers now bind directly to the validator implementation
+packages. Both public model imports and the internal facade remain available;
+no schema, model or operation is omitted. Emission resolves schema bindings first
+while still buffering only one rendered package. Import aliases reserve existing
+identifiers and preserve locally shadowed names. The new shadowing regression
+found and fixed stale import retention in the formatter. Targeted generated
+modules pass for binding/collisions, recursive/dynamic references, XML HTTP and
+multipart composition/binary alternatives. Full Cloudflare compilation under the
+unchanged four-CPU/6-GiB-soft/20-minute policy is in progress for this candidate.

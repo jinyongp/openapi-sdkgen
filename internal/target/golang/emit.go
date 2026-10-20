@@ -29,6 +29,7 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		return fmt.Errorf("invalid Go source plan")
 	}
 	originalSink := sink
+	schemaBindings := make(map[string]partitionReference)
 	packages := make(map[string][]partitionFile)
 	shared := make(map[string]bool)
 	for _, file := range prepared.Files {
@@ -36,6 +37,13 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 	}
 	sink = generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
 		directory := path.Dir(artifact.Path)
+		if directory != "internal/schema" {
+			var err error
+			artifact, err = bindPartitionImports(artifact, prepared.ImportPath+"/internal/schema", schemaBindings)
+			if err != nil {
+				return err
+			}
+		}
 		if directory == "models" || directory == "internal/schema" {
 			packages[directory] = append(packages[directory], partitionFile{artifact: artifact, shared: shared[artifact.Path]})
 			return nil
@@ -44,7 +52,7 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 	})
 	// Retain one package's rendered text at a time. Large source plans already
 	// occupy substantial memory before the compiler is started.
-	for _, phase := range []string{"", "internal/schema", "models"} {
+	for _, phase := range []string{"internal/schema", "models", ""} {
 		for _, file := range prepared.Files {
 			directory := path.Dir(file.Path)
 			if phase == "" {
@@ -95,7 +103,11 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 			}
 		}
 		if phase != "" {
-			if err := emitPartitioned(packages[phase], prepared.ImportPath, phase, originalSink); err != nil {
+			var bindings map[string]partitionReference
+			if phase == "internal/schema" {
+				bindings = schemaBindings
+			}
+			if err := emitPartitioned(packages[phase], prepared.ImportPath, phase, originalSink, bindings); err != nil {
 				return err
 			}
 			delete(packages, phase)

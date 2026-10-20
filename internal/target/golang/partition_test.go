@@ -69,6 +69,36 @@ func TestPartitionedModelAndValidatorContracts(t *testing.T) {
 	testPartitionedModule(t, plan, map[string]string{"partition_test.go": partitionConsumer})
 }
 
+func TestPartitionBindingsPreserveImportAndLocalNames(t *testing.T) {
+	const source = `package models
+import schema "example.test/consumer/api/internal/schema"
+var sdkgenSchema0 = 7
+func Value() int { return schema.Value()+sdkgenSchema0 }
+type Own interface { Value() int }
+func Shadow(schema Own) int { return schema.Value() }
+type local int
+func (value local) Value() int { return int(value) }
+func ShadowResult() int { return Shadow(local(3)) }
+`
+	artifact, err := bindPartitionImports(generator.Artifact{Path: "models/names.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
+		"Value": {path: "example.test/consumer/api/internal/schemaimpl/p1", name: "Value"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(artifact.Data, []byte(`"example.test/consumer/api/internal/schema"`)) {
+		t.Fatal("caller still loads the complete schema facade")
+	}
+	files := []filePlan{
+		{Path: artifact.Path, Source: "partition-test", Prepared: string(artifact.Data)},
+		{Path: "internal/schemaimpl/p1/value.go", Source: "partition-test", Prepared: "package p1\nfunc Value()int{return 2}\n"},
+	}
+	testGeneratedModule(t, generator.NewPlan("golang", sourcePlan{Files: files}), map[string]string{"binding_test.go": `package consumer_test
+import("testing";"example.test/consumer/api/models")
+func TestBindings(t *testing.T){if models.Value()!=9||models.ShadowResult()!=3{t.Fatal("import, collision or local binding changed")}}
+`})
+}
+
 func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[string]string) {
 	t.Helper()
 	value, err := plan.Value("golang")
@@ -97,10 +127,25 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 	if err != nil {
 		t.Fatal(err)
 	}
+	bindings := make(map[string]partitionReference)
 	for _, directory := range []string{"internal/schema", "models"} {
-		if err := partitionPackage(packages[directory], prepared.ImportPath, directory, sink, 512); err != nil {
+		var exports map[string]partitionReference
+		if directory == "internal/schema" {
+			exports = bindings
+		}
+		if err := partitionPackageBound(packages[directory], prepared.ImportPath, directory, sink, 512, exports); err != nil {
 			t.Fatal(err)
 		}
+	}
+	for index, file := range files {
+		if strings.HasPrefix(file.Path, "internal/schema/") || strings.HasPrefix(file.Path, "internal/schemaimpl/") {
+			continue
+		}
+		artifact, err := bindPartitionImports(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}, prepared.ImportPath+"/internal/schema", bindings)
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[index].Prepared = string(artifact.Data)
 	}
 	testGeneratedModule(t, generator.NewPlan("golang", sourcePlan{Files: files}), consumers)
 }
