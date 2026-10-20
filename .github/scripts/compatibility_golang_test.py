@@ -8,6 +8,38 @@ from compatibility_golang import combine, input_pin
 
 
 class GoEvidenceTests(unittest.TestCase):
+    def test_provider_http_contracts_require_the_actual_named_test(self):
+        for provider, name in [('loket.nl', 'TestLoketHTTPContract'), ('stripe', 'TestStripeHTTPContract'),
+                               ('cloudflare', 'TestCloudflareHTTPContract')]:
+            with self.subTest(provider=provider), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                manifests = root / 'test/compatibility'
+                manifests.mkdir(parents=True)
+                entry = dict(id=provider, input='api.json', sha256='a' * 64)
+                (manifests / 'test.json').write_text(json.dumps(dict(corpora=[entry])))
+                report = dict(sourceCommit='b' * 40, sourceDirty=False, verificationRequested=True,
+                              id=provider, input='api.json', inputSha256='a' * 64,
+                              goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit='3GiB'),
+                              mode='golang-generation', addons=['server'], **{'pass': True},
+                              golang=dict(blocked=False, files=1, bytes=10, artifactSha256='e' * 64, compilation=dict(status='pass')))
+                checkpoint = copy.deepcopy(report)
+                checkpoint.update(generationCheckpoint=True, **{'pass': False})
+                checkpoint['golang']['compilation'] = dict(status='not-run')
+                directory = root / f'golang-shard-test-{provider}'
+                directory.mkdir()
+                checkpoint_directory = root / f'golang-generation-shard-test-{provider}'
+                checkpoint_directory.mkdir()
+                (checkpoint_directory / 'golang-generation.json').write_text(json.dumps(checkpoint))
+                with patch('compatibility_golang.CORPORA', ['test']):
+                    for completed in [[], ['TestUnrelatedHTTPContract'], [name]]:
+                        report['golang']['compilation']['contractTests'] = completed
+                        (directory / 'golang.json').write_text(json.dumps(report))
+                        if completed == [name]:
+                            self.assertTrue(combine(root, root, 'b' * 40)['documents'][0]['pass'])
+                        else:
+                            with self.assertRaisesRegex(ValueError, 'HTTP contract'):
+                                combine(root, root, 'b' * 40)
+
     def test_git_blob_pins_bind_the_reported_sha256_to_original_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

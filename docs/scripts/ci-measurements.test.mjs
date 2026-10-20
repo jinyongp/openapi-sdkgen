@@ -160,12 +160,18 @@ test("Go publication keeps failed outcomes and rejects missing, stale or altered
     .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => ({ corpus, id: entry.id, input: entry.input, inputSha256: entry.sha256 ?? "c".repeat(64),
       ...(!entry.sha256 ? { inputPin: { kind: "git-blob", value: entry.gitBlob, sha256: "c".repeat(64) } } : {}),
       sourceCommit, sourceDirty: false, verificationRequested: true, mode: "golang-generation", addons: ["server"], pass: true,
-      golang: { blocked: false, compilation: { status: "pass", ...({ "digitalocean-tags-v1": { contractTests: ["TestDigitalOceanHTTPContract"] }, "spoonacular-parameter-bodies-v1": { contractTests: ["TestSpoonacularHTTPContract"] } }[entry.preparation?.kind] ?? {}) } },
+      golang: { blocked: false, compilation: { status: "pass", ...({ "loket.nl": { contractTests: ["TestLoketHTTPContract"] }, stripe: { contractTests: ["TestStripeHTTPContract"] }, cloudflare: { contractTests: ["TestCloudflareHTTPContract"] } }[entry.id] ?? { "digitalocean-tags-v1": { contractTests: ["TestDigitalOceanHTTPContract"] }, "spoonacular-parameter-bodies-v1": { contractTests: ["TestSpoonacularHTTPContract"] } }[entry.preparation?.kind] ?? {}) } },
       ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256 ?? "c".repeat(64), contractsVerified: true } } : {}),
     })));
   const ci = { provenance: { sourceCommit, runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: { golang: { report: { documents } } } };
   documents[0].golang.inbound = [{ identity: "#/webhooks/notice/post" }];
   const published = readGoCIMeasurements(directory, ci);
+  for (const id of ["loket.nl", "stripe", "cloudflare"]) {
+    const missingContract = structuredClone(ci);
+    const document = missingContract.reports.golang.report.documents.find(item => item.id === id);
+    delete document.golang.compilation.contractTests;
+    assert.throws(() => readGoCIMeasurements(directory, missingContract), /HTTP contract/);
+  }
   assert.equal(published.documents.length, documents.length);
   assert.equal(published.documents[0].routes, 0);
   assert.equal(published.documents[0].handlers, 1);

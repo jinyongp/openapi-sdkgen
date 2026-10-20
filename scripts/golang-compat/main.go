@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -283,6 +284,23 @@ func run() error {
 	options.TypeScriptTypeCheck = nil
 	options.Golang = &generator.GoOptions{ImportPath: "example.test/corpus/api"}
 	var contracts []string
+	if *verify {
+		contractRoute := ""
+		switch selected.ID {
+		case "loket.nl":
+			contracts = []string{"loket_http_test.go.txt"}
+			contractRoute = "PATCH /providers/employers/conceptemployees/import/{payrollAdministrationId}"
+		case "stripe":
+			contracts = []string{"stripe_http_test.go.txt"}
+			contractRoute = "GET /v1/balance"
+		case "cloudflare":
+			contracts = []string{"cloudflare_http_test.go.txt"}
+			contractRoute = "GET /user/tokens/verify"
+		}
+		if len(result.Selection) != 0 && !slices.Contains(result.Selection, contractRoute) {
+			contracts = nil
+		}
+	}
 	if *verify && len(result.Selection) == 0 && selected.Preparation != nil {
 		switch selected.Preparation.Kind {
 		case compatinput.DigitalOceanTagsV1:
@@ -427,10 +445,6 @@ func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, o
 		return result, err
 	}
 	phase(target.Name() + "-emit-finished")
-	if verify {
-		result.Compilation = verifyModule(target.Name(), work, typescriptRoot, contracts...)
-	}
-
 	names := make([]string, 0, len(hashes))
 	for name := range hashes {
 		names = append(names, name)
@@ -454,6 +468,13 @@ func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, o
 	}
 	sort.Strings(result.Routes)
 	sort.Slice(result.Inbound, func(i, j int) bool { return result.Inbound[i].Identity < result.Inbound[j].Identity })
+	if verify && err == nil {
+		// Inspect all plan-owned metadata before releasing its source strings.
+		// The separate compiler processes need only the emitted artifacts.
+		prepared.Plan = generator.Plan{}
+		runtime.GC()
+		result.Compilation = verifyModule(target.Name(), work, typescriptRoot, contracts...)
+	}
 	return result, err
 }
 func compare(result *report) error {

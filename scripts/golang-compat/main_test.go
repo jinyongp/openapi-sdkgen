@@ -8,9 +8,25 @@ import (
 	"path/filepath"
 	"testing"
 
+	compiler "openapi-sdkgen/internal/compiler"
 	"openapi-sdkgen/internal/diagnostic"
 	"openapi-sdkgen/internal/generator"
+	"openapi-sdkgen/internal/target/golang"
 )
+
+func TestVerifiedEmissionRetainsRouteEvidence(t *testing.T) {
+	compiled, err := compiler.CompileResult([]byte(`{"openapi":"3.1.0","info":{"title":"Evidence","version":"1"},"paths":{"/items":{"get":{"operationId":"list","responses":{"204":{"description":"Done"}}}}}}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := prepareAndEmitVerified(golang.Generator{}, compiled, generator.Options{Golang: &generator.GoOptions{ImportPath: "example.test/corpus/api"}}, true, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Blocked || result.Compilation == nil || result.Compilation.Status != "pass" || len(result.Routes) != 1 || result.Routes[0] != "GET /items" || result.ArtifactSHA256 == "" {
+		t.Fatal("verified module lost generation evidence", result)
+	}
+}
 
 func TestCompareRejectsLostHiddenAndUnexplainedOperations(t *testing.T) {
 	for _, name := range []string{"missing", "hidden", "unsafe-extra", "native-extra", "unknown-extra", "duplicate-route", "duplicate-inbound", "extra-inbound", "unrelated-fetch-warning"} {

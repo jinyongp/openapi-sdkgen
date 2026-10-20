@@ -1,0 +1,75 @@
+package corpus_test
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+
+	sdk "example.test/corpus/api"
+	"example.test/corpus/api/types"
+)
+
+func TestLoketHTTPContract(t *testing.T) {
+	var calls atomic.Int32
+	const employee = "904d6856-6034-4624-bcbc-886188c115c5"
+	payload := []byte("--fixture-boundary\r\nContent-Disposition: form-data; name=\"document\"; filename=\"employees.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n\x00\xff\r\n--fixture-boundary--\r\n")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		if r.Method != "PATCH" || r.URL.Path != "/providers/employers/conceptemployees/import/payroll-1" || r.URL.Query().Get("conceptEmployeeId") != employee || r.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected request", r.Method, r.URL, r.Header)
+		}
+		raw, err := io.ReadAll(r.Body)
+		if err != nil || !bytes.Equal(raw, payload) {
+			t.Error("framed body changed", raw, err)
+		}
+		media, parameters, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil || media != "multipart/form-data" || parameters["boundary"] != "fixture-boundary" {
+			t.Error("multipart content type", media, parameters, err)
+		}
+		reader := multipart.NewReader(bytes.NewReader(raw), parameters["boundary"])
+		part, err := reader.NextPart()
+		if err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		data, err := io.ReadAll(part)
+		if err != nil || part.FormName() != "document" || part.FileName() != "employees.bin" || !bytes.Equal(data, []byte{0, 255}) {
+			t.Error("file part", part.Header, data, err)
+		}
+		if _, err := reader.NextPart(); err != io.EOF {
+			t.Error("unexpected extra part", err)
+		}
+		w.Header().Set("Content-Type", "application/json;version=2018-01-01")
+		io.WriteString(w, "{}")
+	}))
+	defer server.Close()
+	client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, contentType := range []string{"multipart/form-data; boundary=fixture-boundary", "multipart/form-data", "multipart/mixed; boundary=fixture-boundary"} {
+		input := sdk.PatchImportConceptEmployeesByPayrollAdministrationIDInput{
+			Path:  sdk.PatchImportConceptEmployeesByPayrollAdministrationIDPath{PayrollAdministrationID: "payroll-1"},
+			Query: sdk.PatchImportConceptEmployeesByPayrollAdministrationIDQuery{ConceptEmployeeID: employee},
+			Body:  types.BinaryFromBytesWithMetadata(payload, types.BinaryMetadata{ContentType: contentType}),
+		}
+		_, err := client.Operations.PatchImportConceptEmployeesByPayrollAdministrationID(input).WithOptions(types.RequestOptions{Authorization: types.Some("Bearer fixture-token")}).Do(context.Background())
+		if contentType == "multipart/form-data; boundary=fixture-boundary" {
+			if err != nil {
+				t.Fatal(err)
+			}
+		} else if err == nil {
+			t.Fatal("invalid multipart metadata accepted", contentType)
+		}
+	}
+	if calls.Load() != 1 {
+		t.Fatal("invalid input reached transport", calls.Load())
+	}
+}

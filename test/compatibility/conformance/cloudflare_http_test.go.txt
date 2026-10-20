@@ -1,0 +1,61 @@
+package corpus_test
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+
+	sdk "example.test/corpus/api"
+	"example.test/corpus/api/types"
+)
+
+func TestCloudflareHTTPContract(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		if r.Method != "GET" || r.URL.Path != "/user/tokens/verify" || r.URL.RawQuery != "" || r.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected request", r.Method, r.URL, r.Header)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		switch r.Header.Get("X-Case") {
+		case "denied":
+			w.WriteHeader(403)
+			io.WriteString(w, `{"success":false,"errors":[{"code":7003,"message":"blocked"}],"messages":[],"result":null}`)
+		case "invalid":
+			io.WriteString(w, `{"success":true,"errors":[],"messages":[],"result":{"id":"fixture-token-id","status":"unknown"}}`)
+		default:
+			io.WriteString(w, `{"success":true,"errors":[],"messages":[],"result":{"id":"fixture-token-id","status":"active"}}`)
+		}
+	}))
+	defer server.Close()
+	client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: server.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, scenario := range []string{"success", "denied", "invalid"} {
+		options := types.RequestOptions{Authorization: types.Some("Bearer fixture-token"), Headers: http.Header{"X-Case": {scenario}}}
+		value, err := client.Operations.UserAPITokensVerifyToken().WithOptions(options).Do(context.Background())
+		if scenario == "success" {
+			if err != nil {
+				t.Fatal(err)
+			}
+			logical, err := value.JSONValue()
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, _ := logical.Get("result")
+			status, _ := result.Get("status")
+			if text, _ := status.String(); text != "active" {
+				t.Fatal("token response changed", logical)
+			}
+		} else if err == nil {
+			t.Fatal("HTTP or response validation failure was lost", scenario)
+		}
+	}
+	if calls.Load() != 3 {
+		t.Fatal("missing HTTP request", calls.Load())
+	}
+}

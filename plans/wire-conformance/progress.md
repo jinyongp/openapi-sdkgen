@@ -150,3 +150,15 @@ pinned Loket upload operation (one selected route, not a full-corpus pass) passe
 `TestLoketHTTPContract` against an independently parsed multipart HTTP request.
 Full SDK compiler evidence is still pending; interrupted diagnostics are not
 counted as successful measurements.
+
+HTTP evidence unit review: the existing DigitalOcean/Spoonacular full-module
+probes are joined by pinned Loket upload, Stripe balance and Cloudflare token
+verification probes. All three new selected-route probes compiled and passed
+against independent local HTTP servers; these selected results do not increase
+full-corpus coverage. Stripe/Cloudflare probes also reject HTTP errors and invalid
+response enums. Successful published full-provider results require the exact
+completed test name, with missing/wrong names rejected by Python and documentation
+readers. The compiler verifier records route/hash evidence before releasing its
+plan; a real emitted-module regression check covers that ordering. The review
+checks passed: targeted Go verifier tests, 22 Python evidence tests and 33
+documentation evidence tests. Complete SDK compiler checks remain in progress.

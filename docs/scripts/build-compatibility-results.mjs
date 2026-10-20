@@ -74,7 +74,7 @@ export function readGoCIMeasurements(directory, ci) {
         prep.sourceSha256 !== document.inputSha256 || prep.operations !== entry.preparation.operations || passed && prep.contractsVerified !== true) : prep !== undefined) {
       throw new Error("Go measurement preparation mismatch");
     }
-    const requiredTest = { "digitalocean-tags-v1": "TestDigitalOceanHTTPContract", "spoonacular-parameter-bodies-v1": "TestSpoonacularHTTPContract" }[entry.preparation?.kind];
+    const requiredTest = { "loket.nl": "TestLoketHTTPContract", stripe: "TestStripeHTTPContract", cloudflare: "TestCloudflareHTTPContract" }[entry.id] ?? { "digitalocean-tags-v1": "TestDigitalOceanHTTPContract", "spoonacular-parameter-bodies-v1": "TestSpoonacularHTTPContract" }[entry.preparation?.kind];
     if (passed && requiredTest && JSON.stringify(profile.compilation.contractTests) !== JSON.stringify([requiredTest])) {
       throw new Error("Go measurement provider HTTP contract proof is missing");
     }

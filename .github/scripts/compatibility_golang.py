@@ -126,6 +126,8 @@ def combine(root, shards, commit, jobs=None, run_id=None, corpus_root=None, repo
                 raise ValueError("unexpected Go input preparation")
             required_test = {"digitalocean-tags-v1": "TestDigitalOceanHTTPContract",
                              "spoonacular-parameter-bodies-v1": "TestSpoonacularHTTPContract"}.get((expected or {}).get("kind"))
+            required_test = {"loket.nl": "TestLoketHTTPContract", "stripe": "TestStripeHTTPContract",
+                             "cloudflare": "TestCloudflareHTTPContract"}.get(entry["id"], required_test)
             if success and required_test and go["compilation"].get("contractTests") != [required_test]:
                 raise ValueError("Go provider HTTP contract proof is missing")
             documents.append(dict(report, corpus=corpus, inputPin=pin))
