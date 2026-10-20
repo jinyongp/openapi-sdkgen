@@ -262,7 +262,8 @@ func TestFetchPinnedDocumentURLsAndAuxiliaryFiles(t *testing.T) {
 }
 
 func TestCommittedHoldoutResultMatchesManifestIdentity(t *testing.T) {
-	manifestPath := filepath.Join("..", "..", "test", "compatibility", "holdout.json")
+	// Historical measurements remain bound to their archived input manifest.
+	manifestPath := filepath.Join("..", "..", "test", "compatibility", "holdout-manifest.json")
 	resultPath := filepath.Join("..", "..", "test", "compatibility", "holdout-results.json")
 
 	manifestData, err := os.ReadFile(manifestPath)

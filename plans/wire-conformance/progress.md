@@ -181,3 +181,9 @@ ownership and XML HTTP encoding/decoding. Full local runs interrupted with
 SIGTERM have no passing evidence; no speedup ratio is claimed. The final gate is
 fresh Actions CI and all 38 full Go provider compilations at the committed source,
 including completed independent HTTP probes for the five repaired providers.
+
+The combined local Go run also exposed a historical holdout identity test still
+reading the active manifest. It now checks the archived manifest measured by
+that report, retaining the exact SHA/document identity checks. This regression
+test and the final XML/dynamic/partition checks pass. Fresh complete CI is still
+required for the final committed state.
