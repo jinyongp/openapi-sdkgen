@@ -4,10 +4,28 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from compatibility_golang import combine
+from compatibility_golang import combine, input_pin
 
 
 class GoEvidenceTests(unittest.TestCase):
+    def test_git_blob_pins_bind_the_reported_sha256_to_original_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'test').mkdir()
+            path = root / 'test/api.json'
+            path.write_bytes(b'hello\n')
+            entry = dict(input='api.json', gitBlob='ce013625030ba8dba906f756967f9e9ca394464a')
+            pin = input_pin(entry, 'test', root)
+            self.assertEqual(pin['kind'], 'git-blob')
+            self.assertEqual(pin['sha256'], '5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03')
+            path.write_bytes(b'changed\n')
+            with self.assertRaises(ValueError):
+                input_pin(entry, 'test', root)
+            with self.assertRaises(ValueError):
+                input_pin(entry, 'test', None)
+            with self.assertRaises(ValueError):
+                input_pin(dict(entry, input='../outside'), 'test', root)
+
     def test_real_compile_outcomes_and_proof_tampering(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

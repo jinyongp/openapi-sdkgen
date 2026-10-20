@@ -26,6 +26,11 @@ function validateProvenance(provenance) {
       !/^[a-f0-9]{40}$/.test(provenance.sourceCommit)) {
     throw new Error("GitHub Actions measurement provenance is invalid");
   }
+  if ((provenance.validationRunUrl !== undefined || provenance.validationSourceCommit !== undefined) &&
+      (!/^https:\/\/github\.com\/jinyongp\/openapi-sdkgen\/actions\/runs\/\d+$/.test(provenance.validationRunUrl ?? "") ||
+       !/^[a-f0-9]{40}$/.test(provenance.validationSourceCommit ?? ""))) {
+    throw new Error("GitHub Actions validation provenance is invalid");
+  }
 }
 
 function validSource(report, sourceCommit) {
@@ -51,10 +56,11 @@ export function readCIMeasurements(directory) {
   return { provenance, reports };
 }
 
-export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runner }) {
+export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runner, validationRunUrl, validationSourceCommit }) {
   const provenance = {
     schemaVersion: 1, provider: "github-actions", verification: "passed",
     runUrl, sourceCommit, runner, reports: {},
+    ...(validationRunUrl !== undefined || validationSourceCommit !== undefined ? { validationRunUrl, validationSourceCommit } : {}),
   };
   validateProvenance(provenance);
   const reports = [...corpusNames, ...graphNames, ...(existsSync(resolve(input, "golang-results.json")) ? ["golang"] : [])].map(id => {
@@ -74,8 +80,8 @@ export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runn
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [command, ...args] = process.argv.slice(2);
-  if (command !== "export" || args.length !== 10) throw new Error("export requires input, output, run URL, commit, and runner");
-  const options = Object.fromEntries(Array.from({ length: 5 }, (_, index) =>
+  if (command !== "export" || ![10, 14].includes(args.length)) throw new Error("export requires input, output, run URL, commit, and runner; validation run and commit are optional");
+  const options = Object.fromEntries(Array.from({ length: args.length / 2 }, (_, index) =>
     [args[index * 2].replace(/^--/, "").replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), args[index * 2 + 1]]));
   exportCIMeasurements(options);
   console.log("ok GitHub Actions measurements exported without machine identifiers");

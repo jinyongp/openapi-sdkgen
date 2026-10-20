@@ -45,7 +45,10 @@ export function readGoCIMeasurements(directory, ci) {
     const profile = document.golang;
     const compiled = profile?.compilation?.status;
     const passed = profile?.blocked === false && compiled === "pass";
-    if (!entry || seen.has(key) || document.inputSha256 !== entry.sha256 || document.input !== entry.input ||
+    const pin = document.inputPin;
+    const inputMatches = entry && (entry.sha256 ? document.inputSha256 === entry.sha256
+      : entry.gitBlob && pin?.kind === "git-blob" && pin.value === entry.gitBlob && pin.sha256 === document.inputSha256 && /^[a-f0-9]{64}$/.test(pin.sha256));
+    if (!entry || seen.has(key) || !inputMatches || document.input !== entry.input ||
         document.sourceCommit !== ci.provenance.sourceCommit || document.sourceDirty !== false ||
         document.verificationRequested !== true || document.mode !== "golang-generation" || document.selection?.length ||
         JSON.stringify(document.addons) !== '["server"]' || document.pass !== passed ||
@@ -62,7 +65,7 @@ export function readGoCIMeasurements(directory, ci) {
     }
     const prep = document.inputPreparation;
     if (entry.preparation ? (!prep || prep.kind !== entry.preparation.kind || prep.sha256 !== entry.preparation.sha256 ||
-        prep.sourceSha256 !== entry.sha256 || prep.operations !== entry.preparation.operations || passed && prep.contractsVerified !== true) : prep !== undefined) {
+        prep.sourceSha256 !== document.inputSha256 || prep.operations !== entry.preparation.operations || passed && prep.contractsVerified !== true) : prep !== undefined) {
       throw new Error("Go measurement preparation mismatch");
     }
     seen.add(key);

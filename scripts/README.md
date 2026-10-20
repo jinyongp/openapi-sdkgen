@@ -291,3 +291,10 @@ surfaces but can never pass compiler verification. The final report must match t
 checkpoint. If the compiler report is lost, the combiner checks the exact source,
 run, job identity and started compiler step through Actions before recording
 `unavailable`. It never converts a checkpoint into a compiler pass.
+
+The optional `measurement_run` input of `compatibility.yml` calls
+`compatibility-report.yml` to revalidate an existing completed measurement run after
+reporting-only corrections. It rejects changes to SDK and measurement producer
+sources, checks the original input pins (including legacy Git blob identities),
+and records separate measurement and validation run/commit provenance. It does not
+relabel earlier SDK measurements as results for a newer SDK source.

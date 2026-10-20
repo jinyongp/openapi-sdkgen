@@ -49,6 +49,17 @@ test("dirty or mismatched source measurements cannot become CI evidence", t => {
   }
 });
 
+test("later validation retains the measured source and records its own Actions provenance", t => {
+  const options = { ...fixture(t), validationRunUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/456", validationSourceCommit: "b".repeat(40) };
+  exportCIMeasurements(options);
+  const { provenance } = readCIMeasurements(options.output);
+  assert.equal(provenance.sourceCommit, options.sourceCommit);
+  assert.equal(provenance.validationSourceCommit, options.validationSourceCommit);
+  assert.equal(provenance.validationRunUrl, options.validationRunUrl);
+  assert.throws(() => exportCIMeasurements({ ...options, validationSourceCommit: undefined }), /validation provenance/);
+  assert.throws(() => exportCIMeasurements({ ...options, validationRunUrl: "https://example.test/456" }), /validation provenance/);
+});
+
 test("CI snapshots reject altered reports and invalid run provenance", t => {
   const options = fixture(t);
   exportCIMeasurements(options);
@@ -126,10 +137,11 @@ test("Go publication keeps failed outcomes and rejects missing, stale or altered
   const directory = resolve(import.meta.dirname, "../../test/compatibility");
   const sourceCommit = "a".repeat(40);
   const documents = corpusNames.flatMap(corpus => JSON.parse(readFileSync(resolve(directory, `${corpus}.json`))).corpora
-    .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => ({ corpus, id: entry.id, input: entry.input, inputSha256: entry.sha256,
+    .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => ({ corpus, id: entry.id, input: entry.input, inputSha256: entry.sha256 ?? "c".repeat(64),
+      ...(!entry.sha256 ? { inputPin: { kind: "git-blob", value: entry.gitBlob, sha256: "c".repeat(64) } } : {}),
       sourceCommit, sourceDirty: false, verificationRequested: true, mode: "golang-generation", addons: ["server"], pass: true,
       golang: { blocked: false, compilation: { status: "pass" } },
-      ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256, contractsVerified: true } } : {}),
+      ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256 ?? "c".repeat(64), contractsVerified: true } } : {}),
     })));
   const ci = { provenance: { sourceCommit, runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: { golang: { report: { documents } } } };
   documents[0].golang.inbound = [{ identity: "#/webhooks/notice/post" }];

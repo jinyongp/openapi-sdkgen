@@ -1,5 +1,6 @@
 """Validate independent Go generation/compilation shards from this Actions source."""
 import argparse
+import hashlib
 from datetime import datetime, timezone
 import json
 import os
@@ -10,8 +11,8 @@ from compatibility_matrix import CORPORA, typecheck_candidate
 from compatibility_summary import table
 
 
-def actions_jobs():
-    result = subprocess.run(["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}/jobs?per_page=100"],
+def actions_jobs(repository, run_id):
+    result = subprocess.run(["gh", "api", f"repos/{repository}/actions/runs/{run_id}/jobs?per_page=100"],
                             capture_output=True, text=True, check=True)
     response = json.loads(result.stdout)
     if response["total_count"] > 100:
@@ -41,13 +42,30 @@ def recover_compiler_evidence(checkpoint, jobs, corpus, entry, commit, run_id):
     return checkpoint
 
 
-def combine(root, shards, commit, jobs=None, run_id=None):
+def input_pin(entry, corpus, corpus_root):
+    if entry.get("sha256"):
+        return dict(kind="sha256", value=entry["sha256"], sha256=entry["sha256"])
+    if not entry.get("gitBlob") or corpus_root is None:
+        raise ValueError("Git blob input verification requires the immutable corpus")
+    base = (corpus_root / corpus).resolve()
+    source = (base / entry["input"]).resolve()
+    if not source.is_relative_to(base):
+        raise ValueError("input pin path escapes the corpus")
+    data = source.read_bytes()
+    blob = hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+    if blob != entry["gitBlob"]:
+        raise ValueError("input Git blob pin mismatch")
+    return dict(kind="git-blob", value=blob, sha256=hashlib.sha256(data).hexdigest())
+
+
+def combine(root, shards, commit, jobs=None, run_id=None, corpus_root=None, repository=None):
     documents = []
     for corpus in CORPORA:
         manifest = json.loads((root / f"test/compatibility/{corpus}.json").read_text())
         for entry in manifest["corpora"]:
             if not typecheck_candidate(entry["id"]):
                 continue
+            pin = input_pin(entry, corpus, corpus_root)
             path = shards / f"golang-shard-{corpus}-{entry['id']}" / "golang.json"
             checkpoint_path = shards / f"golang-generation-shard-{corpus}-{entry['id']}" / "golang-generation.json"
             checkpoint = json.loads(checkpoint_path.read_text())
@@ -69,14 +87,16 @@ def combine(root, shards, commit, jobs=None, run_id=None):
                     report = checkpoint
                 else:
                     if jobs is None:
-                        jobs = actions_jobs()
+                        if run_id is None:
+                            run_id = int(os.environ["GITHUB_RUN_ID"])
+                        jobs = actions_jobs(repository or os.environ["GITHUB_REPOSITORY"], run_id)
                     if run_id is None:
                         run_id = int(os.environ["GITHUB_RUN_ID"])
                     report = recover_compiler_evidence(checkpoint, jobs, corpus, entry, commit, run_id)
             go = report.get("golang", {})
             if (report.get("sourceCommit") != commit or report.get("sourceDirty") is not False
                 or report.get("id") != entry["id"] or report.get("input") != entry["input"]
-                or report.get("inputSha256") != entry["sha256"] or report.get("mode") != "golang-generation"
+                or report.get("inputSha256") != pin["sha256"] or report.get("mode") != "golang-generation"
                 or report.get("addons") != ["server"] or report.get("verificationRequested") is not True
                 or report.get("selection")
                 or report.get("goCompilationPolicy") != dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit="3GiB")):
@@ -99,12 +119,12 @@ def combine(root, shards, commit, jobs=None, run_id=None):
             evidence = report.get("inputPreparation")
             if expected:
                 if (not evidence or evidence.get("kind") != expected["kind"] or evidence.get("sha256") != expected["sha256"]
-                    or evidence.get("sourceSha256") != entry["sha256"] or evidence.get("operations") != expected["operations"]
+                    or evidence.get("sourceSha256") != pin["sha256"] or evidence.get("operations") != expected["operations"]
                     or success and evidence.get("contractsVerified") is not True):
                     raise ValueError("Go prepared input proof mismatch")
             elif evidence is not None:
                 raise ValueError("unexpected Go input preparation")
-            documents.append(dict(report, corpus=corpus))
+            documents.append(dict(report, corpus=corpus, inputPin=pin))
     return {"schemaVersion": 1, "measurement": {"sourceCommit": commit, "sourceDirty": False,
             "measuredAt": datetime.now(timezone.utc).isoformat()}, "documents": documents}
 
@@ -113,8 +133,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--shards", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--corpus-root", type=Path)
     args = parser.parse_args()
-    report = combine(Path.cwd(), args.shards, os.environ["GITHUB_SHA"])
+    report = combine(Path.cwd(), args.shards, os.environ["GITHUB_SHA"], corpus_root=args.corpus_root)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as output:

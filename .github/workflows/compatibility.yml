@@ -3,6 +3,12 @@ run-name: Corpus compatibility ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
+    inputs:
+      measurement_run:
+        description: Optional completed measurement run to revalidate without measuring SDKs again
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -13,7 +19,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  revalidate:
+    if: inputs.measurement_run != ''
+    uses: ./.github/workflows/compatibility-report.yml
+    with:
+      measurement_run: ${{ inputs.measurement_run }}
   plan:
+    if: inputs.measurement_run == ''
     name: Select all compatibility jobs
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -269,6 +281,19 @@ jobs:
             fi
           done
           exit "$compatibility_failed"
+      - name: Locate immutable legacy inputs for pin validation
+        id: go-inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          legacy_artifact="$(python3 -B -c 'import sys;sys.path.insert(0,".github/scripts");from compatibility_matrix import corpus_matrix;from pathlib import Path;print(next(row["artifact"] for row in corpus_matrix(Path.cwd())["include"] if row["corpus"]=="regression"))')"
+          python3 -B .github/scripts/compatibility_artifact.py find "$legacy_artifact" --required
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ steps.go-inputs.outputs.artifact-id }}
+          run-id: ${{ steps.go-inputs.outputs.source-run }}
+          github-token: ${{ github.token }}
+          path: .tmp/compatibility-corpora/regression
       - name: Verify and combine independent Go results
         if: always()
         env:
@@ -276,6 +301,7 @@ jobs:
         run: |
           gh run download "$GITHUB_RUN_ID" --pattern 'golang-*' --dir .tmp/compatibility-shards
           python3 -B .github/scripts/compatibility_golang.py --shards .tmp/compatibility-shards \
+            --corpus-root .tmp/compatibility-corpora \
             --output .tmp/compatibility-ci/golang-results.json
       - name: Download generation-only measurements
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
