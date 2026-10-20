@@ -2,7 +2,10 @@ package golang
 
 import (
 	"bytes"
+	"go/parser"
+	"go/token"
 	"path"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -128,10 +131,13 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 		t.Fatal(err)
 	}
 	bindings := make(map[string]partitionReference)
+	modelBindings := make(map[string]partitionReference)
 	for _, directory := range []string{"internal/schema", "models"} {
 		var exports map[string]partitionReference
 		if directory == "internal/schema" {
 			exports = bindings
+		} else {
+			exports = modelBindings
 		}
 		if err := partitionPackageBound(packages[directory], prepared.ImportPath, directory, sink, 512, exports); err != nil {
 			t.Fatal(err)
@@ -147,6 +153,21 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 		artifact, err := bindPartitionImports(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}, prepared.ImportPath+"/internal/schema", bindings)
 		if err != nil {
 			t.Fatal(err)
+		}
+		artifact, err = bindPartitionImports(artifact, prepared.ImportPath+"/models", modelBindings)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasSuffix(file.Path, ".go") {
+			parsed, err := parser.ParseFile(token.NewFileSet(), file.Path, artifact.Data, parser.ImportsOnly)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, imported := range parsed.Imports {
+				if imported.Path.Value == strconv.Quote(prepared.ImportPath+"/models") {
+					t.Fatal("generated caller still loads the public model facade", file.Path)
+				}
+			}
 		}
 		files[index].Prepared = string(artifact.Data)
 	}

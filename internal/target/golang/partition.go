@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"openapi-sdkgen/internal/generator"
 )
@@ -173,12 +174,11 @@ func partitionPackageBound(files []partitionFile, root, directory string, sink g
 	return nil
 }
 
-// Generated callers use implementation bindings directly. Importing the complete
-// validator facade from every model otherwise reloads its duplicate export data,
-// including aliases used in model state. Internal schema facades are unnecessary
-// once callers have direct bindings; public model facades retain their API.
+// Generated callers use implementation bindings directly instead of reloading
+// duplicate facade export data. Internal schema facades are unnecessary once
+// callers have direct bindings; public model facades retain their API.
 func bindPartitionImports(artifact generator.Artifact, source string, bindings map[string]partitionReference) (generator.Artifact, error) {
-	if len(bindings) == 0 || !bytes.Contains(artifact.Data, []byte(strconv.Quote(source))) {
+	if !strings.HasSuffix(artifact.Path, ".go") || len(bindings) == 0 || !bytes.Contains(artifact.Data, []byte(strconv.Quote(source))) {
 		return artifact, nil
 	}
 	set := token.NewFileSet()

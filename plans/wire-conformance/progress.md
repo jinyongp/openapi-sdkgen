@@ -272,3 +272,22 @@ and are reported separately from timeouts. The optional non-Linux diagnostic
 retains its platform default and its Windows test binary cross-compiles. Go verifier tests, 22 Python evidence tests,
 33 documentation evidence tests and documentation validation passed. Fresh full
 compiler/HTTP evidence is required under the final profile before delivery.
+
+At `0cfc699`, Actions CI run `39435508738` passed all 11 jobs. Run
+`39435513932` confirmed full Go compilation and exact HTTP tests for Loket,
+DigitalOcean and Stripe under the 40-minute policy. Cloudflare still exceeded
+40 minutes. Separate jobs failed to finalize artifacts (HTTP 404) or download
+pnpm; these infrastructure failures are not counted as passes. The local
+Cloudflare run failed when the installed Go 1.27.2 `vet` executable disappeared
+during a system update to 1.27.3; it is not a successful compiler measurement.
+
+The next layout binds generated operations and other callers directly to model
+implementation packages as well as validators. Public model aliases and codec
+functions remain available to consumers; generated callers avoid loading their
+duplicate facade metadata. The forced-partition check now rejects a generated
+caller importing the complete public model facade, while external consumers
+still use the public models package to verify type and function compatibility.
+Recursive/dynamic, XML HTTP and multipart/binary generated-module checks pass.
+The import-only assertion also skips license assets, and the import rewriter is
+restricted to Go source. The compiler policy stays at four CPU threads, 6 GiB
+soft memory and 40 minutes. Full committed-source evidence remains required.
