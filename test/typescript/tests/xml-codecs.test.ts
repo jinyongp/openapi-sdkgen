@@ -457,3 +457,11 @@ describe("XML runtime codecs", () => {
     );
   });
 });
+
+it("preserves XML attribute whitespace, text CR and CDATA CR with character references", ():void=>{
+ const schema: WireSchema = {types:["object"],xml:{name:"root"},properties:{a:{property:"a",schema:{types:["string"],xml:{attribute:true}}},text:{property:"text",schema:{types:["string"]}},cdata:{property:"cdata",schema:{types:["string"],xml:{nodeType:"cdata"}}}}};
+ const value: Record<string,string> = {a:"a\nb\tc\rd",text:"x\ry",cdata:"z\rw]]>q"};
+ const xml: string = encodeXML(value,schema,{});
+ expect(xml).toBe('<root a="a&#10;b&#9;c&#13;d"><![CDATA[z]]>&#13;<![CDATA[w]]]]><![CDATA[>q]]><text>x&#13;y</text></root>');
+ expect(decodeXML(xml,schema,{})).toEqual(value);
+});

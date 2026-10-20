@@ -17,7 +17,7 @@ type jsonSource struct{
     offset int
     pending []byte
     item types.Value
-    eof,done bool
+    eof,done,sequenceStarted bool
     closed atomic.Bool
     failure error
 }
@@ -39,9 +39,12 @@ func(source *jsonSource)Next()bool{
 }
 func(source *jsonSource)emit(final bool)bool{
     text:=string(source.pending);source.pending=source.pending[:0]
-    if source.separator==0x1e||final{text=trimStreamSpace(text)}else{text=strings.TrimSuffix(text,"\r")}
-    if trimStreamSpace(text)==""{return false}
-    value,err:=types.ParseValue([]byte(text));if err!=nil{return source.fail(&types.StreamFrameError{Kind:"json",Cause:err})};source.item=value;return true
+    sequence:=source.separator==0x1e
+    if sequence&&!source.sequenceStarted{source.sequenceStarted=true;if text!=""{return source.fail(&types.StreamFrameError{Kind:"json",Cause:fmt.Errorf("JSON sequence must begin with RS")})};return false}
+    if sequence{if strings.Trim(text," \t\r\n")==""{return false}}else{if final{text=trimStreamSpace(text)}else{text=strings.TrimSuffix(text,"\r")};if trimStreamSpace(text)==""{return false}}
+    value,err:=types.ParseValue([]byte(text));if err!=nil{return source.fail(&types.StreamFrameError{Kind:"json",Cause:err})}
+    if sequence&&(value.Kind()==types.ValueNumber||value.Kind()==types.ValueBoolean||value.Kind()==types.ValueNull)&&!strings.ContainsRune(" \t\r\n",rune(text[len(text)-1])){return false}
+    source.item=value;return true
 }
 func(source *jsonSource)Item()types.Value{return source.item}
 func(source *jsonSource)Err()error{return source.failure}

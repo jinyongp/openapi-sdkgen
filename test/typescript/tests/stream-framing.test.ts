@@ -111,7 +111,7 @@ describe("incremental client and inbound framing", (): void => {
     for (const framing of ["line-delimited-json", "json-sequence"] as const) {
       it(`${side} ${framing} handles a leading BOM, empty records and EOF`, async (): Promise<void> => {
         const source: string =
-          framing === "json-sequence" ? "\uFEFF\u001e\u001e1\r\n\u001e2" : "\uFEFF\r\n1\r\n2";
+          framing === "json-sequence" ? "\uFEFF\u001e\u001e1\r\n\u001e2\n" : "\uFEFF\r\n1\r\n2";
         const { body }: ChunkedBody = chunkedFramingBody(encoder.encode(source), 1);
         expect(await collectFraming(await framingItems(side, framing, body, 10))).toEqual([1, 2]);
       });

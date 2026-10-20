@@ -120,5 +120,5 @@ func xmlOutputScalar(value Value)(string,error){
     if value.Kind()==Number||value.Kind()==Boolean{encoded,err:=value.MarshalJSON();return string(encoded),err}
     return "",fmt.Errorf("XML scalar node requires a scalar value")
 }
-func xmlOutputText(value Value,cdata bool)(string,error){text,err:=xmlOutputScalar(value);if err!=nil{return "",err};if cdata{return "<![CDATA["+strings.ReplaceAll(text,"]]>","]]]]><![CDATA[>")+"]]>",nil};return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(text,"&","&amp;"),"<","&lt;"),">","&gt;"),nil}
-func xmlOutputAttribute(value string)string{return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(USVString(value),"&","&amp;"),"<","&lt;"),">","&gt;"),"\"","&quot;"),"'","&apos;")}
+func xmlOutputText(value Value,cdata bool)(string,error){text,err:=xmlOutputScalar(value);if err!=nil{return "",err};if cdata{return "<![CDATA["+strings.ReplaceAll(strings.ReplaceAll(text,"]]>","]]]]><![CDATA[>"),"\r","]]>&#13;<![CDATA[")+"]]>",nil};return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(text,"&","&amp;"),"<","&lt;"),">","&gt;"),"\r","&#13;"),nil}
+func xmlOutputAttribute(value string)string{return strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(USVString(value),"&","&amp;"),"<","&lt;"),">","&gt;"),"\"","&quot;"),"'","&apos;"),"\r","&#13;"),"\n","&#10;"),"\t","&#9;")}

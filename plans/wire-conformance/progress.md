@@ -9,7 +9,7 @@ Preserve documented unsupported features and OpenAPI's ambiguous space/pipe data
 | Query boundaries | complete | complete: callers, codec precedence, union order and error mapping | TypeScript full; generated Go query/inbound suites passed | query-boundaries commit |
 | Form encoding modes | complete | complete: mode presence, style defaults, codec precedence, shared escaping and multipart callers | TypeScript full; generated Go form/query and multipart suites passed | form-encoding commit |
 | Reference resources and diagnostics | complete | complete: resource identity, opaque data, source immutability, containment, remote locks, direct and CLI callers | compiler/IR/CLI suites; file/stdin/URL and both diagnostic modes passed | reference-resources commit |
-| XML and JSON-seq | pending | pending | pending | pending |
+| XML and JSON-seq | complete | complete: XML escaping order/CDATA, JSON whitespace and RS boundaries, NDJSON EOF and cleanup | TypeScript full; generated Go XML independent parser and protocol suites passed | media-conformance commit |
 | Format assertions | pending | pending | pending | pending |
 | Provider evidence | pending | pending | pending | pending |
 | Combined review | pending | pending | pending | pending |

@@ -235,7 +235,7 @@ export function createXMLCodec(
     if (xml?.nodeType === "none") return "";
     if (xml?.nodeType === "text") return escapeXMLText(xmlScalar(value));
     if (xml?.nodeType === "cdata")
-      return `<![CDATA[${xmlScalar(value).replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
+      return escapeXMLCDATA(xmlScalar(value));
     const name: string = xmlName(xml, fallbackName);
     const namespaces: Record<string, string> = Object.assign(
       Object.create(null),
@@ -284,7 +284,7 @@ export function createXMLCodec(
         continue;
       }
       if (childXML?.nodeType === "cdata") {
-        text += `<![CDATA[${xmlScalar(item).replaceAll("]]>", "]]]]><![CDATA[>")}]]>`;
+        text += escapeXMLCDATA(xmlScalar(item));
         continue;
       }
       children.push(encodeXMLElement(item, childSchema, schemas, childName, scope, namespaces));
@@ -337,11 +337,15 @@ export function createXMLCodec(
   }
 
   function escapeXMLText(value: string): string {
-    return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\r","&#13;");
   }
 
   function escapeXMLAttribute(value: string): string {
-    return escapeXMLText(value).replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+    return escapeXMLText(value).replaceAll('"', "&quot;").replaceAll("'", "&apos;").replaceAll("\n","&#10;").replaceAll("\t","&#9;");
+  }
+
+  function escapeXMLCDATA(value: string): string {
+    return `<![CDATA[${value.replaceAll("]]>", "]]]]><![CDATA[>").replaceAll("\r", "]]>&#13;<![CDATA[")}]]>`;
   }
 
   interface XMLNode {

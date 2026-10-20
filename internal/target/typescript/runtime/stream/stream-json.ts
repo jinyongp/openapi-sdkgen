@@ -16,16 +16,25 @@ export async function* decodeJSONStreamItems(
     },
   );
   const reader: ReadableStreamDefaultReader<Uint8Array<ArrayBufferLike>> = body.getReader();
+  let sequenceStarted: boolean = false;
   try {
     while (true) {
       const { done, value }: ReadableStreamReadResult<Uint8Array<ArrayBufferLike>> =
         await awaitAbortable(reader.read(), signal);
       for (const frame of framing.push(value, done)) {
-        const source: string = done
-          ? frame.trim().replace(/^\u001e/, "")
-          : streamFraming === "json-sequence"
-            ? frame.trim()
-            : frame.replace(/\r$/, "");
+        if (streamFraming === "json-sequence") {
+          if (!sequenceStarted) {
+            if (frame !== "") throw new TypeError("JSON sequence must begin with RS");
+            sequenceStarted = true;
+            continue;
+          }
+          if (/^[ \t\r\n]*$/.test(frame)) continue;
+          const item: unknown = parseStreamJSON(frame);
+          if ((item === null || typeof item === "number" || typeof item === "boolean") && !/[ \t\r\n]$/.test(frame)) continue;
+          yield item;
+          continue;
+        }
+        const source: string = done ? frame.trim() : frame.replace(/\r$/, "");
         if (source.trim() !== "") yield parseStreamJSON(source);
       }
       if (done) break;
