@@ -58,4 +58,8 @@ Ship the SDK
 파일 입력은 `types.BinaryFromBytes`, `BinaryFromString`, `BinarySource`로 준비합니다.
 SDK가 실행 중 연 읽기 객체를 닫습니다. 일회용 읽기 객체는 같은 요청에서 다시 사용할 수 없습니다.
 
+Multipart 입력은 이름이 있는 필드나 순서가 정해진 파트로 선언해야 합니다.
+전체 multipart 본문을 바이너리 문자열로 선언하는 방식은 지원하지 않으며,
+생성 시 해당 스키마 위치를 오류로 안내합니다.
+
 스트림 입력, 코덱과 버퍼 소유권의 세부 조건은 [스트리밍 API](../reference/streaming.md)를 참고하세요.

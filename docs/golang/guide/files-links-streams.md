@@ -58,4 +58,7 @@ The first `Next()` starts the exchange. Close the stream on early exits and insp
 Prepare file input with `types.BinaryFromBytes`, `BinaryFromString` or `BinarySource`.
 The SDK closes readers it opens during execution. One-shot readers cannot be replayed.
 
+Multipart input uses named fields or positional parts. A complete multipart body
+declared as a binary string is not supported; generation reports the schema location.
+
 See [Streaming API](../reference/streaming.md) for request streams, codecs and buffer ownership.
