@@ -15,7 +15,7 @@ func TestParameterStyles(t *testing.T){
   {"label-explode","path","label","[\"a b\",\"c\"]","/x/.a%20b.c",true,false,""},
   {"matrix","path","matrix","{\"a\":1,\"b\":null}","/x/;a=1;b=null",true,false,""},
   {"null","path","simple","null","/x/null",false,false,""},
-  {"query-array","query","form","[\"a\",\"b\"]","p=a%2Cb",false,false,""},
+  {"query-array","query","form","[\"a\",\"b\"]","p=a,b",false,false,""},
   {"query-pipe-object","query","pipeDelimited","{\"a\":1,\"b\":2}","p=a%7C1%7Cb%7C2",false,false,""},
   {"query-pipe-explode","query","pipeDelimited","{\"a\":1,\"b\":2}","p=a%3D1%7Cb%3D2",true,false,""},
   {"query-space-explode","query","spaceDelimited","{\"a\":1,\"b\":2}","p=a%3D1%20b%3D2",true,false,""},

@@ -47,6 +47,7 @@ export type QueryEncoder = (
   location: "query" | "querystring",
 ) => string;
 
+/** Canonical query serialization token shared with URLencoded media. */
 export type { QueryPart } from "../shared/query-serialization.js";
 
 /** Request-local cancellation, timeout observation and listener cleanup. */

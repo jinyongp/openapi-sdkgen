@@ -3,6 +3,7 @@ import {
   serializeQuery,
   encodeStyleQueryValue,
 } from "../../shared/query-serialization.js";
+/** Shared escaping primitives used by prepared HTTP query encoders. */
 export { appendQueryValue, serializeQuery } from "../../shared/query-serialization.js";
 import type { WireSchema, WireSchemas } from "../../schema/wire-types.js";
 import type { OperationDefinition, ParameterDefinition } from "../operation.js";

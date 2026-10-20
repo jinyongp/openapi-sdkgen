@@ -65,8 +65,8 @@ func main(){client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:"https://example
 		if retained := bytes.Contains(data, []byte(marker)); retained != (operation == "GetUnused") {
 			t.Errorf("%s: unused schema literal retained=%t", operation, retained)
 		}
-		if retained := bytes.Contains(data, []byte("https://format.invalid/")); retained != (operation == "GetUnusedURL") {
-			t.Errorf("%s: optional URL initializer retained=%t", operation, retained)
+		if retained := bytes.Contains(data, []byte("example.test/consumer/api/internal/schema.FormatURL")); retained != (operation == "GetUnusedURL") {
+			t.Errorf("%s: optional URI assertion retained=%t", operation, retained)
 		}
 	}
 }
