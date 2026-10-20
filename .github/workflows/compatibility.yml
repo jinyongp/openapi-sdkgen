@@ -168,6 +168,9 @@ jobs:
         continue-on-error: true
         if: ${{ !cancelled() && matrix.typecheck && steps.benchmark.outcome != 'skipped' }}
         timeout-minutes: 30
+        env:
+          GOMEMLIMIT: 3GiB
+          GOMAXPROCS: "2"
         shell: bash
         run: |
           go run ./scripts/golang-compat --mode golang-generation --verify --server \

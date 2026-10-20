@@ -70,3 +70,22 @@ func TestVerifiedInputUsesOriginalPinAndRejectsEscape(t *testing.T) {
 		}
 	}
 }
+
+func TestVerifyGeneratedModuleChecksActualCompilerResult(t *testing.T) {
+	directory := t.TempDir()
+	path := filepath.Join(directory, "example.go")
+	if err := os.WriteFile(path, []byte("package example\nfunc invalid( {\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	failed := verifyModule("golang", directory, "")
+	if failed.Status != "fail" || failed.Detail == "" {
+		t.Fatal("invalid module accepted", failed)
+	}
+	if err := os.WriteFile(path, []byte("package example\nfunc Value() int {return 42}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	passed := verifyModule("golang", directory, "")
+	if passed.Status != "pass" {
+		t.Fatal("valid module rejected", passed)
+	}
+}

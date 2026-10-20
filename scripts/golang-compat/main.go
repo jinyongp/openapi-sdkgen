@@ -53,7 +53,23 @@ type compilationResult struct {
 	Status string `json:"status"`
 	Detail string `json:"detail,omitempty"`
 }
+
+const compilerTimeout = 20 * time.Minute
+const goCompilerMemoryLimit = "3GiB"
+
+type compilationPolicy struct {
+	TimeoutSeconds   int    `json:"timeoutSeconds"`
+	BuildParallelism int    `json:"buildParallelism"`
+	CPUConcurrency   int    `json:"cpuConcurrency"`
+	MemoryLimit      string `json:"memoryLimit"`
+}
+
+func goCompilationPolicy() compilationPolicy {
+	return compilationPolicy{TimeoutSeconds: int(compilerTimeout / time.Second), BuildParallelism: 1, CPUConcurrency: 2, MemoryLimit: goCompilerMemoryLimit}
+}
+
 type report struct {
+	GoCompilationPolicy   *compilationPolicy    `json:"goCompilationPolicy,omitempty"`
 	VerificationRequested bool                  `json:"verificationRequested"`
 	SourceCommit          string                `json:"sourceCommit"`
 	SourceDirty           bool                  `json:"sourceDirty"`
@@ -169,6 +185,10 @@ func run() error {
 		return err
 	}
 	result := report{VerificationRequested: *verify, Mode: *mode, ID: selected.ID, Input: selected.Input, InputSHA256: digest(input), GoVersion: runtime.Version()}
+	if *verify {
+		policy := goCompilationPolicy()
+		result.GoCompilationPolicy = &policy
+	}
 	if *server {
 		result.Addons = []string{"server"}
 	}
@@ -507,14 +527,18 @@ func phase(name string) {
 }
 
 func verifyModule(target, directory, typescriptRoot string) *compilationResult {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), compilerTimeout)
 	defer cancel()
 	var command *exec.Cmd
 	if target == "golang" {
 		if err := os.WriteFile(filepath.Join(directory, "go.mod"), []byte("module example.test/corpus\n\ngo 1.27.0\n"), 0600); err != nil {
 			return &compilationResult{Status: "fail", Detail: err.Error()}
 		}
-		command = exec.CommandContext(ctx, "go", "test", "./...")
+		policy := goCompilationPolicy()
+		command = exec.CommandContext(ctx, "go", "test", fmt.Sprintf("-p=%d", policy.BuildParallelism), "-mod=readonly", "./...")
+		// Bound each compiler independently of the generator's inherited heap
+		// budget. Serial package builds avoid multiplying that memory budget.
+		command.Env = append(os.Environ(), "GOMEMLIMIT="+policy.MemoryLimit, "GOMAXPROCS="+fmt.Sprint(policy.CPUConcurrency), "GOWORK=off", "GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off")
 	} else {
 		options := tscheck.CompilerOptions()
 		for key, value := range map[string]any{"target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "lib": []string{"ES2022", "DOM", "DOM.Iterable"}, "noEmit": true} {
@@ -551,6 +575,9 @@ func verifyModule(target, directory, typescriptRoot string) *compilationResult {
 	output, err := command.CombinedOutput()
 	if err != nil {
 		detail := strings.ReplaceAll(strings.TrimSpace(string(output)), directory, "<generated>")
+		if ctx.Err() != nil {
+			detail = "compiler time limit exceeded (20 minutes)"
+		}
 		if detail == "" {
 			detail = err.Error()
 		}

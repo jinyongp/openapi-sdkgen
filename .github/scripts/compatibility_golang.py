@@ -22,7 +22,8 @@ def combine(root, shards, commit):
                 or report.get("id") != entry["id"] or report.get("input") != entry["input"]
                 or report.get("inputSha256") != entry["sha256"] or report.get("mode") != "golang-generation"
                 or report.get("addons") != ["server"] or report.get("verificationRequested") is not True
-                or report.get("selection")):
+                or report.get("selection")
+                or report.get("goCompilationPolicy") != dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit="3GiB")):
                 raise ValueError(f"Go generation/compilation proof mismatch: {corpus}/{entry['id']}")
             blocked = go.get("blocked")
             compilation = go.get("compilation", {}).get("status")

@@ -278,3 +278,9 @@ Historical public reports retain their matching `*-manifest.json` when the activ
 changes. Documentation verifies the archived manifest hash against the report; historical
 results do not become evidence for the current source. Fresh public results must come
 from the manual compatibility Actions workflow, not local runs.
+
+Go compatibility compilation uses serial package builds, `GOMAXPROCS=2`,
+a `3GiB` soft Go heap limit per process and a 20-minute compiler deadline. The
+requested policy is recorded in each report. It isolates `GOWORK`, uses the installed
+toolchain and disables module downloads. Compiler deadline failures are explicit;
+a runner shutdown without a report remains incomplete evidence.

@@ -20,6 +20,7 @@ class GoEvidenceTests(unittest.TestCase):
             path = directory / 'golang.json'
             report = dict(sourceCommit='b' * 40, sourceDirty=False, verificationRequested=True,
                           id='provider', input='api.json', inputSha256='a' * 64,
+                          goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit="3GiB"),
                           mode='golang-generation', addons=['server'], **{'pass': True},
                           golang=dict(blocked=False, compilation=dict(status='pass')))
             with patch('compatibility_golang.CORPORA', ['test']):
@@ -28,7 +29,7 @@ class GoEvidenceTests(unittest.TestCase):
                     return combine(root, root, 'b' * 40)
                 self.assertEqual(len(check(report)['documents']), 1)
                 for mutation in [dict(sourceDirty=True), dict(sourceCommit='c' * 40),
-                                 dict(verificationRequested=False), dict(selection=['GET /x']),
+                                 dict(verificationRequested=False), dict(goCompilationPolicy={}), dict(selection=['GET /x']),
                                  dict(golang=dict(blocked=False)),
                                  dict(golang=dict(blocked=True, generationError='bad source'))]:
                     with self.assertRaises(ValueError):
