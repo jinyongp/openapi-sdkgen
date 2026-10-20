@@ -53,3 +53,12 @@ it("checks IDNA hyphen positions as Unicode code points", (): void => {
   for (const value of ["-é", "é-", "éa--b"])
     expect(matchesWireFormat(value, "idn-hostname")).toBe(false);
 });
+
+it("keeps URI schemes and IPvFuture literals ASCII even for IRIs", (): void => {
+  for (const format of ["uri", "uri-reference", "iri", "iri-reference"]) {
+    for (const value of ["K://example.test", "ſ://example.test", "http://[v1.K]", "http://[v1.ſ]"])
+      expect(matchesWireFormat(value, format)).toBe(false);
+    for (const value of ["HTTPS://example.test", "http://[Vf.X:1]"])
+      expect(matchesWireFormat(value, format)).toBe(true);
+  }
+});

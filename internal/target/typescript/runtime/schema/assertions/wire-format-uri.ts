@@ -2,7 +2,9 @@ import { matchesWireIPv6 } from "./wire-format-ipv6.js";
 /** RFC 3986/3987 syntax validation; URL parsing would normalize invalid input. */
 export function matchesWireURI(value: string, absolute: boolean, allowUnicode: boolean): boolean {
   const match: RegExpExecArray | null =
-    /^(?:([a-z][a-z0-9+.-]*):)?(?:\/\/([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/iu.exec(value);
+    /^(?:([a-zA-Z][a-zA-Z0-9+.-]*):)?(?:\/\/([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/u.exec(
+      value,
+    );
   if (match === null || (absolute && match[1] === undefined)) return false;
   const path: string = match[3]!;
   if (match[1] === undefined && match[2] === undefined && path.split("/", 1)[0]!.includes(":"))
@@ -24,7 +26,9 @@ export function matchesWireURI(value: string, absolute: boolean, allowUnicode: b
     const end: number = host.indexOf("]");
     if (end < 0 || !/^(?::[0-9]*)?$/.test(host.slice(end + 1))) return false;
     const literal: string = host.slice(1, end);
-    return matchesWireIPv6(literal) || /^v[0-9a-f]+\.[a-z0-9._~!$&'()*+,;=:-]+$/iu.test(literal);
+    return (
+      matchesWireIPv6(literal) || /^[vV][0-9a-fA-F]+\.[a-zA-Z0-9._~!$&'()*+,;=:-]+$/u.test(literal)
+    );
   }
   const colon: number = host.lastIndexOf(":");
   if (colon >= 0) {
