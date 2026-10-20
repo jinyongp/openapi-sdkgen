@@ -109,15 +109,23 @@ export async function decodeInboundParameters(
         );
       continue;
     }
-    const value: unknown = await decodeInboundParameterContent(
-      codecContext,
-      raw,
-      definition,
-      schemas,
-      wireSchemas,
-      codecs,
-    );
     try {
+      const value: unknown =
+        definition.location === "query" &&
+        definition.contentType === undefined &&
+        !(
+          definition.style === "deepObject" ||
+          (definition.style === "form" && definition.explode && isRecord(raw))
+        )
+          ? decodeInboundQueryValue(codecContext, url, raw, definition, schemas, wireSchemas)
+          : await decodeInboundParameterContent(
+              codecContext,
+              raw,
+              definition,
+              schemas,
+              wireSchemas,
+              codecs,
+            );
       codecContext.wire.validateWireValue(value, definition.wireSchema, wireSchemas, "decode");
       const section: Record<string, unknown> =
         definition.location === "header"
@@ -134,6 +142,7 @@ export async function decodeInboundParameters(
         ),
       );
     } catch (error: unknown) {
+      if (error instanceof InboundRequestError) throw error;
       throw new InboundRequestError(
         new Response(
           "Invalid parameter " +
@@ -146,6 +155,62 @@ export async function decodeInboundParameters(
     }
   }
   return result;
+}
+
+/** Splits structural query delimiters before decoding individual data tokens. */
+function decodeInboundQueryValue(
+  codecContext: ServerCodecContext,
+  url: URL,
+  raw: unknown,
+  definition: InboundParameterDefinition,
+  schemas: InboundSchemas,
+  wireSchemas: WireSchemas,
+): unknown {
+  const shape: WireSchema = materializeInboundWireSchema(definition.wireSchema, wireSchemas);
+  const kinds: readonly string[] = inboundWireSchemaTypes(shape, wireSchemas);
+  const decode: (text: string) => string = (text: string): string =>
+    new URLSearchParams("v=" + text).get("v")!;
+  const encoded: string[] = url.search
+    .slice(1)
+    .split("&")
+    .flatMap((pair: string): string[] => {
+      const index: number = pair.indexOf("=");
+      return decode(index < 0 ? pair : pair.slice(0, index)) === definition.name
+        ? [index < 0 ? "" : pair.slice(index + 1)]
+        : [];
+    });
+  const separator: string =
+    definition.style === "pipeDelimited" ? "|" : definition.style === "spaceDelimited" ? " " : ",";
+  const tokens: string[] =
+    definition.explode && definition.style === "form"
+      ? encoded.map(decode)
+      : encoded.flatMap((text: string): string[] =>
+          separator === "," ? text.split(",").map(decode) : decode(text).split(separator),
+        );
+  if (kinds.includes("object") && !definition.explode) {
+    const fields: Record<string, string> = Object.create(null) as Record<string, string>;
+    if (tokens.length % 2 !== 0) throw new TypeError("query object requires name,value pairs");
+    for (let index: number = 0; index < tokens.length; index += 2)
+      defineOwnDataProperty(fields, tokens[index]!, tokens[index + 1]!);
+    return decodeInboundParameterObjectValue(
+      codecContext,
+      fields,
+      definition.schema,
+      schemas,
+      shape,
+      wireSchemas,
+      true,
+    );
+  }
+  return decodeInboundParameterValue(
+    codecContext,
+    raw as string | readonly string[],
+    definition.schema,
+    schemas,
+    shape,
+    wireSchemas,
+    tokens,
+  );
 }
 
 export function decodeInboundSortValue(

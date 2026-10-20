@@ -17,7 +17,9 @@ func DecodeParameters(execution *Execution,path map[string]string,definitions []
    fields:=make(map[string]types.Value)
    if definition.Location=="query"&&definition.Style=="deepObject"{prefix:=definition.Name+"[";for name,entries:=range query{if strings.HasPrefix(name,prefix)&&strings.HasSuffix(name,"]")&&len(entries)>0{fields[name[len(prefix):len(name)-1]],_=types.ValueFrom(entries[len(entries)-1])}}}else{entries:=query;if definition.Location=="cookie"{entries=rawCookies};for name,items:=range entries{fields[name],_=types.ValueFrom(items)};preserve=false}
    raw,_=types.ValueFrom(fields)
-  }else if definition.ContentType==""&&object&&len(values)>0{raw,_=types.ValueFrom(parameterObject(values[0],definition));preserve=true}
+  }else if definition.ContentType==""&&object&&len(values)>0{
+   text:=values[0];encoded:=definition.Location=="query";if encoded{sources:=rawQueryValues(execution.Request.URL.RawQuery,definition.Name);text=sources[0]}
+   fields:=parameterObject(text,definition);if encoded{decoded:=make(map[string]string);for key,item:=range fields{name,_:=url.QueryUnescape(key);value,_:=url.QueryUnescape(item);decoded[name]=value};fields=decoded};raw,_=types.ValueFrom(fields);preserve=true}
   if !preserve&&raw.Kind()==types.ValueObject{alternatives,err:=parameterAlternatives(execution.Context,definition.Schema,make(map[*ParameterSchema]bool));if err!=nil{return types.Value{},err};fields:=make(map[string]types.Value);for _,name:=range raw.Keys(){known:=false;for _,alternative:=range alternatives{_,present,err:=parameterProperty(execution.Context,alternative,name);if err!=nil{return types.Value{},err};known=known||present};if known{fields[name],_=raw.Get(name)}};raw,_=types.ValueFrom(fields)}
   absent:=raw.Kind()==types.ValueArray&&len(raw.Items())==0||raw.Kind()==types.ValueObject&&len(raw.Keys())==0
   if absent{if definition.Required{return types.Value{},inputFailure(fmt.Errorf("missing required parameter"))};continue}
@@ -25,6 +27,10 @@ func DecodeParameters(execution *Execution,path map[string]string,definitions []
   if definition.ContentType!=""&&len(values)>0{
    contentType:=bareMedia(definition.ContentType)
    switch{case contentType=="application/json"||strings.HasSuffix(contentType,"+json"):value,err=types.ParseValue([]byte(values[0]));case definition.DecodeContent!=nil:value,err=definition.DecodeContent(execution.Context,values[0]);case contentType=="application/x-www-form-urlencoded":value=formObject(values[0]);value,err=CoerceParameter(execution.Context,definition.Schema,value,true);case !strings.HasPrefix(contentType,"text/")&&contentType!="application/octet-stream":codec,present:=execution.Codec(contentType);if !present||codec.DecodeParameter==nil{return types.Value{},&Error{Status:415,Code:InboundInputInvalid}};value,err=codec.DecodeParameter(execution.Context,values[0],types.MediaContext{ContentType:definition.ContentType,Request:execution.InboundContext().Request});default:value,err=CoerceParameter(execution.Context,definition.Schema,raw,preserve)}
+  }else if definition.Location=="query"&&!object&&definition.Schema!=nil&&definition.Schema.Kinds&ParameterArray!=0{
+   entries:=values
+   if !(definition.Style=="form"&&definition.Explode){entries=nil;separator:=",";if definition.Style=="pipeDelimited"{separator="|"};if definition.Style=="spaceDelimited"{separator=" "};for _,text:=range rawQueryValues(execution.Request.URL.RawQuery,definition.Name){if separator==","{for _,token:=range strings.Split(text,separator){decoded,_:=url.QueryUnescape(token);entries=append(entries,decoded)}}else{decoded,_:=url.QueryUnescape(text);entries=append(entries,strings.Split(decoded,separator)...)}}}
+   value,err=CoerceParameter(execution.Context,definition.Schema,raw,preserve,entries)
   }else{if definition.Location=="path"&&!object&&len(values)>0{value:=values[0];if definition.Style=="label"{value=strings.TrimPrefix(value,".")};if definition.Style=="matrix"{value=strings.TrimPrefix(value,";"+definition.Name+"=")};raw,_=types.ValueFrom(value)};value,err=CoerceParameter(execution.Context,definition.Schema,raw,preserve)}
   if err!=nil{return types.Value{},inputFailure(err)};if definition.Schema!=nil&&definition.Schema.Validate!=nil{if err:=definition.Schema.Validate(execution.Context,value);err!=nil{return types.Value{},inputFailure(err)}}
   property:=definition.Property;if property==""{property=definition.Name};sections[definition.Location][property]=value
@@ -37,3 +43,6 @@ func parameterObject(source string,definition Parameter)map[string]string{
  if definition.Explode{separator:=",";if definition.Style=="matrix"{separator=";"};if definition.Style=="label"{separator="."};for _,entry:=range strings.Split(source,separator){pair(entry)}}else{tokens:=strings.Split(source,",");for index:=0;index+1<len(tokens);index+=2{result[tokens[index]]=tokens[index+1]}}
  return result
 }
+
+// Raw values retain encoded data delimiters until structural splitting is complete.
+func rawQueryValues(source,name string)[]string{var values []string;for _,pair:=range strings.Split(source,"&"){key,value,_:=strings.Cut(pair,"=");decoded,_:=url.QueryUnescape(key);if decoded==name{values=append(values,value)}};return values}

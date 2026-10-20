@@ -11,6 +11,7 @@ type ParameterCase = {
   parameter: Partial<ParameterDefinition> & Pick<ParameterDefinition, "location">;
   value: unknown;
   search?: string;
+  customSearch?: string;
   path?: string;
   header?: string;
 };
@@ -61,7 +62,8 @@ const cases: ParameterCase[] = [
     name: "joined array",
     parameter: { location: "query", explode: false },
     value: ["a", "b"],
-    search: "?value=a%2Cb",
+    search: "?value=a,b",
+    customSearch: "?value=a%2Cb",
   },
   {
     name: "space array",
@@ -91,7 +93,8 @@ const cases: ParameterCase[] = [
     name: "joined form object",
     parameter: { location: "query", explode: false },
     value: { id: 1, active: true },
-    search: "?value=id%2C1%2Cactive%2Ctrue",
+    search: "?value=id,1,active,true",
+    customSearch: "?value=id%2C1%2Cactive%2Ctrue",
   },
   {
     name: "exploded space object",
@@ -318,7 +321,7 @@ describe.each([false, true])("parameter serialization with custom codec = %s", (
     const [url, options] = fetch.mock.calls[0]!;
     const parsed = new URL(String(url));
     expect(parsed.pathname).toBe(test.path ?? "/items");
-    expect(parsed.search).toBe(test.search ?? "");
+    expect(parsed.search).toBe((customCodec ? test.customSearch : undefined) ?? test.search ?? "");
     if (test.header !== undefined) {
       const header = test.parameter.location === "cookie" ? "Cookie" : "value";
       expect(new Headers(options?.headers).get(header)).toBe(test.header);

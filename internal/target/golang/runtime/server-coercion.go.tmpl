@@ -49,15 +49,15 @@ func parameterItemViewsActive(ctx context.Context,view parameterView,index int,a
 }
 // CoerceParameter preserves the TypeScript inbound candidate order: strings
 // precede booleans/numbers; repeated values prefer a declared array.
-func CoerceParameter(ctx context.Context,node *ParameterSchema,raw types.Value,preserveUnknown bool)(types.Value,error){
- alternatives,err:=parameterAlternatives(ctx,node,make(map[*ParameterSchema]bool));if err!=nil{return types.Value{},err};candidate,err:=coerceParameterViews(ctx,alternatives,raw,preserveUnknown);if err!=nil{return candidate,err};if node!=nil&&node.Validate!=nil{if err:=node.Validate(ctx,candidate);err!=nil{return candidate,err}};return candidate,nil
+func CoerceParameter(ctx context.Context,node *ParameterSchema,raw types.Value,preserveUnknown bool,arrayValues ...[]string)(types.Value,error){
+ alternatives,err:=parameterAlternatives(ctx,node,make(map[*ParameterSchema]bool));if err!=nil{return types.Value{},err};candidate,err:=coerceParameterViews(ctx,alternatives,raw,preserveUnknown,arrayValues...);if err!=nil{return candidate,err};if node!=nil&&node.Validate!=nil{if err:=node.Validate(ctx,candidate);err!=nil{return candidate,err}};return candidate,nil
 }
-func coerceParameterViews(ctx context.Context,alternatives []parameterView,raw types.Value,preserveUnknown bool)(types.Value,error){
+func coerceParameterViews(ctx context.Context,alternatives []parameterView,raw types.Value,preserveUnknown bool,arrayValues ...[]string)(types.Value,error){
  var fallback types.Value;var failure error
- for _,view:=range alternatives{candidate,err:=coerceParameterView(ctx,view,raw,preserveUnknown);fallback=candidate;if err==nil{return candidate,nil};if !schema.IsValidationError(err){return candidate,err};failure=err}
+ for _,view:=range alternatives{candidate,err:=coerceParameterView(ctx,view,raw,preserveUnknown,arrayValues...);fallback=candidate;if err==nil{return candidate,nil};if !schema.IsValidationError(err){return candidate,err};failure=err}
  if failure==nil{failure=schema.Failure("parameter","")};return fallback,failure
 }
-func coerceParameterView(ctx context.Context,view parameterView,raw types.Value,preserveUnknown bool)(types.Value,error){
+func coerceParameterView(ctx context.Context,view parameterView,raw types.Value,preserveUnknown bool,arrayValues ...[]string)(types.Value,error){
  if err:=ctx.Err();err!=nil{return types.Value{},err}
  if raw.Kind()==types.ValueObject{
   fields:=make(map[string]types.Value);for _,key:=range raw.Keys(){item,_:=raw.Get(key);choices,known,err:=parameterProperty(ctx,view,key);if err!=nil{return types.Value{},err};if !known{if preserveUnknown{fields[key]=item};continue};value,err:=coerceParameterViews(ctx,choices,item,preserveUnknown);if err!=nil&&!schema.IsValidationError(err){return types.Value{},err};fields[key]=value}
@@ -68,7 +68,7 @@ func coerceParameterView(ctx context.Context,view parameterView,raw types.Value,
  flags:=parameterKinds(view);candidates:=make([]types.Value,0,4);text,_:=types.ValueFrom(values[0]);candidates=append(candidates,text)
  if flags&ParameterBoolean!=0&&(values[0]=="true"||values[0]=="false"){value,_:=types.ValueFrom(values[0]=="true");candidates=append(candidates,value)}
  if flags&ParameterNumber!=0{if number,ok:=wire.ScalarNumber(values[0]);ok{candidates=append(candidates,number)}}
- if flags&ParameterArray!=0{entries:=make([]string,0);for _,value:=range values{entries=append(entries,strings.Split(value,",")...)};items:=make([]types.Value,len(entries));for index,entry:=range entries{choices,err:=parameterItemViews(ctx,view,index);if err!=nil{return types.Value{},err};value,_:=types.ValueFrom(entry);item,err:=coerceParameterViews(ctx,choices,value,preserveUnknown);if err!=nil&&!schema.IsValidationError(err){return types.Value{},err};items[index]=item};array,err:=types.ValueFrom(items);if err!=nil{return types.Value{},err};if len(values)>1{candidates=append([]types.Value{array},candidates...)}else{candidates=append(candidates,array)}}
+ if flags&ParameterArray!=0{entries:=make([]string,0);if len(arrayValues)>0{entries=arrayValues[0]}else{for _,value:=range values{entries=append(entries,strings.Split(value,",")...)}};items:=make([]types.Value,len(entries));for index,entry:=range entries{choices,err:=parameterItemViews(ctx,view,index);if err!=nil{return types.Value{},err};value,_:=types.ValueFrom(entry);item,err:=coerceParameterViews(ctx,choices,value,preserveUnknown);if err!=nil&&!schema.IsValidationError(err){return types.Value{},err};items[index]=item};array,err:=types.ValueFrom(items);if err!=nil{return types.Value{},err};if len(values)>1{candidates=append([]types.Value{array},candidates...)}else{candidates=append(candidates,array)}}
  for _,candidate:=range candidates{err:=validateParameterView(ctx,view,candidate);if err==nil{return candidate,nil};if !schema.IsValidationError(err){return candidate,err}}
  return candidates[0],schema.Failure("parameter","")
 }

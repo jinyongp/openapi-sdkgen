@@ -66,6 +66,7 @@ export function decodeInboundParameterValue(
   schemas: InboundSchemas,
   wireSchema: WireSchema | undefined = undefined,
   wireSchemas: WireSchemas = {},
+  arrayValues: readonly string[] | undefined = undefined,
 ): unknown {
   if (wireSchema !== undefined) {
     wireSchema = materializeInboundWireSchema(wireSchema, wireSchemas);
@@ -76,6 +77,7 @@ export function decodeInboundParameterValue(
         raw,
         alternative,
         wireSchemas,
+        arrayValues,
       );
       fallback = candidate;
       try {
@@ -106,7 +108,8 @@ export function decodeInboundParameterValue(
     if (Number.isFinite(number)) candidates.push(number);
   }
   if (types.includes("array")) {
-    const entries: string[] = values.flatMap((value: string): string[] => value.split(","));
+    const entries: readonly string[] =
+      arrayValues ?? values.flatMap((value: string): string[] => value.split(","));
     const array: unknown[] = entries.map((entry: string, index: number): unknown =>
       decodeInboundParameterValue(
         codecContext,
@@ -131,6 +134,7 @@ export function decodeInboundParameterValueForWireSchema(
   raw: string | readonly string[],
   schema: WireSchema,
   wireSchemas: WireSchemas,
+  arrayValues: readonly string[] | undefined = undefined,
 ): unknown {
   const values: readonly string[] = typeof raw === "string" ? [raw] : raw;
   const value: string = values[0]!;
@@ -147,7 +151,8 @@ export function decodeInboundParameterValueForWireSchema(
     if (Number.isFinite(number)) candidates.push(number);
   }
   if (types.includes("array")) {
-    const entries: string[] = values.flatMap((entry: string): string[] => entry.split(","));
+    const entries: readonly string[] =
+      arrayValues ?? values.flatMap((entry: string): string[] => entry.split(","));
     const array: unknown[] = entries.map((entry: string, index: number): unknown => {
       const item: WireSchema | undefined = inboundWireArrayItemSchema(schema, index, wireSchemas);
       return item === undefined

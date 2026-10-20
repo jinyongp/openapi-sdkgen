@@ -32,6 +32,17 @@ export function composeQueryParameterEncoder(
       throw new TypeError(`missing parameter encode codec for ${contentType}`);
     return encodeContent(value, contentType, schema, components);
   }
+  function appendFormTokens(
+    query: QueryPart[],
+    name: string,
+    tokens: readonly string[],
+    allowReserved: boolean,
+  ): void {
+    const encode: (value: string) => string = allowReserved
+      ? encodeReservedQueryValue
+      : encodeURIComponent;
+    query.push({ raw: `${encodeURIComponent(name)}=${tokens.map(encode).join(",")}` });
+  }
   function appendQuerySync(
     query: Readonly<Record<string, unknown>>,
     operation: OperationDefinition,
@@ -92,13 +103,7 @@ export function composeQueryParameterEncoder(
         else if (explode)
           for (const item of value)
             appendQueryValue(result, name, item, parameter?.allowReserved ?? false);
-        else
-          appendQueryValue(
-            result,
-            name,
-            value.map(String).join(","),
-            parameter?.allowReserved ?? false,
-          );
+        else appendFormTokens(result, name, value.map(String), parameter?.allowReserved ?? false);
         continue;
       }
       if (isRecord(value) && style === "form") {
@@ -109,12 +114,10 @@ export function composeQueryParameterEncoder(
           for (const [key, item] of entries)
             appendQueryValue(result, key, item, parameter?.allowReserved ?? false);
         else
-          appendQueryValue(
+          appendFormTokens(
             result,
             name,
-            entries
-              .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
-              .join(","),
+            entries.flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)]),
             parameter?.allowReserved ?? false,
           );
         continue;

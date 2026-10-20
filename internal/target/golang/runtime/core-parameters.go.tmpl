@@ -51,8 +51,9 @@ func (execution *Execution) AddParameter(data *RequestData,value types.Value,par
         }
         separator:=",";if parameter.Style=="spaceDelimited"{separator=" "};if parameter.Style=="pipeDelimited"{separator="|"}
         raw:=func(text string)(string,error){return text,nil}
-        serialized,err:=simpleParameter(value,separator,parameter.Explode&&value.Kind()==types.ValueObject,raw);if err!=nil{return err}
-        text,err:=encode(serialized);if err!=nil{return err}
+        serialize:=raw;if separator==","{serialize=encode}
+        serialized,err:=simpleParameter(value,separator,parameter.Explode&&value.Kind()==types.ValueObject,serialize);if err!=nil{return err}
+        text:=serialized;if separator!=","{text,err=encode(serialized);if err!=nil{return err}}
         if data.Query!=""{data.Query+="&"};data.Query+=name+"="+text
     case "querystring":
         if bareMedia(parameter.ContentType)=="application/x-www-form-urlencoded"{
