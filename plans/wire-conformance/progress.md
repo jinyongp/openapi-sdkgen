@@ -112,7 +112,7 @@ the generated clients against separately specified request/response contracts.
 | Spoonacular | explicitly pinned correction of invalid parameter-body metadata; complete Go generation/compilation and HTTP contract checks | input unit complete: 99 operations compiled; independent HTTP contract test passed |
 | DigitalOcean | explicitly pinned tag-pattern correction without loosening the Unicode regex contract; 739 operations and successful Go compilation | input unit complete: 739 operations compiled; independent HTTP contract test passed; compiler cost remains in the performance unit |
 | Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | multipart unit complete; pinned upload operation compiled and passed independent HTTP checks; full SDK compilation belongs to the performance unit |
-| Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | investigating |
+| Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | implementation and targeted review complete; committed-source full compiler checks pending |
 | Delivery | refresh actual Actions evidence, review all five areas together, commit and leave a clean tree | pending |
 
 Stripe baseline output at `fa9e685`: 17,448 files / 248.7 MB, including 153.1 MB
@@ -162,3 +162,22 @@ readers. The compiler verifier records route/hash evidence before releasing its
 plan; a real emitted-module regression check covers that ordering. The review
 checks passed: targeted Go verifier tests, 22 Python evidence tests and 33
 documentation evidence tests. Complete SDK compiler checks remain in progress.
+
+Compiler layout unit: packages of at least 8 MiB are split along strongly
+connected file dependencies, with 1 MiB target batches and intact recursive
+components. Shared runtime state lives in a common implementation package.
+Public model aliases, forwarding functions, constants and method sets preserve
+consumer imports; model backing fields remain private. Internal schema state
+fields, including XML's nested validation state, are rewritten consistently.
+Only one package's rendered source is buffered during layout. This adds facade
+source rather than claiming a smaller download. Stripe's largest measured model
+implementation group is 9.25 MB versus the previous 153.1 MB model package;
+Cloudflare's largest group is 3.97 MB. Facades still need complete compiler proof.
+
+Review found and fixed private-symbol allocation collisions and XML state-field
+ambiguity. Targeted generated-module checks pass for deterministic names,
+recursive/dynamic references, enum/error validation, multipart composition/binary
+ownership and XML HTTP encoding/decoding. Full local runs interrupted with
+SIGTERM have no passing evidence; no speedup ratio is claimed. The final gate is
+fresh Actions CI and all 38 full Go provider compilations at the committed source,
+including completed independent HTTP probes for the five repaired providers.

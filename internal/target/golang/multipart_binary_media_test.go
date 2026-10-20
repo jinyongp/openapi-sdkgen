@@ -17,6 +17,7 @@ func TestGeneratedMultipartBinaryAlternativeMediaSelection(t *testing.T) {
 		t.Fatalf("prepare %v %v", err, diagnostics)
 	}
 	testGeneratedModule(t, plan, map[string]string{"multipart_binary_media_test.go": multipartBinaryMediaConsumer})
+	testPartitionedModule(t, plan, map[string]string{"multipart_binary_media_test.go": multipartBinaryMediaConsumer})
 }
 
 const multipartBinaryMediaConsumer = `package consumer_test

@@ -7,8 +7,8 @@ import (
 	"openapi-sdkgen/internal/generator"
 )
 
-// Generator implements the Go target. Preparation owns all semantic decisions;
-// emission only renders the frozen file plan.
+// Generator implements the Go target. Preparation owns schema semantics;
+// emission renders the frozen plan and partitions large implementation packages.
 type Generator struct{}
 
 func (Generator) Name() string { return "golang" }

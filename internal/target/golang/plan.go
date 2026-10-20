@@ -14,6 +14,7 @@ import (
 )
 
 type sourcePlan struct {
+	ImportPath string
 	Files      []filePlan
 	Inspection map[string]generator.OperationInspection
 	Inbound    []generator.InboundOperationInspection
@@ -606,7 +607,7 @@ func prepare(document *ir.Document, options generator.Options) (generator.Plan, 
 		definition := entry.Definition
 		inboundInspection = append(inboundInspection, generator.InboundOperationInspection{Kind: definition.Kind, Identity: definition.Identity, Name: definition.Name, Method: definition.Operation.Method, Expression: definition.Expression, SourceRoute: definition.SourceRoute, SourceOperationID: definition.SourceOperationID, ComponentName: definition.ComponentName})
 	}
-	return generator.NewPlan("golang", sourcePlan{Files: files, Inbound: inboundInspection, Inspection: prepareInspection(preparedDocument, inspectionOperations, clientResources(resources, selections.Root), omitted)}), diagnostics, nil
+	return generator.NewPlan("golang", sourcePlan{ImportPath: config.ImportPath, Files: files, Inbound: inboundInspection, Inspection: prepareInspection(preparedDocument, inspectionOperations, clientResources(resources, selections.Root), omitted)}), diagnostics, nil
 }
 
 func validPackage(name string) bool { return token.IsIdentifier(name) && name != "_" }

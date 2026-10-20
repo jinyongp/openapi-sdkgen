@@ -125,4 +125,5 @@ func TestDynamic(t *testing.T){
 }
 `
 	testGeneratedModule(t, plan, map[string]string{"api/internal/schema/dynamic_test.go": source})
+	testPartitionedModule(t, plan, map[string]string{"api/internal/schema/dynamic_test.go": source})
 }

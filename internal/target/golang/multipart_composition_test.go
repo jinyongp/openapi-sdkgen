@@ -21,6 +21,7 @@ func TestGeneratedMultipartUnionTupleAndNullableParts(t *testing.T) {
 		t.Fatalf("prepare %v %v", err, diagnostics)
 	}
 	testGeneratedModule(t, plan, map[string]string{"multipart_composition_test.go": multipartCompositionConsumer})
+	testPartitionedModule(t, plan, map[string]string{"multipart_composition_test.go": multipartCompositionConsumer})
 }
 
 const multipartCompositionConsumer = `package consumer_test

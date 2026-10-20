@@ -69,6 +69,7 @@ components:
 		t.Fatalf("prepare %v %v", err, diagnostics)
 	}
 	testGeneratedModule(t, plan, map[string]string{"xml_composition_test.go": xmlCompositionHTTPConsumer})
+	testPartitionedModule(t, plan, map[string]string{"xml_composition_test.go": xmlCompositionHTTPConsumer})
 }
 
 const xmlCompositionHTTPConsumer = `package consumer_test
