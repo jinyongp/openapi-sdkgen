@@ -1,21 +1,35 @@
-var formatURLBase struct { once sync.Once; value *urlstd.URL }
-
-func urlFormatBase() *urlstd.URL {
-    formatURLBase.once.Do(func(){base,err:=urlstd.Parse("https://format.invalid/");if err!=nil{panic(err)};formatURLBase.value=base})
-    return formatURLBase.value
+// FormatURL validates URI/IRI syntax without applying a URL parser's repair rules.
+func FormatURL(value string,absolute bool,unicodeAllowed ...bool)bool{
+ unicode:=len(unicodeAllowed)>0&&unicodeAllowed[0]
+ fragment:="";if index:=strings.IndexByte(value,'#');index>=0{fragment=value[index+1:];value=value[:index]}
+ query:="";if index:=strings.IndexByte(value,'?');index>=0{query=value[index+1:];value=value[:index]}
+ scheme:=false
+ if index:=strings.IndexByte(value,':');index>=0&&!strings.Contains(value[:index],"/"){
+  if index==0{return false};for offset,char:=range value[:index]{if !(char>='a'&&char<='z'||char>='A'&&char<='Z'||offset>0&&(char>='0'&&char<='9'||strings.ContainsRune("+.-",char))){return false}};scheme=true;value=value[index+1:]
+ }
+ if absolute&&!scheme{return false}
+ authority:="";hasAuthority:=strings.HasPrefix(value,"//")
+ if hasAuthority{value=value[2:];index:=strings.IndexByte(value,'/');if index<0{authority=value;value=""}else{authority=value[:index];value=value[index:]}}
+ if !uriPart(value,"/:@",unicode,false)||!uriPart(query,"/:@?",unicode,true)||!uriPart(fragment,"/:@?",unicode,false){return false}
+ if !hasAuthority{return true}
+ if index:=strings.IndexByte(authority,'@');index>=0{if !uriPart(authority[:index],":",unicode,false){return false};authority=authority[index+1:]}
+ if strings.HasPrefix(authority,"["){
+  end:=strings.IndexByte(authority,']');if end<0{return false};tail:=authority[end+1:];if tail!=""&&(!strings.HasPrefix(tail,":")||!uriPort(tail[1:])){return false};literal:=authority[1:end]
+  if FormatIP(literal,true){return true}
+  if len(literal)<4||literal[0]!='v'&&literal[0]!='V'{return false};version,body,ok:=strings.Cut(literal[1:],".");if !ok||version==""||body==""{return false};for _,char:=range version{if !strings.ContainsRune("0123456789abcdefABCDEF",char){return false}}
+  return !strings.Contains(body,"%")&&uriPart(body,":",false,false)
+ }
+ if index:=strings.LastIndexByte(authority,':');index>=0{if !uriPort(authority[index+1:]){return false};authority=authority[:index]}
+ return uriPart(authority,"",unicode,false)
 }
-
-func FormatURL(value string,absolute bool) bool {
-    if absolute {
-        colon:=strings.IndexByte(value,':');if colon<=0{return false}
-        for index:=0;index<colon;index++{char:=value[index];letter:=char>='A'&&char<='Z'||char>='a'&&char<='z';if !letter&&(index==0||!(char>='0'&&char<='9'||char=='+'||char=='-'||char=='.')){return false}}
-    }
-    _,err:=urlFormatBase().Parse(value)
-    return err==nil
-}
-func FormatIDNHostname(value string) (string,bool) {
-    if value==""{return "",false}
-    parsed,err:=urlstd.Parse("http://"+value)
-    if err!=nil{return "",false}
-    return parsed.Hostname(),true
+func uriPort(value string)bool{for _,char:=range value{if char<'0'||char>'9'{return false}};return true}
+func uriPart(value,extra string,unicode,query bool)bool{
+ for index:=0;index<len(value);{
+  point,size:=utf8.DecodeRuneInString(value[index:]);if point==utf8.RuneError&&size==1{return false};index+=size
+  if point=='%'{if index+2>len(value)||!strings.ContainsRune("0123456789abcdefABCDEF",rune(value[index]))||!strings.ContainsRune("0123456789abcdefABCDEF",rune(value[index+1])){return false};index+=2;continue}
+  if point<128{if !(point>='a'&&point<='z'||point>='A'&&point<='Z'||point>='0'&&point<='9'||strings.ContainsRune("-._~!$&'()*+,;="+extra,point)){return false};continue}
+  ucs:=point>=0xa0&&point<=0xd7ff||point>=0xf900&&point<=0xfdcf||point>=0xfdf0&&point<=0xffef||point>=0x10000&&point<=0xefffd&&point&0xffff<=0xfffd
+  private:=point>=0xe000&&point<=0xf8ff||point>=0xf0000&&point<=0x10fffd&&point&0xffff<=0xfffd
+  if !unicode||!ucs&&!(query&&private){return false}
+ };return true
 }

@@ -30,7 +30,11 @@ export async function* decodeJSONStreamItems(
           }
           if (/^[ \t\r\n]*$/.test(frame)) continue;
           const item: unknown = parseStreamJSON(frame);
-          if ((item === null || typeof item === "number" || typeof item === "boolean") && !/[ \t\r\n]$/.test(frame)) continue;
+          if (
+            (item === null || typeof item === "number" || typeof item === "boolean") &&
+            !/[ \t\r\n]$/.test(frame)
+          )
+            continue;
           yield item;
           continue;
         }

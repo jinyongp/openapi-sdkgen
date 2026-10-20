@@ -170,7 +170,7 @@ describe("generated runtime", () => {
       ["date", "2024-02-29", "2023-02-29"],
       ["time", "23:59:60Z", "24:00:00Z"],
       ["duration", "P1Y2M3DT4H5M6.7S", "P"],
-      ["email", "user@example.com", "user@example"],
+      ["email", "user@example.com", "user@-example"],
       ["idn-email", "δοκιμή@παράδειγμα", "not an address"],
       ["hostname", "api.example.com", "-api.example.com"],
       ["idn-hostname", "例え.テスト", "bad host"],

@@ -1,0 +1,4 @@
+func FormatHostname(value string,allowUnicode bool)bool{
+ if !allowUnicode{for _,point:=range value{if point>127{return false}}}
+ _,err:=urlstd.HostnameToASCII(value);return err==nil
+}

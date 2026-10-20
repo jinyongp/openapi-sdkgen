@@ -1,0 +1,39 @@
+{
+  "repository": "https://github.com/json-schema-org/JSON-Schema-Test-Suite",
+  "revision": "3c25e5f709192aadf67cf7f2eb19771a57131fec",
+  "license": "json-schema-suite.LICENSE",
+  "files": {
+    "tests/draft2020-12/optional/format/idn-hostname.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/idn-hostname.json",
+      "sha256": "557f834ac06bd3d89e73d32b8beeebe639c62d7683963e3b86649f244a13f2d5"
+    },
+    "tests/draft2020-12/optional/format/hostname.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/hostname.json",
+      "sha256": "5f4b23d1715e77a59fbed2a203e8ea79a4502b296291ea64fd1784b3c75147fb"
+    },
+    "tests/draft2020-12/optional/format/uri.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/uri.json",
+      "sha256": "b17e5aabe80a0bbc5f454c22a1c3519aa3c97a5889f145b871312b0eb91e756f"
+    },
+    "tests/draft2020-12/optional/format/uri-reference.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/uri-reference.json",
+      "sha256": "2d903e5184dd75bdc2c58aa25448198bde6dc495d6907396ed87d073c4ee70c2"
+    },
+    "tests/draft2020-12/optional/format/iri.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/iri.json",
+      "sha256": "e75042e6617fe2198402e3f874bed6f40e5b0dfcbea8d195a476b9be2cd20d5b"
+    },
+    "tests/draft2020-12/optional/format/iri-reference.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/iri-reference.json",
+      "sha256": "42f3a9fe64b512da7201dfcfa8fc021f3c718c9c0d9b35456c4a42a724abb322"
+    },
+    "tests/draft2020-12/optional/format/email.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/email.json",
+      "sha256": "2d0d8295bd24a445434d016aa8edde7650c0432a83c9106fcf3fbf232b45c79a"
+    },
+    "tests/draft2020-12/optional/format/idn-email.json": {
+      "url": "https://raw.githubusercontent.com/json-schema-org/JSON-Schema-Test-Suite/3c25e5f709192aadf67cf7f2eb19771a57131fec/tests/draft2020-12/optional/format/idn-email.json",
+      "sha256": "9af85986274a8704e0a91d1d8159775a712466713e5418210b1e01ad8e763ad5"
+    }
+  }
+}

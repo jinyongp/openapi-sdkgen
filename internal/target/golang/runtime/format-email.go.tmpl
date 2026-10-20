@@ -1,0 +1,17 @@
+func FormatEmail(value string,allowUnicode bool)bool{
+ if !utf8.ValidString(value){return false};at:=strings.LastIndexByte(value,'@');if at<=0{return false}
+ if !allowUnicode{for _,point:=range value{if point>127{return false}}}
+ local,domain:=value[:at],value[at+1:];if len(local)>64{return false};points:=[]rune(local)
+ if strings.HasPrefix(local,"\""){
+  if len(points)<2||points[len(points)-1]!='"'{return false}
+  for index:=1;index<len(points)-1;index++{point:=points[index];if point=='\\'{index++;if index>=len(points)-1||points[index]<32||points[index]>126{return false}}else if point<32||point=='"'||point==127{return false}}
+ }else{
+  if strings.HasPrefix(local,".")||strings.HasSuffix(local,".")||strings.Contains(local,".."){return false}
+  for _,point:=range points{if point>=128{if !allowUnicode{return false}}else if !(point>='a'&&point<='z'||point>='A'&&point<='Z'||point>='0'&&point<='9'||strings.ContainsRune("!#$%&'*+-/=?^_`{|}~.",point)){return false}}
+ }
+ if strings.HasPrefix(domain,"[")&&strings.HasSuffix(domain,"]"){
+  literal:=domain[1:len(domain)-1];if len(literal)>=5&&strings.EqualFold(literal[:5],"IPv6:"){return FormatIP(literal[5:],true)}
+  parts:=strings.Split(literal,".");if len(parts)!=4{return false};for _,part:=range parts{if len(part)<1||len(part)>3{return false};number:=0;for _,char:=range part{if char<'0'||char>'9'{return false};number=number*10+int(char-'0')};if number>255{return false}};return true
+ }
+ return FormatHostname(domain,allowUnicode)
+}

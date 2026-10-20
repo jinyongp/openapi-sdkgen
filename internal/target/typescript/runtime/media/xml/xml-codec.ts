@@ -234,8 +234,7 @@ export function createXMLCodec(
     const xml: WireXML | undefined = schema.xml;
     if (xml?.nodeType === "none") return "";
     if (xml?.nodeType === "text") return escapeXMLText(xmlScalar(value));
-    if (xml?.nodeType === "cdata")
-      return escapeXMLCDATA(xmlScalar(value));
+    if (xml?.nodeType === "cdata") return escapeXMLCDATA(xmlScalar(value));
     const name: string = xmlName(xml, fallbackName);
     const namespaces: Record<string, string> = Object.assign(
       Object.create(null),
@@ -337,11 +336,19 @@ export function createXMLCodec(
   }
 
   function escapeXMLText(value: string): string {
-    return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\r","&#13;");
+    return value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\r", "&#13;");
   }
 
   function escapeXMLAttribute(value: string): string {
-    return escapeXMLText(value).replaceAll('"', "&quot;").replaceAll("'", "&apos;").replaceAll("\n","&#10;").replaceAll("\t","&#9;");
+    return escapeXMLText(value)
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&apos;")
+      .replaceAll("\n", "&#10;")
+      .replaceAll("\t", "&#9;");
   }
 
   function escapeXMLCDATA(value: string): string {
