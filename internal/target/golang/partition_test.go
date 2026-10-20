@@ -11,16 +11,24 @@ import (
 )
 
 func TestPartitionPrivateSymbolCollisions(t *testing.T) {
-	const source = "package models\ntype SdkgenPrivate__foo int\nfunc foo()int{return 1}\nfunc foo_()int{return foo()+1}\nfunc Value()int{return foo_()}\n"
 	var previous map[string][]byte
 	for repeat := 0; repeat < 2; repeat++ {
 		artifacts := make(map[string][]byte)
-		files := []partitionFile{{artifact: generator.Artifact{Path: "models/names.go", Data: []byte(source)}}}
+		files := []partitionFile{
+			{artifact: generator.Artifact{Path: "models/a.go", Data: []byte("package models\ntype SdkgenPrivate__foo int\ntype hidden int\nfunc local()hidden{return 1}\nfunc foo()int{return int(local())}\n")}},
+			{artifact: generator.Artifact{Path: "models/b.go", Data: []byte("package models\nfunc foo_()int{return foo()+1}\n")}},
+			{artifact: generator.Artifact{Path: "models/c.go", Data: []byte("package models\nfunc Value()int{return foo_()}\n")}},
+		}
 		if err := partitionPackage(files, "example.test/consumer/api", "models", generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
 			artifacts[artifact.Path] = artifact.Data
 			return nil
-		}), 512); err != nil {
+		}), 1); err != nil {
 			t.Fatal(err)
+		}
+		for name, data := range artifacts {
+			if bytes.Contains(data, []byte("SdkgenPrivate__local")) || bytes.Contains(data, []byte("SdkgenPrivate__hidden")) {
+				t.Fatal("package-local helpers leaked into export data", name)
+			}
 		}
 		if repeat == 1 {
 			for name, data := range artifacts {

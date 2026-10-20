@@ -164,7 +164,7 @@ checks passed: targeted Go verifier tests, 22 Python evidence tests and 33
 documentation evidence tests. Complete SDK compiler checks remain in progress.
 
 Compiler layout unit: packages of at least 8 MiB are split along strongly
-connected file dependencies, with 1 MiB target batches and intact recursive
+connected file dependencies, with 4 MiB target batches and intact recursive
 components. Shared runtime state lives in a common implementation package.
 Public model aliases, forwarding functions, constants and method sets preserve
 consumer imports; model backing fields remain private. Internal schema state
@@ -187,3 +187,32 @@ reading the active manifest. It now checks the archived manifest measured by
 that report, retaining the exact SHA/document identity checks. This regression
 test and the final XML/dynamic/partition checks pass. Fresh complete CI is still
 required for the final committed state.
+
+Compiler follow-up review: local codecs remain private unless referenced across
+implementation packages. Stripe's exported private helper functions fall from
+85,573 to 2,393; 83,180 local codecs no longer inflate import metadata. The
+four-MiB batches reduce its implementation package count from 141/78 to 40/22
+(models/schema). Public facades retain the full API. Deterministic collision,
+private-helper visibility, recursive/dynamic, XML and multipart regression checks
+pass, along with 33 documentation evidence checks and the Python Go evidence gate.
+
+With these layout changes, the complete local Stripe module and independent HTTP
+contract passed under the original serial/two-CPU/3-GiB-soft profile in 12:35.80,
+with peak RSS 6,288,928 KiB. This instrumented diagnostic is not an Actions result
+or a matched speedup benchmark. Cloudflare still exceeded that profile's 20-minute
+compiler timeout; its generation succeeded but compilation is a recorded failure.
+
+The compiler budget for new measurements is serial packages, four CPU threads,
+6 GiB soft Go memory and the unchanged 20-minute compiler timeout, within the
+standard public Linux runner. Generation retains its separate two-CPU/3-GiB
+budget. The compiler's soft limit does not cap RSS. Reports record their exact
+policy; the current aggregate rejects older policies rather than combining them.
+Archived evidence retains its original budgets, source and failed outcomes.
+The full Cloudflare check is in progress under the new policy.
+
+At the preceding committed source `3eb502b`, Actions CI run `39414230062` passed
+all 11 jobs. Compatibility run `39414236568` completed all three repaired inputs
+(Spoonacular 99 operations, DigitalOcean 739, Loket 663) and their exact independent
+HTTP tests. Stripe and Cloudflare exceeded the old compiler timeout; successful
+workflow status alone is not compiler success. Fresh complete Actions evidence is
+required for the updated layout and policy before delivery.

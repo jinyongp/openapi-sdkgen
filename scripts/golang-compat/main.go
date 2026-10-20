@@ -57,7 +57,10 @@ type compilationResult struct {
 }
 
 const compilerTimeout = 20 * time.Minute
-const goCompilerMemoryLimit = "3GiB"
+
+// Compilation has its own budget: large public model facades require more
+// memory than generation. Keep package builds serial within the standard runner.
+const goCompilerMemoryLimit = "6GiB"
 
 type compilationPolicy struct {
 	TimeoutSeconds   int    `json:"timeoutSeconds"`
@@ -67,7 +70,7 @@ type compilationPolicy struct {
 }
 
 func goCompilationPolicy() compilationPolicy {
-	return compilationPolicy{TimeoutSeconds: int(compilerTimeout / time.Second), BuildParallelism: 1, CPUConcurrency: 2, MemoryLimit: goCompilerMemoryLimit}
+	return compilationPolicy{TimeoutSeconds: int(compilerTimeout / time.Second), BuildParallelism: 1, CPUConcurrency: 4, MemoryLimit: goCompilerMemoryLimit}
 }
 
 type report struct {

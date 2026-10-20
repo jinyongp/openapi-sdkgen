@@ -20,7 +20,7 @@ import (
 // implementation packages. Public aliases and forwarding functions retain the
 // consumer's import paths, distinct model identities and method sets.
 const partitionThreshold = 8 << 20
-const partitionBatch = 1 << 20
+const partitionBatch = 4 << 20
 
 type partitionFile struct {
 	artifact generator.Artifact
@@ -30,8 +30,9 @@ type partitionFile struct {
 }
 
 type partitionSymbol struct {
-	file int
-	name string
+	file  int
+	name  string
+	users []int
 }
 
 type packagePartition struct {
@@ -93,21 +94,6 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 			})
 		}
 	}
-	used := make(map[string]bool, len(p.symbols))
-	for name := range p.symbols {
-		used[name] = true
-	}
-	for _, name := range sortedKeys(p.symbols) {
-		symbol := p.symbols[name]
-		if !ast.IsExported(name) {
-			symbol.name = "SdkgenPrivate__" + name
-			for used[symbol.name] {
-				symbol.name += "_"
-			}
-			used[symbol.name] = true
-			p.symbols[name] = symbol
-		}
-	}
 	for index, file := range files {
 		node, err := parser.ParseFile(token.NewFileSet(), file.artifact.Path, file.artifact.Data, 0)
 		if err != nil {
@@ -115,14 +101,21 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 		}
 		ignored := partitionIgnored(node)
 		edges := make(map[int]bool)
+		uses := make(map[string]bool)
 		ast.Inspect(node, func(n ast.Node) bool {
 			if id, ok := n.(*ast.Ident); ok && !ignored[id] && partitionGlobal(node, id) {
 				if symbol, exists := p.symbols[id.Name]; exists && symbol.file != index {
 					edges[symbol.file] = true
+					uses[id.Name] = true
 				}
 			}
 			return true
 		})
+		for name := range uses {
+			symbol := p.symbols[name]
+			symbol.users = append(symbol.users, index)
+			p.symbols[name] = symbol
+		}
 		for dependency := range edges {
 			if file.shared && !files[dependency].shared {
 				return fmt.Errorf("shared generated runtime %s depends on a model program", file.artifact.Path)
@@ -132,6 +125,29 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 		sort.Ints(p.files[index].edges)
 	}
 	p.assignGroups(batch)
+	used := make(map[string]bool, len(p.symbols))
+	for name := range p.symbols {
+		used[name] = true
+	}
+	for _, name := range sortedKeys(p.symbols) {
+		symbol := p.symbols[name]
+		if ast.IsExported(name) {
+			continue
+		}
+		// Local codecs must stay private: exporting every helper inflates the
+		// import data loaded by the public facade and every dependent package.
+		for _, user := range symbol.users {
+			if p.files[user].group != p.files[symbol.file].group {
+				symbol.name = "SdkgenPrivate__" + name
+				for used[symbol.name] {
+					symbol.name += "_"
+				}
+				used[symbol.name] = true
+				p.symbols[name] = symbol
+				break
+			}
+		}
+	}
 	for index := range p.files {
 		if err := p.emitFile(index, sink); err != nil {
 			return fmt.Errorf("partition %s: %w", p.files[index].artifact.Path, err)
@@ -490,6 +506,9 @@ func (p *packagePartition) facade(original *ast.File, group int) ([]byte, error)
 			for _, spec := range declaration.Specs {
 				switch spec := spec.(type) {
 				case *ast.TypeSpec:
+					if !spec.Name.IsExported() {
+						continue
+					}
 					name := p.symbols[spec.Name.Name].name
 					spec.Assign = 1
 					spec.Type = &ast.SelectorExpr{X: ast.NewIdent("sdkgenimpl"), Sel: ast.NewIdent(name)}
