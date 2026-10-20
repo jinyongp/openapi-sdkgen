@@ -236,3 +236,13 @@ found and fixed stale import retention in the formatter. Targeted generated
 modules pass for binding/collisions, recursive/dynamic references, XML HTTP and
 multipart composition/binary alternatives. Full Cloudflare compilation under the
 unchanged four-CPU/6-GiB-soft/20-minute policy is in progress for this candidate.
+
+The final layout also omits unused internal schema facades after binding all
+generated callers. This supersedes their temporary retention above: internal
+validator forwarding declarations are implementation details; public model types
+and functions retain their facades. Forced-partition regression checks reject an
+unused schema facade and exercise dynamic validation through the public model
+decoder. Binding/shadowing, recursive/dynamic, XML and multipart generated-module
+checks pass. The superseded local diagnostic and queued compatibility run
+`39430043575` were cancelled, not counted as passing evidence. Final source CI and
+complete provider measurements will be repeated with this smaller layout.

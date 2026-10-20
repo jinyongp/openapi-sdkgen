@@ -45,6 +45,7 @@ type packagePartition struct {
 	symbols                      map[string]partitionSymbol
 	fields, methods              map[string]string
 	sharedTypes                  map[string]bool
+	private                      bool
 }
 
 func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink, bindings map[string]partitionReference) error {
@@ -68,7 +69,7 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 }
 
 func partitionPackageBound(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int, bindings map[string]partitionReference) error {
-	p := packagePartition{root: root, directory: directory, packageName: path.Base(directory), files: files,
+	p := packagePartition{root: root, directory: directory, packageName: path.Base(directory), files: files, private: bindings != nil && directory == "internal/schema",
 		symbols: make(map[string]partitionSymbol), fields: make(map[string]string), methods: make(map[string]string), sharedTypes: make(map[string]bool)}
 	for index, file := range files {
 		node, err := parser.ParseFile(token.NewFileSet(), file.artifact.Path, file.artifact.Data, 0)
@@ -174,7 +175,8 @@ func partitionPackageBound(files []partitionFile, root, directory string, sink g
 
 // Generated callers use implementation bindings directly. Importing the complete
 // validator facade from every model otherwise reloads its duplicate export data,
-// including aliases used in model state. The facade remains available internally.
+// including aliases used in model state. Internal schema facades are unnecessary
+// once callers have direct bindings; public model facades retain their API.
 func bindPartitionImports(artifact generator.Artifact, source string, bindings map[string]partitionReference) (generator.Artifact, error) {
 	if len(bindings) == 0 || !bytes.Contains(artifact.Data, []byte(strconv.Quote(source))) {
 		return artifact, nil
@@ -342,9 +344,12 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 	if err != nil {
 		return err
 	}
-	facade, err := p.facade(node, file.group)
-	if err != nil {
-		return err
+	var facade []byte
+	if !p.private {
+		facade, err = p.facade(node, file.group)
+		if err != nil {
+			return err
+		}
 	}
 	ignored := partitionIgnored(node)
 	imports := make(map[int]string)
@@ -441,6 +446,9 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 	implementation := fmt.Sprintf("internal/%simpl/p%d/%s", p.packageName, file.group, path.Base(file.artifact.Path))
 	if err := sink.WriteArtifact(generator.Artifact{Path: implementation, Data: data}); err != nil {
 		return err
+	}
+	if p.private {
+		return nil
 	}
 	return sink.WriteArtifact(generator.Artifact{Path: file.artifact.Path, Data: facade})
 }

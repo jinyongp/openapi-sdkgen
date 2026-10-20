@@ -138,7 +138,10 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 		}
 	}
 	for index, file := range files {
-		if strings.HasPrefix(file.Path, "internal/schema/") || strings.HasPrefix(file.Path, "internal/schemaimpl/") {
+		if strings.HasPrefix(file.Path, "internal/schema/") {
+			t.Fatal("unused internal schema facade was emitted", file.Path)
+		}
+		if strings.HasPrefix(file.Path, "internal/schemaimpl/") {
 			continue
 		}
 		artifact, err := bindPartitionImports(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}, prepared.ImportPath+"/internal/schema", bindings)

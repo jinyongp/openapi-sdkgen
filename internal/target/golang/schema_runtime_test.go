@@ -110,20 +110,20 @@ func TestGeneratedRecursiveAndDynamicReferences(t *testing.T) {
 	if err != nil || len(diagnostics) != 0 {
 		t.Fatalf("prepare: %v %v", err, diagnostics)
 	}
-	const source = `package schema
-import("context";"testing";"example.test/consumer/api/internal/wire")
+	const source = `package models_test
+import("context";"testing";"example.test/consumer/api/models";"example.test/consumer/api/types")
 func TestDynamic(t *testing.T){
  for _,test:=range []struct{input string;valid bool}{
   {"{\"data\":1,\"children\":[{\"data\":2}]}",true},
   {"{\"data\":1,\"children\":[{\"extra\":2}]}",false},
   {"{\"data\":1,\"children\":[{\"data\":false}]}",false},
  }{
-  value,err:=wire.Parse([]byte(test.input));if err!=nil{t.Fatal(err)}
-  _,err=ValidateHTTP__GetTreeOutput__(context.Background(),value,"")
+  value,err:=types.ParseValue([]byte(test.input));if err!=nil{t.Fatal(err)}
+  _,err=models.DecodeGetTreeOutput(context.Background(),value)
   if (err==nil)!=test.valid{t.Errorf("%s: %v",test.input,err)}
  }
 }
 `
-	testGeneratedModule(t, plan, map[string]string{"api/internal/schema/dynamic_test.go": source})
-	testPartitionedModule(t, plan, map[string]string{"api/internal/schema/dynamic_test.go": source})
+	testGeneratedModule(t, plan, map[string]string{"api/models/dynamic_test.go": source})
+	testPartitionedModule(t, plan, map[string]string{"api/models/dynamic_test.go": source})
 }
