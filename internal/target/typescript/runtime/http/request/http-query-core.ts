@@ -1,3 +1,9 @@
+import {
+  appendQueryValue,
+  serializeQuery,
+  encodeStyleQueryValue,
+} from "../../shared/query-serialization.js";
+export { appendQueryValue, serializeQuery } from "../../shared/query-serialization.js";
 import type { WireSchema, WireSchemas } from "../../schema/wire-types.js";
 import type { OperationDefinition, ParameterDefinition } from "../operation.js";
 import type { QueryPart, QueryEncoder } from "../http-types.js";
@@ -31,17 +37,6 @@ export function composeQueryParameterEncoder(
     if (encodeContent === undefined)
       throw new TypeError(`missing parameter encode codec for ${contentType}`);
     return encodeContent(value, contentType, schema, components);
-  }
-  function appendFormTokens(
-    query: QueryPart[],
-    name: string,
-    tokens: readonly string[],
-    allowReserved: boolean,
-  ): void {
-    const encode: (value: string) => string = allowReserved
-      ? encodeReservedQueryValue
-      : encodeURIComponent;
-    query.push({ raw: `${encodeURIComponent(name)}=${tokens.map(encode).join(",")}` });
   }
   function appendQuerySync(
     query: Readonly<Record<string, unknown>>,
@@ -79,69 +74,9 @@ export function composeQueryParameterEncoder(
       }
       const style: string = parameter?.style ?? "form";
       const explode: boolean = parameter?.explode ?? true;
-      if (style === "deepObject" && isRecord(value)) {
-        for (const [key, item] of Object.entries(value))
-          if (item !== undefined)
-            appendQueryValue(result, `${name}[${key}]`, item, parameter?.allowReserved ?? false);
-        continue;
-      }
-      if (Array.isArray(value)) {
-        if (style === "spaceDelimited")
-          appendQueryValue(
-            result,
-            name,
-            value.map(String).join(" "),
-            parameter?.allowReserved ?? false,
-          );
-        else if (style === "pipeDelimited")
-          appendQueryValue(
-            result,
-            name,
-            value.map(String).join("|"),
-            parameter?.allowReserved ?? false,
-          );
-        else if (explode)
-          for (const item of value)
-            appendQueryValue(result, name, item, parameter?.allowReserved ?? false);
-        else appendFormTokens(result, name, value.map(String), parameter?.allowReserved ?? false);
-        continue;
-      }
-      if (isRecord(value) && style === "form") {
-        const entries: [string, unknown][] = Object.entries(value).filter(
-          (entry: [string, unknown]): boolean => entry[1] !== undefined,
-        );
-        if (explode)
-          for (const [key, item] of entries)
-            appendQueryValue(result, key, item, parameter?.allowReserved ?? false);
-        else
-          appendFormTokens(
-            result,
-            name,
-            entries.flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)]),
-            parameter?.allowReserved ?? false,
-          );
-        continue;
-      }
-      if (isRecord(value) && (style === "spaceDelimited" || style === "pipeDelimited")) {
-        const separator: " " | "|" = style === "spaceDelimited" ? " " : "|";
-        const entries: [string, unknown][] = Object.entries(value).filter(
-          (entry: [string, unknown]): boolean => entry[1] !== undefined,
-        );
-        appendQueryValue(
-          result,
-          name,
-          explode
-            ? entries
-                .map(([key, item]: [string, unknown]): string => `${key}=${String(item)}`)
-                .join(separator)
-            : entries
-                .flatMap(([key, item]: [string, unknown]): string[] => [key, String(item)])
-                .join(separator),
-          parameter?.allowReserved ?? false,
-        );
-        continue;
-      }
-      appendQueryValue(result, name, value, parameter?.allowReserved ?? false);
+      result.push(
+        ...encodeStyleQueryValue(name, value, style, explode, parameter?.allowReserved ?? false),
+      );
     }
     return result;
   }
@@ -204,45 +139,4 @@ export function assertQueryEmptyValueAllowed(
     parameter.allowEmptyValue !== true
   )
     throw new TypeError(`Empty query parameter ${parameter.name} requires allowEmptyValue: true`);
-}
-
-/** Records a query value without losing its reserved-character policy. */
-export function appendQueryValue(
-  query: QueryPart[],
-  name: string,
-  value: unknown,
-  allowReserved: boolean,
-): void {
-  if (
-    isRecord(value) &&
-    typeof value["field"] === "string" &&
-    typeof value["direction"] === "string"
-  ) {
-    query.push({ name, value: `${value["field"]}:${value["direction"]}`, allowReserved });
-    return;
-  }
-  if (typeof value === "object" && value !== null) {
-    query.push({ name, value: JSON.stringify(value), allowReserved });
-    return;
-  }
-  query.push({ name, value: String(value), allowReserved });
-}
-
-/** Escapes query parts using their declared OpenAPI reserved-character policy. */
-export function serializeQuery(query: readonly QueryPart[]): string {
-  return query
-    .map(
-      (part: QueryPart): string =>
-        part.raw ??
-        `${encodeURIComponent(part.name ?? "")}=${part.allowReserved ? encodeReservedQueryValue(part.value ?? "") : encodeURIComponent(part.value ?? "")}`,
-    )
-    .join("&");
-}
-
-function encodeReservedQueryValue(value: string): string {
-  return encodeURIComponent(value)
-    .replace(/%25([0-9a-f]{2})/gi, "%$1")
-    .replace(/%3A|%2F|%3F|%40|%21|%24|%27|%28|%29|%2A|%2C|%3B|%3D/gi, (encoded: string): string =>
-      decodeURIComponent(encoded),
-    );
 }

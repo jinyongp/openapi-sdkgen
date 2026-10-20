@@ -47,13 +47,7 @@ export type QueryEncoder = (
   location: "query" | "querystring",
 ) => string;
 
-/** One query parameter value with its OpenAPI escaping and serialization rules. */
-export interface QueryPart {
-  readonly name?: string;
-  readonly value?: string;
-  readonly allowReserved?: boolean;
-  readonly raw?: string;
-}
+export type { QueryPart } from "../shared/query-serialization.js";
 
 /** Request-local cancellation, timeout observation and listener cleanup. */
 export interface AbortContext {

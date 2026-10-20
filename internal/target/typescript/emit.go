@@ -160,6 +160,7 @@ var runtimeTemplateArtifacts = []runtimeTemplateArtifact{
 	{source: "pagination-types.ts", path: "internal/runtime/client/pagination-types.ts"},
 	{source: "pagination.ts", path: "internal/runtime/client/pagination.ts"},
 	{source: "request.ts", path: "internal/runtime/http/request.ts"},
+	{source: "query-serialization.ts", path: "internal/runtime/shared/query-serialization.ts"},
 	{source: "runtime-support.ts", path: "internal/runtime/shared/runtime-support.ts"},
 	{source: "schema-query.ts", path: "internal/runtime/schema/schema-query.ts"},
 	{source: "security-api-cookie.ts", path: "internal/runtime/security/security-api-cookie.ts"},
