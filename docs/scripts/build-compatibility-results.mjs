@@ -49,8 +49,17 @@ export function readGoCIMeasurements(directory, ci) {
         document.sourceCommit !== ci.provenance.sourceCommit || document.sourceDirty !== false ||
         document.verificationRequested !== true || document.mode !== "golang-generation" || document.selection?.length ||
         JSON.stringify(document.addons) !== '["server"]' || document.pass !== passed ||
-        ![true, false].includes(profile?.blocked) || (profile.blocked ? compiled !== undefined : !["pass", "fail"].includes(compiled)) ||
+        ![true, false].includes(profile?.blocked) || (profile.blocked ? compiled !== undefined : !["pass", "fail", "unavailable"].includes(compiled)) ||
         (!passed && !document.failure)) throw new Error("Go measurement identity or verification mismatch");
+    if (compiled === "unavailable") {
+      const evidence = document.compilerEvidenceUnavailable;
+      const runId = Number(ci.provenance.runUrl.split("/").at(-1));
+      if (document.generationCheckpoint !== true || !evidence || evidence.sourceCommit !== ci.provenance.sourceCommit ||
+          evidence.runId !== runId || !Number.isSafeInteger(evidence.jobId) || evidence.jobId <= 0 ||
+          !["failure", "cancelled", "timed_out"].includes(evidence.jobConclusion)) {
+        throw new Error("Go compiler evidence is unavailable without verified Actions job provenance");
+      }
+    }
     const prep = document.inputPreparation;
     if (entry.preparation ? (!prep || prep.kind !== entry.preparation.kind || prep.sha256 !== entry.preparation.sha256 ||
         prep.sourceSha256 !== entry.sha256 || prep.operations !== entry.preparation.operations || passed && prep.contractsVerified !== true) : prep !== undefined) {

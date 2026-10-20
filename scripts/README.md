@@ -284,3 +284,10 @@ a `3GiB` soft Go heap limit per process and a 20-minute compiler deadline. The
 requested policy is recorded in each report. It isolates `GOWORK`, uses the installed
 toolchain and disables module downloads. Compiler deadline failures are explicit;
 a runner shutdown without a report remains incomplete evidence.
+
+The workflow uploads TypeScript evidence and a Go `--verification-checkpoint` before
+the separate Go compiler attempt. A checkpoint records generated SDK hashes and
+surfaces but can never pass compiler verification. The final report must match that
+checkpoint. If the compiler report is lost, the combiner checks the exact source,
+run, job identity and started compiler step through Actions before recording
+`unavailable`. It never converts a checkpoint into a compiler pass.

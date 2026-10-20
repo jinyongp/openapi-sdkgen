@@ -15,6 +15,10 @@ The measurement workflow separately generates Go clients and server handlers, th
 as failures. Microsoft Graph generation-only measurements are excluded from this Go profile.
 These checks do not call a provider API.
 
+Generation evidence is saved before compilation. If an Actions runner ends without returning a
+compiler result, the row is marked **Not verified**. It does not establish Go compilation support
+for that input.
+
 DigitalOcean publishes authoring sources with references in Operation Objects. These require
 bundling before generation. The measurement keeps both the original and prepared input hashes,
 and checks operation identities, required parameters and response representations after compilation.

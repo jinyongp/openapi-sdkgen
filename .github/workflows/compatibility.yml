@@ -164,19 +164,6 @@ jobs:
           compatibility_observer=$!
           trap 'kill "$compatibility_observer" 2>/dev/null || true; wait "$compatibility_observer" 2>/dev/null || true' EXIT
           wait "$compatibility_process"
-      - name: Generate and compile the independent Go SDK profile
-        continue-on-error: true
-        if: ${{ !cancelled() && matrix.typecheck && steps.benchmark.outcome != 'skipped' }}
-        timeout-minutes: 30
-        env:
-          GOMEMLIMIT: 3GiB
-          GOMAXPROCS: "2"
-        shell: bash
-        run: |
-          go run ./scripts/golang-compat --mode golang-generation --verify --server \
-            --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
-            --corpus-root ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
-            --document "$COMPATIBILITY_DOCUMENT" --output .tmp/compatibility-ci/golang.json
       - name: Require a verified supported SDK profile
         if: always() && steps.benchmark.outcome != 'skipped' && matrix.typecheck
         shell: bash
@@ -201,6 +188,46 @@ jobs:
             .tmp/compatibility-ci/
             .tmp/runs/
           include-hidden-files: true
+          retention-days: 7
+      - name: Save independent Go generation evidence
+        id: go-generation
+        if: ${{ !cancelled() && matrix.typecheck && steps.benchmark.outcome != 'skipped' }}
+        timeout-minutes: 10
+        env:
+          GOMEMLIMIT: 3GiB
+          GOMAXPROCS: "2"
+        run: |
+          go run ./scripts/golang-compat --mode golang-generation --verification-checkpoint --server \
+            --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            --corpus-root ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
+            --document "$COMPATIBILITY_DOCUMENT" --output .tmp/compatibility-ci/golang-generation.json
+      - name: Preserve Go evidence before starting the compiler
+        if: ${{ !cancelled() && steps.go-generation.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: golang-generation-shard-${{ matrix.corpus }}-${{ matrix.document }}
+          path: .tmp/compatibility-ci/golang-generation.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Compile the independent Go SDK profile
+        id: go-compile
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.go-generation.outcome == 'success' }}
+        timeout-minutes: 30
+        env:
+          GOMEMLIMIT: 3GiB
+          GOMAXPROCS: "2"
+        run: |
+          go run ./scripts/golang-compat --mode golang-generation --verify --server \
+            --manifest "test/compatibility/$COMPATIBILITY_CORPUS.json" \
+            --corpus-root ".tmp/compatibility-corpora/$COMPATIBILITY_CORPUS" \
+            --document "$COMPATIBILITY_DOCUMENT" --output .tmp/compatibility-ci/golang.json
+      - name: Upload completed Go compiler evidence
+        if: always() && matrix.typecheck
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: golang-shard-${{ matrix.corpus }}-${{ matrix.document }}
+          path: .tmp/compatibility-ci/golang.json
           retention-days: 7
 
   report:
@@ -244,7 +271,10 @@ jobs:
           exit "$compatibility_failed"
       - name: Verify and combine independent Go results
         if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          gh run download "$GITHUB_RUN_ID" --pattern 'golang-*' --dir .tmp/compatibility-shards
           python3 -B .github/scripts/compatibility_golang.py --shards .tmp/compatibility-shards \
             --output .tmp/compatibility-ci/golang-results.json
       - name: Download generation-only measurements

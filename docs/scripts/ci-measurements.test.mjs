@@ -140,6 +140,18 @@ test("Go publication keeps failed outcomes and rejects missing, stale or altered
   const blocked = structuredClone(ci);
   Object.assign(blocked.reports.golang.report.documents[0], { pass: false, failure: "blocked", golang: { blocked: true, generationError: "invalid pattern" } });
   assert.equal(readGoCIMeasurements(directory, blocked).documents[0].compilation, "blocked");
+  const unavailable = structuredClone(ci);
+  Object.assign(unavailable.reports.golang.report.documents[0], {
+    pass: false, failure: "compiler evidence unavailable", generationCheckpoint: true,
+    compilerEvidenceUnavailable: { runId: 123, jobId: 456, jobConclusion: "failure", sourceCommit },
+    golang: { blocked: false, compilation: { status: "unavailable", detail: "No compiler result was recovered." } },
+  });
+  assert.equal(readGoCIMeasurements(directory, unavailable).documents[0].compilation, "unavailable");
+  for (const change of [{ runId: 999 }, { sourceCommit: "f".repeat(40) }, { jobConclusion: "success" }]) {
+    const invalid = structuredClone(unavailable);
+    Object.assign(invalid.reports.golang.report.documents[0].compilerEvidenceUnavailable, change);
+    assert.throws(() => readGoCIMeasurements(directory, invalid), /Go compiler evidence/);
+  }
   for (const mutate of [list => list.pop(), list => list.push(list[0]), list => { list[0].inputSha256 = "bad"; },
     list => { list[0].sourceDirty = true; }, list => { list[0].verificationRequested = false; },
     list => { list.find(item => item.inputPreparation).inputPreparation.contractsVerified = false; }]) {

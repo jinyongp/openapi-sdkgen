@@ -15,17 +15,25 @@ class GoEvidenceTests(unittest.TestCase):
             manifests.mkdir(parents=True)
             entry = dict(id='provider', input='api.json', sha256='a' * 64)
             (manifests / 'test.json').write_text(json.dumps(dict(corpora=[entry])))
-            directory = root / 'document-shard-test-provider/compatibility-ci'
+            directory = root / 'golang-shard-test-provider'
             directory.mkdir(parents=True)
             path = directory / 'golang.json'
+            checkpoint_dir = root / 'golang-generation-shard-test-provider'
+            checkpoint_dir.mkdir()
+            checkpoint_path = checkpoint_dir / 'golang-generation.json'
             report = dict(sourceCommit='b' * 40, sourceDirty=False, verificationRequested=True,
                           id='provider', input='api.json', inputSha256='a' * 64,
                           goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit="3GiB"),
                           mode='golang-generation', addons=['server'], **{'pass': True},
-                          golang=dict(blocked=False, compilation=dict(status='pass')))
+                          golang=dict(blocked=False, files=1, bytes=10, artifactSha256='e' * 64, compilation=dict(status='pass')))
             with patch('compatibility_golang.CORPORA', ['test']):
                 def check(value):
                     path.write_text(json.dumps(value))
+                    checkpoint = copy.deepcopy(value)
+                    checkpoint.update(generationCheckpoint=True, **{'pass': False})
+                    if not checkpoint['golang'].get('blocked'):
+                        checkpoint['golang']['compilation'] = dict(status='not-run')
+                    checkpoint_path.write_text(json.dumps(checkpoint))
                     return combine(root, root, 'b' * 40)
                 self.assertEqual(len(check(report)['documents']), 1)
                 for mutation in [dict(sourceDirty=True), dict(sourceCommit='c' * 40),
@@ -38,7 +46,7 @@ class GoEvidenceTests(unittest.TestCase):
                                golang=dict(blocked=True, generationError='invalid pattern'))
                 self.assertFalse(check(blocked)['documents'][0]['pass'])
                 failed = dict(report, **{'pass': False}, failure='compile failed',
-                              golang=dict(blocked=False, compilation=dict(status='fail', detail='syntax error')))
+                              golang=dict(blocked=False, files=1, bytes=10, artifactSha256='e' * 64, compilation=dict(status='fail', detail='syntax error')))
                 self.assertFalse(check(failed)['documents'][0]['pass'])
                 expected = dict(kind='operation-references-v1', sha256='d' * 64, operations=2)
                 entry['preparation'] = expected
@@ -51,6 +59,24 @@ class GoEvidenceTests(unittest.TestCase):
                     changed['inputPreparation'][field] = value
                     with self.assertRaises(ValueError):
                         check(changed)
+
+                check(report)
+                changed = json.loads(checkpoint_path.read_text())
+                changed['golang']['artifactSha256'] = 'f' * 64
+                checkpoint_path.write_text(json.dumps(changed))
+                with self.assertRaises(ValueError):
+                    combine(root, root, 'b' * 40)
+                check(report)
+                path.unlink()
+                job = dict(id=123, name='Measure test / provider / full', head_sha='b' * 40, run_id=456,
+                           status='completed', conclusion='failure', steps=[dict(name='Compile the independent Go SDK profile', started_at='2026-10-20T00:00:00Z', conclusion='success')])
+                missing = combine(root, root, 'b' * 40, jobs=[job], run_id=456)['documents'][0]
+                self.assertFalse(missing['pass'])
+                self.assertEqual(missing['golang']['compilation']['status'], 'unavailable')
+                self.assertEqual(missing['compilerEvidenceUnavailable']['jobId'], 123)
+                for change in [dict(head_sha='f' * 40), dict(run_id=999), dict(conclusion='success'), dict(steps=[])]:
+                    with self.assertRaises(ValueError):
+                        combine(root, root, 'b' * 40, jobs=[dict(job, **change)], run_id=456)
 
 
 if __name__ == '__main__':

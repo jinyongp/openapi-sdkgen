@@ -69,6 +69,7 @@ func goCompilationPolicy() compilationPolicy {
 }
 
 type report struct {
+	GenerationCheckpoint  bool                  `json:"generationCheckpoint,omitempty"`
 	GoCompilationPolicy   *compilationPolicy    `json:"goCompilationPolicy,omitempty"`
 	VerificationRequested bool                  `json:"verificationRequested"`
 	SourceCommit          string                `json:"sourceCommit"`
@@ -96,6 +97,7 @@ func main() {
 }
 func run() error {
 	verify := flag.Bool("verify", false, "compile emitted modules; generation alone is not compilation evidence")
+	checkpoint := flag.Bool("verification-checkpoint", false, "save generation evidence before a separate compiler attempt; never a compiler pass")
 	typescriptRoot := flag.String("typescript-root", "test/typescript", "installed consumer TypeScript compiler directory")
 	mode := flag.String("mode", "parity", "parity or golang-generation; generation mode proves no cross-target parity")
 	selectCount := flag.Int("select-count", 0, "select first N exact original route keys, sorted; zero selects all")
@@ -111,6 +113,9 @@ func run() error {
 	var exactRoutes []string
 	flag.Func("route", "repeat an exact original route key for generation selection", func(value string) error { exactRoutes = append(exactRoutes, value); return nil })
 	flag.Parse()
+	if *checkpoint && (*verify || *mode != "golang-generation" || *goOnly) {
+		return fmt.Errorf("verification-checkpoint requires golang-generation without verify or diagnostic-go-only")
+	}
 	if *deadline > 0 && *profilePrefix == "" {
 		return fmt.Errorf("deadline requires a diagnostic profile")
 	}
@@ -184,8 +189,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	result := report{VerificationRequested: *verify, Mode: *mode, ID: selected.ID, Input: selected.Input, InputSHA256: digest(input), GoVersion: runtime.Version()}
-	if *verify {
+	result := report{GenerationCheckpoint: *checkpoint, VerificationRequested: *verify || *checkpoint, Mode: *mode, ID: selected.ID, Input: selected.Input, InputSHA256: digest(input), GoVersion: runtime.Version()}
+	if *verify || *checkpoint {
 		policy := goCompilationPolicy()
 		result.GoCompilationPolicy = &policy
 	}
@@ -300,6 +305,11 @@ func run() error {
 			result.Failure = "generated module compilation failed"
 		}
 	}
+	if *checkpoint && !result.Go.Blocked {
+		result.Go.Compilation = &compilationResult{Status: "not-run"}
+		result.Pass = false
+		result.Failure = "compiler verification has not run"
+	}
 	encoded, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		return err
@@ -309,6 +319,10 @@ func run() error {
 	}
 	if err := os.WriteFile(*output, append(encoded, '\n'), 0600); err != nil {
 		return err
+	}
+	if *checkpoint {
+		fmt.Fprintf(os.Stderr, "%s: Go generation checkpoint saved; blocked=%t; compiler not run\n", result.ID, result.Go.Blocked)
+		return nil
 	}
 	fmt.Fprintf(os.Stderr, "%s server=%t: TS routes=%d/inbound=%d, Go routes=%d/inbound=%d, pass=%t\n", result.ID, *server, len(result.TypeScript.Routes), len(result.TypeScript.Inbound), len(result.Go.Routes), len(result.Go.Inbound), result.Pass)
 	if !result.Pass {
@@ -572,6 +586,7 @@ func verifyModule(target, directory, typescriptRoot string) *compilationResult {
 		command = exec.CommandContext(ctx, "node", args...)
 	}
 	command.Dir = directory
+	command.WaitDelay = 5 * time.Second
 	output, err := command.CombinedOutput()
 	if err != nil {
 		detail := strings.ReplaceAll(strings.TrimSpace(string(output)), directory, "<generated>")
