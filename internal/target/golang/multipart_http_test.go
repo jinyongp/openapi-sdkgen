@@ -53,15 +53,16 @@ func TestMultipartHTTP(t *testing.T){
  if _,err:=client.Operations.Upload(input).WithOptions(types.RequestOptions{MultipartHeaders:options.MultipartHeaders,MultipartContentTypes:map[string]string{"file":"image/png"}}).Do(context.Background());err==nil{t.Fatal("accepted disallowed part content type")}
  if source.opens.Load()!=2||requests.Load()!=2{t.Fatal("invalid header opened source or sent request",source.opens.Load(),requests.Load())}
 }
-type earlyUploadSource struct{opened,released chan struct{};opens,closes atomic.Int32;once sync.Once}
+type earlyUploadSource struct{reading,released chan struct{};opens,closes atomic.Int32;once sync.Once}
 func(*earlyUploadSource)Metadata()types.BinaryMetadata{return types.BinaryMetadata{Filename:"big.bin",Size:types.Some(int64(64<<20))}}
-func(source *earlyUploadSource)Open(context.Context)(io.ReadCloser,error){source.opens.Add(1);close(source.opened);return &earlyUploadReader{source:source},nil}
-type earlyUploadReader struct{source *earlyUploadSource}
-func(reader *earlyUploadReader)Read([]byte)(int,error){<-reader.source.released;return 0,io.ErrClosedPipe}
+func(source *earlyUploadSource)Open(context.Context)(io.ReadCloser,error){source.opens.Add(1);return &earlyUploadReader{source:source},nil}
+type earlyUploadReader struct{source *earlyUploadSource;started sync.Once}
+func(reader *earlyUploadReader)Read([]byte)(int,error){reader.started.Do(func(){close(reader.source.reading)});<-reader.source.released;return 0,io.ErrClosedPipe}
 func(reader *earlyUploadReader)Close()error{reader.source.once.Do(func(){reader.source.closes.Add(1);close(reader.source.released)});return nil}
 func TestEarlyHTTPResponseClosesActiveMultipartSource(t *testing.T){
- source:=&earlyUploadSource{opened:make(chan struct{}),released:make(chan struct{})}
- server:=httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter,request *http.Request){select{case <-source.opened:case <-time.After(5*time.Second):t.Error("source never opened")};writer.Header().Set("Connection","close");writer.WriteHeader(204);writer.(http.Flusher).Flush()}));defer server.Close()
+ source:=&earlyUploadSource{reading:make(chan struct{}),released:make(chan struct{})}
+ // Open may still be returning; Read proves the multipart source is active.
+ server:=httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter,request *http.Request){select{case <-source.reading:case <-time.After(5*time.Second):t.Error("source read never started")};writer.Header().Set("Connection","close");writer.WriteHeader(204);writer.(http.Flusher).Flush()}));defer server.Close()
  client,err:=sdk.NewClient(sdk.ClientOptions{BaseURL:server.URL});if err!=nil{t.Fatal(err)};ctx,cancel:=context.WithTimeout(context.Background(),5*time.Second);defer cancel()
  body:=sdk.UploadMultiMultipartFormDataBody{File:types.BinaryFromSource(source)}
  if _,err:=client.Operations.UploadMulti(sdk.UploadMultiInput{Body:sdk.NewUploadMultiMultipartFormDataBody(body)}).Do(ctx);err!=nil{var apiError *types.APIError;if errors.As(err,&apiError)&&apiError.Code==types.RequestTimeout{t.Fatal("early response left source blocked",err)};t.Fatal("early response",err)}
