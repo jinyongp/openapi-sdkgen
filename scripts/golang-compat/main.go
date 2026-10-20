@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
@@ -18,6 +19,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"openapi-sdkgen/internal/compatinput"
@@ -57,6 +59,7 @@ type compilationResult struct {
 }
 
 const compilerTimeout = 20 * time.Minute
+const goCompilerTimeout = 40 * time.Minute
 
 // Compilation has its own budget: large public model facades require more
 // memory than generation. Keep package builds serial within the standard runner.
@@ -70,7 +73,7 @@ type compilationPolicy struct {
 }
 
 func goCompilationPolicy() compilationPolicy {
-	return compilationPolicy{TimeoutSeconds: int(compilerTimeout / time.Second), BuildParallelism: 1, CPUConcurrency: 4, MemoryLimit: goCompilerMemoryLimit}
+	return compilationPolicy{TimeoutSeconds: int(goCompilerTimeout / time.Second), BuildParallelism: 1, CPUConcurrency: 4, MemoryLimit: goCompilerMemoryLimit}
 }
 
 type report struct {
@@ -575,8 +578,14 @@ func phase(name string) {
 }
 
 func verifyModule(target, directory, typescriptRoot string, contracts ...string) *compilationResult {
-	ctx, cancel := context.WithTimeout(context.Background(), compilerTimeout)
+	timeout := compilerTimeout
+	if target == "golang" {
+		timeout = goCompilerTimeout
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
 	var command *exec.Cmd
 	if target == "golang" {
 		for _, name := range contracts {
@@ -637,11 +646,14 @@ func verifyModule(target, directory, typescriptRoot string, contracts ...string)
 	}
 	command.Dir = directory
 	command.WaitDelay = 5 * time.Second
+	configureCompilerProcess(command)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		detail := strings.ReplaceAll(strings.TrimSpace(string(output)), directory, "<generated>")
-		if ctx.Err() != nil {
-			detail = "compiler time limit exceeded (20 minutes)"
+		if ctx.Err() == context.DeadlineExceeded {
+			detail = fmt.Sprintf("compiler time limit exceeded (%d minutes)", timeout/time.Minute)
+		} else if ctx.Err() != nil {
+			detail = "compiler cancelled"
 		}
 		if detail == "" {
 			detail = err.Error()

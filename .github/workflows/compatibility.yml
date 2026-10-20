@@ -225,7 +225,7 @@ jobs:
         id: go-compile
         continue-on-error: true
         if: ${{ !cancelled() && steps.go-generation.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 50
         env:
           GOMEMLIMIT: 3GiB
           GOMAXPROCS: "2"

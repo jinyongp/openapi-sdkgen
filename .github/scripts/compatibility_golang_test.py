@@ -19,7 +19,7 @@ class GoEvidenceTests(unittest.TestCase):
                 (manifests / 'test.json').write_text(json.dumps(dict(corpora=[entry])))
                 report = dict(sourceCommit='b' * 40, sourceDirty=False, verificationRequested=True,
                               id=provider, input='api.json', inputSha256='a' * 64,
-                              goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=4, memoryLimit='6GiB'),
+                              goCompilationPolicy=dict(timeoutSeconds=2400, buildParallelism=1, cpuConcurrency=4, memoryLimit='6GiB'),
                               mode='golang-generation', addons=['server'], **{'pass': True},
                               golang=dict(blocked=False, files=1, bytes=10, artifactSha256='e' * 64, compilation=dict(status='pass')))
                 checkpoint = copy.deepcopy(report)
@@ -73,7 +73,7 @@ class GoEvidenceTests(unittest.TestCase):
             checkpoint_path = checkpoint_dir / 'golang-generation.json'
             report = dict(sourceCommit='b' * 40, sourceDirty=False, verificationRequested=True,
                           id='provider', input='api.json', inputSha256='a' * 64,
-                          goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=4, memoryLimit="6GiB"),
+                          goCompilationPolicy=dict(timeoutSeconds=2400, buildParallelism=1, cpuConcurrency=4, memoryLimit="6GiB"),
                           mode='golang-generation', addons=['server'], **{'pass': True},
                           golang=dict(blocked=False, files=1, bytes=10, artifactSha256='e' * 64, compilation=dict(status='pass')))
             with patch('compatibility_golang.CORPORA', ['test']):
@@ -88,6 +88,7 @@ class GoEvidenceTests(unittest.TestCase):
                 self.assertEqual(len(check(report)['documents']), 1)
                 for mutation in [dict(sourceDirty=True), dict(sourceCommit='c' * 40),
                                  dict(verificationRequested=False), dict(goCompilationPolicy={}),
+                                 dict(goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=4, memoryLimit='6GiB')),
                                  dict(goCompilationPolicy=dict(timeoutSeconds=1200, buildParallelism=1, cpuConcurrency=2, memoryLimit='3GiB')),
                                  dict(selection=['GET /x']),
                                  dict(golang=dict(blocked=False)),

@@ -16,7 +16,7 @@ as failures. Microsoft Graph generation-only measurements are excluded from this
 These checks do not call a provider API.
 
 Each result records its compiler budget. Current measurements use serial package builds,
-four CPU threads, a 6 GiB Go soft memory limit and a 20-minute compiler timeout on the
+four CPU threads, a 6 GiB Go soft memory limit and a 40-minute compiler timeout on the
 [standard public Linux runner](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 The soft limit is not a bound on process memory. Historical results retain their original budgets;
 results measured with different budgets are not performance comparisons.

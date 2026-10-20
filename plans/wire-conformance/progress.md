@@ -246,3 +246,29 @@ decoder. Binding/shadowing, recursive/dynamic, XML and multipart generated-modul
 checks pass. The superseded local diagnostic and queued compatibility run
 `39430043575` were cancelled, not counted as passing evidence. Final source CI and
 complete provider measurements will be repeated with this smaller layout.
+
+At `66a3025`, Actions CI run `39430780768` passed all 11 jobs. The complete local
+Cloudflare output retained 3,595 operations and fell from 134,707 files /
+1,053,570,400 bytes to 104,203 / 984,831,507 bytes. This is generated-source
+inventory, not a timing comparison. Compilation still exceeded the 20-minute
+measurement deadline at its public model facade; one observed compiler RSS was
+12,862,124 KiB after eight minutes in that package. The 20-minute case remains a
+failure. Run `39430785327` was superseded and cancelled, not published as passing.
+
+The final compiler profile uses the same serial packages, four CPU threads and
+6 GiB soft memory, with a recorded 40-minute deadline for the complete large
+public API. This is an explicit measurement-budget change after removing
+avoidable duplication, not a speedup claim or a route/validation omission.
+TypeScript's diagnostic compiler retains its 20-minute budget. The Actions Go
+step leaves 50 minutes for generation plus compilation, within the existing job
+budget. Current aggregation rejects the earlier 20-minute profile; archived data
+keeps its original source, policy and failed outcomes.
+
+Repeated timeout diagnostics also confirmed that killing only the Go driver
+left an orphan compiler. Linux measurements now give each compiler invocation
+its own process group and cancel the complete group. A real parent/child test
+verifies descendants stop after cancellation; interrupts also cancel that group
+and are reported separately from timeouts. The optional non-Linux diagnostic
+retains its platform default and its Windows test binary cross-compiles. Go verifier tests, 22 Python evidence tests,
+33 documentation evidence tests and documentation validation passed. Fresh full
+compiler/HTTP evidence is required under the final profile before delivery.
