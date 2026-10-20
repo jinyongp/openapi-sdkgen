@@ -119,9 +119,9 @@ func prepareRequestBodyInput(planned *operationPlan, operation ir.Operation, sch
 		}
 		kind := bodyMediaKind(media.ContentType, media.Schema, legacy)
 		binary := kind == "binary" && !shape.Sequential
-		if multipart && binary {
-			return fmt.Errorf("whole-body binary multipart requests are not supported; declare multipart fields or positional parts at %s/schema", identity)
-		}
+		// A binary schema describes the complete, already framed representation.
+		// Only structured multipart bodies have a generated field encoder.
+		multipart = multipart && !binary
 		model := planned.Name + "Body"
 		if union {
 			model = planned.Name + shape.Name + "Body"

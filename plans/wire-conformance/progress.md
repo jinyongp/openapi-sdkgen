@@ -111,7 +111,7 @@ the generated clients against separately specified request/response contracts.
 | --- | --- | --- |
 | Spoonacular | explicitly pinned correction of invalid parameter-body metadata; complete Go generation/compilation and HTTP contract checks | input unit complete: 99 operations compiled; independent HTTP contract test passed |
 | DigitalOcean | explicitly pinned tag-pattern correction without loosening the Unicode regex contract; 739 operations and successful Go compilation | input unit complete: 739 operations compiled; independent HTTP contract test passed; compiler cost remains in the performance unit |
-| Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | pending |
+| Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | multipart unit complete; pinned upload operation compiled and passed independent HTTP checks; full SDK compilation belongs to the performance unit |
 | Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | investigating |
 | Delivery | refresh actual Actions evidence, review all five areas together, commit and leave a clean tree | pending |
 
@@ -138,3 +138,15 @@ evidence tests, 33 documentation evidence tests, documentation validation/build,
 and actual full Go modules with `TestSpoonacularHTTPContract` and
 `TestDigitalOceanHTTPContract` passed. Those HTTP servers independently assert
 URL/body/header behavior and HTTP errors; no provider service was called.
+
+Multipart unit review covers required/optional and single/union bodies across
+OpenAPI 3.0, 3.1 and 3.2, including the server addon's generated declarations.
+Complete binary multipart bodies retain their framing and metadata boundary.
+Missing/mismatched media, malformed boundaries and invalid header bytes fail
+before opening a source. Replayable sources open and close once per execution.
+Named-field multipart retains its existing encoder. The 12 generated-module
+combinations passed, as did existing versioned binary/open-media checks. The
+pinned Loket upload operation (one selected route, not a full-corpus pass) passed
+`TestLoketHTTPContract` against an independently parsed multipart HTTP request.
+Full SDK compiler evidence is still pending; interrupted diagnostics are not
+counted as successful measurements.

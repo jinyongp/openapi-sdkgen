@@ -88,7 +88,8 @@ func (execution *Execution) Send(data RequestData) (*http.Response,error) {
     if data.HasBody&&data.ContentTypePattern!=""&&(strings.Contains(data.ContentType,"*")||ResponseScore(200,data.ContentType,"200",data.ContentTypePattern)==0){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"request body media does not match its declared range"})}
     if data.HasBody&&data.RawBinary{
         media:=bareMedia(data.ContentType)
-        if media=="application/json"||strings.HasSuffix(media,"+json")||strings.HasPrefix(media,"text/")||strings.Contains(media,"xml")||media=="application/x-www-form-urlencoded"||strings.HasPrefix(media,"multipart/"){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"binary body requires a binary representation"})}
+        declaredBinary:=media==bareMedia(data.ContentTypePattern)&&!strings.Contains(media,"*")
+        if !declaredBinary&&(media=="application/json"||strings.HasSuffix(media,"+json")||strings.HasPrefix(media,"text/")||strings.Contains(media,"xml")||media=="application/x-www-form-urlencoded"||strings.HasPrefix(media,"multipart/")){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"binary body requires a binary representation"})}
     }
     if data.RequireCookieHeaders&&!execution.client.transport.Capabilities().CookieHeaders{return nil,execution.Failure(types.TransportCapabilityRequired,&types.SDKError{Code:types.TransportCapabilityRequired,Message:"declared cookies require CookieHeaders capability"})}
     base,err:=execution.serverBase(data.Servers);if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
@@ -107,7 +108,16 @@ func (execution *Execution) Send(data RequestData) (*http.Response,error) {
     if data.HasBody{
         if data.EncodeBody==nil{return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"body encoder is missing"})}
         binary,err:=data.EncodeBody(execution.Context,SnapshotRequest(request));if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
-        if strings.HasPrefix(bareMedia(data.ContentType),"multipart/"){if contentType:=binary.Metadata().ContentType;contentType!=""{request.Header.Set("Content-Type",contentType)}}
+        if strings.HasPrefix(bareMedia(data.ContentType),"multipart/"){
+            contentType:=data.ContentType;if metadata:=binary.Metadata().ContentType;metadata!=""{contentType=metadata}
+            if data.RawBinary{
+                media,parameters,parseError:=mime.ParseMediaType(contentType)
+                boundary:=parameters["boundary"]
+                if parseError!=nil||media!=bareMedia(data.ContentTypePattern)||boundary==""||!validHeader("Content-Type",contentType){return nil,execution.Failure(types.RequestEncodeFailed,&types.SDKError{Code:types.RequestOptionsInvalid,Message:"binary multipart body requires its declared media type and boundary"})}
+                if err:=multipart.NewWriter(io.Discard).SetBoundary(boundary);err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
+            }
+            request.Header.Set("Content-Type",contentType)
+        }
         opened,err:=binary.Open(execution.Context);if err!=nil{return nil,execution.Failure(types.RequestEncodeFailed,err)}
         outgoing:=&requestBodyReader{ReadCloser:opened}
         execution.requestBody=outgoing

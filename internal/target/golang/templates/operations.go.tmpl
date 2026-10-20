@@ -131,8 +131,8 @@ func (call {{.Name}}Call) execute(ctx context.Context,output *{{.OutputType}},in
         data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){value,err:=models.EncodeMedia{{.Type}}(ctx,input);if err!=nil{return types.Binary{},err};return execution.EncodeMultipart(value,{{quote .MediaType}},bodyEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}}),bodyPositionalFor{{$operation.Name}}({{quote .MediaType}}))}
     }
     {{else}}{{if .Binary}}{{if $operation.LinkTarget}}if value,present:=call.linkBodyValue.Get();present{data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){return execution.EncodeBody(value,{{quote .MediaType}},request)}}else{ {{end}}{{if .Required}}body{{.Name}}:=call.input.{{.Name}}
-    data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body{{.Name}},nil}
-    {{else}}if body,present:=call.input.{{.Name}}.Get();present{data.HasBody=true;data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body,nil}}
+    data.HasBody=true;data.RawBinary=true;data.ContentTypePattern={{quote .MediaType}};data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body{{.Name}},nil}
+    {{else}}if body,present:=call.input.{{.Name}}.Get();present{data.HasBody=true;data.RawBinary=true;data.ContentTypePattern={{quote .MediaType}};data.ContentType={{quote .MediaType}};data.EncodeBody=func(context.Context,*http.Request)(types.Binary,error){return body,nil}}
     {{end}}{{if $operation.LinkTarget}}}{{end}}{{else}}{{if and $operation.ResourceBound (eq .Name "Path")}}
     var sectionPath types.Value
     if call.hasBoundPath{sectionPath=call.boundPath;if _,err:=schema.{{.Validation}}(execution.Context,sectionPath,"");err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}}else{
