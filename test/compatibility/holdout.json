@@ -173,7 +173,12 @@
       "input": "APIs/spoonacular.com/1.1/openapi.yaml",
       "gitBlob": "294d51675dca9da5344df71993ae8533ae079e1c",
       "bytes": 809896,
-      "sizeClass": "large"
+      "sizeClass": "large",
+      "preparation": {
+        "kind": "spoonacular-parameter-bodies-v1",
+        "sha256": "f08a9540575e201b4d740d6252d21336435a74dddd58b0f91efcbf641976d60a",
+        "operations": 99
+      }
     },
     {
       "id": "viator.com",

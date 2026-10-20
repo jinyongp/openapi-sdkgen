@@ -53,10 +53,10 @@ export function readCIMeasurements(directory) {
     }
     return [id, { bytes, report }];
   }));
-  return { provenance, reports };
+  return { provenance, reports, directory: resolve(directory) };
 }
 
-export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runner, validationRunUrl, validationSourceCommit }) {
+export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runner, validationRunUrl, validationSourceCommit, manifestDirectory }) {
   const provenance = {
     schemaVersion: 1, provider: "github-actions", verification: "passed",
     runUrl, sourceCommit, runner, reports: {},
@@ -72,15 +72,22 @@ export function exportCIMeasurements({ input, output, runUrl, sourceCommit, runn
     provenance.reports[id] = sha256(bytes);
     return [id, bytes];
   });
+  const manifests = manifestDirectory === undefined ? [] : corpusNames.map(id => {
+    const bytes = readFileSync(resolve(manifestDirectory, `${id}.json`));
+    const report = JSON.parse(reports.find(([name]) => name === id)[1]);
+    if (sha256(bytes) !== report.manifestSha256) throw new Error(`${id}: measured manifest does not match`);
+    return [id, bytes];
+  });
   mkdirSync(output, { recursive: true });
   for (const [id, bytes] of reports) writeFileSync(resolve(output, `${id}-results.json.gz`), gzipSync(bytes));
+  for (const [id, bytes] of manifests) writeFileSync(resolve(output, `${id}-manifest.json.gz`), gzipSync(bytes));
   writeFileSync(resolve(output, "provenance.json"), `${JSON.stringify(provenance, null, 2)}\n`);
   readCIMeasurements(output);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [command, ...args] = process.argv.slice(2);
-  if (command !== "export" || ![10, 14].includes(args.length)) throw new Error("export requires input, output, run URL, commit, and runner; validation run and commit are optional");
+  if (command !== "export" || ![10, 12, 14, 16].includes(args.length)) throw new Error("export requires input, output, run URL, commit, and runner; validation provenance and manifest directory are optional");
   const options = Object.fromEntries(Array.from({ length: args.length / 2 }, (_, index) =>
     [args[index * 2].replace(/^--/, "").replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), args[index * 2 + 1]]));
   exportCIMeasurements(options);

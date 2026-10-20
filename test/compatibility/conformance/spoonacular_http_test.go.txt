@@ -1,0 +1,64 @@
+package corpus_test
+
+import (
+	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+
+	sdk "example.test/corpus/api"
+	"example.test/corpus/api/models"
+	"example.test/corpus/api/types"
+)
+
+// The provider's Clear Meal Plan Day example sends username/date in the path,
+// hash in the query, and no request body. The server encodes that contract
+// independently of either generated server handlers or generated serializers.
+func TestSpoonacularHTTPContract(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		data, err := io.ReadAll(r.Body)
+		if err != nil || len(data) != 0 || r.Header.Get("Content-Type") != "" {
+			t.Error("placeholder body survived", string(data), r.Header, err)
+		}
+		if r.Method != "DELETE" || r.URL.Path != "/mealplanner/dsky/day/2020-06-01" || r.Header.Get("X-Api-Key") != "fixture-key" {
+			t.Error("unexpected request", r.Method, r.URL)
+		}
+		if r.URL.Query().Get("hash") == "denied" {
+			w.WriteHeader(401)
+			return
+		}
+		if r.URL.Query().Get("hash") != "fixture:hash" {
+			t.Error("query changed", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+	client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: server.URL, SecurityProvider: func(_ context.Context, info types.SecurityCredentialContext) (types.SecurityCredentials, error) {
+		credentials := types.SecurityCredentials{}
+		for _, scheme := range info.Requirement.Schemes {
+			credentials[scheme.Name] = types.SecurityCredential{Kind: "api-key", Value: "fixture-key"}
+		}
+		return credentials, nil
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := func(hash string) error {
+		_, err := client.Operations.ClearMealPlanDay(models.ClearMealPlanDayInput{
+			Path:  models.ClearMealPlanDayPath{Username: "dsky", Date: "2020-06-01"},
+			Query: models.ClearMealPlanDayQuery{Hash: hash},
+		}).Do(context.Background())
+		return err
+	}
+	if err := call("fixture:hash"); err != nil {
+		t.Fatal(err)
+	}
+	if err := call("denied"); err == nil || calls.Load() != 2 {
+		t.Fatal("HTTP failure was lost", err, calls.Load())
+	}
+}

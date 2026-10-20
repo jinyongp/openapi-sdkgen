@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -34,6 +35,25 @@ test("CI export preserves measured values and removes machine identifiers", t =>
     assert.equal(report.measurement.hostname, undefined);
     assert.deepEqual(report.environment, {});
   }
+});
+
+test("CI export archives only the exact measured manifests", t => {
+  const options = { ...fixture(t) };
+  options.manifestDirectory = options.input;
+  for (const id of corpusNames) {
+    const bytes = Buffer.from(JSON.stringify({ corpora: [{ id }] }));
+    writeFileSync(resolve(options.input, `${id}.json`), bytes);
+    const path = resolve(options.input, `${id}-results.json`);
+    const report = JSON.parse(readFileSync(path));
+    report.manifestSha256 = createHash("sha256").update(bytes).digest("hex");
+    writeFileSync(path, JSON.stringify(report));
+  }
+  exportCIMeasurements(options);
+  for (const id of corpusNames) {
+    assert.deepEqual(gunzipSync(readFileSync(resolve(options.output, `${id}-manifest.json.gz`))), readFileSync(resolve(options.input, `${id}.json`)));
+  }
+  writeFileSync(resolve(options.input, "holdout.json"), "{}");
+  assert.throws(() => exportCIMeasurements(options), /measured manifest/);
 });
 
 test("dirty or mismatched source measurements cannot become CI evidence", t => {
@@ -140,7 +160,7 @@ test("Go publication keeps failed outcomes and rejects missing, stale or altered
     .filter(entry => entry.id !== "microsoft-graph-beta").map(entry => ({ corpus, id: entry.id, input: entry.input, inputSha256: entry.sha256 ?? "c".repeat(64),
       ...(!entry.sha256 ? { inputPin: { kind: "git-blob", value: entry.gitBlob, sha256: "c".repeat(64) } } : {}),
       sourceCommit, sourceDirty: false, verificationRequested: true, mode: "golang-generation", addons: ["server"], pass: true,
-      golang: { blocked: false, compilation: { status: "pass" } },
+      golang: { blocked: false, compilation: { status: "pass", ...({ "digitalocean-tags-v1": { contractTests: ["TestDigitalOceanHTTPContract"] }, "spoonacular-parameter-bodies-v1": { contractTests: ["TestSpoonacularHTTPContract"] } }[entry.preparation?.kind] ?? {}) } },
       ...(entry.preparation ? { inputPreparation: { ...entry.preparation, sourceSha256: entry.sha256 ?? "c".repeat(64), contractsVerified: true } } : {}),
     })));
   const ci = { provenance: { sourceCommit, runUrl: "https://github.com/jinyongp/openapi-sdkgen/actions/runs/123" }, reports: { golang: { report: { documents } } } };

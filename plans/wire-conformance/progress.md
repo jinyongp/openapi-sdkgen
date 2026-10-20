@@ -99,3 +99,42 @@ SDK source `2042d8b`. No pre-existing user changes were present. Relative to the
 baseline, task-owned repository changes add 37 files, modify 77 and delete none;
 temporary diagnostics and generated test modules remain ignored under `.tmp`.
 All requested areas and fixes have completed their unit and combined review loops.
+
+## Follow-up: resolve provider limitations
+
+The user's follow-up expands completion beyond recording failures: resolve all
+five remaining Go provider cases, then repeat unit/combined review and commits.
+Live provider calls are not required. Independent local HTTP servers will check
+the generated clients against separately specified request/response contracts.
+
+| Area | Completion criterion | State |
+| --- | --- | --- |
+| Spoonacular | explicitly pinned correction of invalid parameter-body metadata; complete Go generation/compilation and HTTP contract checks | input unit complete: 99 operations compiled; independent HTTP contract test passed |
+| DigitalOcean | explicitly pinned tag-pattern correction without loosening the Unicode regex contract; 739 operations and successful Go compilation | input unit complete: 739 operations compiled; independent HTTP contract test passed; compiler cost remains in the performance unit |
+| Loket | usable whole-body binary multipart representation with independent server checks; no unsupported-input shortcut | pending |
+| Stripe / Cloudflare | complete ordinary Go compilation of the full SDKs under a recorded bounded profile; correct root cause rather than increasing the passing count | investigating |
+| Delivery | refresh actual Actions evidence, review all five areas together, commit and leave a clean tree | pending |
+
+Stripe baseline output at `fa9e685`: 17,448 files / 248.7 MB, including 153.1 MB
+models and 81.7 MB validators. A local compiler run using the recorded 3 GiB soft
+heap / two CPU / serial package profile completed the schema package in about
+270 seconds while its heap reached about 7.8 GB. The model compiler's RSS then
+exceeded 13 GB after seven minutes; that task-owned compiler was terminated to
+preserve host responsiveness. This is an interrupted diagnostic baseline, not a
+successful full compile or a completed benchmark. Raw diagnostic output remains
+under `.tmp/provider-resolution-20261020/stripe-baseline.*`.
+
+The input unit uses `digitalocean-tags-v1` and `spoonacular-parameter-bodies-v1`,
+retains original source hashes and pins corrected output hashes. Normalization is
+explicit and preserves opaque examples/extensions. Empty-media bodies are removed
+only after checking that their fields already exist as equivalent path/query
+parameters; real request bodies remain unchanged. New provider rules require a
+completed HTTP contract test in the compiler report. A skipped test cannot pass
+this check. Historical measured manifests are archived with the CI results so
+old evidence is not validated against corrected inputs.
+
+Unit validation: targeted Go preparation/compiler-verifier tests, 32 Python
+evidence tests, 33 documentation evidence tests, documentation validation/build,
+and actual full Go modules with `TestSpoonacularHTTPContract` and
+`TestDigitalOceanHTTPContract` passed. Those HTTP servers independently assert
+URL/body/header behavior and HTTP errors; no provider service was called.

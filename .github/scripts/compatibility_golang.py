@@ -124,6 +124,10 @@ def combine(root, shards, commit, jobs=None, run_id=None, corpus_root=None, repo
                     raise ValueError("Go prepared input proof mismatch")
             elif evidence is not None:
                 raise ValueError("unexpected Go input preparation")
+            required_test = {"digitalocean-tags-v1": "TestDigitalOceanHTTPContract",
+                             "spoonacular-parameter-bodies-v1": "TestSpoonacularHTTPContract"}.get((expected or {}).get("kind"))
+            if success and required_test and go["compilation"].get("contractTests") != [required_test]:
+                raise ValueError("Go provider HTTP contract proof is missing")
             documents.append(dict(report, corpus=corpus, inputPin=pin))
     return {"schemaVersion": 1, "measurement": {"sourceCommit": commit, "sourceDirty": False,
             "measuredAt": datetime.now(timezone.utc).isoformat()}, "documents": documents}

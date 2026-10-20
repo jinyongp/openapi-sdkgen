@@ -427,7 +427,7 @@ func validateManifest(manifest benchmarkManifest) error {
 	ids := map[string]bool{}
 	providers := map[string]bool{}
 	for _, corpus := range manifest.Corpora {
-		if corpus.Preparation != nil && (corpus.Preparation.Kind != compatinput.OperationReferencesV1 || !validSHA256(corpus.Preparation.SHA256) || corpus.Preparation.Operations <= 0) {
+		if corpus.Preparation != nil && (!compatinput.SupportedKind(corpus.Preparation.Kind) || !validSHA256(corpus.Preparation.SHA256) || corpus.Preparation.Operations <= 0) {
 			return fmt.Errorf("invalid input preparation for %s", corpus.ID)
 		}
 		if manifest.Pinned {

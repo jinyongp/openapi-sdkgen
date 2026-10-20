@@ -93,8 +93,8 @@
       "evidenceKind": "real-document",
       "trust": "Pinned official upstream documents and local reference files; compiler remote allowlist empty",
       "preparation": {
-        "kind": "operation-references-v1",
-        "sha256": "243114da81a1d8f99091e1494385ab91f04be49bb0af93ad28c202420cdb8800",
+        "kind": "digitalocean-tags-v1",
+        "sha256": "a080f4b430fc21c2b2f9061a4de4b927eb70bced9e58ca3e68bc7b31d8bbc1a3",
         "operations": 739
       }
     },

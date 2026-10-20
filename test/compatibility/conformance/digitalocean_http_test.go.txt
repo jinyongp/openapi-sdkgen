@@ -1,0 +1,65 @@
+package corpus_test
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"sync/atomic"
+	"testing"
+
+	sdk "example.test/corpus/api"
+	"example.test/corpus/api/models"
+	"example.test/corpus/api/types"
+)
+
+func TestDigitalOceanHTTPContract(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		if r.Method != "POST" || r.URL.Path != "/v2/tags" || r.Header.Get("Authorization") != "Bearer fixture-token" {
+			t.Error("unexpected request", r.Method, r.URL.Path, r.Header)
+		}
+		var body struct {
+			Name string `json:"name"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Error(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if body.Name == "denied" {
+			w.WriteHeader(403)
+			w.Write([]byte(`{"id":"forbidden","message":"blocked"}`))
+			return
+		}
+		if body.Name != "team:api-test_1" {
+			t.Error("tag changed", body.Name)
+		}
+		w.WriteHeader(201)
+		w.Write([]byte(`{"tag":{"name":"team:api-test_1"}}`))
+	}))
+	defer server.Close()
+	client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: server.URL, SecurityProvider: func(_ context.Context, info types.SecurityCredentialContext) (types.SecurityCredentials, error) {
+		credentials := types.SecurityCredentials{}
+		for _, scheme := range info.Requirement.Schemes {
+			credentials[scheme.Name] = types.SecurityCredential{Kind: "http-bearer", Token: "fixture-token"}
+		}
+		return credentials, nil
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	call := func(name string) error {
+		_, err := client.Operations.TagsCreate(models.TagsCreateInput{Body: models.TagsCreateBody{Name: types.Some(name)}}).Do(context.Background())
+		return err
+	}
+	if err := call("team:api-test_1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := call("bad name"); err == nil || calls.Load() != 1 {
+		t.Fatal("invalid tag reached transport", err, calls.Load())
+	}
+	if err := call("denied"); err == nil || calls.Load() != 2 {
+		t.Fatal("HTTP failure was lost", err, calls.Load())
+	}
+}

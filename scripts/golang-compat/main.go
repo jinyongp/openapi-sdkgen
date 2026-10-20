@@ -50,8 +50,9 @@ type profile struct {
 	Surfaces        map[string]generator.OperationInspection `json:"surfaces,omitempty"`
 }
 type compilationResult struct {
-	Status string `json:"status"`
-	Detail string `json:"detail,omitempty"`
+	Status        string   `json:"status"`
+	Detail        string   `json:"detail,omitempty"`
+	ContractTests []string `json:"contractTests,omitempty"`
 }
 
 const compilerTimeout = 20 * time.Minute
@@ -281,7 +282,16 @@ func run() error {
 	runtime.GC()
 	options.TypeScriptTypeCheck = nil
 	options.Golang = &generator.GoOptions{ImportPath: "example.test/corpus/api"}
-	result.Go, err = prepareAndEmitVerified(golang.Generator{}, compiled, options, *verify, *typescriptRoot)
+	var contracts []string
+	if *verify && len(result.Selection) == 0 && selected.Preparation != nil {
+		switch selected.Preparation.Kind {
+		case compatinput.DigitalOceanTagsV1:
+			contracts = []string{"digitalocean_http_test.go.txt"}
+		case compatinput.SpoonacularParametersV1:
+			contracts = []string{"spoonacular_http_test.go.txt"}
+		}
+	}
+	result.Go, err = prepareAndEmitVerified(golang.Generator{}, compiled, options, *verify, *typescriptRoot, contracts...)
 	if err != nil {
 		return fmt.Errorf("Go: %w", err)
 	}
@@ -362,7 +372,7 @@ func verifiedInput(root string, item corpus) ([]byte, error) {
 func prepareAndEmit(target generator.Target, compiled compiler.Result, options generator.Options) (profile, error) {
 	return prepareAndEmitVerified(target, compiled, options, false, "")
 }
-func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, options generator.Options, verify bool, typescriptRoot string) (profile, error) {
+func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, options generator.Options, verify bool, typescriptRoot string, contracts ...string) (profile, error) {
 	phase(target.Name() + "-prepare-start")
 	prepared, err := generator.PrepareCompilation(target, compiled, options)
 	if err != nil {
@@ -418,7 +428,7 @@ func prepareAndEmitVerified(target generator.Target, compiled compiler.Result, o
 	}
 	phase(target.Name() + "-emit-finished")
 	if verify {
-		result.Compilation = verifyModule(target.Name(), work, typescriptRoot)
+		result.Compilation = verifyModule(target.Name(), work, typescriptRoot, contracts...)
 	}
 
 	names := make([]string, 0, len(hashes))
@@ -540,19 +550,35 @@ func phase(name string) {
 	fmt.Fprintf(os.Stderr, "phase=%s at=%s liveHeap=%d heapSys=%d GC=%d\n", name, time.Now().UTC().Format(time.RFC3339), memory.HeapAlloc, memory.HeapSys, memory.NumGC)
 }
 
-func verifyModule(target, directory, typescriptRoot string) *compilationResult {
+func verifyModule(target, directory, typescriptRoot string, contracts ...string) *compilationResult {
 	ctx, cancel := context.WithTimeout(context.Background(), compilerTimeout)
 	defer cancel()
 	var command *exec.Cmd
 	if target == "golang" {
+		for _, name := range contracts {
+			if filepath.Base(name) != name || !strings.HasSuffix(name, "_test.go.txt") {
+				return &compilationResult{Status: "fail", Detail: "invalid provider contract fixture"}
+			}
+			data, err := os.ReadFile(filepath.Join("test", "compatibility", "conformance", name))
+			if err != nil {
+				return &compilationResult{Status: "fail", Detail: err.Error()}
+			}
+			if err := os.WriteFile(filepath.Join(directory, strings.TrimSuffix(name, ".txt")), data, 0600); err != nil {
+				return &compilationResult{Status: "fail", Detail: err.Error()}
+			}
+		}
 		if err := os.WriteFile(filepath.Join(directory, "go.mod"), []byte("module example.test/corpus\n\ngo 1.27.0\n"), 0600); err != nil {
 			return &compilationResult{Status: "fail", Detail: err.Error()}
 		}
 		policy := goCompilationPolicy()
-		command = exec.CommandContext(ctx, "go", "test", fmt.Sprintf("-p=%d", policy.BuildParallelism), "-mod=readonly", "./...")
+		args := []string{"test", fmt.Sprintf("-p=%d", policy.BuildParallelism), "-mod=readonly"}
+		if len(contracts) != 0 {
+			args = append(args, "-json", "-count=1")
+		}
+		command = exec.CommandContext(ctx, "go", append(args, "./...")...)
 		// Bound each compiler independently of the generator's inherited heap
 		// budget. Serial package builds avoid multiplying that memory budget.
-		command.Env = append(os.Environ(), "GOMEMLIMIT="+policy.MemoryLimit, "GOMAXPROCS="+fmt.Sprint(policy.CPUConcurrency), "GOWORK=off", "GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off")
+		command.Env = append(os.Environ(), "GOMEMLIMIT="+policy.MemoryLimit, "GOMAXPROCS="+fmt.Sprint(policy.CPUConcurrency), "GOWORK=off", "GOTOOLCHAIN=local", "GOPROXY=off", "GOSUMDB=off", "GOFLAGS=")
 	} else {
 		options := tscheck.CompilerOptions()
 		for key, value := range map[string]any{"target": "ES2022", "module": "NodeNext", "moduleResolution": "NodeNext", "lib": []string{"ES2022", "DOM", "DOM.Iterable"}, "noEmit": true} {
@@ -601,7 +627,19 @@ func verifyModule(target, directory, typescriptRoot string) *compilationResult {
 		}
 		return &compilationResult{Status: "fail", Detail: detail}
 	}
-	return &compilationResult{Status: "pass"}
+	result := &compilationResult{Status: "pass"}
+	if len(contracts) != 0 {
+		for _, line := range strings.Split(string(output), "\n") {
+			var event struct{ Action, Test string }
+			if json.Unmarshal([]byte(line), &event) == nil && event.Action == "pass" && strings.HasSuffix(event.Test, "HTTPContract") {
+				result.ContractTests = append(result.ContractTests, event.Test)
+			}
+		}
+		if len(result.ContractTests) != len(contracts) {
+			return &compilationResult{Status: "fail", Detail: "provider HTTP contract tests did not complete"}
+		}
+	}
+	return result
 }
 
 func normalizeDiagnostics(profile *profile, root, input, logicalInput string) {

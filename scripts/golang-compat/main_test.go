@@ -89,3 +89,30 @@ func TestVerifyGeneratedModuleChecksActualCompilerResult(t *testing.T) {
 		t.Fatal("valid module rejected", passed)
 	}
 }
+
+func TestVerifyGeneratedModuleRequiresCompletedHTTPContract(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	fixtures := filepath.Join(root, "test", "compatibility", "conformance")
+	if err := os.MkdirAll(fixtures, 0755); err != nil {
+		t.Fatal(err)
+	}
+	module := t.TempDir()
+	if err := os.WriteFile(filepath.Join(module, "value.go"), []byte("package corpus\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GOFLAGS", "-run=^$")
+	for _, test := range []struct{ body, status string }{{"", "pass"}, {`t.Skip("not executed")`, "fail"}, {`t.Fatal("wrong request")`, "fail"}} {
+		data := []byte("package corpus_test\nimport \"testing\"\nfunc TestProbeHTTPContract(t *testing.T){" + test.body + "}\n")
+		if err := os.WriteFile(filepath.Join(fixtures, "probe_http_test.go.txt"), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+		result := verifyModule("golang", module, "", "probe_http_test.go.txt")
+		if result.Status != test.status || test.status == "pass" && (len(result.ContractTests) != 1 || result.ContractTests[0] != "TestProbeHTTPContract") {
+			t.Fatal(test.body, result)
+		}
+	}
+	if result := verifyModule("golang", module, "", "../probe_http_test.go.txt"); result.Status != "fail" {
+		t.Fatal("escaping fixture accepted")
+	}
+}

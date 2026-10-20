@@ -95,6 +95,16 @@ class GoEvidenceTests(unittest.TestCase):
                 for change in [dict(head_sha='f' * 40), dict(run_id=999), dict(conclusion='success'), dict(steps=[])]:
                     with self.assertRaises(ValueError):
                         combine(root, root, 'b' * 40, jobs=[dict(job, **change)], run_id=456)
+                for kind, name in [('digitalocean-tags-v1', 'TestDigitalOceanHTTPContract'),
+                                   ('spoonacular-parameter-bodies-v1', 'TestSpoonacularHTTPContract')]:
+                    expected['kind'] = kind
+                    report['inputPreparation']['kind'] = kind
+                    (manifests / 'test.json').write_text(json.dumps(dict(corpora=[entry])))
+                    report['golang']['compilation'] = dict(status='pass')
+                    with self.assertRaisesRegex(ValueError, 'HTTP contract'):
+                        check(report)
+                    report['golang']['compilation']['contractTests'] = [name]
+                    self.assertTrue(check(report)['documents'][0]['pass'])
 
 
 if __name__ == '__main__':

@@ -55,7 +55,7 @@ jobs:
         run: |
           node docs/scripts/ci-measurements.mjs export --input .tmp/validated-measurements \
             --output .tmp/compatibility-public --run-url "$SOURCE_RUN_URL" --source-commit "$SOURCE_COMMIT" \
-            --runner ubuntu-24.04 --validation-run-url "$VALIDATION_RUN_URL" --validation-source-commit "$VALIDATION_COMMIT"
+            --runner ubuntu-24.04 --manifest-directory test/compatibility --validation-run-url "$VALIDATION_RUN_URL" --validation-source-commit "$VALIDATION_COMMIT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: public-compatibility-measurements

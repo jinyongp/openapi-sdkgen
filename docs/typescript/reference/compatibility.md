@@ -21,6 +21,8 @@ DigitalOcean's authoring input is bundled before measurement: Operation Object r
 reusable objects are expanded, and moved schema references are rebased. The results retain both
 input hashes and check operation IDs, required parameters and response representations against the
 compiled document. The generator rejects unbundled Operation Object references.
+The pinned inputs also correct DigitalOcean's redundant colon escape in tag patterns and
+remove Spoonacular's empty-media placeholders for existing path/query parameters, preserving real bodies.
 See the separately measured [Go results](/golang/reference/compatibility).
 
 For documents with Webhooks or Callbacks, use `--with server` to generate the

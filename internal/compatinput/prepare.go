@@ -55,6 +55,7 @@ type operationContract struct {
 type bundler struct {
 	root, entry string
 	active      map[string]bool
+	document    map[string]any
 }
 
 func Digest(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
@@ -63,14 +64,14 @@ func Prepare(input string, spec *Spec) (*Prepared, error) {
 	if spec == nil {
 		return result, nil
 	}
-	if spec.Kind != OperationReferencesV1 || len(spec.SHA256) != 64 {
+	if !SupportedKind(spec.Kind) || len(spec.SHA256) != 64 {
 		return nil, fmt.Errorf("unsupported or unpinned input preparation")
 	}
 	source, err := os.ReadFile(input)
 	if err != nil {
 		return nil, err
 	}
-	data, contracts, err := Bundle(input)
+	data, contracts, err := BundleWithKind(input, spec.Kind)
 	if err != nil {
 		return nil, err
 	}
@@ -292,6 +293,9 @@ func pointer(value any, fragment string) (any, error) {
 	return value, nil
 }
 func (state *bundler) resolve(value any) (map[string]any, error) {
+	if state.document != nil {
+		return containedObject(state.document, value)
+	}
 	object, _ := value.(map[string]any)
 	seen := map[string]bool{}
 	for {
