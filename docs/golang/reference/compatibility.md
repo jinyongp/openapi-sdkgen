@@ -31,8 +31,9 @@ and checks operation identities, required parameters and response representation
 Explicit, pinned corrections remove an unnecessary colon escape from DigitalOcean's tag
 pattern and remove Spoonacular's empty-media placeholders that duplicate path/query parameters.
 Valid request bodies remain intact. These provider rules do not establish full schema equivalence.
-The corrected providers also run client requests against independent local HTTP servers,
-checking transmitted data, validation failures and HTTP errors without calling the provider.
+DigitalOcean, Spoonacular, Loket, Stripe and Cloudflare also exercise representative client
+calls against independent local HTTP servers. These checks cover transmitted data, validation
+failures and HTTP errors without calling the provider; they do not exercise every operation.
 
 ## Verify your own document
 
