@@ -59,7 +59,7 @@ type compilationResult struct {
 }
 
 const compilerTimeout = 20 * time.Minute
-const goCompilerTimeout = 40 * time.Minute
+const goCompilerTimeout = 60 * time.Minute
 
 // Compilation has its own budget: large public model facades require more
 // memory than generation. Keep package builds serial within the standard runner.

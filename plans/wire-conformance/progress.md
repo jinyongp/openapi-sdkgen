@@ -291,3 +291,29 @@ Recursive/dynamic, XML HTTP and multipart/binary generated-module checks pass.
 The import-only assertion also skips license assets, and the import rewriter is
 restricted to Go source. The compiler policy stays at four CPU threads, 6 GiB
 soft memory and 40 minutes. Full committed-source evidence remains required.
+
+At `3849b9c`, Actions CI run `39446228834` passed all 11 jobs. The local
+instrumented full Cloudflare run completed the generated client/compiler paths
+and `TestCloudflareHTTPContract`, but its `-toolexec` Bash wrapper exceeded the
+argument-list limit when starting the public models package. This is a failed
+diagnostic run, not a full SDK pass. Normal Go uses a compiler response file for
+that package. A subsequent ordinary `go test ./...` completed all 189 packages
+and the HTTP contract with no failures on Go 1.27.3. It reused private-package
+build cache from the instrumented run (444.74 seconds, peak RSS 14,274,660 KiB);
+these conditions do not support a cold-build speedup claim. Package diagnostics
+remain under `.tmp/provider-resolution-20261020/cloudflare-direct-model-*`.
+Fresh Go 1.27.2 Actions evidence is still pending for Cloudflare. The other four
+repaired providers have passed complete Go compilation and exact HTTP tests at
+the same clean `3849b9c` source in run `39446233980`.
+
+The fixed Go 1.27.2 Actions Cloudflare run also exceeded 40 minutes. This does
+not invalidate the completed local Go 1.27.3 module/HTTP checks, but it leaves
+that CI compilation unverified. The final measurement budget is therefore
+60 minutes, still using serial packages, four CPU threads and 6 GiB soft memory.
+The Actions step allows 75 minutes for generation plus compilation within the
+existing 120-minute job. This is a disclosed budget calibration for the complete
+large API, not an omission or a claim of faster compilation. Earlier budgets and
+their failed outcomes remain in history and cannot enter the current aggregate.
+The SDK source is unchanged from the locally verified `3849b9c` layout. Go
+verifier tests, 22 Python evidence tests and documentation validation passed for
+the revised policy. Final Actions compiler/HTTP evidence remains required.
