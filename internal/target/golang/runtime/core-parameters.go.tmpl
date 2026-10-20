@@ -106,12 +106,5 @@ func simpleParameter(value types.Value,separator string,explode bool,encode func
 }
 func encodeParameter(value string,allowReserved bool)(string,error){
     if !utf8.ValidString(value){return "",fmt.Errorf("parameter contains an unpaired UTF-16 surrogate")}
-    const hex="0123456789ABCDEF"
-    var result strings.Builder
-    for index:=0;index<len(value);index++{char:=value[index]
-        if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("-_.!~*'()",rune(char))||allowReserved&&strings.ContainsRune(":/?@$;,=",rune(char)){result.WriteByte(char)
-        }else if allowReserved&&char=='%'&&index+2<len(value)&&hexDigit(value[index+1])&&hexDigit(value[index+2]){result.WriteString(value[index:index+3]);index+=2
-        }else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}
-    }
-    return result.String(),nil
+    return media.EncodeQueryValue(value,allowReserved),nil
 }

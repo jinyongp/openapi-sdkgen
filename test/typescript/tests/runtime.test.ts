@@ -1076,7 +1076,7 @@ describe("generated runtime", () => {
           "application/x-www-form-urlencoded",
         );
         expect(String(init?.body)).toBe(
-          "tags=one%2Ctwo&filter=first%2C1%2Csecond%2Ctwo&payload=%7B%22ok%22%3Atrue%7D",
+          "tags=one,two&filter=first,1,second,two&payload=%7B%22ok%22%3Atrue%7D",
         );
         return jsonResponse({ ok: true });
       },

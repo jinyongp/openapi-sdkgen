@@ -143,7 +143,14 @@ func prepareEncodingFields(planned *operationPlan, raw map[string]any, bodySchem
 		name := fieldNames[key]
 		field, _ := encoding[key].(map[string]any)
 		contentType, _ := field["contentType"].(string)
-		explode := !multipart || contentType == ""
+		style, _ := field["style"].(string)
+		_, hasExplode := field["explode"].(bool)
+		reserved, hasReserved := field["allowReserved"].(bool)
+		styleBased := style != "" || hasExplode || hasReserved
+		if style == "" {
+			style = "form"
+		}
+		explode := !multipart && style == "form" || multipart && contentType == ""
 		if value, exists := field["explode"].(bool); exists {
 			explode = value
 		}
@@ -155,7 +162,7 @@ func prepareEncodingFields(planned *operationPlan, raw map[string]any, bodySchem
 		if binary, ok := httpplan.MultipartBinaryInput(document, partSchema, field); ok {
 			binaryContentType = binary.ContentType
 		}
-		fmt.Fprintf(&body, "{Name:%s,ContentType:%s,DefaultContentType:%q,BinaryContentType:%q,Explode:%t,Positional:%t,Default:%t,Headers:[]core.MultipartHeader{", strconv.Quote(name), strconv.Quote(contentType), multipartDefaultContentType(partSchema), binaryContentType, explode, positional[key], defaults[key])
+		fmt.Fprintf(&body, "{Name:%s,Style:%q,StyleBased:%t,AllowReserved:%t,ContentType:%s,DefaultContentType:%q,BinaryContentType:%q,Explode:%t,Positional:%t,Default:%t,Headers:[]core.MultipartHeader{", strconv.Quote(name), style, styleBased, reserved, strconv.Quote(contentType), multipartDefaultContentType(partSchema), binaryContentType, explode, positional[key], defaults[key])
 		headers, err := prepareMultipartHeaders(planned, field, document, schemas, identity+"/encoding/"+pointerToken(key))
 		if err != nil {
 			return "", err

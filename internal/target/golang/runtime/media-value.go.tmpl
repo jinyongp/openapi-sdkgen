@@ -27,3 +27,16 @@ func formEscape(text string)string{
         for index:=0;index<len(text);index++{char:=text[index];if char==' '{result.WriteByte('+')}else if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("*-._",rune(char)){result.WriteByte(char)}else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}}
         return result.String()
     }
+
+// EncodeQueryValue escapes data tokens before structural delimiters are added.
+func EncodeQueryValue(value string,allowReserved bool)string{
+    const hex="0123456789ABCDEF"
+    var result strings.Builder
+    for index:=0;index<len(value);index++{char:=value[index]
+        if char>='a'&&char<='z'||char>='A'&&char<='Z'||char>='0'&&char<='9'||strings.ContainsRune("-_.!~*'()",rune(char))||allowReserved&&strings.ContainsRune(":/?@$;,=",rune(char)){result.WriteByte(char)
+        }else if allowReserved&&char=='%'&&index+2<len(value)&&isQueryHex(value[index+1])&&isQueryHex(value[index+2]){result.WriteString(value[index:index+3]);index+=2
+        }else{result.WriteByte('%');result.WriteByte(hex[char>>4]);result.WriteByte(hex[char&15])}
+    }
+    return result.String()
+}
+func isQueryHex(value byte)bool{return value>='0'&&value<='9'||value>='a'&&value<='f'||value>='A'&&value<='F'}
