@@ -654,3 +654,10 @@ profile·canonical section 계약을 함께 검사했다. child type import도 �
 planner로 할당해 사용자 parameter와 충돌을 피한다. 멤버 필드는 한 곳만 선언하며
 상속하는 registry도 canonical operation 계약의 mapped view를 사용한다. 이 결과는
 실제 Graph 성공으로 대체하지 않는다. 후속 새 SDK 생성·ownership·전체 strict는 대기 중이다.
+
+E의 후속 intrusive warm 전체 빌드는 operations compiler에서 258.87초에 RSS 보호로
+끝났다(peak 12,416,368,640바이트, hard 11,832 MiB). CPU/heap profile은 모두
+0바이트이며 미완료 원본으로 남긴다. 이 실행의 source·기존 implementation cache는
+변경하지 않았고 full compile 성공이나 cold 표본에 넣지 않는다. P 표본과 다음 TS 검사
+종료 뒤 profiling flag 없이 동일 operations compiler의 stack을 수집해 진행 단계를
+확인하도록 사전 고정했다. 아직 E의 정확한 실패 phase나 CPU hotspot을 확정하지 않는다.

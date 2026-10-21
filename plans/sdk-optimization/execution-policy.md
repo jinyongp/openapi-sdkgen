@@ -196,6 +196,13 @@ empty cache에서 시작한 전체 compile correctness pilot으로 보존하고 
 기존과 같은 11,832 MiB hard와 3,600초를 적용하며 20분 내 2 GiB headroom을 확보하지
 못하면 시작하지 않는다. profile이 완료되지 않으면 읽을 수 있는 증거로 집계하지 않는다.
 
+E warm profile 실행은 258.87초·RSS 12,416,368,640바이트에서 11,832 MiB hard
+보호로 중단됐고 CPU/heap 파일은 0바이트라 판독 가능한 profile이 아니다. P 제공자
+표본 수집 뒤 E의 같은 source/cache를 대상으로 앞서 정의한 단일 operations SIGQUIT
+진단을 적용한다. profiling flag 없이 기존 언어/최적화 옵션·soft heap 6 GiB를 유지하고,
+compiler 10,500 MiB 또는 240초에서 stack을 수집한다. 전체 600초·같은 11,832 MiB
+hard와 2 GiB headroom을 적용한다. 의도한 stack 중단은 compile 성공이나 성능 표본이 아니다.
+
 ### P 크기 비교의 실제 제공자 표본
 
 추가 크기 비교는 고정 holdout의 작은 `tvmaze.com`과 중간 `listennotes.com` 입력을
@@ -211,6 +218,12 @@ files/bytes와 route 추가·삭제의 manifest delta를 계산한다. 네 varia
 6 GiB·기존 동적 hard RSS를 적용한다. 각 build의 상한은 600초다. 무거운 Graph
 진단과 겹치지 않게 시작하며 실패 표본과 원시 출력도 보존한다. 한 route의 양방향
 delta는 변경 폭의 표본이고 실제 publisher 복구·stale 제거 검사의 대체가 아니다.
+
+full 대 explicit-all-route 대조군의 managed 파일 hash를 비교해 선택 모드가 delta에
+영향을 주지 않았는지 확인한다. 대조군 생성은 첫 timing 표본 전에 끝냈다. warm build가
+recorder의 200 ms 관측 간격보다 짧으면 그 외부 시간을 비교 지표로 삼지 않는다.
+같은 5개 cache/variant를 새 Go process에서 다시 확인하되 wrapper 내부 monotonic
+시간을 보존한다. 기존 RSS 보호·환경·순서는 유지하며 다른 무거운 검사와 직렬 실행한다.
 
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
