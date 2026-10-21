@@ -3,7 +3,7 @@
   "profile": "openapi-sdkgen",
   "workstream_id": "88a65ff3-848d-4fff-a307-325ab4cbb221",
   "title": "Graph TypeScript 전체 검사와 Go SDK 출력 구조 최적화",
-  "registered_definition_revision": 1986,
+  "registered_definition_revision": 2029,
   "source_commit": "5ada624a69ebfd85103248379970f78a8f3d2899",
   "documents": {
     "spec": "investigation.md",
@@ -14,6 +14,7 @@
     "execution": "execution.md",
     "section_index_decision": "section-index-decision.md",
     "source_check_boundaries": "source-check-boundaries.md",
+    "operation_batching_decision": "operation-batching-decision.md",
     "raw_preflight": "measurements/2026-10-21/preflight.tar.gz"
   },
   "task_ids": {
@@ -26,6 +27,7 @@
     "W04": "934f0b58-747b-4fdb-aa17-987c123c3cdb",
     "W05": "1ee3e3e7-9d6b-4ba1-818a-5702b9cc076e",
     "W06": "f2b15788-0962-4722-bb66-4f6f4780b7ac",
+    "W06E": "aa606c35-b34f-4e0a-bfaf-c158359fb31c",
     "W07": "d1a8cfba-d7a8-4f75-894b-ea32646f91e9",
     "W08": "96a2650f-0fd0-4ad1-bd0d-d6fddc9850fe",
     "W09": "a055bd00-f99b-4c74-b992-a1ef67b93586",
@@ -42,6 +44,7 @@
     "V04": "f40b0291-c68a-40fb-bc5c-62edcb8d1e3b",
     "V05": "4a62fdd2-d42f-4a08-81be-598659f29d76",
     "V06": "2d504c40-51d4-444c-9aff-8ca6a3742d64",
+    "V06E": "8d54df81-9ad8-4b10-84fd-cec8be837871",
     "V07": "bb3a763c-10c2-4fa2-b969-2a47db56d1e4",
     "V08": "f008eee0-8039-47b6-939c-6374c807058c",
     "V09": "885c4a45-087f-4ff0-929c-3b1ed45f85d2",

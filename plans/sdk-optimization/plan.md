@@ -1,6 +1,8 @@
 # SDK 대형 출력 최적화 실행 계획
 
-상세 근거: `investigation.md`, `preflight.md`. 상태: W01 선행 조사·측정 경로 보완, 제품 최적화 구현 착수 전.
+상세 근거: `investigation.md`, `preflight.md`, `execution.md`. 단위 구현·검증 진행 중이며
+전체 Graph TS·Go와 최종 통합 수용 기준은 아직 미충족이다. 실행 자원 조건은
+`execution-policy.md`의 사전 고정한 후속 실험 정책을 따른다.
 
 ## 완료 계약
 
@@ -107,6 +109,19 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 검증: cancellation, recursion/no-progress, path·program identity, media ancestor·JSON no-media 경로, dynamic refs, evaluated-property/item, contentSchema, null/missing/default, 실제 오류 코드·순서·error assertion. schema-hot-path 및 HTTP micro/macro의 ns/op·B/op·allocs/op·GC를 반복 비교한다. 공유의 partition 이동과 caller export data까지 비교한다. 리뷰루프 후 채택 구현 또는 보류 ADR 커밋. codec 공통화·private 이름 축약·새 domain entry는 이 결과를 근거로 별도 제안하며 범위를 자동 확장하지 않는다.
 
+### W06E — Go operation HTTP 처리문의 AST 절감
+
+선행 W01G. 실제 frontend 비용과 대안은 `operation-batching-decision.md`를 따른다.
+기존 package 배치·공개 계약·codec·validator는 유지하고, 반복 매개변수 처리와 응답 선택을
+기존 core 함수의 순서 있는 반복으로 표현하는 후보 E를 별도 검증한다. 임시 descriptor는
+16개 이하로 나누며 작은 단일 항목은 기존 직접 표현을 유지한다. 파일 묶기 P와 별도 효과다.
+
+검증: header 이름 등록·missing·custom encoder snapshot·첫 오류·취소·묶음 경계·응답
+동점/branch index/status/media, 기존 media/stream/ownership 회귀. 기존 모든 정의
+package·공개 서명은 그대로이며 새 내부 helper만 정확한 allowlist로 대조한다. 실제 Graph
+native AST·전체 compile pilot과 paired HTTP runtime 10쌍을 검증하고 리뷰·커밋한다.
+최종 corpus와 반복 표본은 W09/W11에서 완료한다. 조건을 충족하기 전 기본 적용을 확정하지 않는다.
+
 ### W08 — Graph 검사 구조 최종 결정과 조건부 fallback
 
 선행 W05. W05가 전체 strict 성공이면 근거와 기존 사용법 유지 결정을 확정한다. 실패 시 public named declaration 계층으로 implementation 의존성을 끊고 실제 module SCC를 DAG로 묶는 최소 references 후보를 검증한다. 각 source의 소유 project는 정확히 하나이고 모든 source를 strict 검사한다. 거대 SCC·전체 public declaration consumer가 예산 안에 들어오는지도 확인한다.
@@ -115,7 +130,7 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 ### W09 — Go 실제 제공자·Graph compile과 런타임 통합 검증
 
-선행 W06/W07. 정확히 같은 Go 1.27.2·입력·옵션·CGO·캐시·병렬도에서 기존 corpus 문서 38개(server 포함)와 별도 full Graph를 재생성·컴파일한다. 실험 baseline/P/채택 V/P+V의 작은·큰 fixture 및 최종 candidate를 구분한다. W01에서 소스 동일성이 확인된 과거 CI의 compile correctness만 재사용할 수 있다. 최적화 후 candidate와 성능 비교에는 새 증거가 필요하다.
+선행 W06/W07/W06E. 정확히 같은 Go 1.27.2·입력·옵션·CGO·캐시·병렬도에서 기존 corpus 문서 38개(server 포함)와 별도 full Graph를 재생성·컴파일한다. 실험 baseline/P/E/채택 V와 최종 조합의 작은·큰 fixture를 구분한다. W01에서 소스 동일성이 확인된 과거 CI의 compile correctness만 재사용할 수 있다. 최적화 후 candidate와 성능 비교에는 새 증거가 필요하다.
 
 검증: public symbol·defined package·method set·reflect·JSON tag·error identity, JSON/XML/multipart/binary·stream ordering/cancel/close 소유권, 일반/named/selective/dynamic registry. 생성 시간·메모리·files/bytes·package count·`.a`·stripped/unstripped binary·cold/warm 소비자·runtime를 5회 비교한다. Graph timeout/OOM을 숨기지 않으며 full compile 통과가 남으면 AC-GO-FULL은 미충족이다. `ci:dev go-consumers 1 1` 및 기존 `golang:perf`의 해당 모드를 활용한다. 리뷰루프 후 원시 증거와 판단 커밋.
 
@@ -149,8 +164,10 @@ flowchart TD
   W05 --> W08
   W01G --> W06
   W01G --> W07
+  W01G --> W06E
   W06 --> W09
   W07 --> W09
+  W06E --> W09
   W08 --> W10
   W09 --> W10
   W10 --> W11

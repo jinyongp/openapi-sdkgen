@@ -75,6 +75,14 @@ source·cache·스케줄·Go 옵션을 유지하되 최소 11 GiB hard budget이
 최대 12 GiB·가용 RAM−2 GiB 정책과 3,600초 상한은 유지한다. 20분 안에 시작 조건이
 충족되지 않으면 child를 시작하지 않는다. 두 실행 모두 warm 진단이며 cold 표본이 아니다.
 
+11 GiB 이상 budget의 후속 전체 빌드가 `internal/operations`에서 RSS 보호 종료되면,
+같은 source·cache·Go 옵션으로 그 package 하나의 compiler 단계를 조사한다. compiler
+RSS 10,500 MiB 또는 240초 지점에서 해당 owned-session compiler에만 SIGQUIT를 보내
+goroutine stack을 수집한다. 전체 600초·최소 11 GiB hard budget을 적용하고 source hash를
+대조한다. 의도한 진단 중단이며 전체 build 성공·RSS 실패·성능 표본으로 바꾸지 않는다.
+frontend·inlining·SSA 중 어느 단계인지 확인한 후에만 compiler 스케줄이나 별도 구조
+후보를 고른다. 이 수집을 위해 검사·언어·최적화 옵션을 바꾸지 않는다.
+
 ### Native TS root profile 진단
 
 public root project가 25분 넘게 약 8.9 GB RSS와 높은 CPU를 유지하며 diagnostics를
@@ -146,6 +154,23 @@ source·기존 declaration은 수정하지 않고 source 하나만 더한 diagno
 네 복제의 비교는 같은 11 GiB RSS 상한을 확보한 경우에만 직렬 시작한다. 시작 전
 20분 동안 조건이 충족되지 않으면 child를 시작하지 않는다. 이 상한은 기존 최대
 12 GiB·가용 RAM−2 GiB 정책 안이며 공통 soft heap 6 GiB와 source/strict 강도는 같다.
+
+네 view에서 semantic 완료가 입증되지 않으면 원본 control source를 그대로 두고 compiler
+GC 동작을 한 쌍으로 조사한다. 두 실행은 soft heap 10 GiB·GOGC=100·GOMAXPROCS=4·
+11 GiB hard·strict·같은 owner 959개·120초 계측을 고정한다. 첫 실행은 `gctrace=1`,
+다음 실행은 `gctrace=1,gcstoptheworld=1`만 사용한다. 설치 native compiler의 Go 1.26.4가
+이 process-local 설정을 지원함을 고정 upstream runtime 문서에서 확인했다. 실제 child의
+선택한 GC 환경만 기록한다. CPU 표본에서 idle GC가 차지하는 비율 자체를 wall-time
+원인으로 단정하지 않고, write barrier·union 계산과 완료 여부를 대조한다. 이 설정을
+제품 runtime이나 최종 compiler 조건으로 자동 채택하지 않는다.
+
+GC 대조에서도 semantic 완료가 없으면 C-index를 별도 진단 source에서 조사한다.
+canonical 선언의 route/ID/section과 실제 resource-call 유무를 읽어 private filter 세 개만
+사전 계산하고 원래 value projection·generic 식은 보존한다. 원본 owner 958개와 probe
+하나의 hash·소유권을 확인한다. control과 같은 10 GiB soft heap·GOGC=100·GOMAXPROCS=4·
+`gctrace=1`·11 GiB hard·120초 API 계측을 적용한다. 이 진단 source는 최종 SCC 계획이나
+제품 출력이 아니다. 효과가 있더라도 네 compiler의 generic/union/never/resource/negative
+호환과 실제 생성 비용·전체 source/consumer 검증 전에는 C를 채택하지 않는다.
 
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),

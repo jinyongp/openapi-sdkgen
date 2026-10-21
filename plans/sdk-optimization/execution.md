@@ -510,3 +510,42 @@ background GC는 CPU 표본의 70.17%, 유지 heap은 8,509.14 MiB였다. 다른
 진단 source를 별도 경로에 준비했다. 원래 958개 source hash는 전부 일치했고 각 config는
 그 source와 probe 하나만 소유한다(`owner-attribution-probe-preparation`, 1.45초).
 원본 SDK·기존 declaration은 수정하지 않았다. 실제 비교 실행과 공개 계약 검사는 아직 남았다.
+
+두 번째 warm 진단은 11,656 MiB hard budget에서 schema/model implementation family
+전체를 통과했다(해당 stage 436.60초). 이후 `./api/...` 전체 빌드는 `internal/operations`
+compiler에서 1,085.01초에 RSS 보호 종료됐다. peak session RSS는 12,225,490,944바이트다.
+Go 전체 성공은 아직 미충족이며 이 결과를 cold 표본에 넣지 않는다. 이 package의
+정확한 compiler 단계를 확인할 별도 stack 진단을 정책에 먼저 기록했다.
+
+별도 `graph-go-operations-phase-capture-run`은 93.51초·RSS 11,294,830,592바이트에
+stack 수집을 마쳤다. 의도한 SIGQUIT로 build는 종료했으며 성공 표본이 아니다.
+main goroutine은 `types2.recordUse` → 선언/receiver 검사 → `noder.checkFiles`에 있었다.
+SSA 이전이므로 backend worker 수만 낮추는 방향을 해결책으로 채택하지 않는다.
+실제 publisher hash와 대조한 AST 감사(`graph-go-operations-cost-run`, 20.99초)는
+operation package의 45,696파일·597,978,236바이트·78,054,414 AST 노드를 확인했다.
+반복 HTTP 처리문의 좁은 후보 E와 검증은 `operation-batching-decision.md` 및 W06E에
+독립 등록했다. 아직 제품 구현·효과를 입증한 것은 아니다.
+
+네 Readonly probe는 모두 소유권 959개 일치·읽을 수 있는 CPU/heap profile을 얻었지만
+120초에 semantic 검사는 완료하지 못했다. control/values/sections/both 수집 시간은 각각
+136.54/131.46/130.93/131.32초, peak RSS는 7.247/7.946/7.497/8.083 GB다.
+수집 시간은 검사 완료 시간이 아니며 해당 view를 채택하지 않는다.
+
+별도 GC 대조는 같은 control source·soft heap 10 GiB에서 default/STW 모두 120초에
+semantic 미완료였다. 실제 native child의 선택한 환경을 기록했으며 peak RSS는
+10.321/10.535 GB다. default CPU 표본 135.24초 중 `addTypesToUnion` 누적은
+94.01초(69.51%), `runtime.memmove` flat은 48.50초(35.86%)였다. 이 실행의 GC 비용은
+낮았으므로 이전 profile의 background GC 비율만으로 병목을 설명하지 않는다.
+heap/GC 변경을 더 반복하기보다 private section filter의 사전 계산을 별도 진단한다.
+
+실제 CLI TS 5.9 전체 검사 `graph-ts-narrow-5-9-full-1`은 project 0–18을 통과하고
+root 19에서 Node heap OOM(SIGABRT)으로 실패했다. root는 367.33초·RSS
+11,236,098,048바이트, 실제 hard/heap은 11,411/10,387 MiB였다. 전체 791.19초에
+28개 중 19개가 완료됐고 마지막 공개 consumer는 실행하지 못했다. RSS 보호 실패나
+전체 strict 성공으로 바꾸지 않는다. 원본 narrow SDK와 ownership source는 그대로다.
+
+`section-index-probe-preparation-2`는 9.58초·RSS 423,858,176바이트에 완료했다.
+원본 958개 hash 및 고정 oracle의 route/operation ID 각각 29,581개와 정확히 대조했다.
+새 11,804,074바이트 진단 source는 private route/ID/resource section filter만 교체하며
+value projection은 그대로 둔다. 첫 준비 실패는 owner의 `.ts` 계약을 `.d.ts`만으로
+찾던 도구 assertion이었고 원본과 함께 보존했다. 아직 C의 성능·제품 호환 증거는 아니다.
