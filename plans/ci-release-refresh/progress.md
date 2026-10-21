@@ -1,5 +1,10 @@
 # CI and Releaseway refresh
 
+Current version decision: the next release is **1.3.1**, explicitly selected by
+the maintainer after the automatic 1.4.0 plans below. `bump: patch` overrides
+Conventional Commit inference for this upcoming release; restore automatic bumps
+after it. Historical plans remain unchanged. Publication is still excluded.
+
 Scope: shorten independent CI feedback without dropping checks; update the three
 Releaseway integrations and adopt applicable upstream changes. Work directly on
 `main`, preserve commit history without merge commits, review each unit and the
