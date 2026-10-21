@@ -139,6 +139,63 @@ api.$links.b;
 `
 			}
 			output := compileTypeScriptArtifactSet(t, artifacts, "registry.probe.ts", probe)
+			// Check local factories while the document-wide registry and route
+			// facades are unavailable to the compiler host.
+			if !selected {
+				var roots []string
+				for _, kind := range []string{"prepare", "ids"} {
+					for _, module := range root.modules.registryModules {
+						if module.kind == kind {
+							roots = append(roots, module.path)
+							break
+						}
+					}
+				}
+				for _, module := range root.modules.resources {
+					if module.identity == "literal:r0000" {
+						roots = append(roots, module.path)
+						break
+					}
+				}
+				if len(roots) != 3 {
+					t.Fatal("local factory coverage incomplete", roots)
+				}
+				compiler, err := filepath.Abs("../../../test/typescript/node_modules/typescript-5-9/lib/typescript.js")
+				if err != nil {
+					t.Fatal(err)
+				}
+				blocked, err := json.Marshal([]string{registryContractsPath, root.modules.fixed["client-registry"], root.modules.fixed["route-index"], root.modules.fixed["route-helpers"]})
+				if err != nil {
+					t.Fatal(err)
+				}
+				entrypoints, err := json.Marshal(roots)
+				if err != nil {
+					t.Fatal(err)
+				}
+				boundary := `
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+const {default:ts}=await import(pathToFileURL(process.argv[2]));
+const source=path.join(path.dirname(process.argv[1]),'source');
+const loaded=ts.readConfigFile(path.join(source,'tsconfig.json'),ts.sys.readFile);
+const parsed=ts.parseJsonConfigFileContent(loaded.config,ts.sys,source);
+const blocked=new Set(JSON.parse(process.argv[3]).map(file=>path.resolve(source,file)));
+for(const entry of JSON.parse(process.argv[4])){
+ const options={...parsed.options,noEmit:true},host=ts.createCompilerHost(options);
+ const read=host.readFile,exists=host.fileExists,get=host.getSourceFile;
+ host.readFile=file=>blocked.has(path.resolve(file))?undefined:read(file);
+ host.fileExists=file=>!blocked.has(path.resolve(file))&&exists(file);
+ host.getSourceFile=(file,...args)=>blocked.has(path.resolve(file))?undefined:get(file,...args);
+ const program=ts.createProgram([path.resolve(source,entry)],options,host);
+ const diagnostics=ts.getPreEmitDiagnostics(program);
+ if(diagnostics.length)throw Error(ts.formatDiagnostics(diagnostics,{getCanonicalFileName:file=>file,getCurrentDirectory:()=>source,getNewLine:()=>"\n"}));
+ if(program.getSourceFiles().some(file=>blocked.has(path.resolve(file.fileName))))throw Error('document facade escaped the host boundary');
+}
+`
+				if result, err := exec.Command("node", "--input-type=module", "--eval", boundary, output, compiler, string(blocked), string(entrypoints)).CombinedOutput(); err != nil {
+					t.Fatalf("local factory requires a document-wide facade: %v\n%s", err, result)
+				}
+			}
 			if !selected {
 				compileDeclarationConsumers(t, artifacts, probe)
 				compiler, err := filepath.Abs("../../../test/typescript/node_modules/typescript-5-9/lib/typescript.js")

@@ -299,3 +299,27 @@ rename failure rollback 검사는 최종 output suite에서 함께 확인한다.
 1,649,027 output bytes·616,668 peak buffer bytes였다. 이 도구는 manifest 정렬 순서로
 replay하므로 실제 emitter 순서·전체 generation 성능·최종 채택 크기의 대체 근거가 아니다.
 큰 입력의 후보 진단 뒤 실제 최종 Generator 출력과 전체 compile을 별도로 검증한다.
+
+## W08 registry/resource 타입 의존성의 국소화
+
+registry 단계 메서드 shape를 runtime의 `PreparedRegistryChunkContract` 한 곳에 두었다.
+root는 전체 call map의 view를, prepare/ID 청크는 자기 canonical operation Contract와
+실제 LinkTargets의 view를 사용한다. LinkTargets intersection에서 implicit index signature를
+추론하지 못하던 첫 strict 실패는 기존 `Mutable` mapped view로 해결했다. 값의 타입을
+`any`나 새 broad index signature로 바꾸지 않았다.
+
+resource factory도 자기 operation Contract의 call/resourceCall/pagination view와 child
+factory의 registry view를 사용한다. 전체 client registry·route helper를 import하지 않는다.
+공개 Surface 문서와 route/resource brand, root call binding·Link 순서·client별 state는 같다.
+
+`narrow-registry-resource-behavior-3`은 네 compiler strict source·declaration emit·원본 TS가 없는
+declaration consumer, 전체 native source/runtime, public hover, private/named·cross-chunk Link·stream/pagination을
+통과했다. 추가 compiler-host 검사는 prepare/ID 청크와 leaf resource에서 전체 registry/
+route facade를 사용할 수 없게 한 상태로 strict 검사했다. 단순 source 문자열 검사가 아니라
+실제 import 경계 검사다. 전체 생성기·실제 최종 Graph 검사는 다음 단위에서 계속한다.
+
+실행 세션 복구 과정에서 이전 Go 큰 replay의 `result.json`과 완료 manifest가 없고
+프로세스도 남아 있지 않음을 확인했다. `graph-go-pack-128-replay/interruption.json`에
+중단으로 기록했고 성공·timeout·제품 실패로 집계하지 않는다. 새 경로의 재실행에는 매 trial
+직전 `min(요청 상한, 12 GiB, 가용 RAM - 2 GiB)`를 적용한다. task context는 관측한
+이 workstream의 W05/W06/W07 run만 takeover해 workspace의 비공개 경로로 복구했다.

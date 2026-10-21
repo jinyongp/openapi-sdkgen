@@ -66,11 +66,11 @@ func collectPlannedResourceNodes(node *resourceNode, identity string, artifactPa
 }
 
 func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string) ([]byte, error) {
-	registrySpecifier, err := plan.relativeModuleSpecifier(module.path, plan.fixed["client-registry"])
+	registrySpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/contract-types.ts")
 	if err != nil {
 		return nil, err
 	}
-	helperSpecifier, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-helpers"])
+	identitySpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/shared/identity.ts")
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	childIdentities := resourceChildIdentities(module.identity, module.node)
 	names := newLocalIdentifierPlan(module.path)
-	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "assignCallableProperties", "bindResourceInput", "bindResourceNoInput", "bindResourceOptionalInput", "bindResourceInputStream", "bindResourceNoInputStream", "bindResourceOptionalInputStream", "bindResourceLinks", "bindResourcePagination", "Surface", "build", "registry", "bound", "members"); err != nil {
+	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "ResourceRegistry", "ResourceOperations", "RegistryCalls", "RouteTypeIdentity", "OperationTypeIdentity", "assignCallableProperties", "bindResourceInput", "bindResourceNoInput", "bindResourceOptionalInput", "bindResourceInputStream", "bindResourceNoInputStream", "bindResourceOptionalInputStream", "bindResourceLinks", "bindResourcePagination", "Surface", "build", "registry", "bound", "members"); err != nil {
 		return nil, err
 	}
 	for _, node := range append([]*resourceNode{module.node}, resourceChildNodes(module.node)...) {
@@ -121,8 +121,10 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	}
 
 	var output bytes.Buffer
-	fmt.Fprintf(&output, "import type { CallableRegistry } from %s\n", quoteTS(registrySpecifier))
-	fmt.Fprintf(&output, "import type { PaginateCall, ResourceCall } from %s\n", quoteTS(helperSpecifier))
+	fmt.Fprintf(&output, "import type { ResourceRegistry } from %s\n", quoteTS(registrySpecifier))
+	if len(module.node.operations) > 0 {
+		fmt.Fprintf(&output, "import type { RouteTypeIdentity, OperationTypeIdentity } from %s\n", quoteTS(identitySpecifier))
+	}
 	if needsAssign {
 		fmt.Fprintf(&output, "import { assignCallableProperties } from %s\n", quoteTS(callablesSpecifier))
 	}
@@ -149,6 +151,35 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 			return nil, err
 		}
 		fmt.Fprintf(&output, "import { build as %s } from %s\n", alias, quoteTS(specifier))
+	}
+	output.WriteByte('\n')
+	output.WriteString("interface ResourceOperations {\n")
+	for _, name := range sortedResourceMemberNames(module.node) {
+		operation, exists := module.node.operations[name]
+		if !exists {
+			continue
+		}
+		route := manifestRouteKey(operation)
+		specifier, err := operationModuleSpecifier(module.path, route, plan)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "  readonly %s: import(%s).Contract\n", quoteTS(route), quoteTS(specifier))
+	}
+	output.WriteString("}\nexport type RegistryCalls = { readonly [Route in keyof ResourceOperations]: ResourceOperations[Route][\"call\"] }")
+	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
+		specifier, err := plan.relativeModuleSpecifier(module.path, paths[identity])
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, " & import(%s).RegistryCalls", quoteTS(specifier))
+	}
+	output.WriteString("\ntype CallableRegistry = ResourceRegistry<RegistryCalls>\n")
+	if len(module.node.operations) > 0 {
+		output.WriteString("type ResourceCall<Route extends keyof ResourceOperations> = ResourceOperations[Route][\"resourceCall\"] & RouteTypeIdentity<Route> & OperationTypeIdentity<Route, \"resource\">\n")
+	}
+	if _, ok := paginatedResourceNodeOperation(module.node); ok {
+		output.WriteString("type PaginateCall<Route extends keyof ResourceOperations> = ResourceOperations[Route][\"pagination\"] & RouteTypeIdentity<Route>\n")
 	}
 	output.WriteByte('\n')
 

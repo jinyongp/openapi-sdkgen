@@ -22,3 +22,16 @@ type PublicValue<Value, Seen> = Value extends Seen
 export interface OperationResourceRawCapability<Call, Route> {
   readonly raw: Call & RouteTypeIdentity<Route>;
 }
+
+/** Registry stages depend only on the callables read by their owner. */
+export interface PreparedRegistryChunkContract<Completed, Public> {
+  bindLinks?(completed: Completed): void;
+  decorate(): void;
+  register(completed: Completed): void;
+  expose?(routes: Public): void;
+}
+
+/** A resource factory reads its own and its child factories' exact calls. */
+export interface ResourceRegistry<Calls> {
+  readonly routes: Calls;
+}

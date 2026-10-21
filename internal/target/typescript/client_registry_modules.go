@@ -189,6 +189,9 @@ func emitChunkedRegistry(manifest Manifest, plan *semanticModulePlan, links []ge
 
 func emitRegistryContracts(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
 	var out bytes.Buffer
+	if err := registryImport(&out, plan, registryContractsPath, "type { PreparedRegistryChunkContract }", "internal/runtime/client/contract-types.ts"); err != nil {
+		return nil, err
+	}
 	if err := registryImport(&out, plan, registryContractsPath, "type { Routes as PublicRoutes, OperationRoutes }", plan.fixed["route-index"]); err != nil {
 		return nil, err
 	}
@@ -211,12 +214,7 @@ type PublicCalls = { readonly [Route in keyof PublicRoutes]: PublicRoutes[Route]
 type OperationCalls = { readonly [ID in keyof OperationRoutes]: PublicRoutes[OperationRoutes[ID]]["call"] }
 type LinkCalls = { readonly [ID in keyof OperationRoutes as [PublicRoutes[OperationRoutes[ID]]["links"]] extends [never] ? never : ID]: PublicRoutes[OperationRoutes[ID]]["links"] }
 export interface CallableRegistry { readonly routes: PublicCalls; readonly operations: OperationCalls; readonly links: LinkCalls }
-export interface PreparedRegistryChunk {
-  bindLinks?(completed: CompletedRoutes): void
-  decorate(): void
-  register(completed: CompletedRoutes): void
-  expose?(routes: CallableRegistry["routes"]): void
-}
+export type PreparedRegistryChunk = PreparedRegistryChunkContract<CompletedRoutes, CallableRegistry["routes"]>
 export type RegistryRegistrar = (completed: CompletedRoutes, values: Record<string, unknown>) => void
 `)
 	return out.Bytes(), nil
@@ -274,7 +272,6 @@ func emitRegistryPrepare(plan *semanticModulePlan, module registryModulePlan, fa
 	if streaming {
 		requestType = "RequestFunction"
 	}
-	contracts := "PreparedRegistryChunk, CompletedRoutes, RegistryRoutes"
 	var public []registryEntry
 	if private {
 		for _, entry := range module.entries {
@@ -283,14 +280,11 @@ func emitRegistryPrepare(plan *semanticModulePlan, module registryModulePlan, fa
 			}
 		}
 	}
-	if len(public) > 0 {
-		contracts += ", CallableRegistry"
-	}
 	for _, im := range []struct{ clause, target string }{
 		{"type { " + requestType + " }", "internal/runtime/http/request/request-execution-types.ts"},
 		{"type { WireSchemas }", "internal/runtime/schema/wire-types.ts"},
-		{"type { " + contracts + " }", registryContractsPath},
-		{"{ defineOwnDataProperty }", "internal/runtime/shared/objects.ts"},
+		{"type { PreparedRegistryChunkContract }", "internal/runtime/client/contract-types.ts"},
+		{"{ defineOwnDataProperty, type Mutable }", "internal/runtime/shared/objects.ts"},
 	} {
 		if err := registryImport(&out, plan, module.path, im.clause, im.target); err != nil {
 			return nil, err
@@ -316,6 +310,22 @@ func emitRegistryPrepare(plan *semanticModulePlan, module registryModulePlan, fa
 			return nil, err
 		}
 	}
+	if err := emitRegistryChunkTypes(&out, plan, module, factories); err != nil {
+		return nil, err
+	}
+	publicKeys := make([]string, 0, len(public))
+	for _, entry := range public {
+		publicKeys = append(publicKeys, quoteTS(entry.route))
+	}
+	publicType := "CompletedRoutes"
+	if private {
+		keys := strings.Join(publicKeys, " | ")
+		if keys == "" {
+			keys = "never"
+		}
+		publicType = "Pick<CompletedRoutes, " + keys + ">"
+	}
+	fmt.Fprintf(&out, "type PublicCalls = %s\ntype PreparedRegistryChunk = PreparedRegistryChunkContract<CompletedRoutes, PublicCalls>\n", publicType)
 	fmt.Fprintf(&out, "\nexport function prepare(request: %s, inputSchemas?: WireSchemas, outputSchemas?: WireSchemas): PreparedRegistryChunk {\n", requestType)
 	for _, entry := range module.entries {
 		names := factories[entry.route]
@@ -365,7 +375,7 @@ func emitRegistryPrepare(plan *semanticModulePlan, module registryModulePlan, fa
 	if len(public) > 0 {
 		// The public key set is obtained from the prepared selection, never from
 		// the wider private Link dependency map.
-		out.WriteString("    expose(routes: CallableRegistry[\"routes\"]): void {\n")
+		out.WriteString("    expose(routes: PublicCalls): void {\n")
 		for _, entry := range public {
 			fmt.Fprintf(&out, "      defineOwnDataProperty(routes as Record<string, unknown>, %s, %s)\n", quoteTS(entry.route), factories[entry.route].value)
 		}
@@ -377,10 +387,13 @@ func emitRegistryPrepare(plan *semanticModulePlan, module registryModulePlan, fa
 
 func emitRegistryIDs(plan *semanticModulePlan, module registryModulePlan, sources map[string]bool) ([]byte, error) {
 	var out bytes.Buffer
-	for _, im := range []struct{ clause, target string }{{"type { CompletedRoutes }", registryContractsPath}, {"{ defineOwnDataProperty }", "internal/runtime/shared/objects.ts"}} {
+	for _, im := range []struct{ clause, target string }{{"{ defineOwnDataProperty, type Mutable }", "internal/runtime/shared/objects.ts"}} {
 		if err := registryImport(&out, plan, module.path, im.clause, im.target); err != nil {
 			return nil, err
 		}
+	}
+	if err := emitRegistryChunkTypes(&out, plan, module, nil); err != nil {
+		return nil, err
 	}
 	out.WriteString("\nexport function registerOperations(completed: CompletedRoutes, values: Record<string, unknown>): void {\n")
 	for _, entry := range module.entries {
@@ -397,4 +410,30 @@ func emitRegistryIDs(plan *semanticModulePlan, module registryModulePlan, source
 		out.WriteString("}\n")
 	}
 	return out.Bytes(), nil
+}
+
+func emitRegistryChunkTypes(out *bytes.Buffer, plan *semanticModulePlan, module registryModulePlan, factories map[string]registryIdentifierNames) error {
+	out.WriteString("\ninterface RegistryRoutes {\n")
+	seen := make(map[string]bool)
+	var targets []string
+	for _, entry := range module.entries {
+		if seen[entry.route] {
+			continue
+		}
+		seen[entry.route] = true
+		specifier, err := operationModuleSpecifier(module.path, entry.route, plan)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "  readonly %s: import(%s).Contract\n", quoteTS(entry.route), quoteTS(specifier))
+		if factories[entry.route].links != "" {
+			targets = append(targets, "import("+quoteTS(specifier)+").LinkTargets")
+		}
+	}
+	out.WriteString("}\ntype CompletedRoutes = Mutable<{ -readonly [Route in keyof RegistryRoutes]: RegistryRoutes[Route][\"call\"] }")
+	for _, target := range targets {
+		fmt.Fprintf(out, " & %s", target)
+	}
+	out.WriteString(">\n")
+	return nil
 }
