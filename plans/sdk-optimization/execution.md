@@ -430,3 +430,18 @@ profile flush가 끝나지 않아 불완전하다. gctrace와 실패 원본은 �
 semantic 진단·CPU/heap profile 판독까지 통과했다. 큰 원본 config API 시도는 snapshot
 구성 도중 가용 RAM에 따른 6,224 MiB 보호 상한을 넘어 종료됐으며 owner 확인 전이다.
 이들 언어 서비스 진단은 전체 CLI·declaration·public consumer 성공을 대신하지 않는다.
+
+## W06 실제 Graph 전체 계약 대조
+
+`graph-go-native-final-audit-run`은 최종 source 전부를 parse cap 없이 검사했다
+(141.84초, 최대 RSS 906,264,576바이트). 기준선의 큰 두 파일은 기존 unlimited
+supplement로 보완했다. publisher manifest와 모든 audit source hash·전수 coverage가 일치한다.
+`graph-go-native-final-streamed-contract-comparison`은 원본 Go 659,663파일과 후보
+285,343파일에서 각각 6,434,421개 계약을 비교해 차이 0건으로 통과했다
+(54.67초, 최대 RSS 541,319,168바이트). 정의 type의 package/name과 공개 AST 서명·
+import binding이 동일하다. filename은 비교하지 않으며 compiler/runtime 성공은 별도다.
+
+비교 도구의 첫 3/6 GiB 실행은 각각 RSS 보호로 실패했다. 큰 facade의 import 문자열을
+각 공개 서명에 붙인 임시 list가 원인이었다. import prefix의 해시 상태를 복사하고 서명을
+순차 처리하도록 고쳐 같은 해시 의미와 계약별 occurrence 수를 유지했다. 기존 양성·음성
+회귀가 통과했고, 실제 전수 대조도 원래 3 GiB 도구 예산 안에서 완료됐다. 실패 원본을 보존한다.

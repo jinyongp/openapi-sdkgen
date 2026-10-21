@@ -5,7 +5,6 @@ defined type ownership and exported AST contracts as multisets. Supplemental
 unlimited audits must replace precisely the matching capped source records.
 """
 import argparse
-from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -51,12 +50,23 @@ def load(connection, side, audit, manifest_path, supplements):
         if not row['package'] and row['reasons'] != ['go_ignored_filename']:
             raise ValueError('source package absent: ' + name)
         package = str(Path(name).parent) + ':' + row['package']
-        entries = [('type:' + name, '') for name in row['definedTypes'] or []]
-        entries += [('public:' + name, row['importKey'] + '\x00' + value) for name, value in row['publicSignatures'].items()]
-        values = Counter((package, name, hashlib.sha256(value.encode()).hexdigest()) for name, value in entries)
-        for (package, name, value), occurrences in values.items():
-            connection.execute('INSERT INTO contracts VALUES (?, ?, ?, ?, ?) ON CONFLICT(side, package, name, value) DO UPDATE SET occurrences=occurrences+excluded.occurrences', (side, package, name, value, occurrences))
-        count += len(entries)
+        # A facade can import hundreds of packages and export thousands of
+        # methods. Never retain importKey + signature once per method: that
+        # Cartesian-sized temporary can exceed the SDK compiler's own budget.
+        prefix = hashlib.sha256()
+        prefix.update(row['importKey'].encode())
+        prefix.update(b'\x00')
+
+        def entries():
+            for name in row['definedTypes'] or []:
+                yield side, package, 'type:' + name, hashlib.sha256(b'').hexdigest(), 1
+            for name, signature in row['publicSignatures'].items():
+                digest = prefix.copy()
+                digest.update(signature.encode())
+                yield side, package, 'public:' + name, digest.hexdigest(), 1
+
+        connection.executemany('INSERT INTO contracts VALUES (?, ?, ?, ?, ?) ON CONFLICT(side, package, name, value) DO UPDATE SET occurrences=occurrences+excluded.occurrences', entries())
+        count += len(row['definedTypes'] or []) + len(row['publicSignatures'])
     if replacements:
         raise ValueError('supplement contains uncapped/unknown source')
     if seen != {name for name in manifest if name.endswith('.go')}:
