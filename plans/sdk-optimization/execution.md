@@ -445,3 +445,33 @@ import binding이 동일하다. filename은 비교하지 않으며 compiler/runt
 각 공개 서명에 붙인 임시 list가 원인이었다. import prefix의 해시 상태를 복사하고 서명을
 순차 처리하도록 고쳐 같은 해시 의미와 계약별 occurrence 수를 유지했다. 기존 양성·음성
 회귀가 통과했고, 실제 전수 대조도 원래 3 GiB 도구 예산 안에서 완료됐다. 실패 원본을 보존한다.
+
+## W08 실제 native CPU·heap profile
+
+별도 flat fixture는 source owner 19의 원본 958개와 이미 검사한 dependency 선언
+97,862개를 hardlink했다. API가 실제로 읽은 program은 57,127파일이며 implementation
+source 집합은 958개와 정확히 일치했다. strict·noCheck=false는 실제 compiler options에서
+확인했다. 원본 SDK와 reference 출력은 수정하지 않았다.
+
+`graph-ts-flat-api-factory-run`은 53.11초·최대 RSS 7,154,118,656바이트로 profile 수집을
+마쳤고 factory semantic 진단은 오류 0개다. registry도 37.70초·6,666,031,104바이트로
+수집을 마쳤으며 오류 0개다. 두 실행의 CPU·heap 파일은 `go tool pprof`로 실제 판독했다.
+이는 해당 파일의 언어 서비스 진단이며 전체 source·emit·consumer 성공이 아니다.
+
+`graph-ts-flat-api-program-run`은 file을 생략해 loaded program 전체의 semantic 호출을
+120초 계측했다. profile 수집은 141.72초·9,379,581,952바이트로 완료됐으나 semantic
+호출 자체는 끝나지 않았다. CPU 표본 464.14초 중 background GC가 339.07초(73.05%)를
+차지했고 heap profile의 유지 객체는 7,740.97 MiB다. 6 GiB soft limit보다 크다.
+checker 경로에서는 `getConstraintFromIndexedAccess` → `getIndexedAccessTypeOrUndefined`
+→ `getUnionTypeEx` → `addTypesToUnion`의 비용이 크다. 이 단계에서 특정 public alias나
+section predicate가 원인이라고 확정하지 않는다. 원본 두 profile과 owner·config·binary
+hash, 실패·중단 결과를 모두 보존한다. API의 checker pool 경로는 CLI singleThreaded
+실행과 구분하며 이 계측을 최종 성능 표본으로 사용하지 않는다.
+
+호출 경로 해석에 참고한 고정 upstream 원본은
+[API 진단 schema](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/api/proto.go),
+[진단 handler](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/api/session.go),
+[indexed access·union 계산](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/checker/checker.go)이다.
+마지막 파일의 SHA-256은 `32384dde486c33c59c5695505f4c951c3009c6d7e50589cb5b18d0ea92cbf161`이다.
+큰 파일은 connector가 본문을 반환하지 않아 동일 commit의 raw 원본을 읽었다.
+packaged binary의 `+dirty`를 이유로 source와 binary가 완전히 같다고 가정하지 않는다.

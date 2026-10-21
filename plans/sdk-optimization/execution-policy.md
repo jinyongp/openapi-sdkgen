@@ -117,6 +117,19 @@ dependency declaration 97,862개와 root owner 19의 원본 source 958개만 har
 hard RSS 정책을 유지한다. 이는 새 compiler 조건의 최종 timing 표본이 아니다. 읽을 수
 있는 CPU/heap profile과 실제 관측 비용으로 다음 조사를 선택한다.
 
+flat fixture의 factory·registry 파일별 semantic 진단이 각각 오류 없이 끝나면,
+같은 API의 file 생략 기능으로 loaded program 전체의 semantic 비용을 최대 120초
+계측한다. 원본 CLI의 emit·references 실행과는 구분하며 compiler 옵션·실제 owner
+일치·모든 profile 원본을 기록한다. RPC가 진행 중이면 수집을 끝낸 뒤 그 사실을 표시한다.
+
+실제 program profile이 GC 73.05%·유지 heap 7,740.97 MiB를 보이면 다음 조사를 나눈다.
+우선 같은 flat fixture의 `internal/routes/helpers.ts` 한 파일을 6 GiB soft heap·120초로
+계측해 alias가 있는 파일까지 비용을 좁힌다. 이 진단은 최소 8 GiB hard RSS budget을
+확보한 경우에만 시작한다. 이후 같은 program의 10 GiB soft heap 진단은 최소 11 GiB
+hard budget과 기존 2 GiB 가용 RAM 여유를 확보한 경우에만 시작하며 240초를 수집한다.
+12 GiB hard 최대치·source/strict 옵션은 그대로다. CLI 실행이나 최종 반복 조건으로
+자동 채택하지 않으며 가능한 실제 semantic 완료와 profile 수집 완료를 별도 기록한다.
+
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
 [execute](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/execute/tsc.go),
