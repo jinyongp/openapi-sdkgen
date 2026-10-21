@@ -94,13 +94,16 @@ execution; only prepared artifacts with matching inputs can be shared for reads.
 `ci:dev go-core` owns source checks, tests outside the two generator packages,
 and the Go generation-check integration. `ci:dev go-consumers SHARD COUNT`
 discovers runnable Go-target tests with `go test -list`, then distributes their
-sorted names round-robin. CI runs four disjoint shards; the final gate verifies
-their combined inventory and completed test records, including newly added tests.
+sorted names round-robin. CI runs four disjoint Go shards and two TypeScript
+generator shards; the final gate verifies each group's combined inventory and
+completed test records, including newly added tests.
 Each shard preserves timing data under `.tmp/ci-tests`. Test-result caching is
 disabled for these measured CI groups; Go compilation caches remain available.
 The extra runners trade additional setup and total runner work for shorter waits.
 
-`ci:dev typescript-generator` owns the other TypeScript generator tests.
+`ci:dev typescript-generator [SHARD COUNT]` owns the other TypeScript generator tests,
+using the same discovered-inventory partitioning and excluding the two separately
+owned runtime/declaration matrix tests.
 `ci:dev typescript-runtime` owns runtime conformance, while `ci:dev typescript-matrix`
 owns `TestRuntimeFeatureNativeMatrixRegression`. Each compiler version has separate
 `consumers` and `declarations` groups; the latter owns its exact

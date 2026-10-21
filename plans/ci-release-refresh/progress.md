@@ -17,8 +17,8 @@ between 2:04 and 4:47. These are observed Actions durations, not local timings.
 
 | Unit | State | Validation |
 | --- | --- | --- |
-| CI partitioning | implemented and unit-reviewed: Go core, four Go consumer shards, TypeScript generator/native matrix, separate compiler consumers/declarations | core, consumer shard 2/4, compiler 7.0.2 declarations, four inventory tests, shell syntax and actionlint passed; committed-source Actions comparison pending |
-| Releaseway refresh | implemented: actions v0.6.3, npm-actions v0.7.1, Homebrew v0.4.3; source-tag plan/resume, exact npm tag and operation diagnostics | pinned release commits and contracts verified through GitHub API; mocked dispatch/CI-reuse tests and actionlint passed; actual read-only plan pending |
+| CI partitioning | initial unit passed all 21 Actions jobs; follow-up splits the observed TypeScript generator bottleneck into two shards | source `e00fd40`, run `39528328681`; Go inventory 157/157 verified; updated gate tests, exact previous 515-test TypeScript inventory comparison, first TypeScript shard, shell syntax and actionlint passed; full follow-up Actions run pending |
+| Releaseway refresh | complete: actions v0.6.3, npm-actions v0.7.1, Homebrew v0.4.3; source-tag plan/resume, exact npm tag and operation diagnostics | pinned releases/contracts, mocked dispatch/CI-reuse tests, actionlint and actual read-only plan run `39528351091` passed; all tag/publication jobs skipped |
 | Combined review | pending | coverage union, failure propagation, gating, source/tag identity, read-only release validation |
 
 Runner setup and compilation may repeat across jobs. No timing improvement is
@@ -33,3 +33,26 @@ tests with `-count=1` while retaining build caches. Local shard 1 completed all
 40 selected tests, but its initial shell wrapper failed after that script was
 edited while running; that invocation is not a passing command. The stable wrapper
 and full second shard subsequently passed. No SDK source changed.
+
+## First Actions measurement and follow-up
+
+The second same-source baseline, run `39526526870`, completed its Go job in 12:39
+(test suite step 12:18). The first baseline's 17:22 and this 12:39 show real runner
+and cache variability. Both use the same SDK source and pinned Go 1.27.2.
+
+At `e00fd40`, run `39528328681` passed all 21 jobs. Its longest Go shard job took
+5:47; Go core took 1:44. The complete CI jobs finished in 6:57 from first job start
+to the source gate. All 157 Go target tests were accounted for by the gate. Raw
+timing artifacts were downloaded under `.tmp/ci-release-refresh/39528328681`.
+These are observed Actions feedback times, not a normalized compiler benchmark.
+
+The remaining longest job was TypeScript generator tests: 6:47 for 515 top-level
+tests. The follow-up applies the same two-way partitioning to those tests and
+checks both inventories at the final gate. The native/declaration matrix tests
+retain their independent owners; no generated SDK checks are omitted.
+
+The new Releaseway read-only plan is schema 2, strategy `source-tag`, version
+1.4.0, and source/commit both `e00fd405949b0fc27c64f1288da3e62f365e27be`.
+The plan includes the policy digest and proposed tag object identity, but no
+remote v1.4.0 tag exists. GitHub and npm still report 1.3.0. Source-tag creation,
+package publication and live delivery remain intentionally unexecuted.

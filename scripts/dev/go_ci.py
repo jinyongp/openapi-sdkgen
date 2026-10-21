@@ -11,6 +11,7 @@ import time
 
 GOLANG = "openapi-sdkgen/internal/target/golang"
 TYPESCRIPT = "openapi-sdkgen/internal/target/typescript"
+PACKAGES = {"golang": GOLANG, "typescript": TYPESCRIPT}
 MATRICES = "^TestRuntimeFeature(Native|Declaration)MatrixRegression$"
 
 
@@ -28,40 +29,42 @@ def discover(package):
     return names
 
 
-def verify_reports(directory):
-    reports = [json.loads(path.read_text()) for path in sorted(directory.glob("golang-*.json"))]
+def group_tests(group, names):
+    return [name for name in names if group != "typescript" or not re.fullmatch(MATRICES, name)]
+
+
+def verify_reports(directory, group="golang"):
+    reports = [json.loads(path.read_text()) for path in sorted(directory.glob(f"{group}-*.json"))]
     if not reports:
-        raise ValueError("Go consumer shard reports are missing")
+        raise ValueError(f"{group} generator shard reports are missing")
     first = reports[0]
     count = first["count"]
     if count < 1 or len(reports) != count or sorted(report["shard"] for report in reports) != list(range(1, count + 1)):
         raise ValueError("Go consumer shard reports are incomplete or duplicated")
     selected = []
     for report in reports:
-        if (report["group"] != "golang" or report["count"] != count or report["exitCode"] != 0
+        if (report["group"] != group or report["count"] != count or report["exitCode"] != 0
                 or report["inventoryCount"] != first["inventoryCount"]
                 or report["inventorySha256"] != first["inventorySha256"]
                 or not report["selected"]
-                or set(report["tests"]) != {GOLANG + "/" + name for name in report["selected"]}):
+                or set(report["tests"]) != {PACKAGES[group] + "/" + name for name in report["selected"]}):
             raise ValueError("Go consumer shard execution differs from its inventory")
         selected.extend(report["selected"])
     digest = hashlib.sha256("\n".join(sorted(selected)).encode()).hexdigest()
     if len(selected) != len(set(selected)) or len(selected) != first["inventoryCount"] or digest != first["inventorySha256"]:
         raise ValueError("Go consumer shards overlap or omit tests")
-    print(f"Verified {len(selected)} Go consumer tests in {count} disjoint shards")
+    print(f"Verified {len(selected)} {group} generator tests in {count} disjoint shards")
 
 
 def run(group, shard=1, count=1):
     selected = None
-    if group == "golang":
-        inventory = discover(GOLANG)
+    if group in PACKAGES:
+        inventory = group_tests(group, discover(PACKAGES[group]))
         selected = partition(inventory, shard, count)
         if not selected:
             raise ValueError("empty Go consumer shard")
         pattern = "^(?:" + "|".join(re.escape(name) for name in selected) + ")$"
-        args = ["-run", pattern, GOLANG]
-    elif group == "typescript":
-        args = ["-skip", MATRICES, TYPESCRIPT]
+        args = ["-run", pattern, PACKAGES[group]]
     elif group == "native":
         args = ["-run", "^TestRuntimeFeatureNativeMatrixRegression$", TYPESCRIPT]
     else:
@@ -84,7 +87,7 @@ def run(group, shard=1, count=1):
             name = event.get("Test", "")
             if name and "/" not in name and event.get("Action") in ("pass", "fail", "skip"):
                 outcomes[event["Package"] + "/" + name] = {"status": event["Action"], "seconds": event.get("Elapsed", 0)}
-                if event["Package"] == GOLANG:
+                if event["Package"] == PACKAGES.get(group):
                     completed.add(name)
         status = process.wait()
     report = {"group": group, "shard": shard, "count": count,
@@ -111,11 +114,12 @@ if __name__ == "__main__":
     parser.add_argument("count", type=int, nargs="?", default=1)
     parser.add_argument("--reports", type=Path, default=Path(".tmp/ci-tests"))
     args = parser.parse_args()
-    if args.group != "golang" and (args.shard != 1 or args.count != 1):
-        parser.error("only the Go consumer group accepts shards")
+    if args.group not in PACKAGES and (args.shard != 1 or args.count != 1):
+        parser.error("only generator test groups accept shards")
     try:
         if args.group == "verify":
-            verify_reports(args.reports)
+            for group in PACKAGES:
+                verify_reports(args.reports, group)
         else:
             sys.exit(run(args.group, args.shard, args.count))
     except (ValueError, subprocess.CalledProcessError) as error:

@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [go-core, typescript-generator, typescript-runtime, typescript-matrix, typescript-tools]
+        suite: [go-core, typescript-runtime, typescript-matrix, typescript-tools]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -48,6 +48,7 @@ jobs:
         with:
           name: ci-test-timings-${{ matrix.suite }}
           path: .tmp/ci-tests/
+          overwrite: true
           if-no-files-found: ignore
           retention-days: 7
       - name: Preserve failure diagnostics
@@ -59,14 +60,20 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  go-consumers:
-    name: Go consumers ${{ matrix.shard }}/4
+  generator-consumers:
+    name: ${{ matrix.label }} ${{ matrix.shard }}/${{ matrix.count }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        include:
+          - {suite: go-consumers, label: Go consumers, shard: 1, count: 4}
+          - {suite: go-consumers, label: Go consumers, shard: 2, count: 4}
+          - {suite: go-consumers, label: Go consumers, shard: 3, count: 4}
+          - {suite: go-consumers, label: Go consumers, shard: 4, count: 4}
+          - {suite: typescript-generator, label: TypeScript generator, shard: 1, count: 2}
+          - {suite: typescript-generator, label: TypeScript generator, shard: 2, count: 2}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -78,23 +85,26 @@ jobs:
           package-manager-cache: false
       - name: Install TypeScript dependencies
         run: bash scripts/dev/typescript.sh install
-      - name: Run generated Go consumer shard
+      - name: Run generator test shard
         env:
+          SUITE: ${{ matrix.suite }}
           SHARD: ${{ matrix.shard }}
-        run: bash scripts/dev/ci.sh go-consumers "$SHARD" 4
+          COUNT: ${{ matrix.count }}
+        run: bash scripts/dev/ci.sh "$SUITE" "$SHARD" "$COUNT"
       - name: Preserve test inventory and timings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: go-consumer-timings-${{ matrix.shard }}
+          name: generator-timings-${{ matrix.suite }}-${{ matrix.shard }}
           path: .tmp/ci-tests/
+          overwrite: true
           if-no-files-found: error
           retention-days: 7
       - name: Preserve failure diagnostics
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: diagnostics-go-consumers-${{ matrix.shard }}
+          name: diagnostics-${{ matrix.suite }}-${{ matrix.shard }}
           path: .tmp/runs/
           include-hidden-files: true
           retention-days: 7
@@ -135,30 +145,30 @@ jobs:
 
   validate:
     name: Validate source
-    needs: [suites, go-consumers, compilers, installers]
+    needs: [suites, generator-consumers, compilers, installers]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Download Go consumer inventories
-        if: needs.go-consumers.result == 'success'
+      - name: Download generator test inventories
+        if: needs.generator-consumers.result == 'success'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: go-consumer-timings-*
+          pattern: generator-timings-*
           merge-multiple: true
           path: .tmp/ci-tests/
-      - name: Require complete disjoint Go consumer coverage
-        if: needs.go-consumers.result == 'success'
+      - name: Require complete disjoint generator coverage
+        if: needs.generator-consumers.result == 'success'
         run: python3 -B scripts/dev/go_ci.py verify
       - name: Require all suites to pass
         env:
           SUITES_RESULT: ${{ needs.suites.result }}
-          GO_CONSUMERS_RESULT: ${{ needs.go-consumers.result }}
+          GENERATORS_RESULT: ${{ needs.generator-consumers.result }}
           COMPILERS_RESULT: ${{ needs.compilers.result }}
           INSTALLERS_RESULT: ${{ needs.installers.result }}
         run: |
-          if [[ "$SUITES_RESULT" != success || "$GO_CONSUMERS_RESULT" != success || "$COMPILERS_RESULT" != success || "$INSTALLERS_RESULT" != success ]]; then
-            printf 'validation failed: suites=%s go-consumers=%s compilers=%s installers=%s\n' "$SUITES_RESULT" "$GO_CONSUMERS_RESULT" "$COMPILERS_RESULT" "$INSTALLERS_RESULT" >&2
+          if [[ "$SUITES_RESULT" != success || "$GENERATORS_RESULT" != success || "$COMPILERS_RESULT" != success || "$INSTALLERS_RESULT" != success ]]; then
+            printf 'validation failed: suites=%s generators=%s compilers=%s installers=%s\n' "$SUITES_RESULT" "$GENERATORS_RESULT" "$COMPILERS_RESULT" "$INSTALLERS_RESULT" >&2
             exit 1
           fi

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from go_ci import GOLANG, partition, verify_reports
+from go_ci import PACKAGES, group_tests, partition, verify_reports
 
 
 class TestPartition(unittest.TestCase):
@@ -22,26 +22,34 @@ class TestPartition(unittest.TestCase):
             with self.subTest(shard=shard, count=count), self.assertRaises(ValueError):
                 partition(["TestOne"], shard, count)
 
+    def test_only_typescript_matrices_have_separate_owners(self):
+        names = ["TestOne", "FuzzSeed", "ExampleClient",
+                 "TestRuntimeFeatureNativeMatrixRegression", "TestRuntimeFeatureDeclarationMatrixRegression"]
+        self.assertEqual(group_tests("golang", names), names)
+        self.assertEqual(group_tests("typescript", names), names[:3])
+
 
 class TestReports(unittest.TestCase):
-    def reports(self):
+    def reports(self, group="golang"):
         names = ["TestOne", "TestTwo", "FuzzSeed", "ExampleClient"]
         digest = hashlib.sha256("\n".join(sorted(names)).encode()).hexdigest()
-        return [{"group": "golang", "shard": shard, "count": 2,
+        return [{"group": group, "shard": shard, "count": 2,
                  "exitCode": 0, "inventoryCount": len(names), "inventorySha256": digest,
                  "selected": partition(names, shard, 2),
-                 "tests": {GOLANG + "/" + name: {"status": "pass", "seconds": 1}
+                 "tests": {PACKAGES[group] + "/" + name: {"status": "pass", "seconds": 1}
                            for name in partition(names, shard, 2)}} for shard in (1, 2)]
 
-    def verify(self, reports):
+    def verify(self, reports, group="golang"):
         with TemporaryDirectory() as temporary:
             directory = Path(temporary)
             for index, report in enumerate(reports):
-                (directory / f"golang-{index}.json").write_text(json.dumps(report))
-            verify_reports(directory)
+                (directory / f"{group}-{index}.json").write_text(json.dumps(report))
+            verify_reports(directory, group)
 
     def test_completed_inventory_passes(self):
-        self.verify(self.reports())
+        for group in PACKAGES:
+            with self.subTest(group=group):
+                self.verify(self.reports(group), group)
 
     def test_missing_duplicate_changed_or_unexecuted_inventory_fails(self):
         for change in ("missing", "duplicate", "changed", "unexecuted", "overlap"):
