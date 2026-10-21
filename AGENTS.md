@@ -81,9 +81,10 @@ devtools run publish:release [--dry-run|-n | --yes|-y] [--prerelease ID] [--resu
 The command requests a version plan for remote `main` without running product
 checks. `--yes` requires successful push CI for the exact source commit, waits
 for a running CI, and checks release builds and examples before publication.
-Local edits and commits are not pushed. Releaseway calculates the version, then
-its tag mode binds a lightweight tag directly to the verified source without
-changing `main`. The built-in `GITHUB_TOKEN` creates the tag and explicitly
+Local edits and commits are not pushed. Releaseway's `source-tag` strategy calculates
+the version and binds an annotated tag directly to the verified source without
+changing `main`. Its unmodified plan is restored by immutable artifact ID and
+verified digest, then resumed for tag creation. The built-in `GITHUB_TOKEN` creates the tag and explicitly
 dispatches publication at that tag; no release App or new credential is needed.
 Main runs only plan or tag; publication runs at the tag. `.github/releaseway.yml`
 owns version-series and bump policy. Source-bound tag plans are saved as workflow

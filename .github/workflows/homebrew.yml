@@ -8,6 +8,6 @@ permissions:
 
 jobs:
   homebrew:
-    uses: releaseway/homebrew-actions/.github/workflows/check.yml@d3f1522212aca4702a32805159b0bd3e88561986 # v0.4.1
+    uses: releaseway/homebrew-actions/.github/workflows/check.yml@8fe42d36a7f93a3c399461efbe571fc695d4cdc6 # v0.4.3
     with:
       tap-repository: jinyongp/homebrew-tap

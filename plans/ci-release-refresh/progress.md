@@ -18,7 +18,7 @@ between 2:04 and 4:47. These are observed Actions durations, not local timings.
 | Unit | State | Validation |
 | --- | --- | --- |
 | CI partitioning | implemented and unit-reviewed: Go core, four Go consumer shards, TypeScript generator/native matrix, separate compiler consumers/declarations | core, consumer shard 2/4, compiler 7.0.2 declarations, four inventory tests, shell syntax and actionlint passed; committed-source Actions comparison pending |
-| Releaseway refresh | upstream stable releases and migration contracts inspected | actions v0.6.3, npm-actions v0.7.1, Homebrew v0.4.3; source-tag, exact npm tag and diagnostics applicable |
+| Releaseway refresh | implemented: actions v0.6.3, npm-actions v0.7.1, Homebrew v0.4.3; source-tag plan/resume, exact npm tag and operation diagnostics | pinned release commits and contracts verified through GitHub API; mocked dispatch/CI-reuse tests and actionlint passed; actual read-only plan pending |
 | Combined review | pending | coverage union, failure propagation, gating, source/tag identity, read-only release validation |
 
 Runner setup and compilation may repeat across jobs. No timing improvement is

@@ -39,9 +39,10 @@ jobs:
       contents: read
       actions: read
     outputs:
-      tag: ${{ steps.tag-plan.outputs.tag || steps.existing.outputs.tag }}
-      version: ${{ steps.tag-plan.outputs.version || steps.existing.outputs.version }}
-      commit: ${{ steps.tag-plan.outputs.commit || steps.existing.outputs.commit }}
+      tag: ${{ steps.release.outputs.tag || steps.existing.outputs.tag }}
+      version: ${{ steps.release.outputs.version || steps.existing.outputs.version }}
+      commit: ${{ steps.release.outputs.commit || steps.existing.outputs.commit }}
+      plan-artifact-id: ${{ steps.plan-artifact.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,9 +50,10 @@ jobs:
           persist-credentials: false
       - id: existing
         if: github.ref_type == 'tag'
-        uses: releaseway/actions/prepare@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
+        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
-          mode: ${{ contains(github.ref_name, '-') && 'tag' || 'resolve' }}
+          mode: resolve
+          allow-prerelease: "true"
           tag: ${{ github.ref_name }}
           commit: ${{ github.sha }}
       - name: Reuse successful CI for the release source
@@ -73,21 +75,29 @@ jobs:
         run: bash scripts/release/check.sh
       - id: release
         if: github.ref_type != 'tag'
-        uses: releaseway/actions/prepare@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
+        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
           mode: plan
           prerelease-id: ${{ inputs.prerelease-id }}
           plan-path: ${{ runner.temp }}/release-plan.json
-      - name: Bind the version plan to the verified source
-        id: tag-plan
-        if: github.ref_type != 'tag'
-        run: node .github/scripts/release_tag_plan.mjs "$RUNNER_TEMP/release-plan.json" "$RUNNER_TEMP/tag-plan.json"
       - name: Preserve release plan
-        if: steps.tag-plan.outcome == 'success'
+        id: plan-artifact
+        if: steps.release.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-plan
-          path: ${{ runner.temp }}/tag-plan.json
+          name: release-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.release.outputs.plan-path }}
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve preparation diagnostics
+        if: always() && (steps.release.outputs.diagnostics-path != '' || steps.existing.outputs.diagnostics-path != '')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-preparation-diagnostics-${{ github.run_attempt }}
+          path: |
+            ${{ steps.release.outputs.diagnostics-path }}
+            ${{ steps.existing.outputs.diagnostics-path }}
+          if-no-files-found: error
           retention-days: 7
       - name: Preserve check diagnostics
         if: failure()
@@ -111,24 +121,27 @@ jobs:
       - name: Restore verified release plan
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: release-plan
-          path: ${{ runner.temp }}
+          artifact-ids: ${{ needs.prepare-release.outputs.plan-artifact-id }}
+          path: ${{ runner.temp }}/release-plan
+          digest-mismatch: error
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.prepare-release.outputs.commit }}
           fetch-depth: 0
-      - name: Read the verified tag plan
-        id: plan
-        run: |
-          jq -e --arg source "$GITHUB_SHA" '.source == $source' "$RUNNER_TEMP/tag-plan.json" >/dev/null
-          jq -er '"tag=" + .tag, "commit=" + .source' "$RUNNER_TEMP/tag-plan.json" >> "$GITHUB_OUTPUT"
       - name: Tag the verified source without changing main
         id: release
-        uses: releaseway/actions/prepare@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
+        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
-          mode: tag
-          tag: ${{ steps.plan.outputs.tag }}
-          commit: ${{ steps.plan.outputs.commit }}
+          mode: resume
+          plan-path: ${{ runner.temp }}/release-plan/release-plan.json
+      - name: Preserve tag diagnostics
+        if: always() && steps.release.outputs.diagnostics-path != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-tag-diagnostics-${{ github.run_attempt }}
+          path: ${{ steps.release.outputs.diagnostics-path }}
+          if-no-files-found: error
+          retention-days: 7
       # GITHUB_TOKEN tag pushes do not trigger push workflows. Dispatch at the
       # tag so npm provenance and every distribution use the same release ref.
       - name: Request publication at the release tag
@@ -153,7 +166,19 @@ jobs:
           fetch-depth: 0
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@3972d333a5651cc04ceed6975ef5b01409052289 # v0.6.0
+        uses: releaseway/npm-actions@b9b00e1a5e5d4e055d34e4daa663909e4d65e21c # v0.7.1
+        with:
+          release-tag: ${{ needs.prepare-release.outputs.tag }}
+      - name: Preserve npm diagnostics
+        if: always() && (steps.npm.outputs.report-path != '' || steps.npm.outputs.diagnostics-path != '')
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-release-diagnostics-${{ github.run_attempt }}
+          path: |
+            ${{ steps.npm.outputs.report-path }}
+            ${{ steps.npm.outputs.diagnostics-path }}
+          if-no-files-found: error
+          retention-days: 7
 
   verify-npm-release:
     name: Verify npm distribution
@@ -166,7 +191,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [prepare-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@d3f1522212aca4702a32805159b0bd3e88561986 # v0.4.1
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@8fe42d36a7f93a3c399461efbe571fc695d4cdc6 # v0.4.3
     permissions:
       contents: read
     with:
@@ -240,7 +265,8 @@ jobs:
           bash scripts/install/build.sh "$RELEASE_VERSION" dist
           (cd dist && sha256sum install.sh install.ps1 >> checksums.txt)
       - name: Publish immutable GitHub Release
-        uses: releaseway/actions@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
+        id: publication
+        uses: releaseway/actions@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
           tag: ${{ needs.prepare-release.outputs.tag }}
           commit: ${{ needs.prepare-release.outputs.commit }}
@@ -254,6 +280,14 @@ jobs:
             dist/install.ps1
             dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.tar.gz
             dist/openapi-sdkgen_${{ needs.prepare-release.outputs.version }}_*.zip
+      - name: Preserve GitHub Release diagnostics
+        if: always() && steps.publication.outputs.diagnostics-path != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: github-release-diagnostics-${{ github.run_attempt }}
+          path: ${{ steps.publication.outputs.diagnostics-path }}
+          if-no-files-found: error
+          retention-days: 7
 
   verify-native-release:
     name: Verify published native Go support

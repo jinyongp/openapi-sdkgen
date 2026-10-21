@@ -138,8 +138,10 @@ suites are not repeated. A legacy Releaseway marker reuses CI from its verified,
 identical-tree parent. Preparation allows up to 30 minutes for source CI and has
 a 45-minute job budget including
 release build checks. The workflow preserves the verified plan as an artifact.
-A separate five-minute job uses Releaseway `mode: tag` to bind the selected version
-directly to the verified source commit. It creates no marker and never pushes
+A separate five-minute job resumes Releaseway's `source-tag` plan to bind the
+selected version directly to the verified source commit with an annotated tag.
+It restores the unmodified plan by immutable artifact ID and verifies its digest.
+It creates no marker and never pushes
 `main`. The built-in `GITHUB_TOKEN` has `contents: write` and `actions: write`
 only in that job; build checks retain read-only permissions. No release App,
 personal token, new secret, or branch protection exception is required.
@@ -147,14 +149,21 @@ Only tag runs publish packages or documentation. Since `GITHUB_TOKEN` tag pushes
 do not start push workflows, the main run explicitly dispatches the Release
 workflow at the new tag and ends without waiting for it. Both runs share the
 release concurrency group; waiting inside the main run would block publication.
-A plan-only run performs no remote writes. The saved `tag-plan.json` contains
-the source, tag and version, rather than Releaseway's unused marker binding.
-Rerunning the tag job reuses that exact binding. Replanning the same source and
-channel reuses its existing tag; ambiguous bindings fail and require an explicit
+A plan-only run performs no remote writes. The saved `release-plan.json` is
+Releaseway's schema 2 source-tag plan, including source, version and policy identity;
+the workflow does not transform it. Rerunning the tag job reuses that exact binding.
+Replanning the same source and channel reuses its existing tag; ambiguous bindings fail and require an explicit
 `--resume TAG`. Once main has advanced, use
 `--resume TAG` to retry publication at the same commit. Local edits and commits are not
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
+
+Releaseway Actions v0.6.3, npm Actions v0.7.1 and Homebrew Actions v0.4.3 are
+pinned by immutable commit SHA. npm receives the exact `release-tag`, including
+when multiple stable/prerelease tags share a source. Preparation, tag creation,
+GitHub publication and npm retain their operation diagnostics as separate
+artifacts on controlled success/failure. These diagnostics do not authorize a
+retry or prove that an unavailable runner performed no remote writes.
 
 ### Repository release settings
 

@@ -119,7 +119,7 @@ jobs:
       - name: Merge installers from the exact public release
         id: distribution
         if: inputs.release-ref != ''
-        uses: releaseway/actions/distribute@7427110b565bedef79ab0f80e6821a706d7f21ed # v0.5.1
+        uses: releaseway/actions/distribute@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
           tag: ${{ inputs.release-ref }}
           commit: ${{ inputs.release-commit }}
