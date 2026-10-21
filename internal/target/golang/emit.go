@@ -28,7 +28,25 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 	if !ok {
 		return fmt.Errorf("invalid Go source plan")
 	}
-	originalSink := sink
+	packer := newArtifactPacker(sink, packTargetBytes, packBufferBytes)
+	packer.unsafeDirectories = make(map[string]bool)
+	packTemplates := make(map[string]string)
+	for _, file := range prepared.Files {
+		text := file.Prepared
+		if file.Template != "" {
+			templateText, found := packTemplates[file.Template]
+			if !found {
+				data, _ := sources.ReadFile(file.Template)
+				templateText = string(data)
+				packTemplates[file.Template] = templateText
+			}
+			text += templateText
+		}
+		if path.Ext(file.Path) != ".go" || strings.Contains(text, "//go:embed") || strings.Contains(text, "//go:linkname") || strings.Contains(text, "#cgo") {
+			packer.unsafeDirectories[path.Dir(file.Path)] = true
+		}
+	}
+	originalSink := generator.ArtifactSink(packer)
 	schemaBindings := make(map[string]partitionReference)
 	modelBindings := make(map[string]partitionReference)
 	packages := make(map[string][]partitionFile)
@@ -123,5 +141,5 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 			delete(packages, phase)
 		}
 	}
-	return nil
+	return packer.finish()
 }

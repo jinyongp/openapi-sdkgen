@@ -236,3 +236,27 @@ incremental metadata는 매번 새로 만들며 이전 성공 캐시를 사용�
 map을 검사하고, 내부 TS2322·변경/추가 source·augmentation·기존 output 재사용을 거절한다.
 초기 두 fixture 기대값 오류와 수정 후 결과도 삭제하지 않는다. W05의 네 compiler/
 실험군/server profile 분류와 W08의 최종 전체 strict 성공은 아직 별도 필수 작업이다.
+
+## W06 최종 sink의 안전한 선언 묶기
+
+`EmitTo`의 기존 partition/import binding 뒤 공통 sink에 native packer를 연결했다.
+모델·schema 구현 및 facade·operations·비분할 package가 같은 경로를 거친다.
+최종 package와 정확한 import 집합이 같은 파일만 묶고 선언 본문은 그대로 보존한다.
+package 변수·init·directive·cgo/blank/dot import·platform/test/ignored 파일·큰 파일·
+비생성 파일은 원래 경로로 전달한다. assembly/embedding 경계가 있는 package도 제외한다.
+
+payload buffer는 총 8 MiB, 동시 group은 128개로 제한하고 가장 먼저 열린 group을
+결정적으로 flush한다. 기본 target 128 KiB는 아직 비교 전 후보값이며 64/128/256 KiB
+실제 비교에서 확정한다. 단독 파일은 원래 경로로 내보내고 묶인 파일의 경로는 최종
+package/import 집합/첫 원래 경로의 전체 SHA-256으로 만든다. 중복 원래 경로와 원래/
+묶인 경로의 양방향 충돌을 거절한다. 오류 뒤에는 flush나 sink write를 계속하지 않는다.
+위 buffer 상한은 payload 기준이다. 모든 원래/최종 경로 중복 감지용 hash metadata는
+artifact 수에 비례하며 전체 생성기의 메모리가 8 MiB라는 뜻이 아니다.
+
+`go-pack-unit-3`은 실제 race consumer의 import/local shadowing·iota·초기화·alias/
+defined type·method set·reflect PkgPath·JSON tag, 제외 규칙·sink 오류·중복/충돌·
+buffer/group cap·큰 파일/비Go 전달·빈/final flush·반복 출력 검사를 통과했다.
+`go-pack-callers`에서는 기존 immutable plan 재방출과 private symbol partition·binding·
+모델/validator consumer를 다시 통과했다. 첫 trial의 CGO 설정과 충돌 fixture 오류는
+보존했다. 기본 크기 비교·실제 Graph 최종 inventory·publication 증분/rollback·전체
+corpus/Graph compile은 W06 후속/W09/W10에서 완료하며 이 단위 커밋만으로 통과 처리하지 않는다.
