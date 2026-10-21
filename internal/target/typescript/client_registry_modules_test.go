@@ -197,7 +197,11 @@ for(const entry of JSON.parse(process.argv[4])){
 				}
 			}
 			if !selected {
-				compileDeclarationConsumers(t, artifacts, probe)
+				compileDeclarationConsumerProfiles(t, artifacts, probe, []declarationConsumerProfile{
+					{name: "nodenext", isolatedDeclarations: true},
+					{name: "bundler", isolatedDeclarations: true},
+					{name: "commonjs", isolatedDeclarations: true},
+				})
 				compiler, err := filepath.Abs("../../../test/typescript/node_modules/typescript-5-9/lib/typescript.js")
 				if err != nil {
 					t.Fatal(err)

@@ -69,6 +69,59 @@ GOFLAGS·GOEXPERIMENT는 비우고 linux/amd64·GOAMD64=v1·GOGC=100을 명시�
 새 경로의 채택 여부와 최종 반복 조건은 실제 결과 뒤에 고정하며 source ownership,
 defined PkgPath·공개 서명·runtime·전체 Graph 성공 기준은 그대로 적용한다.
 
+### Native TS root profile 진단
+
+public root project가 25분 넘게 약 8.9 GB RSS와 높은 CPU를 유지하며 diagnostics를
+내지 않아, 비계측 대기를 중단하고 비용 함수를 계측한다. 중단은 agent의 진단 전환으로
+별도 기록하고 signal/fail 원본을 보존한다. timeout·RSS 보호·semantic 오류로 바꾸지 않는다.
+
+설치된 TS7 binary는 Go 1.26.4, source module `2bd066d87f5b+dirty` 빌드다. package와
+binary hash를 유지하며 실제 `pprofDir` 지원 및 해당 commit의 CLI 취소/profile flush
+경로를 검토했다. 이 upstream 원본과 packaged binary의 완전한 소스 동일성을 가정하지
+않고, 생성된 profile을 `go tool pprof`로 실제 읽어 확인한다.
+
+진단은 이전에 통과한 reference 출력을 쓰는 root project 하나, 새 outDir/build-info,
+기존 strict·singleThreaded·soft heap 6 GiB, `gctrace=1`·`pprofDir`로 실행한다.
+240초 또는 hard RSS보다 1 GiB 낮은 soft 지점에서 SIGINT를 보내고 30초 안에 profile
+flush가 끝나지 않으면 종료하여 불완전 진단으로 표시한다. 외부 600초·기존 동적 RSS
+보호도 유지한다. CPU와 allocs profile의 수집 성공은 전체 source·최종 consumer 성공이나
+최종 timing 표본이 아니다. heap 조정·구조 변경은 실제 profile 뒤에 판단한다.
+
+6 GiB 진단의 GC 원본은 약 7,871 MiB의 유지 heap과 약 2.5초짜리 반복 GC를 보였다.
+soft limit보다 유지 heap이 큰 상태다. SIGINT 뒤 30초 안에 종료되지 않아 강제 종료했고
+CPU/allocs profile이 flush되지 않았으므로 불완전 진단으로 남긴다. GC 원본 자체는 보존한다.
+다음 단일 root 진단은 native TS의 soft heap만 9 GiB로 조정한다. hard RSS는 같은
+동적 정책이며 최소 10 GiB 이상인 경우에 실행한다. 실제 child process의 GOMEMLIMIT·
+GOMAXPROCS·GODEBUG를 선택적으로 대조하고 나머지 source/strict 옵션은 유지한다.
+이 조건도 전체 fresh Graph 반복의 채택 조건으로 자동 간주하지 않는다.
+
+9 GiB에서도 실제 유지 heap은 약 7,870 MiB, GC goal은 약 7,968 MiB여서 반복 GC가
+이어졌다. child 환경의 9 GiB/4 CPU/gctrace 적용은 실제 process에서 일치했다.
+240초 후 취소가 30초 안에 끝나지 않아 이 profile도 불완전하다. 다음 진단은 soft heap
+10 GiB와 최소 11 GiB hard RSS headroom 조건, 480초 수집·외부 900초로 사전 고정한다.
+hard RSS 상한 자체와 source/strict 강도는 같은 정책을 따른다.
+
+10 GiB의 480초 CLI 수집도 취소 뒤 30초에 flush되지 않아 불완전으로 보존한다.
+native local async API의 snapshot·파일별 diagnostics·독립 start/stop CPU profile·heap
+profile을 작은 실제 fixture로 확인했다(2.46초, diagnostics 0, 두 profile 실제 판독).
+이후 진단은 같은 config·실제 owner source 목록 일치를 확인하고 한 파일의 semantic 또는
+declaration 비용을 최대 120초 수집한다. 검사가 진행 중이어도 별도 RPC로 profile을
+종료하므로 CLI 취소 완료에 의존하지 않는다. 언어 서비스의 per-file 진단은 CLI 전체
+source/emit/public consumer 검사나 최종 성능 표본으로 집계하지 않는다.
+
+원본 config의 API snapshot이 reference project까지 여는 비용을 분리하기 위해, 통과한
+dependency declaration 97,862개와 root owner 19의 원본 source 958개만 hardlink한 별도
+진단 fixture를 사용한다. 원본 source·기존 reference 출력은 수정하지 않는다. reference
+목록을 제거한 config와 각 source hash를 보존하고 API가 관측한 implementation source
+집합이 958개와 정확히 같은지 검사한다. 첫 flat 진단의 soft heap은 6 GiB이며 기존 동적
+hard RSS 정책을 유지한다. 이는 새 compiler 조건의 최종 timing 표본이 아니다. 읽을 수
+있는 CPU/heap profile과 실제 관측 비용으로 다음 조사를 선택한다.
+
+취소·flush 참고 원본:
+[CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
+[execute](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/execute/tsc.go),
+[pprof](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/pprof/pprof.go).
+
 ## 성능 채택 판단
 
 - 최우선 gate는 전체 source/public consumer의 strict 및 기존 계약 보존이다.

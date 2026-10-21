@@ -410,3 +410,23 @@ model implementation의 `p249`까지 진행했으며 전체 package 완료 수�
 큰 implementation을 먼저 직렬 빌드하고 작은 implementation을 제한 병렬 처리한 뒤
 전체 root를 빌드하는 추가 스케줄 진단은 `execution-policy.md`에 사전 기록했다.
 아직 실행·채택한 결과가 아니며 기존 timeout을 성공으로 바꾸지 않는다.
+
+## W08 module profile·증분 오류 전파와 native 진단
+
+`registry-strict-module-profiles`는 700 public/300 private operation fixture를 네 compiler의
+strict NodeNext·Bundler·CommonJS에서 검사했다. 실제 `isolatedDeclarations` source 생성과
+source가 없는 별도 declaration consumer가 모두 통과했다(301.73초, 최대 RSS
+1,678,426,112바이트). 기존 CommonJS CI의 relaxed profile을 strict 근거로 재사용하지 않는다.
+`project-check-incremental-tool-tests`도 통과했다(43.59초, 366,579,712바이트).
+성공 뒤 source를 바꾸고 inventory/ownership을 새로 만든 실제 semantic 오류가 실패하며,
+이를 고친 새 실행은 통과한다. 기존 성공 declaration을 재사용하지 않는 경로를 확인했다.
+
+12 GiB 요청의 전체 native 검사 `graph-ts-narrow-native-12g-1`은 project 0~18 통과 뒤
+root project 19에서 1,636.28초 동안 진단을 내지 않아 profile 조사로 전환하며 중단했다.
+중단 이유와 실제 signal은 `interruption.json`에 보존했다. RSS·timeout·semantic 오류나
+전체 성공으로 집계하지 않는다. CLI의 6/9/10 GiB soft heap 진단 세 번은 취소 뒤에도
+profile flush가 끝나지 않아 불완전하다. gctrace와 실패 원본은 보존하며 빈 CPU 파일을
+판독 가능한 profile로 취급하지 않는다. 작은 async API smoke는 snapshot·owner 확인·
+semantic 진단·CPU/heap profile 판독까지 통과했다. 큰 원본 config API 시도는 snapshot
+구성 도중 가용 RAM에 따른 6,224 MiB 보호 상한을 넘어 종료됐으며 owner 확인 전이다.
+이들 언어 서비스 진단은 전체 CLI·declaration·public consumer 성공을 대신하지 않는다.

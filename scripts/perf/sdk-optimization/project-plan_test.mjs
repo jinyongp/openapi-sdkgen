@@ -62,6 +62,22 @@ try {
   result = check(good, "changed-check"); assert.notEqual(result.status, 0);
   assert.match(result.stderr, /changed or unowned source/);
   result = node("project-plan.mjs", good.inventory, path.join(temp, "changed-plan")); assert.notEqual(result.status, 0);
+  // A regenerated SDK must not inherit the previous successful declarations.
+  // Replan the changed source, observe its real error, then check the correction.
+  const refresh = (name) => {
+    const inventory = path.join(temp, name + "-inventory"), plan = path.join(temp, name + "-plan");
+    let result = node("inventory.mjs", good.sdk, inventory); assert.equal(result.status, 0, result.stderr);
+    result = node("project-plan.mjs", inventory, plan, "1000", "2"); assert.equal(result.status, 0, result.stderr);
+    return { ...good, inventory, plan: path.join(plan, "plan.json") };
+  };
+  const delta = path.join(good.sdk, "regenerated.ts");
+  fs.writeFileSync(delta, 'export const changed: number = "invalid";\n');
+  result = check(refresh("regenerated-error"), "regenerated-error-check");
+  assert.notEqual(result.status, 0, "fresh ownership must propagate an incremental source error");
+  const regenerated = JSON.parse(fs.readFileSync(path.join(temp, "regenerated-error-check/result.json"), "utf8"));
+  assert.equal(regenerated.files, 7); assert.equal(regenerated.status, "fail");
+  fs.writeFileSync(delta, "export const changed: number = 1;\n");
+  result = check(refresh("regenerated-fixed"), "regenerated-fixed-check"); assert.equal(result.status, 0, result.stdout + result.stderr);
   const added = fixture("added");
   fs.writeFileSync(path.join(added.sdk, "extra.ts"), "export const extra: number = 1;\n");
   result = check(added, "added-check"); assert.notEqual(result.status, 0);
