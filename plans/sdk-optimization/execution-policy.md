@@ -33,6 +33,16 @@
   완전 empty-cache cold, warm consumer는 별도 집계한다. 기존 cache를 지우지 않고
   trial 전용 GOCACHE로 경계를 고정한다. profile/diagnostic 표본은 대표 timing에서 제외한다.
 
+현재 가용 RAM에 따른 RSS 상한은 6 GiB보다 작아질 수 있다. 기존 compiler soft heap
+6 GiB와 이런 hard RSS 상한의 조합은 GC가 목표 heap에 도달하기 전에 보호 종료될 수 있다.
+이를 구분하기 위한 추가 Go 진단은 compiler soft heap 3 GiB, 기존 언어/최적화 flag,
+fresh GOCACHE와 같은 직전-RAM RSS 정책으로 고정한다. gctrace를 켠 진단은 timing
+표본으로 쓰지 않는다. 필요하면 R도 같은 3 GiB profile로 검사하며 이전 6 GiB 결과와
+성능 개선율을 계산하지 않는다. 채택 측정 조건은 이 진단 결과 뒤에 다시 고정한다.
+같은 Go runtime을 사용하는 native TS compiler도 이 구분이 필요한 경우 실패한 owner
+project를 3 GiB profile로 별도 진단한다. 이미 통과한 reference 출력을 쓰는 단일 project
+진단은 전체 fresh Graph 검사 성공이나 최종 timing 표본으로 집계하지 않는다.
+
 ## 성능 채택 판단
 
 - 최우선 gate는 전체 source/public consumer의 strict 및 기존 계약 보존이다.

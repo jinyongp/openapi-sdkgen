@@ -40,7 +40,7 @@ try {
   fs.writeFileSync(usage, 'import type { Client } from "__SDK_ROOT__";\nexport function pick(client: Client): keyof Client["$operations"] {\n// @ts-expect-error unknown route\nclient.$routes["GET /missing"];\nreturn "one";\n}\n');
   const check = (fixture, name, compiler = "typescript-5-9", removeComments = false) => run("python3", [path.join(here, "check-projects.py"), "--node", process.execPath,
     "--plan", fixture.plan, "--output", path.join(temp, name), "--reference", reference,
-    "--compiler", path.join(root, "test/typescript/node_modules", compiler, "lib/tsc.js"), "--timeout", "120", "--usage-consumer", usage, ...(removeComments ? ["--remove-declaration-comments"] : [])]);
+    "--compiler", path.join(root, "test/typescript/node_modules", compiler, "lib/tsc.js"), "--timeout", "120", "--usage-consumer", usage, "--isolated-declarations", ...(removeComments ? ["--remove-declaration-comments"] : [])]);
   let result = check(good, "good-check"); assert.equal(result.status, 0, result.stdout + result.stderr);
   const trace = path.join(temp, "reference-phases.jsonl");
   result = node("trace-ts-phases.mjs", "typescript-5-9", path.join(temp, "good-check/configs/2.json"), trace);

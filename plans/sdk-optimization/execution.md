@@ -362,3 +362,27 @@ body 382,088,702바이트를 조사했다. 모든 body에 Program identity guard
 원시 보고서는 `graph-validator-duplicates-schemaimpl.json`, recorder는
 `graph-validator-duplicates-schemaimpl`이다. V의 실제 채택/보류는 P의 전체 compile과
 이 비용·identity/runtime 경계를 함께 검토해 확정한다. 현재 validator 제품 코드는 같다.
+
+## W08 좁은 계약 적용 뒤 전체 Graph 재검사
+
+`graph-ts-narrow`는 187,686파일·761,986,482바이트다. 원본보다 약 67.7% 작지만
+이는 compiler 성공을 뜻하지 않는다. source inventory의 최대 SCC는 35파일·4,841,854바이트이며
+32 MiB/12,000파일 목표로 28개 ownership project를 만들었다. 모든 source는 한 project만
+소유하고 scratch declaration에만 comment 제거를 적용한다. 원래 SDK는 바꾸지 않는다.
+
+`graph-ts-narrow-native-1`은 strict·실제 `isolatedDeclarations`를 켜고 fresh config,
+build-info, declaration 출력으로 실행했다. 19개 project가 통과한 뒤 public root를 포함한
+project 19에서 RSS 보호 종료됐다. 전체 531.53초이며 전체 source/public consumer 성공은
+미완료다. 이전 16개 통과보다 진행했지만 이를 완료나 전체 compile 속도 개선으로 집계하지 않는다.
+
+Go compiler와 native TS의 soft heap 3 GiB 진단도 각각 RSS 8,621,887,488바이트와
+8,591,290,368바이트로 8 GiB 상한을 넘었다. Go는 실제 compiler package
+`example.test/graph/api/internal/schemaimpl/p10`이 가장 큰 메모리 사용 주체였다.
+TS 진단은 이미 통과한 reference 출력을 쓴 단일 root project 검사였으므로 전체 fresh
+검사 표본이 아니다. 두 진단 모두 실패 기록이며 3 GiB를 채택 측정 조건으로 확정하지 않는다.
+
+checker는 각 project와 최종 consumer 직전에 기존 최대 12 GiB·가용 RAM−2 GiB 정책을
+다시 적용하고 실제 RSS/Node heap 예산을 결과에 저장한다. Node heap은 RSS보다 최소
+1 GiB 작다. `narrow-project-tool-tests`는 실제 isolated declaration flag를 포함한 JS/native
+compiler, ownership·public negative·오류 전파 검사를 통과했다(22.20초). 이 검사는 작은
+fixture의 도구 검증이며 Graph 성공 증거와 구분한다.

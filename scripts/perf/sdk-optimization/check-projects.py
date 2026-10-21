@@ -69,6 +69,7 @@ def check(args):
                    lib=['ES2022', 'DOM', 'DOM.Iterable'], types=[], noEmit=False,
                    composite=True, incremental=True, declaration=True, emitDeclarationOnly=True,
                    removeComments=args.remove_declaration_comments,
+                   isolatedDeclarations=args.isolated_declarations,
                    rootDir=str(root), outDir=str(declarations),
                    disableSourceOfProjectReferenceRedirect=True)
     for group in plan['groups']:
@@ -89,6 +90,7 @@ def check(args):
               'compilerVersion': package['version'], 'files': plan['files'], 'projects': len(plan['groups']),
               'freshBuildInfo': True, 'strictOptions': strict, 'results': results}
     result['removeDeclarationComments'] = args.remove_declaration_comments
+    result['isolatedDeclarations'] = args.isolated_declarations
     result['usageConsumers'] = {str(file.resolve()): digest(file.resolve()) for file in args.usage_consumer}
 
     def trial(name, argv, owned_sources=None):
@@ -96,12 +98,18 @@ def check(args):
         if remaining <= 0:
             raise ValueError('whole compiler invocation time budget exhausted')
         directory = output / name
+        available = int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))) // 1024
+        budget = min(args.max_rss_mib, 12288, available - 2048)
+        if budget < 3072:
+            raise ValueError('insufficient RAM headroom before ' + name)
+        heap = min(args.node_heap_mib, budget - 1024)
+        argv = [argv[0], '--max-old-space-size=' + str(heap), *argv[2:]]
         run = subprocess.run([sys.executable, str(HERE / 'record.py'), '--output', str(directory),
                               '--input', str(plan_path), '--timeout', str(remaining),
-                              '--max-rss-mib', str(args.max_rss_mib), '--', *argv], cwd=ROOT, check=False)
+                              '--max-rss-mib', str(budget), '--', *argv], cwd=ROOT, check=False)
         value = json.loads((directory / 'result.json').read_text())
         results.append({'name': name, 'status': value['status'], 'elapsedSeconds': value.get('elapsedSeconds'),
-                        'peakSessionRSSBytes': value.get('peakSessionRSSBytes')})
+                        'peakSessionRSSBytes': value.get('peakSessionRSSBytes'), 'rssLimitMiB': budget, 'nodeHeapMiB': heap})
         if run.returncode or value['status'] != 'pass':
             raise ValueError('strict compiler check failed: ' + name)
         if owned_sources is not None:
@@ -176,6 +184,7 @@ def main():
     parser.add_argument('--remove-declaration-comments', action='store_true',
                         help='omit comments only from scratch checking declarations; original SDK remains unchanged')
     parser.add_argument('--usage-consumer', type=Path, action='append', default=[], help='additional independently justified public usage fixture; repeatable')
+    parser.add_argument('--isolated-declarations', action='store_true', help='also enforce independently emittable source declarations')
     args = parser.parse_args()
     if args.node_heap_mib > args.max_rss_mib - 1024 or args.timeout <= 0:
         parser.error('heap must leave at least 1 GiB RSS headroom; timeout must be positive')
