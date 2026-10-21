@@ -558,20 +558,22 @@ func TestLargeJSONLiveHeapAndGC(t *testing.T) {
 func BenchmarkURL(b *testing.B) {
 	for _, sample := range []struct {
 		name, input    string
-		absolute, want bool
+		absolute, iri, want bool
 	}{
-		{"ascii", "https://example.test/a?b#c", true, true},
-		{"idn", "https://例え.テスト/道", true, true},
-		{"long-idn", "https://" + strings.Repeat("例", 64) + ".test/a", true, true},
-		{"relative", "../a/./b/../?x", false, true},
-		{"ipv4", "http://0x7f.1:80/a", true, true},
-		{"ipv6", "https://[::ffff:127.0.0.1]/", true, true},
-		{"rejected", "https://example.test%2fevil.test/", true, false},
+		{"ascii", "https://example.test/a?b#c", true, false, true},
+		{"idn", "https://例え.テスト/道", true, true, true},
+		{"long-idn", "https://" + strings.Repeat("例", 64) + ".test/a", true, true, true},
+		{"unicode-uri-rejected", "https://例え.テスト/道", true, false, false},
+		{"relative", "../a/./b/../?x", false, false, true},
+		{"ipv4", "http://0x7f.1:80/a", true, false, true},
+		{"ipv6", "https://[::ffff:127.0.0.1]/", true, false, true},
+		{"percent-encoded-reg-name", "https://example.test%2fevil.test/", true, false, true},
+		{"rejected", "https://example.test%zz/", true, false, false},
 	} {
 		b.Run(sample.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
-				if got := schema.FormatURL(sample.input, sample.absolute); got != sample.want {
+				if got := schema.FormatURL(sample.input, sample.absolute, sample.iri); got != sample.want {
 					b.Fatal(got, sample.input)
 				}
 			}

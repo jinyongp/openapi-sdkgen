@@ -65,6 +65,24 @@ Go 1.27.2, server 포함 전체 `./api/...`, CGO=0·GOWORK=off·GOMAXPROCS=4,
 원시 phase/profile·최종 파일 hash·기본/대형 AST inventory·실패 compile은 모두
 `.tmp/sdk-optimization-execution/graph-go-*`에 있다. runtime 기준 표본은 아직 진행 전이다.
 
+Go runtime 최초 실행은 URL benchmark의 세 기대값에서 실패했다. 현재 제품은
+URI/IRI 문법을 구분하지만 benchmark는 IRI 사례에서 Unicode 허용 인자를 생략했고,
+`reg-name`의 유효한 percent encoding을 URL parser 정책으로 거절하길 기대했다.
+기존 format 회귀와 [RFC 3986 §3.2.2](https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2),
+[RFC 3987 §2.2](https://www.rfc-editor.org/rfc/rfc3987#section-2.2)를 대조해 측정 기대값을
+수정했다. Unicode URI 거절·잘못된 percent escape 거절도 함께 측정하며 제품은 바꾸지 않았다.
+최초 실패 원본은 `go-runtime-baseline`에 남긴다.
+
+새 `go-runtime-baseline-2`는 Go 1.27.2에서 전체 9단계 pass다. 실제 schema 활성
+JSON/XML/multipart/body lease/stream/regex/concurrency/URI·IRI/NFC 320 benchmark
+표본(64 case×5), stream/body/large JSON live heap, 별도 contention profile과 race를 확보했다.
+profile·forced GC 결과는 ordinary timing에 섞지 않는다. 기존 helper는 child command를
+별도 session으로 실행하므로 바깥 recorder RSS를 전체 runtime peak로 사용하지 않는다.
+각 command의 GNU time 및 재귀 process RSS 기록을 사용하며 helper의 7 GiB 보호가 적용된다.
+Go 제품·38문서 입력이 기준 소스와 같아 기존 server 포함 38/38 correctness와
+157 consumer의 package/alias/reflect/error/media/cancel/selection 기준 검사를 재사용한다.
+최종 최적화 후보의 38문서·Graph와 runtime은 W09에서 새로 확인한다.
+
 ## W02 projected closure 부분 공유
 
 TS 공통 correctness 기준은 `25d5626`이다. 새 planner는 projection별 descriptor의
