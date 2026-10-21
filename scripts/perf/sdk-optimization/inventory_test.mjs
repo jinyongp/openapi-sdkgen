@@ -21,6 +21,10 @@ try {
   const summary = JSON.parse(fs.readFileSync(path.join(output, "summary.json"), "utf8"));
   assert.equal(summary.files, 3); assert.equal(summary.maps, 2); assert.equal(summary.mapEntries, 2);
   assert.equal(summary.repeatedEntries, 1); assert.equal(summary.largestSccFiles, 2); assert.equal(summary.unresolvedImports, 0);
+  const graph = JSON.parse(fs.readFileSync(path.join(output, "graph.json"), "utf8"));
+  assert.equal(graph.files.length, 3);
+  assert.equal(graph.dependencies.length, 3);
+  assert.deepEqual(graph.files.map((file, index) => [file, graph.sizes[index]]), graph.files.map((file) => [file, fs.statSync(path.join(root, file)).size]));
   result = run("prepare-ts.mjs", root); assert.equal(result.status, 0, result.stderr);
   const config = JSON.parse(fs.readFileSync(path.join(root, "tsconfig.optimization.json"), "utf8"));
   assert.equal(config.files.length, 3); assert.equal(config.compilerOptions.strict, true); assert.equal(config.compilerOptions.noCheck, false);

@@ -206,3 +206,33 @@ W03 최종 basis `c355cdf`의 Graph를 다시 생성했다. 문서 보존 후 �
 전체 source·정확한 key/ID→route·legacy 호출 map은 네 compiler 모두 pass했다.
 W03의 구조·계약 검증은 완료하고, 최종 Graph 전체 source/consumer strict는 W05/W08에서
 실제로 완료해야 한다. 프로그램 구성 실패를 성공으로 바꾸거나 수용 기준에서 빼지 않는다.
+
+## W05 전체 검사 실패와 소유권 진단
+
+최종 W03 Graph의 TS7 단일 프로젝트 검사는 전체 source와 독립 public consumer를 포함해
+실패했다. 첫 trial은 RSS 10,800 MiB를 설정해 직전 가용 RAM 기준 허용값을 조금 넘었으므로
+정책 밖 진단으로 보존한다. 허용 범위 안인 10,600 MiB의 새 trial도 78.20초에 RSS
+11,194,957,824바이트로 보호 종료됐다. 어느 결과도 strict 성공이나 성능 개선율이 아니다.
+원시 결과는 `graph-ts-combined-final-typescript-7-smoke{,-2}`다.
+
+`inventory.mjs`에 전체 파일·크기·정적/동적/type import 연결 export를 추가했다.
+새 `project-plan.mjs`는 해시와 실제 source 목록을 대조하고 global script·augmentation·
+triple-slash reference를 거절한 다음 SCC를 자르지 않는 DAG 소유권을 생성한다.
+모든 source는 정확히 한 project에 속한다. `check-projects.py`는 fresh config·build-info·
+declaration 디렉터리를 만들고 각 project를 strict 검사·declaration emit한다. compiler의
+실제 `--listFiles`도 해당 project의 소유 source와 대조하므로 다른 project의 원본을
+실수로 다시 읽는 경우를 성공으로 처리하지 않는다. 마지막에는 원본 TS가 없는 디렉터리의
+전체 declaration과 독립 public consumer를 strict 검사한다. composite가 요구하는
+incremental metadata는 매번 새로 만들며 이전 성공 캐시를 사용하지 않는다.
+
+64 MiB/25,000파일 상한은 13개 project를 만들었다. TS7에서 앞의 8개가 pass했고,
+9번째는 RSS 10,488,287,232바이트로 10,000 MiB 상한에서 보호 종료됐다. 완료된 declaration
+80,939파일도 389,268,727바이트여서 declaration 의존성 비용을 무시할 수 없다.
+이는 fallback 성공이 아니며 32 MiB 단위 및 scratch declaration의 comment 비용을
+구분하는 후속 실험으로 연결한다. SDK 원본의 주석·문서·타입·공개 import는 수정하지 않는다.
+원시 계획·프로젝트별 결과는 `graph-project-plan-64m-2`, `graph-project-native`에 있다.
+
+도구 행동 검사는 JS/native compiler 모두에서 SCC·nominal symbol identity·전체 public
+map을 검사하고, 내부 TS2322·변경/추가 source·augmentation·기존 output 재사용을 거절한다.
+초기 두 fixture 기대값 오류와 수정 후 결과도 삭제하지 않는다. W05의 네 compiler/
+실험군/server profile 분류와 W08의 최종 전체 strict 성공은 아직 별도 필수 작업이다.

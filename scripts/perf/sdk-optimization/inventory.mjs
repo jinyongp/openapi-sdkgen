@@ -114,5 +114,6 @@ const summary = { files: files.length, totalBytes: sizes.reduce((a, b) => a + b,
   scope: "syntactic inventory; repeatedEntries is an opportunity count, not bytes saved, strict success or a memory prediction" };
 fs.writeFileSync(path.join(out, "scc.json"), JSON.stringify({ compiler: ts.version, components, unresolvedImports: unknown }));
 fs.writeFileSync(path.join(out, "summary.json"), JSON.stringify(summary, null, 2) + "\n");
+fs.writeFileSync(path.join(out, "graph.json"), JSON.stringify({ root, files: files.map((file) => path.relative(root, file).split(path.sep).join("/")), sizes, dependencies: adj }) + "\n");
 console.log(JSON.stringify(summary));
 if (nocheck || unknown.length) process.exitCode = 1;
