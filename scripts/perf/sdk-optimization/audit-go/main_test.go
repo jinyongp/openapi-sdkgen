@@ -36,3 +36,19 @@ func TestIgnoredAndInitializationFilesAreExcluded(t *testing.T) {
 		})
 	}
 }
+
+func TestAuditCanCompleteAnExplicitlyRaisedParseBudget(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "api.go")
+	if err := os.WriteFile(path, []byte("package api; type Public struct { Value string `json:\"value\"` }"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	limited, err := inspectWithLimit(root, path, false, 16)
+	if err != nil || len(limited.Types) != 0 || len(limited.Reasons) != 1 {
+		t.Fatalf("bounded audit must expose missing inventory: %+v %v", limited, err)
+	}
+	complete, err := inspectWithLimit(root, path, false, 0)
+	if err != nil || len(complete.Reasons) != 0 || len(complete.Types) != 1 || complete.Public["Public"] == "" {
+		t.Fatalf("explicit unlimited audit must recover the public contract: %+v %v", complete, err)
+	}
+}

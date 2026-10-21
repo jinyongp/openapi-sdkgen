@@ -40,3 +40,25 @@ JSON Value 재귀 검사와 전체 `ci:dev typescript-generator`도 통과했다
 원시 결과는 `.tmp/sdk-optimization-execution/{recursive,runtime}-fixed-*`와
 `.tmp/ci-tests/`에 있다. 단위 리뷰에서 index union을 구성하는 caller와 재귀 DFS의
 visited 범위를 대조했다. 이 correctness 커밋을 후속 TS 성능 비교의 공통 기준으로 쓴다.
+
+## W01G Go 최종 산출물과 실패 기준
+
+고정 Graph의 server 포함 실제 publisher 출력은 659,664 artifact, 4,045,045,462바이트다.
+CPU profile을 켠 진단은 1,385.66초·session 최대 RSS 8,555,765,760바이트에 완료됐다.
+compile 12.82초, prepare 완료 137.83초, emit 완료 1,383.42초,
+publish 완료 1,384.40초다. profile과 일부 correctness 검사 실행이 포함되어
+일반 timing 또는 기존 옵션이 다른 477,701파일 결과와의 개선율에 사용하지 않는다.
+
+최종 Go 파일 659,663개·590 package를 audit했다. 기본 8 MiB 상한에서 빠진
+`client.go` 55,629,305바이트와 `operations/types.go` 29,377,260바이트는
+`-only-large -max-file-bytes 0` 별도 bounded trial로 전체 AST를 확인했다.
+각각 공개 signature 253,349개와 194,183개이며 후속 package/identity 비교에서 빠뜨리지 않는다.
+두 대형 파일을 제외한 동일 최종 package·import 집합의 묶기 후보는 545,220파일이다.
+이는 구현·컴파일 성공 또는 실제 절감량의 근거가 아니다.
+
+Go 1.27.2, server 포함 전체 `./api/...`, CGO=0·GOWORK=off·GOMAXPROCS=4,
+`-p=1`, compiler soft heap 6 GiB, fresh 전용 GOCACHE, 3,600초·session RSS 9 GiB
+정책으로 기준 compile을 시도했다. 255.71초에 RSS 보호가 작동했고 관측 최대치는
+9,665,454,080바이트다. 미완료 실패로 보존하며 최종 W09/W11 성공 기준은 유지한다.
+원시 phase/profile·최종 파일 hash·기본/대형 AST inventory·실패 compile은 모두
+`.tmp/sdk-optimization-execution/graph-go-*`에 있다. runtime 기준 표본은 아직 진행 전이다.

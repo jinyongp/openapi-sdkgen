@@ -32,6 +32,10 @@ type row struct {
 }
 
 func inspect(root, path string, assembly bool) (row, error) {
+	return inspectWithLimit(root, path, assembly, 8<<20)
+}
+
+func inspectWithLimit(root, path string, assembly bool, maxBytes int) (row, error) {
 	rel, err := filepath.Rel(root, path)
 	if err != nil {
 		return row{}, err
@@ -48,8 +52,8 @@ func inspect(root, path string, assembly bool) (row, error) {
 		r.Reasons = append(r.Reasons, "go_ignored_filename")
 		return r, nil
 	}
-	if len(b) > 8<<20 {
-		r.Reasons = append(r.Reasons, "parse_cap_8MiB")
+	if maxBytes > 0 && len(b) > maxBytes {
+		r.Reasons = append(r.Reasons, fmt.Sprintf("parse_cap_%d_bytes", maxBytes))
 		return r, nil
 	}
 	set := token.NewFileSet()
@@ -156,6 +160,8 @@ func inspect(root, path string, assembly bool) (row, error) {
 func main() {
 	root := flag.String("root", "", "generated SDK root")
 	output := flag.String("output", "", "fresh JSONL report")
+	maxBytes := flag.Int("max-file-bytes", 8<<20, "per-source parse cap; 0 disables the cap")
+	onlyLarge := flag.Bool("only-large", false, "audit only files above the original 8 MiB cap")
 	flag.Parse()
 	if *root == "" || *output == "" {
 		panic("root and output required")
@@ -180,6 +186,15 @@ func main() {
 				assembly[filepath.Dir(path)] = true
 			}
 			if strings.HasSuffix(path, ".go") {
+				if *onlyLarge {
+					info, err := d.Info()
+					if err != nil {
+						return err
+					}
+					if info.Size() <= 8<<20 {
+						return nil
+					}
+				}
 				paths = append(paths, path)
 			}
 		}
@@ -196,7 +211,7 @@ func main() {
 	packages := map[string][2]int{}
 	eligible, total, eligibleBytes := 0, 0, 0
 	for _, path := range paths {
-		r, err := inspect(*root, path, assembly[filepath.Dir(path)])
+		r, err := inspectWithLimit(*root, path, assembly[filepath.Dir(path)], *maxBytes)
 		if err != nil {
 			panic(err)
 		}
@@ -224,7 +239,7 @@ func main() {
 			mergeable += count
 		}
 	}
-	summary := map[string]any{"summary": true, "goFiles": len(paths), "bytes": total, "eligibleFiles": eligible, "eligibleBytes": eligibleBytes, "sameImportGroupFiles": mergeable, "packageCount": len(packages), "packages": packages, "excludedReasons": reasons, "scope": "audit only; exact import set, same final package; no packing or compile claim"}
+	summary := map[string]any{"summary": true, "goFiles": len(paths), "bytes": total, "eligibleFiles": eligible, "eligibleBytes": eligibleBytes, "sameImportGroupFiles": mergeable, "packageCount": len(packages), "packages": packages, "excludedReasons": reasons, "onlyLarge": *onlyLarge, "maxFileBytes": *maxBytes, "scope": "audit only; exact import set, same final package; no packing or compile claim"}
 	if err := encoder.Encode(summary); err != nil {
 		panic(err)
 	}

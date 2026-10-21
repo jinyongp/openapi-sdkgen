@@ -46,7 +46,9 @@ savings. `audit-go` never packs files. It inventories current final package
 ownership, public AST signatures (including tags/receiver types), and conservative
 file eligibility. Runtime reflection/error/initialization contracts and actual
 bounded packing remain W06/W09 work. Files beyond its 8 MiB parse cap leave the
-symbol inventory incomplete and must be inspected separately.
+symbol inventory incomplete and must be inspected separately. Use
+`-only-large -max-file-bytes 0` in a separate bounded trial to inventory precisely those files
+without the parse cap; combine matching path/hash records with the original audit.
 
 `public-consumer.mjs freeze BASELINE_SDK REFERENCE` freezes the existing public
 route/ID/Link keys. `prepare CANDIDATE_SDK REFERENCE FRESH_OUTPUT` creates a consumer
