@@ -6,11 +6,11 @@ import (
 	"strings"
 )
 
-func emitRouteArtifactsTo(manifest Manifest, plan *semanticModulePlan, write func(Artifact) error) error {
+func emitRouteArtifactsTo(manifest Manifest, plan *semanticModulePlan, resourceReachable map[string]bool, write func(Artifact) error) error {
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
-	if err := emitRouteTypeModulesTo(manifest, plan, write); err != nil {
+	if err := emitRouteTypeModulesTo(manifest, plan, resourceReachable, write); err != nil {
 		return err
 	}
 	index, err := emitRouteIndex(manifest, plan)
@@ -218,13 +218,18 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	output.WriteString("  readonly links: LinkCalls<Route>\n")
 	output.WriteString("  readonly stream: StreamCall<Route>\n")
 	output.WriteString("}\n\n")
-	if err := emitRouteOperationHelpers(&output, manifest); err != nil {
+	if usesPublicTypeModules(manifest, plan) {
+		if err := emitRouteSectionIndexes(&output, manifest, plan); err != nil {
+			return nil, err
+		}
+	}
+	if err := emitRouteOperationHelpers(&output, usesPublicTypeModules(manifest, plan)); err != nil {
 		return nil, err
 	}
 	return []byte(generatedTypeImports(output.String())), nil
 }
 
-func emitRouteOperationHelpers(output *bytes.Buffer, manifest Manifest) error {
+func emitRouteOperationHelpers(output *bytes.Buffer, indexedSections bool) error {
 	output.WriteString("/** Operation ID or generated exact/resource method accepted by operation type helpers. */\n")
 	output.WriteString("export type OperationSource = keyof OperationRoutes | OperationTypeIdentity<keyof Routes, OperationSurface>\n\n")
 	output.WriteString("type OperationIdentityOf<Source extends OperationSource> =\n")
@@ -264,26 +269,35 @@ func emitRouteOperationHelpers(output *bytes.Buffer, manifest Manifest) error {
 	output.WriteString("  OperationIdentityOf<Source> extends { readonly route: infer Route }\n")
 	output.WriteString("    ? Route extends keyof Routes ? RouteStreamItem<Route> : never\n")
 	output.WriteString("    : never\n\n")
-	emitRequestSectionHelpers(output)
+	emitRequestSectionHelpers(output, indexedSections)
 	return nil
 }
 
-func emitRequestSectionHelpers(output *bytes.Buffer) {
-	output.WriteString("type RouteSourceForSection<Section extends PropertyKey> = {\n")
-	output.WriteString("  [Route in keyof RouteRequestSections]: Section extends keyof RouteRequestSections[Route] ? Route : never\n")
-	output.WriteString("}[keyof RouteRequestSections]\n\n")
+func emitRequestSectionHelpers(output *bytes.Buffer, indexedSections bool) {
+	if indexedSections {
+		output.WriteString("type RouteSourceForSection<Section extends PropertyKey> = Section extends keyof RouteSourcesBySection ? RouteSourcesBySection[Section] : never\n\n")
+	} else {
+		output.WriteString("type RouteSourceForSection<Section extends PropertyKey> = {\n")
+		output.WriteString("  [Route in keyof RouteRequestSections]: Section extends keyof RouteRequestSections[Route] ? Route : never\n")
+		output.WriteString("}[keyof RouteRequestSections]\n\n")
+	}
 	output.WriteString("type SelectedRouteSection<Route extends keyof RouteRequestSections, Section extends PropertyKey> =\n")
 	output.WriteString("  Section extends keyof RouteRequestSections[Route] ? RouteRequestSections[Route][Section] : never\n\n")
-	output.WriteString("type OperationIDSourceForSection<Section extends PropertyKey> = {\n")
-	output.WriteString("  [ID in keyof OperationRoutes]: Section extends keyof RouteRequestSections[OperationRoutes[ID]] ? ID : never\n")
-	output.WriteString("}[keyof OperationRoutes]\n\n")
-	output.WriteString("type ResourceOperationRouteForSection<Section extends PropertyKey> = {\n")
-	output.WriteString("  [Route in keyof RouteRequestSections]: Routes[Route][\"resourceCall\"] extends never\n")
-	output.WriteString("    ? never\n")
-	output.WriteString("    : Section extends \"path\"\n")
-	output.WriteString("      ? never\n")
-	output.WriteString("      : Section extends keyof RouteRequestSections[Route] ? Route : never\n")
-	output.WriteString("}[keyof RouteRequestSections]\n\n")
+	if indexedSections {
+		output.WriteString("type OperationIDSourceForSection<Section extends PropertyKey> = Section extends keyof OperationIDsBySection ? OperationIDsBySection[Section] : never\n\n")
+		output.WriteString("type ResourceOperationRouteForSection<Section extends PropertyKey> = Section extends keyof ResourceRoutesBySection ? ResourceRoutesBySection[Section] : never\n\n")
+	} else {
+		output.WriteString("type OperationIDSourceForSection<Section extends PropertyKey> = {\n")
+		output.WriteString("  [ID in keyof OperationRoutes]: Section extends keyof RouteRequestSections[OperationRoutes[ID]] ? ID : never\n")
+		output.WriteString("}[keyof OperationRoutes]\n\n")
+		output.WriteString("type ResourceOperationRouteForSection<Section extends PropertyKey> = {\n")
+		output.WriteString("  [Route in keyof RouteRequestSections]: Routes[Route][\"resourceCall\"] extends never\n")
+		output.WriteString("    ? never\n")
+		output.WriteString("    : Section extends \"path\"\n")
+		output.WriteString("      ? never\n")
+		output.WriteString("      : Section extends keyof RouteRequestSections[Route] ? Route : never\n")
+		output.WriteString("}[keyof RouteRequestSections]\n\n")
+	}
 	output.WriteString("type OperationSourceForSection<Section extends PropertyKey> =\n")
 	output.WriteString("  | OperationIDSourceForSection<Section>\n")
 	output.WriteString("  | OperationTypeIdentity<RouteSourceForSection<Section>, \"exact\">\n")

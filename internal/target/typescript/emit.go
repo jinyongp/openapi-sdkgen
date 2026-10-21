@@ -835,7 +835,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err := emitOperationArtifactsTo(shared.document, *shared.manifest, shared.modules, shared.executions, shared.resourceTree, shared.resourceReachable, shared.links, shared.streams, write); err != nil {
 		return err
 	}
-	if err := emitRouteArtifactsTo(publicManifest, plan.modules, write); err != nil {
+	if err := emitRouteArtifactsTo(publicManifest, plan.modules, shared.resourceReachable, write); err != nil {
 		return err
 	}
 	registrySource, err := emitClientRegistry(document, manifest, plan.modules, plan.links, plan.streams)

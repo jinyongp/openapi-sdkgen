@@ -3,6 +3,7 @@ package typescript
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ func routeTypeModulePath(registryPath string) string {
 	return strings.Replace(strings.Replace(registryPath, "internal/client/registry-chunks/", "internal/routes/contracts/", 1), "/prepare-", "/types-", 1)
 }
 
-func emitRouteTypeModulesTo(manifest Manifest, plan *semanticModulePlan, write func(Artifact) error) error {
+func emitRouteTypeModulesTo(manifest Manifest, plan *semanticModulePlan, resourceReachable map[string]bool, write func(Artifact) error) error {
 	if !usesPublicTypeModules(manifest, plan) {
 		return nil
 	}
@@ -61,9 +62,68 @@ func emitRouteTypeModulesTo(manifest Manifest, plan *semanticModulePlan, write f
 			}
 			out.WriteString("}\n\n")
 		}
+		for _, contract := range []string{"RouteSourcesBySection", "OperationIDsBySection", "ResourceRoutesBySection"} {
+			fmt.Fprintf(&out, "export interface %s {\n", contract)
+			for _, section := range requestInputSectionDescriptors {
+				var keys []string
+				for _, entry := range entries {
+					item := items[entry.route]
+					if !slices.Contains(item.InputSections, section.section) {
+						continue
+					}
+					key := entry.route
+					if contract == "OperationIDsBySection" {
+						if item.OperationID == "" {
+							continue
+						}
+						key = item.OperationID
+					} else if contract == "ResourceRoutesBySection" && (section.section == inputSectionPath || item.Visibility != "public" || !resourceReachable[entry.route]) {
+						continue
+					}
+					keys = append(keys, quoteTS(key))
+				}
+				value := "never"
+				if len(keys) != 0 {
+					value = strings.Join(keys, " | ")
+				}
+				fmt.Fprintf(&out, "  readonly %s: %s\n", section.sectionKey, value)
+			}
+			out.WriteString("}\n\n")
+		}
 		if err := write(Artifact{Path: artifact, Data: generatedSource(out.Bytes())}); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// The existing bounded contract parts own literal membership. Helpers combine
+// those sets without mapping over every route again for each generic section.
+func emitRouteSectionIndexes(out *bytes.Buffer, manifest Manifest, plan *semanticModulePlan) error {
+	items := registryItems(manifest)
+	parts := make(map[string][]string)
+	index := 0
+	for _, module := range plan.registryModules {
+		if module.kind != "prepare" || len(activeRegistryEntries(module, items)) == 0 {
+			continue
+		}
+		var imports []string
+		for _, contract := range []string{"RouteSourcesBySection", "OperationIDsBySection", "ResourceRoutesBySection"} {
+			alias := fmt.Sprintf("%sPart%d", contract, index)
+			parts[contract] = append(parts[contract], alias)
+			imports = append(imports, contract+" as "+alias)
+		}
+		if err := registryImport(out, plan, plan.fixed["route-helpers"], "type { "+strings.Join(imports, ", ")+" }", routeTypeModulePath(module.path)); err != nil {
+			return err
+		}
+		index++
+	}
+	for _, contract := range []string{"RouteSourcesBySection", "OperationIDsBySection", "ResourceRoutesBySection"} {
+		value := "never"
+		if len(parts[contract]) != 0 {
+			value = strings.Join(parts[contract], " | ")
+		}
+		fmt.Fprintf(out, "type %s = %s\n\n", contract, value)
 	}
 	return nil
 }

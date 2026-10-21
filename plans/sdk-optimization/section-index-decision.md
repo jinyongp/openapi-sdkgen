@@ -1,4 +1,24 @@
-# W04 — 요청 section 사전 인덱스 보류
+# 요청 section 사전 인덱스 판단
+
+현재 상태: W08에서 C 후보 검증을 재개했다. 후속 native profile에서 큰 union 구성 비용을
+확인했고, 같은 10 GiB hard/soft 조건의 private filter 대조에서 원본은 120초 미완료,
+C는 9.14초 계측 구간 안에 semantic 오류 0개로 완료했다. 전체 CLI/source/declaration/
+public consumer 성공은 아직 아니다. 원본 value projection·공개 generic 식을 유지하고
+canonical `InputSections`와 operation emitter와 같은 resource reachability를 사용해
+기존 256 operation 계약 청크에 literal membership만 추가하는 후보를 검증한다.
+작은 SDK와 selected/named의 기존 helper/import 경로는 유지한다. 네 compiler의 독립된
+이전 mapped-filter oracle·양방향 generic·union/never/PropertyKey·ID 없는 route·resource/
+negative·isolated declaration과 실제 Graph 전체 검사 후 최종 판단을 갱신한다.
+
+후속 후보의 네 compiler source/isolated declaration/독립 consumer와 양방향 generic
+검사는 통과했다. 실제 Graph의 116개 계약 청크에서 3×6 membership을 원본 선언 oracle과
+대조한 결과도 차이 0개다. 전체 native strict는 이 필터와 별개인 기존 resource root의
+중복 callable 표현에서 TS2859 312개로 종료됐다. 그 표현의 canonical `Surface` 재사용
+수정은 W08의 별도 후속 단위이며 최종 전체 source/public 성공까지 추적한다.
+
+아래는 W04 당시의 보류 판단과 근거다. 후속 실험을 과거 판단의 당시 근거로 섞지 않는다.
+
+## 초기 W04 판단
 
 결정: 후보 C를 기본 출력에 넣지 않는다. 실제 checker hotspot이 확인되면 다시 검토한다.
 Graph 전체 strict 성공과 공개 generic 계약은 그대로 필수다.
