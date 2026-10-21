@@ -50,6 +50,18 @@ symbol inventory incomplete and must be inspected separately. Use
 `-only-large -max-file-bytes 0` in a separate bounded trial to inventory precisely those files
 without the parse cap; combine matching path/hash records with the original audit.
 
+`compare-go.py --baseline ORIGINAL_AUDIT --baseline-supplement LARGE_AUDIT
+--candidate CANDIDATE_UNLIMITED_AUDIT --baseline-manifest ORIGINAL_MANIFEST
+--candidate-manifest CANDIDATE_MANIFEST --output FRESH_REPORT` compares defined
+type ownership and exported AST signatures, including their exact import binding,
+while ignoring filenames. Each audit must cover all Go artifacts in its publisher
+manifest. A supplemental unlimited audit must match the capped source hash and
+size. Missing, stale or duplicate source records fail. A disk-backed multiset
+keeps the full Graph comparison bounded in memory. Run its negative ownership,
+signature, binding and coverage tests with `python3 -B
+scripts/perf/sdk-optimization/compare-go_test.py`. This is a contract inventory;
+compiler, reflection and runtime validation remain separate checks.
+
 `public-consumer.mjs freeze BASELINE_SDK REFERENCE` freezes the existing public
 route/ID/Link keys. `prepare CANDIDATE_SDK REFERENCE FRESH_OUTPUT` creates a consumer
 config containing every SDK source plus exact public key equality and negative
