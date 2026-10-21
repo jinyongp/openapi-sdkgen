@@ -192,3 +192,17 @@ strict·원래 ID→route 참조 검사가 통과했다. 생성 중앙값은 128
 C 보류와 별개로 최종 Graph 전체 strict는 여전히 미충족이다. 프로그램 구성 단계의 heap
 실패 원본을 보존하며 W05/W08 fallback의 전체 source 소유권/strict·전체 public consumer를
 검증해야 한다. 이 단계에서 workstream 완료로 처리하지 않는다.
+
+W03 최종 basis `c355cdf`의 Graph를 다시 생성했다. 문서 보존 후 최종 TS는
+187,686파일·731,936,445바이트로 원본 대비 68.97% 감소했다. 모든 source hash를
+실제 publisher manifest와 대조해 누락·추가·불일치 0을 확인했다. import 누락과
+`@ts-nocheck`도 0이고, helper omission 경고 원문 1,245,543바이트는 원본과 완전히 같다.
+앞의 722,122,359바이트 수치는 최종 수치로 대체한다. 생성 130.18초·RSS
+3,328,045,056바이트는 단일 진단이며 matched timing 개선율로 사용하지 않는다.
+
+독립 public reference의 literal route/ID를 사용해 원래 `OperationMethod` field map도
+재구성했다. candidate의 canonical operation identity 안에서 Client map과 양방향 호환을
+검사하므로 SDK 사본마다 다른 nominal symbol을 혼동하지 않는다. 최종 실제 GitHub
+전체 source·정확한 key/ID→route·legacy 호출 map은 네 compiler 모두 pass했다.
+W03의 구조·계약 검증은 완료하고, 최종 Graph 전체 source/consumer strict는 W05/W08에서
+실제로 완료해야 한다. 프로그램 구성 실패를 성공으로 바꾸거나 수용 기준에서 빼지 않는다.

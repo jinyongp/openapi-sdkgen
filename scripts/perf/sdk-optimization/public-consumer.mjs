@@ -38,10 +38,15 @@ if (mode === "freeze") {
   let entry = path.relative(output, path.join(sdk, "index.js")).split(path.sep).join("/");
   if (!entry.startsWith(".")) entry = "./" + entry;
   const union = (names) => names.length ? names.map((name) => JSON.stringify(name)).join(" | ") : "never";
-  const code = `import type { Client${keys.operationRoutes ? ", OperationRoutes" : ""} } from ${JSON.stringify(entry)};\n` +
+  const legacyMethods = keys.operationRoutes ?
+    `interface ExpectedLegacyRouteCalls {\n${keys.routes.map((route) => `readonly ${JSON.stringify(route)}: OperationMethod<${JSON.stringify(route)}>;`).join("\n")}\n}\n` +
+    `interface ExpectedLegacyOperationCalls {\n${Object.entries(keys.operationRoutes).map(([key, route]) => `readonly ${JSON.stringify(key)}: OperationMethod<${JSON.stringify(route)}>;`).join("\n")}\n}\n` +
+    `export type CheckLegacyRouteCalls = Assert<Equal<Client["$routes"], ExpectedLegacyRouteCalls>>;\nexport type CheckLegacyOperationCalls = Assert<Equal<Client["$operations"], ExpectedLegacyOperationCalls>>;\n` : "";
+  const code = `import type { Client${keys.operationRoutes ? ", OperationRoutes, OperationMethod" : ""} } from ${JSON.stringify(entry)};\n` +
     `type Equal<A, B> = [A] extends [B] ? [B] extends [A] ? true : false : false;\ntype Assert<T extends true> = T;\n` +
     Object.entries(keys).filter(([key]) => key !== "operationRoutes").map(([key, names]) => `type Expected_${key} = ${union(names)};\nexport type Check_${key} = Assert<Equal<keyof Client["$${key}"], Expected_${key}>>;\n`).join("") +
     (keys.operationRoutes ? `interface ExpectedOperationRoutes {\n${Object.entries(keys.operationRoutes).map(([key, route]) => `readonly ${JSON.stringify(key)}: ${JSON.stringify(route)};`).join("\n")}\n}\nexport type CheckOperationRoutes = Assert<Equal<OperationRoutes, ExpectedOperationRoutes>>;\n` : "") +
+    legacyMethods +
     (!("links" in keys) ? `export type CheckAbsentLinks = Assert<Equal<Extract<"$links", keyof Client>, never>>;\n` : "") +
     `declare const client: Client;\n// @ts-expect-error unknown operation must stay rejected\nclient.$operations.__sdkgen_missing_operation_contract__;\n// @ts-expect-error unknown exact route must stay rejected\nclient.$routes["GET /__sdkgen_missing_route_contract__"];\n`;
   fs.writeFileSync(path.join(output, "public-contract.mts"), code, { flag: "wx" });

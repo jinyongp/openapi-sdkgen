@@ -57,6 +57,10 @@ route/ID assertions. The reference comes from the baseline, never the candidate.
 New references also freeze each operation ID's exact route literal and check the
 public `OperationRoutes` contract. An absent Link surface stays absent. Existing compiler/runtime consumers still
 verify parameter/response and selection semantics.
+The consumer also reconstructs the original literal `OperationMethod` field maps
+from that frozen metadata and checks both directions against the candidate Client.
+It uses the same canonical operation identities, so nominal symbols from two
+different SDK copies cannot create a false compatibility failure.
 
 `profile-go` under this directory uses the real Go target and product publisher.
 It records compile, prepare, release of input state, emit and completed publication
