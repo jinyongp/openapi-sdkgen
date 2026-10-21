@@ -121,6 +121,22 @@ coverage gate requires all groups and inventories to succeed.
 
 ## Release documentation review
 
+Documentation publication reconstructs `/vX.Y.Z/install.sh` and `install.ps1`
+from every public immutable release with a complete installer pair. Releaseway
+verifies the remote assets before placing them under their tag directories; the
+current release's installers also remain at the site root. Rebuilding from GitHub
+releases preserves previous version URLs without relying on Pages history or
+artifact retention. Releases predating standalone installers have no such URLs.
+The deployment checks both root installers and every versioned pair against the
+prepared hashes, and missing or stale historical bytes fail verification.
+
+To refresh this distribution for an already published stable release without
+publishing a new package, dispatch `docs.yml` on `main` with `release-tag` set to
+the existing tag. The documentation build uses that tag's source; discovery and
+verification tooling follow the dispatched workflow. Dispatching without a tag
+only builds and checks documentation. Version artifacts are scoped to the run,
+replaced on retry, and retained only for the build/deploy handoff.
+
 Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.
 `.github/releaseway.yml` declares the first version and ancestry boundary.
 Releaseway selects versions within that series while retaining historical tags.
@@ -266,8 +282,10 @@ not SDK generation. Vue templates are compiled by the static build and exercised
 Release checks include the Go example. Published native, npm (three operating systems)
 and stable Homebrew distributions also generate and run a Go consumer through
 `scripts/release/smoke-go.sh`. Production Pages is called by the stable release only
-after those distributions pass. Main/PR/manual docs workflows build and verify without
-production deployment. The reusable docs workflow checks the tag/commit/version and
+after those distributions pass. Main/PR docs workflows and manual runs without a
+release tag build and verify without production deployment. A manual run with
+`release-tag` refreshes the existing release's site and versioned installers.
+The reusable docs workflow checks the tag/commit/version and
 builds its WASM and pages at that commit, recording `release.json` in the artifact.
 On a docs-only failure, rerun the failed release jobs at the same tag; successful
 package publication jobs and immutable assets are reused by the existing release flow.

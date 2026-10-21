@@ -7,3 +7,4 @@ if [[ "${1:-}" == --help ]]; then
   exit 0
 fi
 run_step 'POSIX installer and site fixtures' node --test "$ROOT/scripts/install/install.test.mjs" "$ROOT/scripts/install/verify-site.test.mjs"
+run_step 'installer release inventory' python3 -B "$ROOT/scripts/install/releases_test.py"

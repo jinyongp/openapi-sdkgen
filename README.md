@@ -24,20 +24,20 @@ If prompted, run the printed `PATH` command, then run `openapi-sdkgen --version`
 
 ### Install a specific version
 
-Choose a version from [the release list](https://github.com/jinyongp/openapi-sdkgen/releases).
+Choose a stable version from [the release list](https://github.com/jinyongp/openapi-sdkgen/releases).
 Replace `X.Y.Z` below with that release's version:
 
 ```sh
-curl -fsSL https://github.com/jinyongp/openapi-sdkgen/releases/download/vX.Y.Z/install.sh | sh
+curl -fsSL https://jinyongp.dev/openapi-sdkgen/vX.Y.Z/install.sh | sh
 ```
 
 ```powershell
-irm https://github.com/jinyongp/openapi-sdkgen/releases/download/vX.Y.Z/install.ps1 | iex
+irm https://jinyongp.dev/openapi-sdkgen/vX.Y.Z/install.ps1 | iex
 ```
 
 Use a release with `install.sh` or `install.ps1` attached under **Assets**.
 Each installer defaults to its release's version. To share an installation link,
-copy the installer asset's URL from that release.
+replace `X.Y.Z` in the URL above. Versioned links are retained when newer releases are deployed.
 With npm, use `npm install -g openapi-sdkgen@X.Y.Z` (Node.js 22+).
 
 <details>

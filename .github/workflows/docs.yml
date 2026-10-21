@@ -9,6 +9,7 @@ on:
       - "docs/**"
       - "examples/**"
       - "scripts/lib/**"
+      - "scripts/install/**"
       - "test/compatibility/**"
       - "**/*.go"
       - "go.mod"
@@ -24,6 +25,7 @@ on:
       - "docs/**"
       - "examples/**"
       - "scripts/lib/**"
+      - "scripts/install/**"
       - "test/compatibility/**"
       - "**/*.go"
       - "go.mod"
@@ -34,6 +36,11 @@ on:
       - "scripts/release/**"
       - ".node-version"
   workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Existing stable release to deploy, including all versioned installers. Empty builds only.
+        required: false
+        type: string
   workflow_call:
     inputs:
       release-ref:
@@ -54,11 +61,69 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  installer-releases:
+    name: Discover published installer versions
+    if: inputs.release-ref != '' || inputs.release-tag != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      tags: ${{ steps.inventory.outputs.tags }}
+      tag: ${{ steps.release.outputs.tag }}
+      commit: ${{ steps.release.outputs.commit }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - id: release
+        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        with:
+          mode: resolve
+          tag: ${{ inputs.release-ref || inputs.release-tag }}
+          commit: ${{ inputs.release-commit }}
+      - id: inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          tags=$(python3 -B scripts/install/releases.py "$GITHUB_REPOSITORY" "$RELEASE_TAG")
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+
+  version-installers:
+    name: Preserve installers for ${{ matrix.tag }}
+    needs: installer-releases
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.installer-releases.outputs.tags) }}
+    steps:
+      - id: distribution
+        uses: releaseway/actions/distribute@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        with:
+          tag: ${{ matrix.tag }}
+          files: |
+            install.sh
+            install.ps1
+          destination: ${{ matrix.tag }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: version-installers-${{ matrix.tag }}-${{ github.run_id }}
+          path: ${{ steps.distribution.outputs.path }}
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   build:
     name: Build documentation
+    needs: [installer-releases, version-installers]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     outputs:
       shell-installer-sha: ${{ steps.installer-hashes.outputs.shell }}
       powershell-installer-sha: ${{ steps.installer-hashes.outputs.powershell }}
+      versioned-installers: ${{ steps.installer-hashes.outputs.versions }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -68,7 +133,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          ref: ${{ inputs.release-commit || github.sha }}
+          ref: ${{ needs.installer-releases.outputs.commit || github.sha }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -78,14 +143,16 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Verify release identity
-        if: inputs.release-ref != ''
+        if: needs.installer-releases.outputs.tag != ''
         env:
-          RELEASE_REF: ${{ inputs.release-ref }}
-          RELEASE_COMMIT: ${{ inputs.release-commit }}
-          RELEASE_VERSION: ${{ inputs.release-version }}
+          RELEASE_REF: ${{ needs.installer-releases.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.installer-releases.outputs.commit }}
+          RELEASE_VERSION: ${{ needs.installer-releases.outputs.version }}
+          EXPECTED_VERSION: ${{ inputs.release-version }}
         run: |
           set -euo pipefail
           test "$RELEASE_REF" = "v$RELEASE_VERSION"
+          test -z "$EXPECTED_VERSION" || test "$EXPECTED_VERSION" = "$RELEASE_VERSION"
           test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
           test "$(git rev-parse "$RELEASE_REF^{commit}")" = "$RELEASE_COMMIT"
       - name: Install existing TypeScript verification tooling
@@ -95,18 +162,18 @@ jobs:
           CI: "true"
         run: bash docs/scripts/commands.sh install
       - name: Configure GitHub Pages
-        if: inputs.release-ref != ''
+        if: needs.installer-releases.outputs.tag != ''
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Build documentation
         run: bash docs/scripts/commands.sh build
       - name: Verify built routes and generated consumers
         run: bash docs/scripts/commands.sh verify
       - name: Record documentation release identity
-        if: inputs.release-ref != ''
+        if: needs.installer-releases.outputs.tag != ''
         env:
-          RELEASE_REF: ${{ inputs.release-ref }}
-          RELEASE_COMMIT: ${{ inputs.release-commit }}
-          RELEASE_VERSION: ${{ inputs.release-version }}
+          RELEASE_REF: ${{ needs.installer-releases.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.installer-releases.outputs.commit }}
+          RELEASE_VERSION: ${{ needs.installer-releases.outputs.version }}
         run: |
           python3 - <<'PY'
           import json, os
@@ -117,27 +184,56 @@ jobs:
           }) + "\n")
           PY
       - name: Merge installers from the exact public release
-        id: distribution
-        if: inputs.release-ref != ''
+        id: latest-installers
+        if: needs.installer-releases.outputs.tag != ''
         uses: releaseway/actions/distribute@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
         with:
-          tag: ${{ inputs.release-ref }}
-          commit: ${{ inputs.release-commit }}
+          tag: ${{ needs.installer-releases.outputs.tag }}
+          commit: ${{ needs.installer-releases.outputs.commit }}
           files: |
             install.sh
             install.ps1
           site: docs/.vitepress/dist
+      - name: Restore every published installer version
+        if: needs.installer-releases.outputs.tag != ''
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: version-installers-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/version-installers
+          merge-multiple: true
+          digest-mismatch: error
+      - name: Merge versioned installers into the site
+        id: distribution
+        if: needs.installer-releases.outputs.tag != ''
+        uses: releaseway/actions/distribute@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        with:
+          root: ${{ runner.temp }}/version-installers
+          files: |
+            */install.sh
+            */install.ps1
+          site: ${{ steps.latest-installers.outputs.path }}
       - name: Record expected installer hashes
         id: installer-hashes
-        if: inputs.release-ref != ''
+        if: needs.installer-releases.outputs.tag != ''
         env:
           DISTRIBUTION_PATH: ${{ steps.distribution.outputs.path }}
+          EXPECTED_TAGS: ${{ needs.installer-releases.outputs.tags }}
         run: |
           set -euo pipefail
           echo "shell=$(sha256sum "$DISTRIBUTION_PATH/install.sh" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
           echo "powershell=$(sha256sum "$DISTRIBUTION_PATH/install.ps1" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path(os.environ["DISTRIBUTION_PATH"])
+          versions = {tag: {
+              "shell": hashlib.sha256((root / tag / "install.sh").read_bytes()).hexdigest(),
+              "powershell": hashlib.sha256((root / tag / "install.ps1").read_bytes()).hexdigest(),
+          } for tag in json.loads(os.environ["EXPECTED_TAGS"])}
+          print("versions=" + json.dumps(versions, separators=(",", ":")))
+          PY
       - name: Upload GitHub Pages artifact
-        if: inputs.release-ref != ''
+        if: needs.installer-releases.outputs.tag != ''
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ steps.distribution.outputs.path }}
@@ -145,8 +241,8 @@ jobs:
   deploy:
     name: Deploy documentation
     timeout-minutes: 10
-    if: inputs.release-ref != '' && !contains(inputs.release-ref, '-')
-    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.installer-releases.outputs.tag != '' && !contains(needs.installer-releases.outputs.tag, '-') }}
+    needs: [build, installer-releases]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -158,7 +254,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.release-commit }}
+          # Verification tooling follows this workflow; documentation follows the release source.
+          ref: ${{ github.sha }}
           sparse-checkout: |
             scripts/install
             scripts/lib
@@ -170,4 +267,5 @@ jobs:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
           SHELL_SHA: ${{ needs.build.outputs.shell-installer-sha }}
           POWERSHELL_SHA: ${{ needs.build.outputs.powershell-installer-sha }}
+          VERSIONED_INSTALLERS: ${{ needs.build.outputs.versioned-installers }}
         run: bash scripts/install/verify-site.sh
