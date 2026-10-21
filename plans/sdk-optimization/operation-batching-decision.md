@@ -1,7 +1,8 @@
 # Go operation의 반복 HTTP 처리문 절감
 
 현재 상태: 후보 E 구현과 단위 행동·실제 Graph AST/계약 검증을 마쳤다. 전체 Graph
-compile 및 실제 GitHub SDK HTTP paired 비용은 검증 중이며 기본 채택 판단은 아직 남는다.
+compile은 미완료다. 실제 GitHub SDK HTTP paired 10쌍은 내부 비열등성 기준을 통과했으며
+기본 채택 판단과 최종 통합 검증은 아직 남는다.
 
 현재 Graph의 다음 병목은 파일 개수보다 `internal/operations` 한 package의 frontend 크기다.
 전체 schema/model implementation 빌드는 통과했으나 전체 빌드는 해당 package에서
@@ -60,3 +61,19 @@ package의 source는 579,570,728바이트, AST/identifier는 75,204,993/35,781,4
 이는 실제 생성물에서 직접 계산한 값이다. compiler 시간·메모리나 HTTP 개선율은 별도
 실측 없이 주장하지 않는다. 최초 생성과 cold compile은 작은 후속 검증과 겹친 pilot으로
 보존하며, 최종 성능 반복 수에는 넣지 않는다.
+
+실제 두 GitHub 호출의 paired ratio 95% 상한은 1.0282/1.0209로 1.05 이하고,
+B/op·allocs/op는 양쪽이 같다. 두 로컬 transport 호출의 증거이며 속도 향상이나 모든
+HTTP 경로의 증거로 확대하지 않는다. 첫 전체 cold는 3,600초 timeout, 후속 intrusive
+warm은 operations에서 RSS 보호로 끝났고 profile 두 개는 0바이트다. 별도 stack/GC
+진단 결과와 최종 전체 compile·반복 검사가 남는다. 원시 결과는 `execution.md`를 따른다.
+
+후속 stack은 선언·서명 검사, 늦은 stack은 함수 본문 검사였으며 모두 frontend였다.
+soft 10 GiB의 별도 900초 warm 진단에서 865초에 늦은 stack을 요청했고 recorder는
+900.33초에 종료했다. peak RSS는 12,278,591,488바이트, GC 원문의 유지 heap은
+13,738 MB까지 올라갔다. agent signal과 실제 timeout을 함께 보존하며, 중단하지 않은
+전체 compile 결과나 더 큰 heap의 해결 증거로 해석하지 않는다.
+
+V06E의 단위 범위는 구현·AST/계약·행동·HTTP 비용과 실제 compile pilot의 결과/원인
+검토다. 이 범위는 완료했으며 실제 전체 성공·38문서·최종 5표본은 V09/VIntegration의
+필수 gate로 유지한다. E를 포함한 최종 기본 채택과 workstream 종료는 아직 아니다.
