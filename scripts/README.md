@@ -12,6 +12,12 @@ Scripts are grouped by responsibility: `dev`, `generate`, `compatibility`,
 Documentation commands stay in `docs/scripts`. Go measurement helpers and
 TypeScript verification implementations stay with the code they exercise.
 
+`preflight:perf` records bounded local SDK optimization trials with pinned Go,
+source/binary/input hashes, redacted logs and explicit failure reasons. Its
+[internal recipe](perf/sdk-optimization/README.md) covers full-source TypeScript
+configuration and read-only TS/Go output inventories. These diagnostics do not
+replace public consumer contracts or establish a full Graph compiler pass.
+
 | Target | Examples |
 | --- | --- |
 | `dev` | `build:dev`, `test:dev`, `ci:dev go`, `ts-lint:dev` |

@@ -1,5 +1,8 @@
 profile = 'openapi-sdkgen'
 
+[commands."preflight:perf"]
+exec = ['bash', '-c', 'exec fnm exec --using "$(cat .node-version)" bash "$@"', 'sdkgen', 'scripts/perf/sdk-optimization.sh']
+
 [commands."selection:perf"]
 exec = ["bash", "-c", "exec fnm exec --using \"$(cat .node-version)\" node \"$@\"", "sdkgen", "test/typescript/verification/selection-benchmark.mjs"]
 
