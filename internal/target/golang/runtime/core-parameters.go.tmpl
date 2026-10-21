@@ -5,6 +5,23 @@ type Parameter struct {
     Encoder func(context.Context,types.Value,string)([]byte,error)
 }
 
+// ParameterBinding reuses an encoded section and its serialization contract.
+type ParameterBinding struct {
+    Section types.Value
+    Parameter Parameter
+}
+
+func (execution *Execution) AddParameters(data *RequestData,bindings []ParameterBinding) error {
+    for _,binding:=range bindings {
+        parameter:=binding.Parameter
+        if parameter.Location=="header"{data.HeaderNames=append(data.HeaderNames,parameter.Name)}
+        if value,present:=binding.Section.Get(parameter.Name);present {
+            if err:=execution.AddParameter(data,value,parameter);err!=nil{return err}
+        }
+    }
+    return nil
+}
+
 func (execution *Execution) AddParameter(data *RequestData,value types.Value,parameter Parameter) error {
     if err:=execution.Context.Err();err!=nil{return err}
     if parameter.ContentType!=""&&!(parameter.Location=="querystring"&&bareMedia(parameter.ContentType)=="application/x-www-form-urlencoded") {

@@ -108,7 +108,11 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 			if err != nil {
 				return fmt.Errorf("Go template %s: %w", file.Template, err)
 			}
-			renderer, err := template.New(file.Path).Funcs(template.FuncMap{"quote": strconv.Quote}).Parse(string(templateSource))
+			renderer, err := template.New(file.Path).Funcs(template.FuncMap{
+				"quote":            strconv.Quote,
+				"parameterBatches": operationBatches[parameterPlan],
+				"responseBatches":  operationBatches[responsePlan],
+			}).Parse(string(templateSource))
 			if err != nil {
 				return err
 			}
@@ -146,4 +150,17 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		}
 	}
 	return packer.finish()
+}
+
+// Keep each generated descriptor literal bounded, including unusually wide
+// operations. The views retain the planner's canonical contracts and order.
+func operationBatches[T any](values []T) [][]T {
+	const size = 16
+	batches := make([][]T, 0, (len(values)+size-1)/size)
+	for len(values) != 0 {
+		count := min(size, len(values))
+		batches = append(batches, values[:count])
+		values = values[count:]
+	}
+	return batches
 }

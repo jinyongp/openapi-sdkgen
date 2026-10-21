@@ -1,5 +1,8 @@
 # Go operation의 반복 HTTP 처리문 절감
 
+현재 상태: 후보 E 구현과 단위 행동·실제 Graph AST/계약 검증을 마쳤다. 전체 Graph
+compile 및 실제 GitHub SDK HTTP paired 비용은 검증 중이며 기본 채택 판단은 아직 남는다.
+
 현재 Graph의 다음 병목은 파일 개수보다 `internal/operations` 한 package의 frontend 크기다.
 전체 schema/model implementation 빌드는 통과했으나 전체 빌드는 해당 package에서
 RSS 12,225,490,944바이트로 보호 종료됐다. 별도 SIGQUIT 진단은 `types2.recordUse`와
@@ -40,9 +43,20 @@ batch 경계의 branch index와 동점·wildcard/status/media 선택, 기존 HTT
 consumer를 포함한다. generator의 기존 operation 계약과 추가 core 내부 helper를 구분해
 모든 기존 Go 정의 package·서명·method set·alias·JSON tag를 대조한다. 새 내부 선언은
 정확한 이름·서명의 allowlist로만 확인하며 기존 계약 차이를 무시하지 않는다.
+Graph import path에 고정한 목록은 `go-operation-additions.json`이다. 3개 정의 type와
+그 공개 struct 선언, 기존 `Execution`의 새 method 및 `ResponseSelection`의 method를
+합쳐 정확히 8개 계약만 추가 허용한다. 선언은 구현 source에서 검토한 것이며 실제
+Graph 비교의 차이를 보고 목록을 넓히지 않는다.
 
 작은/중간 실제 SDK에서 P와 E의 생성·compile·runtime를 구분해 측정하고, HTTP runtime는
 기존 정책의 paired 10쌍·95% ratio 상한 1.05 및 allocation/GC 검토를 적용한다. 실제 native
 Graph의 AST와 frontend 비용을 다시 측정하며 전체 compile 성공이 없으면 채택 증거가
 완성되지 않는다. 최종 38문서·Graph 5표본·binary/archive·통합 검사는 W09/W11에 남긴다.
 단위 리뷰·커밋 후 현재 basis에 검증을 기록한다. 파일 묶기 P의 이득과 혼합해 주장하지 않는다.
+
+실제 E Graph는 모든 기존 6,434,421개 계약이 같고 새 8개만 추가됐다. 같은 operation
+package의 source는 579,570,728바이트, AST/identifier는 75,204,993/35,781,439개다.
+각각 기준보다 3.08%/3.65%/4.65% 감소했으며 package와 정의 type 개수는 같다.
+이는 실제 생성물에서 직접 계산한 값이다. compiler 시간·메모리나 HTTP 개선율은 별도
+실측 없이 주장하지 않는다. 최초 생성과 cold compile은 작은 후속 검증과 겹친 pilot으로
+보존하며, 최종 성능 반복 수에는 넣지 않는다.

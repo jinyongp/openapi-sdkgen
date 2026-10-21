@@ -1,3 +1,22 @@
+// ResponseChoice retains the original branch index independently of batching.
+type ResponseChoice struct {
+    Index int
+    Status,MediaType,Kind string
+    BinaryFallback bool
+}
+type ResponseSelection struct {
+    Branch,Score int
+    Kind string
+    BinaryFallback bool
+}
+func (selection *ResponseSelection) Choose(status int,contentType string,choices []ResponseChoice) {
+    for _,choice:=range choices {
+        if score:=ResponseScore(status,contentType,choice.Status,choice.MediaType);score>selection.Score {
+            selection.Branch,selection.Score,selection.Kind,selection.BinaryFallback=choice.Index,score,choice.Kind,choice.BinaryFallback
+        }
+    }
+}
+
 func ResponseScore(status int,actual,pattern,media string)int{
     rank:=0
     if pattern==strconv.Itoa(status){rank=3

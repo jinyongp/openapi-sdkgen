@@ -145,18 +145,26 @@ func (call {{.Name}}Call) execute(ctx context.Context,output *{{.OutputType}},in
     {{end}}{{end}}{{if .MediaType}}{{if .Required}}data.HasBody=true{{else}}data.HasBody=call.input.{{.Name}}.IsSet(){{end}}
     data.ContentType={{quote .MediaType}};data.EncodeBody=func(ctx context.Context,request *http.Request)(types.Binary,error){ {{if .Encoder}}encoded,err:=schema.{{.Encoder}}(ctx,section{{.Name}},{{quote .MediaType}});return types.BinaryFromBytes(encoded),err{{else}}return execution.EncodeBody(section{{.Name}},{{quote .MediaType}},request,bodyEncodingFor{{$operation.Name}}(execution,{{quote .MediaType}})){{end}} }
     {{end}}{{end}}{{end}}{{end}}{{end}}
-    {{range .Parameters}}{{if eq .Location "header"}}data.HeaderNames=append(data.HeaderNames,{{quote .Name}})
+    {{if gt (len .Parameters) 1}}{{range parameterBatches .Parameters}}
+    if err:=execution.AddParameters(&data,[]core.ParameterBinding{ {{range .}}{Section:section{{.Section}},Parameter:{{template "parameterContract" .}}},{{end}} });err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+    {{end}}{{else}}{{range .Parameters}}{{if eq .Location "header"}}data.HeaderNames=append(data.HeaderNames,{{quote .Name}})
     {{end}}if value,present:=section{{.Section}}.Get({{quote .Name}});present {
-        if err:=execution.AddParameter(&data,value,core.Parameter{Name:{{quote .Name}},Location:{{quote .Location}},Style:{{quote .Style}},ContentType:{{quote .ContentType}},Explode:{{.Explode}},AllowReserved:{{.AllowReserved}},AllowEmptyValue:{{.AllowEmptyValue}}{{if .Encoder}},Encoder:schema.{{.Encoder}}{{end}} });err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
+        if err:=execution.AddParameter(&data,value,{{template "parameterContract" .}});err!=nil{return nil,execution,execution.Failure(types.RequestEncodeFailed,err)}
     }
-    {{end}}
+    {{end}}{{end}}
     response,err:=execution.Send(data);if err!=nil{return nil,execution,err}
-    branch,best,kind:=0,0,"auto"
-    binaryFallback:=false
     contentType:=response.Header.Get("Content-Type")
+    {{if gt (len .Responses) 1}}
+    selection:=core.ResponseSelection{Kind:"auto"}
+    {{range responseBatches .Responses}}selection.Choose(response.StatusCode,contentType,[]core.ResponseChoice{ {{range .}}{Index:{{.Index}},Status:{{quote .Status}},MediaType:{{quote .MediaType}},Kind:{{quote .Kind}},BinaryFallback:{{.BinaryFallback}}},{{end}} })
+    {{end}}
+    branch,kind,binaryFallback:=selection.Branch,selection.Kind,selection.BinaryFallback
+    {{else}}branch,best,kind:=0,0,"auto"
+    binaryFallback:=false
     {{range .Responses}}if score:=core.ResponseScore(response.StatusCode,contentType,{{quote .Status}},{{quote .MediaType}});score>best{branch,best,kind,binaryFallback={{.Index}},score,{{quote .Kind}},{{.BinaryFallback}}}
     {{end}}
     _=best
+    {{end}}
     if len(incremental)!=0&&incremental[0]&&kind!="stream"{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response is not a declared sequential representation"})}
     if kind=="blocked"{return nil,execution,execution.Failure(types.ResponseDecodeFailed,&types.SDKError{Code:types.ResponseDecodeFailed,Message:"response contract forbids this representation"})}
     {{if .HasSequential}}if kind=="stream"&&output!=nil{buffered:=false;switch branch{ {{range .Responses}}{{if .Buffered}}case {{.Index}}:buffered=true
@@ -259,3 +267,4 @@ func (call {{.Name}}Call) Raw(ctx context.Context)(*{{.Name}}RawResponse,error){
 }
 {{end}}
 {{end}}
+{{define "parameterContract"}}core.Parameter{Name:{{quote .Name}},Location:{{quote .Location}},Style:{{quote .Style}},ContentType:{{quote .ContentType}},Explode:{{.Explode}},AllowReserved:{{.AllowReserved}},AllowEmptyValue:{{.AllowEmptyValue}}{{if .Encoder}},Encoder:schema.{{.Encoder}}{{end}} }{{end}}

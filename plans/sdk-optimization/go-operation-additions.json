@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "additions": [
+    {"package":"internal/core:core","name":"type:ParameterBinding","signature":"","importKey":""},
+    {"package":"internal/core:core","name":"type:ResponseChoice","signature":"","importKey":""},
+    {"package":"internal/core:core","name":"type:ResponseSelection","signature":"","importKey":""},
+    {
+      "package":"internal/core:core",
+      "name":"public:ParameterBinding",
+      "signature":"ParameterBinding struct {\n\tSection   types.Value\n\tParameter Parameter\n}",
+      "importKey":" \"context\"\n \"example.test/graph/api/internal/media\"\n \"example.test/graph/api/types\"\n \"fmt\"\n \"net/http\"\n \"strings\"\n \"unicode/utf8\""
+    },
+    {
+      "package":"internal/core:core",
+      "name":"public:*Execution.AddParameters",
+      "signature":"func (execution *Execution) AddParameters(data *RequestData, bindings []ParameterBinding) error",
+      "importKey":" \"context\"\n \"example.test/graph/api/internal/media\"\n \"example.test/graph/api/types\"\n \"fmt\"\n \"net/http\"\n \"strings\"\n \"unicode/utf8\""
+    },
+    {
+      "package":"internal/core:core",
+      "name":"public:ResponseChoice",
+      "signature":"ResponseChoice struct {\n\tIndex                   int\n\tStatus, MediaType, Kind string\n\tBinaryFallback          bool\n}",
+      "importKey":" \"context\"\n \"example.test/graph/api/internal/media\"\n \"example.test/graph/api/types\"\n \"io\"\n \"net/http\"\n \"sort\"\n \"strconv\"\n \"strings\""
+    },
+    {
+      "package":"internal/core:core",
+      "name":"public:ResponseSelection",
+      "signature":"ResponseSelection struct {\n\tBranch, Score  int\n\tKind           string\n\tBinaryFallback bool\n}",
+      "importKey":" \"context\"\n \"example.test/graph/api/internal/media\"\n \"example.test/graph/api/types\"\n \"io\"\n \"net/http\"\n \"sort\"\n \"strconv\"\n \"strings\""
+    },
+    {
+      "package":"internal/core:core",
+      "name":"public:*ResponseSelection.Choose",
+      "signature":"func (selection *ResponseSelection) Choose(status int, contentType string, choices []ResponseChoice)",
+      "importKey":" \"context\"\n \"example.test/graph/api/internal/media\"\n \"example.test/graph/api/types\"\n \"io\"\n \"net/http\"\n \"sort\"\n \"strconv\"\n \"strings\""
+    }
+  ]
+}
