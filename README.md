@@ -22,25 +22,45 @@ irm https://jinyongp.dev/openapi-sdkgen/install.ps1 | iex
 
 If prompted, run the printed `PATH` command, then run `openapi-sdkgen --version`.
 
+### Install a specific version
+
+Use the installer attached to the version you want. For example, to install **v1.3.1**:
+
+```sh
+curl -fsSL https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.sh | sh
+```
+
+```powershell
+irm https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.ps1 | iex
+```
+
+Replace `v1.3.1` with a tag from [the release list](https://github.com/jinyongp/openapi-sdkgen/releases)
+that includes `install.sh` or `install.ps1`.
+Each release's installer defaults to that version. You can also share the installer links directly:
+[v1.3.1 macOS/Linux](https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.sh) ·
+[v1.3.1 Windows](https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.ps1).
+With npm, use `npm install -g openapi-sdkgen@1.3.1` (Node.js 22+).
+
 <details>
-<summary>Version, location and other installation methods</summary>
+<summary>Custom installation directory and other installation methods</summary>
 
 The default directory is `~/.local/bin` on macOS/Linux or
 `%LOCALAPPDATA%\Programs\openapi-sdkgen\bin` on Windows.
-To choose a version or directory, save the installer first:
+To choose a directory, save the installer first:
 
 ```sh
 curl -fsSL https://jinyongp.dev/openapi-sdkgen/install.sh -o install.sh
-sh install.sh --version X.Y.Z --install-dir /your/bin
+sh install.sh --install-dir /your/bin
 ```
 
 ```powershell
 irm https://jinyongp.dev/openapi-sdkgen/install.ps1 -OutFile install.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Version X.Y.Z -InstallDir C:\your\bin
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir C:\your\bin
 ```
 
-Replace `X.Y.Z` with a released version. Download the installer again to upgrade. To uninstall, remove
-the installed executable.
+Use a version-specific installer URL above to choose both the version and directory.
+To upgrade to the latest version, rerun the commands at the start of this section.
+To uninstall, remove the installed executable.
 
 Other options: [download an executable](https://github.com/jinyongp/openapi-sdkgen/releases),
 `npm install -g openapi-sdkgen` (Node.js 22+), or
