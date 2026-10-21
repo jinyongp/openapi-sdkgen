@@ -188,6 +188,30 @@ empty cache에서 시작한 전체 compile correctness pilot으로 보존하고 
 표본에서는 제외한다. 최종 source·compiler 조건을 고정한 후 겹치는 작업 없이 새 표본을
 수집한다. 이 구분으로 원래 반복 수나 전체 compile 요구를 줄이지 않는다.
 
+첫 E cold 실행은 schema/model family를 통과한 뒤 operations compiler가 끝나기 전에
+3,600초 상한에 도달했다. RSS 보호 종료는 아니었다. 다음 Go 진단은 그 cache를 명시적으로
+재사용해 `./api/...` 전체를 `-p=1`, compiler soft heap 6 GiB로 다시 확인한다. 모든 package를
+포함하며 cold 표본이 아니다. operations compiler에만 CPU/heap profile을 지정하고
+`gctrace=1`을 기록해 다음 구조·스케줄 판단의 근거를 확보한다. 언어·최적화 옵션은 유지한다.
+기존과 같은 11,832 MiB hard와 3,600초를 적용하며 20분 내 2 GiB headroom을 확보하지
+못하면 시작하지 않는다. profile이 완료되지 않으면 읽을 수 있는 증거로 집계하지 않는다.
+
+### P 크기 비교의 실제 제공자 표본
+
+추가 크기 비교는 고정 holdout의 작은 `tvmaze.com`과 중간 `listennotes.com` 입력을
+사용한다. 원본 Git blob과 SHA-256을 확인하고 P 이전의 동결 generator로 전체 출력과
+정렬 첫 route 하나를 제외한 출력을 만든다. 같은 원본을 정렬 manifest 순서로 각각
+64/128/256 KiB로 replay한다. 이 순서는 native emitter 순서와 다르므로 생성 시간의
+대체 표본이나 Graph의 native 파일 수로 일반화하지 않는다. E와 V는 포함하지 않는다.
+
+원본·세 크기의 전체 package/정의 타입/공개 서명/import binding을 전수 대조하고
+files/bytes와 route 추가·삭제의 manifest delta를 계산한다. 네 variant의 empty-cache
+전체 build와 같은 cache의 warm build를 각 5회 수행한다. 반복마다 순서를 회전하고
+홀수 회는 역순으로 하며, Go 1.27.2·CGO=0·GOMAXPROCS=4·`-p=1`·soft heap
+6 GiB·기존 동적 hard RSS를 적용한다. 각 build의 상한은 600초다. 무거운 Graph
+진단과 겹치지 않게 시작하며 실패 표본과 원시 출력도 보존한다. 한 route의 양방향
+delta는 변경 폭의 표본이고 실제 publisher 복구·stale 제거 검사의 대체가 아니다.
+
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
 [execute](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/execute/tsc.go),

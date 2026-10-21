@@ -592,8 +592,12 @@ E의 server 포함 전체 Graph 생성은 1,072.00초·RSS 8,541,708,288바이�
 operation package는 45,696파일·정의 type 88,764개가 같고 source는
 597,978,236→579,570,728바이트, AST 노드는 78,054,414→75,204,993개,
 identifier 노드는 37,526,117→35,781,439개다. 실제 compiler/runtime 성공과 별도다.
-첫 전체 staged cold compile은 진행 중이며 작은 후속 타입 검사와 겹친 correctness
-pilot이므로 최종 성능 5표본에 넣지 않는다.
+첫 전체 staged cold compile은 3,600.46초·peak RSS 12,295,872,512바이트에서 시간
+초과로 끝났다. hard 11,832 MiB 안에서 schema 대형 두 package와 나머지 implementation
+family는 각각 139.87/138.82/2,659.50초에 통과했으나 최종 전체 build의 operations
+compiler가 완료되지 않았다. RSS 보호 종료나 전체 성공으로 바꾸지 않는다. 작은 후속
+타입 검사와 겹친 correctness pilot이므로 최종 성능 5표본에서도 제외한다. 같은 cache의
+후속 전체 warm build와 operations CPU/heap profile은 별도 진단으로 사전 기록했다.
 
 C의 최초 전체 fixture oracle은 같은 helper를 복제한 대조에서도 동일한 TS2719
 16개를 냈다. 재귀 값 alias를 별도 module에 복제한 검사 결함이었다. 이전 mapped
@@ -624,4 +628,10 @@ resource 모듈의 `Surface` call signature를 부모가 다시 함수 intersect
 helper caller 검사는 3.92초·559 MB에 통과했다. 최초 resource 검사 source는 기록된 hash와
 일치하도록 복원·보존했다. 실제 GitHub의 `git/get-ref`(매개변수 3개·응답 3개)와
 `issues/list-for-repo`(15개·4개)에서 P/E SDK를 각각 생성·컴파일하고 로컬 HTTP 동작과
-response close를 확인했다. 성능 10쌍은 다른 무거운 작업이 끝난 뒤 수집한다.
+response close를 확인했다. Go cold 종료 뒤 다른 무거운 작업 없이 warmup 1쌍을 제외한
+교차 순서 10쌍을 수집했다(`go-http-pair-samples/summary.json`, 원시 sample 전부 보존).
+paired geometric ratio와 bootstrap 95% 구간은 git-ref 1.0023 [0.9772, 1.0281],
+issues 0.9979 [0.9668, 1.0208]이다. 두 상한 모두 내부 1.05 기준 이하다. B/op는
+각각 11,616/7,896, allocs/op는 139/78로 양쪽이 같고 GC/op 중앙값도 비슷했다.
+관측 범위는 실제 두 SDK 호출의 로컬 transport이며 remote 지연·전체 SDK·모든 HTTP
+경로의 증거로 확대하지 않는다. 속도 향상을 주장하지 않으며 E의 전체 compile은 남는다.
