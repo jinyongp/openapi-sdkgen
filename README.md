@@ -24,22 +24,21 @@ If prompted, run the printed `PATH` command, then run `openapi-sdkgen --version`
 
 ### Install a specific version
 
-Use the installer attached to the version you want. For example, to install **v1.3.1**:
+Choose a version from [the release list](https://github.com/jinyongp/openapi-sdkgen/releases).
+Replace `X.Y.Z` below with that release's version:
 
 ```sh
-curl -fsSL https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.sh | sh
+curl -fsSL https://github.com/jinyongp/openapi-sdkgen/releases/download/vX.Y.Z/install.sh | sh
 ```
 
 ```powershell
-irm https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.ps1 | iex
+irm https://github.com/jinyongp/openapi-sdkgen/releases/download/vX.Y.Z/install.ps1 | iex
 ```
 
-Replace `v1.3.1` with a tag from [the release list](https://github.com/jinyongp/openapi-sdkgen/releases)
-that includes `install.sh` or `install.ps1`.
-Each release's installer defaults to that version. You can also share the installer links directly:
-[v1.3.1 macOS/Linux](https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.sh) ·
-[v1.3.1 Windows](https://github.com/jinyongp/openapi-sdkgen/releases/download/v1.3.1/install.ps1).
-With npm, use `npm install -g openapi-sdkgen@1.3.1` (Node.js 22+).
+Use a release with `install.sh` or `install.ps1` attached under **Assets**.
+Each installer defaults to its release's version. To share an installation link,
+copy the installer asset's URL from that release.
+With npm, use `npm install -g openapi-sdkgen@X.Y.Z` (Node.js 22+).
 
 <details>
 <summary>Custom installation directory and other installation methods</summary>
