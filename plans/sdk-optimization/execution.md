@@ -635,3 +635,22 @@ issues 0.9979 [0.9668, 1.0208]이다. 두 상한 모두 내부 1.05 기준 이�
 각각 11,616/7,896, allocs/op는 139/78로 양쪽이 같고 GC/op 중앙값도 비슷했다.
 관측 범위는 실제 두 SDK 호출의 로컬 transport이며 remote 지연·전체 SDK·모든 HTTP
 경로의 증거로 확대하지 않는다. 속도 향상을 주장하지 않으며 E의 전체 compile은 남는다.
+
+canonical callable Surface를 반영한 새 Graph도 187,686개 source의 hash/소유권과
+3×6 membership을 통과했으나 native 전체 strict는 19개 project 완료 뒤 root에서
+TS2859 158개로 실패했다. 해당 project는 206.13초·RSS 10,617,331,712바이트,
+hard 11,744 MiB에서 exit 2였다. 기존 312개 오류 중 일부만 제거됐으며 성공이 아니다.
+남은 위치는 `Pick<Surface, keyof Surface>`로 전체 멤버를 다시 투영하는 조립과,
+자식 호출 때 전체 descendant intersection registry를 구조적으로 비교하는 경계다.
+W08 후속 후보는 멤버를 한 번 선언한 `Members`를 Surface와 조립에서 재사용하고,
+registry를 자식의 canonical interface를 상속하는 interface로 표현한다. 기존 exact
+call·public Surface·실제 runtime은 유지하며 새 cast나 `any`를 추가하지 않는다.
+먼저 22단계/80개 분기·registry 누락 거절·generic 부모→자식 및 네 compiler의
+source/declaration 계약을 검사하고, 새 실제 Graph 전체 결과를 별도로 확인한다.
+
+`resource-named-bases-contracts`는 293.82초·RSS 1,598,083,072바이트에서 통과했다.
+위 확대 계약과 기존 nested resource 방출·1,000 operation registry의 엄격한 세 module
+profile·canonical section 계약을 함께 검사했다. child type import도 기존 local identifier
+planner로 할당해 사용자 parameter와 충돌을 피한다. 멤버 필드는 한 곳만 선언하며
+상속하는 registry도 canonical operation 계약의 mapped view를 사용한다. 이 결과는
+실제 Graph 성공으로 대체하지 않는다. 후속 새 SDK 생성·ownership·전체 strict는 대기 중이다.

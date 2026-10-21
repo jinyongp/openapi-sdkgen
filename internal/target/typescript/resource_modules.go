@@ -81,7 +81,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	childIdentities := resourceChildIdentities(module.identity, module.node)
 	names := newLocalIdentifierPlan(module.path)
-	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "ResourceRegistry", "ResourceOperations", "RegistryCalls", "RouteTypeIdentity", "OperationTypeIdentity", "assignCallableProperties", "bindResourceInput", "bindResourceNoInput", "bindResourceOptionalInput", "bindResourceInputStream", "bindResourceNoInputStream", "bindResourceOptionalInputStream", "bindResourceLinks", "bindResourcePagination", "Surface", "build", "registry", "bound", "members"); err != nil {
+	if err := names.reserve("CallableRegistry", "PaginateCall", "ResourceCall", "ResourceRegistry", "ResourceOperations", "OwnRegistryCalls", "RegistryCalls", "Members", "RouteTypeIdentity", "OperationTypeIdentity", "assignCallableProperties", "bindResourceInput", "bindResourceNoInput", "bindResourceOptionalInput", "bindResourceInputStream", "bindResourceNoInputStream", "bindResourceOptionalInputStream", "bindResourceLinks", "bindResourcePagination", "Surface", "build", "registry", "bound", "members"); err != nil {
 		return nil, err
 	}
 	for _, node := range append([]*resourceNode{module.node}, resourceChildNodes(module.node)...) {
@@ -96,6 +96,9 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 			return nil, fmt.Errorf("resource child %q has no module owner", identity)
 		}
 		if err := names.request(resourceBuilderIdentifierKey(identity)); err != nil {
+			return nil, err
+		}
+		if err := names.request(typeImportIdentifierKey(paths[identity], "RegistryCalls")); err != nil {
 			return nil, err
 		}
 	}
@@ -151,6 +154,11 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 			return nil, err
 		}
 		fmt.Fprintf(&output, "import { build as %s } from %s\n", alias, quoteTS(specifier))
+		calls, err := names.resolve(typeImportIdentifierKey(path, "RegistryCalls"))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(&output, "import type { RegistryCalls as %s } from %s\n", calls, quoteTS(specifier))
 	}
 	output.WriteByte('\n')
 	output.WriteString("interface ResourceOperations {\n")
@@ -166,15 +174,17 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		}
 		fmt.Fprintf(&output, "  readonly %s: import(%s).Contract\n", quoteTS(route), quoteTS(specifier))
 	}
-	output.WriteString("}\nexport type RegistryCalls = { readonly [Route in keyof ResourceOperations]: ResourceOperations[Route][\"call\"] }")
+	// Named base relationships let a parent registry satisfy a child registry
+	// without structurally re-comparing the complete descendant intersection.
+	output.WriteString("}\ntype OwnRegistryCalls = { readonly [Route in keyof ResourceOperations]: ResourceOperations[Route][\"call\"] }\nexport interface RegistryCalls extends OwnRegistryCalls")
 	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
-		specifier, err := plan.relativeModuleSpecifier(module.path, paths[identity])
+		calls, err := names.resolve(typeImportIdentifierKey(paths[identity], "RegistryCalls"))
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, " & import(%s).RegistryCalls", quoteTS(specifier))
+		fmt.Fprintf(&output, ", %s", calls)
 	}
-	output.WriteString("\ntype CallableRegistry = ResourceRegistry<RegistryCalls>\n")
+	output.WriteString(" {}\ntype CallableRegistry = ResourceRegistry<RegistryCalls>\n")
 	if len(module.node.operations) > 0 {
 		output.WriteString("type ResourceCall<Route extends keyof ResourceOperations> = ResourceOperations[Route][\"resourceCall\"] & RouteTypeIdentity<Route> & OperationTypeIdentity<Route, \"resource\">\n")
 	}
@@ -183,8 +193,9 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	}
 	output.WriteByte('\n')
 
-	output.WriteString("/** Resource surface owned by this resolved OpenAPI path node. */\n")
-	output.WriteString("export interface Surface {\n")
+	// Declare members once, preserving their canonical child Surface identities.
+	// Pick<Surface, keyof Surface> remaps the entire tree during construction.
+	output.WriteString("interface Members {\n")
 	for _, name := range sortedResourceMemberNames(module.node) {
 		operation, hasOperation := module.node.operations[name]
 		child := module.node.children[name]
@@ -211,6 +222,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		writeJSDoc(&output, "  ", jsDocInline, fmt.Sprintf("Lazily iterates every item from exact operation `%s` pagination.", paginated.OperationID))
 		fmt.Fprintf(&output, "  readonly paginate: PaginateCall<%s>\n", quoteTS(manifestRouteKey(paginated)))
 	}
+	output.WriteString("}\n\n/** Resource surface owned by this resolved OpenAPI path node. */\nexport interface Surface extends Members {\n")
 	if module.node.parameterChild != nil {
 		parameter := module.node.parameterChild.parameter
 		parameterType, err := resourceParameterType(document, plan, module.path, parameter)
@@ -230,7 +242,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	output.WriteString("/** Builds this resource node from the completed exact-call registry. */\n")
 	output.WriteString("export function build(registry: CallableRegistry, bound: readonly unknown[] = []): Surface {\n")
-	output.WriteString("  const members: Pick<Surface, keyof Surface> = {\n")
+	output.WriteString("  const members: Members = {\n")
 	for _, name := range sortedResourceMemberNames(module.node) {
 		fmt.Fprintf(&output, "    %s: ", name)
 		if err := emitResourceModuleMemberValue(&output, document, plan, module, paths, childIdentities, names, name); err != nil {

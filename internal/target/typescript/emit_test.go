@@ -528,7 +528,7 @@ func TestSourceArtifactsGenerateNestedResourceTree(t *testing.T) {
 		`export type PaginateCall<Route extends keyof Routes> = Routes[Route]["pagination"] & RouteTypeIdentity<Route>`,
 		`export type LinkCalls<Route extends keyof Routes> = Routes[Route]["links"] & RouteTypeIdentity<Route>`,
 		`readonly auth: import("./auth/index.js").Surface`,
-		"export interface Surface {",
+		"export interface Surface extends Members {",
 		`readonly login: import("./login/index.js").Surface`,
 		`readonly post: ResourceCall<"POST /auth/login">`,
 		`export type ExactCall = (`,
