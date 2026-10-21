@@ -2,8 +2,7 @@ schema: 1
 strategy: source-tag
 branch: main
 tag-prefix: v
-# Maintainer-selected v1.3.1; restore automatic bumps after this release.
-bump: patch
+bump: auto
 series:
   base-tag: v11.0.4
   start-version: 1.2.0

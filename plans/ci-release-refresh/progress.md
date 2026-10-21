@@ -1,18 +1,21 @@
 # CI and Releaseway refresh
 
-Current version decision: the next release is **1.3.1**, explicitly selected by
-the maintainer after the automatic 1.4.0 plans below. `bump: patch` overrides
-Conventional Commit inference for this upcoming release; restore automatic bumps
-after it. Historical plans remain unchanged. Publication is still excluded.
+Current release status: **v1.3.1 is published** from
+`54723748893e32b8b46e2dec530629eb3fc3a8a3`, following the maintainer's explicit
+deployment request. The maintainer-selected patch version supersedes the automatic
+1.4.0 plans below. The temporary `bump: patch` override has now been restored to
+`bump: auto` for subsequent releases. Historical plans and authorization limits
+below describe the earlier CI refresh phase.
 
-Scope: shorten independent CI feedback without dropping checks; update the three
-Releaseway integrations and adopt applicable upstream changes. Work directly on
+Original scope: shorten independent CI feedback without dropping checks; update
+the three Releaseway integrations and adopt applicable upstream changes. Work directly on
 `main`, preserve commit history without merge commits, review each unit and the
-combined result, and commit. Publication is explicitly excluded.
+combined result, and commit. Publication was explicitly excluded during that phase;
+the later deployment request authorized the release recorded below.
 
 The earlier release request run `39526581214` was cancelled before tag creation
 or any publishing job. Read-only planning selected v1.4.0; that version was not
-published. Current public release remains v1.3.0. PR #22 was closed unmerged;
+published. The public release at that time remained v1.3.0. PR #22 was closed unmerged;
 `main` advanced by fast-forward to `e003236`.
 
 Baseline: source `e003236`, Actions CI run `39524695228` on ubuntu-24.04,
@@ -100,3 +103,30 @@ The final record changes no SDK, test runner, workflow or release configuration.
 No pre-existing user edits were present. Unit commits were made directly on `main`
 and pushed without a PR or merge commit. `git diff --check` passed, and the final
 delivery includes only this completion record after the verified configuration.
+
+## Authorized v1.3.1 deployment
+
+[Source CI 39531695541](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39531695541)
+passed all 22 jobs for source `5472374`.
+[Preparation 39531928349](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39531928349)
+passed release cross-builds and examples, then created the annotated `v1.3.1` tag
+directly on that source without changing `main`.
+[Publication 39532967881](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39532967881)
+completed successfully, including GitHub, npm, Homebrew, native Go support,
+macOS/Windows installers, all three npm cold-cache consumers, Homebrew Go support,
+and matching documentation deployment.
+
+Public verification confirmed the immutable
+[v1.3.1 GitHub release](https://github.com/jinyongp/openapi-sdkgen/releases/tag/v1.3.1)
+as the latest release, npm `latest` as `1.3.1`, and the published Homebrew formula
+as version `1.3.1` with source `5472374`. The live documentation `release.json`
+reports the same tag, full source commit, and both TypeScript and Go targets.
+
+Post-release review covers the version policy, its documentation, and this record.
+The policy restores the previously used automatic bump mode only after successful
+publication; the immutable release tag and distributed source remain unchanged.
+No SDK, workflow, or test implementation changes are part of this cleanup.
+Both review passes found no remaining in-scope defect. Existing release dispatch
+and exact-source CI reuse tests passed after the cleanup; `git diff --check`
+passed. The published source is covered by the CI and publication runs above;
+those runs do not claim to test this later policy/documentation cleanup.

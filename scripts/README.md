@@ -124,9 +124,8 @@ coverage gate requires all groups and inventories to succeed.
 Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.
 `.github/releaseway.yml` declares the first version and ancestry boundary.
 Releaseway selects versions within that series while retaining historical tags.
-The upcoming release is maintainer-selected v1.3.1, using `bump: patch` instead
-of Conventional Commit inference. Restore `bump: auto` after that release to
-resume automatic SemVer selection.
+After the maintainer-selected v1.3.1 patch release, `bump: auto` resumes
+Conventional Commit inference for subsequent versions.
 Homebrew keeps `version_scheme: 1` in its product spec so existing installations
 recognize the new series as an upgrade. Stable npm releases explicitly publish
 to `latest`, prereleases publish to `next`, and GitHub uses `current-series` latest
