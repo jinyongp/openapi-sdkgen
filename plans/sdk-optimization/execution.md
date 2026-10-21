@@ -49,10 +49,12 @@ compile 12.82초, prepare 완료 137.83초, emit 완료 1,383.42초,
 publish 완료 1,384.40초다. profile과 일부 correctness 검사 실행이 포함되어
 일반 timing 또는 기존 옵션이 다른 477,701파일 결과와의 개선율에 사용하지 않는다.
 
-최종 Go 파일 659,663개·590 package를 audit했다. 기본 8 MiB 상한에서 빠진
+최종 Go 파일 659,663개를 audit했다. 기본 8 MiB 상한에서 빠진
 `client.go` 55,629,305바이트와 `operations/types.go` 29,377,260바이트는
 `-only-large -max-file-bytes 0` 별도 bounded trial로 전체 AST를 확인했다.
 각각 공개 signature 253,349개와 194,183개이며 후속 package/identity 비교에서 빠뜨리지 않는다.
+대형 파일의 package 이름을 원래 inventory에 합치면 실제 package는 588개다.
+첫 audit의 590은 미파싱 파일의 빈 package 이름 두 개를 별도 집계한 값이므로 정정한다.
 두 대형 파일을 제외한 동일 최종 package·import 집합의 묶기 후보는 545,220파일이다.
 이는 구현·컴파일 성공 또는 실제 절감량의 근거가 아니다.
 
@@ -62,3 +64,46 @@ Go 1.27.2, server 포함 전체 `./api/...`, CGO=0·GOWORK=off·GOMAXPROCS=4,
 9,665,454,080바이트다. 미완료 실패로 보존하며 최종 W09/W11 성공 기준은 유지한다.
 원시 phase/profile·최종 파일 hash·기본/대형 AST inventory·실패 compile은 모두
 `.tmp/sdk-optimization-execution/graph-go-*`에 있다. runtime 기준 표본은 아직 진행 전이다.
+
+## W02 projected closure 부분 공유
+
+TS 공통 correctness 기준은 `25d5626`이다. 새 planner는 projection별 descriptor의
+정확한 소비 closure 집합을 묶는다. 64개 이상 descriptor를 두 개 이상의 큰 closure가
+함께 쓰는 경우에만 block을 만들고, 각 closure는 그 부분집합과 delta만 import한다.
+쌍별 교집합이나 전역 superset은 없다. exact closure의 모듈과 map identity를 유지한다.
+Go에서 정한 ordinal을 heap으로 merge하여 UTF-8 순서·JS 숫자 own key 순서와
+`__proto__`/`constructor`의 일반 data property·prototype을 보존한다.
+
+리뷰에서 projection을 바꿔 순회할 때 이전 projection의 delta를 다시 추가하던 결함과
+strict unused/indexed access 오류를 수정했다. input/output·중첩 순환·dynamic/Link·선택
+caller, collision 등록, 두 단계 fingerprint hashing을 대조했다. 빈/단일/분리/작은 교집합,
+여러 interleaved block, projection, descriptor/map identity·property flags·두 client 격리·
+실제 잘못된 요청 거절 및 결정적 재방출을 검사했다. 전체 생성기 519 test pass,
+마지막 추가 assertion을 포함한 새 행동 검사와 네 compiler whole-source strict도 통과했다.
+
+실제 full Graph 후보는 TS 187,198파일·789,774,425바이트다. 기존
+186,448파일·2,358,735,553바이트 대비 파일 750개 증가, 소스 66.52% 감소다.
+helper/import/delta를 포함한 실측이며 누락 import와 `@ts-nocheck`는 0이다.
+새 merge 호출은 기존 inventory의 `Object.fromEntries` 패턴 수에 포함되지 않으므로
+그 도구의 map 감소를 runtime map 개수 감소로 해석하지 않는다.
+생성 141.97초·RSS 3,447,164,928바이트는 단일 진단이다. 기존 생성과 heap 정책 등이
+달라 timing 개선율로 사용하지 않는다. 전체 공개 29,581 route/ID consumer를 포함한
+TS 5.9 strict는 100.23초·관측 RSS 8,032,882,688바이트에 Node heap 부족으로 종료했다.
+이 실패는 W03/W05/W08에서 해결하며 소스 절감으로 전체 성공을 대체하지 않는다.
+
+todo와 고정 GitHub의 동일 binary/도구/옵션·직렬 교차 순서 5쌍은 생성·전체 strict
+각 20/20 pass다. 둘은 공유가 켜지지 않아 source byte/manifest가 같고, 작은 timing 차이를
+개선으로 주장하지 않는다. checker 중앙값은 todo 1.243/1.243초, GitHub 11.670/11.882초
+(기준/후보)이며 GitHub 기준 범위가 11.236~17.717초로 넓다. JS/gzip은 기존 하네스의
+full/static loader/root/named 14비교가 모두 같다. Resend는 해당 하네스가 server add-on을
+설정하지 않아 E505로 막혔으며 그 실패를 남기고 지원되는 두 입력을 측정했다.
+
+실제 공유를 쓰는 Graph의 첫 두 distinct output closure provider를 결정적으로 선택해
+runtime 전체 import를 포함하여 bundle했다. JS 3,789,053→3,465,791바이트,
+gzip 485,978→451,989바이트다. fresh Node module 초기화 10쌍의 geometric mean ratio
+0.9468, paired bootstrap 95% 0.9059~0.9930으로 사전 1.05 상한 기준을 통과했다.
+첫 warmup pair는 별도 보존했다. filesystem cache는 warm/미지정이며 HTTP hot path
+측정이나 full Graph checker 성공을 뜻하지 않는다. 원시 표본·도구/source/binary hash는
+`.tmp/sdk-optimization-execution/{closure-paired,closure-provider-size-2,graph-closure-startup,graph-ts-closure-*}`에 있다.
+동일 Graph 초기화의 timing 이후 GC로 측정한 retained heap 중앙값도
+24,792,424→23,876,064바이트로 감소했다. B/op·HTTP ns/op 결과로 해석하지 않는다.

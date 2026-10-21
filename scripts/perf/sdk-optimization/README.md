@@ -63,6 +63,17 @@ as separate checkpoints, with final package counts and file hashes. Its import r
 is `example.test/graph/api` and the server addon is enabled. Optional `-profile`
 writes intrusive CPU evidence; do not mix those times into ordinary paired samples.
 
+`compare-ts.py --output FRESH_OUTPUT --baseline BASELINE_BINARY --candidate
+CANDIDATE_BINARY --input PINNED_DOCUMENT [--input SECOND_DOCUMENT] --pairs 5`
+alternates fresh generation and whole-source/public-key strict checker processes.
+Use it through `preflight:perf` with pinned Node/Go. Each child trial has its own
+8 GiB RSS/900-second bound and raw recorder result. Set Node/Go heap policy before
+the run. Keep binary build provenance; a binary hash alone does not identify its
+source. Run competing variants without other measurement load. Failures remain
+in the requested denominator; completed medians/ranges and paired ratios are
+separate, with no arbitrary percentage pass gate. Filesystem cache is warm or
+unspecified, and this command does not claim empty-cache measurements.
+
 ```sh
 devtools run preflight:perf --output .tmp/sdk-preflight/recorder-tests -- python3 scripts/perf/sdk-optimization/record_test.py
 devtools run preflight:perf --output .tmp/sdk-preflight/go-audit-tests -- go test ./scripts/perf/sdk-optimization/audit-go
