@@ -390,6 +390,8 @@ jobs:
     uses: ./.github/workflows/docs.yml
     permissions:
       contents: read
+      actions: read
+      deployments: read
       pages: write
       id-token: write
     with:

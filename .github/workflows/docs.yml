@@ -87,7 +87,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
-          tags=$(python3 -B scripts/install/releases.py "$GITHUB_REPOSITORY" "$RELEASE_TAG")
+          tags=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[] | select(.draft == false) | select(any(.assets[]; .name == "install.sh" or .name == "install.ps1")) | .tag_name' \
+            | jq -Rsc 'split("\n") | map(select(length > 0)) | unique')
+          jq -e --arg tag "$RELEASE_TAG" 'index($tag) != null' <<< "$tags" > /dev/null
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
 
   version-installers:
@@ -121,9 +124,7 @@ jobs:
     needs: [installer-releases, version-installers]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     outputs:
-      shell-installer-sha: ${{ steps.installer-hashes.outputs.shell }}
-      powershell-installer-sha: ${{ steps.installer-hashes.outputs.powershell }}
-      versioned-installers: ${{ steps.installer-hashes.outputs.versions }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -161,9 +162,6 @@ jobs:
         env:
           CI: "true"
         run: bash docs/scripts/commands.sh install
-      - name: Configure GitHub Pages
-        if: needs.installer-releases.outputs.tag != ''
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Build documentation
         run: bash docs/scripts/commands.sh build
       - name: Verify built routes and generated consumers
@@ -202,6 +200,16 @@ jobs:
           path: ${{ runner.temp }}/version-installers
           merge-multiple: true
           digest-mismatch: error
+      - name: Require every selected version before deployment
+        if: needs.installer-releases.outputs.tag != ''
+        env:
+          INSTALLER_ROOT: ${{ runner.temp }}/version-installers
+          INSTALLER_TAGS: ${{ needs.installer-releases.outputs.tags }}
+        run: |
+          while IFS= read -r tag; do
+            test -f "$INSTALLER_ROOT/$tag/install.sh"
+            test -f "$INSTALLER_ROOT/$tag/install.ps1"
+          done < <(jq -r '.[]' <<< "$INSTALLER_TAGS")
       - name: Merge versioned installers into the site
         id: distribution
         if: needs.installer-releases.outputs.tag != ''
@@ -212,60 +220,29 @@ jobs:
             */install.sh
             */install.ps1
           site: ${{ steps.latest-installers.outputs.path }}
-      - name: Record expected installer hashes
-        id: installer-hashes
+      - name: Upload complete site for Releaseway
+        id: upload
         if: needs.installer-releases.outputs.tag != ''
-        env:
-          DISTRIBUTION_PATH: ${{ steps.distribution.outputs.path }}
-          EXPECTED_TAGS: ${{ needs.installer-releases.outputs.tags }}
-        run: |
-          set -euo pipefail
-          echo "shell=$(sha256sum "$DISTRIBUTION_PATH/install.sh" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
-          echo "powershell=$(sha256sum "$DISTRIBUTION_PATH/install.ps1" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
-          python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import hashlib, json, os
-          from pathlib import Path
-          root = Path(os.environ["DISTRIBUTION_PATH"])
-          versions = {tag: {
-              "shell": hashlib.sha256((root / tag / "install.sh").read_bytes()).hexdigest(),
-              "powershell": hashlib.sha256((root / tag / "install.ps1").read_bytes()).hexdigest(),
-          } for tag in json.loads(os.environ["EXPECTED_TAGS"])}
-          print("versions=" + json.dumps(versions, separators=(",", ":")))
-          PY
-      - name: Upload GitHub Pages artifact
-        if: needs.installer-releases.outputs.tag != ''
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
+          name: documentation-distribution-${{ github.run_id }}
           path: ${{ steps.distribution.outputs.path }}
+          include-hidden-files: true
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
 
   deploy:
     name: Deploy documentation
-    timeout-minutes: 10
     if: ${{ !cancelled() && needs.build.result == 'success' && needs.installer-releases.outputs.tag != '' && !contains(needs.installer-releases.outputs.tag, '-') }}
     needs: [build, installer-releases]
-    runs-on: ubuntu-24.04
     permissions:
       contents: read
+      actions: read
+      deployments: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Verification tooling follows this workflow; documentation follows the release source.
-          ref: ${{ github.sha }}
-          sparse-checkout: |
-            scripts/install
-            scripts/lib
-      - name: Deploy GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
-      - name: Verify installers at the deployed URLs
-        env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
-          SHELL_SHA: ${{ needs.build.outputs.shell-installer-sha }}
-          POWERSHELL_SHA: ${{ needs.build.outputs.powershell-installer-sha }}
-          VERSIONED_INSTALLERS: ${{ needs.build.outputs.versioned-installers }}
-        run: bash scripts/install/verify-site.sh
+    uses: releaseway/actions/.github/workflows/distribute-pages.yml@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+    with:
+      artifact-id: ${{ needs.build.outputs.artifact-id }}
+      files: '**'

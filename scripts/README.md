@@ -23,7 +23,7 @@ TypeScript verification implementations stay with the code they exercise.
 | `examples` | `todo:examples`, `advanced:examples`, `capabilities:examples` |
 | `release` | `check:release`, `cross-build:release`, `test:release`, `publish:release` |
 | `npm` | `source-check:npm` |
-| `install` | `build:install VERSION OUTPUT`, `test:install`, `verify:install` |
+| `install` | `build:install VERSION OUTPUT`, `test:install` |
 | `docs` | `validate:docs`, `build:docs`, `dev:docs` |
 
 Use `devtools command list` for the full command list. TypeScript runtime checks,
@@ -122,18 +122,20 @@ coverage gate requires all groups and inventories to succeed.
 ## Release documentation review
 
 Documentation publication reconstructs `/vX.Y.Z/install.sh` and `install.ps1`
-from every public immutable release with a complete installer pair. Releaseway
+from public releases containing standalone installers. The workflow only lists
+their tags with `gh api`; Releaseway requires both installer files and
 verifies the remote assets before placing them under their tag directories; the
 current release's installers also remain at the site root. Rebuilding from GitHub
 releases preserves previous version URLs without relying on Pages history or
 artifact retention. Releases predating standalone installers have no such URLs.
-The deployment checks both root installers and every versioned pair against the
-prepared hashes, and missing or stale historical bytes fail verification.
+The complete site is passed by immutable same-run artifact ID to Releaseway's
+`distribute-pages.yml`, which packages, deploys, and verifies the served bytes.
+There is no product-specific Pages verifier or installer hash manifest.
 
 To refresh this distribution for an already published stable release without
 publishing a new package, dispatch `docs.yml` on `main` with `release-tag` set to
-the existing tag. The documentation build uses that tag's source; discovery and
-verification tooling follow the dispatched workflow. Dispatching without a tag
+the existing tag. The documentation build uses that tag's source; distribution
+uses the dispatched workflow and the pinned Releaseway implementation. Dispatching without a tag
 only builds and checks documentation. Version artifacts are scoped to the run,
 replaced on retry, and retained only for the build/deploy handoff.
 
@@ -219,15 +221,13 @@ Ordinary CI requires installer fixtures on Linux, macOS and Windows. The release
 workflow additionally executes the published installers and native commands on
 Linux, macOS and Windows before documentation deployment. Linux also generates
 and runs the existing Go consumer. `releaseway/actions/distribute` merges the
-exact release's digest-verified scripts with the documentation build; the existing
-Pages workflow deploys the complete site. The source templates are not copied
+exact release's digest-verified scripts with the documentation build; Releaseway's
+Pages workflow deploys and verifies the complete site. The source templates are not copied
 directly to the public site. Prereleases retain their GitHub script assets and do
-not replace the stable site's installers. After deployment,
-`scripts/install/verify-site.sh` compares the actual served bytes against the
-hashes recorded from the merged artifact. Six bounded attempts allow for Pages
-propagation; a mismatch fails verification without rolling back the live site.
-For a read-only recheck, use `devtools run verify:install` with `PAGE_URL`,
-`SHELL_SHA` and `POWERSHELL_SHA` from the matching release artifact.
+not replace the stable site's installers. Releaseway owns Pages concurrency,
+archive membership checks, deployment identity, bounded propagation retries, and
+served-byte verification. Its workflow summary and delivery report record the
+actual delivery state; verification failure does not roll back the live site.
 
 Before publication, compare the public CLI help and generated exports with the
 English and Korean guides and references. Confirm that released features are
