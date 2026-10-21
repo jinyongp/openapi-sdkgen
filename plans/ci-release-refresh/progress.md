@@ -17,13 +17,13 @@ between 2:04 and 4:47. These are observed Actions durations, not local timings.
 
 | Unit | State | Validation |
 | --- | --- | --- |
-| CI partitioning | initial unit passed all 21 Actions jobs; follow-up splits the observed TypeScript generator bottleneck into two shards | source `e00fd40`, run `39528328681`; Go inventory 157/157 verified; updated gate tests, exact previous 515-test TypeScript inventory comparison, first TypeScript shard, shell syntax and actionlint passed; full follow-up Actions run pending |
+| CI partitioning | complete: four Go consumer shards, two TypeScript generator shards and independent compiler/runtime groups | source `f0e4a7d`, run `39529704679` passed all 22 jobs; exact prior inventories retained, all 157 Go and 515 TypeScript generator tests passed |
 | Releaseway refresh | complete: actions v0.6.3, npm-actions v0.7.1, Homebrew v0.4.3; source-tag plan/resume, exact npm tag and operation diagnostics | pinned releases/contracts, mocked dispatch/CI-reuse tests, actionlint and actual read-only plan run `39528351091` passed; all tag/publication jobs skipped |
-| Combined review | pending | coverage union, failure propagation, gating, source/tag identity, read-only release validation |
+| Combined review | complete; no additional eligible defect found | coverage union, failure propagation, gating, retries, source/tag identity, diagnostics and read-only release validation reviewed |
 
-Runner setup and compilation may repeat across jobs. No timing improvement is
-claimed until the new Actions critical path is observed; retain actual shard
-inventories and timings. No live release or package publication is authorized.
+Runner setup and compilation may repeat across jobs. The measured feedback times
+below retain their actual shard inventories and runner/cache limitations. No live
+release or package publication is authorized.
 
 The actual Go target inventory contains 157 top-level runnable tests; generated
 test source embedded in fixtures is not mistaken for repository tests. Shards
@@ -56,3 +56,42 @@ The new Releaseway read-only plan is schema 2, strategy `source-tag`, version
 The plan includes the policy digest and proposed tag object identity, but no
 remote v1.4.0 tag exists. GitHub and npm still report 1.3.0. Source-tag creation,
 package publication and live delivery remain intentionally unexecuted.
+
+## Completed combined validation
+
+[Final configuration CI run 39529704679](https://github.com/jinyongp/openapi-sdkgen/actions/runs/39529704679)
+passed all 22 jobs at `f0e4a7ded20fdcc02962d3db50973a073ca7fc3e`.
+The source gate verified four Go inventories and two TypeScript inventories.
+An independent comparison with the first Actions artifacts confirmed the exact
+same 157 Go and 515 TypeScript generator test identities, without duplicates;
+all 672 top-level outcomes were `pass`. Timings and inventories remain under
+`.tmp/ci-release-refresh/39529704679` and in that run's artifacts.
+
+| Observed Actions interval | Before | First partition | Final partition |
+| --- | --- | --- | --- |
+| Longest Go job | 17:22 / 12:39 | 5:47 | 5:57 |
+| TypeScript generator job | part of the Go job | 6:47 | 5:14 (longest of two) |
+| First CI job start to completed source gate | 17:27 / 12:44 | 6:57 | 6:08 |
+
+Baseline runs are `39524695228` and `39526526870`; first partition run is
+`39528328681`. All use ubuntu-24.04 and Go 1.27.2 with unchanged SDK source.
+Runner/cache conditions vary, so these are feedback-time observations rather
+than normalized speedup ratios. The two Go partition runs give repeated evidence
+for its shorter critical path. Final runtime/native-matrix and compiler groups
+also passed; no additional split is needed to shorten this measured critical path.
+Individual full-provider compatibility compilation budgets are unchanged.
+
+Final review covered every changed workflow/script and their callers: discovered
+test selection, local aggregate ownership, fuzz/example inclusion, missing/overlap
+and completion rejection, final matrix-result gating, and report replacement on
+retry. Core Go, representative consumer/declaration groups, five partition/coverage
+tests, shell syntax, actionlint 1.7.12 and mocked release/CI-reuse tests passed.
+The official source-tag plan/resume contract replaces the deleted local converter;
+annotated tag commit identity, exact npm tag and immutable plan artifact/digest
+bindings were reviewed. Source-tag creation and delivery are excluded by the user's
+explicit no-publication instruction; only the real read-only plan was exercised.
+
+The final record changes no SDK, test runner, workflow or release configuration.
+No pre-existing user edits were present. Unit commits were made directly on `main`
+and pushed without a PR or merge commit. `git diff --check` passed, and the final
+delivery includes only this completion record after the verified configuration.
