@@ -390,3 +390,23 @@ checker는 각 project와 최종 consumer 직전에 기존 최대 12 GiB·가용
 1 GiB 작다. `narrow-project-tool-tests`는 실제 isolated declaration flag를 포함한 JS/native
 compiler, ownership·public negative·오류 전파 검사를 통과했다(22.20초). 이 검사는 작은
 fixture의 도구 검증이며 Graph 성공 증거와 구분한다.
+
+## W06 native 전체 생성과 직렬 cold 빌드
+
+`graph-go-native-final-generation`은 실제 native generator·server addon·product publisher로
+1,336.35초에 완료됐다. peak session RSS는 8,415,866,880바이트다. 최종 manifest는
+285,344 artifact이며 원본 659,664개보다 줄었다. sorted frozen replay의 219,063개와
+구분한다. native 순서에서 `models`는 55,485파일, `schemaimpl/p10`은 1,070파일이며
+같은 replay는 각각 31,471개·645개다. bounded group flush는 입력 순서의 영향을 받는다.
+
+`graph-go-native-final-cold-compile-1`은 새 GOCACHE·Go 1.27.2·CGO=0·GOMAXPROCS=4·
+soft heap 6 GiB·`-p=1 ./api/...`로 실행했다. 9,264 MiB RSS 예산에서 3,600.45초
+시간 초과로 끝났다. peak session RSS는 9,507,672,064바이트이며 RSS 보호 종료가 아니다.
+Go 전체 compile 성공은 아직 확보하지 못했다. compiler 관측은 큰 schema package 뒤
+model implementation의 `p249`까지 진행했으며 전체 package 완료 수로 집계하지 않는다.
+
+같은 실행의 GOFLAGS·GOEXPERIMENT·GOOS·GOARCH·GOAMD64·GOGC override가 없음을
+실제 Go process에서 확인했다. 환경 전체나 자격증명은 저장·출력하지 않았다.
+큰 implementation을 먼저 직렬 빌드하고 작은 implementation을 제한 병렬 처리한 뒤
+전체 root를 빌드하는 추가 스케줄 진단은 `execution-policy.md`에 사전 기록했다.
+아직 실행·채택한 결과가 아니며 기존 timeout을 성공으로 바꾸지 않는다.
