@@ -69,6 +69,12 @@ GOFLAGS·GOEXPERIMENT는 비우고 linux/amd64·GOAMD64=v1·GOGC=100을 명시�
 새 경로의 채택 여부와 최종 반복 조건은 실제 결과 뒤에 고정하며 source ownership,
 defined PkgPath·공개 서명·runtime·전체 Graph 성공 기준은 그대로 적용한다.
 
+첫 warm 스케줄 진단은 당시 가용 RAM에 따른 8,550 MiB hard 상한에서 model compiler
+세 개가 동시에 약 2.7~2.9 GB RSS를 사용하며 보호 종료됐다. 다음 continuation은 동일
+source·cache·스케줄·Go 옵션을 유지하되 최소 11 GiB hard budget이 확보될 때만 시작한다.
+최대 12 GiB·가용 RAM−2 GiB 정책과 3,600초 상한은 유지한다. 20분 안에 시작 조건이
+충족되지 않으면 child를 시작하지 않는다. 두 실행 모두 warm 진단이며 cold 표본이 아니다.
+
 ### Native TS root profile 진단
 
 public root project가 25분 넘게 약 8.9 GB RSS와 높은 CPU를 유지하며 diagnostics를
@@ -129,6 +135,17 @@ flat fixture의 factory·registry 파일별 semantic 진단이 각각 오류 없
 hard budget과 기존 2 GiB 가용 RAM 여유를 확보한 경우에만 시작하며 240초를 수집한다.
 12 GiB hard 최대치·source/strict 옵션은 그대로다. CLI 실행이나 최종 반복 조건으로
 자동 채택하지 않으며 가능한 실제 semantic 완료와 profile 수집 완료를 별도 기록한다.
+
+heap 10 GiB에서도 GC 비중이 높고 semantic 호출이 240초에 끝나지 않으면 추가 heap-only
+반복은 하지 않는다. helper 파일의 원본 복제와 nested `Routes` lookup만 `Readonly` view로
+감싼 복제, request-section lookup만 감싼 복제, 둘을 감싼 복제를 비교한다. 원본 958개
+source·기존 declaration은 수정하지 않고 source 하나만 더한 diagnostic config/owner를
+별도로 만든다. 같은 strict·soft heap 6 GiB·120초·최소 8 GiB RSS 조건을 사용하며,
+각 profile·owner·source hash·진단을 보존한다. generic 관계와 실제 Graph 효과가 모두
+확인되기 전에는 제품에 적용하거나 최종 성능·전체 source 성공으로 취급하지 않는다.
+네 복제의 비교는 같은 11 GiB RSS 상한을 확보한 경우에만 직렬 시작한다. 시작 전
+20분 동안 조건이 충족되지 않으면 child를 시작하지 않는다. 이 상한은 기존 최대
+12 GiB·가용 RAM−2 GiB 정책 안이며 공통 soft heap 6 GiB와 source/strict 강도는 같다.
 
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),

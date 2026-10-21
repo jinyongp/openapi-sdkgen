@@ -475,3 +475,38 @@ hash, 실패·중단 결과를 모두 보존한다. API의 checker pool 경로�
 마지막 파일의 SHA-256은 `32384dde486c33c59c5695505f4c951c3009c6d7e50589cb5b18d0ea92cbf161`이다.
 큰 파일은 connector가 본문을 반환하지 않아 동일 commit의 raw 원본을 읽었다.
 packaged binary의 `+dirty`를 이유로 source와 binary가 완전히 같다고 가정하지 않는다.
+
+`graph-ts-flat-api-route-helpers-run`은 owner 일치·두 profile 판독까지 완료했다
+(136.85초, 최대 RSS 7,290,998,784바이트). `routes/helpers.ts` 한 파일의 semantic
+호출은 120초에 끝나지 않았으며 background GC가 CPU의 71.16%였다. 파일까지 비용을
+좁혔지만 어느 별칭인지와 section index의 채택 여부는 아직 확정하지 않는다.
+
+작은 generic probe는 직접 nested lookup을 조건부 `infer` lookup이나 별도 mapped
+view로 대체하는 두 후보를 조사했다. 공통 필드 접근은 통과했으나 기존
+`Routes[Route]["input"]`에서 새 generic 별칭으로 전달하는 방향이 TypeScript 5.9.3의
+TS2322로 실패했다. 리터럴·union 값이 비슷해도 generic 관계를 보존하지 못하므로
+둘을 제품에 적용하지 않았다. 원본 probe·실패 결과를 보존한다.
+
+## W06 warm 스케줄 진단의 자원 종료
+
+`graph-go-native-final-staged-warm-diagnostic`은 이전 timeout cache를 이었다.
+큰 schema package 두 개는 cache로 완료했고 model implementation family를 `-p=3`,
+compiler soft heap 2 GiB로 진행하다 871.73초에 RSS 보호 종료됐다. 당시 실제 hard
+상한은 8,550 MiB, 관측 peak는 8,972,869,632바이트다. 마지막 sample의 세 compiler는
+`modelsimpl/p337`, `p340`, `p345`이며 각각 약 2.7~2.9 GB RSS였다. source 크기만으로
+compiler RSS를 예측할 수 없음을 보여 준다. 이 실행은 compile 성공이나 cold 표본이 아니다.
+후속 continuation의 최소 headroom을 정책에 먼저 고정했으며 실제 결과로 채택을 판단한다.
+
+`graph-ts-flat-api-program-10g-run`도 두 profile 수집과 owner 확인을 완료했다
+(255.78초, 최대 RSS 10,994,176,000바이트). semantic 호출은 240초에 끝나지 않았고
+background GC는 CPU 표본의 70.17%, 유지 heap은 8,509.14 MiB였다. 다른 구간 길이와
+진행 상태의 profile이므로 앞의 6 GiB 실행과 속도 개선율을 계산하지 않는다.
+추가 heap-only 반복보다 helper 표현의 분리 조사를 우선한다.
+
+`projection-generic-homomorphic-probe`는 기존 object를 그대로 유도하는 `Readonly`와
+`Pick` view의 공통 필드 및 generic 양방향 전달을 통과했다(TypeScript 5.9.3, 1.05초).
+이는 필요한 작은 호환성 검사이며 제품 채택이나 Graph 성능 개선의 증거가 아니다.
+원본 helper를 복제한 control과 두 lookup 종류에 각각/함께 `Readonly`를 쓴 네 개의
+진단 source를 별도 경로에 준비했다. 원래 958개 source hash는 전부 일치했고 각 config는
+그 source와 probe 하나만 소유한다(`owner-attribution-probe-preparation`, 1.45초).
+원본 SDK·기존 declaration은 수정하지 않았다. 실제 비교 실행과 공개 계약 검사는 아직 남았다.
