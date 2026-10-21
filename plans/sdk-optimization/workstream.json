@@ -13,6 +13,7 @@
     "execution_policy": "execution-policy.md",
     "execution": "execution.md",
     "section_index_decision": "section-index-decision.md",
+    "source_check_boundaries": "source-check-boundaries.md",
     "raw_preflight": "measurements/2026-10-21/preflight.tar.gz"
   },
   "task_ids": {

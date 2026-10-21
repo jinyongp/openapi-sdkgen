@@ -89,6 +89,7 @@ def check(args):
               'compilerVersion': package['version'], 'files': plan['files'], 'projects': len(plan['groups']),
               'freshBuildInfo': True, 'strictOptions': strict, 'results': results}
     result['removeDeclarationComments'] = args.remove_declaration_comments
+    result['usageConsumers'] = {str(file.resolve()): digest(file.resolve()) for file in args.usage_consumer}
 
     def trial(name, argv, owned_sources=None):
         remaining = args.timeout - (time.monotonic() - started)
@@ -130,6 +131,26 @@ def check(args):
         consumer = output / 'consumer'
         subprocess.run([args.node, str(HERE / 'public-consumer.mjs'), 'prepare', str(declarations),
                         str(args.reference.resolve()), str(consumer)], check=True, cwd=ROOT)
+        for index, template in enumerate(args.usage_consumer):
+            code = template.read_text()
+            replaced = 0
+            for marker, target in {'__SDK_ROOT__': 'index.js', '__SDK_WEBHOOKS__': 'server/webhooks.js', '__SDK_CALLBACKS__': 'server/callbacks.js'}.items():
+                quoted = json.dumps(marker)
+                if quoted not in code:
+                    continue
+                if code.count(quoted) != 1:
+                    raise ValueError('each usage import marker must occur exactly once')
+                relative = os.path.relpath(declarations / target, consumer).replace(os.sep, '/')
+                code = code.replace(quoted, json.dumps(relative))
+                replaced += 1
+            if not replaced or '"__SDK_' in code:
+                raise ValueError('unknown/missing usage import marker')
+            usage = consumer / f'public-usage-{index}.mts'
+            usage.write_text(code)
+            config_path = consumer / 'tsconfig.json'
+            config = json.loads(config_path.read_text())
+            config['files'].append(str(usage))
+            dump(config_path, config)
         trial('public-consumer', [*command, '-p', str(consumer / 'tsconfig.json'), '--pretty', 'false'])
         verify_sources()
         result['status'] = 'pass'
@@ -154,6 +175,7 @@ def main():
     parser.add_argument('--timeout', type=float, default=3600)
     parser.add_argument('--remove-declaration-comments', action='store_true',
                         help='omit comments only from scratch checking declarations; original SDK remains unchanged')
+    parser.add_argument('--usage-consumer', type=Path, action='append', default=[], help='additional independently justified public usage fixture; repeatable')
     args = parser.parse_args()
     if args.node_heap_mib > args.max_rss_mib - 1024 or args.timeout <= 0:
         parser.error('heap must leave at least 1 GiB RSS headroom; timeout must be positive')

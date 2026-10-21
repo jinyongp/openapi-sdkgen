@@ -15,11 +15,11 @@ if(loaded.error)throw Error(ts.flattenDiagnosticMessageText(loaded.error.message
 const parsed=ts.parseJsonConfigFileContent(loaded.config,ts.sys,path.dirname(config));
 if(parsed.errors.length)throw Error('configuration diagnostics: '+parsed.errors.length);
 if(parsed.options.noCheck||parsed.options.skipLibCheck||!parsed.options.strict)throw Error('strict configuration required');
-phase('configuration',{compiler:ts.version,rootFiles:parsed.fileNames.length});
+phase('configuration',{compiler:ts.version,rootFiles:parsed.fileNames.length,projectReferences:parsed.projectReferences?.length||0});
 ts.performance.enable();
 phase('program-start');
-const program=ts.createProgram(parsed.fileNames,parsed.options);
-phase('program-created',{sourceFiles:program.getSourceFiles().length});
+const program=ts.createProgram({rootNames:parsed.fileNames,options:parsed.options,projectReferences:parsed.projectReferences});
+phase('program-created',{sourceFiles:program.getSourceFiles().length,declarationFiles:program.getSourceFiles().filter(file=>file.isDeclarationFile).length});
 const syntactic=program.getSyntacticDiagnostics();phase('syntactic',{diagnostics:syntactic.length});
 program.getTypeChecker();phase('bound');
 const diagnostics=ts.getPreEmitDiagnostics(program);

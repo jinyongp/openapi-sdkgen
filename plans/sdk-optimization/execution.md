@@ -234,8 +234,35 @@ incremental metadata는 매번 새로 만들며 이전 성공 캐시를 사용�
 
 도구 행동 검사는 JS/native compiler 모두에서 SCC·nominal symbol identity·전체 public
 map을 검사하고, 내부 TS2322·변경/추가 source·augmentation·기존 output 재사용을 거절한다.
-초기 두 fixture 기대값 오류와 수정 후 결과도 삭제하지 않는다. W05의 네 compiler/
-실험군/server profile 분류와 W08의 최종 전체 strict 성공은 아직 별도 필수 작업이다.
+초기 두 fixture 기대값 오류와 수정 후 결과도 삭제하지 않는다. 이후의 W05 실험군/
+server profile 분류는 아래 결과로 갱신하며 W08의 최종 전체 strict 성공은 계속 필수다.
+
+W05 진단을 추가 완료했다. R을 다시 생성한 186,448개 artifact hash는 원래 기준선과
+전부 같다. A는 187,198파일, B는 186,936파일, 최종 AB는 187,686파일,
+실제 Graph의 AB-server는 187,748파일이다. 각 native 생성물의 publisher manifest와
+전체 strict config의 source 집합이 정확히 일치한다. R/B의 5.9.3, AB의
+5.7.3/5.9.3/6.0.3, AB-server의 네 compiler를 추가 실행했다. 새 strict trial 9개 중
+8개는 Node heap 부족, server TS7은 RSS 보호 종료다. AB의 이전 최종 source TS7 실패도
+보존한다. A의 앞선 5.9.3 및 원래 네 compiler 실패는 해당 당시 예산/consumer로 남긴다.
+예산은 직전 가용 RAM에 따라 달라졌으므로 timing 개선율이나 동등 예산 승률을 계산하지 않는다.
+
+JS 새 consumer는 원래 29,581 route/ID와 literal 연결·legacy call map 외에 실제 Graph
+user 모델, 생성 request/response, query/body/parameter helper, union/never와 잘못된 입력을
+사용한다. 타입 성공은 아직 확인하지 못했다. server export를 직접 사용하는 추가 probe도
+W08의 최종 profile에 포함한다. C는 `section-index-decision.md`의 근거로 미채택이며
+없는 C variant를 실행 또는 성공으로 집계하지 않는다.
+
+32 MiB/reference 진단의 16번 project를 5.9.3 API로 다시 관측했다. 실제 project reference
+15개와 1,848개 owner source에서 program 37,988파일(그중 declaration 36,140파일)을
+구성했다. program 구성 31.76초/RSS 4.97 GB, binding 37.99초/RSS 6.13 GB까지 완료한 뒤
+전체 diagnostics 수집에서 heap 부족으로 종료됐다. 이 구간은 semantic 검사 전후의
+옵션/전역/선언 진단도 포함하므로 특정 predicate나 개별 파일을 CPU hotspot으로 확정하지
+않는다. raw source 구성을 못 마친 이전 단일 프로젝트 실패와는 다른 관측이다.
+
+`w05-verified-summary.json`은 실제 compiler identity·실패 원인·canonical strict·전체
+source 집합·R hash 동일성과 위 phase 결과를 다시 대조한 결과다. 전체 Graph pass는
+여전히 0이다. 다음 최소 후보와 유지할 계약은 `source-check-boundaries.md`에 정리했다.
+W05는 실패 분류와 W08의 실행 경로 확보로 완료하며 AC-TS-FULL을 통과 처리하지 않는다.
 
 ## W06 최종 sink의 안전한 선언 묶기
 

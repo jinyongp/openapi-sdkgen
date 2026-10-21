@@ -36,10 +36,19 @@ try {
   assert.ok(owner.get("calls.ts") <= owner.get("index.ts"));
   const reference = path.join(temp, "reference.json");
   fs.writeFileSync(reference, JSON.stringify({ routes: ["GET /one"], operations: ["one"], operationRoutes: { one: "GET /one" } }));
+  const usage = path.join(temp, "usage.mts");
+  fs.writeFileSync(usage, 'import type { Client } from "__SDK_ROOT__";\nexport function pick(client: Client): keyof Client["$operations"] {\n// @ts-expect-error unknown route\nclient.$routes["GET /missing"];\nreturn "one";\n}\n');
   const check = (fixture, name, compiler = "typescript-5-9", removeComments = false) => run("python3", [path.join(here, "check-projects.py"), "--node", process.execPath,
     "--plan", fixture.plan, "--output", path.join(temp, name), "--reference", reference,
-    "--compiler", path.join(root, "test/typescript/node_modules", compiler, "lib/tsc.js"), "--timeout", "120", ...(removeComments ? ["--remove-declaration-comments"] : [])]);
+    "--compiler", path.join(root, "test/typescript/node_modules", compiler, "lib/tsc.js"), "--timeout", "120", "--usage-consumer", usage, ...(removeComments ? ["--remove-declaration-comments"] : [])]);
   let result = check(good, "good-check"); assert.equal(result.status, 0, result.stdout + result.stderr);
+  const trace = path.join(temp, "reference-phases.jsonl");
+  result = node("trace-ts-phases.mjs", "typescript-5-9", path.join(temp, "good-check/configs/2.json"), trace);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const phases = fs.readFileSync(trace, "utf8").trim().split("\n").map(JSON.parse);
+  assert.ok(phases[0].projectReferences > 0);
+  assert.ok(phases.find((phase) => phase.phase === "program-created").declarationFiles > 0);
+  assert.equal(phases.find((phase) => phase.phase === "checked").diagnostics, 0);
   result = check(good, "native-check", "typescript"); assert.equal(result.status, 0, result.stdout + result.stderr);
   result = check(good, "commentless-check", "typescript-5-9", true); assert.equal(result.status, 0, result.stdout + result.stderr);
   result = check(good, "good-check"); assert.notEqual(result.status, 0, "must reject existing outputs/build info");
