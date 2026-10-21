@@ -15,6 +15,7 @@ type semanticModulePlan struct {
 	schemaPrograms            *schemaRuntimePlan
 	operationSchemas          map[string]operationSchemaPlan
 	runtimeComposition        runtimeComposition
+	registryModules           []registryModulePlan
 	schemas                   []schemaModulePlan
 	operations                []operationModulePlan
 	resources                 []resourceModulePlan
@@ -85,6 +86,7 @@ func buildSemanticModulePlan(document *ir.Document, reservations Manifest, manif
 	if err := result.planSelective(manifest); err != nil {
 		return nil, err
 	}
+	prepareRegistryModules(result, manifest, registryChunkSize)
 	if err := result.validate(); err != nil {
 		return nil, err
 	}

@@ -63,7 +63,7 @@ Go 1.27.2, server 포함 전체 `./api/...`, CGO=0·GOWORK=off·GOMAXPROCS=4,
 정책으로 기준 compile을 시도했다. 255.71초에 RSS 보호가 작동했고 관측 최대치는
 9,665,454,080바이트다. 미완료 실패로 보존하며 최종 W09/W11 성공 기준은 유지한다.
 원시 phase/profile·최종 파일 hash·기본/대형 AST inventory·실패 compile은 모두
-`.tmp/sdk-optimization-execution/graph-go-*`에 있다. runtime 기준 표본은 아직 진행 전이다.
+`.tmp/sdk-optimization-execution/graph-go-*`에 있다. runtime 기준 표본은 아래에서 보완했다.
 
 Go runtime 최초 실행은 URL benchmark의 세 기대값에서 실패했다. 현재 제품은
 URI/IRI 문법을 구분하지만 benchmark는 IRI 사례에서 Unicode 허용 인자를 생략했고,
@@ -125,3 +125,25 @@ gzip 485,978→451,989바이트다. fresh Node module 초기화 10쌍의 geometr
 `.tmp/sdk-optimization-execution/{closure-paired,closure-provider-size-2,graph-closure-startup,graph-ts-closure-*}`에 있다.
 동일 Graph 초기화의 timing 이후 GC로 측정한 retained heap 중앙값도
 24,792,424→23,876,064바이트로 감소했다. B/op·HTTP ns/op 결과로 해석하지 않는다.
+
+## W03a registry의 단계별 청크
+
+512개를 넘는 registry는 현재 256 operation 단위의 준비 모듈과 ID 등록 모듈을 사용한다.
+작은 SDK의 기존 경로는 유지한다. 청크는 자기 base/pagination/stream 값을 closure로
+보관하고 한 개의 `PreparedRegistryChunk` 계약을 구현한다. Root는 모든 base 준비 후
+모든 Link 연결, 모든 decoration, 정렬 route 등록, public 노출, 정렬 ID/Link 등록 순으로
+실행한다. 완료 map은 client마다 하나이고 Link closure들이 같은 map을 참조한다.
+ID 정렬은 route 청크 순서와 별도 계획하여 Go의 기존 key 순서를 유지한다.
+
+공개 호출 map과 내부 완료 map은 기존 Routes/OperationRoutes의 mapped view로 유도한다.
+모듈 경로는 준비 단계에서 collision 검사에 등록하고, actual root의 retained operation만
+해당 모듈에 방출한다. named union에서 root가 private로 쓰는 route를 공개하지 않는다.
+리뷰 중 private-only 청크에서 불필요한 CallableRegistry import가 생기는 문제를 수정했다.
+
+700 일반 operation과 300 private Link chain, 경계를 넘는 Link 순환·ID 없는 route·hidden·
+Unicode/숫자/`__proto__`/`constructor` 키를 실제로 생성·strict compile·실행했다.
+full 및 private/named root에서 정렬 map·callable identity·두 client 격리·Link 실행·stream·
+pagination과 잘못된 호출 거절을 확인했다. deterministic 재방출도 같다.
+실제 고정 GitHub 전체 source와 기준 public/negative consumer는 네 compiler 모두 pass다.
+원시 결과는 `registry-chunk-behavior-4`, `registry-github-*`에 있다.
+청크 128/256/512 비교와 대형 공개 타입 분할, full Graph 평가는 이어지는 W03/W05에 남는다.

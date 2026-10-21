@@ -13,6 +13,9 @@ func emitClientRegistry(document *ir.Document, manifest Manifest, plan *semantic
 	if plan == nil {
 		return nil, fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
+	if usesRegistryModules(manifest, plan) {
+		return emitChunkedRegistry(manifest, plan, links, streams)
+	}
 	artifact := plan.fixed["client-registry"]
 	callables, err := plan.relativeModuleSpecifier(artifact, "internal/runtime/http/request/request-execution-types.ts")
 	if err != nil {

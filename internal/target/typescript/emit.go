@@ -845,6 +845,9 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 	if err := write(Artifact{Path: plan.modules.fixed["client-registry"], Data: generatedSource(registrySource)}); err != nil {
 		return err
 	}
+	if err := emitRegistryModulesTo(document, manifest, plan.modules, plan.links, plan.streams, write); err != nil {
+		return err
+	}
 	constantsSource, err := readRuntimeTemplate("constants.ts")
 	if err != nil {
 		return err
