@@ -17,7 +17,7 @@ Arguments follow the command name directly; a devtools separator is unnecessary.
 ```txt
 devtools run build:dev
 devtools run test:dev
-devtools run ci:dev [go|typescript-runtime|typescript-tools|compiler VERSION]
+devtools run ci:dev [go|go-core|go-consumers SHARD COUNT|typescript-generator|typescript-runtime|typescript-matrix|typescript-tools|compiler VERSION [all|consumers|declarations]]
 devtools run check:dev
 devtools run sdk:generate INPUT OUTPUT [TARGET]
 devtools run check:generate INPUT [TARGET] [-- GENERATOR_OPTIONS...]

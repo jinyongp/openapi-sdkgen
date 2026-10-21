@@ -91,18 +91,30 @@ work starts. Prefer the default command for routine work.
 CI suite boundaries follow execution cost and dependencies rather than directory
 count. Each suite runs its necessary checks once. Mutable outputs belong to one
 execution; only prepared artifacts with matching inputs can be shared for reads.
-The Go suite runs source checks and Go tests. The TypeScript runtime suite owns
-the complete emitted runtime matrix (`TestRuntimeFeatureNativeMatrixRegression`),
-so that matrix runs once alongside runtime conformance checks. Each compiler job
-runs its version of the strict source and declaration consumer matrix
-(`TestRuntimeFeatureDeclarationMatrixRegression`). Both matrices are excluded
-from the Go suite. `test:dev` still runs every Go test across all compilers.
+`ci:dev go-core` owns source checks, tests outside the two generator packages,
+and the Go generation-check integration. `ci:dev go-consumers SHARD COUNT`
+discovers runnable Go-target tests with `go test -list`, then distributes their
+sorted names round-robin. CI runs four disjoint shards; the final gate verifies
+their combined inventory and completed test records, including newly added tests.
+Each shard preserves timing data under `.tmp/ci-tests`. Test-result caching is
+disabled for these measured CI groups; Go compilation caches remain available.
+The extra runners trade additional setup and total runner work for shorter waits.
+
+`ci:dev typescript-generator` owns the other TypeScript generator tests.
+`ci:dev typescript-runtime` owns runtime conformance, while `ci:dev typescript-matrix`
+owns `TestRuntimeFeatureNativeMatrixRegression`. Each compiler version has separate
+`consumers` and `declarations` groups; the latter owns its exact
+`TestRuntimeFeatureDeclarationMatrixRegression` subtest. No matrix is repeated by
+the other groups. `ci:dev go` composes the three Go-test groups locally, and
+`ci:dev all` adds runtime, native matrix, tools and all compiler groups.
+`test:dev` still runs every Go test across all compilers.
 
 `test:dev` uses a 20-minute timeout per Go test package, including the cumulative
 cost of compiling and running generated SDK consumers. Pass `-timeout=...` to
 override it for a local run. Generated Go consumer tests retain their 45-second
-test timeout and one-minute subprocess deadline. The Go CI job allows 30 minutes
-for setup, source checks, tests, and diagnostics; other suite budgets are unchanged.
+test timeout and one-minute subprocess deadline. Each CI suite/shard allows
+15 minutes including setup; each compiler group allows 10 minutes. The test
+coverage gate requires all groups and inventories to succeed.
 
 ## Release documentation review
 
