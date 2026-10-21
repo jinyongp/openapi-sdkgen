@@ -1,11 +1,59 @@
 package typescript
 
 import (
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	sdkgen "openapi-sdkgen/internal/compiler"
 )
+
+func TestSchemaModulesTypecheckRecursiveFixedPropertyIndex(t *testing.T) {
+	for _, test := range []struct{ name, property, components string }{
+		{"direct", `{"$ref":"#/components/schemas/Node"}`, ""},
+		{"nested", `{"type":"array","items":{"$ref":"#/components/schemas/Node"}}`, ""},
+		{"mutual", `{"$ref":"#/components/schemas/Other"}`, `,"Other":{"type":"object","properties":{"node":{"$ref":"#/components/schemas/Node"}},"additionalProperties":{"type":"string"}}`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			document, err := sdkgen.Compile([]byte(fmt.Sprintf(`{
+"openapi":"3.1.1","info":{"title":"Recursive fixed property","version":"1"},
+"paths":{"/nodes":{"get":{"operationId":"getNodes","responses":{"200":{"description":"Node","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Node"}}}}}}}},
+"components":{"schemas":{"Node":{"type":"object","required":["value"],"properties":{"value":{"type":"string"},"next":%s},"additionalProperties":{"type":"string"}}%s}}
+}`, test.property, test.components)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			compileTypeScriptArtifactsWithProbe(t, document, "recursive-fixed.probe.ts", `
+import type { Input, Output } from './internal/schemas/node.js';
+const input: Input = {value:'input',extra:'allowed'};
+const output: Output = {value:'output',extra:'allowed'};
+output.value = 'mutable';
+// @ts-expect-error input properties stay readonly
+input.value = 'changed';
+// @ts-expect-error declared properties keep their exact type
+const wrongProperty: Input = {value:42};
+// @ts-expect-error unrelated additional values stay rejected
+const wrongAdditional: Input = {value:'ok',extra:true};
+// @ts-expect-error required properties stay required
+const missing: Input = {};
+void input;void output;void wrongProperty;void wrongAdditional;void missing;
+`)
+		})
+	}
+}
+
+func TestRuntimePerformanceFixtureTypechecks(t *testing.T) {
+	input, err := os.ReadFile("../../../scripts/perf/golang/runtime-fixture.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := sdkgen.Compile(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compileTypeScriptArtifacts(t, document)
+}
 
 func TestSchemaModulesTypecheckRecursiveJSONValue(t *testing.T) {
 	document, err := sdkgen.Compile([]byte(`{

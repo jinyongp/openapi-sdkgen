@@ -630,13 +630,19 @@ func objectIndexHasSelfReference(document *ir.Document, schema map[string]any, s
 	if scope.ownerComponent == "" {
 		return false
 	}
-	if schemaReferenceTargetsComponent(document, schema["additionalProperties"], scope.ownerComponent, make(map[string]bool)) {
+	seen := make(map[string]bool)
+	if schemaReferenceTargetsComponent(document, schema["additionalProperties"], scope.ownerComponent, seen) {
 		return true
 	}
-	patterns, _ := schema["patternProperties"].(map[string]any)
-	for _, value := range patterns {
-		if schemaReferenceTargetsComponent(document, value, scope.ownerComponent, make(map[string]bool)) {
-			return true
+	// Fixed property types also participate in the index-value union. A self
+	// reference there needs the same deferred index syntax as additional or
+	// pattern properties, including nested and mutually recursive properties.
+	for _, keyword := range []string{"properties", "patternProperties"} {
+		properties, _ := schema[keyword].(map[string]any)
+		for _, value := range properties {
+			if schemaReferenceTargetsComponent(document, value, scope.ownerComponent, seen) {
+				return true
+			}
 		}
 	}
 	return false
