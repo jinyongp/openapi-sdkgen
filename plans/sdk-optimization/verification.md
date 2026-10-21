@@ -53,3 +53,48 @@ Go 재현은 package 변수 `seen`, `mark(value)` 함수, `var A=mark("A")`, `va
 첫 패스에서 pack 위치 누락, validator 공유의 재분할 영향, Graph 기존 명령의 검사 미실행, references 성공의 불확실성을 찾아 계획에 반영했다. 두 번째 패스는 변경된 설계·의존성·수용 기준을 함께 대조했다. 구현 전에 측정으로 확정할 D03/D04와 조건부 채택을 계획에 명시했으며 이를 검증 완료나 사용자 확정 SLA로 바꾸지 않았다.
 
 마지막 문서·등록 정합성 검사에서 저장된 spec/plan 본문, task·validation ID, 요구사항·수용 기준·의존성을 대조해 통과했다. 문서 inventory·ID shape·credential 미포함 검사도 통과했다. Git 범위와 commit 후 재확인 결과는 W00의 현재 devtools validation record에 남긴다. 미래 제품 작업과 workstream 전체는 완료 처리하지 않는다.
+
+## 후속 선행 조사와 계획 보완
+
+최신 결과는 `preflight.md`, 원시 근거는
+`measurements/2026-10-21/preflight.tar.gz`다. 최초 W00 기록과 새 실행 결과를 구분한다.
+`4251698`은 내부 측정·audit 도구 12파일의 단위 리뷰·회귀 검사 후 만든 커밋이다.
+제품 `cmd`/`internal`은 바꾸지 않았다.
+
+| 확인 | 실제 결과 | 한계 |
+| --- | --- | --- |
+| v2 재검산 | manifest 5,921파일·완료 235명령·98,204 source reference hash 일치 | 합성 결과이며 제품 86 matrix는 blocked |
+| recorder 행동 | 최종 5개 검사 pass | 정상·오류·signal·timeout·자식 RSS·별도 process group 중단·blocked nonzero |
+| Go audit / TS inventory | 무시/init/변수/directive 등 7 Go subcase, AST/config/SCC/no-check 거절 pass | audit는 pack 구현이 아님 |
+| JS 의미 | own keys·descriptor·reference·prototype·UTF-8 반례 pass | 후보 제품 구현의 parity 검사는 별도 |
+| Graph TS 소스 | 186,448파일·2,358,735,553 B, manifest/hash 대조 누락·추가·불일치 0 | helper resource omission 1,208개는 기존 계약 |
+| Graph TS strict 네 compiler | JS 세 버전 heap 부족, native RSS 보호 종료 | 완료 0/4, public consumer 전체 검사 미완료 |
+| 실제 작은 TS consumer | todo positive 4/4, negative TS2339 거절 4/4 | Graph/전체 named·선택 계약의 대체 근거가 아님 |
+| 기존 재귀 타입 오류 | 원래 fixture와 축소 입력 모두 TS2456 4/4 재현 | 별도 W01R 선행 수정, 현재 제품 코드 미수정 |
+| Go corpus compile 기준 | 과거 CI 38/38의 제품 소스·manifest·현재 입력 pin 일치 | correctness만 재사용, candidate 성능 증거 아님 |
+| Graph Go 전체 생성 | 900.68초 timeout, peak 6,411,071,488 B | 완성 출력 없음, full compile·전체 pack 후보율 not-run |
+| 실제 작은 Go SDK | server 포함 생성·전체 package compile·AST audit pass | 173파일·21 package의 국소 결과 |
+| 선행 보완 통합 검사 | `GOTOOLCHAIN=go1.27.2 GOMAXPROCS=4 devtools run ci:dev go-core` exit 0 | 534 pass·4 기존 opt-in 성능 skip. fmt/vet/mod·partition·Go generation-check 포함 |
+| 원시 보관 | 281파일·53 trial, 포함 파일 SHA-256 전부 일치 | 대형 생성 트리·closure/file inventory는 로컬 경로와 digest만 보존 |
+
+이번 범위의 통합 리뷰는 다음 전체 영역을 대조했다.
+
+| 영역 | 상태 | 확인·후속 조건 |
+| --- | --- | --- |
+| v1/v2 주장·원시·기존 CI 재사용 | reviewed | 소급 복원·제품 수치 승격 없음, 38곳 표현 수정 |
+| runner·실패·tool identity | reviewed | FieldList 출력·자식 중단·입력 부재·SCC 최대값 수정 후 caller와 회귀 재검증 |
+| 실제 TS 구조·계획 | reviewed | closure 비용 실측, 큰 공개 타입 파일 추가, W01R의 correctness 기준 갱신 의존성 |
+| Go 영향·실험 경계 | reviewed | EmitTo와 실제 게시 구분, full 생성 timeout을 compile 실패로 오인하지 않음 |
+| 기록·검사·소스 범위 | reviewed | 원시 archive 검산·core 검사·제품 소스 동일성 확인. 변경은 내부 도구·계획·재현 입력 |
+| 제품 구현 준비도 | incomplete | W01의 Go 단계/GC 진단·최종 inventory·계약 경로·runtime 정책, W01R 수정 필요 |
+
+이 통합 리뷰는 선행 조사·도구·계획 보완 범위다. 제품 최종 W11 통합 리뷰를 실행했거나
+W01 이후 수용 기준을 통과했다고 기록하지 않는다. W01은 남은 조건과 다음 동작을
+현재 정의에 checkpoint하고 미완료로 유지한다. W00 계획 검증만 새 정의에서 갱신한다.
+
+보완 정의는 revision 1974에 원자적 preview→저장했다. 새 W01R과 전용 validation을
+추가해 13 task·14 validation·7 requirement·13 acceptance가 됐다. TS W02/W03/W04의
+선행 조건은 W01R로 연결했고 Go W06/W07은 W01을 유지했다. revision 1976에서
+spec/plan 본문·전체 ID·의존성·문서 inventory·원시 archive와 결과 해석을 다시 대조해
+pass였다. workstream check는 `valid=true`, `issues=[]`, `closable=false`다. 마지막
+변경 범위·staged/unstaged `diff --check`와 commit 결과는 현재 validation record에 남긴다.

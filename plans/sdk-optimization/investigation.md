@@ -34,7 +34,7 @@
 | TS Graph 186,448개·약 2.36 GB | 저장된 CI 보고서에 186,448개, 2,358,735,553 B, 29,581 operation, omission 0, helper omission 1,208이 있다. | 해당 고정 입력과 측정 commit의 생성 결과로 확인된다. |
 | 약 857 MB로 축소 가능 | ZIP에 Graph closure별 membership·바이트 분포 및 모델 계산 원본이 없다. | 검증되지 않은 바이트 모델. 목표나 예상 실측값으로 확정하지 않는다. |
 | Go 477,701개·약 3.20 GB | `plans/golang-target/w11-performance.md`의 과거 생성 측정과 일치 | 현재 full Graph 컴파일 성공 근거가 아니다. |
-| Go 38개 제공자 검증 | `test/compatibility/ci/golang-results.json.gz`는 38/38, Go 1.27.2, server 포함, compile pass를 기록 | 기존 기준의 근거는 있다. 후보 구현의 새 검증은 필요하다. |
+| Go 38개 corpus 문서 검증 | `test/compatibility/ci/golang-results.json.gz`는 38/38, Go 1.27.2, server 포함, compile pass를 기록 | 실제 API 문서 29개와 fixture 9개다. 제공자 38곳으로 해석하지 않는다. 후보 구현의 새 검증은 필요하다. |
 
 ## 현재 CI의 의미
 
@@ -60,6 +60,47 @@ registry·section 실험 원시 결과, validator ns/op 원시 출력, 실제 40
 
 새 조사에서 첨부 성능 수치를 재측정했다고 주장하지 않는다. 정확한 툴체인의 현재 회귀 검사와 작은 의미 보존 재현을 실행하고, 대형 성능 검증은 구현 작업의 명시적 완료 조건으로 남긴다.
 
+### v2 보완 자료 재검토
+
+후속 ZIP `openapi_sdkgen_optimization_complete_v2.zip`의 SHA-256은
+`2df012da5fc9fb621738578aab1c0573bee973a4c7dc6de5ec377cee96735b64`다.
+위의 원본 자료 누락 지적은 최초 자료에 관한 기록이다. v2는 재현 가능한 합성
+근거를 보강하고, 원본이 없는 정밀 수치와 857 MB 제품 예측을 철회했다.
+
+독립 verifier에서 manifest 파일 5,921개, 완료 명령 기록 235개, source reference
+98,204개의 hash 연결이 맞았다. 완료 명령은 pass 234개와 예상한 TS6202 negative
+1개이며, 중단된 TS 표본 1개는 성공으로 집계하지 않았다. 네 설치 compiler의
+작은 emitter-shaped baseline/candidate 총 8개 조합도 직접 통과했다.
+
+| v2 실측 | 검산 결과 | 제품 결정에 남는 한계 |
+| --- | --- | --- |
+| TS wire / registry / section | 중앙값 3.065→1.58 s / 3.98→2.445→2.2 s / 1.58→1.41 s | 실제 Graph 측정이 아닌 합성 입력 |
+| Go validator / file pack | build 1.77→0.28 s / SDK-cold 0.665→0.475 s | 실제 generated IR 중복률·최종 package 분포 미측정 |
+| validator runtime 10쌍 | paired ratio 중앙값 0.9874, bootstrap 95% 구간 0.9665~1.1139 | +5% 비열등성을 입증하지 못함 |
+| JS map 10회씩 | 57.9824→77.1950 ms, retained bytes 동일 | map 조립 비용 증가를 제품 실측으로 확인해야 함 |
+| 작은 emitter-shaped 결과 | 4,052→4,950 B, +898 B | 단순 공유가 net bytes 감소를 보장하지 않음 |
+| 실제 제품 matrix 86개 | 모두 `not_run_blocked` | TS 8개, Go corpus 76개, 별도 Graph Go 2개. 합성 성공으로 대체할 수 없음 |
+
+v2 도구에서는 실제 반례 세 가지를 확인했다. packer가 `_ignored.go`를 활성 파일과
+합쳐 duplicate symbol을 만들었고, Go 버전 사전 확인은 1.27.2여도 실행 환경은
+`GOTOOLCHAIN=local` 때문에 1.27.3이 될 수 있었다. 실제 실행 matrix가 전부
+blocked여도 최상위 프로세스는 exit 0이었다. 당시 기록 235개에는 후에 추가된
+`command_file_artifacts`와 실행별 toolchain digest 필드도 없다.
+
+외부 runner/packer를 제품 경로로 가져오지 않는다. W01의 작은 내부 진입점은 같은
+실패를 nonzero로 기록하고, 확인한 Go 바이너리를 그대로 실행하며, 무시되는 파일을
+audit 대상의 안전한 병합 후보에서 제외한다. 원본 첨부를 수정한 것으로 주장하지
+않는다. Go의 무시 파일 규칙은 [공식 go 명령 문서](https://pkg.go.dev/cmd/go#hdr-Package_lists_and_patterns)와 일치한다.
+Project References의 declaration 경계는 [공식 문서](https://www.typescriptlang.org/docs/handbook/project-references.html)에 따르되 실제 Graph SCC와 public consumer의 완료 가능성은 별도 실측한다.
+
+W01의 실제 기준 조사와 남은 착수 조건은 `preflight.md`에 기록한다. v2의 합성
+실험을 다시 제품 개선율로 승격하지 않는다.
+
+후속 실제 작은 SDK 검사에서는 재귀 고정 property와 additionalProperties가 함께 있는
+기준 출력의 TS2456을 네 compiler에서 확인했다. 축소 입력을 `probes/recursive-property.json`에
+보존했고 원인을 `types.go`의 property index union과 재귀 감지 경계까지 추적했다.
+이 기존 정확성 문제는 W01R에서 성능 후보와 분리해 먼저 수정하도록 계획했다.
+
 ## 구조와 영향 범위
 
 ### TypeScript: dependency 사실과 출력 표현 분리
@@ -72,6 +113,13 @@ registry·section 실험 원시 결과, validator ns/op 원시 출력, 실제 40
 4. Go가 부여한 ordinal로 merge하고 `Object.fromEntries` 또는 동등한 own data property 생성으로 map을 만든다. `Object.assign({}, shared, delta)`와 재정렬은 사용하지 않는다. 중복 ordinal/key를 계획 단계에서 거부한다. `Object.keys`의 정수형 키 우선 규칙도 baseline과 비교한다.
 5. registry는 전체 base 단계 완료 → links 단계 → decoration 단계 → route/ID/link 정렬 등록 순서를 유지한다. 단계 사이 typed state는 한 번 선언한다. 청크별 mapped type, operation마다 별도 넓은 object shape, 반복 intersection을 늘리지 않는다.
 6. section index는 route뿐 아니라 operation ID, exact/resource identity, resource `path` 제외, generic union·`never`·일반 `PropertyKey`의 현재 의미까지 보존한다. 공개 shape 정의는 canonical 계약에서 파생한다.
+
+W01 실물 inventory에서는 단일 파일 크기가 client/types 42,655,818 B,
+registry 39,808,834 B, routes/index 36,506,796 B, selective/types 33,439,373 B였다.
+따라서 함수 분할과 별개로 대형 공개 타입 계약의 내부 모듈 분할을 W03에 추가했다.
+import SCC는 44개가 순환이며 가장 큰 순환은 35파일·328,670 B다. 바이트가 가장 큰
+SCC는 위 client/types 한 파일이다. checker 타입 인스턴스의 SCC를 측정한 결과는
+아니며, references 도입만으로 큰 public consumer 비용이 해결된다고 판단하지 않는다.
 
 영향: execution module 계획·파일 이름·fingerprint, selective/static/dynamic loader, named-client 공유, input/output wire schema 객체, 공개 Routes/Operations helper, bundler import graph, server addon, incremental manifest. `selective_modules.go`의 generation hash는 출력 변화에 맞게 갱신되어야 하며 이전 fingerprint를 고정하지 않는다. 서로 다른 generation provider 혼용 거절과 현재 ABI를 재검증한다.
 

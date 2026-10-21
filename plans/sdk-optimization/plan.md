@@ -1,12 +1,12 @@
 # SDK 대형 출력 최적화 실행 계획
 
-상세 근거: `investigation.md`. 상태: 조사·계획 등록, 제품 구현 착수 전.
+상세 근거: `investigation.md`, `preflight.md`. 상태: W01 선행 조사·측정 경로 보완, 제품 최적화 구현 착수 전.
 
 ## 완료 계약
 
 - 고정 Graph beta의 29,581 operation, 현재 공개 API·wire·검증·오류·선택 경계와 기존 helper omission 계약을 유지한다.
 - TS 5.7.3/5.9.3/6.0.3/7.0.2 각각 생성 소스 전체와 전체 공개 consumer를 strict 검사한다. 잘못된 호출도 실제로 거절한다. `skipLibCheck`, `noCheck`, `@ts-nocheck`, broad `any` 추가, 일부 모듈 제외로 성공을 만들지 않는다.
-- Go 1.27.2에서 기존 server 포함 38개 제공자와 Graph를 구분해 생성·컴파일·실행 증거를 남긴다. Graph 실패는 별도 실패이며 38개 성공으로 상쇄하지 않는다.
+- Go 1.27.2에서 기존 server 포함 corpus 문서 38개(실제 API 문서 29개·fixture 9개)와 Graph를 구분해 생성·컴파일·실행 증거를 남긴다. Graph 실패는 별도 실패이며 38개 성공으로 상쇄하지 않는다.
 - 성능 이득은 동일 입력·도구·옵션·자원·캐시 경계의 실측으로 판단한다. 추정 바이트 절감과 합성 결과는 제품 완료 근거가 아니다.
 - 각 작업은 범위 리뷰 → 원인 수정 → 영향받은 caller·검사 재확인 → 남은 대상 전수 리뷰 → 해당 작업만 커밋한다. 마지막 W11에서 통합 리뷰루프를 수행한다. push·release·배포는 이 계획의 완료 조건에 포함하지 않는다.
 
@@ -16,8 +16,8 @@
 | --- | --- | --- | --- |
 | D01 | 기준 제품 `5ada624`, Graph SHA `46bead9a…daec`, 동일 옵션·operation·helper omission을 기준으로 한다. 실행 시 새 HEAD라면 관련 diff와 basis를 재확인한다. | W00 확정, W01 provenance 재고정 | 전체 |
 | D02 | 기본 툴체인과 무관하게 Go 1.27.2, Node `.node-version`, 현재 고정 compiler 네 개를 명시한다. | W01 실제 binary version·hash | 모든 측정 |
-| D03 | 자원 예산은 기존 CI runner 안에서 정한다. 제안: 검사 tree RSS 상한 `min(12 GiB, 실제 RAM/cgroup 상한 - 2 GiB)`, TS checker 60분, Go build 60분, serial full-provider, TS7 singleThreaded. 디스크·inode·cgroup·runner 여유를 W01에서 확인하여 manifest에 확정한다. 기준/후보의 상한을 동일하게 적용한다. | W01 사전 smoke. 더 큰 유료 runner나 호스트 설정 변경은 별도 결정 | full-scale 실행 |
-| D04 | 성능 채택에는 재현 가능한 compile/size 이득과 correctness가 모두 필요하다. 제안 hot-path 경고선 +5%는 사용자 확정 요구가 아니다. W01에서 기존 benchmark 분산으로 허용 폭을 정하고 W07/W09 측정 전에 기록한다. 불확실하거나 회귀가 일관되면 공유를 채택하지 않는다. | W01 정책 문서, W07/W09 판단 | 성능 기본 적용 |
+| D03 | 이번 로컬 smoke는 생성 900초, checker·Go build 각 600초, owned session RSS 합 8 GiB, Node heap 7 GiB, GOMAXPROCS=4, TS7 singleThreaded, heavy trial 직렬 실행으로 고정한다. 중단·heap 부족은 이 예산에서의 미완료 결과다. 최종 CI는 runner 가용 RAM/cgroup·2 GiB 여유를 확인하고 별도 manifest에 최대 60분 예산을 사전 고정한다. | W01 `preflight.md`; local과 CI 예산을 섞은 개선율 금지. 유료 runner·호스트 변경은 별도 결정 | full-scale 실행 |
+| D04 | correctness·전체 compile 성공을 필수로 하고, 반복 paired 결과와 불확실성을 함께 판단한다. +5%는 runtime 추가 조사 경고선이며 SLA가 아니다. 15% 같은 임의 최소 이득을 통과 gate로 만들지 않는다. 실제 runtime 기준 분산과 허용 폭이 확정되기 전에는 W07 공유를 기본 적용하지 않는다. v2 합성 runtime 95% ratio 상한 1.1139는 비열등성 미입증이다. | W01 정책·남은 gate, W07/W09 실제 runtime 판단 | 성능 기본 적용 |
 | D05 | closure는 exact 재사용을 유지하고 projection별 부분집합 base+delta부터 구현한다. 수익 없는 공유·전역 superset·쌍별 전수 교집합은 사용하지 않는다. | W01 분포·비용표 → W02 bounded 알고리즘 | W02 |
 | D06 | map의 own key 순서·descriptor reference·prototype과 동일 closure map 재사용을 보존한다. Go ordinal merge, key 중복 거절을 사용한다. | W02 특수 키·projection·dynamic parity | W02 |
 | D07 | registry의 단계 순서와 callable identity를 보존한다. state 타입은 한 개이며 청크 크기는 bounded statement/byte 비용으로 비교한다. 공개 경로는 유지한다. | W03 128/256/512 operation 상당 후보와 cross-chunk Link | W03 |
@@ -26,12 +26,14 @@
 | D10 | Go 파일 묶기는 최종 package 배치 뒤 공통 sink 앞에 둔다. safe 파일의 명시적 기준·import binding·flush/failure 규약을 먼저 정의한다. 64/128/256 KiB는 후보, 새 public 옵션은 기본적으로 추가하지 않는다. | W06 의미 검사·고정 이름·증분 변경 실측 | W06 |
 | D11 | validator는 기존 view 공유 뒤 남은 동일 의미만 대상으로 한다. helper 공유가 partition 배치·type identity를 옮기면 고정 배치 안의 공유로 제한하거나 보류한다. | W07 symbol→package 비교·runtime parity | W07 적용 |
 | D12 | fingerprint/manifest 해시는 실제 새 출력과 일치하게 바꾼다. ABI 불변이면 기존 ABI 사용, provider 혼용 거절은 계속 검사한다. 이전 generator로 되돌려 재생성하는 복구 경로를 보장한다. | W02/W06 단위, W10 통합 | 배포 자료 갱신 |
+| D13 | registry 함수만 나누면 남는 대형 타입 파일도 별도로 다룬다. 실제 Graph의 client/types 42.66 MB·routes/index 36.51 MB·selective/types 33.44 MB를 canonical named 계약과 bounded 내부 모듈로 나누는 후보를 검증한다. 공개 Client·RouteCalls·Routes/ID의 literal·generic·declaration 소비를 유지하며 public facade로 연결한다. | W03 별도 단위, W05/W08 전체 checker·consumer | TS 구조 최적화 완료 |
+| D14 | 재귀 property와 추가 속성 index union의 기존 TS2456은 성능 후보와 분리해 먼저 해결한다. `objectIndexHasSelfReference`가 additional/pattern만 검사하고 고정 property에서 union에 들어온 self 참조를 놓친다. canonical input/output 계약과 허용·거절 의미를 유지하는 최소 표현 수정을 별도 커밋한다. | W01R의 축소 사례·네 compiler·기존 재귀 검사 | W02/W03/W04 |
 
 D03/D04는 측정 전 확정할 실험 정책이다. 임의 숫자를 이미 합의된 제품 SLA로 취급하지 않는다. D05/D07/D08/D10/D11은 아래 선행 측정과 조건부 채택으로 해결한다. public API·선택 범위·검사 강도·정의 패키지를 바꾸는 방향은 자동 결정하지 않는다.
 
 ## 검증 하네스와 측정 방법
 
-W01에서 기존 SSOT 스크립트에 최적화 실험 전용 진입점을 추가한다. 명령 이름과 인자는 `devtools command list/inspect`로 확인하고 필요한 항목만 등록한다. 아래 `ci:dev`·`compilers:verify`·`golang:perf`는 현재 존재하는 명령이며, 새로운 Graph full strict 명령이 이미 존재한다고 가정하지 않는다.
+W01의 `preflight:perf`는 고정 Go binary 실행, 실패 nonzero, source/binary/input hash와 자원 보호를 제공한다. 사용법과 한계는 `scripts/perf/sdk-optimization/README.md`에 있다. `prepare-ts.mjs`가 생성 소스 전체를 명시하고 strict 옵션을 재사용한다. source 검사 성공 뒤 별도 public/negative consumer가 필요하다. 기존 CI의 Graph generation-only 정책은 이 실험 경로와 구분한다.
 
 각 trial manifest는 source commit/dirty diff hash, generator binary hash, input/reference/selection hash, addons, compiler binary와 버전, tsconfig hash, Go/Node/CGO·GOMAXPROCS·메모리 정책, cache 상태, 시간 제한, artifact 수·바이트·해시, exit/signal/timeout/protection 원인과 원시 로그 위치를 기록한다. baseline은 현재 동작을 그대로 사용한다.
 
@@ -47,29 +49,39 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 ### W00 — 조사·결정·workstream 계획 확정
 
-첨부 모든 영역, 현재 코드·기존 작업·CI provenance, 의미 보존 재현과 기존 검사 결과를 정리한다. `investigation.md`, 이 계획, 검증 기록, workstream ID 대응을 커밋한다. 구조 검사와 요구사항→수용 기준→작업→검증 연결을 읽어 되확인한다. 현재 요청의 완료 단위다. 제품 구현 작업들은 미완료로 남긴다.
+첨부 모든 영역, 현재 코드·기존 작업·CI provenance, 의미 보존 재현과 기존 검사 결과를 정리한다. `investigation.md`, 이 계획, 검증 기록, workstream ID 대응을 커밋한다. 구조 검사와 요구사항→수용 기준→작업→검증 연결을 읽어 되확인한다. 최초 조사·등록 단위이며 후속 증거로 계획이 바뀌면 현재 정의에서 재검증한다. 제품 구현 작업들은 미완료로 남긴다.
 
 ### W01 — 고정 입력 기준선과 동등성·자원 측정 경로 확보
 
-선행 W00. 경로: `scripts/compat-benchmark`, `scripts/perf`, `scripts/verification`, `.github/scripts`, `test/compatibility`, 필요한 `devtools.toml` 선언. 기존 Graph generation-only 결과를 보존하면서 실험 전용 full strict 경로를 추가한다. 실제 closure membership/바이트 분포, Go 최종 package별 파일·bytes·symbol placement를 수집한다. 현재 38개 제공자와 Graph 원본 pins를 고정한다. D02~D05 정책·측정 예산과 고비용 실행 중단 조건을 기록한다.
+선행 W00. 경로: `scripts/compat-benchmark`, `scripts/perf`, `scripts/verification`, `.github/scripts`, `test/compatibility`, 필요한 `devtools.toml` 선언. 기존 Graph generation-only 결과를 보존하면서 실험 전용 full strict 경로를 추가한다. 실제 closure membership/바이트 분포, Go 최종 package별 파일·bytes·symbol placement를 수집한다. corpus 문서 38개와 별도 Graph 원본 pins를 고정한다. D02~D05 정책·측정 예산과 고비용 실행 중단 조건을 기록한다.
+
+작업을 세 단계로 검토한다. W01a는 runner 오류 교정·회귀 재현·도구 provenance, W01b는 실제 Graph 기준 검사·출력 분포·Go 안전 후보율, W01c는 전체 public/negative·선택 경계·reflection/error identity 계약과 runtime 판단 정책이다. 단계별 결과와 미완료 조건을 `preflight.md`에 남긴다. 기준선 실패 자체는 측정 결과이며, 검사 누락·불명확한 종료·누락된 계약은 W01 완료가 아니다. W01a 커밋만으로 후속 최적화 작업을 ready 처리하지 않는다.
+
+이번 full Go 생성은 900초에 완료되지 않았다. 다음 W01b 진단은 compile/prepare/emit/format/partition/publish와 GC 비용을 나눠 관측하고 renderer의 최종 sink audit와 실제 디스크 게시를 구분한다. compiler의 6 GiB 정책을 생성 예산으로 자동 복사하지 않는다. 완성된 출력이 없으면 Graph compile not-run과 전체 pack 후보율 미측정을 유지한다.
 
 검증: 작은 실제 SDK로 성공·실제 타입 오류·timeout·signal·보호 종료·로그 부재를 구분한다. 전체 source inventory의 누락 0, 잘못된 consumer 거절, process tree RSS와 parent 포함 범위를 확인한다. 기존 `ci:dev go-core`, 관련 verification 도구 검사와 새 하네스 행동 검사를 수행한다. 리뷰루프 후 `test(perf): establish pinned SDK optimization baselines` 상당 단위 커밋.
 
+### W01R — 기존 재귀 property 타입 오류의 선행 수정
+
+선행 W01. 경로: `internal/target/typescript/types.go`, `recursive_type_regression_test.go`, `plans/sdk-optimization/probes/recursive-property.json`. W01 smoke에서 네 compiler 모두 기존 runtime fixture의 Input/Output에 TS2456을 냈다. 추가 속성의 index union에 고정 property의 self 참조가 포함되지만 재귀 index 감지는 additional/pattern만 확인하는 원인을 추적했다. 변경은 출력 표현의 재귀 합법성과 기존 타입 의미를 함께 보존해야 한다. 성능 후보의 회귀로 잘못 분류하지 않는다.
+
+검증: 축소 사례와 원래 runtime fixture를 네 compiler에서 전체 source strict 검사한다. input readonly/optional·output mutable·known property·unknown additional key·mutual/nested recursion·pattern/composition에 대한 허용/거절 consumer와 기존 재귀 검사를 유지한다. `ci:dev typescript-generator` 및 관련 compiler consumer를 실행한다. 리뷰루프 후 독립 correctness 커밋을 만들고 이 소스를 이후 성능 비교의 새 공통 기준으로 재고정한다. 현재 조사에서는 제품 코드를 수정하지 않았다.
+
 ### W02 — TypeScript projected closure 부분 공유
 
-선행 W01. 경로: `execution_plan.go`, `execution_schema_modules.go`, `execution_modules.go`, `selective_modules.go`, 관련 plan·loader tests. exact closure 공유를 보존하고 이득이 입증된 subset base+delta를 계획한다. ordinal·projection·deterministic artifact identity를 canonical 계약으로 둔다. planner 시간·메모리도 측정한다.
+선행 W01R. 경로: `execution_plan.go`, `execution_schema_modules.go`, `execution_modules.go`, `selective_modules.go`, 관련 plan·loader tests. exact closure 공유를 보존하고 이득이 입증된 subset base+delta를 계획한다. ordinal·projection·deterministic artifact identity를 canonical 계약으로 둔다. planner 시간·메모리도 측정한다.
 
 검증: 빈/단일/동일/부분 겹침/분리 집합·순환·dynamic ref·input/output·Unicode/특수 키, own key 순서·descriptor 동일성·동일 closure map 재사용·선택 import graph subset·두 client 격리. 실제 schema parse/validate 허용·거절과 media 경계를 검사한다. static/dynamic/named/Link consumer, bundler JS/gzip, source strict 네 compiler, deterministic 재방출과 fingerprint 혼용 거절을 재확인한다. 기존 exact emission 문자열 검사는 행동 계약에 맞춰 갱신한다. 리뷰루프 후 `perf(typescript): factor projected execution schema closures`.
 
-### W03 — registry 단계별 함수와 canonical state 타입
+### W03 — registry 단계별 함수와 대형 공개 타입 계약 분할
 
-선행 W01. 경로: `client_registry.go`, 관련 client/Link/selection tests. 전체 base → links → decoration → 정렬 등록의 단계와 request/client별 state 수명을 보존한다. 청크·stage 사이 값의 타입은 하나의 canonical 계약과 utility/indexed view로 표현한다. 공개 Routes/ID 반환 literal을 유지한다.
+선행 W01R. 경로: `client_registry.go`, `client_modules.go`, `route_modules.go`, `selective_modules.go`, 관련 client/Link/selection/declaration tests. W03a는 전체 base → links → decoration → 정렬 등록 단계와 request/client별 state 수명을 보존하며 bounded 함수를 만든다. 청크·stage 사이 값의 타입은 하나의 canonical 계약과 utility/indexed view로 표현한다. W03b는 42.66 MB client 타입, 36.51 MB routes index, 33.44 MB selective 타입의 큰 익명 shape·반복 literal 연결을 canonical named 계약과 내부 모듈로 분리한다. exported facade와 정확한 route/ID literal을 유지한다. 각 단위를 따로 리뷰·측정·커밋하고 함수 분할만으로 전체 타입 비용이 해결됐다고 판단하지 않는다.
 
-검증: 청크 경계 양방향 Link·나중 target resolve·순환 Link, bind 정확히 한 번, callable·pagination·stream·route/ID identity, dependency-only·hidden·operation ID 없음, 특수 키와 공개 key 순서. source strict 네 compiler와 runtime 호출로 확인한다. named·선택 client 호출자도 재검사한다. 리뷰루프 후 `perf(typescript): bound callable registry binding stages`.
+검증: 청크 경계 양방향 Link·나중 target resolve·순환 Link, bind 정확히 한 번, callable·pagination·stream·route/ID identity, dependency-only·hidden·operation ID 없음, 특수 키와 공개 key 순서. source strict 네 compiler와 runtime 호출로 확인한다. 공개 Client/RouteCalls와 generic route/ID/helper에 대한 양방향 타입 호환, 잘못된 호출 거절, fresh declaration consumer, named·선택 client를 재검사한다. source 파일 크기와 checker 비용을 함께 비교하며, interface extends/intersection으로 부하가 이동하면 원인을 기록한다. 단위 리뷰루프 후 registry와 타입 계약 분할을 각각 커밋한다.
 
 ### W04 — request section index 효과와 타입 의미 검증
 
-선행 W01. 경로: `route_modules.go`, type helper/runtime consumer tests. route·ID·resource의 정확한 section 목록을 기존 canonical operation 계약에서 생성하는 후보를 비교한다. meaningful checker hotspot과 전체 비용 이득이 없으면 현행 계산을 유지하고 결정 기록만 남긴다.
+선행 W01R. 경로: `route_modules.go`, type helper/runtime consumer tests. route·ID·resource의 정확한 section 목록을 기존 canonical operation 계약에서 생성하는 후보를 비교한다. meaningful checker hotspot과 전체 비용 이득이 없으면 현행 계산을 유지하고 결정 기록만 남긴다.
 
 검증: path/query/header/cookie/body/querystring, body 없음·선택적 body, resource path 제외, hidden·dependency-only, union generic·never·PropertyKey, 잘못된 route·ID·section·parameter name 거절, request/response literal 보존. A/B와 C 추가 비용을 실제 입력으로 비교하고 bytes 증가·RSS·check time을 함께 판정한다. 리뷰루프 후 채택 구현 또는 보류 근거를 단위 커밋.
 
@@ -95,11 +107,11 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 선행 W05. W05가 전체 strict 성공이면 근거와 기존 사용법 유지 결정을 확정한다. 실패 시 public named declaration 계층으로 implementation 의존성을 끊고 실제 module SCC를 DAG로 묶는 최소 references 후보를 검증한다. 각 source의 소유 project는 정확히 하나이고 모든 source를 strict 검사한다. 거대 SCC·전체 public declaration consumer가 예산 안에 들어오는지도 확인한다.
 
-검증: clean `tsc -b --force` 상당 실행·declaration build·negative consumer·NodeNext/Bundler/CommonJS·isolated declarations, fresh clone에서 stale declaration 미사용, incremental 변경 전파와 error exit. 네 compiler와 root public consumer 모두 통과해야 한다. 현재 단일 프로젝트 source 소비나 설치·배포가 바뀌는 경우 구체적 호환안·실측과 결정을 먼저 기록한다. 미해결이면 실패 상태와 선택지를 보존하며 AC-GRAPH를 통과시키지 않는다. 리뷰루프 후 필요한 작은 구현 단위마다 커밋하고 최종 결정 커밋.
+검증: clean `tsc -b --force` 상당 실행·declaration build·negative consumer·NodeNext/Bundler/CommonJS·isolated declarations, fresh clone에서 stale declaration 미사용, incremental 변경 전파와 error exit. 네 compiler와 root public consumer 모두 통과해야 한다. 현재 단일 프로젝트 source 소비나 설치·배포가 바뀌는 경우 구체적 호환안·실측과 결정을 먼저 기록한다. 미해결이면 실패 상태와 선택지를 보존하며 AC-TS-FULL을 통과시키지 않는다. 리뷰루프 후 필요한 작은 구현 단위마다 커밋하고 최종 결정 커밋.
 
 ### W09 — Go 실제 제공자·Graph compile과 런타임 통합 검증
 
-선행 W06/W07. 정확히 같은 Go 1.27.2·입력·옵션·CGO·캐시·병렬도에서 기존 38개 제공자(server 포함)와 별도 full Graph를 재생성·컴파일한다. 실험 baseline/P/채택 V/P+V의 작은·큰 fixture 및 최종 candidate를 구분한다.
+선행 W06/W07. 정확히 같은 Go 1.27.2·입력·옵션·CGO·캐시·병렬도에서 기존 corpus 문서 38개(server 포함)와 별도 full Graph를 재생성·컴파일한다. 실험 baseline/P/채택 V/P+V의 작은·큰 fixture 및 최종 candidate를 구분한다. W01에서 소스 동일성이 확인된 과거 CI의 compile correctness만 재사용할 수 있다. 최적화 후 candidate와 성능 비교에는 새 증거가 필요하다.
 
 검증: public symbol·defined package·method set·reflect·JSON tag·error identity, JSON/XML/multipart/binary·stream ordering/cancel/close 소유권, 일반/named/selective/dynamic registry. 생성 시간·메모리·files/bytes·package count·`.a`·stripped/unstripped binary·cold/warm 소비자·runtime를 5회 비교한다. Graph timeout/OOM을 숨기지 않으며 full compile 통과가 남으면 AC-GO-FULL은 미충족이다. `ci:dev go-consumers 1 1` 및 기존 `golang:perf`의 해당 모드를 활용한다. 리뷰루프 후 원시 증거와 판단 커밋.
 
@@ -122,9 +134,10 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 ```mermaid
 flowchart TD
   W00 --> W01
-  W01 --> W02
-  W01 --> W03
-  W01 --> W04
+  W01 --> W01R
+  W01R --> W02
+  W01R --> W03
+  W01R --> W04
   W02 --> W05
   W03 --> W05
   W04 --> W05
@@ -138,7 +151,7 @@ flowchart TD
   W10 --> W11
 ```
 
-의존성은 입력·증거를 소비하는 관계다. W02/W03/W04, W06/W07의 독립성은 자동 병렬 실행 허가를 뜻하지 않는다. 공유 파일과 성능 측정 자원을 먼저 조정한다. subagent 사용은 별도 요청이 있을 때 결정한다.
+의존성은 입력·증거를 소비하는 관계다. W01R은 TS 최적화의 공통 correctness 기준을 만드는 작업이며 Go W06/W07의 선행 조건으로 추가하지 않는다. W02/W03/W04, W06/W07의 독립성은 자동 병렬 실행 허가를 뜻하지 않는다. 공유 파일과 성능 측정 자원을 먼저 조정한다. subagent 사용은 별도 요청이 있을 때 결정한다.
 
 기존 workstream `a853d451-82ec-4888-9670-e454521618a3`에는 Graph 경로·기존 계측 작업과 아직 active인 run이 있다. 본 계획은 새 최적화 scope이며 기존 작업과 서로 참조한다. 기존 Cloudflare 작업까지 선행 dependency로 묶거나 기존 claim을 takeover하지 않는다. 구현 전 해당 소유자와 겹치는 파일·검사 산출물 작업을 조정한다.
 
