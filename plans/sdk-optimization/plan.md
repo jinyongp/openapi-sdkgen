@@ -51,15 +51,19 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 첨부 모든 영역, 현재 코드·기존 작업·CI provenance, 의미 보존 재현과 기존 검사 결과를 정리한다. `investigation.md`, 이 계획, 검증 기록, workstream ID 대응을 커밋한다. 구조 검사와 요구사항→수용 기준→작업→검증 연결을 읽어 되확인한다. 최초 조사·등록 단위이며 후속 증거로 계획이 바뀌면 현재 정의에서 재검증한다. 제품 구현 작업들은 미완료로 남긴다.
 
-### W01 — 고정 입력 기준선과 동등성·자원 측정 경로 확보
+### W01 — 공통 측정 경로와 TypeScript 기준 계약 확보
 
-선행 W00. 경로: `scripts/compat-benchmark`, `scripts/perf`, `scripts/verification`, `.github/scripts`, `test/compatibility`, 필요한 `devtools.toml` 선언. 기존 Graph generation-only 결과를 보존하면서 실험 전용 full strict 경로를 추가한다. 실제 closure membership/바이트 분포, Go 최종 package별 파일·bytes·symbol placement를 수집한다. corpus 문서 38개와 별도 Graph 원본 pins를 고정한다. D02~D05 정책·측정 예산과 고비용 실행 중단 조건을 기록한다.
+선행 W00. 공통 recorder·도구 identity·입력 pin·실패 분류와 TS 전체 source/import/closure inventory를 확보한다. 기존 Graph generation-only CI와 실험 strict 경로를 구분한다. 원본 Graph의 공개 route/operation ID 29,581개를 동결하고 public root의 전체 key 동등성 및 negative consumer를 검사할 실행 경로를 만든다. 기존 compiler/runtime·선택 import 경계 검사를 연결하고 작은 실제 SDK로 하네스를 확인한다. 정책은 `execution-policy.md`에 사전 고정한다. Go 최종 package inventory·생성 단계/GC·reflection/runtime 기준 측정은 W01G에서 완료한다.
 
-작업을 세 단계로 검토한다. W01a는 runner 오류 교정·회귀 재현·도구 provenance, W01b는 실제 Graph 기준 검사·출력 분포·Go 안전 후보율, W01c는 전체 public/negative·선택 경계·reflection/error identity 계약과 runtime 판단 정책이다. 단계별 결과와 미완료 조건을 `preflight.md`에 남긴다. 기준선 실패 자체는 측정 결과이며, 검사 누락·불명확한 종료·누락된 계약은 W01 완료가 아니다. W01a 커밋만으로 후속 최적화 작업을 ready 처리하지 않는다.
-
-이번 full Go 생성은 900초에 완료되지 않았다. 다음 W01b 진단은 compile/prepare/emit/format/partition/publish와 GC 비용을 나눠 관측하고 renderer의 최종 sink audit와 실제 디스크 게시를 구분한다. compiler의 6 GiB 정책을 생성 예산으로 자동 복사하지 않는다. 완성된 출력이 없으면 Graph compile not-run과 전체 pack 후보율 미측정을 유지한다.
+공통·TS 선행 작업과 Go 선행 작업의 완료 증거를 분리한다. TS 기준 strict 미완료는 실제 결과로 보존하며 최종 성공은 W08/W11에서 충족한다. Go의 미완료 선행 조건을 W01G로 옮겨 같은 수용 기준·전용 validation으로 추적한다. 검증을 삭제하거나 최종 Graph 성공 기준을 완화하지 않는다.
 
 검증: 작은 실제 SDK로 성공·실제 타입 오류·timeout·signal·보호 종료·로그 부재를 구분한다. 전체 source inventory의 누락 0, 잘못된 consumer 거절, process tree RSS와 parent 포함 범위를 확인한다. 기존 `ci:dev go-core`, 관련 verification 도구 검사와 새 하네스 행동 검사를 수행한다. 리뷰루프 후 `test(perf): establish pinned SDK optimization baselines` 상당 단위 커밋.
+
+### W01G — Go 생성·최종 package·런타임 기준 측정
+
+선행 W01. 원래 W01의 Go 선행 검증을 전부 수행한다. corpus 문서 38개와 Graph pin을 고정하고 compile/prepare/emit/format/partition/publish 및 GC 비용을 분리한다. compiler의 6 GiB 정책을 생성 heap 예산으로 자동 복사하지 않는다. 완성된 Graph 출력의 package별 files/bytes·safe pack 후보율·symbol→정의 package·public signature/tag/alias를 동결한다. 전체 생성이 중단되면 일부 stage를 전체 기준선으로 승격하지 않는다.
+
+검증: 기존 Go source/입력이 같은 38개 CI compile correctness는 재사용할 수 있다. 별도 Graph는 새 완성 출력으로 compile을 실제 시도하고 성공·timeout·메모리 보호·compiler 오류를 구분한다. 실제 partition/selected/named·reflection/error/media/cancel 계약과 runtime 기준 표본을 확보한다. 프로파일은 일반 timing과 분리한다. 실패 원인·자원 예산·raw evidence를 검토하고 단위 커밋한다. 후보의 최종 full Graph compile 성공은 W09/W11의 필수 조건으로 남는다.
 
 ### W01R — 기존 재귀 property 타입 오류의 선행 수정
 
@@ -93,13 +97,13 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 
 ### W06 — Go 최종 package 안의 안전한 파일 묶기
 
-선행 W01. 경로: `internal/target/golang/emit.go`, `partition.go`, 새 pack 계획/emit 코드, `internal/output` 관련 tests. final partition/import binding 이후 공통 artifact sink를 연결해 분할·비분할·operations·facade를 모두 처리한다. bounded buffering/flush, deterministic path, package별 실패 전파와 제외 파일 규칙을 구현한다. 최종 package membership은 변경하지 않는다.
+선행 W01G. 경로: `internal/target/golang/emit.go`, `partition.go`, 새 pack 계획/emit 코드, `internal/output` 관련 tests. final partition/import binding 이후 공통 artifact sink를 연결해 분할·비분할·operations·facade를 모두 처리한다. bounded buffering/flush, deterministic path, package별 실패 전파와 제외 파일 규칙을 구현한다. 최종 package membership은 변경하지 않는다.
 
 검증: safe/제외 파일 혼재·import alias 충돌과 local shadowing·iota·comment/directive·큰 단일 선언·empty package·상한 전후·non-Go artifact·final flush·sink fail. 기존 partition consumer의 public type/method/alias·reflect PkgPath·JSON tag를 비교한다. SDK에 operation 하나 추가/삭제, 반복 생성, 실제 stale 파일 제거·수정된 사용자 파일 충돌·write/rename failure rollback을 검사한다. 64/128/256 KiB와 기존 출력의 compile·RSS·증분 변경 폭을 측정한다. 리뷰루프 후 `perf(golang): pack safe declarations after package placement`.
 
 ### W07 — Go validator 공유의 실제 중복·identity·runtime 판단
 
-선행 W01. 경로: `plan_schema.go`, `plan_schema_views.go`, `templates/schema.go.tmpl`, runtime/schema·media tests. 이미 공유하는 view를 제외한 lowered 프로그램의 중복률과 바이트를 계량한다. Name·Program ID를 무작정 지우지 않고 동일 알고리즘·binding·direction·media·dialect만 후보로 만든다. 기존 placement가 바뀌면 고정 그룹 내 공유를 비교한다. 이득이 작거나 identity/runtime가 바뀌면 보류한다.
+선행 W01G. 경로: `plan_schema.go`, `plan_schema_views.go`, `templates/schema.go.tmpl`, runtime/schema·media tests. 이미 공유하는 view를 제외한 lowered 프로그램의 중복률과 바이트를 계량한다. Name·Program ID를 무작정 지우지 않고 동일 알고리즘·binding·direction·media·dialect만 후보로 만든다. 기존 placement가 바뀌면 고정 그룹 내 공유를 비교한다. 이득이 작거나 identity/runtime가 바뀌면 보류한다.
 
 검증: cancellation, recursion/no-progress, path·program identity, media ancestor·JSON no-media 경로, dynamic refs, evaluated-property/item, contentSchema, null/missing/default, 실제 오류 코드·순서·error assertion. schema-hot-path 및 HTTP micro/macro의 ns/op·B/op·allocs/op·GC를 반복 비교한다. 공유의 partition 이동과 caller export data까지 비교한다. 리뷰루프 후 채택 구현 또는 보류 ADR 커밋. codec 공통화·private 이름 축약·새 domain entry는 이 결과를 근거로 별도 제안하며 범위를 자동 확장하지 않는다.
 
@@ -134,6 +138,7 @@ Go: 생성 완료/정확성, package별 bytes/files·placement, `.a`, stripped/u
 ```mermaid
 flowchart TD
   W00 --> W01
+  W01 --> W01G
   W01 --> W01R
   W01R --> W02
   W01R --> W03
@@ -142,8 +147,8 @@ flowchart TD
   W03 --> W05
   W04 --> W05
   W05 --> W08
-  W01 --> W06
-  W01 --> W07
+  W01G --> W06
+  W01G --> W07
   W06 --> W09
   W07 --> W09
   W08 --> W10
@@ -151,7 +156,7 @@ flowchart TD
   W10 --> W11
 ```
 
-의존성은 입력·증거를 소비하는 관계다. W01R은 TS 최적화의 공통 correctness 기준을 만드는 작업이며 Go W06/W07의 선행 조건으로 추가하지 않는다. W02/W03/W04, W06/W07의 독립성은 자동 병렬 실행 허가를 뜻하지 않는다. 공유 파일과 성능 측정 자원을 먼저 조정한다. subagent 사용은 별도 요청이 있을 때 결정한다.
+의존성은 입력·증거를 소비하는 관계다. 공통 W01 뒤에 Go W01G와 TS W01R을 분리한다. 각 언어의 선행 증거를 해당 구현 작업에서 요구한다. 무거운 성능 trial은 직렬로 실행하고 공유 파일의 변경을 조정한다. subagent 사용은 별도 요청이 있을 때 결정한다.
 
 기존 workstream `a853d451-82ec-4888-9670-e454521618a3`에는 Graph 경로·기존 계측 작업과 아직 active인 run이 있다. 본 계획은 새 최적화 scope이며 기존 작업과 서로 참조한다. 기존 Cloudflare 작업까지 선행 dependency로 묶거나 기존 claim을 takeover하지 않는다. 구현 전 해당 소유자와 겹치는 파일·검사 산출물 작업을 조정한다.
 

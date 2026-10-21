@@ -48,6 +48,19 @@ file eligibility. Runtime reflection/error/initialization contracts and actual
 bounded packing remain W06/W09 work. Files beyond its 8 MiB parse cap leave the
 symbol inventory incomplete and must be inspected separately.
 
+`public-consumer.mjs freeze BASELINE_SDK REFERENCE` freezes the existing public
+route/ID/Link keys. `prepare CANDIDATE_SDK REFERENCE FRESH_OUTPUT` creates a consumer
+config containing every SDK source plus exact public key equality and negative
+route/ID assertions. The reference comes from the baseline, never the candidate.
+An absent Link surface stays absent. Existing compiler/runtime consumers still
+verify parameter/response and selection semantics.
+
+`profile-go` under this directory uses the real Go target and product publisher.
+It records compile, prepare, release of input state, emit and completed publication
+as separate checkpoints, with final package counts and file hashes. Its import root
+is `example.test/graph/api` and the server addon is enabled. Optional `-profile`
+writes intrusive CPU evidence; do not mix those times into ordinary paired samples.
+
 ```sh
 devtools run preflight:perf --output .tmp/sdk-preflight/recorder-tests -- python3 scripts/perf/sdk-optimization/record_test.py
 devtools run preflight:perf --output .tmp/sdk-preflight/go-audit-tests -- go test ./scripts/perf/sdk-optimization/audit-go
