@@ -29,6 +29,10 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		return fmt.Errorf("invalid Go source plan")
 	}
 	packer := newArtifactPacker(sink, packTargetBytes, packBufferBytes)
+	// Final native facades are generated artifacts even when partitioning has
+	// removed the original detached header comment. Existing user files never
+	// enter this sink; the publisher enforces their ownership independently.
+	packer.generatedArtifacts = true
 	packer.unsafeDirectories = make(map[string]bool)
 	packTemplates := make(map[string]string)
 	for _, file := range prepared.Files {

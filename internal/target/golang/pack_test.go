@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
+	"path"
 	"reflect"
 	"strings"
 	"testing"
@@ -94,21 +98,21 @@ func TestPackExclusionsAndExactImportGroups(t *testing.T) {
 	} {
 		t.Run(test.name+test.body, func(t *testing.T) {
 			artifact := packTestArtifact(t, "models/"+test.name, test.body)
-			if _, _, _, ok := packableArtifact(artifact, 4<<10); ok {
+			if _, _, _, ok := packableArtifact(artifact, 4<<10, false); ok {
 				t.Fatal("unsafe file became eligible")
 			}
 		})
 	}
 	a := packTestArtifact(t, "models/a.go", "import f \"fmt\"\nfunc A() string{return f.Sprint(1)}")
 	b := packTestArtifact(t, "models/b.go", "import fmt \"fmt\"\nfunc B() string{return fmt.Sprint(1)}")
-	ka, _, _, oka := packableArtifact(a, 4<<10)
-	kb, _, _, okb := packableArtifact(b, 4<<10)
+	ka, _, _, oka := packableArtifact(a, 4<<10, false)
+	kb, _, _, okb := packableArtifact(b, 4<<10, false)
 	if !oka || !okb || ka == kb {
 		t.Fatal("different import aliases shared a group")
 	}
 	b.Path = "other/a.go"
 	b.Data = a.Data
-	kb, _, _, _ = packableArtifact(b, 4<<10)
+	kb, _, _, _ = packableArtifact(b, 4<<10, false)
 	if ka == kb {
 		t.Fatal("different final packages shared a group")
 	}
@@ -214,5 +218,64 @@ func TestPackGroupLimitAndEmptyFlush(t *testing.T) {
 	}
 	if err := packer.finish(); err != nil || len(collector.artifacts) != packBufferGroups+10 {
 		t.Fatal("final singleton flush lost files", err)
+	}
+}
+
+func TestPackFinalMarkerlessFacadesPreservesDefinedPackage(t *testing.T) {
+	files := []partitionFile{
+		{artifact: packTestArtifact(t, "models/a.go", "type A struct { Value int `json:\"value\"` }\nfunc(a A) Number() int { return a.Value }\n")},
+		{artifact: packTestArtifact(t, "models/b.go", "type B int\n")},
+		{artifact: packTestArtifact(t, "models/c.go", "type C string\n")},
+	}
+	baseline := &artifactCollector{}
+	if err := partitionPackage(files, "example.test/consumer/api", "models", baseline, 4096); err != nil {
+		t.Fatal(err)
+	}
+	wantPackage := ""
+	var prepared []filePlan
+	for _, file := range baseline.artifacts {
+		node, err := parser.ParseFile(token.NewFileSet(), file.Path, file.Data, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, declaration := range node.Decls {
+			if declaration, ok := declaration.(*ast.GenDecl); ok {
+				for _, spec := range declaration.Specs {
+					if typ, ok := spec.(*ast.TypeSpec); ok && typ.Name.Name == "A" && !typ.Assign.IsValid() {
+						wantPackage = "example.test/consumer/api/" + path.Dir(file.Path)
+					}
+				}
+			}
+		}
+		prepared = append(prepared, filePlan{Path: file.Path, Source: "native-partition-output", Prepared: string(file.Data)})
+	}
+	if wantPackage == "" {
+		t.Fatal("baseline definition missing")
+	}
+	plan := generator.NewPlan("golang", sourcePlan{ImportPath: "example.test/consumer/api", Files: prepared})
+	packed, err := (Generator{}).Emit(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	modelFiles := 0
+	for _, file := range packed {
+		if path.Dir(file.Path) == "models" {
+			modelFiles++
+		}
+	}
+	if modelFiles != 1 {
+		t.Fatalf("native markerless facades bypassed packing: %d", modelFiles)
+	}
+	testGeneratedModule(t, plan, map[string]string{"facade_test.go": fmt.Sprintf(`package consumer_test
+import("reflect";"testing";"example.test/consumer/api/models")
+func TestFacadeIdentity(t *testing.T){
+ value:=models.A{Value:3};typ:=reflect.TypeOf(value)
+ if typ.PkgPath()!=%q || typ.Name()!="A" || typ.NumMethod()!=1 || typ.Field(0).Tag.Get("json")!="value" || value.Number()!=3 {t.Fatal(typ)}
+ var _ models.B=2;var _ models.C="value"
+}
+`, wantPackage)})
+	artifact := generator.Artifact{Path: "copyright.go", Data: []byte("// Copyright retained\npackage models\ntype Licensed int\n")}
+	if _, _, _, ok := packableArtifact(artifact, 4096, true); ok {
+		t.Fatal("native provenance discarded a header comment")
 	}
 }

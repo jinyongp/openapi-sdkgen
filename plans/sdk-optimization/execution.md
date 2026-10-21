@@ -323,3 +323,22 @@ route facade를 사용할 수 없게 한 상태로 strict 검사했다. 단순 s
 중단으로 기록했고 성공·timeout·제품 실패로 집계하지 않는다. 새 경로의 재실행에는 매 trial
 직전 `min(요청 상한, 12 GiB, 가용 RAM - 2 GiB)`를 적용한다. task context는 관측한
 이 workstream의 W05/W06/W07 run만 takeover해 workspace의 비공개 경로로 복구했다.
+
+## W06 실제 Graph에서 발견한 facade 제외 수정
+
+중단 후의 native replay는 659,664→369,519 artifact, 4,045,045,462→3,969,206,721바이트였다.
+전체 package cold compile은 5,883 MiB 예산에서 RSS 6,223,519,744바이트로 보호 종료됐다.
+package별 분포를 다시 보니 `models`의 181,927개 facade가 전혀 줄지 않았다.
+기존 partition facade는 detached generated header를 제거하므로 marker 필터가 모두 제외한
+원인이었다. 공통 sink 위치만으로 facade coverage가 입증되지 않는 실제 결함이다.
+
+native `EmitTo`와 동결 native 출력 replay에서만 생성 출처를 명시하도록 고쳤다. public
+파일·기존 사용자 파일은 publisher의 ownership 규약으로 분리하며 기존 파일을 packer에
+넣지 않는다. 생성 출처가 있어도 license/header comment·directive·init/var·ignored/platform
+파일 등 기존 제외 규칙은 유지한다. 단순히 모든 표식 없는 파일을 허용하지 않는다.
+
+`go-pack-facade-tests`는 실제 native partition의 표식 없는 facade를 사용해 native EmitTo가
+파일을 묶는지 확인했다. 원래 정의 package를 baseline AST에서 독립 동결하고 실제 Go
+consumer의 reflect PkgPath·type alias·method set·JSON tag·값 동작을 대조해 통과했다.
+수정된 원본/License header 보존·기존 pack 및 partition binding 회귀도 함께 통과했다.
+새 큰 replay·compile와 기본 target 크기 비교는 계속 필요하다.

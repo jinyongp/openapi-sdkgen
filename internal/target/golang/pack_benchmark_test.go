@@ -74,6 +74,9 @@ func BenchmarkPackFinalOutput(b *testing.B) {
 			count++
 			return sink.WriteArtifact(artifact)
 		}), target, packBufferBytes)
+		// The frozen manifest was produced by the native emitter, including
+		// markerless partition facades. No existing unmanaged file is replayed.
+		packer.generatedArtifacts = true
 		for _, file := range files {
 			data, err := os.ReadFile(filepath.Join(input, filepath.FromSlash(file)))
 			if err != nil {

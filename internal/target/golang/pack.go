@@ -44,6 +44,7 @@ type artifactPacker struct {
 	order                 list.List
 	inputs, outputs       map[[32]byte]struct{}
 	unsafeDirectories     map[string]bool
+	generatedArtifacts    bool
 	err                   error
 	peakBytes, peakGroups int
 }
@@ -70,7 +71,7 @@ func (p *artifactPacker) WriteArtifact(artifact generator.Artifact) error {
 	if p.unsafeDirectories[directory] || strings.HasPrefix(directory, "internal/modelsimpl/") && p.unsafeDirectories["models"] || strings.HasPrefix(directory, "internal/schemaimpl/") && p.unsafeDirectories["internal/schema"] {
 		return p.write(artifact, true)
 	}
-	key, header, body, ok := packableArtifact(artifact, p.target)
+	key, header, body, ok := packableArtifact(artifact, p.target, p.generatedArtifacts)
 	if !ok || len(artifact.Data) > p.limit {
 		return p.write(artifact, true)
 	}
@@ -157,9 +158,9 @@ func (p *artifactPacker) finish() error {
 	return nil
 }
 
-func packableArtifact(artifact generator.Artifact, target int) (string, []byte, int, bool) {
+func packableArtifact(artifact generator.Artifact, target int, generated bool) (string, []byte, int, bool) {
 	name := path.Base(artifact.Path)
-	if !strings.HasSuffix(name, ".go") || len(artifact.Data) > target || !bytes.HasPrefix(artifact.Data, []byte(generatedGoMarker+"\n")) {
+	if !strings.HasSuffix(name, ".go") || len(artifact.Data) > target || !generated && !bytes.HasPrefix(artifact.Data, []byte(generatedGoMarker+"\n")) {
 		return "", nil, 0, false
 	}
 	for _, component := range strings.Split(artifact.Path, "/") {
