@@ -260,3 +260,15 @@ buffer/group cap·큰 파일/비Go 전달·빈/final flush·반복 출력 검사
 모델/validator consumer를 다시 통과했다. 첫 trial의 CGO 설정과 충돌 fixture 오류는
 보존했다. 기본 크기 비교·실제 Graph 최종 inventory·publication 증분/rollback·전체
 corpus/Graph compile은 W06 후속/W09/W10에서 완료하며 이 단위 커밋만으로 통과 처리하지 않는다.
+
+실제 작은 SDK의 추가/삭제 operation을 native Generator→packer→publisher로 생성해
+incremental 교체·stale 제거·no-op `CheckManaged`·수정된 packed 파일 충돌·사용자 파일
+보존을 검사했다. `go-pack-publication-tests`가 pass다. generic publisher의 실제 write/
+rename failure rollback 검사는 최종 output suite에서 함께 확인한다.
+
+크기 후보 진단용 `BenchmarkPackFinalOutput`은 동결 publisher manifest의 각 artifact를
+해시 검증하고 native packer와 publisher로 replay한다. 절대 경로와 fresh output만
+허용한다. 작은 실제 입력 `go-pack-small-replay-2`는 174→128 artifact,
+1,649,027 output bytes·616,668 peak buffer bytes였다. 이 도구는 manifest 정렬 순서로
+replay하므로 실제 emitter 순서·전체 generation 성능·최종 채택 크기의 대체 근거가 아니다.
+큰 입력의 후보 진단 뒤 실제 최종 Generator 출력과 전체 compile을 별도로 검증한다.
