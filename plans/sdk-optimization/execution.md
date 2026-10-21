@@ -342,3 +342,23 @@ native `EmitTo`와 동결 native 출력 replay에서만 생성 출처를 명시�
 consumer의 reflect PkgPath·type alias·method set·JSON tag·값 동작을 대조해 통과했다.
 수정된 원본/License header 보존·기존 pack 및 partition binding 회귀도 함께 통과했다.
 새 큰 replay·compile와 기본 target 크기 비교는 계속 필요하다.
+
+## W07 lowered validator 중복의 실제 계량
+
+새 native AST 도구는 최종 package·정확한 import 집합·함수 서명·body를 비교하며 함수의
+선언 이름만 key에서 제외한다. Program ID·body의 binding/호출 이름·direction/media 경로는
+그대로 둔다. 기존 view wrapper는 lowered check body가 없으므로 중복 기회로 재집계하지 않는다.
+
+동결 Graph의 `internal/schemaimpl` 189,358파일에서 check validator 382,814개,
+body 382,088,702바이트를 조사했다. 모든 body에 Program identity guard가 있고,
+완전히 같은 bound body 중복은 0이다. Program을 지운 뒤 같은 함수라고 판정하면 이 결과를
+과장하게 된다. 별도 기회 계량은 visit.Program만 보존할 runtime 매개변수로 치환하며
+원래 exact hash와 함수/파일 예시를 따로 남긴다. 10,019개 묶음·138,736,336 반복 body
+바이트가 나왔다. 전체 4,045,045,462바이트 출력의 약 3.43%에 해당하는 기회 상한이며
+새 wrapper·인자·helper·배치 보존 비용을 뺀 절감량이나 성능 결과가 아니다.
+
+`validator-duplicate-tool-tests-2`는 같은 body의 서로 다른 Program ID와 다른 package를
+정확한 중복으로 합치지 않고 parameterized 기회만 별도로 집계함을 확인했다.
+원시 보고서는 `graph-validator-duplicates-schemaimpl.json`, recorder는
+`graph-validator-duplicates-schemaimpl`이다. V의 실제 채택/보류는 P의 전체 compile과
+이 비용·identity/runtime 경계를 함께 검토해 확정한다. 현재 validator 제품 코드는 같다.
