@@ -10,6 +10,40 @@ spec.loader.exec_module(module)
 
 
 class FinalContractTests(unittest.TestCase):
+    def test_only_exact_new_contracts_can_be_approved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline, candidate, first, second, allow = [root / name for name in ['baseline.jsonl', 'candidate.jsonl', 'first.json', 'second.json', 'allow.json']]
+            original = dict(path='internal/core/a.go', package='core', bytes=10, sha256='original', reasons=[], importKey='ctx "context"', definedTypes=['A'], publicSignatures={'A': 'A int'})
+            extra = dict(path='internal/core/b.go', package='core', bytes=20, sha256='extra', reasons=[], importKey='ctx "context"', definedTypes=['Binding'], publicSignatures={'Binding': 'Binding struct { Context ctx.Context }'})
+            baseline.write_text(json.dumps(original)+'\n')
+            first.write_text(json.dumps({'files': {original['path']: original['sha256']}}))
+            entries = [{'package': 'internal/core:core', 'name': 'type:Binding', 'signature': '', 'importKey': ''}, {'package': 'internal/core:core', 'name': 'public:Binding', 'signature': extra['publicSignatures']['Binding'], 'importKey': extra['importKey']}]
+            allow.write_text(json.dumps({'version': 1, 'additions': entries}))
+
+            def check(records):
+                candidate.write_text(''.join(json.dumps(r)+'\n' for r in records))
+                second.write_text(json.dumps({'files': {r['path']: r['sha256'] for r in records}}))
+                return module.compare(baseline, candidate, first, second, [], allow)
+
+            result = check([original, extra])
+            self.assertEqual(result['status'], 'pass')
+            self.assertEqual(len(result['acceptedAdditions']), 2)
+            self.assertEqual(check([dict(original, publicSignatures={'A': 'A string'}), extra])['status'], 'fail')
+            self.assertEqual(check([extra])['status'], 'fail')
+            self.assertEqual(check([original, dict(extra, publicSignatures=extra['publicSignatures'] | {'Unexpected': 'Unexpected int'})])['status'], 'fail')
+            for changed in [dict(extra, importKey='ctx "example.test/context"'), dict(extra, definedTypes=['Binding', 'Binding']), dict(extra, publicSignatures={'Binding': 'Binding struct { Context int }'})]:
+                with self.assertRaisesRegex(ValueError, 'addition absent or different'):
+                    check([original, changed])
+            with self.assertRaisesRegex(ValueError, 'addition absent or different'):
+                check([original])
+            allow.write_text(json.dumps({'version': 1, 'additions': entries + [entries[0]]}))
+            with self.assertRaisesRegex(ValueError, 'duplicate contract addition'):
+                check([original, extra])
+            allow.write_text(json.dumps({'version': 1, 'additions': [{'package': 'internal/core:core', 'name': 'public:A', 'signature': 'A string', 'importKey': original['importKey']}]}))
+            with self.assertRaisesRegex(ValueError, 'already exists in baseline'):
+                check([dict(original, publicSignatures={'A': 'A string'})])
+
     def test_packing_preserves_aliases_receivers_tags_and_defined_package(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

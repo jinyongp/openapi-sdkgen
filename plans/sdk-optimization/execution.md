@@ -549,3 +549,37 @@ root 19에서 Node heap OOM(SIGABRT)으로 실패했다. root는 367.33초·RSS
 새 11,804,074바이트 진단 source는 private route/ID/resource section filter만 교체하며
 value projection은 그대로 둔다. 첫 준비 실패는 owner의 `.ts` 계약을 `.d.ts`만으로
 찾던 도구 assertion이었고 원본과 함께 보존했다. 아직 C의 성능·제품 호환 증거는 아니다.
+
+## 후속 후보 E/C — 검증 진행
+
+W06E 추가 뒤 계획 구조는 15 task/16 validation과 저장 본문·전체 ID·W09 의존성까지
+다시 대조했다. 최초 검사에서 실행 중인 W00에 `execution_ready`까지 요구한 assertion은
+잘못된 검사 조건이었다. 구조 유효성과 실행 가능 상태를 구분해 전체 대응 검사를 다시
+통과했고 `current-plan-verification.json`에 남겼다. 이전 단위의 변하지 않은 방법·역사적
+결과는 개별 검토 후 현재 basis에 명시적으로 연결했다. 과거 실패를 성공으로 바꾸거나
+현재 후보의 최종 성공으로 재사용하지 않았다.
+
+Go E는 기존 `Parameter`를 재사용한 최대 16개 binding과 상태를 이어 가는 응답 선택을
+구현한 후보다. 0/1개는 기존 직접 표현을 유지한다. 기존 매개변수·codec·응답·stream
+회귀는 16.52초·RSS 668 MB에 통과했다. 추가 core 계약 검사(3.48초)와 33개 매개변수/
+33개 응답의 실제 HTTP·race 검사(5.93초)도 통과했다. missing header 등록 시점·encoder
+snapshot·첫 오류·취소·batch 경계·동점·wildcard 선택을 확인했다. 최초 새 검사 실패는
+test import alias 오류였으며 원본을 보존하고 수정했다. 전체 Graph와 runtime 비용은 남는다.
+
+Go 계약 도구는 새 내부 helper만 정확한 이름·서명·import binding·1회 추가로 허용할 수
+있게 했다. 기존 이름 변경·삭제, 예기치 않은 추가, 허용 목록 누락·중복·다른 서명은
+통과하지 못한다. 기존 양성/음성과 추가 허용 경계 검사 3개는 실제로 통과했다(0.30초).
+Graph의 전체 기존 계약 비교는 별도로 수행한다.
+
+11 GiB hard 진단은 headroom 부족으로 child를 시작하지 않았다. 새 10 GiB hard 대조는
+같은 control/C source 소유권 959개·program 57,128개·soft heap 10 GiB와 실제 child의
+동일 GC 환경을 확인했다. control은 120초 semantic 미완료, C는 9.14초 계측 구간 안에
+semantic diagnostics 0개로 완료했다. 수집 전체는 132.27/22.09초, peak RSS는
+10,275,872,768/8,621,797,376바이트다. profile 수집은 CLI·declaration emit·전체 source/
+공개 consumer 성공이 아니며 검사 완료 시간의 개선율로 계산하지 않는다.
+
+이제 canonical `InputSections`와 실제 resource reachability에서 세 private filter 집합만
+기존 최대 256 operation 계약 청크에 생성하는 C 후보를 W08에서 검증한다. 값 projection과
+public generic 식·작은 SDK/selected/named의 기존 import 범위는 유지한다. 새 runtime
+module이나 generator 옵션은 추가하지 않는다. 초기 W04 보류 판단을 바꾸려면 네 compiler의
+generic/union/never/ID 없는 route/resource/negative 및 실제 Graph 전체 검증이 필요하다.

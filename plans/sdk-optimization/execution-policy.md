@@ -172,6 +172,12 @@ canonical 선언의 route/ID/section과 실제 resource-call 유무를 읽어 pr
 제품 출력이 아니다. 효과가 있더라도 네 compiler의 generic/union/never/resource/negative
 호환과 실제 생성 비용·전체 source/consumer 검증 전에는 C를 채택하지 않는다.
 
+후속 C 실행은 11 GiB hard+2 GiB 여유 조건을 확보하지 못해 측정 child를 시작하지
+않았다. host 설정을 바꾸지 않고 control/C를 둘 다 새로 10 GiB hard 조건에서 수집한다.
+soft heap 10 GiB와 나머지 환경·120초 구간은 동일하다. 12분 내 headroom이 없으면
+시작하지 않는다. 이전 11 GiB 결과와 시간 개선율을 계산하지 않고, 새 한 쌍의 완료 여부와
+profile을 대조한다. 보호 종료도 그대로 보존하며 최종 strict gate의 예산·강도는 유지한다.
+
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
 [execute](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/execute/tsc.go),

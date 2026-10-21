@@ -62,6 +62,15 @@ signature, binding and coverage tests with `python3 -B
 scripts/perf/sdk-optimization/compare-go_test.py`. This is a contract inventory;
 compiler, reflection and runtime validation remain separate checks.
 
+When a candidate deliberately adds internal helpers, `--allow-additions FILE`
+accepts a reviewed JSON document with `version: 1` and an `additions` array. Each
+entry specifies `package`, `name`, `signature`, and `importKey` exactly as audited;
+defined-type entries use `type:NAME` with empty signature/import key, and exported
+declarations use `public:NAME`. Only one new occurrence can be accepted. Existing
+baseline names, changed signatures/import bindings, removals, unknown additions,
+and missing or duplicate approved entries fail. Keep this explicit document with
+the reviewed helper contracts; never derive exemptions from comparison failures.
+
 `public-consumer.mjs freeze BASELINE_SDK REFERENCE` freezes the existing public
 route/ID/Link keys. `prepare CANDIDATE_SDK REFERENCE FRESH_OUTPUT` creates a consumer
 config containing every SDK source plus exact public key equality and negative
