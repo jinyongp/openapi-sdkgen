@@ -361,7 +361,11 @@ body 382,088,702바이트를 조사했다. 모든 body에 Program identity guard
 정확한 중복으로 합치지 않고 parameterized 기회만 별도로 집계함을 확인했다.
 원시 보고서는 `graph-validator-duplicates-schemaimpl.json`, recorder는
 `graph-validator-duplicates-schemaimpl`이다. V의 실제 채택/보류는 P의 전체 compile과
-이 비용·identity/runtime 경계를 함께 검토해 확정한다. 현재 validator 제품 코드는 같다.
+이 비용·identity/runtime 경계를 함께 검토한다. 최종 W07 결정은
+`validator-sharing-decision.md`의 추가 공유 보류다. exact 중복 0개, 매개변수화 비용과
+partition/type identity를 근거로 한다. schema planner·view planner·schema template·runtime의
+원래 제품 대비 diff가 없고 runtime 기준 9단계가 모두 통과했음을 다시 검산했다.
+공유 구현의 성능을 주장하지 않으며 P의 W09/W11 compile·runtime gate는 그대로 남는다.
 
 ## W08 좁은 계약 적용 뒤 전체 Graph 재검사
 
