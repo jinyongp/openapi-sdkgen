@@ -194,7 +194,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		}
 		if child != nil {
 			identity := childIdentities["literal:"+name]
-			childType, err := resourceChildSurfaceType(document, plan, module.path, identity, child, paths)
+			childType, err := resourceChildSurfaceType(plan, module.path, identity, paths)
 			if err != nil {
 				return nil, err
 			}
@@ -269,27 +269,14 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	return []byte(generatedTypeImports(source)), nil
 }
 
-func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, artifact, identity string, child *resourceNode, paths map[string]string) (string, error) {
+func resourceChildSurfaceType(plan *semanticModulePlan, artifact, identity string, paths map[string]string) (string, error) {
 	childSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[identity])
 	if err != nil {
 		return "", err
 	}
-	childType := "import(" + quoteTS(childSpecifier) + ").Surface"
-	if child.parameterChild == nil {
-		return childType, nil
-	}
-	parameter := child.parameterChild.parameter
-	parameterType, err := resourceParameterType(document, plan, artifact, parameter)
-	if err != nil {
-		return "", err
-	}
-	parameterIdentity := resourceChildIdentities(identity, child)["parameter"]
-	parameterSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[parameterIdentity])
-	if err != nil {
-		return "", err
-	}
-	callType := "((" + parameter.Binding + ": " + parameterType + ") => import(" + quoteTS(parameterSpecifier) + ").Surface)"
-	return callType + " & " + childType, nil
+	// The owning Surface already declares its parameter call signature. Adding
+	// another copy forces structural comparisons down the entire resource tree.
+	return "import(" + quoteTS(childSpecifier) + ").Surface", nil
 }
 
 func resourceParameterType(document *ir.Document, plan *semanticModulePlan, artifact string, parameter *operationParameter) (string, error) {

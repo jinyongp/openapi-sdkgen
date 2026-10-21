@@ -178,6 +178,16 @@ soft heap 10 GiB와 나머지 환경·120초 구간은 동일하다. 12분 내 h
 시작하지 않는다. 이전 11 GiB 결과와 시간 개선율을 계산하지 않고, 새 한 쌍의 완료 여부와
 profile을 대조한다. 보호 종료도 그대로 보존하며 최종 strict gate의 예산·강도는 유지한다.
 
+E의 첫 전체 Graph 생성은 구조·정확성 pilot으로 사용한다. 그동안 최대 3 GiB의 작은 C
+fixture 호환 검사도 실행할 수 있으므로 이 pilot 생성 시간은 최종 5개 성능 표본에서
+제외한다. 큰 Graph compiler/profile·생성 trial끼리는 직렬로 유지하며 최종 성능 표본은
+관련 검사를 겹쳐 실행하지 않는다. 원시 pilot 결과와 실제 동시 실행 조건을 보존한다.
+
+E의 첫 staged cold compile도 후속 resource 타입의 작은 회귀 검사와 겹쳤다. 이 실행은
+empty cache에서 시작한 전체 compile correctness pilot으로 보존하고 최종 5개 성능
+표본에서는 제외한다. 최종 source·compiler 조건을 고정한 후 겹치는 작업 없이 새 표본을
+수집한다. 이 구분으로 원래 반복 수나 전체 compile 요구를 줄이지 않는다.
+
 취소·flush 참고 원본:
 [CLI](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/cmd/tsgo/main.go),
 [execute](https://github.com/microsoft/typescript-go/blob/2bd066d87f5b/internal/execute/tsc.go),

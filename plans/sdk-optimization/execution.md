@@ -583,3 +583,45 @@ semantic diagnostics 0개로 완료했다. 수집 전체는 132.27/22.09초, pea
 public generic 식·작은 SDK/selected/named의 기존 import 범위는 유지한다. 새 runtime
 module이나 generator 옵션은 추가하지 않는다. 초기 W04 보류 판단을 바꾸려면 네 compiler의
 generic/union/never/ID 없는 route/resource/negative 및 실제 Graph 전체 검증이 필요하다.
+
+### 실제 E/C 산출물과 다음 source 복잡도
+
+E의 server 포함 전체 Graph 생성은 1,072.00초·RSS 8,541,708,288바이트에 완료됐다.
+전체 unlimited AST 감사(138.21초·786 MB)와 정확한 추가 계약 비교(57.82초·540 MB)는
+통과했다. 원본 기존 6,434,421개 계약의 차이는 0이며 검토한 새 8개만 추가됐다.
+operation package는 45,696파일·정의 type 88,764개가 같고 source는
+597,978,236→579,570,728바이트, AST 노드는 78,054,414→75,204,993개,
+identifier 노드는 37,526,117→35,781,439개다. 실제 compiler/runtime 성공과 별도다.
+첫 전체 staged cold compile은 진행 중이며 작은 후속 타입 검사와 겹친 correctness
+pilot이므로 최종 성능 5표본에 넣지 않는다.
+
+C의 최초 전체 fixture oracle은 같은 helper를 복제한 대조에서도 동일한 TS2719
+16개를 냈다. 재귀 값 alias를 별도 module에 복제한 검사 결함이었다. 이전 mapped
+filter를 독립적으로 동결하되 변경하지 않은 값 alias를 canonical 선언 한 곳에서
+공유하도록 고쳤다. querystring의 원래 `whole` wrapper도 기대값에 반영했다.
+원래 실패·동일 복제 대조는 보존했다. 수정한 검사는 네 compiler의 전체 source·
+isolated declaration emit·source 없는 declaration consumer·양방향 generic·negative를
+41.95초·RSS 1,001,058,304바이트에 통과했다.
+
+실제 C Graph 생성은 130.15초·RSS 3,161,706,496바이트에 완료됐다. 전체 187,686개
+source·773,855,711바이트에 누락 import와 `nocheck`는 0이다. 29개 owner project는
+각각 32 MiB/12,000 source 제한을 지킨다. 실제 116개 계약 청크의 hash와 route/ID/
+resource의 3×6 membership 집합을 원본 operation 선언에서 동결한 oracle과 전수
+대조해 차이 0개를 확인했다(`graph-ts-section-index-membership.json`).
+
+후속 native 7.0.2 전체 strict는 project 0–18을 통과하고 19에서 실제 TS2859 312개로
+실패했다. 해당 project는 210.04초·RSS 10,532,925,440바이트였으며 10,690 MiB hard
+안에서 exit 2였다. RSS/시간 종료가 아니다. C의 private filter와 별개로 변경하지 않은
+resource 모듈의 `Surface` call signature를 부모가 다시 함수 intersection으로 복제해
+비교하던 경로를 확인했다. 소유 모듈의 `Surface`가 이미 같은 call을 선언하므로 부모는
+그 canonical type만 참조하는 후보를 검증한다. runtime·public scalar/호출 경계는 그대로다.
+22개 중첩 경로의 이전 callable signature·key/parameter/return type·양방향 generic과
+네 compiler source/declaration 검사는 12.68초·584 MB에 통과했다. 실제 Graph의 해당
+오류 해소와 전체 public consumer는 새 산출물에서 다시 확인해야 한다.
+
+추가로 callable interface의 `Function.bind`/`Function.call` 인수·반환 타입도 네 compiler에서
+검사해 통과했다(15.02초·RSS 620 MB). 기존 중첩 resource 방출과 canonical section/local
+helper caller 검사는 3.92초·559 MB에 통과했다. 최초 resource 검사 source는 기록된 hash와
+일치하도록 복원·보존했다. 실제 GitHub의 `git/get-ref`(매개변수 3개·응답 3개)와
+`issues/list-for-repo`(15개·4개)에서 P/E SDK를 각각 생성·컴파일하고 로컬 HTTP 동작과
+response close를 확인했다. 성능 10쌍은 다른 무거운 작업이 끝난 뒤 수집한다.

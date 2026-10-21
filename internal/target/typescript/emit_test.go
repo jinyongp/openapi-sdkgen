@@ -541,7 +541,7 @@ func TestSourceArtifactsGenerateNestedResourceTree(t *testing.T) {
 		`export type OperationBody<Source extends OperationSourceForSection<"body">>`,
 		`export type RouteParameter<`,
 		`export type OperationParameter<`,
-		`readonly sessions: ((sessionID: string) => import("./sessions/by-session-id.js").Surface) & import("./sessions/index.js").Surface`,
+		`readonly sessions: import("./sessions/index.js").Surface`,
 		"(sessionID: string)",
 		`readonly delete: ResourceCall<"DELETE /auth/sessions/{sessionId}">`,
 		"login: __sdkgen_",
