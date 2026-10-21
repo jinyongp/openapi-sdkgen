@@ -37,6 +37,9 @@ func emitClientArtifactsTo(document *ir.Document, manifest Manifest, plan *seman
 }
 
 func emitClientTypes(manifest Manifest, plan *semanticModulePlan, links []generatedLink, streams []generatedStream) ([]byte, error) {
+	if usesPublicTypeModules(manifest, plan) {
+		return emitDerivedClientTypes(plan, len(links) > 0)
+	}
 	helpers, err := plan.relativeModuleSpecifier(plan.fixed["client-types"], plan.fixed["route-helpers"])
 	if err != nil {
 		return nil, err

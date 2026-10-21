@@ -95,6 +95,9 @@ func hashSelectiveArtifact(digest hash.Hash, artifact Artifact) {
 }
 
 func emitSelectiveArtifactsTo(plan *sourcePlan, generation string, write func(Artifact) error) error {
+	if err := emitSelectedResourceTypeModulesTo(plan, write); err != nil {
+		return err
+	}
 	root := plan
 	if plan.root != nil {
 		root = plan.root
@@ -273,29 +276,36 @@ func emitSelectiveTypesAt(plan *sourcePlan, artifact string, named bool) ([]byte
 		return nil, err
 	}
 	fmt.Fprintf(&output, "import type { OperationReference, GuaranteedSelection, PossibleSelection, SelectedOperationCalls } from %s\n\n", quoteTS(selectionTypes))
-	output.WriteString("/** Full development-time contract; never a runtime operation registry. */\nexport interface RouteCalls {\n")
 	items := make(map[string]ManifestOperation)
 	for _, item := range plan.manifest.Operations {
 		items[manifestRouteKey(item)] = item
 	}
-	for _, module := range plan.modules.operations {
-		if items[module.routeKey].dependencyOnly {
-			continue
-		}
-		specifier, err := plan.modules.relativeModuleSpecifier(artifact, module.path)
-		if err != nil {
+	if usesPublicTypeModules(*plan.manifest, plan.modules) {
+		if err := registryImport(&output, plan.modules, artifact, "type { Routes as ClientRoutes, OperationRoutes as ClientOperationRoutes }", plan.modules.fixed["route-index"]); err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  readonly %s: import(%s).ExactCall\n", quoteTS(module.routeKey), quoteTS(specifier))
-	}
-	output.WriteString("}\nexport type RouteKey = keyof RouteCalls\n\nexport interface OperationRoutes {\n")
-	for _, module := range plan.modules.operations {
-		item := items[module.routeKey]
-		if item.dependencyOnly {
-			continue
+		output.WriteString("type CanonicalRouteCalls = { readonly [Route in keyof ClientRoutes]: ClientRoutes[Route][\"call\"] }\n/** Full development-time contract; never a runtime operation registry. */\nexport interface RouteCalls extends CanonicalRouteCalls {}\nexport type RouteKey = keyof RouteCalls\n\nexport interface OperationRoutes extends ClientOperationRoutes {\n")
+	} else {
+		output.WriteString("/** Full development-time contract; never a runtime operation registry. */\nexport interface RouteCalls {\n")
+		for _, module := range plan.modules.operations {
+			if items[module.routeKey].dependencyOnly {
+				continue
+			}
+			specifier, err := plan.modules.relativeModuleSpecifier(artifact, module.path)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&output, "  readonly %s: import(%s).ExactCall\n", quoteTS(module.routeKey), quoteTS(specifier))
 		}
-		if item.OperationID != "" {
-			fmt.Fprintf(&output, "  readonly %s: %s\n", quoteTS(item.OperationID), quoteTS(module.routeKey))
+		output.WriteString("}\nexport type RouteKey = keyof RouteCalls\n\nexport interface OperationRoutes {\n")
+		for _, module := range plan.modules.operations {
+			item := items[module.routeKey]
+			if item.dependencyOnly {
+				continue
+			}
+			if item.OperationID != "" {
+				fmt.Fprintf(&output, "  readonly %s: %s\n", quoteTS(item.OperationID), quoteTS(module.routeKey))
+			}
 		}
 	}
 	output.WriteString("}\n\nexport interface OperationLinkRoutes {\n")

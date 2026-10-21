@@ -10,6 +10,9 @@ func emitRouteArtifactsTo(manifest Manifest, plan *semanticModulePlan, write fun
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
+	if err := emitRouteTypeModulesTo(manifest, plan, write); err != nil {
+		return err
+	}
 	index, err := emitRouteIndex(manifest, plan)
 	if err != nil {
 		return err
@@ -35,6 +38,9 @@ func emitRouteArtifactsTo(manifest Manifest, plan *semanticModulePlan, write fun
 }
 
 func emitRouteIndex(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
+	if usesPublicTypeModules(manifest, plan) {
+		return emitChunkedRouteIndex(manifest, plan)
+	}
 	var output bytes.Buffer
 	output.WriteString("/** Generated route contracts keyed by HTTP method and exact OpenAPI path. */\n")
 	output.WriteString("export interface Routes {\n")
@@ -74,6 +80,13 @@ func emitRouteIndex(manifest Manifest, plan *semanticModulePlan) ([]byte, error)
 }
 
 func emitRouteInputs(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
+	if usesPublicTypeModules(manifest, plan) {
+		var output bytes.Buffer
+		if err := emitRoutePartInterfaces(&output, manifest, plan, plan.fixed["route-inputs"], true, "RouteRequestSections"); err != nil {
+			return nil, err
+		}
+		return output.Bytes(), nil
+	}
 	var output bytes.Buffer
 	output.WriteString("/** Request sections keyed by exact generated route. */\n")
 	output.WriteString("export interface RouteRequestSections {\n")
@@ -117,32 +130,38 @@ func emitRouteHelpers(manifest Manifest, plan *semanticModulePlan) ([]byte, erro
 	fmt.Fprintf(&output, "import type { OperationRoutes, Routes } from %s\n", quoteTS(index))
 	fmt.Fprintf(&output, "import type { RouteRequestSections } from %s\n\n", quoteTS(inputs))
 
-	output.WriteString("interface ExactRawCalls {\n")
-	for _, operation := range manifest.Operations {
-		if operation.Visibility == "hidden" {
-			continue
-		}
-		route := manifestRouteKey(operation)
-		specifier, err := operationModuleSpecifier(plan.fixed["route-helpers"], route, plan)
-		if err != nil {
+	if usesPublicTypeModules(manifest, plan) {
+		if err := emitRoutePartInterfaces(&output, manifest, plan, plan.fixed["route-helpers"], false, "ExactRawCalls", "ResourceRawCalls"); err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  readonly %s: import(%s).RawCall\n", quoteTS(route), quoteTS(specifier))
-	}
-	output.WriteString("}\n\n")
-	output.WriteString("interface ResourceRawCalls {\n")
-	for _, operation := range manifest.Operations {
-		if operation.Visibility == "hidden" {
-			continue
+	} else {
+		output.WriteString("interface ExactRawCalls {\n")
+		for _, operation := range manifest.Operations {
+			if operation.Visibility == "hidden" {
+				continue
+			}
+			route := manifestRouteKey(operation)
+			specifier, err := operationModuleSpecifier(plan.fixed["route-helpers"], route, plan)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&output, "  readonly %s: import(%s).RawCall\n", quoteTS(route), quoteTS(specifier))
 		}
-		route := manifestRouteKey(operation)
-		specifier, err := operationModuleSpecifier(plan.fixed["route-helpers"], route, plan)
-		if err != nil {
-			return nil, err
+		output.WriteString("}\n\n")
+		output.WriteString("interface ResourceRawCalls {\n")
+		for _, operation := range manifest.Operations {
+			if operation.Visibility == "hidden" {
+				continue
+			}
+			route := manifestRouteKey(operation)
+			specifier, err := operationModuleSpecifier(plan.fixed["route-helpers"], route, plan)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&output, "  readonly %s: import(%s).ResourceRawCall\n", quoteTS(route), quoteTS(specifier))
 		}
-		fmt.Fprintf(&output, "  readonly %s: import(%s).ResourceRawCall\n", quoteTS(route), quoteTS(specifier))
+		output.WriteString("}\n\n")
 	}
-	output.WriteString("}\n\n")
 	output.WriteString("/** Raw-call member shared by resource-oriented operation contracts. */\n")
 	output.WriteString("export interface ResourceRawCapability<Route extends keyof Routes> { readonly raw: RawCall<Route> }\n\n")
 	output.WriteString("type PublicType<Value> = PublicValue<Value, never>\n")

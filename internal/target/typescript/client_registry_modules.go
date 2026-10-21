@@ -47,6 +47,10 @@ func prepareRegistryModules(plan *semanticModulePlan, manifest Manifest, size in
 			path := "internal/client/registry-chunks/" + digest[:16] + "/" + group.kind + "-" + digest[16:] + ".ts"
 			plan.registryModules = append(plan.registryModules, registryModulePlan{path: path, kind: group.kind, entries: group.entries[start:end]})
 			plan.selective = append(plan.selective, artifactPathCandidate{identity: "client registry " + path, base: path})
+			if group.kind == "prepare" {
+				part := routeTypeModulePath(path)
+				plan.selective = append(plan.selective, artifactPathCandidate{identity: "route contracts " + part, base: part})
+			}
 		}
 	}
 }

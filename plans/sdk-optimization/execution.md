@@ -147,3 +147,48 @@ pagination과 잘못된 호출 거절을 확인했다. deterministic 재방출�
 실제 고정 GitHub 전체 source와 기준 public/negative consumer는 네 compiler 모두 pass다.
 원시 결과는 `registry-chunk-behavior-4`, `registry-github-*`에 있다.
 청크 128/256/512 비교와 대형 공개 타입 분할, full Graph 평가는 이어지는 W03/W05에 남는다.
+
+## W03b 공개 타입과 selective resource 타입의 분할
+
+큰 full SDK의 Client·selective 호출 map은 canonical Routes/OperationRoutes에서 유도한다.
+route/ID/input/raw 계약은 기존 public facade 뒤의 256 operation 단위 타입 모듈에 둔다.
+generic selective resource는 128 node 단위로 나누며 child 방향의 참조만 만든다.
+공통 helper는 RouteKey를 canonical Routes에서 읽어 resource module 간 순환을 만들지 않는다.
+준비 단계에서 소유권과 artifact 경로를 등록한다. scoped/named client는 기존의 좁은
+타입 import를 유지하며 문서 전체 map으로 바꾸지 않는다.
+
+리뷰에서 각 resource 청크마다 전체 tree를 다시 수집하던 비용을 제거하고 prepared
+node/ID plan을 재사용했다. 기존 wide-resource 표현 검사는 새로 방출된 전체 타입 모듈에
+연결했다. 대형 consumer에서 guaranteed/optional/empty 선택, 미선택 resource 거절,
+readonly input·mutable output과 구체 값 타입을 확인했다. 전체 생성기 520 test pass다.
+마지막 focused full SDK 검사는 네 compiler의 strict source/declaration emit 및 원본 TS를
+볼 수 없는 declaration-only consumer와 실제 runtime까지 통과했다.
+
+추가 compiler symbol 리뷰에서 mapped property가 기존 `@example`을 잃는 문제를 찾았다.
+canonical route/ID 문서 원본에 기존 call JSDoc을 두어 수정했고 route/ID hover의 HTTP
+설명과 example을 실제 symbol에서 재확인하는 회귀를 추가했다.
+`public-type-final-declarations-hover`는 이 수정 후 83.88초에 pass했다.
+
+최초 결합 Graph는 187,686파일·722,122,359바이트, import 누락/`@ts-nocheck` 0이다.
+client types 957바이트, registry 42,946바이트, route index 25,298바이트, input facade
+22,362바이트, helper facade 39,045바이트, selective types 2,989바이트로 분리됐다.
+registry 모듈 최대 328,158바이트, route 타입 모듈 최대 864,603바이트,
+resource 타입 모듈 최대 273,528바이트다. import SCC는 기존과 같은 44개 비단일 component,
+최대 35파일이며 가장 큰 단일 component는 4,841,854바이트다.
+이는 example 문서 보존 수정 전 진단 수치다. 최종 source byte와 성능은 후속 최종 basis에서
+재확인하며 이 수치를 최종 산출물 수치로 재사용하지 않는다.
+
+실제 GitHub에서 prototype 청크 128/256과 512/256을 각 5쌍 비교했다. 모든 생성·전체
+strict·원래 ID→route 참조 검사가 통과했다. 생성 중앙값은 128/256 4.918/4.924초,
+512/256 4.918/4.920초다. checker는 각각 11.867/12.065초, 12.073/11.678초이며
+표본 범위가 겹친다. 첫 generation의 1.317 ratio 등 outlier도 그대로 남겼다.
+속도 우열을 확정하지 않고 128보다 모듈 수를 줄이고 512보다 함수 크기를 낮추는 256을
+유지한다. 이 비교는 example 문서 수정 전 후보이며 최종 성능 주장에 사용하지 않는다.
+
+독립 consumer는 원본 Graph의 ID→route 29,581 연결도 동결하도록 강화했다.
+원래 key 집합과 동일하며 하나의 route literal을 틀리게 넣은 probe가 TS2344·nonzero로
+거절됐다. 새 mapped Client를 자동 freeze하려던 첫 측정 실패는 남기고, 후보 간 비교에는
+원본에서 동결한 외부 reference를 명시하는 경로를 추가했다. `section-index-decision.md`의
+C 보류와 별개로 최종 Graph 전체 strict는 여전히 미충족이다. 프로그램 구성 단계의 heap
+실패 원본을 보존하며 W05/W08 fallback의 전체 source 소유권/strict·전체 public consumer를
+검증해야 한다. 이 단계에서 workstream 완료로 처리하지 않는다.

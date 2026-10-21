@@ -60,9 +60,7 @@ func emitSelectedResourceTypes(document *ir.Document, plan *semanticModulePlan, 
 	return emitSelectedResourceTypesAt(document, plan, root, "selective/types.ts")
 }
 
-func emitSelectedResourceTypesAt(document *ir.Document, plan *semanticModulePlan, root *resourceNode, artifact string) ([]byte, error) {
-	var output bytes.Buffer
-	output.WriteString(`type Member<Key extends string, Routes extends RouteKey, Guaranteed extends RouteKey, Possible extends RouteKey, Value> =
+const selectedResourceTypeHelpers = `type Member<Key extends string, Routes extends RouteKey, Guaranteed extends RouteKey, Possible extends RouteKey, Value> =
   [Extract<Routes, Possible>] extends [never] ? {} :
   [Extract<Routes, Guaranteed>] extends [never] ? { readonly [K in Key]?: Value } : { readonly [K in Key]: Value }
 // A parameter builder or operation may share a namespace. When only its
@@ -79,7 +77,25 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
   readonly [Key in keyof Values as [Extract<Routes[Key], P>] extends [never] ? never : [Extract<Routes[Key], G>] extends [never] ? Key : never]?: Values[Key]
 }
 
-`)
+`
+
+func emitSelectedResourceTypesAt(document *ir.Document, plan *semanticModulePlan, root *resourceNode, artifact string) ([]byte, error) {
+	if plan.selection == nil && plan.selectedResourceTypes != nil && plan.selectedResourceTypes.root == root {
+		return emitSelectedResourceFacade(plan, artifact)
+	}
+	return emitSelectedResourceTypeNodes(document, plan, root, artifact, nil)
+}
+
+func emitSelectedResourceTypeNodes(document *ir.Document, plan *semanticModulePlan, root *resourceNode, artifact string, selected []*resourceNode) ([]byte, error) {
+	var output bytes.Buffer
+	split := selected != nil
+	if split {
+		if err := registryImport(&output, plan, artifact, "type { RouteKey, WithCall, SelectedMembers }", selectedResourceHelpersPath); err != nil {
+			return nil, err
+		}
+	} else {
+		output.WriteString(selectedResourceTypeHelpers)
+	}
 	ids := make(map[*resourceNode]int)
 	var nodes []*resourceNode
 	var collect func(*resourceNode)
@@ -93,9 +109,40 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 			collect(node.parameterChild)
 		}
 	}
-	collect(root)
-	nodeRoutes := func(node *resourceNode) string { return fmt.Sprintf("NodeRoutes%d", ids[node]) }
-	nodeType := func(node *resourceNode) string { return fmt.Sprintf("Node%d<G, P>", ids[node]) }
+	if split {
+		ids, nodes = plan.selectedResourceTypes.ids, selected
+	} else {
+		collect(root)
+	}
+	references := make(map[*resourceNode]string)
+	if split {
+		for _, node := range nodes {
+			children := make([]*resourceNode, 0, len(node.children)+1)
+			for _, child := range node.children {
+				children = append(children, child)
+			}
+			if node.parameterChild != nil {
+				children = append(children, node.parameterChild)
+			}
+			for _, child := range children {
+				target := selectedResourceTypeModulePath(ids[child] / selectedResourceChunkSize)
+				if target == artifact {
+					continue
+				}
+				specifier, err := plan.relativeModuleSpecifier(artifact, target)
+				if err != nil {
+					return nil, err
+				}
+				references[child] = "import(" + quoteTS(specifier) + ")."
+			}
+		}
+	}
+	nodeRoutes := func(node *resourceNode) string { return references[node] + fmt.Sprintf("NodeRoutes%d", ids[node]) }
+	nodeType := func(node *resourceNode) string { return references[node] + fmt.Sprintf("Node%d<G, P>", ids[node]) }
+	export := ""
+	if split {
+		export = "export "
+	}
 	operationType := func(route, slot string) (string, error) {
 		module, exists := plan.operationByRoute[route]
 		if !exists {
@@ -171,13 +218,18 @@ type SelectedMembers<Values, Routes extends { readonly [Key in keyof Values]: Ro
 			allRoutes += " | " + nodeRoutes(child)
 		}
 		if node != root {
-			fmt.Fprintf(&output, "type NodeRoutes%d = %s\n", ids[node], allRoutes)
+			fmt.Fprintf(&output, "%stype NodeRoutes%d = %s\n", export, ids[node], allRoutes)
 		}
 		nodeSource := strings.NewReplacer("<G, P>", "<_G, _P>", ", G, P>", ", _G, _P>").Replace(nodeValue)
-		fmt.Fprintf(&output, "type Node%d<_G extends RouteKey, _P extends RouteKey> = %s\n\n", ids[node], nodeSource)
+		fmt.Fprintf(&output, "%stype Node%d<_G extends RouteKey, _P extends RouteKey> = %s\n\n", export, ids[node], nodeSource)
 	}
-	output.WriteString("export type SelectedResources<G extends RouteKey, P extends RouteKey> = Node0<G, P>\n")
+	if !split {
+		output.WriteString("export type SelectedResources<G extends RouteKey, P extends RouteKey> = Node0<G, P>\n")
+	}
 	source := output.String()
+	if split {
+		return []byte(generatedTypeImports(source)), nil
+	}
 	if generatedIdentifiers(source)["WithCall"] == 1 {
 		start := strings.Index(source, "// A parameter builder")
 		end := strings.Index(source, "// Distribute over")

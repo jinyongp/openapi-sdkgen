@@ -36,6 +36,12 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 				t.Fatal(err)
 			}
 			text := string(source)
+			if err := emitSelectedResourceTypeModulesTo(plan, func(artifact Artifact) error {
+				text += string(artifact.Data)
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
 			if !strings.Contains(text, "SelectedMembers<NodeMembers1<_G, _P>, NodeMemberRoutes1, _G, _P>") {
 				t.Fatal("wide namespace no longer uses deferred member lookup")
 			}
@@ -57,7 +63,8 @@ func TestSelectedResourceTypesUseDeferredMemberMaps(t *testing.T) {
 				}
 			}
 			for _, index := range []int{0, count - 1} {
-				if !strings.Contains(text, fmt.Sprintf(`readonly "item%d": Node`, index)) ||
+				member := fmt.Sprintf(`readonly "item%d": `, index)
+				if !strings.Contains(text, member) ||
 					!strings.Contains(text, fmt.Sprintf(`"GET /items/item%d"`, index)) {
 					t.Fatalf("resource or route disappeared: item%d", index)
 				}

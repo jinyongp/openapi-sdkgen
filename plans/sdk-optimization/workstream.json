@@ -11,6 +11,8 @@
     "verification": "verification.md",
     "preflight": "preflight.md",
     "execution_policy": "execution-policy.md",
+    "execution": "execution.md",
+    "section_index_decision": "section-index-decision.md",
     "raw_preflight": "measurements/2026-10-21/preflight.tar.gz"
   },
   "task_ids": {

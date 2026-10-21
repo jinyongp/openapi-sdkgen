@@ -17,9 +17,12 @@ def main():
     parser.add_argument('--baseline', required=True, type=Path)
     parser.add_argument('--candidate', required=True, type=Path)
     parser.add_argument('--input', action='append', required=True, type=Path)
+    parser.add_argument('--reference', action='append', type=Path, help='independently frozen contract for each input')
     parser.add_argument('--pairs', type=int, default=5)
     parser.add_argument('--compiler', default='typescript-5-9')
     args = parser.parse_args()
+    if args.reference and len(args.reference) != len(args.input):
+        parser.error('supply one reference per input')
     if args.pairs < 1 or args.compiler not in ['typescript-5-7', 'typescript-5-9', 'typescript-6', 'typescript']:
         parser.error('positive pairs and an installed compiler alias required')
     output = args.output.resolve()
@@ -49,11 +52,13 @@ def main():
                                for key, path in variants.items()},
                   'inputs': [{'path': str(path.resolve()), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
                              for path in args.input],
+                  'references': [{'path': str(path.resolve()), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+                                 for path in (args.reference or [])],
                   'boundary': 'fresh generator/checker processes; filesystem cache warm/unspecified; no incremental; alternating order; raw recorder per command'}
     (output / 'provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
     for input_index, input_path in enumerate(args.input):
         input_path = input_path.resolve()
-        reference = output / f'contract-{input_index}.json'
+        reference = args.reference[input_index].resolve() if args.reference else output / f'contract-{input_index}.json'
         for pair in range(args.pairs):
             failures_before_pair = failures
             order = ['baseline', 'candidate'] if pair % 2 == 0 else ['candidate', 'baseline']
@@ -76,7 +81,7 @@ def main():
                 if config['status'] != 'pass':
                     save()
                     continue
-                if variant == 'baseline' and pair == 0:
+                if variant == 'baseline' and pair == 0 and not args.reference:
                     frozen = trial(directory / 'freeze', input_path,
                                    ['node', HERE / 'public-consumer.mjs', 'freeze', sdk, reference])
                     if frozen['status'] != 'pass':

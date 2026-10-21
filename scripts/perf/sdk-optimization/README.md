@@ -54,7 +54,8 @@ without the parse cap; combine matching path/hash records with the original audi
 route/ID/Link keys. `prepare CANDIDATE_SDK REFERENCE FRESH_OUTPUT` creates a consumer
 config containing every SDK source plus exact public key equality and negative
 route/ID assertions. The reference comes from the baseline, never the candidate.
-An absent Link surface stays absent. Existing compiler/runtime consumers still
+New references also freeze each operation ID's exact route literal and check the
+public `OperationRoutes` contract. An absent Link surface stays absent. Existing compiler/runtime consumers still
 verify parameter/response and selection semantics.
 
 `profile-go` under this directory uses the real Go target and product publisher.
@@ -71,8 +72,18 @@ Use it through `preflight:perf` with pinned Node/Go. Each child trial has its ow
 the run. Keep binary build provenance; a binary hash alone does not identify its
 source. Run competing variants without other measurement load. Failures remain
 in the requested denominator; completed medians/ranges and paired ratios are
-separate, with no arbitrary percentage pass gate. Filesystem cache is warm or
+separate, with no arbitrary percentage pass gate. Supply `--reference FILE` once
+per input when comparing candidates with derived Client maps: freeze that
+reference from the original SDK, never from either candidate. The legacy freeze
+parser deliberately rejects unfamiliar Client layouts. Filesystem cache is warm or
 unspecified, and this command does not claim empty-cache measurements.
+
+`trace-ts-phases.mjs COMPILER CONFIG FRESH_JSONL` uses a pinned JavaScript compiler
+API to separate program construction, syntactic diagnostics, binding and semantic
+diagnostics without relaxing the configuration. It records each checkpoint before
+continuing, so a heap failure still identifies the last completed stage. This is
+intrusive classification, not representative checker timing. Native TS7 uses its
+own CLI instead of this JavaScript API path.
 
 ```sh
 devtools run preflight:perf --output .tmp/sdk-preflight/recorder-tests -- python3 scripts/perf/sdk-optimization/record_test.py

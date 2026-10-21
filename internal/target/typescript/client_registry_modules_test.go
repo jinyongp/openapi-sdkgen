@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -95,8 +96,18 @@ func TestRegistryModulesKeepCrossChunkLinksAndOrderedPublicMaps(t *testing.T) {
 			if err != nil || !reflect.DeepEqual(artifacts, again) {
 				t.Fatalf("unstable registry emission: %v", err)
 			}
-			probe := `import type {Client} from './index.js';
+			probe := `import type {Client, RouteInput, RouteOutput} from './index.js';
+import type {Client as SelectedClient} from './selective/types.js';
+import type {OperationReference} from './selective/index.js';
 declare const api: Client;
+const output: RouteOutput<'GET /a'> = {id:'one'};
+output.id='mutable';
+// @ts-expect-error decoded output preserves its value type
+output.id=42;
+const input: RouteInput<'GET /pPages'> = {query:{cursor:'one'}};
+// @ts-expect-error projected input stays readonly
+input.query!.cursor='changed';
+void input;void output;
 api.$operations['__proto__']();api.$operations.a;api.$links.a.next;
 api.$operations.pages.paginate({});api.$operations.events.stream();
 api.$routes['GET /idless/{task-id}']({path:{'task-id':'one'}});
@@ -106,6 +117,17 @@ api.$operations.hidden;
 api.$operations.missing;
 // @ts-expect-error this operation accepts no body
 api.$operations['__proto__']({body:true});
+declare const chosen: SelectedClient<readonly [OperationReference<'GET /a'>]>;
+chosen.a.get();
+// @ts-expect-error unselected resource remains absent
+chosen.r0000.get();
+declare const maybe: SelectedClient<{readonly route?: OperationReference<'GET /a'>}>;
+maybe.a?.get?.();
+// @ts-expect-error optional selection does not guarantee a resource
+maybe.a.get();
+declare const empty: SelectedClient<readonly []>;
+// @ts-expect-error empty selection has no resources
+empty.a.get();
 `
 			if selected {
 				probe += `// @ts-expect-error dependency-only operation
@@ -117,6 +139,36 @@ api.$links.b;
 `
 			}
 			output := compileTypeScriptArtifactSet(t, artifacts, "registry.probe.ts", probe)
+			if !selected {
+				compileDeclarationConsumers(t, artifacts, probe)
+				compiler, err := filepath.Abs("../../../test/typescript/node_modules/typescript-5-9/lib/typescript.js")
+				if err != nil {
+					t.Fatal(err)
+				}
+				hover := `
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+const {default:ts}=await import(pathToFileURL(process.argv[2]));
+const source=path.join(path.dirname(process.argv[1]),'source');
+const loaded=ts.readConfigFile(path.join(source,'tsconfig.json'),ts.sys.readFile);
+const parsed=ts.parseJsonConfigFileContent(loaded.config,ts.sys,source);
+const probe=path.join(source,'registry.probe.ts');
+const program=ts.createProgram([probe],parsed.options),checker=program.getTypeChecker();
+const expected=new Map([['__proto__','GET /r0000'],['GET /idless/{task-id}','GET /idless/{task-id}']]),found=new Set();
+const visit=node=>{
+  if(ts.isElementAccessExpression(node)&&ts.isStringLiteral(node.argumentExpression)&&expected.has(node.argumentExpression.text)){
+    const key=node.argumentExpression.text,symbol=checker.getPropertyOfType(checker.getTypeAtLocation(node.expression),key);
+    if(!symbol||!ts.displayPartsToString(symbol.getDocumentationComment(checker)).includes(expected.get(key))||!symbol.getJsDocTags(checker).some(tag=>tag.name==='example'))throw Error('public hover documentation lost: '+key);
+    found.add(key);
+  }
+  ts.forEachChild(node,visit);
+};
+visit(program.getSourceFile(probe));if(found.size!==expected.size)throw Error('hover coverage missing');
+`
+				if result, err := exec.Command("node", "--input-type=module", "--eval", hover, output, compiler).CombinedOutput(); err != nil {
+					t.Fatalf("public map hover: %v\n%s", err, result)
+				}
+			}
 			public := root.selection.publicManifest(*root.manifest)
 			routes, operations := []string{}, []string{}
 			byID := map[string]string{}
