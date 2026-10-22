@@ -1,5 +1,9 @@
 # Graph 검사 경계의 진단과 다음 후보
 
+2026-10-22 현재 결정은 `scope-decision-2026-10-22.md`를 따른다. 아래 전체 Graph
+진단·references 후보는 실험 이력이다. 전체 Graph 성공과 추가 반복은 필수가 아니며,
+대표 SDK·Graph 선택 SDK의 네 compiler strict·공개 계약과 기존 사용법을 검증한다.
+
 현재 결론은 전체 strict 성공이 아니라 다음 구현 후보의 범위 확정이다.
 단일 프로젝트의 최종 W03 Graph는 네 compiler에서 자원 상한 안에 완료하지 못했다.
 실험별 원시 결과와 source/도구 해시는 `execution.md`와 `.tmp/sdk-optimization-execution`에 있다.
@@ -64,5 +68,6 @@ Graph의 별도 profile에서 생성한 source와 실제 server export consumer�
 각각 6.99초·10.39초·4.61초에 오류 없이 끝났다. loaded program 59,670파일과 owner
 1,695개는 원본과 일치했다. 이 수치는 원인 분리 결과이며 전체 Graph 개선율은 아니다.
 생성기 반영 후 기존 네 compiler·세 모듈·독립 declaration, generic 호출·key 동등성,
-private Link·등록 순서·깊은 resource·ID 없는 route 검사는 통과했다. 새 전체 Graph
-생성·source/declaration/public/negative 및 server 검증은 후속 gate로 남는다.
+private Link·등록 순서·깊은 resource·ID 없는 route 검사는 통과했다. 이후 사용자 결정으로
+전체 Graph 성공 gate는 제외했으며, 대표·선택 SDK의 source/declaration/public/negative와
+server 검증으로 최종 수용 범위를 고정한다.

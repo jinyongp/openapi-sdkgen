@@ -4,6 +4,13 @@
 리뷰/커밋과 최종 통합 리뷰까지 수행한다. 공개 API·정의 패키지·선택 경계·strict 강도는
 유지한다. 유료 runner·호스트 설정·push·release는 포함하지 않는다.
 
+## 현재 검증 범위
+
+2026-10-22 사용자 결정은 `scope-decision-2026-10-22.md`에 기록했다. 전체 Graph는
+참고 검증으로 전환했으며 아래의 전체 Graph 성공·TS 3회/Go 5회 반복·전체 warm 계획은
+이전 실험의 이력이다. 추가 전체 Graph 실험을 시작하지 않는다. 일반 제공자 38개,
+대표 성능 근거와 Graph 선택 SDK의 정확성·호환성은 현재 필수 범위다.
+
 ## 기준선과 관측 경계
 
 - correctness 수정 W01R 전의 제품 기준은 `5ada624`와 동일한 현재 제품 소스다.
@@ -361,19 +368,20 @@ recorder의 200 ms 관측 간격보다 짧으면 그 외부 시간을 비교 지
   파일 수만 줄거나 합성 fixture만 빨라진 결과로 채택하지 않는다. planner 비용과
   helper/import/delta까지 포함한 net bytes, compiler wall/RSS, 공개 배포 bytes를 함께 본다.
 - 작은/중간 입력은 교차 순서 5쌍, runtime 공유는 최소 10쌍으로 측정한다. 표본의 중앙값·
-  범위와 paired ratio를 보존한다. full Graph는 기존 계획의 compiler별 3회/Go 5회 정책을
-  유지하며 동일 예산에서 이미 실패한 기준선을 개선율 목적으로 반복하지 않는다.
+  범위와 paired ratio를 보존한다. full Graph의 compiler별 3회/Go 5회 조건은 사용자
+  결정으로 제외했다. 동일 예산에서 이미 실패한 기준선을 개선율 목적으로 반복하지 않는다.
 - **알고리즘/runtime 공유 채택의 내부 기준**은 paired runtime ratio의 95% 구간 상한
   1.05 이하다. 이는 제품 SLA가 아니라 최적화 채택을 위한 보수적 기준이다. 불충분하면
   반복 비용을 확인하거나 공유를 보류한다. B/op·allocs/op·live heap 회귀도 별도 검토한다.
   기존 view sharing 유지·파일 배치만 변경한 경우 새 hot-path 호출 비용은 추가하지 않는다.
 - 임의의 최소 15% 개선 gate는 두지 않는다. 재현 가능한 실제 이득이 측정 잡음보다 작으면
   복잡한 후보는 보류한다. section index와 validator 공유는 보류 결론도 허용하되 원인·
-  실데이터·호환성 및 후속 영향을 남긴다. 최종 Graph 성공 기준은 그대로 유지한다.
+  실데이터·호환성 및 후속 영향을 남긴다. 선택 SDK와 일반 제공자의 필수 성공 기준은 유지한다.
 
 ## 리뷰와 완료
 
 각 task에서 실제 결과·변경 caller·미검증 범위를 확인한 뒤 해당 작업을 커밋한다.
 devtools의 현재 run/basis에 근거를 기록하고 done 처리한다. W11에서는 최종 commit의
-전체 source/consumer/runtime/output/docs와 Graph 네 TS compiler·Go corpus/Graph를
-통합 리뷰한다. 남은 필수 검증이 있으면 workstream을 close하지 않는다.
+전체 제품 source/consumer/runtime/output/docs, 대표 TS·Graph 선택 SDK 네 compiler와
+Go corpus 38개·선택 SDK를 통합 리뷰한다. 참고 Graph 실패는 그대로 보존하며
+남은 필수 검증이 있으면 workstream을 close하지 않는다.

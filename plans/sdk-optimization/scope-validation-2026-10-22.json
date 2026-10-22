@@ -1,0 +1,28 @@
+{
+  "status": "pass",
+  "scope": "approved definition and local document consistency; not passing product tests or restored completions",
+  "definitionRevision": 2105,
+  "tasks": 15,
+  "validations": 16,
+  "activeAcceptance": [
+    "AC-BASIS",
+    "AC-CLOSURE",
+    "AC-DELIVERY",
+    "AC-FINAL",
+    "AC-GO-CORPUS",
+    "AC-GO-METADATA",
+    "AC-INDEX",
+    "AC-PACK",
+    "AC-PLAN",
+    "AC-REGISTRY",
+    "AC-TS-DIAG",
+    "AC-TS-RECURSION",
+    "AC-TS-SCOPED",
+    "AC-VALIDATOR"
+  ],
+  "dependenciesPreserved": true,
+  "planSha256": "2c841b13d2830d995b52448c59543b09c1c862f17ebba0bd271c7c9faeedba24",
+  "specWithDecisionSha256": "90f65e18fe8b2ea91e7f7bd7a753aa8b4c580522a23745047bab9c935850b60d",
+  "structureIssues": [],
+  "priorCompletionsRequiringReview": 11
+}

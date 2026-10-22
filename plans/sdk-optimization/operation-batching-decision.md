@@ -1,5 +1,9 @@
 # Go operation의 반복 HTTP 처리문 절감
 
+현재 최종 수용 범위는 `scope-decision-2026-10-22.md`를 따른다. 사용자가 전체 Graph를
+참고 검증으로 전환했으므로 아래 전체 Graph compile·반복 계획은 실험 이력이다.
+기존 AST·계약·HTTP 10쌍 근거는 유지하고 일반 제공자·Graph 선택 SDK와 최종 통합을 검증한다.
+
 현재 상태: 후보 E 구현과 단위 행동·실제 Graph AST/계약 검증을 마쳤다. 전체 Graph
 compile은 미완료다. 실제 GitHub SDK HTTP paired 10쌍은 내부 비열등성 기준을 통과했으며
 기본 채택 판단과 최종 통합 검증은 아직 남는다.

@@ -3,6 +3,13 @@
 조사일: 2026-10-21. 제품 기준: `5ada624a69ebfd85103248379970f78a8f3d2899`.
 이 문서는 내부 개발 기록이다. 제품 구현과 성능 개선 완료를 주장하지 않는다.
 
+## 현재 범위 결정
+
+2026-10-22 사용자는 전체 MS Graph 성공을 필수로 강제하는 비용이 과하다고 판단하고
+참고 검증으로 전환했다. `scope-decision-2026-10-22.md`와 갱신된 `plan.md`가 현재 범위다.
+일반 제공자 38개, 대표 SDK와 Graph 선택 SDK의 정확성·호환성·배포 검증은 유지한다.
+아래 분석과 과거 전체 Graph 실험은 당시 조사·결과의 이력이며 전체 성공을 뜻하지 않는다.
+
 ## 판정
 
 첨부 보고서는 실험 후보의 우선순위를 정하는 자료로 타당하다. 실제 Graph 전체 strict 검사 성공이나 Go 대형 출력 개선율의 근거로 사용할 수는 없다. TypeScript closure 공유와 registry 분할, Go 동일 패키지 파일 묶기를 우선 검증한다. section 인덱스, validator 공유, Project References는 효과와 호환성을 확인한 뒤 채택한다.
@@ -164,4 +171,4 @@ validator는 lowering 후 알고리즘·ref binding·dialect·direction·media·
 
 기존 TypeScript 생성기·Go 소비자 검사는 `GOTOOLCHAIN=go1.27.2 devtools run ci:dev ...`로 실행한다. 최초 `test:dev`는 잠긴 vault 때문에 실행되지 않았다. 비밀값 주입 없는 기존 `ci:dev`를 사용했으며 vault나 프로젝트 설정을 변경하지 않았다. 셸 기본 Go는 1.27.3이어서 정확한 1.27.2를 명시했다.
 
-최종 실행 결과, 리뷰 기록, workstream ID와 작업 ID는 `verification.md` 및 `workstream.json`에 기록한다. 신규 실제 Graph full strict, 신규 Graph Go compilation, 후보 출력 성능, 4개 compiler의 후보 전체 소스 검사는 W01 이후의 필수 검증이다. 이번 조사에서 완료한 것으로 집계하지 않는다.
+최종 실행 결과, 리뷰 기록, workstream ID와 작업 ID는 `verification.md` 및 `workstream.json`에 기록한다. 초기 계획은 실제 Graph full strict·Go compilation을 필수로 두었지만, 2026-10-22 사용자 결정으로 전체 Graph는 참고 검증으로 전환했다. 현재 필수인 대표·Graph 선택 SDK와 일반 제공자 검증은 `plan.md`를 따른다. 이번 초기 조사에서 제품 검증을 완료한 것으로 집계하지 않는다.

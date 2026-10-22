@@ -2,8 +2,8 @@
   "kind": "devtools-workstream-definition-reference",
   "profile": "openapi-sdkgen",
   "workstream_id": "88a65ff3-848d-4fff-a307-325ab4cbb221",
-  "title": "Graph TypeScript 전체 검사와 Go SDK 출력 구조 최적화",
-  "registered_definition_revision": 2029,
+  "title": "SDK 출력 최적화와 일반·선택 SDK 검증",
+  "registered_definition_revision": 2105,
   "source_commit": "5ada624a69ebfd85103248379970f78a8f3d2899",
   "documents": {
     "spec": "investigation.md",
@@ -15,6 +15,7 @@
     "section_index_decision": "section-index-decision.md",
     "source_check_boundaries": "source-check-boundaries.md",
     "operation_batching_decision": "operation-batching-decision.md",
+    "scope_decision": "scope-decision-2026-10-22.md",
     "raw_preflight": "measurements/2026-10-21/preflight.tar.gz"
   },
   "task_ids": {

@@ -1,5 +1,9 @@
 # Workstream 실행 기록
 
+현재 완료 범위는 `scope-decision-2026-10-22.md`와 갱신된 `plan.md`를 따른다.
+전체 Graph는 사용자가 참고 검증으로 전환했다. 아래 과거 기록의 전체 Graph 필수 gate는
+당시 계획이며, 현재는 일반 제공자 38개·대표 SDK·Graph 선택 SDK와 최종 통합을 검증한다.
+
 ## W01 공통·TS 선행 경로
 
 기준 제품은 `5ada624`와 같다. 기존 `preflight.md`의 실제 TS 네 compiler 실패와
@@ -817,3 +821,17 @@ TS emitter 함수 본문뿐이며, 고정 Go 1.27.2로 조사한 Go 생성 의�
 동일하다. 변경 없는 auditor의 `golang-generation` 분기는 TS emitter를 호출하지 않는다.
 따라서 Go 37개 문서의 correctness는 해당 실행 경로에 한해 재사용하며, source 전체의
 동일성·TS parity·성능 표본이나 미완료 Cloudflare/Graph 성공을 주장하지 않는다.
+
+## 2026-10-22 사용자 범위 결정
+
+사용자는 전체 MS Graph 변환의 비용·실용성을 재검토하고 “전체 Graph는 참고 검증으로
+전환”을 선택했다. 전체 Graph 성공·네 compiler 3회·Go 5회와 후속 전체 warm은 현재
+완료 조건에서 제외한다. 일반 38개 제공자와 Graph 선택 생성의 정확성·호환성, 배포 및
+최종 통합 리뷰는 필수로 유지한다. 기존 실패를 passing record로 바꾸지 않는다.
+
+진행 중이던 새 native 전체 검사는 전환 후 추가 5분 한도 안에 자연 종료됐다. 전체
+수집 570.12초, 실제 checker 557.55초에 29개 project 중 20개가 통과했고 project 20은
+132.88초·RSS 11,779,776,512바이트로 당시 동적 11,189 MiB 상한에 걸렸다. project 19는
+96.27초·RSS 9,974,358,016바이트에 통과했다. agent 강제 종료·compiler 오류·전체 성공이
+아니며 public consumer까지 도달하지 않았다. 전체 Graph를 통과시키기 위한 추가 수정은
+진행하지 않는다. Graph Go 전체 warm·최종 전체 반복은 미실행 그대로 남긴다.
