@@ -98,3 +98,28 @@ W01 이후 수용 기준을 통과했다고 기록하지 않는다. W01은 남�
 spec/plan 본문·전체 ID·의존성·문서 inventory·원시 archive와 결과 해석을 다시 대조해
 pass였다. workstream check는 `valid=true`, `issues=[]`, `closable=false`다. 마지막
 변경 범위·staged/unstaged `diff --check`와 commit 결과는 현재 validation record에 남긴다.
+
+## W09의 실제 CI 입력 계약 대조
+
+후보의 38문서 검증에서는 원본 SHA뿐 아니라 CI가 사용하는 **보정 후 입력 계약**을
+확인한다. `test/compatibility/ci/*-manifest.json.gz`와 원래 catalog를 전수 대조한 결과,
+원본 pin은 모두 같았지만 `spoonacular.com` 한 건의 catalog에는 CI의 `preparation`이
+없었다. CI는 `spoonacular-parameter-bodies-v1`로 중복 parameter body 99개를 보정하며,
+보정 후 SHA-256은 `f08a9540575e201b4d740d6252d21336435a74dddd58b0f91efcbf641976d60a`다.
+
+첫 로컬 검증은 그 보정 없이 실행되어 빈 request-body media type을 거절했다. 해당
+검증의 실패 원본을 보존한다. 제품의 해당 거절 동작은 기준 코드에도 있어 최적화 회귀로
+분류하지 않는다. CI manifest를 그대로 동결한 별도 입력으로 Spoonacular만 다시 실행한다.
+나머지 결과는 관련 제품·auditor source와 binary hash가 그대로이고 유효 입력이 같은
+경우에만 재사용한다. 진행 중인 기존 검증 스크립트나 제품의 유효성 검사는 변경하지 않는다.
+
+최종 집계는 다음을 모두 확인한 뒤 작성한다.
+
+- 38개 문서의 원본 SHA 및 보정 유무·kind·최종 SHA·operation 수·`contractsVerified`.
+- Go 1.27.2, server 포함 전체 생성과 전체 package compile, 고정 compilation policy.
+- Spoonacular·Loket·Stripe·Cloudflare·DigitalOcean의 기존 HTTP 계약 검사 실행 증거.
+- 각 recorder의 성공·source manifest·실제 auditor binary와 현재 관련 source의 동일성.
+
+원본 catalog 실패와 CI 입력 재검증은 별도 경로로 남긴다. 최종 38/38 성공 전에는
+완료로 기록하지 않으며, 이 결과를 Graph 전체 compile·성능이나 새 공개 CI 근거로
+확대 해석하지 않는다.

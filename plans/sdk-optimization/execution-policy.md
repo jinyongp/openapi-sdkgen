@@ -267,6 +267,67 @@ hard 11 GiB+2 GiB headroom, 120초 계측/600초 외부)으로 직렬 계측한�
 세 파일과 달리 이 두 mapped-type 선언은 파일별로 확인하지 않았으므로 원인 확정 전
 제품 변경을 고르지 않는다. 그 뒤 독립 Go 전체 warm 검증을 같은 고정 조건으로 실행한다.
 
+진행 중 WSL host가 재시작돼 native compiler와 두 supervisor가 사라졌다. 새 host의
+boot 시각이 owner 20 시작보다 뒤이고 recorder 최종 결과가 없어 외부 중단으로 분류한다.
+원래 디렉터리에 `external-host-reset.json`을 별도 보존하며 결과를 만들거나 덮어쓰지 않는다.
+다시 확인한 가용 메모리로는 위 11 GiB+2 GiB 시작 조건을 충족하지 못했다. 두 미확인
+파일의 추가 API 진단은 시작 전에 soft 6 GiB·hard 9 GiB+2 GiB 여유·같은 120초/600초로
+낮춰 고정한다. 10 GiB/11 GiB 표본과 시간 비율을 계산하지 않는다. 그 뒤 W09의 fresh
+38개 문서/server 검증을 직렬 실행하고, 원래 Go 전체 warm의 11,832 MiB+2 GiB 여유가
+확보되면 같은 조건으로 실행한다. 기존 자원 한도·전체 성공 조건은 늘리거나 완화하지 않는다.
+원본 `client/types.ts` 파일별 진단이 지연되면 같은 6 GiB/9 GiB/120초 조건으로 한 복제본을
+비교한다. 다른 source/declaration은 hardlink하고 해당 파일만 별도 inode로 만든다.
+operation-ID mapped view의 `OperationMethod` 재적용만 이미 선언한
+`ClientRoutes[OperationRoutes[ID]]` lookup으로 바꾸며 원본 파일 hash·전체 owner 집합을
+대조한다. route map과 공개 helper의 generic 식·brand 상관관계는 유지한다.
+이 API 진단은 네 compiler 호환·전체 CLI/public 검사의 대체가 아니며, 비교가 끝난 후에만
+직렬 slot을 Go corpus에 넘긴다.
+외부 작업의 메모리 사용으로 9 GiB 시작도 대기하므로, child를 시작하지 않은 대기자만
+확인해 종료하고 3 GiB 상한의 기존 확대 계약 검사 네 개를 먼저 직렬 실행한다. 제품 후보는
+ID map 한 줄만 위 view 재사용으로 바꾸고, 기존 1,000-operation fixture에 이전 식 대비
+양방향 generic·union·keys·Parameters/ReturnType 검사를 더한다. 이 호환성 검사와 실제
+Graph 복제본 대조가 통과하기 전에는 최종 채택하지 않는다. 그 뒤 미실행 registry 파일
+진단·Graph 복제본 대조·Go corpus 순서로 이어가며 완료한 control은 다시 실행하지 않는다.
+이 계약 검사의 첫 실행은 26.79초·RSS 3,241,000,960바이트로 3 GiB 보호 종료됐다.
+타입 오류 출력이나 완료 결과는 없었다. 실패 원본을 보존하고 새 실행은 같은 3 GiB/
+1,200초에서 Go build `-p=1`·soft heap 1 GiB로 낮춘다. 생성물의 strict·네 compiler/
+source·declaration·consumer 검사 강도는 그대로며 대표 시간 비교로 사용하지 않는다.
+두 번째도 28.48초·RSS 3,222,269,952바이트로 보호 종료됐다. 관측 binary에는 native
+`tsc`가 있어 Go 빌드만의 실패로 단정하지 않는다. 다음 단위 진단은 같은 상한·strict에서
+native API/CLI의 checker worker 수를 구분하려고 자식 전체의 GOMAXPROCS를 1로 낮추고
+기존 네 검사를 verbose로 실행한다. owned session의 tool명/RSS만 0.5초 간격으로 남긴다.
+기존 두 원본은 실패로 보존하며 결과·실패 단계가 확인되기 전 같은 검사를 반복하지 않는다.
+세 번째는 55.14초·RSS 3,238,166,528바이트로 보호 종료됐다. 마지막 native `tsc`는
+약 2,897 MiB, 테스트 114 MiB·Go driver 36 MiB였다. 확대 generic consumer의 첫 native
+source 검사 단계다. 새 view와 새 검사 자체의 영향을 분리하기 위해 emitter 한 줄을
+원래 식으로 되돌리고 같은 consumer의 parent/native 단계만 test 180초·외부 240초/
+3 GiB/GOMAXPROCS=1로
+대조한다. nested declaration/compiler profile은 이 진단에서 선택하지 않으며 전체 회귀
+성공으로 집계하지 않는다. 원래 full matrix 기준과 세 실패 원본은 그대로 유지한다.
+원래 식도 51.24초·RSS 3,237,208,064바이트로 같은 native 단계에서 보호 종료됐다.
+따라서 이 결과만으로 view 후보의 회귀를 확정하지 않는다. 추가 검사의 전역 ID mapped
+type 복제를 제거하고 다른 입력/응답을 가진 `a`·`pages` 두 ID에 대해 canonical public
+`OperationMethod`와 양방향 generic·union·Parameters/ReturnType을 확인한다. 전체 route/ID
+key 동등성과 1,000-operation 원래 fixture·네 compiler·세 모듈/declaration profile은 유지한다.
+route generic 식은 바꾸지 않는다. 새 검사는 같은 3 GiB/1,200초/GOMAXPROCS=1 조건이다.
+그 실행도 48.33초·RSS 3,231,932,416바이트에서 종료됐다. 추가 route generic consumer도
+서로 다른 두 route로 한정해 ID와 같은 경계를 사용한다. 제품의 route generic 식이나
+기존 1,000-operation 검사 범위는 바꾸지 않는다. 다음 native parent 진단은 test 180초/
+외부 240초·3 GiB·같은 worker 조건이며 통과 후에만 전체 단위 matrix를 실행한다.
+이 bounded native 진단은 23.99초·RSS 1,215,098,880바이트에서 실제 generic 할당 오류로
+끝났다. 새 generic return 기대가 원래 API에서도 가능한지 확인하기 위해 원래 emitter 식과
+같은 bounded consumer를 동일 한도에서 대조한다. 원래 코드에서도 거절되는 기대를 새
+필수 동작으로 간주하지 않으며, 후보만 거절되면 해당 view를 채택하지 않는다.
+원래 식도 23.42초·RSS 1,227,403,264바이트에서 같은 두 TS2375를 냈다. 후보 회귀가
+아닌 기존 generic indexed-write 제한이다. 기존에 가능한 방향의 generic 변환과 literal
+역방향·양방향 union을 positive consumer로 고정한다. 전체 키·인자·반환과 원래 fixture는
+유지한다. 두 오류 대조를 보존하고 같은 단위 한도에서 전체 네 검사/matrix를 다시 실행한다.
+새 단위 matrix는 377.27초·RSS 1,615,532,032바이트에 통과했고 두 변경 파일의 현재
+hash도 실행 원본과 일치했다. 외부 작업 때문에 다음 Graph API의 9 GiB+2 GiB 시작
+조건은 아직 미충족이다. child 없는 대기자만 확인해 종료하고 독립 Go 38문서/server
+검증을 기존 `min(12 GiB, 가용 RAM−2 GiB)` 정책으로 먼저 수행한다. API2/복제본은
+미실행으로 남기며, 이 순서 변경을 실제 Graph 비용 개선이나 최종 채택 근거로 삼지 않는다.
+
 ### P 크기 비교의 실제 제공자 표본
 
 추가 크기 비교는 고정 holdout의 작은 `tvmaze.com`과 중간 `listennotes.com` 입력을

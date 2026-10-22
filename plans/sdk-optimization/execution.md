@@ -692,3 +692,32 @@ owner 20의 API 파일별 semantic은 factory/registry/helpers 모두 오류 0�
 `tryDeferToSpanScan`·`findObject`·`scanObject`가 상위였다. VmSwap은 0, major fault는
 수집 전후 4였다. Go runtime 내부와 실제 타입 검사 비용을 구분하며 이 관측으로 특정
 생성 source의 구조 변경이나 전체 컴파일 성공을 주장하지 않는다.
+
+10 GiB 전체 실행은 WSL host 재시작으로 compiler·supervisor가 함께 사라져 최종
+recorder 결과 없이 중단됐다. 새 host boot 시각은 2026-10-22 00:03:50 UTC로 owner 20
+시작보다 뒤였다. `external-host-reset.json`에 관측을 남겼고 source 전체 성공·timeout·
+RSS 보호·agent signal 중 하나로 소급 분류하지 않았다. owner 0–19의 완료 근거는 보존한다.
+
+추가 read-only `client/types.ts` API는 실제 owner 1,695개·program 59,670개 일치 상태에서
+120초 semantic 미완료와 판독 가능한 CPU/heap을 남겼다. CPU 419.81초/120.09초 구간에
+GC가 우세했고 type argument constraint 경로도 확인됐다. ID map이 공개 helper를 다시
+적용하는 대신 canonical `ClientRoutes` 값을 참조하는 한 줄 후보를 검증하고 있다.
+
+추가 generic consumer의 두 역방향 return은 기존 emitter와 후보 모두 같은 TS2375로
+거절됐다. 기존에 지원하지 않은 패턴을 새 기능으로 확장하지 않고, 기존 허용 generic
+방향·literal 역방향·양방향 union 및 전체 key·Parameters/ReturnType을 고정했다.
+새 후보의 네 compiler·세 모듈/독립 declaration·기존 runtime/selection/resource/section
+검사는 377.27초·RSS 1,615,532,032바이트에 통과했다. 변경 두 파일의 hash도 일치한다.
+3 GiB 보호 종료 5건은 당시 전체 generated compiler 입력을 별도 archive로 보존했다.
+이는 단위 호환성 근거이며 실제 Graph 후보 대조·전체 CLI 성공이나 최종 채택은 아니다.
+
+외부 작업의 메모리 사용으로 다음 Graph API의 시작 조건은 미충족이라, child 없는
+대기자만 종료하고 독립 W09의 고정 38문서/server 생성·전체 compile을 먼저 시작했다.
+Go 1.27.2·모든 원본 input pin을 다시 확인했고 Graph는 이 분모에 포함하지 않는다.
+
+진행 중 Spoonacular의 원본 catalog에 CI 전용 입력 보정이 빠진 것을 확인했다.
+보정 없이 빈 media type을 거절한 최초 실패는 보존한다. CI의 고정 manifest·기존
+99-operation 보정으로 해당 문서만 별도 재검증하고, 나머지는 관련 source·binary·
+유효 입력·HTTP 계약 검사가 모두 같은지 확인한 뒤 집계한다. 원본 SHA만 같다는
+이전 확인으로 보정 후 입력의 동등성까지 주장하지 않는다. 자세한 경계는
+`verification.md`의 W09 입력 계약에 기록했다.
