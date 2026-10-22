@@ -42,7 +42,9 @@ def latest_run(runs, repository, commit):
 
 def fetch_runs(repository, commit):
     query = urlencode({"head_sha": commit, "event": "push", "branch": "main", "per_page": 100})
-    endpoint = f"repos/{repository}/actions/workflows/ci.yml/runs?{query}"
+    # Resolve runs through the repository index. latest_run still checks the
+    # exact workflow identity, alongside source, event, branch and repository.
+    endpoint = f"repos/{repository}/actions/runs?{query}"
     result = subprocess.check_output(["gh", "api", "--paginate", "--slurp", endpoint], text=True)
     return [run for page in json.loads(result) for run in page["workflow_runs"]]
 

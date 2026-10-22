@@ -35,6 +35,10 @@ class CIReuseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "failure"):
                 ci.require_ci(REPOSITORY, SOURCE)
 
+    def test_newer_other_workflow_cannot_replace_source_ci(self):
+        documentation = run_record(id=11, path=".github/workflows/docs.yml")
+        self.assertEqual(ci.latest_run([run_record(), documentation], REPOSITORY, SOURCE)["id"], 10)
+
     def test_waits_for_pending_ci_without_running_it_again(self):
         pending = run_record(status="in_progress", conclusion=None)
         with (mock.patch.object(ci, "fetch_runs", side_effect=[[pending], [run_record()]]),
@@ -70,7 +74,7 @@ class CIReuseTests(unittest.TestCase):
             args = command.call_args.args[0]
             self.assertIn("--paginate", args)
             self.assertIn("--slurp", args)
-            self.assertIn("actions/workflows/ci.yml/runs?", args[-1])
+            self.assertIn("actions/runs?", args[-1])
             self.assertIn(f"head_sha={SOURCE}", args[-1])
 
 
