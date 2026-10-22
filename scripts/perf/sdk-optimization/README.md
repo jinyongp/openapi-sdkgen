@@ -9,6 +9,13 @@ already be available. See the fixed protocol and documentation boundary in
 `plans/sdk-optimization/representative-comparison.md`. Results are local evidence,
 not published GitHub Actions benchmarks. No full Graph or Cloudflare run is included.
 
+If the host stops the driver between completed Go cases, `resume-apis.py --output
+EXISTING_DIRECTORY` preserves completed samples and executes only missing cases.
+Use a fresh outer `preflight:perf` recorder directory and an appropriate deadline.
+Recovery checks the original worker, recorder, input and generator hashes and keeps
+using that unchanged timing worker. It refuses partial cases and missing TS cases;
+it does not overwrite a failed trial or retry a warm cache as a cold cache.
+
 Run through `devtools run preflight:perf`. This is an optional Linux diagnostic,
 not an optimization or an ordinary CI performance gate. It uses Python's standard
 library and the installed pinned Go/Node/TypeScript tools. It does not install
