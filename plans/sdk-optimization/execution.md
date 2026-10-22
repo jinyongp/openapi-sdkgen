@@ -7,17 +7,26 @@
 
 ## 최신 선택 SDK 검증과 대형 참고 결과
 
+최종 제품은 `52eab98`다. 통합 과정에서 발견한 canonical 선언·inline import 검사·
+selector hover 결함을 수정하고 전체 TS522·runtime1172·native/tools·지원compiler4개·
+교차빌드6개·예제와 Go core가 통과했다. Go 소비자166개·corpus37개 전체와 Go 선택
+결과는 실제269개 의존 입력의 동일성을 대조해 재사용했다. Graph TS 선택5개는 최종
+생성기로 새275source 전체·독립 선언·공개/양성/음성 consumer·네 compiler·HTTP를 통과했다.
+증분/복구/provider ABI·실제 archive/export/binary 검증도 통과했고 제품1841개 입력은
+그 뒤 바뀌지 않았다. `final-integration-review.md`와 언어·출력별 최종 문서가 현재 결과다.
+아래는 그 전의 실행 이력이다.
+
 후속 사용자 승인 범위를 `fc71325`에서 고정했다. corpus는 37개 전체 성공을 재사용하고
 Cloudflare는 토큰 확인 선택 SDK 전체 compile·HTTP 계약을 새로 통과했다. Graph는
 인증 요구 조회/수정·그룹 소속 확인·메일 안내·로그인 세션 취소 다섯 API의 server 포함
 TS 네 compiler 전체 source·독립 선언·정확한 원본 key/negative consumer, Go 전체
 compile과 두 언어의 실제 HTTP 각7건을 통과했다. 세부 범위·최초 잘못된 HTTP fixture의
 실패·교정과 초기 대형 선택의 생성 전용 결과는 `selected-sdk-verification.md`에 있다.
-단위 리뷰·원시 검산·커밋은 `523cbd9`다. 제품 변경은 `3560450` 이후 없다.
+초기 선택 단위 리뷰·원시 검산·커밋은 `523cbd9`이며 당시 제품은 `3560450`이었다.
 
 최신 전체 Graph의 20/29 project 뒤 RSS 종료와 Cloudflare 전체/warm RSS 종료·준비
 차단은 `full-stress-limits.md`에 보존했다. 추가 전체 실행은 하지 않았고 실패를 성공으로
-집계하지 않았다. 현재 마지막 통합 suite와 최종 배포 산출물 확인은 진행 중이다.
+집계하지 않았다. 후속 최종 통합·배포 검증은 위 최종 문서에서 완료했다.
 
 ## W01 공통·TS 선행 경로
 

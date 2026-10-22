@@ -17,6 +17,11 @@
     "operation_batching_decision": "operation-batching-decision.md",
     "scope_decision": "scope-decision-2026-10-22.md",
     "selected_sdk_verification": "selected-sdk-verification.md",
+    "final_typescript_verification": "final-typescript-verification.md",
+    "final_go_verification": "final-go-verification.md",
+    "final_output_review": "final-output-review.md",
+    "final_integration_review": "final-integration-review.md",
+    "raw_final": "measurements/2026-10-22/final-integration.tar.gz",
     "raw_preflight": "measurements/2026-10-21/preflight.tar.gz"
   },
   "task_ids": {

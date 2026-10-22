@@ -135,6 +135,17 @@ pass였다. workstream check는 `valid=true`, `issues=[]`, `closable=false`다. 
 - Spoonacular·Loket·Stripe·Cloudflare·DigitalOcean의 기존 HTTP 계약 검사 실행 증거.
 - 각 recorder의 성공·source manifest·실제 auditor binary와 현재 관련 source의 동일성.
 
-원본 catalog 실패와 CI 입력 재검증은 별도 경로로 남긴다. 최종 38/38 성공 전에는
-완료로 기록하지 않으며, 이 결과를 Graph 전체 compile·성능이나 새 공개 CI 근거로
-확대 해석하지 않는다.
+원본 catalog 실패와 CI 입력 재검증은 별도 경로로 남겼다. 위38/38 필수 조건은 후속
+사용자 승인으로 corpus37개전체·Cloudflare 선택 검증으로 대체됐다. 최종 결과와 실제
+의존성 대조는 `final-go-verification.md`를 따른다. Graph 전체 compile·성능이나 새
+공개 CI 근거로 확대 해석하지 않는다.
+
+## 최종 구현·통합 검증
+
+`52eab98`에서 TS522·runtime1172·native/tools·지원compiler4개·교차빌드6개·예제와
+Go core가 통과했다. 기존runtime25skip은 유지했다. Go 소비자166개와 corpus37개는
+실제Go의존269파일의 동일성을 확인한 correctness만 재사용했다. Graph 선택 TS275개
+전체 source·선언·consumer·네compiler·HTTP는 최종 생성 출력에서 새로 통과했다.
+증분/복구/provider/배포와 도구 self-test도 통과하고 제품 입력1841개가 그대로다.
+범위별 결과·발견한 세 결함·원시 보존·기존 한계와 최종 리뷰는
+`final-integration-review.md` 및 언어/출력별 최종 문서를 따른다.

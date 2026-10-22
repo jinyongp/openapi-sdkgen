@@ -1,5 +1,9 @@
 # 통합 리뷰 진행 기록
 
+이 문서는 당시 진행 이력이다. 사용자 승인으로 바뀐 범위와 최종 수정·검사·완료 판정은
+`final-integration-review.md`를 따른다. 아래 과거 미완료·전체 Graph gate를 현재 조건으로
+해석하지 않는다.
+
 대상: correctness 기준 `25d5626` 이후 이 workstream의 최적화·측정 도구·결정 기록.
 최종 완료 판정 전에는 아래 미완료 항목과 최신 commit의 검사 유효성을 다시 대조한다.
 수용 기준은 `plan.md`와 `execution-policy.md`를 따른다.
