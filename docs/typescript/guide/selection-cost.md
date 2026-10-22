@@ -27,8 +27,30 @@ Use [static imports](/typescript/guide/selective-client#bundlers) when your bund
 needs to discover the dependencies, and follow the
 [deployment guide](/typescript/guide/selective-client#deployment) when serving native ESM.
 
+## Compare generation and typechecking costs
+
+Selection still requires parsing and analyzing the input document. Shared generated code can
+reduce source bytes while adding helper modules. Additional helpers and type contracts can
+also make a small SDK larger. Fewer bytes do not guarantee fewer files, lower peak memory
+or faster typechecking. Measure generation, optional TypeScript checks,
+application bundling and runtime initialization separately. Compiler installation is not required
+to generate an SDK.
+
+For a version comparison, keep the input, selected APIs, add-ons, generator build options,
+Node version, compiler version and strict settings the same. Alternate the versions over repeated
+runs and generate into fresh directories. Distinguish a full check without `.tsbuildinfo` from
+an unchanged incremental check that reuses it. Both can start a fresh compiler process while
+the operating system's file cache remains warm. Neither measures rebuilding after a source edit.
+
+Peak generator/compiler RSS and heap retained after initializing a client are different memory
+metrics. Smaller generated source or faster module initialization does not establish cheaper
+whole-SDK compilation. A timeout or memory-limit termination is an incomplete check, not a
+successful faster result.
+
 ## Published measurements
 
 [Compatibility results](/typescript/reference/compatibility) publishes generation
 counts and times extracted from GitHub Actions, with links to the measured run
 and input documents. These results do not measure API server response time.
+They describe the linked revision and checks; they do not establish a before/after
+speedup between generator versions.
