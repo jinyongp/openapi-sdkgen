@@ -84,3 +84,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   생성 시간·peak RSS의 일관된 이득은 입증하지 못했다. 세 실제 API 전체 출력·
   소비자/소유권/race·실제 CLI·리뷰를 통과했다. 전용 cache 약 3.1 GiB를 유지하고
   오래된 실행 파일 약 74 MB를 제거했다. raw-source 정규화 생략 후보는 기각했다.
+- [10: 중간 AST 출력의 열 정렬](performance-resource-loop/10-intermediate-alignment.md):
+  완료·후보 기각. 전체 출력은 같았지만 할당 −0.45%에 비해 생성 시간/CPU 이득을
+  입증하지 못해 원래 runtime을 유지했다. stdlib oracle 회귀 검사와 전체 비교의
+  원시 근거를 보존했다. 후보 실행 파일 약 74 MB를 제거하고 cache 약 3.2 GiB를
+  유지한다. 다음은 AST 순회의 반복 타입 분석과 교체 cursor 구조를 조사한다.
