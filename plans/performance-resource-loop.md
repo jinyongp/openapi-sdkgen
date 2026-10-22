@@ -52,3 +52,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   채택. 파서 AST의 입력 계약을 명확히 하고 비노드 필드 박싱을 제거했다.
   실제 GitHub 누적 할당 5.12% 감소. 생성 시간의 일관된 이득은 입증하지 못했다.
   세 실제 API 출력과 관련 검사·표준 AST oracle·리뷰 완료. cache 약 2.2 GiB.
+- [04: facade 원본 소유권](performance-resource-loop/04-facade-source.md):
+  채택. 잘못된 위치 집합으로 중간 출력하던 경로를 없애고 공개 문서 손실을 수정했다.
+  직전 제품 대비 GitHub 시간 중앙값 10.66%·누적 할당 9.54% 감소. RSS 0.75%·
+  출력 0.69% 증가는 비용으로 기록한다. 세 실제 API의 전체 코드·초기화 순서,
+  최종 CLI·관련 소비자/게시 검사와 리뷰를 통과했다. cache 약 2.3 GiB.

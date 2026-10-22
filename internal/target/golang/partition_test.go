@@ -153,6 +153,72 @@ func Value() string {
 	}
 }
 
+func TestPartitionFacadePreservesDocumentation(t *testing.T) {
+	const source = `// Package models documents the generated API.
+package models
+
+// Count is the default item count.
+const Count = 3
+
+// Name identifies an item.
+type Name string
+
+// Names returns its arguments.
+func Names(values ...Name) []Name {
+	// This implementation comment must not enter the facade.
+	return values
+}
+`
+	var facade []byte
+	if err := partitionPackage([]partitionFile{{artifact: generator.Artifact{
+		Path: "models/names.go", Data: []byte(source),
+	}}}, "example.test/consumer/api", "models", generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		if artifact.Path == "models/names.go" {
+			facade = artifact.Data
+		}
+		return nil
+	}), 1); err != nil {
+		t.Fatal(err)
+	}
+	file, err := parser.ParseFile(token.NewFileSet(), "names.go", facade, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs := map[string]string{"package": file.Doc.Text()}
+	for _, declaration := range file.Decls {
+		switch declaration := declaration.(type) {
+		case *ast.FuncDecl:
+			docs[declaration.Name.Name] = declaration.Doc.Text()
+		case *ast.GenDecl:
+			for _, spec := range declaration.Specs {
+				switch spec := spec.(type) {
+				case *ast.TypeSpec:
+					docs[spec.Name.Name] = declaration.Doc.Text()
+				case *ast.ValueSpec:
+					docs[spec.Names[0].Name] = declaration.Doc.Text()
+				}
+			}
+		}
+	}
+	for name, want := range map[string]string{
+		"package": "Package models documents the generated API.\n",
+		"Count":   "Count is the default item count.\n",
+		"Name":    "Name identifies an item.\n",
+		"Names":   "Names returns its arguments.\n",
+	} {
+		if docs[name] != want {
+			t.Errorf("documentation for %s: got %q, want %q", name, docs[name], want)
+		}
+	}
+	if bytes.Contains(facade, []byte("This implementation comment")) {
+		t.Fatal("detached implementation comment entered the facade")
+	}
+	canonical, err := format.Source(facade)
+	if err != nil || !bytes.Equal(canonical, facade) {
+		t.Fatal("facade is not canonical Go source", err)
+	}
+}
+
 func TestPartitionForwardReferencesCyclesAndLocalBindings(t *testing.T) {
 	files := []partitionFile{
 		{artifact: generator.Artifact{Path: "models/first.go", Data: []byte(`package models

@@ -349,7 +349,7 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 	}
 	var facade []byte
 	if !p.private {
-		facade, err = p.facade(node, file.group)
+		facade, err = p.facade(file.artifact.Data, file.group)
 		if err != nil {
 			return err
 		}
@@ -557,15 +557,12 @@ func transformPartitionValue(value reflect.Value, transform func(ast.Node) ast.N
 	return nil
 }
 
-func (p *packagePartition) facade(original *ast.File, group int) ([]byte, error) {
-	// Parse again: signatures retained by the facade must not be rewritten when
-	// the implementation is qualified and its private runtime state is exported.
-	var buffer bytes.Buffer
-	if err := format.Node(&buffer, token.NewFileSet(), original); err != nil {
-		return nil, err
-	}
+func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
+	// Reparse the rendered source into an independent tree with its own positions.
+	// Printing the implementation tree with an unrelated FileSet loses comment
+	// ownership and repeats formatting before the facade's final normalization.
 	set := token.NewFileSet()
-	file, err := parser.ParseFile(set, "facade.go", buffer.Bytes(), parser.ParseComments)
+	file, err := parser.ParseFile(set, "facade.go", source, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
