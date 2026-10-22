@@ -157,6 +157,7 @@ selection. npm channels live in `.github/npm/packages.yml`.
 
 `devtools run publish:release` requests a version plan for remote `main`
 without running product checks.
+It uses the GitHub CLI's authentication and does not inject devtools profile values.
 Add `--yes` to prepare and publish, or `--prerelease rc` to select a prerelease
 channel. `--resume TAG` dispatches at the existing tag so npm provenance remains
 bound to that commit. Releaseway owns version calculation and source-bound tag

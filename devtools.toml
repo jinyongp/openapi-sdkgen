@@ -194,7 +194,6 @@ exec = ['bash', 'scripts/release/cross-build.sh']
 
 [commands."publish:release"]
 exec = ['bash', 'scripts/release/publish.sh']
-inject = true
 
 [commands."test:release"]
 exec = ['bash', 'scripts/release/test.sh']
