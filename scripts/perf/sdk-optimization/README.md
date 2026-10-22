@@ -1,5 +1,14 @@
 # Local SDK optimization preflight
 
+`compare-apis.py --output FRESH_DIRECTORY --pairs 5` compares the pinned original
+and final generator revisions on full TVMaze, ListenNotes and GitHub documents.
+Run it through `preflight:perf` with a 7,200-second outer deadline. It builds both
+generators from Git archives, then alternates generation and cold/warm compilation.
+Input hashes are checked before work; all inputs and compiler dependencies must
+already be available. See the fixed protocol and documentation boundary in
+`plans/sdk-optimization/representative-comparison.md`. Results are local evidence,
+not published GitHub Actions benchmarks. No full Graph or Cloudflare run is included.
+
 Run through `devtools run preflight:perf`. This is an optional Linux diagnostic,
 not an optimization or an ordinary CI performance gate. It uses Python's standard
 library and the installed pinned Go/Node/TypeScript tools. It does not install
