@@ -1,8 +1,12 @@
 # Graph·Cloudflare 선택 SDK 검증
 
+이 문서는 `523cbd9`의 초기 검증 기록이다. 이후 선언·hover 수정까지 반영한 최종
+Graph 선택 출력은 `final-typescript-verification.md`에서 새로 검증했다. Go 관련 입력은
+동일성을 대조해 재사용하며 최종 corpus 결과는 `final-go-verification.md`를 따른다.
+
 2026-10-22 사용자는 전체 Graph를 참고 검증으로 전환하고, 이어서 **corpus 37개 전체 +
 Cloudflare 선택 API 검증**을 승인했다. 전체 corpus 38개 성공이나 전체 Graph 지원을
-주장하지 않는다. 제품 소스는 `3560450`과 같으며 테스트·측정 자료만 추가했다.
+주장하지 않는다. 이 초기 실행의 제품 소스는 `3560450`과 같았다.
 
 ## 실제 결과
 

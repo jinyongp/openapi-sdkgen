@@ -103,3 +103,13 @@ manifest·producer를 보존하며 전체 SDK/임시 선언/실행 파일은 중
 제외했고,36개 benchmark 로그의 CPU 모델 header 값만 생략해 원본 hash와 변환을
 index에 명시했다. 수치·오류·이상 표본은 바꾸지 않았다. 현재 전체 생성기 timing이나
 전체 Graph/Cloudflare 성공을 증명하는 자료가 아니다.
+
+## 최종 통합·선택·배포 검증
+
+`final-integration.tar.gz`: 12,109,087 B, SHA-256
+`df997b51b481bfb37e9bad69a03ce4e2c5a5b9909330df0e19e75fe2d0053583`.
+8,517개 entry의 크기·hash를 검산했다. `52eab98`의 실제 SSOT 전체 결과, 이전 실패와
+수정 검증, 최종 Graph 선택 SDK의 네 compiler·HTTP, corpus37개와 Go 선택의 정확한
+재사용 근거, 최종 증분/복구/provider·SDK archive/export/binary 측정을 포함한다.
+원격 CI 통과·전체 Graph/Cloudflare 성공·비교 성능 개선을 주장하는 자료는 아니다.
+제외한 원본/실행 파일/cache와 초기 scratch 진단의 한계는 archive index를 따른다.
