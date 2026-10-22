@@ -67,15 +67,19 @@ class CIReuseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 ci.require_ci(REPOSITORY, SOURCE)
 
-    def test_reads_all_pages_and_requests_exact_source_ci(self):
-        pages = [dict(workflow_runs=[run_record()]), dict(workflow_runs=[run_record(id=11)])]
+    def test_reads_all_pages_before_selecting_exact_source_ci(self):
+        pages = [dict(workflow_runs=[run_record(id=13, head_sha="b" * 40),
+                                    run_record(id=12, path=".github/workflows/docs.yml")]),
+                 dict(workflow_runs=[run_record(), run_record(id=11)])]
         with mock.patch.object(ci.subprocess, "check_output", return_value=json.dumps(pages)) as command:
-            self.assertEqual(len(ci.fetch_runs(REPOSITORY, SOURCE)), 2)
+            records = ci.fetch_runs(REPOSITORY)
+            self.assertEqual(len(records), 4)
+            self.assertEqual(ci.latest_run(records, REPOSITORY, SOURCE)["id"], 11)
             args = command.call_args.args[0]
             self.assertIn("--paginate", args)
             self.assertIn("--slurp", args)
             self.assertIn("actions/runs?", args[-1])
-            self.assertIn(f"head_sha={SOURCE}", args[-1])
+            self.assertNotIn("head_sha=", args[-1])
 
 
 class ReleaseMarkerTests(unittest.TestCase):

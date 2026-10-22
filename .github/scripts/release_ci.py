@@ -6,7 +6,6 @@ import re
 import subprocess
 import sys
 import time
-from urllib.parse import urlencode
 
 
 def git(*args):
@@ -40,11 +39,10 @@ def latest_run(runs, repository, commit):
     return max(candidates, key=lambda run: run["id"])
 
 
-def fetch_runs(repository, commit):
-    query = urlencode({"head_sha": commit, "event": "push", "branch": "main", "per_page": 100})
-    # Resolve runs through the repository index. latest_run still checks the
-    # exact workflow identity, alongside source, event, branch and repository.
-    endpoint = f"repos/{repository}/actions/runs?{query}"
+def fetch_runs(repository):
+    # Search-filtered lists can omit existing source CI. Read the complete
+    # repository index; latest_run enforces every release-source condition.
+    endpoint = f"repos/{repository}/actions/runs?per_page=100"
     result = subprocess.check_output(["gh", "api", "--paginate", "--slurp", endpoint], text=True)
     return [run for page in json.loads(result) for run in page["workflow_runs"]]
 
@@ -53,7 +51,7 @@ def require_ci(repository, commit, timeout=1800):
     deadline = time.monotonic() + timeout
     announced = None
     while True:
-        run = latest_run(fetch_runs(repository, commit), repository, commit)
+        run = latest_run(fetch_runs(repository), repository, commit)
         if run["status"] == "completed":
             if run["conclusion"] != "success":
                 raise ValueError(f"Latest CI is {run['conclusion']}: {run['html_url']}")
