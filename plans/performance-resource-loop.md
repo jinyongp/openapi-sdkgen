@@ -48,3 +48,7 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   세 실제 API 전체 출력과 관련 검사·리뷰를 통과했다. 전용 cache 약 2.1 GiB.
 - [01+02 통합 확인](performance-resource-loop/integration-01-02.md):
   최종 실제 CLI의 세 입력 전체 파일 hash를 원래 배포 버전과 직접 대조해 일치했다.
+- [03: AST 노드 판별과 복사](performance-resource-loop/03-ast-node-boxing.md):
+  채택. 파서 AST의 입력 계약을 명확히 하고 비노드 필드 박싱을 제거했다.
+  실제 GitHub 누적 할당 5.12% 감소. 생성 시간의 일관된 이득은 입증하지 못했다.
+  세 실제 API 출력과 관련 검사·표준 AST oracle·리뷰 완료. cache 약 2.2 GiB.

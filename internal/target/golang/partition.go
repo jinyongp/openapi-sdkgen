@@ -402,7 +402,7 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 		}
 		return true
 	})
-	if err := transformPartitionAST(reflect.ValueOf(node), func(n ast.Node) ast.Node {
+	if err := transformPartitionAST(node, func(n ast.Node) ast.Node {
 		if id, ok := n.(*ast.Ident); ok && !ignored[id] && partitionGlobal(node, id) {
 			if symbol, exists := p.symbols[id.Name]; exists {
 				return qualify(symbol)
@@ -506,14 +506,22 @@ func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
 	return format.Source(buffer.Bytes())
 }
 
-// Reflection visits AST syntax fields only, never parser object/scope links.
-// It allows replacing an identifier expression with a qualified selector while
-// retaining all declaration, literal, comment and local-binding identities.
-func transformPartitionAST(value reflect.Value, transform func(ast.Node) ast.Node) error {
-	if !value.IsValid() || value.Kind() == reflect.Pointer && value.IsNil() || value.Kind() == reflect.Interface && value.IsNil() {
+// Parser-owned Go syntax stores nodes in pointer/interface slots. Struct and
+// scalar fields carry data; parser object/scope links are outside the syntax tree.
+func transformPartitionAST(file *ast.File, transform func(ast.Node) ast.Node) error {
+	return transformPartitionValue(reflect.ValueOf(file), transform)
+}
+
+func transformPartitionValue(value reflect.Value, transform func(ast.Node) ast.Node) error {
+	if !value.IsValid() {
 		return nil
 	}
-	if value.CanInterface() {
+	kind := value.Kind()
+	nodeSlot := kind == reflect.Pointer || kind == reflect.Interface
+	if nodeSlot && value.IsNil() {
+		return nil
+	}
+	if nodeSlot && value.CanInterface() {
 		if node, ok := value.Interface().(ast.Node); ok {
 			replacement := transform(node)
 			if replacement != node {
@@ -526,12 +534,12 @@ func transformPartitionAST(value reflect.Value, transform func(ast.Node) ast.Nod
 			}
 		}
 	}
-	switch value.Kind() {
+	switch kind {
 	case reflect.Interface, reflect.Pointer:
-		return transformPartitionAST(value.Elem(), transform)
+		return transformPartitionValue(value.Elem(), transform)
 	case reflect.Slice:
 		for index := 0; index < value.Len(); index++ {
-			if err := transformPartitionAST(value.Index(index), transform); err != nil {
+			if err := transformPartitionValue(value.Index(index), transform); err != nil {
 				return err
 			}
 		}
@@ -541,7 +549,7 @@ func transformPartitionAST(value reflect.Value, transform func(ast.Node) ast.Nod
 			if field == "Obj" || field == "Scope" || field == "Unresolved" {
 				continue
 			}
-			if err := transformPartitionAST(value.Field(index), transform); err != nil {
+			if err := transformPartitionValue(value.Field(index), transform); err != nil {
 				return err
 			}
 		}
