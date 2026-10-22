@@ -746,3 +746,10 @@ source를 canonical strict 설정과 native compiler로 JS·declaration까지 em
 195,264,512바이트에 통과했다. `source-check:npm`도 프로젝트 SSOT 경로에서
 0.49초·RSS 139,841,536바이트에 통과했다. 게시·배포를 실행하거나 공개 성능 결과를
 갱신하지 않았다. 전체 Graph·네 compiler·최종 runtime 통합은 여전히 남는다.
+
+완료한 출력·복구 단위의 실제 SDK·probe·config·JS/declaration·producer와 원시
+recorder를 `measurements/2026-10-22/distribution.tar.gz`에 보관했다. 2,160개 항목·
+2,595,313바이트이며 SHA-256은 `df46712754d65a5b668365d9050d4074de8affa3614fead69d8d183c0dc8e177`다.
+index에 기록한 자료 파일과 patch를 archive에서 다시 읽어 검산했다. 실행 파일 제외와 정확한
+dirty source 재현 경계는 같은 디렉터리 README에 기록했다. 진행 중 corpus/Graph와
+private task context는 넣지 않았다.
