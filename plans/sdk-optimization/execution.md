@@ -2,7 +2,8 @@
 
 현재 완료 범위는 `scope-decision-2026-10-22.md`와 갱신된 `plan.md`를 따른다.
 전체 Graph는 사용자가 참고 검증으로 전환했다. 아래 과거 기록의 전체 Graph 필수 gate는
-당시 계획이며, 현재는 일반 제공자 38개·대표 SDK·Graph 선택 SDK와 최종 통합을 검증한다.
+당시 계획이며, 후속 사용자 승인에 따라 현재는 corpus 37개 전체·Cloudflare 선택 SDK·
+대표 SDK·Graph 선택 SDK와 최종 통합을 검증한다. 추가 전체 Graph·Cloudflare 반복은 하지 않는다.
 
 ## W01 공통·TS 선행 경로
 

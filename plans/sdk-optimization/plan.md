@@ -1,15 +1,15 @@
 # SDK 대형 출력 최적화 실행 계획
 
 상세 근거: `investigation.md`, `preflight.md`, `execution.md`. 현재 범위는 사용자가 승인한
-`scope-decision-2026-10-22.md`를 따른다. 전체 Graph는 참고 검증이며 일반 제공자 38개,
-Graph 선택 SDK와 최종 통합 수용 기준을 완료한다. 실행 자원 조건은
+`scope-decision-2026-10-22.md`를 따른다. 전체 Graph·Cloudflare는 참고 검증이며 corpus
+37개 전체·Cloudflare 선택 SDK·Graph 선택 SDK와 최종 통합 수용 기준을 완료한다. 실행 자원 조건은
 `execution-policy.md`를 따른다.
 
 ## 완료 계약
 
 - 고정 Graph beta의 29,581 operation, 현재 공개 API·wire·검증·오류·선택 경계와 기존 helper omission 계약을 유지한다.
 - TS 5.7.3/5.9.3/6.0.3/7.0.2에서 대표 SDK와 Graph 선택 SDK의 생성 source 전체·공개/negative consumer를 strict 검사한다. `skipLibCheck`, `noCheck`, `@ts-nocheck`, broad `any` 추가, 선택된 SDK의 일부 모듈 제외로 성공을 만들지 않는다.
-- Go 1.27.2에서 server 포함 corpus 문서 38개(실제 API 문서 29개·fixture 9개)와 Graph 선택 SDK를 생성·전체 compile·실행한다. 전체 Graph의 기존 실패는 참고 기록에 그대로 남긴다.
+- Go 1.27.2에서 server 포함 corpus 문서 37개(실제 API 문서 28개·fixture 9개) 전체와 Cloudflare·Graph 선택 SDK를 생성·전체 compile·실행한다. 전체 Graph·Cloudflare의 기존 실패는 참고 기록에 그대로 남기며 38개 전체 성공으로 집계하지 않는다.
 - 성능 이득은 동일 입력·도구·옵션·자원·캐시 경계의 실측으로 판단한다. 추정 바이트 절감과 합성 결과는 제품 완료 근거가 아니다.
 - 각 작업은 범위 리뷰 → 원인 수정 → 영향받은 caller·검사 재확인 → 남은 대상 전수 리뷰 → 해당 작업만 커밋한다. 마지막 W11에서 통합 리뷰루프를 수행한다. push·release·배포는 이 계획의 완료 조건에 포함하지 않는다.
 
@@ -31,6 +31,7 @@ Graph 선택 SDK와 최종 통합 수용 기준을 완료한다. 실행 자원 �
 | D12 | fingerprint/manifest 해시는 실제 새 출력과 일치하게 바꾼다. ABI 불변이면 기존 ABI 사용, provider 혼용 거절은 계속 검사한다. 이전 generator로 되돌려 재생성하는 복구 경로를 보장한다. | W02/W06 단위, W10 통합 | 배포 자료 갱신 |
 | D13 | registry 함수만 나누면 남는 대형 타입 파일도 별도로 다룬다. 실제 Graph의 client/types 42.66 MB·routes/index 36.51 MB·selective/types 33.44 MB를 canonical named 계약과 bounded 내부 모듈로 나누는 후보를 검증한다. 공개 Client·RouteCalls·Routes/ID의 literal·generic·declaration 소비를 유지하며 public facade로 연결한다. | W03 별도 단위, W05/W08 전체 checker·consumer | TS 구조 최적화 완료 |
 | D14 | 재귀 property와 추가 속성 index union의 기존 TS2456은 성능 후보와 분리해 먼저 해결한다. `objectIndexHasSelfReference`가 additional/pattern만 검사하고 고정 property에서 union에 들어온 self 참조를 놓친다. canonical input/output 계약과 허용·거절 의미를 유지하는 최소 표현 수정을 별도 커밋한다. | W01R의 축소 사례·네 compiler·기존 재귀 검사 | W02/W03/W04 |
+| D15 | 2026-10-22 후속 사용자 승인으로 Cloudflare도 선택 SDK 검증으로 전환한다. corpus 37개 전체와 Cloudflare 토큰 확인 선택 API의 전체 compile·HTTP 계약을 필수로 한다. 전체 Cloudflare의 자원 실패는 보존하고 추가 전체 반복은 하지 않는다. | `scope-decision-2026-10-22.md`, `selected-sdk-verification.md` → W09/W11 | 최종 범위 확정 |
 
 D03/D04는 측정 전 확정할 실험 정책이다. 임의 숫자를 이미 합의된 제품 SLA로 취급하지 않는다. D05/D07/D08/D10/D11은 아래 선행 측정과 조건부 채택으로 해결한다. public API·선택 범위·검사 강도·정의 패키지를 바꾸는 방향은 자동 결정하지 않는다.
 
@@ -129,11 +130,11 @@ native AST·전체 compile pilot과 paired HTTP runtime 10쌍을 검증하고 �
 
 검증: 대표 fixture의 네 compiler·NodeNext/Bundler/CommonJS·독립/isolated declaration·generic/negative consumer·Link/private/순서 회귀와, 고정 Graph 선택 SDK의 전체 source·정확한 공개 key·사용/negative consumer를 검증한다. 선택 route·ID와 원본 pin, server/named/선택 경계를 명시한다. 기존 실패를 성공으로 바꾸지 않으며 원래 source 소비와 TS 선택 설치 계약을 유지한다. 리뷰루프 후 최종 결정과 근거를 커밋한다.
 
-### W09 — Go 38개 제공자·Graph 선택 SDK와 런타임 검증
+### W09 — Go corpus 37개 전체·Cloudflare/Graph 선택 SDK 검증
 
-선행 W06/W07/W06E. Go 1.27.2·고정 입력·server·기존 compile 정책에서 corpus 문서 38개와 Graph 선택 SDK를 생성·전체 compile·HTTP 검증한다. baseline/P/E/채택 V와 최종 조합의 대표 fixture를 구분하고, 관련 생성 의존성·입력·도구가 같은 correctness만 재사용한다. 성능 이득은 조건이 유효한 실제 비교 근거로 판단한다.
+선행 W06/W07/W06E. Go 1.27.2·고정 입력·server·기존 compile 정책에서 corpus 문서 37개 전체와 Cloudflare/Graph 선택 SDK를 생성·전체 compile·HTTP 검증한다. baseline/P/E/채택 V와 최종 조합의 대표 fixture를 구분하고, 관련 생성 의존성·입력·도구가 같은 correctness만 재사용한다. 성능 이득은 조건이 유효한 실제 비교 근거로 판단한다.
 
-검증: public symbol·defined package·method set·reflect·JSON tag·error identity, JSON/XML/multipart/binary·stream ordering/cancel/close, 일반/named/selective/dynamic registry를 기존 회귀와 실제 선택 SDK에서 확인한다. 대표 입력의 생성/파일/배포·archive/binary·cold/warm·runtime 근거를 대조하고 조건이 같은 결과만 재사용한다. 전체 Graph 성공·5회 반복은 필수가 아니며 기존 실패·미실행 상태를 보존한다. `ci:dev go-consumers 1 1`과 필요한 `golang:perf` 모드를 활용한다.
+검증: public symbol·defined package·method set·reflect·JSON tag·error identity, JSON/XML/multipart/binary·stream ordering/cancel/close, 일반/named/selective/dynamic registry를 기존 회귀와 실제 선택 SDK에서 확인한다. 대표 입력의 생성/파일/배포·archive/binary·cold/warm·runtime 근거를 대조하고 조건이 같은 결과만 재사용한다. 전체 Graph 성공·5회 반복과 전체 Cloudflare 성공·추가 반복은 필수가 아니며 기존 실패·미실행 상태를 보존한다. `ci:dev go-consumers 1 1`과 필요한 `golang:perf` 모드를 활용한다.
 
 ### W10 — 증분 생성·배포 산출물·CI 근거와 문서 일치
 
@@ -145,7 +146,7 @@ native AST·전체 compile pilot과 paired HTTP runtime 10쌍을 검증하고 �
 
 선행 W10. W00~W10의 최종 commit·결정·검사 basis를 대조한다. 전체 범위를 pending/reviewed/needs-recheck로 나누고 closure/registry/helpers, Go placement/pack/validator/runtime, output/distribution, CI/docs를 모두 리뷰한다. 발견한 필수 결함은 원인을 수정하고 caller와 무효화된 검사만 재수행한 뒤 모든 영역을 다시 완료한다.
 
-필수 검사: `ci:dev go-core`, `ci:dev go-consumers 1 1`, `ci:dev typescript-generator`, `ci:dev typescript-runtime`, `ci:dev typescript-matrix`, `ci:dev typescript-tools`, `compilers:verify all`, `check:dev`, 변경한 문서 검사, W08 대표 TS·Graph 선택 SDK 네 compiler, W09 Go 38개 제공자·선택 SDK, 유효한 대표 성능 근거. 같은 최종 basis에서 통과한 suite는 재사용하고 중복 실행하지 않는다. 전체 Graph 추가 반복·release 명령은 실행하지 않는다.
+필수 검사: `ci:dev go-core`, `ci:dev go-consumers 1 1`, `ci:dev typescript-generator`, `ci:dev typescript-runtime`, `ci:dev typescript-matrix`, `ci:dev typescript-tools`, `compilers:verify all`, `check:dev`의 SSOT 통합 검사, 변경한 문서 검사, W08 대표 TS·Graph 선택 SDK 네 compiler, W09 Go corpus 37개 전체·Cloudflare/Graph 선택 SDK, 유효한 대표 성능 근거. 같은 최종 basis에서 통과한 suite는 재사용하고 중복 실행하지 않는다. 전체 Graph·Cloudflare 추가 반복·release 명령은 실행하지 않는다. devtools 포트 준비가 vault 잠금으로 차단되면 비밀값 없는 기존 측정 명령이 준비한 동일 환경에서 `scripts/dev/check.sh`를 직접 구성 실행하고 원래 명령의 차단을 함께 기록한다.
 
 각 코드 수정은 단위 리뷰·검사 후 커밋한다. 마지막에는 통합 리뷰·최종 evidence 갱신을 커밋한다. `git status --short`, unstaged/staged stat·`diff --check`, task-owned/기존 변경 분리를 확인한다. devtools validation basis→실제 결과 record→task done, 전체 수용 기준과 integration validation을 확인한 뒤 workstream close한다. 실패·예산 초과·남은 public 계약 결정은 해당 상태로 남기고 완료로 기록하지 않는다.
 

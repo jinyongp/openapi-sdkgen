@@ -4,14 +4,19 @@
 workstream: `88a65ff3-848d-4fff-a307-325ab4cbb221`, 조사 작업 W00.
 
 현재 수용 범위는 2026-10-22 사용자가 승인한 `scope-decision-2026-10-22.md`를 따른다.
-전체 Graph는 참고 스트레스 사례로 전환하고, 일반 제공자 38개·대표 SDK·Graph 선택 SDK의
+전체 Graph·Cloudflare는 참고 스트레스 사례로 전환하고, corpus 37개 전체·Cloudflare 선택 SDK·대표 SDK·Graph 선택 SDK의
 정확성·호환성·배포와 최종 통합을 검증한다. 아래 초기 조사·기존 실패 근거는 보존한다.
 
-범위 변경은 devtools definition revision 2105에 원자적으로 반영했다. 로컬 spec/plan과
+첫 Graph 범위 변경은 devtools definition revision 2105에 원자적으로 반영했다. 로컬 spec/plan과
 15개 task·16개 validation·14개 현재 acceptance 및 전체 plan 참조를 전수 대조했고
 dependency 변경과 구조 오류는 없었다. `scope-validation-2026-10-22.json`에 hash와
 검증 결과를 보관했다. 정의 변경으로 기존 완료 11개가 stale이 된 것은 테스트 실패가
 아니며, 현재 범위에 유효한 실제 근거를 검토·수용하기 전 완료로 복구하지 않는다.
+
+후속 Cloudflare 결정은 definition 2163에서 17개 연산으로 반영했다. spec/plan 본문과
+모든 plan 참조·task/validation 의존성·acceptance 연결을 대조했고 구조 오류는 없다.
+`cloudflare-scope-validation-2026-10-22.json`이 이 시점의 정합성 결과다.
+이 정의에서도 기존 완료 11개는 유효한 근거를 개별 재검토한 뒤 복구한다.
 
 ## 실행 결과
 

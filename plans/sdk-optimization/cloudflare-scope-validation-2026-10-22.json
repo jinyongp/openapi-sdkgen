@@ -1,0 +1,15 @@
+{
+  "status": "pass",
+  "scope": "Second explicitly approved scope decision and document/definition consistency; not a new product test",
+  "definitionRevision": 2163,
+  "tasks": 15,
+  "validations": 16,
+  "operations": 17,
+  "structureIssues": [],
+  "dependenciesAndAcceptanceLinksPreserved": true,
+  "planSha256": "380dce329c50fe7cd4cd2fbcae26eb18140e3cbb2b523a8e5a0999f6471f9637",
+  "specWithDecisionSha256": "18ee36ca7e517bb0b6aa59248eeb8cc5eff78bb688322a39387ce347ab4ce49f",
+  "priorCompletionsRequiringReview": 11,
+  "mandatoryScope": ["37 full corpus documents", "selected Cloudflare token API", "selected Graph SDK", "representative compatibility/performance", "output/distribution", "final SSOT integration and review"],
+  "optionalOnly": ["full Graph", "full Cloudflare"]
+}

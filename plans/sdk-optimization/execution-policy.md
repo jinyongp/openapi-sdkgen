@@ -8,7 +8,8 @@
 
 2026-10-22 사용자 결정은 `scope-decision-2026-10-22.md`에 기록했다. 전체 Graph는
 참고 검증으로 전환했으며 아래의 전체 Graph 성공·TS 3회/Go 5회 반복·전체 warm 계획은
-이전 실험의 이력이다. 추가 전체 Graph 실험을 시작하지 않는다. 일반 제공자 38개,
+이전 실험의 이력이다. 후속 사용자 승인으로 Cloudflare도 선택 검증으로 전환했다.
+추가 전체 Graph·Cloudflare 실험을 시작하지 않는다. corpus 37개 전체·Cloudflare 선택 SDK,
 대표 성능 근거와 Graph 선택 SDK의 정확성·호환성은 현재 필수 범위다.
 
 ## 기준선과 관측 경계
@@ -383,5 +384,5 @@ recorder의 200 ms 관측 간격보다 짧으면 그 외부 시간을 비교 지
 각 task에서 실제 결과·변경 caller·미검증 범위를 확인한 뒤 해당 작업을 커밋한다.
 devtools의 현재 run/basis에 근거를 기록하고 done 처리한다. W11에서는 최종 commit의
 전체 제품 source/consumer/runtime/output/docs, 대표 TS·Graph 선택 SDK 네 compiler와
-Go corpus 38개·선택 SDK를 통합 리뷰한다. 참고 Graph 실패는 그대로 보존하며
+Go corpus 37개 전체·Cloudflare/Graph 선택 SDK를 통합 리뷰한다. 참고 대형 실패는 그대로 보존하며
 남은 필수 검증이 있으면 workstream을 close하지 않는다.
