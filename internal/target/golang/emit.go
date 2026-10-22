@@ -51,6 +51,7 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		}
 	}
 	originalSink := generator.ArtifactSink(packer)
+	formatter := partitionFormatter{}
 	schemaBindings := make(map[string]partitionReference)
 	modelBindings := make(map[string]partitionReference)
 	packages := make(map[string][]partitionFile)
@@ -62,14 +63,14 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 		directory := path.Dir(artifact.Path)
 		if directory != "internal/schema" {
 			var err error
-			artifact, err = bindPartitionImports(artifact, prepared.ImportPath+"/internal/schema", schemaBindings)
+			artifact, err = formatter.bindImports(artifact, prepared.ImportPath+"/internal/schema", schemaBindings)
 			if err != nil {
 				return err
 			}
 		}
 		if directory != "models" {
 			var err error
-			artifact, err = bindPartitionImports(artifact, prepared.ImportPath+"/models", modelBindings)
+			artifact, err = formatter.bindImports(artifact, prepared.ImportPath+"/models", modelBindings)
 			if err != nil {
 				return err
 			}
@@ -148,7 +149,7 @@ func (Generator) EmitTo(plan generator.Plan, sink generator.ArtifactSink) error 
 			} else if phase == "models" {
 				bindings = modelBindings
 			}
-			if err := emitPartitioned(packages[phase], prepared.ImportPath, phase, originalSink, bindings); err != nil {
+			if err := emitPartitioned(packages[phase], prepared.ImportPath, phase, originalSink, bindings, &formatter); err != nil {
 				return err
 			}
 			delete(packages, phase)

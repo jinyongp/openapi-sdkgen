@@ -23,6 +23,7 @@ import (
 // consumer's import paths, distinct model identities and method sets.
 const partitionThreshold = 8 << 20
 const partitionBatch = 4 << 20
+const partitionFormatBufferBytes = 1 << 20
 
 type partitionFile struct {
 	artifact generator.Artifact
@@ -49,9 +50,10 @@ type packagePartition struct {
 	sharedTypes                  map[string]bool
 	private                      bool
 	astWalker                    partitionASTWalker
+	formatter                    *partitionFormatter
 }
 
-func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink, bindings map[string]partitionReference) error {
+func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink, bindings map[string]partitionReference, formatter *partitionFormatter) error {
 	size := 0
 	for _, file := range files {
 		size += len(file.artifact.Data)
@@ -64,16 +66,17 @@ func emitPartitioned(files []partitionFile, root, directory string, sink generat
 		}
 		return nil
 	}
-	return partitionPackageBound(files, root, directory, sink, partitionBatch, bindings)
+	return partitionPackageBound(files, root, directory, sink, partitionBatch, bindings, formatter)
 }
 
 func partitionPackage(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int) error {
-	return partitionPackageBound(files, root, directory, sink, batch, nil)
+	formatter := partitionFormatter{}
+	return partitionPackageBound(files, root, directory, sink, batch, nil, &formatter)
 }
 
-func partitionPackageBound(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int, bindings map[string]partitionReference) error {
+func partitionPackageBound(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int, bindings map[string]partitionReference, formatter *partitionFormatter) error {
 	p := packagePartition{root: root, directory: directory, packageName: path.Base(directory), files: files, private: bindings != nil && directory == "internal/schema",
-		symbols: make(map[string]partitionSymbol), fields: make(map[string]string), methods: make(map[string]string), sharedTypes: make(map[string]bool)}
+		symbols: make(map[string]partitionSymbol), fields: make(map[string]string), methods: make(map[string]string), sharedTypes: make(map[string]bool), formatter: formatter}
 	references := make([][]string, len(files))
 	for index, file := range files {
 		node, err := parser.ParseFile(token.NewFileSet(), file.artifact.Path, file.artifact.Data, 0)
@@ -181,7 +184,7 @@ func partitionPackageBound(files []partitionFile, root, directory string, sink g
 // Generated callers use implementation bindings directly instead of reloading
 // duplicate facade export data. Internal schema facades are unnecessary once
 // callers have direct bindings; public model facades retain their API.
-func bindPartitionImports(artifact generator.Artifact, source string, bindings map[string]partitionReference) (generator.Artifact, error) {
+func (formatter *partitionFormatter) bindImports(artifact generator.Artifact, source string, bindings map[string]partitionReference) (generator.Artifact, error) {
 	if !strings.HasSuffix(artifact.Path, ".go") || len(bindings) == 0 || !bytes.Contains(artifact.Data, []byte(strconv.Quote(source))) {
 		return artifact, nil
 	}
@@ -240,7 +243,7 @@ func bindPartitionImports(artifact generator.Artifact, source string, bindings m
 	for _, location := range sortedKeys(imports) {
 		addPartitionImport(file, imports[location], location)
 	}
-	artifact.Data, err = formatPartitionFile(set, file)
+	artifact.Data, err = formatter.format(set, file)
 	return artifact, err
 }
 
@@ -443,7 +446,7 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 	for _, group := range groups {
 		addPartitionImport(node, imports[group], p.importPath(group))
 	}
-	data, err := formatPartitionFile(set, node)
+	data, err := p.formatter.format(set, node)
 	if err != nil {
 		return err
 	}
@@ -463,7 +466,12 @@ func addPartitionImport(file *ast.File, alias, location string) {
 	file.Imports = append(file.Imports, spec)
 }
 
-func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
+// Serialization scratch belongs to one emission, independently of its artifacts.
+type partitionFormatter struct {
+	buffer bytes.Buffer
+}
+
+func (formatter *partitionFormatter) format(set *token.FileSet, file *ast.File) ([]byte, error) {
 	used := make(map[string]bool)
 	ast.Inspect(file, func(n ast.Node) bool {
 		if selector, ok := n.(*ast.SelectorExpr); ok {
@@ -496,15 +504,20 @@ func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
 		declarations = append(declarations, declaration)
 	}
 	file.Decls = declarations
-	var buffer bytes.Buffer
+	formatter.buffer.Reset()
+	defer func() {
+		if formatter.buffer.Cap() > partitionFormatBufferBytes {
+			formatter.buffer = bytes.Buffer{}
+		}
+	}()
 	// Serialize the rewritten AST once, then normalize the resulting source.
 	// format.Node copies and reparses files with grouped imports before printing;
 	// that import-sorting pass is redundant with the final format.Source below.
 	config := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
-	if err := config.Fprint(&buffer, set, file); err != nil {
+	if err := config.Fprint(&formatter.buffer, set, file); err != nil {
 		return nil, err
 	}
-	return format.Source(buffer.Bytes())
+	return format.Source(formatter.buffer.Bytes())
 }
 
 // Child layouts belong to the parser's AST types, not individual syntax trees.
@@ -672,5 +685,5 @@ func (p *packagePartition) facade(set *token.FileSet, source *ast.File, group in
 	// Detached body comments must not remain interleaved with forwarding code.
 	file.Comments = nil
 	addPartitionImport(&file, "sdkgenimpl", p.importPath(group))
-	return formatPartitionFile(set, &file)
+	return p.formatter.format(set, &file)
 }

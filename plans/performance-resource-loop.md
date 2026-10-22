@@ -94,3 +94,9 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   GitHub 생성 시간 중앙값 2.06%·CPU 1.82% 감소, 최대 RSS 1.06% 증가는 비용으로 기록한다.
   세 실제 API 전체 출력·metadata/교체/소비자/race·실제 CLI 검증과 리뷰를 통과했다.
   Go cache 약 3.2 GiB를 유지하고 오래된/benchmark 실행 파일 약 156 MB를 제거했다.
+- [12: 재작성 임시 저장소의 수명](performance-resource-loop/12-identifier-rewrites.md):
+  채택. binding 통합 후보는 주석 이동으로 기각하고 기존 형식을 유지했다.
+  emission 소유·1 MiB 보관 상한의 직렬화 scratch로 GitHub 누적 할당 4.55% 감소.
+  시간 중앙값 −0.27%·RSS +0.65%를 구분해 기록한다. 세 실제 API 전체 출력·
+  소유권/오류/소비자/race·실제 CLI 검증과 리뷰 통과. cache 약 3.3 GiB 유지,
+  오래된 실행 파일 약 74 MB 제거.

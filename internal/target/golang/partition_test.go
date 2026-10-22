@@ -86,7 +86,8 @@ type local int
 func (value local) Value() int { return int(value) }
 func ShadowResult() int { return Shadow(local(3)) }
 `
-	artifact, err := bindPartitionImports(generator.Artifact{Path: "models/names.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
+	formatter := partitionFormatter{}
+	artifact, err := formatter.bindImports(generator.Artifact{Path: "models/names.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
 		"Value": {path: "example.test/consumer/api/internal/schemaimpl/p1", name: "Value"},
 	})
 	if err != nil {
@@ -121,7 +122,8 @@ func Value() string {
 	return fmt.Sprint(schema.Value(), "// unchanged /* literal */")
 }
 `
-	artifact, err := bindPartitionImports(generator.Artifact{Path: "models/value.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
+	formatter := partitionFormatter{}
+	artifact, err := formatter.bindImports(generator.Artifact{Path: "models/value.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
 		"Value": {path: "example.test/consumer/api/internal/schemaimpl/p1", name: "Value"},
 	})
 	if err != nil {
@@ -290,7 +292,7 @@ func private() string { return strings.TrimSpace(" body ") }
 			return buffer.Bytes()
 		}
 		before := snapshot()
-		partition := packagePartition{root: "example.test/consumer/api", packageName: "models", symbols: map[string]partitionSymbol{"Name": {name: "Name"}}}
+		partition := packagePartition{root: "example.test/consumer/api", packageName: "models", symbols: map[string]partitionSymbol{"Name": {name: "Name"}}, formatter: &partitionFormatter{}}
 		first, err := partition.facade(set, file, 0)
 		if !bytes.Equal(before, snapshot()) || file.Scope != scope || !reflect.DeepEqual(objects, scope.Objects) {
 			t.Fatal("facade modified parser-owned implementation syntax or scope")
@@ -400,10 +402,11 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 		} else {
 			exports = modelBindings
 		}
-		if err := partitionPackageBound(packages[directory], prepared.ImportPath, directory, sink, 512, exports); err != nil {
+		if err := partitionPackageBound(packages[directory], prepared.ImportPath, directory, sink, 512, exports, &partitionFormatter{}); err != nil {
 			t.Fatal(err)
 		}
 	}
+	formatter := partitionFormatter{}
 	for index, file := range files {
 		if strings.HasPrefix(file.Path, "internal/schema/") {
 			t.Fatal("unused internal schema facade was emitted", file.Path)
@@ -411,11 +414,11 @@ func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[stri
 		if strings.HasPrefix(file.Path, "internal/schemaimpl/") {
 			continue
 		}
-		artifact, err := bindPartitionImports(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}, prepared.ImportPath+"/internal/schema", bindings)
+		artifact, err := formatter.bindImports(generator.Artifact{Path: file.Path, Data: []byte(file.Prepared)}, prepared.ImportPath+"/internal/schema", bindings)
 		if err != nil {
 			t.Fatal(err)
 		}
-		artifact, err = bindPartitionImports(artifact, prepared.ImportPath+"/models", modelBindings)
+		artifact, err = formatter.bindImports(artifact, prepared.ImportPath+"/models", modelBindings)
 		if err != nil {
 			t.Fatal(err)
 		}
