@@ -1,0 +1,12 @@
+package main
+
+import (
+    "fmt"
+    sdk "example.test/roundtrip/api"
+)
+
+func main() {
+    client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: "https://fixture.invalid"})
+    if err != nil { panic(err) }
+    fmt.Printf("%T\n", client)
+}

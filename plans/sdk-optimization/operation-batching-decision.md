@@ -4,9 +4,10 @@
 참고 검증으로 전환했으므로 아래 전체 Graph compile·반복 계획은 실험 이력이다.
 기존 AST·계약·HTTP 10쌍 근거는 유지하고 일반 제공자·Graph 선택 SDK와 최종 통합을 검증한다.
 
-현재 상태: 후보 E 구현과 단위 행동·실제 Graph AST/계약 검증을 마쳤다. 전체 Graph
-compile은 미완료다. 실제 GitHub SDK HTTP paired 10쌍은 내부 비열등성 기준을 통과했으며
-기본 채택 판단과 최종 통합 검증은 아직 남는다.
+최종 상태: E를 기본 구현으로 유지한다. 실제 AST/계약·HTTP10쌍·corpus37개전체와
+Cloudflare/Graph 선택 SDK·최종 제품 SSOT 검증을 통과했다. `final-go-verification.md`에
+채택 근거와 정적 export/binary 비용을 기록했다. 전체 Graph compile 성공은 주장하지 않는다.
+아래 진단과 당시 미완료 gate는 실험 이력이다.
 
 현재 Graph의 다음 병목은 파일 개수보다 `internal/operations` 한 package의 frontend 크기다.
 전체 schema/model implementation 빌드는 통과했으나 전체 빌드는 해당 package에서
