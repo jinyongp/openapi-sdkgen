@@ -68,3 +68,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   중앙값 4.00%·누적 할당 6.55% 감소, RSS 1.32% 증가는 비용으로 기록한다.
   세 실제 API 전체 출력·최종 CLI·독립성/오류/소비자/race 검사와 리뷰를 통과했다.
   Go cache 약 3.0 GiB, 중간 실행 파일 약 608 MB 제거 후 scratch 약 290 MiB.
+- [07: 측정 중단 수명](performance-resource-loop/07-trial-cancellation.md):
+  완료. 부모/foreground 취소에서 중첩 trial session과 관측된 고아 자식까지 회수한다.
+  controller 종료 전 snapshot 경합도 회귀 검사로 막았다. 중단 결과·가린 로그를
+  보존하고 원래 RSS 지표 범위를 유지한다. 13개 최종 검사 통과.
+  사례별 cache 수명과 기본 전역 cache 격리는 다음 단위로 이어간다.

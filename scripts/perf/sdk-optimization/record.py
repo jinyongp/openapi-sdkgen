@@ -23,45 +23,80 @@ def dump(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
 
 
-def session_usage(session):
-    """Include native children and children spawned by non-main Go threads.
-
-    RSS sums can double-count shared pages; this is not cgroup physical usage.
-    Descendants must retain their session. Deliberately detached daemons are out
-    of scope for these finite generator/compiler commands.
-    """
-    rss, binaries = 0, set()
+def process_snapshot():
+    processes = {}
     for path in Path('/proc').glob('[0-9]*/stat'):
         try:
             fields = path.read_text().rsplit(')', 1)[1].split()
-            if int(fields[3]) != session:
+            processes[int(path.parent.name)] = {
+                'parent': int(fields[1]), 'session': int(fields[3]), 'start': fields[19],
+                'rss': int(fields[21]) * os.sysconf('SC_PAGE_SIZE'),
+            }
+        except (OSError, ValueError, IndexError):
+            continue
+    return processes
+
+
+def track_owned(processes, session, owned):
+    # Keep observed child sessions even if an intermediate controller exits.
+    sessions = {session} | {value['session'] for value in owned.values()}
+    selected = {pid for pid, value in processes.items() if value['session'] in sessions
+                or pid in owned and value['start'] == owned[pid]['start']}
+    while True:
+        descendants = {pid for pid, value in processes.items() if value['parent'] in selected}
+        if descendants <= selected:
+            break
+        selected.update(descendants)
+    owned.clear()
+    owned.update({pid: processes[pid] for pid in selected})
+
+
+def session_usage(session, owned=None):
+    """Include native children and children spawned by non-main Go threads.
+
+    RSS sums can double-count shared pages; this is not cgroup physical usage.
+    RSS retains its command-session boundary. Ownership tracking also follows
+    nested finite trials across sessions; it does not widen the RSS metric.
+    Unobserved detached daemons remain outside this finite-command contract.
+    """
+    rss, binaries = 0, set()
+    processes = process_snapshot()
+    if owned is not None:
+        track_owned(processes, session, owned)
+    for pid, value in processes.items():
+        try:
+            if value['session'] != session:
                 continue
-            rss += int(fields[21]) * os.sysconf('SC_PAGE_SIZE')
-            binaries.add(str((path.parent / 'exe').resolve(strict=True)))
+            rss += value['rss']
+            binaries.add(str((Path('/proc') / str(pid) / 'exe').resolve(strict=True)))
         except (OSError, ValueError, IndexError):
             continue
     return rss, binaries
 
 
-def stop(process):
-    # A Go verifier may put its compiler in a separate process group while
-    # retaining the session. Terminate those children too, including orphans.
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
-    for _ in range(2):
-        for path in Path('/proc').glob('[0-9]*/stat'):
+def stop(process, owned=None):
+    owned = {} if owned is None else owned
+    for action in (signal.SIGSTOP, signal.SIGSTOP, signal.SIGKILL, signal.SIGKILL):
+        # Snapshot ancestry before terminating its controllers. Nested recorders
+        # create sessions of their own. Freeze controllers first so children born
+        # during a snapshot remain discoverable before their parents disappear.
+        track_owned(process_snapshot(), process.pid, owned)
+        for pid in sorted(owned, reverse=True):
             try:
-                fields = path.read_text().rsplit(')', 1)[1].split()
-                if int(fields[3]) == process.pid:
-                    os.kill(int(path.parent.name), signal.SIGKILL)
+                fields = (Path('/proc') / str(pid) / 'stat').read_text().rsplit(')', 1)[1].split()
+                if fields[19] == owned[pid]['start']:
+                    os.kill(pid, action)
             except (OSError, ValueError, IndexError):
                 continue
+        try:
+            os.killpg(process.pid, action)
+        except ProcessLookupError:
+            pass
     process.wait()
 
 
-def run(args):
+def run(args, cancellation=None):
+    cancellation = cancellation if cancellation is not None else {'signal': None}
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     os.chmod(output, 0o700)
@@ -74,6 +109,7 @@ def run(args):
               'rssScope': 'sum of owned session RSS, sampled every 200ms; shared pages may count twice',
               'environment': {k: env[k] for k in FLAGS if k in env}}
     dump(output / 'started.json', result)
+    process, started, peak, owned = None, None, 0, {}
     try:
         if not Path('/proc/self/stat').exists():
             raise ValueError('Linux procfs is required for resource protection')
@@ -114,27 +150,30 @@ def run(args):
         with (output / 'stdout.log').open('wb') as out, (output / 'stderr.log').open('wb') as err:
             # Reuse the project's stream redactor BEFORE logs are stored.
             filters = [subprocess.Popen([sys.executable, str(ROOT / 'scripts/lib/redact.py')],
-                       stdin=subprocess.PIPE, stdout=target, env=env) for target in (out, err)]
+                       stdin=subprocess.PIPE, stdout=target, env=env, start_new_session=True) for target in (out, err)]
             try:
                 process = subprocess.Popen(argv, cwd=args.cwd, env=env, start_new_session=True,
                                            stdout=filters[0].stdin, stderr=filters[1].stdin)
                 while True:
-                    rss, observed = session_usage(process.pid)
+                    rss, observed = session_usage(process.pid, owned)
                     peak = max(peak, rss)
                     binaries.update(observed)
-                    if rss > args.max_rss_mib * 1024**2:
+                    if cancellation['signal'] is not None:
+                        reason = 'interrupted'
+                    elif rss > args.max_rss_mib * 1024**2:
                         reason = 'rss_protection'
                     elif time.monotonic() - started > args.timeout:
                         reason = 'timeout'
                     if reason:
-                        stop(process)
                         break
                     if process.poll() is not None:
                         break
                     time.sleep(0.2)
-                # Remove surviving ordinary descendants even after a driver exit.
-                stop(process)
             finally:
+                # Finish all owned writers before closing/draining redactors,
+                # including cancellation or an exception in the observer.
+                if process is not None:
+                    stop(process, owned)
                 for filt in filters:
                     filt.stdin.close()
                 for filt in filters:
@@ -145,11 +184,20 @@ def run(args):
                       peakSessionRSSBytes=peak, binaries={p: sha(p) for p in sorted(binaries) if Path(p).is_file()})
     except (OSError, ValueError, subprocess.SubprocessError, RuntimeError) as error:
         result.update(status='blocked', error=str(error))
+    requested_signal = cancellation['signal']
+    if requested_signal is not None:
+        result.update(status='interrupted', requestedSignal=requested_signal)
+        if process is not None:
+            result['exitCode'] = process.returncode
+        if started is not None:
+            result.update(elapsedSeconds=time.monotonic() - started, peakSessionRSSBytes=peak)
     for name in ('stdout.log', 'stderr.log'):
         if (output / name).exists():
             result[name + 'Sha256'] = sha(output / name)
     dump(output / 'result.json', result)
     print(json.dumps({k: result[k] for k in ('status', 'elapsedSeconds', 'peakSessionRSSBytes', 'error') if k in result} | {'result': str(output / 'result.json')}))
+    if requested_signal is not None:
+        return 128 + requested_signal
     return 0 if result['status'] == 'pass' else 1
 
 
@@ -164,7 +212,18 @@ def main():
     args = parser.parse_args()
     if args.timeout <= 0 or args.max_rss_mib <= 0:
         parser.error('timeout and RSS limit must be positive')
-    return run(args)
+    cancellation = {'signal': None}
+    def request_stop(number, frame):
+        if cancellation['signal'] is None:
+            cancellation['signal'] = number
+    handlers = {number: signal.getsignal(number) for number in (signal.SIGINT, signal.SIGTERM)}
+    try:
+        for number in handlers:
+            signal.signal(number, request_stop)
+        return run(args, cancellation)
+    finally:
+        for number, handler in handlers.items():
+            signal.signal(number, handler)
 
 
 if __name__ == '__main__':

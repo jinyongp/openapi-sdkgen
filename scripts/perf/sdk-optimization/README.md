@@ -15,6 +15,9 @@ Use a fresh outer `preflight:perf` recorder directory and an appropriate deadlin
 Recovery checks the original worker, recorder, input and generator hashes and keeps
 using that unchanged timing worker. It refuses partial cases and missing TS cases;
 it does not overwrite a failed trial or retry a warm cache as a cold cache.
+Recovery remains bound to the exact worker and recorder saved with that study.
+For an older interrupted study, restore its archived versions; do not bypass
+their hash checks when current lifecycle handling has changed.
 
 Run through `devtools run preflight:perf`. This is an optional Linux diagnostic,
 not an optimization or an ordinary CI performance gate. It uses Python's standard
@@ -50,6 +53,14 @@ unsupported. The default limit is 8 GiB with a ten-minute deadline. Set both
 before a matched experiment. These bounds are local smoke policy, not a product
 SLA or the final CI budget. Do not run competing memory-heavy trials together.
 Generation and checking use separate processes. Preserve interrupted trials.
+
+SIGINT/SIGTERM requests to the recorder produce an `interrupted` result with
+`requestedSignal` and exit status `128 + signal`. Owned command-session processes
+are stopped before redactors drain and the recorder returns. Unrelated sessions
+are not stopped. SIGKILL and host shutdown cannot provide this cleanup guarantee.
+Termination follows observed descendants across nested trial sessions, including
+workers whose controller has exited. The RSS metric still sums only the original
+command session; detached daemons orphaned before observation are unsupported.
 
 Raw stdout/stderr pass through the existing project redactor before storage.
 Output directories are private. Use public fixture commands; argv and source
