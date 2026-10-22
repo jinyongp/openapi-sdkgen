@@ -113,3 +113,26 @@ index에 명시했다. 수치·오류·이상 표본은 바꾸지 않았다. 현
 재사용 근거, 최종 증분/복구/provider·SDK archive/export/binary 측정을 포함한다.
 원격 CI 통과·전체 Graph/Cloudflare 성공·비교 성능 개선을 주장하는 자료는 아니다.
 제외한 원본/실행 파일/cache와 초기 scratch 진단의 한계는 archive index를 따른다.
+
+## 기존 제품과 최종 제품의 실제 API 비교
+
+`representative-final-comparison.tar.gz`: 65,558,818 B, 1,727 entry.
+SHA-256: `ba0e79a365b4ee3a5253eeacaeb77be417c8263f174378658dd0af995c4eb30c`.
+index의 모든 자료를 archive에서 다시 읽어 크기·hash를 검산했다.
+
+기존5ada624a와 최종52eab98을 같은 옵션으로 직접 빌드해 TVMaze·ListenNotes·GitHub
+전체 문서를 TS/Go로 각각5쌍씩 비교했다. 생성·cold/warm180개 명령 모두 성공했고,
+12개 조합의 각5회 관리 파일 hash는 같다. Go의 기존 계약 차이는 세 입력 모두0개이며
+검토된 내부 추가8개만 허용했다. 고정 입력 원본·실제 producer·도구/입력/binary/source
+hash·모든 표본·로그·설정·manifest·Go audit와 계약 비교를 포함한다.
+
+첫 driver가171개 완료 뒤143으로 끝난 중단과 snapshot도 보존한다. 실제 측정 worker를
+바꾸지 않고 빠진 Go 사례3개를 재개했다. 복구 경계를 걸친 쌍을 제외한 보조 분석도
+포함하며 primary 집계는5쌍 전부다. 시스템 swap 관측을 측정 프로세스의 paging 원인으로
+단정하지 않는다. 개별 프로세스 high-water와200ms session RSS 합의 경계를 구분한다.
+
+Go cache·build-info·실행 파일·전체 생성 SDK는 제외했다. 두 제품 source는 고정 Git
+revision의 추출 archive hash와 실제 추출 파일을 대조했으며 원본 입력은 이 묶음에 있다.
+새 로컬 실측이지 공개 Actions benchmark가 아니다. 전체 Graph·Cloudflare는 실행하지
+않았고, JS/선언 방출·API 수정 후 재컴파일·원격 HTTP 성능은 측정하지 않았다.
+결과와 해석은 `../../representative-comparison.md`를 따른다.

@@ -41,7 +41,7 @@ devtools 측정 명령이 준비한 환경에서 같은 `scripts/dev/check.sh`�
 검사를 통과했다. 승인한 범위의 남은 필수 결함·미검토 영역·필수 검증은 없다.
 TS closure/registry/section과 Go P128/E16을 유지하고 추가 validator 공유 V는 보류한다.
 대표 성능·출력 비용의 이득과 증가를 구분했다. 작은 Go SDK는 파일160→120이지만
-export data는12,920 B 증가했고 stripped binary는 같다. 전체 compiler 속도나 binary
+compiler archive(`.a` 전체)는12,920 B 증가했고 stripped binary는 같다. 전체 compiler 속도나 binary
 축소를 입증한 것으로 일반화하지 않는다.
 
 전체 Graph·Cloudflare 실패, 생성만 성공한 넓은 Graph 선택, 원격 CI 미실행, 기존25개
@@ -53,3 +53,10 @@ runtime skip은 숨기지 않는다. 전체 대형 compile 성공은 사용자 �
 archive8,517개 entry의 크기·hash와 실제 통합 검사 이후1841개 제품 입력을 검산했다.
 작업별 리뷰·관련 커밋과 현재 validation basis에 기록하며, workstream lifecycle의
 최종 상태는 `workstream.json`의 `live_state_command`로 조회한다.
+
+후속 요청에서 기존/최종 제품을 실제 API 세 개로 직접 비교하고 공개 비용 문서를
+보완했다. 별도 결과는 `representative-comparison.md`를 따른다. 위의 공개 문서 미변경
+기록은 이 통합 리뷰 당시의 범위이며, 후속 문서 변경이나 새 로컬 실측을 포함하지 않는다.
+제품 source는52eab98 그대로이며, 새 공개 benchmark 수치나 전체 Graph/Cloudflare
+성공을 추가한 것은 아니다. 기존 정적 표의 `sdkExportBytes`는 `.a` 전체 크기라는
+의미로 명칭을 교정했으며 원시 수치는 바꾸지 않았다.

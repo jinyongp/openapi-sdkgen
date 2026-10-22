@@ -30,18 +30,20 @@ Go 소비자166개 검사는 CGO=1에서 모두 통과했고, 최종 Go core와 
 동일 Todo 입력/server·Go1.27.2·CGO=0·`-trimpath -buildvcs=false`의 실제 이전/최종
 생성 출력을 사용했다. archive는 이름·시간·권한을 고정했다. executable은 SDK의
 `NewClient`를 생성하는 프로그램만 링크하므로 모든 API 호출을 유지한 binary가 아니다.
-export data는 client import에서 도달하는 SDK package들의 `.a` 합이며 표준 라이브러리는 제외했다.
+컴파일 archive 크기는 client import에서 도달하는 SDK package들의 `.a` 합이며 표준
+라이브러리는 제외했다. 원시 필드명은 `sdkExportBytes`지만 순수 export 영역만이 아니라
+object code 등을 포함한 archive 전체 크기다.
 
 | 측정, B | 이전 | 최종 |
 | --- | ---: | ---: |
 | managed 파일 수 | 160 | 120 |
 | managed source | 1,614,749 | 1,610,058 |
 | deterministic source archive | 351,761 | 350,074 |
-| SDK export data | 10,998,804 | 11,011,724 |
+| SDK compiler archive (`.a`) | 10,998,804 | 11,011,724 |
 | constructor client executable | 8,180,822 | 8,180,214 |
 | stripped executable | 5,689,504 | 5,689,504 |
 
-파일은25% 줄었지만 export data는12,920 B 증가했고 stripped binary 크기는 같다.
+파일은25% 줄었지만 compiler archive는12,920 B 증가했고 stripped binary 크기는 같다.
 binary 축소나 전체 compiler 메모리 개선을 채택 근거로 주장하지 않는다. 이 측정은 단일
 작은 입력의 정적 크기 비교이며 반복 timing이 아니다. 실제 HTTP·warm 비교는 별도
 `representative-performance.tar.gz`의 원시 표본을 따른다.
@@ -50,3 +52,7 @@ binary 축소나 전체 compiler 메모리 개선을 채택 근거로 주장하�
 의존성 hash·원본 compile/HTTP 연결·실제 배포 입력과 producer는
 `measurements/2026-10-22/final-integration.tar.gz`에 보존했다. 단위·최종 통합 리뷰에서
 새 Go 결함이나 남은 필수 Go 검증은 발견되지 않았다.
+
+후속 요청의 기존/최종 native 전체 생성·cold/warm 비용은 `representative-comparison.md`에
+별도로 기록했다. 실제 API 세 개의 각5쌍 비교이며 위 P-only 실험이나 단일 Todo 정적
+크기 비교와 섞지 않는다. 전체 Graph·Cloudflare는 이 후속 측정에서도 제외했다.
