@@ -46,3 +46,5 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   채택. 참조 분석용 두 번째 파싱을 제거했다. 같은 관측기 3쌍에서 GitHub 누적
   할당 6.44%, 시간 2.99% 감소. RSS 중앙값 감소는 관측했으나 표본·범위의 한계를 유지한다.
   세 실제 API 전체 출력과 관련 검사·리뷰를 통과했다. 전용 cache 약 2.1 GiB.
+- [01+02 통합 확인](performance-resource-loop/integration-01-02.md):
+  최종 실제 CLI의 세 입력 전체 파일 hash를 원래 배포 버전과 직접 대조해 일치했다.
