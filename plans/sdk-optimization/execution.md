@@ -777,3 +777,43 @@ inventory·재현 스크립트를 `measurements/2026-10-22/go-corpus-attempt-1.t
 266개 항목·9,271,246바이트, SHA-256은
 `2e371349f2d1f4b76c6ce8016fa3f5363ded9dabad5f57787d52ca234295b102`이며 index·모든 자료
 파일을 다시 검산했다. 이 집계·archive는 W09 완료나 Graph compile 성공이 아니다.
+
+## W08 bounded operation ID 계약
+
+원본 client/types·registry-contracts와 `ClientRoutes` 경유 후보는 파일별 API semantic을
+120초 안에 끝내지 못했다. 세 곳의 key bound를 명시한 별도 복제본도 파일별 semantic이
+미완료였다. 그 복제본의 전체 API는 45.26초·RSS 8,668,737,536바이트에 동적 8,260 MiB
+상한으로 보호 종료됐다. 서로 다른 검사 범위나 hard 상한의 결과로 개선율을 계산하지 않는다.
+
+기존 bounded contract part의 ID 계약을 재사용한 새 복제본은 같은 loaded program
+59,670파일·owner 1,695개에서 client·registry·route index semantic을 각각
+6.99초·10.39초·4.61초에 오류 없이 마쳤다. 수집 전체는 20.10초·21.91초·16.73초,
+최대 session RSS는 6,527,762,432·6,643,650,560·6,667,087,872바이트였다.
+API별 profiling 결과이므로 CLI 전체 검사나 최종 대표 성능 표본으로 사용하지 않는다.
+
+생성기에 bounded `Operations`를 반영하고 registry/client가 canonical 계약과 기존
+identity를 재사용하게 했다. 이전 한줄 `ClientRoutes` 후보는 이 구조로 대체했다.
+네 compiler·세 모듈·독립 declaration·generic/key/Parameters/ReturnType·Link/private·
+resource/section·ID 없는 route의 기존 5개 회귀는 365.29초·RSS 1,639,268,352바이트에
+통과했다. 이후 리뷰에서 기존 `Operations` 공개 JSDoc을 그대로 출력하도록 보완했다.
+이 후속 차이는 문서 주석 출력만 추가하며, 새 SDK와 최종 통합 검사에서 함께 확인한다.
+전체 Graph 수용 gate는 아직 미충족이다.
+
+새 생성기의 실제 Graph 출력은 187,686 source·775,537,492바이트·29개 project이며 전체
+소유권과 고정 원본의 18개 membership 집합 대조가 통과했다. 이전 named-resource 출력과
+managed 경로 집합은 같다. 구조 변경은 기존 contract part 116개와 route index·client
+types·registry contracts의 3개 파일이다. 전체 generation fingerprint가 바뀌어 실행 provider
+등에도 identity literal 변경이 전파되므로 byte가 같은 runtime 출력이라고 주장하지 않는다.
+파일 추가·삭제는 없고, 공개 `Operations` JSDoc 보존도 실제 생성물에서 확인했다.
+생성·inventory 성공으로 strict compiler 검사를 대체하지 않는다.
+전수 hash·내용 대조에서 변경 88,863개 중 119개는 위 구조 변경이고, 나머지 88,744개는
+정확한 이전→새 generation fingerprint 치환만 있었다. 예상 밖 내용 변경은 0개다.
+단위 리뷰는 contract part의 ID 소유권, full/selected registry, client generic/brand·Link,
+ID 없는 route, 공개 JSDoc과 Go 실행 경계를 대조했다. 기존 공개 JSDoc 누락을 고친 뒤
+단위 범위에 남은 결함은 없었다. 새 전체 source/declaration/public 검사는 진행 중이다.
+
+TS 변경 후 Go correctness 재사용은 별도로 대조했다. 현재 956개 입력 중 변경된 두 파일은
+TS emitter 함수 본문뿐이며, 고정 Go 1.27.2로 조사한 Go 생성 의존 파일 269개는 원본과
+동일하다. 변경 없는 auditor의 `golang-generation` 분기는 TS emitter를 호출하지 않는다.
+따라서 Go 37개 문서의 correctness는 해당 실행 경로에 한해 재사용하며, source 전체의
+동일성·TS parity·성능 표본이나 미완료 Cloudflare/Graph 성공을 주장하지 않는다.

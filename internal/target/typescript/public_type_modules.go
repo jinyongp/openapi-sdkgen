@@ -62,6 +62,9 @@ func emitRouteTypeModulesTo(manifest Manifest, plan *semanticModulePlan, resourc
 			}
 			out.WriteString("}\n\n")
 		}
+		// Resolve ID-to-route indexing within the existing bounded contract part.
+		// Global consumers reuse these contracts instead of relating two full maps.
+		out.WriteString("export type Operations = { readonly [ID in keyof OperationRoutes]: Routes[OperationRoutes[ID]] }\n\n")
 		for _, contract := range []string{"RouteSourcesBySection", "OperationIDsBySection", "ResourceRoutesBySection"} {
 			fmt.Fprintf(&out, "export interface %s {\n", contract)
 			for _, section := range requestInputSectionDescriptors {
@@ -152,6 +155,9 @@ func emitRoutePartInterfaces(out *bytes.Buffer, manifest Manifest, plan *semanti
 		prefix = "export "
 	}
 	for _, contract := range contracts {
+		if exported && contract == "Operations" {
+			out.WriteString("\n/** Compatibility contracts keyed by exact explicit operation IDs. */\n")
+		}
 		fmt.Fprintf(out, "%sinterface %s extends %s {}\n", prefix, contract, strings.Join(parts[contract], ", "))
 	}
 	return nil
@@ -159,10 +165,9 @@ func emitRoutePartInterfaces(out *bytes.Buffer, manifest Manifest, plan *semanti
 
 func emitChunkedRouteIndex(manifest Manifest, plan *semanticModulePlan) ([]byte, error) {
 	var out bytes.Buffer
-	if err := emitRoutePartInterfaces(&out, manifest, plan, plan.fixed["route-index"], true, "Routes", "OperationRoutes"); err != nil {
+	if err := emitRoutePartInterfaces(&out, manifest, plan, plan.fixed["route-index"], true, "Routes", "OperationRoutes", "Operations"); err != nil {
 		return nil, err
 	}
-	out.WriteString("\ntype OperationContracts = { readonly [ID in keyof OperationRoutes]: Routes[OperationRoutes[ID]] }\n/** Compatibility contracts keyed by exact explicit operation IDs. */\nexport interface Operations extends OperationContracts {}\n")
 	return out.Bytes(), nil
 }
 
@@ -170,8 +175,9 @@ func emitDerivedClientTypes(plan *semanticModulePlan, links bool) ([]byte, error
 	var out bytes.Buffer
 	artifact := plan.fixed["client-types"]
 	for _, im := range []struct{ clause, target string }{
-		{"type { Routes, OperationRoutes }", plan.fixed["route-index"]},
-		{"type { OperationMethod, LinkCalls }", plan.fixed["route-helpers"]},
+		{"type { Routes, Operations, OperationRoutes }", plan.fixed["route-index"]},
+		{"type { OperationMethod }", plan.fixed["route-helpers"]},
+		{"type { OperationTypeIdentity, RouteTypeIdentity }", "internal/runtime/shared/identity.ts"},
 		{"type { Surface as Resources }", plan.fixed["resource-index"]},
 	} {
 		if err := registryImport(&out, plan, artifact, im.clause, im.target); err != nil {
@@ -180,10 +186,10 @@ func emitDerivedClientTypes(plan *semanticModulePlan, links bool) ([]byte, error
 	}
 	out.WriteString(`
 type ClientRoutes = { readonly [Route in keyof Routes]: OperationMethod<Route> }
-type ClientOperations = { readonly [ID in keyof OperationRoutes]: OperationMethod<OperationRoutes[ID]> }
+type ClientOperations = { readonly [ID in keyof OperationRoutes]: Operations[ID]["call"] & OperationTypeIdentity<OperationRoutes[ID], "exact"> }
 `)
 	if links {
-		out.WriteString("type ClientLinks = { readonly [ID in keyof OperationRoutes as [Routes[OperationRoutes[ID]][\"links\"]] extends [never] ? never : ID]: LinkCalls<OperationRoutes[ID]> }\n")
+		out.WriteString("type ClientLinks = { readonly [ID in keyof Operations as [Operations[ID][\"links\"]] extends [never] ? never : ID]: Operations[ID][\"links\"] & RouteTypeIdentity<OperationRoutes[ID]> }\n")
 	}
 	out.WriteString("/** Generated API client with exact route, operation-ID, and resource calls. */\nexport interface Client extends Resources {\n  readonly $routes: ClientRoutes\n  readonly $operations: ClientOperations\n")
 	if links {

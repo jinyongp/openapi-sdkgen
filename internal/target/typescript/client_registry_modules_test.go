@@ -129,6 +129,28 @@ declare const empty: SelectedClient<readonly []>;
 // @ts-expect-error empty selection has no resources
 empty.a.get();
 `
+			if !selected {
+				probe += `import type {OperationMethod} from './index.js';
+import type {Routes, OperationRoutes} from './internal/routes/index.js';
+type Expect<Value extends true> = Value;
+type Equal<Left,Right> = (<Value>()=>Value extends Left?1:2) extends (<Value>()=>Value extends Right?1:2)?true:false;
+type ProbeID = 'a'|'pages';
+type ProbeRoute = 'GET /a'|'GET /pPages';
+type ExpectedOperation<ID extends ProbeID> = OperationMethod<OperationRoutes[ID]>;
+export type ClientMapContracts = [
+  Expect<Equal<keyof Client['$routes'],keyof Routes>>,
+  Expect<Equal<keyof Client['$operations'],keyof OperationRoutes>>,
+  Expect<Equal<Parameters<Client['$operations']['a']>,Parameters<ExpectedOperation<'a'>>>>,
+  Expect<Equal<ReturnType<Client['$operations']['a']>,ReturnType<ExpectedOperation<'a'>>>>
+];
+export function routeToLegacy<Route extends ProbeRoute>(value:Client['$routes'][Route]):OperationMethod<Route>{return value}
+export function routeFromLegacy(value:OperationMethod<'GET /a'>):Client['$routes']['GET /a']{return value}
+export function operationToLegacy<ID extends ProbeID>(value:Client['$operations'][ID]):ExpectedOperation<ID>{return value}
+export function operationFromLegacy(value:ExpectedOperation<'a'>):Client['$operations']['a']{return value}
+export function unionToLegacy(value:Client['$operations'][ProbeID]):ExpectedOperation<'a'>|ExpectedOperation<'pages'>{return value}
+export function unionFromLegacy(value:ExpectedOperation<'a'>|ExpectedOperation<'pages'>):Client['$operations'][ProbeID]{return value}
+`
+			}
 			if selected {
 				probe += `// @ts-expect-error dependency-only operation
 api.$operations.b;

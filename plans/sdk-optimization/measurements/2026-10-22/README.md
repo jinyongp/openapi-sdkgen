@@ -59,3 +59,22 @@ Cloudflare의 약 976 MB 기계 생성 소스와 auditor 실행 파일은 로컬
 이 묶음은 통과·실패를 함께 보존한 첫 실행 원본이다. 새 실패를 원본에 덮어쓰거나
 미완료를 성공으로 바꾸지 않는다. 별도 Graph, 최종 반복 측정·통합 검사는 포함하지 않으며
 진행 중 TS 실행·private task context는 선택하지 않았다.
+
+## TypeScript operation ID 계약 진단
+
+`operation-contract-probes.tar.gz`: 20,056,928바이트, 117개 항목.
+SHA-256: `68389333850ac6d5e0ed2c57f0a5ab49050a8f7bc422d3de07da1d73505b6c50`.
+완료된 API 진단 8건과 공개 계약 단위 검사 1건의 원본·CPU/heap 프로파일·후보 patch·
+재현 스크립트를 포함한다. index·patch·모든 자료 파일을 다시 읽어 hash를 검산했다.
+
+앞선 원본·ID view·key bound의 미완료 semantic과 전체 API RSS 보호 종료도 보존했다.
+bounded canonical 계약 후보의 세 파일 진단은 오류 없이 끝났고, 단위 검사는 네 compiler와
+모듈·declaration·generic/Link 계약을 통과했다. 완료된 진단 수집과 semantic 완료는
+index에서 구분하며, 전체 Graph strict·server 성공이나 공개 성능 수치로 집계하지 않는다.
+
+복제본 네 개의 변경 대상 TS 입력·config·ownership plan과 각 진단의 전체 program-file
+목록을 포함한다. 기계 생성 SDK/declaration 전체 트리와 실행 파일은 로컬에 남기고,
+이 archive에는 모든 원본 compiler 입력 바이트를 넣지는 않았다. 정확한 경로·도구 hash와
+생성 근거, 제외 이유는 index에 명시했다. 단위 검사 뒤 추가한 변경은 기존 `Operations`
+JSDoc 복구뿐이며, 해당 분기를 제거한 source hash가 실제 단위 검사 기록과 일치함을
+확인했다. 진행 중 새 전체 Graph 검사와 private task context는 포함하지 않았다.

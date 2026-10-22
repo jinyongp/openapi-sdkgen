@@ -192,7 +192,7 @@ func emitRegistryContracts(manifest Manifest, plan *semanticModulePlan) ([]byte,
 	if err := registryImport(&out, plan, registryContractsPath, "type { PreparedRegistryChunkContract }", "internal/runtime/client/contract-types.ts"); err != nil {
 		return nil, err
 	}
-	if err := registryImport(&out, plan, registryContractsPath, "type { Routes as PublicRoutes, OperationRoutes }", plan.fixed["route-index"]); err != nil {
+	if err := registryImport(&out, plan, registryContractsPath, "type { Routes as PublicRoutes, Operations as PublicOperations }", plan.fixed["route-index"]); err != nil {
 		return nil, err
 	}
 	out.WriteString("interface PrivateRoutes {\n")
@@ -211,8 +211,8 @@ func emitRegistryContracts(manifest Manifest, plan *semanticModulePlan) ([]byte,
 export type RegistryRoutes = PublicRoutes & PrivateRoutes
 export type CompletedRoutes = { -readonly [Route in keyof RegistryRoutes]: RegistryRoutes[Route]["call"] }
 type PublicCalls = { readonly [Route in keyof PublicRoutes]: PublicRoutes[Route]["call"] }
-type OperationCalls = { readonly [ID in keyof OperationRoutes]: PublicRoutes[OperationRoutes[ID]]["call"] }
-type LinkCalls = { readonly [ID in keyof OperationRoutes as [PublicRoutes[OperationRoutes[ID]]["links"]] extends [never] ? never : ID]: PublicRoutes[OperationRoutes[ID]]["links"] }
+type OperationCalls = { readonly [ID in keyof PublicOperations]: PublicOperations[ID]["call"] }
+type LinkCalls = { readonly [ID in keyof PublicOperations as [PublicOperations[ID]["links"]] extends [never] ? never : ID]: PublicOperations[ID]["links"] }
 export interface CallableRegistry { readonly routes: PublicCalls; readonly operations: OperationCalls; readonly links: LinkCalls }
 export type PreparedRegistryChunk = PreparedRegistryChunkContract<CompletedRoutes, CallableRegistry["routes"]>
 export type RegistryRegistrar = (completed: CompletedRoutes, values: Record<string, unknown>) => void

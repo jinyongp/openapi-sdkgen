@@ -45,3 +45,24 @@ declaration/hover/runtime 회귀, local import graph의 전체 map 의존성 제
 source ownership·네 compiler·전체 public/negative consumer 순서다. server add-on은 전체
 Graph의 별도 profile에서 생성한 source와 실제 server export consumer를 함께 검사한다.
 작은 fixture나 일부 project 통과로 전체 Graph 성공을 대체하지 않는다.
+
+## W08 operation ID 계약의 bounded projection
+
+후속 파일별 native API 진단에서 `client/types.ts`와 `registry-contracts.ts`의
+문서 전체 `OperationRoutes[ID]`를 다시 `Routes`로 인덱싱하는 경로가 120초 안에
+끝나지 않았다. `ClientRoutes`를 경유하거나 `& keyof Routes`를 명시하는 대조도
+완료하지 못했다. 이 진단은 프로파일을 켠 별도 loaded program이며 전체 CLI 검사는 아니다.
+
+새 후보는 기존 bounded route contract part마다 ID 계약 `Operations`를 유도한다.
+전체 `Operations`는 이 부분 계약들을 상속하고, registry는 그 계약의 `call`·`links`를
+읽는다. client의 ID 호출은 같은 canonical `call`과 기존 operation identity를 조합한다.
+따라서 전체 route key union과 ID의 route union을 다시 비교하는 중첩 인덱싱을 제거한다.
+공개 route·ID·generic helper·brand, 선택/named client 경로와 runtime 등록은 유지한다.
+추가 public 객체 shape나 `any`·cast·검사 생략은 없다.
+
+실제 Graph 입력을 복제한 대조에서 client·registry·route index 파일의 semantic 검사는
+각각 6.99초·10.39초·4.61초에 오류 없이 끝났다. loaded program 59,670파일과 owner
+1,695개는 원본과 일치했다. 이 수치는 원인 분리 결과이며 전체 Graph 개선율은 아니다.
+생성기 반영 후 기존 네 compiler·세 모듈·독립 declaration, generic 호출·key 동등성,
+private Link·등록 순서·깊은 resource·ID 없는 route 검사는 통과했다. 새 전체 Graph
+생성·source/declaration/public/negative 및 server 검증은 후속 gate로 남는다.
