@@ -727,3 +727,22 @@ Go 1.27.2·모든 원본 input pin을 다시 확인했고 Graph는 이 분모에
 실제 파일 충돌·staged write/rename 실패·증분 교체와 stale 파일·manifest 복원·사용자
 수정 보존·잠금 재획득을 포함한다. 진행 중 corpus는 correctness 전용으로 유지하며
 두 실행의 겹친 시간을 대표 성능 표본으로 쓰지 않는다. 이는 W10 전체 완료가 아니다.
+
+이전 동결 generator와 현재 source로 빌드한 CLI의 실제 재생성 복구도 별도로 확인했다.
+Todo/server 포함 TS·Go에서 old fresh와 current fresh를 기준으로 기존 디렉터리를
+current incremental→current no-op→old incremental로 바꿨다. upgrade와 downgrade의
+전체 파일 hash·manifest는 각각 fresh 결과와 같고 stale 파일은 없었다. no-op은 managed
+파일과 manifest의 inode·mtime을 모두 유지했으며 사용자 파일도 보존했다. Go managed
+파일은 160→120개로 바뀌어 실제 배치 변경을 거쳤고 TS는 각 185개다. 1.92초·RSS
+51,879,936바이트에 통과했으며 원본 binary·build source·입력 hash와 두 manifest를
+`distribution-regeneration-roundtrip`에 보존한다. 작은 입력의 재생성 복구 검증이며
+컴파일·최종 Graph·대표 성능 표본의 대체가 아니다.
+
+같은 이전·현재 TS Todo SDK는 원본 hash를 유지하는 별도 복제본에서 각각 185개 전체
+source를 canonical strict 설정과 native compiler로 JS·declaration까지 emit했다.
+실제 provider의 ABI 1과 generation 차이를 확인하고 현재 provider의 준비·client bind는
+성공, 이전 generation의 reference/provider 및 ABI 999 provider는 `IDENTITY`로 거절했다.
+거절된 provider에서는 client module load가 0회였다. 해당 검증은 1.88초·RSS
+195,264,512바이트에 통과했다. `source-check:npm`도 프로젝트 SSOT 경로에서
+0.49초·RSS 139,841,536바이트에 통과했다. 게시·배포를 실행하거나 공개 성능 결과를
+갱신하지 않았다. 전체 Graph·네 compiler·최종 runtime 통합은 여전히 남는다.
