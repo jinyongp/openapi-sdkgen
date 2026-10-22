@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,6 +91,62 @@ func TestWholeDocumentNamesRemainStable(t *testing.T) {
 	}
 	if first.operations["GET /a"] != "GetHealth" || first.operations["GET /b"] != "GetHealth_"+nameDigest("GET /b") || first.operations["GET /c"] == "GetHealthInput" || first.operations["GET /d"] == "Operations" {
 		t.Fatalf("unresolved public name collisions: %#v", first.operations)
+	}
+}
+
+func TestEmissionTemplatesKeepFileDataIndependent(t *testing.T) {
+	makePlan := func(base int) generator.Plan {
+		return generator.NewPlan("golang", sourcePlan{Files: []filePlan{
+			{Path: "alpha/value.go", Package: "alpha", Template: "templates/prepared.go.tmpl", Prepared: fmt.Sprintf("const Value = %d", base)},
+			{Path: "beta/value.go", Package: "beta", Template: "templates/prepared.go.tmpl", Prepared: fmt.Sprintf("const Value = %d", base+1)},
+		}})
+	}
+	shared := makePlan(0)
+	for worker, plan := range []generator.Plan{shared, shared, makePlan(20), makePlan(30)} {
+		base := 0
+		if worker >= 2 {
+			base = worker * 10
+		}
+		t.Run(fmt.Sprintf("plan-%d", worker), func(t *testing.T) {
+			t.Parallel()
+			for range 2 {
+				artifacts, err := (Generator{}).Emit(plan)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(artifacts) != 2 {
+					t.Fatal("missing independent file outputs", len(artifacts))
+				}
+				for _, artifact := range artifacts {
+					value := base
+					if artifact.Path == "beta/value.go" {
+						value++
+					} else if artifact.Path != "alpha/value.go" {
+						t.Fatal("unexpected artifact", artifact.Path)
+					}
+					if !strings.Contains(string(artifact.Data), fmt.Sprintf("const Value = %d\n", value)) {
+						t.Fatalf("template data crossed file/plan boundaries in %s: %s", artifact.Path, artifact.Data)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestEmissionTemplateErrorIdentifiesCurrentFileAndSource(t *testing.T) {
+	const source = "templates/operation-pagination.go.tmpl"
+	plan := generator.NewPlan("golang", sourcePlan{Files: []filePlan{
+		{Path: "alpha/first.go", Package: "alpha", Template: source, Operations: []operationPlan{{Name: "First", Pagination: &paginationPlan{
+			Mode: "cursor", ItemModel: "Item", Configuration: "nil", Query: inputFieldPlan{Type: "Query"},
+		}}}},
+		{Path: "beta/broken.go", Package: "beta", Template: source, Operations: []operationPlan{{Name: "Broken"}}},
+	}})
+	_, err := (Generator{}).Emit(plan)
+	if err == nil || !strings.Contains(err.Error(), "render beta/broken.go:") || !strings.Contains(err.Error(), source+":") {
+		t.Fatal("missing output/source context", err)
+	}
+	if strings.Contains(err.Error(), "alpha/first.go") {
+		t.Fatal("error retained a different output's context", err)
 	}
 }
 

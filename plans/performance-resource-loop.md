@@ -20,6 +20,8 @@
 - 캐시 4 GiB, 생성 출력·임시 파일 2 GiB를 운영 상한으로 삼는다.
   실행 전후 확인하고 넘으면 다음 실행 전 이 작업의 재생성 가능한 파일만 정리한다.
   실행 중인 Go 캐시는 삭제하지 않는다. 비교마다 cold 캐시를 복제하지 않는다.
+- 완료한 실험의 실행 파일은 배포 기준 CLI·현재 제품·직전 제품만 유지한다.
+  원시 측정/입력/빌드 출처를 보존한 뒤 그 밖의 task-owned 중간 실행 파일은 정리한다.
 - 생성·프로파일은 직렬로 실행한다. 기본 `GOMAXPROCS=4`, `GOMEMLIMIT=2GiB`,
   `GOFLAGS=-p=2`, session RSS 보호 3 GiB와 개별 180초를 사용한다.
   다른 제한이 필요한 검사는 근거와 새 상한을 먼저 기록한다.
@@ -61,3 +63,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   완료. 최종 정규화 제거 후보는 재작성 AST의 위치로 인해 비정규 출력이 나와 기각했다.
   제품 runtime은 유지하고 작은 재현과 정규 서명 회귀 검사를 추가했다.
   최신 profile에서 확인한 template 반복 파싱을 다음 후보로 조사한다.
+- [06: emission 템플릿 파싱 공유](performance-resource-loop/06-emission-templates.md):
+  채택. emission마다 source별로 한 번 파싱한다. 직전 제품 대비 GitHub observer 시간
+  중앙값 4.00%·누적 할당 6.55% 감소, RSS 1.32% 증가는 비용으로 기록한다.
+  세 실제 API 전체 출력·최종 CLI·독립성/오류/소비자/race 검사와 리뷰를 통과했다.
+  Go cache 약 3.0 GiB, 중간 실행 파일 약 608 MB 제거 후 scratch 약 290 MiB.
