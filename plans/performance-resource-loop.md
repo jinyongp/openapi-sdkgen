@@ -42,3 +42,7 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   채택. 실제 GitHub Go 생성 중앙값 13.83%, CPU 13.81% 감소.
   세 실제 API 전체 출력 동일. peak RSS 절감은 입증하지 못했다.
   관련 검사·실측 검산·최종 리뷰 완료.
+- [02: 할당과 중복 파싱](performance-resource-loop/02-partition-references.md):
+  채택. 참조 분석용 두 번째 파싱을 제거했다. 같은 관측기 3쌍에서 GitHub 누적
+  할당 6.44%, 시간 2.99% 감소. RSS 중앙값 감소는 관측했으나 표본·범위의 한계를 유지한다.
+  세 실제 API 전체 출력과 관련 검사·리뷰를 통과했다. 전용 cache 약 2.1 GiB.

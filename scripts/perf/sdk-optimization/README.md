@@ -104,6 +104,11 @@ It records compile, prepare, release of input state, emit and completed publicat
 as separate checkpoints, with final package counts and file hashes. Its import root
 is `example.test/graph/api` and the server addon is enabled. Optional `-profile`
 writes intrusive CPU evidence; do not mix those times into ordinary paired samples.
+Checkpoints also report cumulative `totalAllocBytes`, distinct from live heap and
+process RSS. Optional `-heap FRESH_FILE` writes a heap/allocation profile after
+publication and a GC. Use `alloc_space` for sampled cumulative allocation attribution;
+this post-publication snapshot does not measure peak live memory. Heap collection
+and CPU profiling are diagnostic overhead, not ordinary CLI timing samples.
 
 `compare-ts.py --output FRESH_OUTPUT --baseline BASELINE_BINARY --candidate
 CANDIDATE_BINARY --input PINNED_DOCUMENT [--input SECOND_DOCUMENT] --pairs 5`

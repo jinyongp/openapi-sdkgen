@@ -27,13 +27,14 @@ type packageCount struct {
 }
 
 type checkpoint struct {
-	Phase          string                  `json:"phase"`
-	ElapsedSeconds float64                 `json:"elapsedSeconds"`
-	LiveHeapBytes  uint64                  `json:"liveHeapBytes"`
-	GC             uint32                  `json:"gc"`
-	Files          int                     `json:"files"`
-	Bytes          int64                   `json:"bytes"`
-	Packages       map[string]packageCount `json:"packages,omitempty"`
+	Phase           string                  `json:"phase"`
+	ElapsedSeconds  float64                 `json:"elapsedSeconds"`
+	LiveHeapBytes   uint64                  `json:"liveHeapBytes"`
+	TotalAllocBytes uint64                  `json:"totalAllocBytes"`
+	GC              uint32                  `json:"gc"`
+	Files           int                     `json:"files"`
+	Bytes           int64                   `json:"bytes"`
+	Packages        map[string]packageCount `json:"packages,omitempty"`
 }
 
 func main() {
@@ -41,6 +42,7 @@ func main() {
 	sdk := flag.String("output", "", "fresh generated SDK directory")
 	report := flag.String("report", "", "fresh JSONL phase report")
 	profile := flag.String("profile", "", "optional intrusive CPU profile")
+	heap := flag.String("heap", "", "optional intrusive heap/allocation profile after publication")
 	flag.Parse()
 	if *input == "" || *sdk == "" || *report == "" {
 		panic("input, output and report required")
@@ -73,6 +75,7 @@ func main() {
 		state.Phase = phase
 		state.ElapsedSeconds = time.Since(started).Seconds()
 		state.LiveHeapBytes = memory.HeapAlloc
+		state.TotalAllocBytes = memory.TotalAlloc
 		state.GC = memory.NumGC
 		if err := encoder.Encode(state); err != nil {
 			panic(err)
@@ -145,4 +148,15 @@ func main() {
 		panic(err)
 	}
 	mark("publish-finished")
+	if *heap != "" {
+		file, err := os.OpenFile(*heap, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		runtime.GC()
+		if err := pprof.WriteHeapProfile(file); err != nil {
+			panic(err)
+		}
+	}
 }

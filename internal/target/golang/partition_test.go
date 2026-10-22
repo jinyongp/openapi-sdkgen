@@ -153,6 +153,39 @@ func Value() string {
 	}
 }
 
+func TestPartitionForwardReferencesCyclesAndLocalBindings(t *testing.T) {
+	files := []partitionFile{
+		{artifact: generator.Artifact{Path: "models/first.go", Data: []byte(`package models
+type First struct { Other *Second }
+func Value() int { return later() + shadow(3) }
+func shadow(later int) int { return later }
+`)}},
+		{artifact: generator.Artifact{Path: "models/second.go", Data: []byte(`package models
+type Second struct { First *First }
+`)}},
+		{artifact: generator.Artifact{Path: "models/last.go", Data: []byte(`package models
+func later() int { return 7 }
+`)}},
+	}
+	var prepared []filePlan
+	if err := partitionPackage(files, "example.test/consumer/api", "models", generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		prepared = append(prepared, filePlan{Path: artifact.Path, Source: "partition-test", Prepared: string(artifact.Data)})
+		return nil
+	}), 1); err != nil {
+		t.Fatal(err)
+	}
+	testGeneratedModule(t, generator.NewPlan("golang", sourcePlan{Files: prepared}), map[string]string{"forward_test.go": `package consumer_test
+import("testing";"example.test/consumer/api/models")
+func TestForwardReferences(t *testing.T) {
+ if models.Value() != 10 { t.Fatal("forward reference or local binding changed") }
+ first := models.First{}
+ second := models.Second{First: &first}
+ first.Other = &second
+ if first.Other.First != &first { t.Fatal("recursive type ownership changed") }
+}
+`})
+}
+
 func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[string]string) {
 	t.Helper()
 	value, err := plan.Value("golang")

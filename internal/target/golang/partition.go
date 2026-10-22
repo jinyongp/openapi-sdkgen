@@ -73,6 +73,7 @@ func partitionPackage(files []partitionFile, root, directory string, sink genera
 func partitionPackageBound(files []partitionFile, root, directory string, sink generator.ArtifactSink, batch int, bindings map[string]partitionReference) error {
 	p := packagePartition{root: root, directory: directory, packageName: path.Base(directory), files: files, private: bindings != nil && directory == "internal/schema",
 		symbols: make(map[string]partitionSymbol), fields: make(map[string]string), methods: make(map[string]string), sharedTypes: make(map[string]bool)}
+	references := make([][]string, len(files))
 	for index, file := range files {
 		node, err := parser.ParseFile(token.NewFileSet(), file.artifact.Path, file.artifact.Data, 0)
 		if err != nil {
@@ -104,29 +105,30 @@ func partitionPackageBound(files []partitionFile, root, directory string, sink g
 				return true
 			})
 		}
-	}
-	for index, file := range files {
-		node, err := parser.ParseFile(token.NewFileSet(), file.artifact.Path, file.artifact.Data, 0)
-		if err != nil {
-			return err
-		}
+		// Keep only names from this AST. Linking waits until every file's
+		// declarations are indexed; retaining the complete trees is unnecessary.
 		ignored := partitionIgnored(node)
-		edges := make(map[int]bool)
 		uses := make(map[string]bool)
 		ast.Inspect(node, func(n ast.Node) bool {
 			if id, ok := n.(*ast.Ident); ok && !ignored[id] && partitionGlobal(node, id) {
-				if symbol, exists := p.symbols[id.Name]; exists && symbol.file != index {
-					edges[symbol.file] = true
-					uses[id.Name] = true
-				}
+				uses[id.Name] = true
 			}
 			return true
 		})
-		for name := range uses {
-			symbol := p.symbols[name]
+		references[index] = sortedKeys(uses)
+	}
+	for index, file := range files {
+		edges := make(map[int]bool)
+		for _, name := range references[index] {
+			symbol, exists := p.symbols[name]
+			if !exists || symbol.file == index {
+				continue
+			}
+			edges[symbol.file] = true
 			symbol.users = append(symbol.users, index)
 			p.symbols[name] = symbol
 		}
+		references[index] = nil
 		for dependency := range edges {
 			if file.shared && !files[dependency].shared {
 				return fmt.Errorf("shared generated runtime %s depends on a model program", file.artifact.Path)
