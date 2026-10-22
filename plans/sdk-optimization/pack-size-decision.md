@@ -60,3 +60,7 @@ delta에 선택 모드 차이가 섞이지 않았다. 제거 방향의 파일/�
 실행 producer `pack-provider-matrix.py`와 그 동결 `producer-versions/pack-provider-matrix-v1.py`다.
 공유 archive에는 입력 pin과 재현 경로·원시 결과를 포함하고 개인 장비 정보와 private
 task context는 넣지 않는다. 최종 검증 전의 후보 판단을 제품 전체 완료로 기록하지 않는다.
+
+실제 작은 입력·모든 표본과 producer는
+`measurements/2026-10-22/representative-performance.tar.gz`에도 보존했다.
+compiler cache·실행 파일은 제외하고 로그의 개인 CPU 모델 값만 명시적으로 생략했다.

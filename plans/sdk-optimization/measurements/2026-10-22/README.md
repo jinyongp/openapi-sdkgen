@@ -78,6 +78,7 @@ index에서 구분하며, 전체 Graph strict·server 성공이나 공개 성능
 생성 근거, 제외 이유는 index에 명시했다. 단위 검사 뒤 추가한 변경은 기존 `Operations`
 JSDoc 복구뿐이며, 해당 분기를 제거한 source hash가 실제 단위 검사 기록과 일치함을
 확인했다. 진행 중 새 전체 Graph 검사와 private task context는 포함하지 않았다.
+
 # 최신 선택 SDK·대형 참고 자료
 
 `selected-sdk-verification.tar.gz`: 7,052,323 B, SHA-256
@@ -91,3 +92,14 @@ JSDoc 복구뿐이며, 해당 분기를 제거한 source hash가 실제 단위 �
 204개 entry를 전수 검산했다. 이미 종료된 전체 Graph/Cloudflare 원시 결과·ownership·
 manifest·producer를 보존하며 전체 SDK/임시 선언/실행 파일은 중복 포함하지 않는다.
 `../../full-stress-limits.md`의 실패 분류와 제외 범위를 따른다.
+
+## 대표 성능 실험 원본
+
+`representative-performance.tar.gz`: 35,652,082 B, SHA-256
+`2893050c5805366949b0189cd4ff4ea1fc56a684f53b24718e394ba930b0e515`.
+8,156개 entry와199개 trial을 검산했다. 두 실제 제공자의 P-only 묶기 크기·80 build·
+40개 정밀 warm, 실제 선택 GitHub SDK의 P/E HTTP10쌍, W02 closure 초기화 표본을
+보존했다. 작은 SDK·입력·fixture·producer도 포함한다. compiler cache와 실행 파일은
+제외했고,36개 benchmark 로그의 CPU 모델 header 값만 생략해 원본 hash와 변환을
+index에 명시했다. 수치·오류·이상 표본은 바꾸지 않았다. 현재 전체 생성기 timing이나
+전체 Graph/Cloudflare 성공을 증명하는 자료가 아니다.
