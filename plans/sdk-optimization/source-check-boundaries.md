@@ -4,7 +4,10 @@
 진단·references 후보는 실험 이력이다. 전체 Graph 성공과 추가 반복은 필수가 아니며,
 대표 SDK·Graph 선택 SDK의 네 compiler strict·공개 계약과 기존 사용법을 검증한다.
 
-현재 결론은 전체 strict 성공이 아니라 다음 구현 후보의 범위 확정이다.
+최종 선택 Graph SDK는 네 compiler의 전체 source/isolated declaration·공개 consumer와
+Go 전체 compile·두 언어 HTTP 계약을 통과했다(`selected-sdk-verification.md`).
+최신 전체 Graph 검사는 20/29 project 뒤 RSS 종료했으며 `full-stress-limits.md`에 보존했다.
+아래 내용은 당시 진단과 후보 판단의 이력이다.
 단일 프로젝트의 최종 W03 Graph는 네 compiler에서 자원 상한 안에 완료하지 못했다.
 실험별 원시 결과와 source/도구 해시는 `execution.md`와 `.tmp/sdk-optimization-execution`에 있다.
 

@@ -5,6 +5,20 @@
 당시 계획이며, 후속 사용자 승인에 따라 현재는 corpus 37개 전체·Cloudflare 선택 SDK·
 대표 SDK·Graph 선택 SDK와 최종 통합을 검증한다. 추가 전체 Graph·Cloudflare 반복은 하지 않는다.
 
+## 최신 선택 SDK 검증과 대형 참고 결과
+
+후속 사용자 승인 범위를 `fc71325`에서 고정했다. corpus는 37개 전체 성공을 재사용하고
+Cloudflare는 토큰 확인 선택 SDK 전체 compile·HTTP 계약을 새로 통과했다. Graph는
+인증 요구 조회/수정·그룹 소속 확인·메일 안내·로그인 세션 취소 다섯 API의 server 포함
+TS 네 compiler 전체 source·독립 선언·정확한 원본 key/negative consumer, Go 전체
+compile과 두 언어의 실제 HTTP 각7건을 통과했다. 세부 범위·최초 잘못된 HTTP fixture의
+실패·교정과 초기 대형 선택의 생성 전용 결과는 `selected-sdk-verification.md`에 있다.
+단위 리뷰·원시 검산·커밋은 `523cbd9`다. 제품 변경은 `3560450` 이후 없다.
+
+최신 전체 Graph의 20/29 project 뒤 RSS 종료와 Cloudflare 전체/warm RSS 종료·준비
+차단은 `full-stress-limits.md`에 보존했다. 추가 전체 실행은 하지 않았고 실패를 성공으로
+집계하지 않았다. 현재 마지막 통합 suite와 최종 배포 산출물 확인은 진행 중이다.
+
 ## W01 공통·TS 선행 경로
 
 기준 제품은 `5ada624`와 같다. 기존 `preflight.md`의 실제 TS 네 compiler 실패와

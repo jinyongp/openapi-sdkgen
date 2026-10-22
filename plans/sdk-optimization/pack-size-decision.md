@@ -1,8 +1,9 @@
 # Go 파일 묶기 크기 비교
 
 상태: 원본과 64/128/256 KiB의 두 실제 제공자 계약·80개 전체 build는 통과했다.
-정밀 warm 시간도 40개 표본을 추가해 확인했다. 기본 128 KiB를 유지하는 후보 판단이며,
-W09 전체 Graph 성공·반복 검사는 남는다. 파일 수 감소를 cold compiler 시간·메모리
+정밀 warm 시간도 40개 표본을 추가해 확인했다. 기본 128 KiB를 유지한다.
+후속 사용자 승인에 따라 최종 범위는 corpus37개전체·Cloudflare/Graph선택SDK이며
+전체 Graph·Cloudflare 성공·반복은 요구하지 않는다. 파일 수 감소를 cold compiler 시간·메모리
 개선으로 바꾸어 주장하지 않는다.
 
 고정 holdout의 `tvmaze.com`(42개 route)과 `listennotes.com`(24개 route)을 사용했다.

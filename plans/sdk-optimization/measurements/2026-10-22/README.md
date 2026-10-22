@@ -78,3 +78,16 @@ index에서 구분하며, 전체 Graph strict·server 성공이나 공개 성능
 생성 근거, 제외 이유는 index에 명시했다. 단위 검사 뒤 추가한 변경은 기존 `Operations`
 JSDoc 복구뿐이며, 해당 분기를 제거한 source hash가 실제 단위 검사 기록과 일치함을
 확인했다. 진행 중 새 전체 Graph 검사와 private task context는 포함하지 않았다.
+# 최신 선택 SDK·대형 참고 자료
+
+`selected-sdk-verification.tar.gz`: 7,052,323 B, SHA-256
+`6eb992b9ef002cec95054c7a2646ef76b2ba35d581abe2c99462ef6cecd0e531`.
+2,140개 entry의 크기·SHA를 전수 검산했다. 작은 Graph/Cloudflare 선택 SDK 전체 출력,
+네 compiler·Go 전체 compile·실제 HTTP와 처음 잘못된 HTTP fixture의 실패를 포함한다.
+정확한 결과와 초기 큰 선택의 생성 전용 한계는 `../../selected-sdk-verification.md`를 따른다.
+
+`full-stress-limits.tar.gz`: 66,129,639 B, SHA-256
+`59395966618b312acfe8f3b8334edf22f77b2462bb7675e888d79f0240180a9e`.
+204개 entry를 전수 검산했다. 이미 종료된 전체 Graph/Cloudflare 원시 결과·ownership·
+manifest·producer를 보존하며 전체 SDK/임시 선언/실행 파일은 중복 포함하지 않는다.
+`../../full-stress-limits.md`의 실패 분류와 제외 범위를 따른다.
