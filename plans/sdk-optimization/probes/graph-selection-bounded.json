@@ -1,0 +1,12 @@
+{
+  "scope": "Five bounded Graph operations for authentication, membership and mail tips; not whole-Graph support",
+  "input": ".tmp/compatibility-regression/microsoft-graph-beta/openapi.yaml",
+  "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+  "cases": [
+    {"route": "GET /users/{user-id}/authentication/requirements", "operationId": "users.authentication.GetRequirements"},
+    {"route": "PATCH /users/{user-id}/authentication/requirements", "operationId": "users.authentication.UpdateRequirements"},
+    {"route": "POST /users/{user-id}/checkMemberGroups", "operationId": "users.user.checkMemberGroups"},
+    {"route": "POST /users/{user-id}/getMailTips", "operationId": "users.user.getMailTips"},
+    {"route": "POST /users/{user-id}/revokeSignInSessions", "operationId": "users.user.revokeSignInSessions"}
+  ]
+}

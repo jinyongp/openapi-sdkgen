@@ -1,0 +1,9 @@
+[
+  {"name":"requirements","method":"GET","path":"/users/u/authentication/requirements","query":{"$select":"perUserMfaState"},"body":null,"status":200,"response":{"@odata.type":"#microsoft.graph.strongAuthenticationRequirements","perUserMfaState":"disabled"}},
+  {"name":"update","method":"PATCH","path":"/users/u/authentication/requirements","query":{},"body":{"@odata.type":"#microsoft.graph.strongAuthenticationRequirements","perUserMfaState":"enabled"},"status":200,"response":{"@odata.type":"#microsoft.graph.strongAuthenticationRequirements","perUserMfaState":"enabled"}},
+  {"name":"membership","method":"POST","path":"/users/u/checkMemberGroups","query":{},"body":{"groupIds":["11111111-1111-4111-8111-111111111111"]},"status":200,"response":{"value":["11111111-1111-4111-8111-111111111111"]}},
+  {"name":"mailtips","method":"POST","path":"/users/u/getMailTips","query":{},"body":{"EmailAddresses":["reader@example.test"],"MailTipsOptions":"automaticReplies"},"status":200,"response":{"value":[{"@odata.type":"#microsoft.graph.mailTips","customMailTip":"Hello"}]}},
+  {"name":"revoke","method":"POST","path":"/users/u/revokeSignInSessions","query":{},"body":null,"status":200,"response":{"value":true}},
+  {"name":"denied","method":"GET","path":"/users/u/authentication/requirements","query":{"$select":"perUserMfaState"},"body":null,"status":403,"response":{"error":{"code":"denied","message":"blocked"}}},
+  {"name":"invalid","method":"GET","path":"/users/u/authentication/requirements","query":{"$select":"perUserMfaState"},"body":null,"status":200,"response":{"@odata.type":17,"perUserMfaState":"disabled"}}
+]

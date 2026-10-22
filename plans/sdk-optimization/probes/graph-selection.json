@@ -1,0 +1,18 @@
+{
+  "scope": "Five selected Microsoft Graph operations; not whole-Graph support",
+  "input": ".tmp/compatibility-regression/microsoft-graph-beta/openapi.yaml",
+  "inputSha256": "46bead9a6459cbe5f66d31094b23a614eb8da8f46690ee61404d97523e23daec",
+  "cases": [
+    {"route": "GET /users", "operationId": "users.user.ListUser"},
+    {"route": "GET /users/{user-id}", "operationId": "users.user.GetUser"},
+    {"route": "PATCH /users/{user-id}", "operationId": "users.user.UpdateUser"},
+    {"route": "POST /users/{user-id}/sendMail", "operationId": "users.user.sendMail"},
+    {"route": "GET /groups/{group-id}/members", "operationId": "groups.ListMembers"}
+  ],
+  "contracts": [
+    "All emitted selected sources are checked, including server exports",
+    "Exact route and operation-ID sets match the frozen original catalog",
+    "Unselected original routes and operation IDs are rejected",
+    "Path/query/body serialization and declared responses cross a real loopback HTTP boundary"
+  ]
+}

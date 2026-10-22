@@ -1,0 +1,103 @@
+package graphselection_test
+
+import (
+    "context"
+    "encoding/json"
+    "io"
+    "net/http"
+    "net/http/httptest"
+    "os"
+    "reflect"
+    "testing"
+
+    sdk "example.test/graph-selection/api"
+    "example.test/graph-selection/api/models"
+    "example.test/graph-selection/api/types"
+)
+
+type wireCase struct {
+    Name, Method, Path string
+    Query map[string]string
+    Body, Response json.RawMessage
+    Status int
+}
+
+func decodeBody[T any](t *testing.T, body json.RawMessage) T {
+    t.Helper()
+    var value T
+    if err := json.Unmarshal(body, &value); err != nil { t.Fatal(err) }
+    return value
+}
+
+func TestSelectedGraphHTTP(t *testing.T) {
+    data, err := os.ReadFile("graph-selected-wire-cases.json")
+    if err != nil { t.Fatal(err) }
+    var cases []wireCase
+    if err := json.Unmarshal(data, &cases); err != nil { t.Fatal(err) }
+    var seen []string
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        var expected *wireCase
+        for i := range cases { if cases[i].Name == r.Header.Get("X-Case") { expected = &cases[i] } }
+        if expected == nil { t.Error("unexpected case"); w.WriteHeader(500); return }
+        query := map[string]string{}
+        for key, values := range r.URL.Query() { if len(values) != 1 { t.Error("repeated query") }; query[key] = values[0] }
+        if r.Method != expected.Method || r.URL.Path != expected.Path || !reflect.DeepEqual(query, expected.Query) || r.Header.Get("Authorization") != "Bearer fixture-token" { t.Error("unexpected request", r.Method, r.URL, r.Header) }
+        raw, err := io.ReadAll(r.Body)
+        if err != nil { t.Error(err) }
+        var actualBody, expectedBody any
+        if len(raw) != 0 { if err := json.Unmarshal(raw, &actualBody); err != nil { t.Error(err) } }
+        if err := json.Unmarshal(expected.Body, &expectedBody); err != nil { t.Error(err) }
+        if !reflect.DeepEqual(actualBody, expectedBody) { t.Error("request body changed", string(raw), string(expected.Body)) }
+        seen = append(seen, expected.Name)
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(expected.Status)
+        if expected.Status != 204 { w.Write(expected.Response) }
+    }))
+    defer server.Close()
+    client, err := sdk.NewClient(sdk.ClientOptions{BaseURL: server.URL})
+    if err != nil { t.Fatal(err) }
+    ctx := context.Background()
+    for _, row := range cases {
+        options := types.RequestOptions{Authorization: types.Some("Bearer fixture-token"), Headers: http.Header{"X-Case": {row.Name}}}
+        var logical types.Value
+        switch row.Name {
+        case "requirements", "denied", "invalid":
+            result, callErr := client.Routes.GetUsersByIDAuthenticationRequirements(sdk.UsersAuthenticationGetRequirementsInput{Path: sdk.UsersAuthenticationGetRequirementsPath{UserID: "u"}, Query: types.Some(sdk.UsersAuthenticationGetRequirementsQuery{Select: types.Some([]string{"perUserMfaState"})})}).WithOptions(options).Do(ctx)
+            err = callErr
+            if err == nil { logical, err = result.JSONValue() }
+        case "update":
+            result, callErr := client.Operations.UsersAuthenticationUpdateRequirements(sdk.UsersAuthenticationUpdateRequirementsInput{Path: sdk.UsersAuthenticationUpdateRequirementsPath{UserID: "u"}, Body: decodeBody[models.UsersAuthenticationUpdateRequirementsBody](t, row.Body)}).WithOptions(options).Do(ctx)
+            err = callErr
+            if err == nil { logical, err = result.JSONValue() }
+        case "membership":
+            result, callErr := client.Operations.UsersUserCheckMemberGroups(sdk.UsersUserCheckMemberGroupsInput{Path: sdk.UsersUserCheckMemberGroupsPath{UserID: "u"}, Body: decodeBody[models.UsersUserCheckMemberGroupsBody](t, row.Body)}).WithOptions(options).Do(ctx)
+            err = callErr
+            if err == nil { logical, err = result.JSONValue() }
+        case "mailtips":
+            result, callErr := client.Routes.PostUsersByIDGetMailTips(sdk.UsersUserGetMailTipsInput{Path: sdk.UsersUserGetMailTipsPath{UserID: "u"}, Body: decodeBody[models.UsersUserGetMailTipsBody](t, row.Body)}).WithOptions(options).Do(ctx)
+            err = callErr
+            if err == nil { logical, err = result.JSONValue() }
+        case "revoke":
+            result, callErr := client.Operations.UsersUserRevokeSignInSessions(sdk.UsersUserRevokeSignInSessionsInput{Path: sdk.UsersUserRevokeSignInSessionsPath{UserID: "u"}}).WithOptions(options).Do(ctx)
+            err = callErr
+            if err == nil { logical, err = result.JSONValue() }
+        default: t.Fatal("unknown case", row.Name)
+        }
+        if row.Name == "denied" || row.Name == "invalid" {
+            if err == nil { t.Fatal("expected HTTP or schema failure", row.Name) }
+        } else {
+            if err != nil { t.Fatal(row.Name, err) }
+            {
+                encoded, marshalErr := json.Marshal(logical)
+                if marshalErr != nil { t.Fatal(marshalErr) }
+                var actual, expected any
+                if err := json.Unmarshal(encoded, &actual); err != nil { t.Fatal(err) }
+                if err := json.Unmarshal(row.Response, &expected); err != nil { t.Fatal(err) }
+                if !reflect.DeepEqual(actual, expected) { t.Fatal("response changed", row.Name, string(encoded)) }
+            }
+        }
+    }
+    expectedNames := make([]string, len(cases))
+    for i := range cases { expectedNames[i] = cases[i].Name }
+    if !reflect.DeepEqual(seen, expectedNames) { t.Fatal("missing or repeated HTTP request", seen) }
+}
