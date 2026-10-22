@@ -273,6 +273,23 @@ test("independent generated packages may own identical private contracts", () =>
   });
 });
 
+test("inline import types resolve module identities relative to their source", () => {
+  workspace((root) => {
+    const first = resolve(root, "one/first.ts");
+    const second = resolve(root, "two/second.ts");
+    mkdirSync(resolve(root, "one"));
+    mkdirSync(resolve(root, "two"));
+    writeFileSync(resolve(root, "package.json"), "{}");
+    writeFileSync(first, 'interface First { readonly value: import("./child.js").Surface }');
+    writeFileSync(second, 'interface Second { readonly value: import("./child.js").Surface }');
+    assert.equal(checkFiles([first, second]).ok, true);
+    writeFileSync(second, 'interface Second { readonly value: import("../one/child.js").Surface }');
+    assert.equal(checkFiles([first, second]).violations["duplicate-object-type"], 1);
+    writeFileSync(second, 'interface Second { readonly value: import("../one/child.js").Other }');
+    assert.equal(checkFiles([first, second]).ok, true);
+  });
+});
+
 test("local implementation copies fail while distinct generic scopes stay distinct", () => {
   workspace((root) => {
     const file = resolve(root, "local.ts");

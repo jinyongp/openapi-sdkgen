@@ -892,7 +892,7 @@ func emitSourcePlanTo(plan *sourcePlan, sink func(Artifact) error) error {
 		metadataSource = append(metadataSource, []byte("\n/** Named client API assignments. */\n")...)
 		metadataSource = append(metadataSource, clientsSource...)
 	}
-	if err := emitResourceArtifactsTo(document, plan.modules, plan.resourceTree, write); err != nil {
+	if err := emitResourceArtifactsTo(document, publicManifest, plan.modules, plan.resourceTree, write); err != nil {
 		return err
 	}
 	clientIndexSource, err := emitClientArtifactsTo(document, publicManifest, plan.modules, publicLinks, plan.streams, write)

@@ -200,6 +200,19 @@ export function createTypeReuseChecks(inputs, roots = []) {
       }
       function fingerprint(node) {
         if (ts.isParenthesizedTypeNode(node)) return fingerprint(node.type);
+        if (
+          ts.isImportTypeNode(node) &&
+          ts.isLiteralTypeNode(node.argument) &&
+          ts.isStringLiteral(node.argument.literal)
+        )
+          return [
+            node.kind,
+            modulePath(file, node.argument.literal.text),
+            node.qualifier?.getText(source),
+            !!node.isTypeOf,
+            (node.typeArguments ?? []).map(fingerprint),
+            node.attributes && fingerprint(node.attributes),
+          ];
         if (ts.isTypeReferenceNode(node) || ts.isTypeQueryNode(node))
           return [
             node.kind,

@@ -15,7 +15,7 @@ type plannedResourceNode struct {
 	node     *resourceNode
 }
 
-func emitResourceArtifactsTo(document *ir.Document, plan *semanticModulePlan, tree *resourceNode, write func(Artifact) error) error {
+func emitResourceArtifactsTo(document *ir.Document, manifest Manifest, plan *semanticModulePlan, tree *resourceNode, write func(Artifact) error) error {
 	if plan == nil {
 		return fmt.Errorf("internal TypeScript target: prepared plan has no semantic modules")
 	}
@@ -28,9 +28,15 @@ func emitResourceArtifactsTo(document *ir.Document, plan *semanticModulePlan, tr
 	}
 	nodes := make([]plannedResourceNode, 0, len(paths))
 	collectPlannedResourceNodes(tree, "root", nil, nil, paths, &nodes)
+	publicRoutes := 0
+	for _, operation := range manifest.Operations {
+		if operation.Visibility != "hidden" && !operation.dependencyOnly {
+			publicRoutes++
+		}
+	}
 	sort.Slice(nodes, func(left, right int) bool { return nodes[left].path < nodes[right].path })
 	for _, module := range nodes {
-		source, err := emitResourceNodeModule(document, plan, module, paths)
+		source, err := emitResourceNodeModule(document, plan, module, paths, publicRoutes)
 		if err != nil {
 			return fmt.Errorf("emit resource module %q: %w", module.identity, err)
 		}
@@ -65,7 +71,7 @@ func collectPlannedResourceNodes(node *resourceNode, identity string, artifactPa
 	}
 }
 
-func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string) ([]byte, error) {
+func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, module plannedResourceNode, paths map[string]string, publicRoutes int) ([]byte, error) {
 	registrySpecifier, err := plan.relativeModuleSpecifier(module.path, "internal/runtime/client/contract-types.ts")
 	if err != nil {
 		return nil, err
@@ -161,22 +167,33 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		fmt.Fprintf(&output, "import type { RegistryCalls as %s } from %s\n", calls, quoteTS(specifier))
 	}
 	output.WriteByte('\n')
-	output.WriteString("interface ResourceOperations {\n")
-	for _, name := range sortedResourceMemberNames(module.node) {
-		operation, exists := module.node.operations[name]
-		if !exists {
-			continue
-		}
-		route := manifestRouteKey(operation)
-		specifier, err := operationModuleSpecifier(module.path, route, plan)
+	if len(module.node.operations) > 0 && len(module.node.operations) == publicRoutes {
+		// A node owning every public route has exactly the canonical contract,
+		// including selections with private Link dependencies outside that map.
+		specifier, err := plan.relativeModuleSpecifier(module.path, plan.fixed["route-index"])
 		if err != nil {
 			return nil, err
 		}
-		fmt.Fprintf(&output, "  readonly %s: import(%s).Contract\n", quoteTS(route), quoteTS(specifier))
+		fmt.Fprintf(&output, "type ResourceOperations = import(%s).Routes\n", quoteTS(specifier))
+	} else {
+		output.WriteString("interface ResourceOperations {\n")
+		for _, name := range sortedResourceMemberNames(module.node) {
+			operation, exists := module.node.operations[name]
+			if !exists {
+				continue
+			}
+			route := manifestRouteKey(operation)
+			specifier, err := operationModuleSpecifier(module.path, route, plan)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Fprintf(&output, "  readonly %s: import(%s).Contract\n", quoteTS(route), quoteTS(specifier))
+		}
+		output.WriteString("}\n")
 	}
 	// Named base relationships let a parent registry satisfy a child registry
 	// without structurally re-comparing the complete descendant intersection.
-	output.WriteString("}\ntype OwnRegistryCalls = { readonly [Route in keyof ResourceOperations]: ResourceOperations[Route][\"call\"] }\nexport interface RegistryCalls extends OwnRegistryCalls")
+	output.WriteString("type OwnRegistryCalls = { readonly [Route in keyof ResourceOperations]: ResourceOperations[Route][\"call\"] }\nexport interface RegistryCalls extends OwnRegistryCalls")
 	for _, identity := range uniqueResourceChildIdentities(childIdentities) {
 		calls, err := names.resolve(typeImportIdentifierKey(paths[identity], "RegistryCalls"))
 		if err != nil {
