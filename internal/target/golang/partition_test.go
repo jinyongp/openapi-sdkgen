@@ -153,6 +153,32 @@ func Value() string {
 	}
 }
 
+func TestPartitionRewrittenSignaturesRemainCanonical(t *testing.T) {
+	files := []partitionFile{
+		{artifact: packTestArtifact(t, "models/state.go", `type state struct{}
+func (value *state) use(item *state) *state { return item }
+`)},
+		{artifact: packTestArtifact(t, "models/caller.go", `func consume(value *state) *state { return value }
+`)},
+	}
+	implementations := 0
+	if err := partitionPackage(files, "example.test/consumer/api", "models", generator.ArtifactSinkFunc(func(artifact generator.Artifact) error {
+		if strings.HasPrefix(artifact.Path, "internal/modelsimpl/") {
+			implementations++
+		}
+		canonical, err := format.Source(artifact.Data)
+		if err != nil || !bytes.Equal(canonical, artifact.Data) {
+			t.Errorf("rewritten signature is not canonical in %s: %v\n%s", artifact.Path, err, artifact.Data)
+		}
+		return nil
+	}), 1); err != nil {
+		t.Fatal(err)
+	}
+	if implementations != len(files) {
+		t.Fatal("partitioned implementations were not checked", implementations)
+	}
+}
+
 func TestPartitionFacadePreservesDocumentation(t *testing.T) {
 	const source = `// Package models documents the generated API.
 package models

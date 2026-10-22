@@ -57,3 +57,7 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   직전 제품 대비 GitHub 시간 중앙값 10.66%·누적 할당 9.54% 감소. RSS 0.75%·
   출력 0.69% 증가는 비용으로 기록한다. 세 실제 API의 전체 코드·초기화 순서,
   최종 CLI·관련 소비자/게시 검사와 리뷰를 통과했다. cache 약 2.3 GiB.
+- [05: 최신 병목 재확인](performance-resource-loop/05-post-facade-profile.md):
+  완료. 최종 정규화 제거 후보는 재작성 AST의 위치로 인해 비정규 출력이 나와 기각했다.
+  제품 runtime은 유지하고 작은 재현과 정규 서명 회귀 검사를 추가했다.
+  최신 profile에서 확인한 template 반복 파싱을 다음 후보로 조사한다.
