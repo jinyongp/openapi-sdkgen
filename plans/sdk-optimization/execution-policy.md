@@ -202,6 +202,70 @@ E warm profile 실행은 258.87초·RSS 12,416,368,640바이트에서 11,832 MiB
 진단을 적용한다. profiling flag 없이 기존 언어/최적화 옵션·soft heap 6 GiB를 유지하고,
 compiler 10,500 MiB 또는 240초에서 stack을 수집한다. 전체 600초·같은 11,832 MiB
 hard와 2 GiB headroom을 적용한다. 의도한 stack 중단은 compile 성공이나 성능 표본이 아니다.
+이 E 단계 진단에서는 `gctrace=1`도 남겨 compiler의 유지 heap과 GC를 stack 단계와
+대조한다. Go driver가 compiler stderr를 보류할 수 있어 그동안 보이는 driver GC를
+compiler GC로 해석하지 않는다. 이전 P 진단 producer는 원본 그대로 별도 보존한다.
+
+E stack은 `types2.packageObjects`의 함수 선언·서명 검사였고 backend 이전이었다.
+compiler GC 원문은 유지 heap 9,404 MB와 약 2초 mark 구간, heap goal이 이미 유지
+heap보다 작은 상태를 보였다. 다음 Go 진단은 같은 source/cache의 전체 `./api/...`를
+profiling compiler flag 없이 soft heap 10 GiB·gctrace로 확인한다. hard 11,832 MiB와
+2 GiB headroom은 그대로며 시간은 진단용 900초다. TS owner API 대조 종료 뒤 직렬
+실행한다. 성공하더라도 warm 진단이며, 최종 cold 5회·3,600초 조건을 대체하지 않는다.
+이 900초 진단이 850초에도 같은 operations compiler에 있으면, 현재 native PID/package/
+시작 identity를 다시 확인해 SIGQUIT로 늦은 단계를 수집한다. 원래 900초 상한을 늘리지
+않으며 agent의 stack 수집 중단으로 분류한다. 늦은 단계와 실제 compiler GC를 보존해
+다음 구조·스케줄 판단에 쓰고 전체 compile 성공이나 natural timeout으로 바꾸지 않는다.
+
+늦은 stack 요청 뒤에도 wrapper가 끝나지 않아 recorder가 실제 900.33초 timeout을
+기록했다. 요청 signal과 recorder outcome을 모두 보존한다. 본문 frontend까지 진행했으나
+전체 성공은 아니다. 다음 W09 검증은 원래 전체 3,600초 예산에서 같은 SDK/cache와
+soft heap 10 GiB를 사용하고 profiling flag·gctrace·의도한 signal 없이 자연 종료를
+기다린다. hard 11,832 MiB와 시작 전 2 GiB headroom을 요구하며 20분 내 확보하지 못하면
+child를 시작하지 않는다. 이 warm 검증은 최종 cold 5표본을 대신하지 않는다. owned
+process의 VmSwap/VmSize도 1초 간격으로 보존해 RSS만으로 전체 메모리 비용을 추정하지
+않는다. 과거 sampler producer는 별도 동결한다.
+
+### Native TS owner 20의 추가 비용 분리
+
+named resource 후보는 root owner 19를 오류 0개로 통과했다. 다음 owner 20은 233초
+관측 시점에 singleThreaded·soft heap 6 GiB에서 RSS 약 9.1 GB와 누적 CPU 365%를
+보였다. 실제 retained heap이나 semantic hotspot은 아직 확정하지 않는다. 이 실행을
+agent의 진단 전환으로 중단하고 원래 결과·signal을 보존하며 timeout/RSS 실패로 바꾸지
+않는다. 해당 native PID의 실행 identity를 대조하고 SIGINT, 30초 뒤 남아 있으면 SIGKILL을
+그 프로세스에만 보낸다. wrapper 종료 후에만 후속 무거운 진단을 시작한다.
+
+이미 통과한 owner 0–19의 declaration과 owner 20의 원래 source만 새 tree에 hardlink해
+read-only fixture를 만든다. 원본 SDK·이전 선언은 수정하지 않는다. 두 API 진단은 같은
+config/실제 owner/전체 loaded program의 semantic, hard 11 GiB·GOGC=100·GOMAXPROCS=4·
+gctrace·120초 계측·외부 600초를 고정하고 soft heap만 6/10 GiB로 나눈다. 각 source hash와
+실제 loaded source 집합을 대조하고 CPU/heap profile을 실제 판독한다. 단순 RSS 관찰이나
+API 수집을 전체 strict 성공으로 삼지 않는다. 두 결과를 보고 다음 전체 검사 조건을 정한다.
+두 대조는 실제 program 59,670개·owner source 1,695개가 같고 판독 가능한 profile을
+남겼으나 semantic은 모두 120초 미완료였다. 10 GiB에서도 union/type 비교가 남아 있어
+heap만 더 올리지 않는다. 다음에는 같은 fixture·soft 10 GiB·hard 11 GiB·같은 120초/
+600초 조건으로 client factory, registry, route helper 세 파일의 semantic을 각각 계측한다.
+새 Go warm 진단 종료 뒤 직렬 실행하며 파일별 결과로 다음 source 후보를 고른다.
+세 파일은 각각 semantic 오류 0개로 약 11.78/7.32/8.61초의 계측 구간에 끝났다.
+이 결과로 특정 source의 구조 변경을 채택하지 않는다. API의 checker pool·전체 파일
+수집 경로는 CLI와 다를 수 있으므로 API 시간으로 CLI 완료를 예측하지 않는다.
+다음 검증은 같은 SDK/strict 옵션·singleThreaded·새 전체 declaration/build-info에서
+native soft heap 10 GiB를 사용한다. 기존 동적 최대 12 GiB hard와 전체 3,600초는
+유지하고, 전체 source/공개 consumer까지 자연 종료를 기다린다. 과거 6 GiB의 agent
+중단과 새 profile을 구분하며 같은 조건의 성능 비교로 계산하지 않는다.
+
+실행 중인 정확한 native PID·start identity·config를 확인한 뒤 Linux user-space
+software CPU clock으로 30초 표본을 수집했다. signal·ptrace·process stop이나 host 설정
+변경 없이 기존 binary의 Go symbol로 판독한다. 이 계측이 포함된 전체 실행은 correctness
+pilot으로만 보존하고 최종 대표 시간 표본에서는 제외한다. 자연 종료 조건은 유지한다.
+수집 11,703개에서 lost/unknown은 0개였고 runtime 계열 flat 표본은 11,604개였다.
+관측 전후 VmSwap은 0, major fault는 4로 같았다. 이 구간을 swap 병목으로 해석하지 않는다.
+판독한 non-runtime 호출 경로는 mapped type 안의 type argument constraint·indexed
+access union 관계 검사였다. 전체 native가 실패할 경우, 같은 read-only fixture의
+`internal/client/types.ts`와 `registry-contracts.ts`만 기존 API 조건(soft 10 GiB,
+hard 11 GiB+2 GiB headroom, 120초 계측/600초 외부)으로 직렬 계측한다. 앞서 확인한
+세 파일과 달리 이 두 mapped-type 선언은 파일별로 확인하지 않았으므로 원인 확정 전
+제품 변경을 고르지 않는다. 그 뒤 독립 Go 전체 warm 검증을 같은 고정 조건으로 실행한다.
 
 ### P 크기 비교의 실제 제공자 표본
 

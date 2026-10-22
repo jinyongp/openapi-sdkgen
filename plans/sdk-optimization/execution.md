@@ -661,3 +661,34 @@ E의 후속 intrusive warm 전체 빌드는 operations compiler에서 258.87초�
 변경하지 않았고 full compile 성공이나 cold 표본에 넣지 않는다. P 표본과 다음 TS 검사
 종료 뒤 profiling flag 없이 동일 operations compiler의 stack을 수집해 진행 단계를
 확인하도록 사전 고정했다. 아직 E의 정확한 실패 phase나 CPU hotspot을 확정하지 않는다.
+
+named resource 후보의 새 실제 Graph는 133.57초·RSS 3,238,699,008바이트에 생성됐다.
+187,686 source·775,520,325바이트, 누락 import·nocheck 0개이며 전체 ownership/hash와
+3×6 membership을 다시 통과했다. native strict의 owner 0–19는 모두 통과했고, 이전에
+TS2859가 158개였던 root 19는 오류 0개로 87.14초·RSS 10,068,951,040바이트에 끝났다.
+
+다음 owner 20은 계속 실행되며 singleThreaded에서도 CPU 약 365%·RSS 약 9.3 GB를
+보였다. GC 비용 가설을 직접 확인하기 위해 해당 native PID/start time/config를 대조하고
+SIGINT, 30초 뒤 SIGKILL로 진단 전환했다. 20개 owner 완료·전체 795.25초에서 끝난
+실행은 agent 중단이며 natural timeout/RSS 실패나 전체 strict 성공이 아니다. 원래 result와
+`agent-diagnostic-transition.json`을 보존한다. 완료한 declaration을 쓰는 read-only owner
+20 fixture의 동일 11 GiB hard·soft heap 6/10 GiB CPU/heap 대조를 별도로 사전 고정했다.
+
+P의 두 실제 제공자 원본/64/128/256 KiB 계약 12개와 cold/warm build 80개는 모두
+통과했다. 기본 full과 explicit-all-route 출력도 양쪽에서 byte-identical이라 selection
+mode의 delta 교란은 없다. 파일 수 감소·cold 시간 범위·operation 추가/삭제 쓰기 증폭은
+`pack-size-decision.md`에 정리했다. 원래 warm 외부 시간의 관측 간격 한계를 보완하는
+같은 cache의 내부 시간 측정은 별도 직렬 작업이며, 전체 Graph 성공은 여전히 남는다.
+
+W06은 실제 제공자 비교·정확한 warm 40회와 단위 리뷰를 커밋한 `fddf7ce` 기준으로
+current validation을 기록해 done 처리했다. W06E도 HTTP 10쌍·AST/계약·compiler pilot의
+실패 원인을 검토한 `4e47ddd` 기준으로 done 처리했다. 이는 최종 전체 Graph 성공이나
+Go 5회 표본의 면제가 아니다. 그 검증은 claim한 W09와 W11에 남는다.
+
+owner 20의 API 파일별 semantic은 factory/registry/helpers 모두 오류 0개로 끝났지만
+전체 CLI와 checker pool·수집 경로가 달라 전체 성공으로 집계하지 않았다. 같은 실제 SDK의
+새 전체 native 검사는 soft heap 10 GiB·기존 hard 상한·3,600초·strict 강도로 진행한다.
+실제 CLI의 비중단 CPU 표본 11,703개 중 runtime 계열 flat 표본이 11,604개였고,
+`tryDeferToSpanScan`·`findObject`·`scanObject`가 상위였다. VmSwap은 0, major fault는
+수집 전후 4였다. Go runtime 내부와 실제 타입 검사 비용을 구분하며 이 관측으로 특정
+생성 source의 구조 변경이나 전체 컴파일 성공을 주장하지 않는다.

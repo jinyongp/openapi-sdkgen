@@ -16,6 +16,11 @@ negative·isolated declaration과 실제 Graph 전체 검사 후 최종 판단�
 중복 callable 표현에서 TS2859 312개로 종료됐다. 그 표현의 canonical `Surface` 재사용
 수정은 W08의 별도 후속 단위이며 최종 전체 source/public 성공까지 추적한다.
 
+canonical callable 참조만 적용한 실제 Graph에서는 root 오류 158개가 남았다. 후속
+canonical Members·상속 RegistryCalls 후보는 네 compiler의 확대 계약 검사를 통과했고
+새 실제 Graph root도 오류 0개로 통과했다. 다음 전역 owner의 비용을 CPU/heap으로
+조사 중이며, C의 전체 source/public consumer 성공과 최종 채택은 아직 완료하지 않았다.
+
 아래는 W04 당시의 보류 판단과 근거다. 후속 실험을 과거 판단의 당시 근거로 섞지 않는다.
 
 ## 초기 W04 판단
