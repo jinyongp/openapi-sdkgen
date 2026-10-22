@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"time"
 
 	compiler "openapi-sdkgen/internal/compiler"
@@ -35,6 +36,7 @@ type checkpoint struct {
 	Files           int                     `json:"files"`
 	Bytes           int64                   `json:"bytes"`
 	Packages        map[string]packageCount `json:"packages,omitempty"`
+	HeapArtifact    string                  `json:"heapArtifact,omitempty"`
 }
 
 func main() {
@@ -43,9 +45,14 @@ func main() {
 	report := flag.String("report", "", "fresh JSONL phase report")
 	profile := flag.String("profile", "", "optional intrusive CPU profile")
 	heap := flag.String("heap", "", "optional intrusive heap/allocation profile after publication")
+	emissionHeap := flag.String("heap-during-emission", "", "optional intrusive heap profile at first matching artifact")
+	heapPrefix := flag.String("heap-on-prefix", "", "artifact prefix required by heap-during-emission")
 	flag.Parse()
 	if *input == "" || *sdk == "" || *report == "" {
 		panic("input, output and report required")
+	}
+	if (*emissionHeap == "") != (*heapPrefix == "") {
+		panic("heap-during-emission and heap-on-prefix are required together")
 	}
 	if _, err := os.Stat(*sdk); !os.IsNotExist(err) {
 		panic("fresh output required")
@@ -55,6 +62,14 @@ func main() {
 		panic(err)
 	}
 	defer log.Close()
+	var duringEmission *os.File
+	if *emissionHeap != "" {
+		duringEmission, err = os.OpenFile(*emissionHeap, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if err != nil {
+			panic(err)
+		}
+		defer duringEmission.Close()
+	}
 	if *profile != "" {
 		cpu, err := os.OpenFile(*profile, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if err != nil {
@@ -139,6 +154,14 @@ func main() {
 			if state.Files%25000 == 0 {
 				mark("emit-progress")
 			}
+			if duringEmission != nil && state.HeapArtifact == "" && strings.HasPrefix(a.Path, *heapPrefix) {
+				runtime.GC()
+				state.HeapArtifact = a.Path
+				mark("emit-heap")
+				if err := pprof.WriteHeapProfile(duringEmission); err != nil {
+					return err
+				}
+			}
 			return sink.WriteArtifact(a)
 		}))
 		mark("emit-finished")
@@ -146,6 +169,9 @@ func main() {
 	})
 	if err != nil {
 		panic(err)
+	}
+	if duringEmission != nil && state.HeapArtifact == "" {
+		panic("no emitted artifact matched heap-on-prefix")
 	}
 	mark("publish-finished")
 	if *heap != "" {

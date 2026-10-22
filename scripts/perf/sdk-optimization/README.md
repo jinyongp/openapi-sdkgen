@@ -130,6 +130,16 @@ publication and a GC. Use `alloc_space` for sampled cumulative allocation attrib
 this post-publication snapshot does not measure peak live memory. Heap collection
 and CPU profiling are diagnostic overhead, not ordinary CLI timing samples.
 
+Use `-heap-during-emission FRESH_FILE -heap-on-prefix ARTIFACT_PREFIX` together
+to collect live allocation attribution during emission. Before the first matching
+artifact reaches the publisher, the observer forces a GC, records an `emit-heap`
+checkpoint with `heapArtifact`, and writes the profile. Inspect `inuse_space` for
+retained bytes at that point; the selected checkpoint is not necessarily peak
+memory. Default runs do not collect this profile. Both flags are required, existing
+profile files are protected, and an unmatched prefix fails the diagnostic after
+generation has completed. That failure can leave a valid generated SDK. Treat
+these runs as intrusive diagnostics and verify their output separately.
+
 `compare-ts.py --output FRESH_OUTPUT --baseline BASELINE_BINARY --candidate
 CANDIDATE_BINARY --input PINNED_DOCUMENT [--input SECOND_DOCUMENT] --pairs 5`
 alternates fresh generation and whole-source/public-key strict checker processes.

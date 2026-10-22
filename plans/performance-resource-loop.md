@@ -100,3 +100,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   시간 중앙값 −0.27%·RSS +0.65%를 구분해 기록한다. 세 실제 API 전체 출력·
   소유권/오류/소비자/race·실제 CLI 검증과 리뷰 통과. cache 약 3.3 GiB 유지,
   오래된 실행 파일 약 74 MB 제거.
+- [13: 생성 중 살아 있는 패키지 메모리](performance-resource-loop/13-live-package-memory.md):
+  완료. 생성 중 선택 관측점의 heap에서 렌더링 source 보유가 약 절반임을 확인했다.
+  optional observer·옵션 실패 경로·작은 기본 동작·GitHub 전체 출력 동일성을 검증했다.
+  제품 runtime은 유지하며 다음 단위에서 lossless 보관의 RAM/CPU 비용을 비교한다.
+  진단 실행 파일 약 35 MB 제거, 전용 cache 약 3.3 GiB 유지.
