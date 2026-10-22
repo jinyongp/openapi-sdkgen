@@ -212,6 +212,9 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 
 	// Declare members once, preserving their canonical child Surface identities.
 	// Pick<Surface, keyof Surface> remaps the entire tree during construction.
+	if module.node.parameterChild != nil {
+		output.WriteString("export ")
+	}
 	output.WriteString("interface Members {\n")
 	for _, name := range sortedResourceMemberNames(module.node) {
 		operation, hasOperation := module.node.operations[name]
@@ -222,7 +225,7 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 		}
 		if child != nil {
 			identity := childIdentities["literal:"+name]
-			childType, err := resourceChildSurfaceType(plan, module.path, identity, paths)
+			childType, err := resourceChildSurfaceType(document, plan, module.path, identity, child, paths)
 			if err != nil {
 				return nil, err
 			}
@@ -298,14 +301,28 @@ func emitResourceNodeModule(document *ir.Document, plan *semanticModulePlan, mod
 	return []byte(generatedTypeImports(source)), nil
 }
 
-func resourceChildSurfaceType(plan *semanticModulePlan, artifact, identity string, paths map[string]string) (string, error) {
+func resourceChildSurfaceType(document *ir.Document, plan *semanticModulePlan, artifact, identity string, child *resourceNode, paths map[string]string) (string, error) {
 	childSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[identity])
 	if err != nil {
 		return "", err
 	}
-	// The owning Surface already declares its parameter call signature. Adding
-	// another copy forces structural comparisons down the entire resource tree.
-	return "import(" + quoteTS(childSpecifier) + ").Surface", nil
+	if child.parameterChild == nil {
+		return "import(" + quoteTS(childSpecifier) + ").Surface", nil
+	}
+	parameter := child.parameterChild.parameter
+	parameterType, err := resourceParameterType(document, plan, artifact, parameter)
+	if err != nil {
+		return "", err
+	}
+	parameterIdentity := resourceChildIdentities(identity, child)["parameter"]
+	parameterSpecifier, err := plan.relativeModuleSpecifier(artifact, paths[parameterIdentity])
+	if err != nil {
+		return "", err
+	}
+	// Spell the selector once for readable hover, then reuse only its canonical
+	// members. Intersecting with Surface would duplicate the same call signature.
+	callType := "((" + parameter.Binding + ": " + parameterType + ") => import(" + quoteTS(parameterSpecifier) + ").Surface)"
+	return callType + " & import(" + quoteTS(childSpecifier) + ").Members", nil
 }
 
 func resourceParameterType(document *ir.Document, plan *semanticModulePlan, artifact string, parameter *operationParameter) (string, error) {

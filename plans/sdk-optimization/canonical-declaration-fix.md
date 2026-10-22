@@ -22,3 +22,11 @@ W08을 명시적으로 다시 열고 수정·caller 재검토·단위 검사를 
 원시 실행은 `.tmp/sdk-optimization-execution/`의 `resource-canonical-*`,
 `inline-import-identity-red/green`에 있다. 초기 전체 통합 실패와 중간 수정의 한계도
 그대로 보존한다. 이 수정은 전체 Graph·Cloudflare 재실행을 요구하지 않는다.
+
+후속 전체 TS 생성기522개 검사는 통과했지만 실제 LSP QuickInfo 검사에서 selector의
+`(customerID: string)` 표시가 named Surface 뒤로 숨는 회귀를 발견했다. selector를
+명시한 함수와 소유 모듈의 canonical `Members`만 결합해 기존 표시를 복원했다.
+call signature를 가진 Surface를 다시 intersection에 넣지 않으므로 중복 callable 비교를
+되살리지 않는다. 함수 타입 alias만 바꾸는 첫 진단은 표시를 복원하지 못해 채택하지 않았다.
+실제 생성기를 통한 전체 catalog·선언 옵션은 다시 통과했고, LSP·네 compiler 소비 회귀와
+최종 suite를 이 표현에서 재확인한다. 초기 전체 통합 결과를 최종 성공으로 바꾸지 않는다.
