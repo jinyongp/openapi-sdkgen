@@ -349,7 +349,7 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 	}
 	var facade []byte
 	if !p.private {
-		facade, err = p.facade(file.artifact.Data, file.group)
+		facade, err = p.facade(set, node, file.group)
 		if err != nil {
 			return err
 		}
@@ -557,15 +557,12 @@ func transformPartitionValue(value reflect.Value, transform func(ast.Node) ast.N
 	return nil
 }
 
-func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
-	// Reparse the rendered source into an independent tree with its own positions.
-	// Printing the implementation tree with an unrelated FileSet loses comment
-	// ownership and repeats formatting before the facade's final normalization.
-	set := token.NewFileSet()
-	file, err := parser.ParseFile(set, "facade.go", source, parser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
+func (p *packagePartition) facade(set *token.FileSet, source *ast.File, group int) ([]byte, error) {
+	// The facade is printed before the implementation is rewritten. Copy only
+	// nodes this view changes; unchanged signatures and docs keep their original
+	// positions and remain read-only. Re-parsing discarded bodies is unnecessary.
+	file := *source
+	file.Imports = append([]*ast.ImportSpec(nil), source.Imports...)
 	var declarations []ast.Decl
 	for _, declaration := range file.Decls {
 		switch declaration := declaration.(type) {
@@ -573,19 +570,31 @@ func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
 			if declaration.Recv != nil || !declaration.Name.IsExported() {
 				continue
 			}
+			forwarder := *declaration
+			signature := *declaration.Type
+			parameters := *signature.Params
+			parameters.List = make([]*ast.Field, len(signature.Params.List))
+			signature.Params = &parameters
+			forwarder.Type = &signature
 			var arguments []ast.Expr
 			parameter := 0
-			for _, field := range declaration.Type.Params.List {
+			for index, original := range declaration.Type.Params.List {
+				field := *original
+				field.Names = append([]*ast.Ident(nil), original.Names...)
 				if len(field.Names) == 0 {
 					field.Names = []*ast.Ident{ast.NewIdent(fmt.Sprintf("argument%d", parameter))}
 				}
-				for _, name := range field.Names {
+				for index, name := range field.Names {
 					if name.Name == "_" {
-						name.Name = fmt.Sprintf("argument%d", parameter)
+						argument := *name
+						argument.Name = fmt.Sprintf("argument%d", parameter)
+						field.Names[index] = &argument
+						name = &argument
 					}
 					arguments = append(arguments, ast.NewIdent(name.Name))
 					parameter++
 				}
+				parameters.List[index] = &field
 			}
 			call := &ast.CallExpr{Fun: &ast.SelectorExpr{X: ast.NewIdent("sdkgenimpl"), Sel: ast.NewIdent(declaration.Name.Name)}, Args: arguments}
 			if len(declaration.Type.Params.List) != 0 {
@@ -597,11 +606,12 @@ func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
 			if declaration.Type.Results != nil && len(declaration.Type.Results.List) != 0 {
 				statement = &ast.ReturnStmt{Results: []ast.Expr{call}}
 			}
-			declaration.Body = &ast.BlockStmt{List: []ast.Stmt{statement}}
-			declarations = append(declarations, declaration)
+			forwarder.Body = &ast.BlockStmt{List: []ast.Stmt{statement}}
+			declarations = append(declarations, &forwarder)
 		case *ast.GenDecl:
 			if declaration.Tok == token.IMPORT {
-				declarations = append(declarations, declaration)
+				imports := *declaration
+				declarations = append(declarations, &imports)
 				continue
 			}
 			for _, spec := range declaration.Specs {
@@ -611,9 +621,10 @@ func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
 						continue
 					}
 					name := p.symbols[spec.Name.Name].name
-					spec.Assign = 1
-					spec.Type = &ast.SelectorExpr{X: ast.NewIdent("sdkgenimpl"), Sel: ast.NewIdent(name)}
-					declarations = append(declarations, &ast.GenDecl{Doc: declaration.Doc, Tok: token.TYPE, Specs: []ast.Spec{spec}})
+					alias := *spec
+					alias.Assign = 1
+					alias.Type = &ast.SelectorExpr{X: ast.NewIdent("sdkgenimpl"), Sel: ast.NewIdent(name)}
+					declarations = append(declarations, &ast.GenDecl{Doc: declaration.Doc, Tok: token.TYPE, Specs: []ast.Spec{&alias}})
 				case *ast.ValueSpec:
 					for _, name := range spec.Names {
 						if !name.IsExported() {
@@ -635,6 +646,6 @@ func (p *packagePartition) facade(source []byte, group int) ([]byte, error) {
 	file.Decls = declarations
 	// Detached body comments must not remain interleaved with forwarding code.
 	file.Comments = nil
-	addPartitionImport(file, "sdkgenimpl", p.importPath(group))
-	return formatPartitionFile(set, file)
+	addPartitionImport(&file, "sdkgenimpl", p.importPath(group))
+	return formatPartitionFile(set, &file)
 }

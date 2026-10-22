@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/token"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -242,6 +243,90 @@ func Names(values ...Name) []Name {
 	canonical, err := format.Source(facade)
 	if err != nil || !bytes.Equal(canonical, facade) {
 		t.Fatal("facade is not canonical Go source", err)
+	}
+}
+
+func TestPartitionFacadeViewDoesNotMutateImplementation(t *testing.T) {
+	const source = `// Package models preserves its API documentation.
+package models
+import (
+"fmt"
+"strings"
+)
+// Count is retained by the facade.
+const Count = 3
+// Name identifies a model.
+type Name string
+func Names(_ Name, values ...Name) []Name {
+// Implementation-only comment.
+return values
+}
+func Unnamed(Name, ...Name) {}
+func Reference(value fmt.Stringer) fmt.Stringer { return value }
+func private() string { return strings.TrimSpace(" body ") }
+`
+	for _, mutable := range []bool{false, true} {
+		text := source
+		if mutable {
+			text += "var Mutable int\n"
+		}
+		set := token.NewFileSet()
+		file, err := parser.ParseFile(set, "models/names.go", text, parser.ParseComments)
+		if err != nil {
+			t.Fatal(err)
+		}
+		scope := file.Scope
+		objects := make(map[string]*ast.Object, len(scope.Objects))
+		for name, object := range scope.Objects {
+			objects[name] = object
+		}
+		snapshot := func() []byte {
+			var buffer bytes.Buffer
+			// ast.Fprint visits map keys in unspecified order. Check the scope
+			// map separately while retaining object links in the syntax snapshot.
+			if err := ast.Fprint(&buffer, set, file, func(name string, _ reflect.Value) bool { return name != "Objects" }); err != nil {
+				t.Fatal(err)
+			}
+			return buffer.Bytes()
+		}
+		before := snapshot()
+		partition := packagePartition{root: "example.test/consumer/api", packageName: "models", symbols: map[string]partitionSymbol{"Name": {name: "Name"}}}
+		first, err := partition.facade(set, file, 0)
+		if !bytes.Equal(before, snapshot()) || file.Scope != scope || !reflect.DeepEqual(objects, scope.Objects) {
+			t.Fatal("facade modified parser-owned implementation syntax or scope")
+		}
+		if mutable {
+			if err == nil || !strings.Contains(err.Error(), "cannot alias mutable public variable Mutable") {
+				t.Fatal("mutable variable contract changed", err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		second, err := partition.facade(set, file, 0)
+		if err != nil || !bytes.Equal(first, second) || !bytes.Equal(before, snapshot()) {
+			t.Fatal("facade view is not repeatable and isolated", err)
+		}
+		canonical, err := format.Source(first)
+		if err != nil || !bytes.Equal(canonical, first) {
+			t.Fatal("facade view is not canonical Go", err)
+		}
+		for _, expected := range []string{
+			"func Names(argument0 Name, values ...Name) []Name",
+			"return sdkgenimpl.Names(argument0, values...)",
+			"func Unnamed(argument0 Name, argument1 ...Name)",
+			"sdkgenimpl.Unnamed(argument0, argument1...)",
+			"func Reference(value fmt.Stringer) fmt.Stringer",
+			"// Name identifies a model.",
+		} {
+			if !bytes.Contains(first, []byte(expected)) {
+				t.Fatalf("facade lost its public signature or forwarding behavior: %s\n%s", expected, first)
+			}
+		}
+		if bytes.Contains(first, []byte("Implementation-only comment")) || bytes.Contains(first, []byte(`"strings"`)) {
+			t.Fatal("facade retained a discarded body or its import")
+		}
 	}
 }
 

@@ -78,3 +78,9 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   실패·timeout·협조적 취소에서도 writer 종료 후 cache를 회수하며 caller cache는 유지한다.
   25개 검사와 실제 TVMaze cold/warm 빌드, 약 139 MB 임시 cache 제거를 확인했다.
   전용 기존 cache 약 3.0 GiB를 유지한다. 제품 속도 개선율로 해석하지 않는다.
+- [09: Facade AST의 부분 복사](performance-resource-loop/09-current-profile.md):
+  채택. 수정하는 공개 표면만 복사해 같은 FileSet으로 먼저 출력하고, 버릴 구현 body의
+  재파싱을 제거했다. 직전 제품 대비 GitHub 누적 할당 중앙값 5.15% 감소.
+  생성 시간·peak RSS의 일관된 이득은 입증하지 못했다. 세 실제 API 전체 출력·
+  소비자/소유권/race·실제 CLI·리뷰를 통과했다. 전용 cache 약 3.1 GiB를 유지하고
+  오래된 실행 파일 약 74 MB를 제거했다. raw-source 정규화 생략 후보는 기각했다.
