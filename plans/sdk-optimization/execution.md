@@ -753,3 +753,27 @@ recorder를 `measurements/2026-10-22/distribution.tar.gz`에 보관했다. 2,160
 index에 기록한 자료 파일과 patch를 archive에서 다시 읽어 검산했다. 실행 파일 제외와 정확한
 dirty source 재현 경계는 같은 디렉터리 README에 기록했다. 진행 중 corpus/Graph와
 private task context는 넣지 않았다.
+
+Go corpus의 Cloudflare는 1,428.41초·peak 9,679,519,744바이트에서 당시 동적 상한
+9,213 MiB를 넘어 보호 종료됐다. compiler 오류·HTTP 통과나 전체 compile 성공으로
+분류하지 않는다. 마지막 proc 관측은 `internal/operations`였지만 보호 종료 순간의
+package/stack은 수집하지 못했다. auditor 최종 report도 없으므로 원본 recorder를
+그대로 남기고 종료된 SDK 54,542파일·976,456,445바이트와 HTTP fixture를 별도 보존했다.
+보존 출력에서 전수 재계산한 artifact SHA는
+`ce9de03e21c962a3bd1fdca94497e953eb761888c7f1e81e20416bde9609fc36`이다.
+이는 미저장 auditor 결과를 복원한 값이나 compile 성공 근거가 아니다.
+
+Cloudflare 재검증이 남아 Go 38/38 gate는 미충족이다. corpus compiler가 모두 끝난 뒤
+독립 W08 API를 직렬로 진행하도록 child 없는 대기자만 종료·재연결했다. 이는 Go 실패를
+면제하거나 source 검사 강도를 바꾸는 조치가 아니다. Cloudflare 재검증과 Graph 전체
+warm은 기존 메모리 최대·headroom·compile 3,600초 안에서 별도 실행한다.
+
+원래 38문서 실행은 36개 통과로 끝났고, 정확한 CI 보정으로 재실행한 Spoonacular는
+20.66초·RSS 1,233,420,288바이트에 전체 compile·HTTP 계약까지 통과했다. 원본 pin뿐
+아니라 보정 계약·현재 관련 source 956파일·auditor binary·Go 1.27.2·server·전체 compile
+policy와 필수 HTTP 실행을 대조한 최종 첫 집계는 **37/38**이다. Cloudflare만 남는다.
+auditor build·38문서·Spoonacular 재검증의 40개 recorder trial과 실패 원본, 보존 SDK
+inventory·재현 스크립트를 `measurements/2026-10-22/go-corpus-attempt-1.tar.gz`에 넣었다.
+266개 항목·9,271,246바이트, SHA-256은
+`2e371349f2d1f4b76c6ce8016fa3f5363ded9dabad5f57787d52ca234295b102`이며 index·모든 자료
+파일을 다시 검산했다. 이 집계·archive는 W09 완료나 Graph compile 성공이 아니다.
