@@ -2,6 +2,8 @@ package golang
 
 import (
 	"bytes"
+	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"path"
@@ -100,6 +102,55 @@ func ShadowResult() int { return Shadow(local(3)) }
 import("testing";"example.test/consumer/api/models")
 func TestBindings(t *testing.T){if models.Value()!=9||models.ShadowResult()!=3{t.Fatal("import, collision or local binding changed")}}
 `})
+}
+
+func TestPartitionBindingsPreserveCommentsAndCanonicalFormatting(t *testing.T) {
+	const source = `// Package models documents the generated API.
+package models
+
+import (
+	// Keep the standard formatting dependency.
+	"fmt"
+	schema "example.test/consumer/api/internal/schema"
+)
+
+// Value returns the schema value.
+func Value() string {
+	// Keep this body comment and comment-like string data.
+	return fmt.Sprint(schema.Value(), "// unchanged /* literal */")
+}
+`
+	artifact, err := bindPartitionImports(generator.Artifact{Path: "models/value.go", Data: []byte(source)}, "example.test/consumer/api/internal/schema", map[string]partitionReference{
+		"Value": {path: "example.test/consumer/api/internal/schemaimpl/p1", name: "Value"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := format.Source(artifact.Data)
+	if err != nil || !bytes.Equal(canonical, artifact.Data) {
+		t.Fatal("partition output is not canonical Go source", err)
+	}
+	file, err := parser.ParseFile(token.NewFileSet(), artifact.Path, artifact.Data, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if file.Doc.Text() != "Package models documents the generated API.\n" {
+		t.Fatal("package documentation changed")
+	}
+	var value *ast.FuncDecl
+	for _, declaration := range file.Decls {
+		if function, ok := declaration.(*ast.FuncDecl); ok && function.Name.Name == "Value" {
+			value = function
+		}
+	}
+	if value == nil || value.Doc.Text() != "Value returns the schema value.\n" {
+		t.Fatal("function documentation changed ownership")
+	}
+	for _, text := range []string{"// Keep the standard formatting dependency.", "// Keep this body comment and comment-like string data.", `"// unchanged /* literal */"`} {
+		if bytes.Count(artifact.Data, []byte(text)) != 1 {
+			t.Fatalf("source text was changed or duplicated: %s", text)
+		}
+	}
 }
 
 func testPartitionedModule(t *testing.T, plan generator.Plan, consumers map[string]string) {

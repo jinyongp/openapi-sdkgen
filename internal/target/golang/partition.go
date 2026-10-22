@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"path"
 	"reflect"
@@ -493,7 +494,11 @@ func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
 	}
 	file.Decls = declarations
 	var buffer bytes.Buffer
-	if err := format.Node(&buffer, set, file); err != nil {
+	// Serialize the rewritten AST once, then normalize the resulting source.
+	// format.Node copies and reparses files with grouped imports before printing;
+	// that import-sorting pass is redundant with the final format.Source below.
+	config := printer.Config{Mode: printer.UseSpaces | printer.TabIndent, Tabwidth: 8}
+	if err := config.Fprint(&buffer, set, file); err != nil {
 		return nil, err
 	}
 	return format.Source(buffer.Bytes())
