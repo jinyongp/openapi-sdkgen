@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"strings"
 	"testing"
 )
 
@@ -43,7 +44,8 @@ func Branch(input <-chan int) {
 		t.Fatal(err)
 	}
 	actual := make(map[*ast.Ident]bool)
-	if err := transformPartitionAST(file, func(node ast.Node) ast.Node {
+	walker := partitionASTWalker{}
+	if err := walker.transform(file, func(node ast.Node) ast.Node {
 		if identifier, ok := node.(*ast.Ident); ok {
 			actual[identifier] = true
 		}
@@ -64,5 +66,104 @@ func Branch(input <-chan int) {
 	}
 	if !bytes.Equal(before.Bytes(), after.Bytes()) {
 		t.Fatal("identity transform modified parser syntax")
+	}
+}
+
+func TestPartitionASTWalkerReusesOnlyFieldMetadata(t *testing.T) {
+	const source = "package sample\nfunc F(){external(); _ = []int{external, external}; _ = values[external]; _ = external + external}\n"
+	for _, target := range []string{"external", "other", "last"} {
+		t.Run(target, func(t *testing.T) {
+			t.Parallel()
+			walker := partitionASTWalker{}
+			var previous *ast.File
+			var previousSet *token.FileSet
+			var previousOutput []byte
+			var previousTypes int
+			for _, name := range []string{target, target + "Next"} {
+				set := token.NewFileSet()
+				file, err := parser.ParseFile(set, "sample.go", strings.ReplaceAll(source, "external", name), 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				changed, revisited := 0, false
+				if err := walker.transform(file, func(node ast.Node) ast.Node {
+					if identifier, ok := node.(*ast.Ident); ok {
+						if identifier.Name == "remote" {
+							revisited = true
+						}
+						if identifier.Name == name {
+							changed++
+							return &ast.SelectorExpr{X: ast.NewIdent("remote"), Sel: ast.NewIdent("Value")}
+						}
+					}
+					return node
+				}); err != nil {
+					t.Fatal(err)
+				}
+				if changed != 6 || revisited {
+					t.Fatal("expression slots or replacement visitation changed", changed, revisited)
+				}
+				selectors := 0
+				ast.Inspect(file, func(node ast.Node) bool {
+					if selector, ok := node.(*ast.SelectorExpr); ok && selector.Sel.Name == "Value" {
+						selectors++
+					}
+					return true
+				})
+				if selectors != 6 {
+					t.Fatal("not all expression slots were replaced", selectors)
+				}
+				if previous != nil {
+					var after bytes.Buffer
+					if err := format.Node(&after, previousSet, previous); err != nil || !bytes.Equal(previousOutput, after.Bytes()) {
+						t.Fatal("reusing metadata changed an earlier tree", err)
+					}
+					if previousTypes != len(walker.childFields) {
+						t.Fatal("metadata grew with tree identities instead of AST types")
+					}
+				}
+				var output bytes.Buffer
+				if err := format.Node(&output, set, file); err != nil {
+					t.Fatal(err)
+				}
+				previous, previousSet, previousOutput, previousTypes = file, set, output.Bytes(), len(walker.childFields)
+			}
+		})
+	}
+}
+
+func TestPartitionASTWalkerPreservesSlotErrors(t *testing.T) {
+	walker := partitionASTWalker{}
+	set := token.NewFileSet()
+	file, err := parser.ParseFile(set, "sample.go", "package sample\nvar external int\n", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = walker.transform(file, func(node ast.Node) ast.Node {
+		if identifier, ok := node.(*ast.Ident); ok && identifier.Name == "external" {
+			return &ast.SelectorExpr{X: ast.NewIdent("remote"), Sel: ast.NewIdent("Value")}
+		}
+		return node
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot qualify generated identifier at *ast.Ident") {
+		t.Fatal("narrow identifier slot error changed", err)
+	}
+	if file.Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Names[0].Name != "external" {
+		t.Fatal("failed replacement changed its declaration")
+	}
+	file, err = parser.ParseFile(set, "next.go", "package sample\nvar value = external\n", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := walker.transform(file, func(node ast.Node) ast.Node {
+		if identifier, ok := node.(*ast.Ident); ok && identifier.Name == "external" {
+			return &ast.SelectorExpr{X: ast.NewIdent("remote"), Sel: ast.NewIdent("Value")}
+		}
+		return node
+	}); err != nil {
+		t.Fatal("failed replacement poisoned later tree metadata", err)
+	}
+	if _, ok := file.Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec).Values[0].(*ast.SelectorExpr); !ok {
+		t.Fatal("later expression slot was not rewritten")
 	}
 }

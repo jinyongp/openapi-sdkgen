@@ -48,6 +48,7 @@ type packagePartition struct {
 	fields, methods              map[string]string
 	sharedTypes                  map[string]bool
 	private                      bool
+	astWalker                    partitionASTWalker
 }
 
 func emitPartitioned(files []partitionFile, root, directory string, sink generator.ArtifactSink, bindings map[string]partitionReference) error {
@@ -402,7 +403,7 @@ func (p *packagePartition) emitFile(index int, sink generator.ArtifactSink) erro
 		}
 		return true
 	})
-	if err := transformPartitionAST(node, func(n ast.Node) ast.Node {
+	if err := p.astWalker.transform(node, func(n ast.Node) ast.Node {
 		if id, ok := n.(*ast.Ident); ok && !ignored[id] && partitionGlobal(node, id) {
 			if symbol, exists := p.symbols[id.Name]; exists {
 				return qualify(symbol)
@@ -506,13 +507,41 @@ func formatPartitionFile(set *token.FileSet, file *ast.File) ([]byte, error) {
 	return format.Source(buffer.Bytes())
 }
 
-// Parser-owned Go syntax stores nodes in pointer/interface slots. Struct and
-// scalar fields carry data; parser object/scope links are outside the syntax tree.
-func transformPartitionAST(file *ast.File, transform func(ast.Node) ast.Node) error {
-	return transformPartitionValue(reflect.ValueOf(file), transform)
+// Child layouts belong to the parser's AST types, not individual syntax trees.
+// A package partition owns one walker; metadata never retains nodes or callbacks.
+type partitionASTWalker struct {
+	childFields map[reflect.Type][]int
 }
 
-func transformPartitionValue(value reflect.Value, transform func(ast.Node) ast.Node) error {
+func (walker *partitionASTWalker) transform(file *ast.File, transform func(ast.Node) ast.Node) error {
+	return walker.transformValue(reflect.ValueOf(file), transform)
+}
+
+func (walker *partitionASTWalker) fields(nodeType reflect.Type) []int {
+	if fields, found := walker.childFields[nodeType]; found {
+		return fields
+	}
+	var fields []int
+	for index := 0; index < nodeType.NumField(); index++ {
+		field := nodeType.Field(index)
+		if field.Name == "Obj" || field.Name == "Scope" || field.Name == "Unresolved" {
+			continue
+		}
+		// Scalar values cannot contain parser syntax. Preserve the original
+		// structural order and pointer/interface slots used for replacements.
+		switch field.Type.Kind() {
+		case reflect.Pointer, reflect.Interface, reflect.Slice, reflect.Struct:
+			fields = append(fields, index)
+		}
+	}
+	if walker.childFields == nil {
+		walker.childFields = make(map[reflect.Type][]int)
+	}
+	walker.childFields[nodeType] = fields
+	return fields
+}
+
+func (walker *partitionASTWalker) transformValue(value reflect.Value, transform func(ast.Node) ast.Node) error {
 	if !value.IsValid() {
 		return nil
 	}
@@ -536,20 +565,16 @@ func transformPartitionValue(value reflect.Value, transform func(ast.Node) ast.N
 	}
 	switch kind {
 	case reflect.Interface, reflect.Pointer:
-		return transformPartitionValue(value.Elem(), transform)
+		return walker.transformValue(value.Elem(), transform)
 	case reflect.Slice:
 		for index := 0; index < value.Len(); index++ {
-			if err := transformPartitionValue(value.Index(index), transform); err != nil {
+			if err := walker.transformValue(value.Index(index), transform); err != nil {
 				return err
 			}
 		}
 	case reflect.Struct:
-		for index := 0; index < value.NumField(); index++ {
-			field := value.Type().Field(index).Name
-			if field == "Obj" || field == "Scope" || field == "Unresolved" {
-				continue
-			}
-			if err := transformPartitionValue(value.Field(index), transform); err != nil {
+		for _, index := range walker.fields(value.Type()) {
+			if err := walker.transformValue(value.Field(index), transform); err != nil {
 				return err
 			}
 		}

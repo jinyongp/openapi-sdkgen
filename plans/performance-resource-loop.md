@@ -89,3 +89,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   입증하지 못해 원래 runtime을 유지했다. stdlib oracle 회귀 검사와 전체 비교의
   원시 근거를 보존했다. 후보 실행 파일 약 74 MB를 제거하고 cache 약 3.2 GiB를
   유지한다. 다음은 AST 순회의 반복 타입 분석과 교체 cursor 구조를 조사한다.
+- [11: AST 자식 필드 구조의 분리](performance-resource-loop/11-ast-child-fields.md):
+  채택. partition별 walker가 타입별 child field 구조를 재사용하고 scalar 재귀를 제거한다.
+  GitHub 생성 시간 중앙값 2.06%·CPU 1.82% 감소, 최대 RSS 1.06% 증가는 비용으로 기록한다.
+  세 실제 API 전체 출력·metadata/교체/소비자/race·실제 CLI 검증과 리뷰를 통과했다.
+  Go cache 약 3.2 GiB를 유지하고 오래된/benchmark 실행 파일 약 156 MB를 제거했다.

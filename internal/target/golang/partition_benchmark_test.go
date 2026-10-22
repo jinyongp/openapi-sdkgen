@@ -21,11 +21,12 @@ func BenchmarkPartitionASTTransform(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.ReportAllocs()
+	walker := partitionASTWalker{}
 	b.ResetTimer()
 	var visited int
 	for b.Loop() {
 		visited = 0
-		if err := transformPartitionAST(file, func(node ast.Node) ast.Node {
+		if err := walker.transform(file, func(node ast.Node) ast.Node {
 			visited++
 			return node
 		}); err != nil {
