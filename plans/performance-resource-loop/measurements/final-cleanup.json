@@ -1,0 +1,103 @@
+{
+  "status": "pass",
+  "reason": "user requested completion; no further optimization runs",
+  "removedDirectory": "/home/jinyongp/workspace/jinyongp/openapi-sdkgen/.tmp/perf-resource-loop",
+  "removedAllocatedBytes": 4053913600,
+  "removedDedicatedGoCacheAllocatedBytes": 3641065472,
+  "retainedArchiveBytes": 49216061,
+  "verifiedArchiveEntries": 2916,
+  "verifiedArchives": [
+    {
+      "archive": "01-partition-format.tar.gz",
+      "bytes": 2357392,
+      "sha256": "9fd80fea471cf770b5d79e2f88b4b0d0b99724e029e31f6f474a2cd6ec25f6ed",
+      "entries": 291
+    },
+    {
+      "archive": "02-partition-references.tar.gz",
+      "bytes": 1413608,
+      "sha256": "5aa25c5c6fe2868a03b35fca1b2d643a0fbfb171ec8eefcdbb65d1cc9cc73672",
+      "entries": 176
+    },
+    {
+      "archive": "03-ast-node-boxing.tar.gz",
+      "bytes": 3025180,
+      "sha256": "ffda1aa5e857edd7ae1fb660fdf1a8c559a79e66020d0dca372f6b230125ed5b",
+      "entries": 192
+    },
+    {
+      "archive": "04-facade-source.tar.gz",
+      "bytes": 20894268,
+      "sha256": "9087674ac82379e1bcf07bec13caa60a9efc680cdde7031ea6e1eea251187518",
+      "entries": 285
+    },
+    {
+      "archive": "05-post-facade-profile.tar.gz",
+      "bytes": 1956321,
+      "sha256": "8be8bebd008194690721cf506018d0f557faf6566e42991162f185c75c49da2b",
+      "entries": 104
+    },
+    {
+      "archive": "06-emission-templates.tar.gz",
+      "bytes": 1471511,
+      "sha256": "707615152ce76fe95d87a648ddb4ed4f8c9bfefa123de3fd397a2b8f3d632de3",
+      "entries": 229
+    },
+    {
+      "archive": "07-trial-cancellation.tar.gz",
+      "bytes": 1516747,
+      "sha256": "d908ad3742b83d477865c1e4e3350424f76264b7f684f17763d6d8cad4b5bd1f",
+      "entries": 82
+    },
+    {
+      "archive": "08-measurement-caches.tar.gz",
+      "bytes": 902845,
+      "sha256": "1f3bc9b9ddbbe76128fe6794e923a59a1bc40f80b888edfe7b148cd0728a60de",
+      "entries": 130
+    },
+    {
+      "archive": "09-current-profile.tar.gz",
+      "bytes": 2587835,
+      "sha256": "63e248290ff59b675c5cadfb5a3cf16e22da7f0b4774bcec4a504272e8d5adc8",
+      "entries": 257
+    },
+    {
+      "archive": "10-intermediate-alignment.tar.gz",
+      "bytes": 2331534,
+      "sha256": "935c7dea516998e09a0954bac91cc4dd040e6e72879b751831bb526ba69ac6f8",
+      "entries": 192
+    },
+    {
+      "archive": "11-ast-child-fields.tar.gz",
+      "bytes": 2426977,
+      "sha256": "4953dc72806c7476180fa3bee587b89cd8b8a065c08a8aaa46973beba965a797",
+      "entries": 253
+    },
+    {
+      "archive": "12-identifier-rewrites.tar.gz",
+      "bytes": 2778434,
+      "sha256": "d77db79d2abbf49c68143908b5b34990db74517bb893a3221a017717e04853f2",
+      "entries": 247
+    },
+    {
+      "archive": "13-live-package-memory.tar.gz",
+      "bytes": 2222417,
+      "sha256": "8419b89b85a763488d0c118b7c6631c030079ec2f8f4a2ca1256423de60b1ee7",
+      "entries": 127
+    },
+    {
+      "archive": "14-partition-source-storage.tar.gz",
+      "bytes": 2733160,
+      "sha256": "f039f9a2baf08bf5fb70ef0e73eaeae2e5ae4aeb4eac0d93295877fe3b2a3ae7",
+      "entries": 319
+    },
+    {
+      "archive": "integration-01-02.tar.gz",
+      "bytes": 597832,
+      "sha256": "c082b69af8bd13a45df03cd98f09f1428b43eff68eca81921c18e9718ad8ffbc",
+      "entries": 32
+    }
+  ],
+  "restoredRuntimeGoFiles": 605,
+  "retainedProductCommit": "5b9312d7c191bb6117bbf67f466631f916dc97a6"
+}

@@ -3,6 +3,11 @@
 사용자 요청: 중단 요청 전까지 성능과 자원 사용을 함께 개선한다. 구조 변경이
 필요하면 원인을 확인하고 결정한다. 임시 조건이나 제공자별 예외로 수치를 맞추지 않는다.
 
+상태: 2026-10-23 사용자 요청으로 종료. 마지막 압축 후보는 기각하고 검증된
+`5b9312d` 제품 runtime을 유지한다. 추가 조사/실험은 진행하지 않는다.
+[작업 전후 비교와 한계](performance-resource-loop/final-comparison.md)에 최종 결과를 정리했다.
+근거 archive 15개를 보존·검산한 뒤 전용 cache/임시 파일 약 3.78 GiB도 정리했다.
+
 ## 유지할 계약
 
 - 시작점: `6231d70af9d162ac7fd50099c028ed9860f36c0c` (`v1.4.0`).
@@ -105,3 +110,7 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   optional observer·옵션 실패 경로·작은 기본 동작·GitHub 전체 출력 동일성을 검증했다.
   제품 runtime은 유지하며 다음 단위에서 lossless 보관의 RAM/CPU 비용을 비교한다.
   진단 실행 파일 약 35 MB 제거, 전용 cache 약 3.3 GiB 유지.
+- [14: 분할 대기 소스의 저장 수명](performance-resource-loop/14-partition-source-storage.md):
+  완료·후보 기각. 실제 CLI 3쌍에서 RSS 중앙값 −7.62%보다 시간 +11.17%·CPU +12.58%의
+  손해가 커 기준 runtime을 복구했다. 관련 31개 검사·race·실제 입력 전체 출력·
+  복구/원시 근거 보존을 확인했다. 실험 실행 파일 약 184 MB 제거 후 전체 작업을 종료한다.

@@ -1,0 +1,216 @@
+{
+  "scope": "historical local CLI observations; not a matched end-to-end speedup claim",
+  "baselineCommit": "6231d70af9d162ac7fd50099c028ed9860f36c0c",
+  "retainedProductCommit": "5b9312d7c191bb6117bbf67f466631f916dc97a6",
+  "endToEndMatchedComparison": false,
+  "reason": "different rounds, 5 versus 3 samples, import roots matched/api versus graph/api; no new runs at user stop request",
+  "goVersion": "1.27.2",
+  "GOMAXPROCS": 4,
+  "GOMEMLIMIT": "2GiB",
+  "github": {
+    "before": {
+      "samples": 5,
+      "secondsMedian": 56.00831639199896,
+      "secondsRange": [
+        55.27635707399895,
+        57.375453157001175
+      ],
+      "cpuSecondsMedian": 62.872732,
+      "peakRSSBytesMedian": 629440512,
+      "files": 6375,
+      "bytes": 203264540
+    },
+    "after": {
+      "samples": 3,
+      "secondsMedian": 35.561927241004014,
+      "secondsRange": [
+        35.527609837001364,
+        35.91714595800295
+      ],
+      "cpuSecondsMedian": 39.978364,
+      "peakRSSBytesMedian": 638476288,
+      "files": 6377,
+      "bytes": 204611637
+    },
+    "historicalChangePercent": {
+      "secondsMedian": -36.50598780347521,
+      "cpuSecondsMedian": -36.413827221632424,
+      "peakRSSBytesMedian": 1.435525014316208,
+      "bytes": 0.6627309416585847
+    },
+    "beforeSamples": [
+      {
+        "provider": "github",
+        "pair": 0,
+        "variant": "baseline",
+        "recorderExit": 0,
+        "seconds": 57.375453157001175,
+        "peakProcessRSSBytes": 629440512,
+        "userSeconds": 62.290204,
+        "systemSeconds": 1.970396,
+        "exitCode": 0,
+        "files": 6375,
+        "bytes": 203264540,
+        "outputMatches": true
+      },
+      {
+        "provider": "github",
+        "pair": 1,
+        "variant": "baseline",
+        "recorderExit": 0,
+        "seconds": 56.1264687139992,
+        "peakProcessRSSBytes": 627564544,
+        "userSeconds": 61.370973,
+        "systemSeconds": 1.635951,
+        "exitCode": 0,
+        "files": 6375,
+        "bytes": 203264540,
+        "outputMatches": true
+      },
+      {
+        "provider": "github",
+        "pair": 2,
+        "variant": "baseline",
+        "recorderExit": 0,
+        "seconds": 55.27635707399895,
+        "peakProcessRSSBytes": 638947328,
+        "userSeconds": 60.012278,
+        "systemSeconds": 1.642576,
+        "exitCode": 0,
+        "files": 6375,
+        "bytes": 203264540,
+        "outputMatches": true
+      },
+      {
+        "provider": "github",
+        "pair": 3,
+        "variant": "baseline",
+        "recorderExit": 0,
+        "seconds": 56.00831639199896,
+        "peakProcessRSSBytes": 642449408,
+        "userSeconds": 61.319529,
+        "systemSeconds": 1.553203,
+        "exitCode": 0,
+        "files": 6375,
+        "bytes": 203264540,
+        "outputMatches": true
+      },
+      {
+        "provider": "github",
+        "pair": 4,
+        "variant": "baseline",
+        "recorderExit": 0,
+        "seconds": 55.840095753999776,
+        "peakProcessRSSBytes": 628998144,
+        "userSeconds": 60.325902,
+        "systemSeconds": 2.047531,
+        "exitCode": 0,
+        "files": 6375,
+        "bytes": 203264540,
+        "outputMatches": true
+      }
+    ],
+    "afterSamples": [
+      {
+        "pair": 0,
+        "variant": "baseline",
+        "seconds": 35.527609837001364,
+        "peakProcessRSSBytes": 638476288,
+        "userSeconds": 38.444153,
+        "systemSeconds": 1.402534,
+        "exitCode": 0,
+        "files": 6377,
+        "bytes": 204611637,
+        "outputMatches": true,
+        "sourceSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+        "binarySha256": "e830462adb7458cad09585b7628d8ee34f3868a90787e12cc81b38be9ca50100",
+        "producerSha256": "23b30daa7a6bfbd9e1490e3204e69b442d819a073004e1953b7f0573a18ed231",
+        "scope": "matched actual CLI generation; no observer or profiler"
+      },
+      {
+        "pair": 1,
+        "variant": "baseline",
+        "seconds": 35.561927241004014,
+        "peakProcessRSSBytes": 646291456,
+        "userSeconds": 38.573079,
+        "systemSeconds": 1.4052850000000001,
+        "exitCode": 0,
+        "files": 6377,
+        "bytes": 204611637,
+        "outputMatches": true,
+        "sourceSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+        "binarySha256": "e830462adb7458cad09585b7628d8ee34f3868a90787e12cc81b38be9ca50100",
+        "producerSha256": "23b30daa7a6bfbd9e1490e3204e69b442d819a073004e1953b7f0573a18ed231",
+        "scope": "matched actual CLI generation; no observer or profiler"
+      },
+      {
+        "pair": 2,
+        "variant": "baseline",
+        "seconds": 35.91714595800295,
+        "peakProcessRSSBytes": 636239872,
+        "userSeconds": 39.072849,
+        "systemSeconds": 1.269384,
+        "exitCode": 0,
+        "files": 6377,
+        "bytes": 204611637,
+        "outputMatches": true,
+        "sourceSha256": "d39842ee4d43d701e8a8c5483b4afa7c23218518f943dea2e42d36a3798cbdcc",
+        "binarySha256": "e830462adb7458cad09585b7628d8ee34f3868a90787e12cc81b38be9ca50100",
+        "producerSha256": "23b30daa7a6bfbd9e1490e3204e69b442d819a073004e1953b7f0573a18ed231",
+        "scope": "matched actual CLI generation; no observer or profiler"
+      }
+    ]
+  },
+  "smallRetainedCli": {
+    "tvmaze": {
+      "sampleCount": 1,
+      "purpose": "correctness run; not a performance distribution",
+      "metrics": {
+        "seconds": 0.25983406900195405,
+        "peakProcessRSSBytes": 50327552,
+        "userSeconds": 0.236539,
+        "systemSeconds": 0.077487,
+        "exitCode": 0
+      },
+      "verification": {
+        "provider": "tvmaze",
+        "unit": "unit12",
+        "files": 143,
+        "referenceInventorySha256": "917508c28e5183e034cb2b5e47f080b3ef2a83c1795c78e166829c537a917a29",
+        "candidateBinarySha256": "e830462adb7458cad09585b7628d8ee34f3868a90787e12cc81b38be9ca50100",
+        "actualOutputMatchesObservedCandidate": true,
+        "producerSha256": "3385f821c064bff13db65264aaa0cc027f74ea2763ef1061419dc47a448c260a",
+        "scope": "single correctness run; not a matched performance comparison"
+      }
+    },
+    "listennotes": {
+      "sampleCount": 1,
+      "purpose": "correctness run; not a performance distribution",
+      "metrics": {
+        "seconds": 0.4817152100004023,
+        "peakProcessRSSBytes": 59244544,
+        "userSeconds": 0.504445,
+        "systemSeconds": 0.058851999999999995,
+        "exitCode": 0
+      },
+      "verification": {
+        "provider": "listennotes",
+        "unit": "unit12",
+        "files": 201,
+        "referenceInventorySha256": "ddb7adab8e07ae392c38d00f0e503f10dc04dc5c977fca8144ced75377753f3b",
+        "candidateBinarySha256": "e830462adb7458cad09585b7628d8ee34f3868a90787e12cc81b38be9ca50100",
+        "actualOutputMatchesObservedCandidate": true,
+        "producerSha256": "3385f821c064bff13db65264aaa0cc027f74ea2763ef1061419dc47a448c260a",
+        "scope": "single correctness run; not a matched performance comparison"
+      }
+    }
+  },
+  "coldWarmCompilation": {
+    "remeasured": false
+  },
+  "sources": {
+    "before": "01-partition-format.tar.gz:comparison/trials.json",
+    "after": "14-partition-source-storage.tar.gz:unit14/cli-verification.json (baseline rows)",
+    "small": "12-identifier-rewrites.tar.gz:unit12/cli-integration/"
+  }
+}
