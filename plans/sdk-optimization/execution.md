@@ -721,3 +721,9 @@ Go 1.27.2·모든 원본 input pin을 다시 확인했고 Graph는 이 분모에
 유효 입력·HTTP 계약 검사가 모두 같은지 확인한 뒤 집계한다. 원본 SHA만 같다는
 이전 확인으로 보정 후 입력의 동등성까지 주장하지 않는다. 자세한 경계는
 `verification.md`의 W09 입력 계약에 기록했다.
+
+대기 중 독립 출력 계층의 기존 22개 검사를 Go 1.27.2·child GOMAXPROCS=1·soft heap
+512 MiB·hard RSS 1 GiB로 실행해 전부 통과했다(1.86초·peak 516,448,256바이트).
+실제 파일 충돌·staged write/rename 실패·증분 교체와 stale 파일·manifest 복원·사용자
+수정 보존·잠금 재획득을 포함한다. 진행 중 corpus는 correctness 전용으로 유지하며
+두 실행의 겹친 시간을 대표 성능 표본으로 쓰지 않는다. 이는 W10 전체 완료가 아니다.
