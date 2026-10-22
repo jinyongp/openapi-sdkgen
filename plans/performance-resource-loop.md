@@ -73,3 +73,8 @@ compile/prepare/emit/publish 비용과 CPU 분포를 확인한다. 특히 변환
   controller 종료 전 snapshot 경합도 회귀 검사로 막았다. 중단 결과·가린 로그를
   보존하고 원래 RSS 지표 범위를 유지한다. 13개 최종 검사 통과.
   사례별 cache 수명과 기본 전역 cache 격리는 다음 단위로 이어간다.
+- [08: 측정 cache 수명](performance-resource-loop/08-measurement-caches.md):
+  완료. 기본 run cache와 cold/warm pair cache의 소유권·수명을 분리했다.
+  실패·timeout·협조적 취소에서도 writer 종료 후 cache를 회수하며 caller cache는 유지한다.
+  25개 검사와 실제 TVMaze cold/warm 빌드, 약 139 MB 임시 cache 제거를 확인했다.
+  전용 기존 cache 약 3.0 GiB를 유지한다. 제품 속도 개선율로 해석하지 않는다.

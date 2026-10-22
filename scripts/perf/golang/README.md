@@ -12,6 +12,17 @@ artifact hashes, Go/Node versions, flags, exact commands, exit codes, GNU time
 metrics and raw output. A failure or timeout stops the run and is not a passing
 sample. Command children are terminated as a process group on timeout.
 
+The Python-driven modes use one temporary run cache when `GOCACHE` is unset or
+empty. An explicitly supplied `GOCACHE` is borrowed and never removed. Each
+cold/warm pair gets a separate empty temporary cache, shared only by that pair.
+Owned writers are stopped before owned caches are removed, including failure,
+timeout and cooperative SIGINT/SIGTERM cleanup. Metrics, logs, hashes and SDK
+artifacts remain; cache contents are not evidence artifacts. SIGKILL or host
+shutdown can leave the current temporary directory behind.
+The direct `micro` Go test command retains the caller's usual Go cache behavior.
+GNU time metrics cover the measured command. Driver `wallSeconds` also includes
+process finalization; cache removal occurs outside the timed cold/warm commands.
+
 Run measurements sequentially on an otherwise idle host. Keep diagnostic heap
 sampling separate from timed workloads. Total allocations, live heap and peak
 RSS describe different costs. Cold/warm consumer builds, provider generation,
@@ -29,7 +40,8 @@ computed dynamic lookup, plus server schema compilation/validation. Use
 repeating unaffected measurements. The named case configures both a Todo entry and a second
 entry with the other XML/stream/regex APIs, then imports only the Todo entry.
 Its source union therefore includes the full fixture. Each gets five cold builds with separate empty
-`GOCACHE` directories and five warm builds using the corresponding same cache.
+temporary `GOCACHE` directories and five warm builds using the corresponding same cache.
+Each pair's cache is reclaimed before the next pair starts, even if that pair fails.
 It runs every binary, records dependency graphs and unstripped symbols, then
 builds and runs a separately labelled stripped binary. Inspect actual symbol
 and dependency evidence before claiming any unused feature was removed.

@@ -5,13 +5,15 @@ import json
 import os
 from pathlib import Path
 import shutil
-import signal
 import subprocess
+import sys
 import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+from resources import POLICY_PATH, cancellation_signals, finish_process, go_cache, owned_process
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -21,28 +23,26 @@ def tree(path):
     return {'files': len(files), 'bytes': sum(p.stat().st_size for p in path.rglob('*') if p.is_file()), 'sha256': hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest(), 'fileHashes': files}
 
 class Measurement:
-    def __init__(self, output):
+    def __init__(self, output, cache):
         self.output = output
         self.results = []
-        self.environment = {**os.environ, 'GOWORK': 'off', 'GOTOOLCHAIN': 'local', 'CGO_ENABLED': '0'}
+        self.environment = {**os.environ, 'GOWORK': 'off', 'GOTOOLCHAIN': 'local', 'CGO_ENABLED': '0', 'GOCACHE': str(cache)}
         self.binary = output / 'sdkgen'
         names = subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
         source = {n: digest(ROOT / n) for n in sorted(names) if n and not n.startswith('plans/') and (ROOT / n).is_file()}
         self.basis = {'scope': 'Local diagnostics; no public numeric claim or fixed CI percentage gate.', 'source': source, 'go': subprocess.check_output(['go', 'version'], text=True).strip(), 'node': subprocess.check_output(['node', '--version'], text=True).strip(), 'flags': {k: self.environment[k] for k in ['GOWORK', 'GOTOOLCHAIN', 'CGO_ENABLED']}}
         # Do not persist the process environment: it can contain credentials.
-        self.basis['flags'] = {k: self.environment[k] for k in ['GOWORK', 'GOTOOLCHAIN', 'CGO_ENABLED']}
+        self.basis['flags'] = {k: self.environment[k] for k in ['GOWORK', 'GOTOOLCHAIN', 'CGO_ENABLED', 'GOCACHE']}
+        self.basis['cachePolicy'] = {'run': 'caller-owned' if os.environ.get('GOCACHE') else 'temporary-owned',
+                                     'coldWarm': 'temporary-owned-per-pair'}
+        self.basis['resourcePolicySha256'] = digest(POLICY_PATH)
         (output / 'basis.json').write_text(json.dumps(self.basis, indent=2) + '\n')
         self.run('build-generator', ['go', 'build', '-o', str(self.binary), './cmd/openapi-sdkgen'], ROOT)
         self.basis['generatorSha256'] = digest(self.binary)
         (output / 'basis.json').write_text(json.dumps(self.basis, indent=2) + '\n')
 
     def stop(self, process):
-        os.killpg(process.pid, signal.SIGTERM)
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait()
+        finish_process(process)
 
     def process_rss(self, pid):
         # GNU time launches the measured process; include its owned descendants.
@@ -64,28 +64,34 @@ class Measurement:
         started = time.monotonic()
         with raw_out.open('w') as out, raw_err.open('w') as err:
             command = ['/usr/bin/time', '-f', '{"elapsedSeconds":%e,"maximumRSSKiB":%M,"userSeconds":%U,"systemSeconds":%S}', '-o', str(metrics), *map(str, argv)]
-            process = subprocess.Popen(command, cwd=cwd, env=env or self.environment, stdout=out, stderr=err, start_new_session=True)
             stopped = None
             observed_rss = 0
-            if (env or self.environment).get('GOMEMLIMIT'):
-                while process.poll() is None:
-                    observed_rss = max(observed_rss, self.process_rss(process.pid))
-                    if observed_rss > 7 * 1024 * 1024:
-                        stopped = '7GiB RSS safety bound'
-                    elif time.monotonic() - started > timeout:
-                        stopped = 'measurement deadline'
-                    if stopped:
-                        self.stop(process)
-                        break
-                    time.sleep(0.5)
-                status = 124 if stopped else process.returncode
-            else:
-                try:
-                    status = process.wait(timeout=timeout)
-                except subprocess.TimeoutExpired:
-                    self.stop(process)
-                    stopped = 'measurement deadline'
-                    status = 124
+            interrupted = None
+            try:
+                with owned_process(command, cwd=cwd, env=env or self.environment, stdout=out, stderr=err) as process:
+                    if (env or self.environment).get('GOMEMLIMIT'):
+                        while process.poll() is None:
+                            observed_rss = max(observed_rss, self.process_rss(process.pid))
+                            if observed_rss > 7 * 1024 * 1024:
+                                stopped = '7GiB RSS safety bound'
+                            elif time.monotonic() - started > timeout:
+                                stopped = 'measurement deadline'
+                            if stopped:
+                                self.stop(process)
+                                break
+                            time.sleep(0.5)
+                        status = 124 if stopped else process.returncode
+                    else:
+                        try:
+                            status = process.wait(timeout=timeout)
+                        except subprocess.TimeoutExpired:
+                            self.stop(process)
+                            stopped = 'measurement deadline'
+                            status = 124
+            except (KeyboardInterrupt, SystemExit) as error:
+                interrupted = error
+                status = 130 if isinstance(error, KeyboardInterrupt) else error.code
+                stopped = 'measurement interrupted'
             if stopped:
                 err.write('\nStopped at ' + stopped + '; not a passing sample.\n')
         result = {'label': label, 'argv': list(map(str, argv)), 'cwd': str(cwd), 'environment': {k: (env or self.environment)[k] for k in ['CGO_ENABLED', 'GOTOOLCHAIN', 'GOWORK', 'GOCACHE', 'GOOS', 'GOARCH', 'GOMEMLIMIT', 'GOMAXPROCS'] if k in (env or self.environment)}, 'exitCode': status, 'wallSeconds': time.monotonic() - started, 'stdout': str(raw_out), 'stderr': str(raw_err), 'stdoutSha256': digest(raw_out), 'stderrSha256': digest(raw_err), 'time': str(metrics), 'stoppedReason': stopped, 'maximumObservedGroupRSSKiB': observed_rss}
@@ -97,6 +103,8 @@ class Measurement:
         self.results.append(result)
         (self.output / 'results.json').write_text(json.dumps(self.results, indent=2) + '\n')
         print(json.dumps({'label': label, 'exitCode': status}), flush=True)
+        if interrupted is not None:
+            raise interrupted
         if required and status:
             raise SystemExit(f'{label} failed; inspect {raw_err} and {raw_out}')
         return result
@@ -256,17 +264,14 @@ class Measurement:
                 raise SystemExit('Consumer generation output changed between matched samples')
             (module / 'main.go').write_text((HERE / 'consumer.go.tmpl').read_text().replace('ENTRY_IMPORTS', imports).replace('ENTRY_BODY', body))
             for sample in range(5):
-                cache = self.output / f'cache-{name}-{sample}'
-                cache.mkdir()
-                env = {**self.environment, 'GOCACHE': str(cache)}
-                for state in ['cold', 'warm']:
-                    binary = module / f'{state}-{sample}'
-                    result = self.run(f'build-{name}-{state}{sample}', ['go', 'build', '-mod=readonly', '-buildvcs=false', '-o', binary, '.'], module, env=env)
-                    result['binaryBytes'] = binary.stat().st_size
-                    result['binarySha256'] = digest(binary)
-                    self.run(f'run-{name}-{state}{sample}', [binary], module)
-                # The next cold build starts with its own empty cache.
-                shutil.rmtree(cache)
+                with go_cache(self.output, prefix=f'cache-{name}-{sample}-') as cache:
+                    env = {**self.environment, 'GOCACHE': cache}
+                    for state in ['cold', 'warm']:
+                        binary = module / f'{state}-{sample}'
+                        result = self.run(f'build-{name}-{state}{sample}', ['go', 'build', '-mod=readonly', '-buildvcs=false', '-o', binary, '.'], module, env=env)
+                        result['binaryBytes'] = binary.stat().st_size
+                        result['binarySha256'] = digest(binary)
+                        self.run(f'run-{name}-{state}{sample}', [binary], module)
             self.run('deps-' + name, ['go', 'list', '-mod=readonly', '-buildvcs=false', '-deps', '.'], module)
             self.run('symbols-' + name, ['go', 'tool', 'nm', module / 'warm-4'], module)
             stripped = module / 'stripped'
@@ -276,12 +281,12 @@ class Measurement:
             self.run('run-stripped-' + name, [stripped], module)
             (self.output / 'results.json').write_text(json.dumps(self.results, indent=2) + '\n')
 
-if __name__ == '__main__':
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=['runtime', 'generation', 'builds', 'platform', 'providers', 'features'])
     parser.add_argument('--output', type=Path)
     parser.add_argument('--variant', choices=['full-static', 'selected', 'named', 'dynamic', 'server'], help='Only this consumer in builds mode')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.variant and args.mode != 'builds':
         parser.error('--variant requires builds mode')
     os.umask(0o077)
@@ -293,8 +298,13 @@ if __name__ == '__main__':
         parent.mkdir(parents=True, exist_ok=True)
         output = Path(tempfile.mkdtemp(prefix=args.mode + '-', dir=parent))
     print(f'Private raw measurements: {output}', flush=True)
-    measurement = Measurement(output)
-    if args.mode == 'builds':
-        measurement.builds(args.variant)
-    else:
-        getattr(measurement, args.mode)()
+    with cancellation_signals(), go_cache(output, existing=os.environ.get('GOCACHE')) as cache:
+        measurement = Measurement(output, cache)
+        if args.mode == 'builds':
+            measurement.builds(args.variant)
+        else:
+            getattr(measurement, args.mode)()
+
+
+if __name__ == '__main__':
+    main()

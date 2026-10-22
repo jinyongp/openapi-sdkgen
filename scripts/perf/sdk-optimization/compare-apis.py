@@ -1,5 +1,6 @@
 """Matched real-API generation and cold/warm build trials; local evidence only."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import io
 import itertools
@@ -16,6 +17,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+from resources import POLICY_PATH, cancellation_signals, go_cache, owned_process
 REVISIONS = {
     'baseline': '5ada624a69ebfd85103248379970f78a8f3d2899',
     'final': '52eab9882d4a4df33b0131b119f37d87c254344b',
@@ -101,6 +104,11 @@ def main():
         parser.error('positive pair count required')
     output = args.output.resolve()
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    with cancellation_signals(), go_cache(output, existing=os.environ.get('GOCACHE')) as cache:
+        return compare(args, output, cache)
+
+
+def compare(args, output, cache):
     inputs = {}
     for provider in args.provider or PROVIDERS:
         relative, expected = PROVIDERS[provider]
@@ -110,17 +118,20 @@ def main():
         inputs[provider] = {'path': str(source), 'sha256': expected, 'bytes': source.stat().st_size}
     environment = dict(os.environ, GOTOOLCHAIN='local', GOWORK='off', CGO_ENABLED='0',
                        GOMAXPROCS='4', GOMEMLIMIT='4GiB', NODE_OPTIONS='--max-old-space-size=5120',
-                       GOFLAGS='', GOEXPERIMENT='', GOGC='100')
+                       GOFLAGS='', GOEXPERIMENT='', GOGC='100', GOCACHE=cache)
     # No network API requests. Compiler modules/toolchains must already be installed.
     environment['GOPROXY'] = 'off'
     provenance = {
         'status': 'running', 'revisions': REVISIONS, 'pairs': args.pairs, 'inputs': inputs,
         'producerSha256': sha(__file__), 'recorderSha256': sha(HERE / 'record.py'),
+        'resourcePolicySha256': sha(POLICY_PATH),
+        'cachePolicy': {'run': 'caller-owned' if os.environ.get('GOCACHE') else 'temporary-owned',
+                        'coldWarm': 'temporary-owned-per-pair'},
         'hostBefore': host_state(),
         'tools': {name: subprocess.check_output(command, text=True, env=environment).strip()
                   for name, command in {'go': ['go', 'version'], 'node': ['node', '--version']}.items()},
         'environment': {key: environment[key] for key in ['GOTOOLCHAIN', 'GOWORK', 'CGO_ENABLED',
-            'GOMAXPROCS', 'GOMEMLIMIT', 'NODE_OPTIONS', 'GOFLAGS', 'GOEXPERIMENT', 'GOGC', 'GOPROXY']},
+            'GOMAXPROCS', 'GOMEMLIMIT', 'NODE_OPTIONS', 'GOFLAGS', 'GOEXPERIMENT', 'GOGC', 'GOPROXY', 'GOCACHE']},
         'scope': 'Full pinned real API documents, server enabled, no selection, serial alternating pairs. '
                  'Fresh output per generation. Go cold: empty dedicated GOCACHE including stdlib; '
                  'warm: identical no-change build in same cache. TS cold: no build-info; '
@@ -145,7 +156,8 @@ def main():
                       '--cwd', str(cwd), '--timeout', str(timeout), '--max-rss-mib', '6144',
                       '--input', str(Path(__file__).resolve()), '--', sys.executable,
                       str(Path(__file__).resolve()), '_child', str(metrics), *map(str, command)]
-        subprocess.run(invocation, cwd=ROOT, env=environment | (extra_env or {}), check=False)
+        with owned_process(invocation, cwd=ROOT, env=environment | (extra_env or {})) as process:
+            process.wait()
         result = json.loads((directory / 'result.json').read_text())
         measured = json.loads(metrics.read_text()) if metrics.exists() else {}
         return {'status': result['status'], 'recorder': str(directory / 'result.json'),
@@ -205,10 +217,7 @@ def main():
                         'files': len(files), 'bytes': sum((sdk / name).stat().st_size for name in files),
                         'manifestSha256': sha(manifest)})
                     if target == 'golang':
-                        cache = case / 'cache'
-                        cache.mkdir()
                         command = ['go', 'build', '-p=1', '-trimpath', '-buildvcs=false', './api/...']
-                        extra = {'GOCACHE': str(cache)}
                     else:
                         setup = [['node', HERE / 'prepare-ts.mjs', sdk]]
                         if variant == 'baseline' and pair == 0:
@@ -227,15 +236,17 @@ def main():
                             continue
                         command = ['node', compiler, '-p', case / 'consumer/tsconfig.json', '--pretty', 'false',
                                    '--extendedDiagnostics', '--incremental', '--tsBuildInfoFile', case / 'check.tsbuildinfo']
-                        extra = {}
-                    for phase in ['cold', 'warm']:
-                        result = trial(case / phase, command, cwd=case, extra_env=extra)
-                        rows.append({'provider': provider, 'target': target, 'pair': pair,
-                                     'variant': variant, 'phase': phase, **result})
-                        save()
-                        if result['status'] != 'pass':
-                            stop_case = True
-                            break
+                    lifetime = go_cache(case, prefix='cache-') if target == 'golang' else nullcontext(None)
+                    with lifetime as pair_cache:
+                        extra = {'GOCACHE': pair_cache} if target == 'golang' else {}
+                        for phase in ['cold', 'warm']:
+                            result = trial(case / phase, command, cwd=case, extra_env=extra)
+                            rows.append({'provider': provider, 'target': target, 'pair': pair,
+                                         'variant': variant, 'phase': phase, **result})
+                            save()
+                            if result['status'] != 'pass':
+                                stop_case = True
+                                break
                     print(json.dumps({'provider': provider, 'target': target, 'pair': pair,
                                       'variant': variant, 'completed': not stop_case}), flush=True)
     provenance['status'] = 'fail' if any(row['status'] != 'pass' for row in rows) else 'pass'

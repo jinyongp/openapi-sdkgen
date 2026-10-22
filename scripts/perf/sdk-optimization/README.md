@@ -12,12 +12,21 @@ not published GitHub Actions benchmarks. No full Graph or Cloudflare run is incl
 If the host stops the driver between completed Go cases, `resume-apis.py --output
 EXISTING_DIRECTORY` preserves completed samples and executes only missing cases.
 Use a fresh outer `preflight:perf` recorder directory and an appropriate deadline.
-Recovery checks the original worker, recorder, input and generator hashes and keeps
+Recovery checks the original worker, recorder, resource policy, input and generator hashes and keeps
 using that unchanged timing worker. It refuses partial cases and missing TS cases;
 it does not overwrite a failed trial or retry a warm cache as a cold cache.
 Recovery remains bound to the exact worker and recorder saved with that study.
 For an older interrupted study, restore its archived versions; do not bypass
 their hash checks when current lifecycle handling has changed.
+
+New runs use a temporary run cache unless the caller explicitly supplies a
+nonempty `GOCACHE`; caller caches are not removed. Go cold/warm pairs always use
+their own fresh temporary cache, reclaimed after both phases or an error. Warm
+uses the exact cold cache; the next cold starts empty. Recovery applies the same
+policy to missing cases without rerunning completed evidence. The resource helper
+hash is pinned alongside the worker and recorder. Historical recovery needs all
+versions frozen with that study. Raw records and SDK artifacts remain available;
+the caches are disposable. SIGKILL/host shutdown can leave the current directory.
 
 Run through `devtools run preflight:perf`. This is an optional Linux diagnostic,
 not an optimization or an ordinary CI performance gate. It uses Python's standard
