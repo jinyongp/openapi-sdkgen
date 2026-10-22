@@ -1,6 +1,6 @@
 # 최종 버전과 기존 버전의 실제 API 비교
 
-상태: 180개 측정 명령·반복 출력·Go 계약·문서 검증/빌드 통과, 최종 통합 리뷰 전. 전체 Graph·Cloudflare는 제외한다. 기존 workstream 완료와 별개인
+상태: 측정·검산·문서 반영과 최종 통합 리뷰 완료. 전체 Graph·Cloudflare는 제외한다. 기존 workstream 완료와 별개인
 후속 실측이며, 이전의 부분 최적화 실험을 최종 버전의 성능으로 대체하지 않는다.
 
 확인된 주요 이득은 Go의 파일 수·무변경 캐시 빌드 비용 감소와 GitHub TS의 전체 strict
@@ -183,3 +183,4 @@ Go 예제는 전역 캐시 삭제 대신 임시 전용 캐시를 쓰고 POSIX �
 양 언어의 코드 블록은 같고 `devtools run validate:docs`, `devtools run build:docs`가 통과했다.
 공개 benchmark 숫자와 Actions 결과는 바꾸지 않았으며 새 로컬 수치는 이 내부 기록에 둔다.
 제품 `cmd`·`internal`·`go.mod`·`go.sum`은 최종 제품52eab98과 차이가 없다.
+단위 리뷰·커밋 뒤 수행한 최종 통합 리뷰는 `representative-comparison-review.md`에 기록했다.
