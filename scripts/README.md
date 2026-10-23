@@ -99,13 +99,27 @@ count. Each suite runs its necessary checks once. Mutable outputs belong to one
 execution; only prepared artifacts with matching inputs can be shared for reads.
 `ci:dev go-core` owns source checks, tests outside the two generator packages,
 and the Go generation-check integration. `ci:dev go-consumers SHARD COUNT`
-discovers runnable Go-target tests with `go test -list`, then distributes their
-sorted names round-robin. CI runs four disjoint Go shards and two TypeScript
+discovers runnable Go-target tests with `go test -list`, then assigns the longest
+estimated tests first to the least-loaded shard. Estimates are per-test medians
+from successful CI runs, recorded with source run links in
+`dev/go_ci_timings.json`. New tests receive a one-second estimate and always run;
+deleted tests' old estimates do not add tests to the discovered inventory.
+Stable name/shard ties and integer costs make the plan deterministic.
+CI runs four disjoint Go shards and two TypeScript
 generator shards; the final gate verifies each group's combined inventory and
-completed test records, including newly added tests.
+completed test records, including newly added tests. Shards must also agree on
+the timing profile digest. Timing data changes scheduling only, never assertions,
+compiler coverage, timeout limits or the requirement to execute each test once.
 Each shard preserves timing data under `.tmp/ci-tests`. Test-result caching is
 disabled for these measured CI groups; Go compilation caches remain available.
 The extra runners trade additional setup and total runner work for shorter waits.
+
+To refresh estimates, download each successful CI run's metadata into
+`REPORTS/RUN_ID/run.json` and its six `generator-timings-*` artifacts beneath
+`REPORTS/RUN_ID/reports/`. Run `devtools run ci:dev timings REPORTS`, review the
+generated timing profile, and commit it. Failed or incomplete source runs are
+rejected. Ordinary CI reads the committed profile without remote lookups or
+automatic writes, so a new run cannot silently change the current schedule.
 
 `ci:dev typescript-generator [SHARD COUNT]` owns the other TypeScript generator tests,
 using the same discovered-inventory partitioning and excluding the two separately

@@ -6,7 +6,7 @@ cd "$ROOT"
 suite="${1:-all}"
 case "$suite" in
   --help|help)
-    echo 'ci.sh [all|go|go-core|go-consumers SHARD COUNT|typescript-generator [SHARD COUNT]|typescript-runtime|typescript-matrix|typescript-tools|compiler VERSION [all|consumers|declarations]]: independent checks. all runs suites sequentially.' >&2
+    echo 'ci.sh [all|go|go-core|go-consumers SHARD COUNT|typescript-generator [SHARD COUNT]|typescript-runtime|typescript-matrix|typescript-tools|compiler VERSION [all|consumers|declarations]|timings REPORTS]: independent checks. timings refreshes tracked scheduling weights from downloaded successful CI reports; all runs suites sequentially.' >&2
     exit 0 ;;
   go)
     bash "$ROOT/scripts/dev/ci.sh" go-core
@@ -18,6 +18,7 @@ case "$suite" in
     run_step 'Go CI partition tests' python3 -B -m unittest discover -s "$ROOT/scripts/dev" -p '*_test.py'
     bash "$ROOT/scripts/generate/go-check-test.sh" ;;
   go-consumers) run_step 'generated Go consumer tests' python3 "$ROOT/scripts/dev/go_ci.py" golang "${2:-1}" "${3:-1}" ;;
+  timings) run_step 'CI timing refresh' python3 -B "$ROOT/scripts/dev/go_ci.py" refresh --reports "${2:?CI report directory is required}" ;;
   typescript-generator) run_step 'TypeScript generator tests' python3 "$ROOT/scripts/dev/go_ci.py" typescript "${2:-1}" "${3:-1}" ;;
   typescript-runtime)
     bash "$ROOT/scripts/verification/typescript.sh" test ;;
