@@ -50,7 +50,7 @@ jobs:
           persist-credentials: false
       - id: existing
         if: github.ref_type == 'tag'
-        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        uses: releaseway/actions/prepare@b6f17f2ffe2c8fd92bdf6be4729e1e56d151bef3 # v0.8.0
         with:
           mode: resolve
           allow-prerelease: "true"
@@ -75,7 +75,7 @@ jobs:
         run: bash scripts/release/check.sh
       - id: release
         if: github.ref_type != 'tag'
-        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        uses: releaseway/actions/prepare@b6f17f2ffe2c8fd92bdf6be4729e1e56d151bef3 # v0.8.0
         with:
           mode: plan
           prerelease-id: ${{ inputs.prerelease-id }}
@@ -130,7 +130,7 @@ jobs:
           fetch-depth: 0
       - name: Tag the verified source without changing main
         id: release
-        uses: releaseway/actions/prepare@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        uses: releaseway/actions/prepare@b6f17f2ffe2c8fd92bdf6be4729e1e56d151bef3 # v0.8.0
         with:
           mode: resume
           plan-path: ${{ runner.temp }}/release-plan/release-plan.json
@@ -166,7 +166,7 @@ jobs:
           fetch-depth: 0
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@b9b00e1a5e5d4e055d34e4daa663909e4d65e21c # v0.7.1
+        uses: releaseway/npm-actions@a663ac41be77d1345fd9f4023f11a02e341c62f9 # v0.7.5
         with:
           release-tag: ${{ needs.prepare-release.outputs.tag }}
       - name: Preserve npm diagnostics
@@ -191,7 +191,7 @@ jobs:
   publish-homebrew:
     name: Publish Homebrew formula
     needs: [prepare-release, publish-github-release]
-    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@8fe42d36a7f93a3c399461efbe571fc695d4cdc6 # v0.4.3
+    uses: releaseway/homebrew-actions/.github/workflows/publish.yml@7e351bd4f3ea1aa0070e4d6556bb5130df2401e6 # v0.5.3
     permissions:
       contents: read
     with:
@@ -266,7 +266,7 @@ jobs:
           (cd dist && sha256sum install.sh install.ps1 >> checksums.txt)
       - name: Publish immutable GitHub Release
         id: publication
-        uses: releaseway/actions@2abdf26c6f01c1e49da4ba5d85253847fe721fd9 # v0.6.3
+        uses: releaseway/actions@b6f17f2ffe2c8fd92bdf6be4729e1e56d151bef3 # v0.8.0
         with:
           tag: ${{ needs.prepare-release.outputs.tag }}
           commit: ${{ needs.prepare-release.outputs.commit }}

@@ -142,22 +142,28 @@ coverage gate requires all groups and inventories to succeed.
 ## Release documentation review
 
 Documentation publication reconstructs `/vX.Y.Z/install.sh` and `install.ps1`
-from public releases containing standalone installers. The workflow only lists
-their tags with `gh api`; Releaseway requires both installer files and
-verifies the remote assets before placing them under their tag directories; the
-current release's installers also remain at the site root. Rebuilding from GitHub
+from public releases containing standalone installers. Releaseway's release-set
+policy in `.github/distribution/installers.yml` selects all canonical `v` SemVer
+tags, including prereleases, and skips releases containing neither installer.
+The policy omits `schema`; `releases` selects release-set mode. Filename strings
+map each asset to the same public filename and are required by default.
+Releaseway requires both installer files and verifies the remote assets before
+placing them under their tag directories; the current release's installers also
+remain at the site root. Rebuilding from GitHub
 releases preserves previous version URLs without relying on Pages history or
 artifact retention. Releases predating standalone installers have no such URLs.
-The complete site is passed by immutable same-run artifact ID to Releaseway's
-`distribute-pages.yml`, which packages, deploys, and verifies the served bytes.
+Documentation with the exact release's root installers is passed by immutable
+same-run `site-artifact-id` to Releaseway's `distribute-pages.yml`, which adds
+versioned installers, packages, deploys, and verifies the served bytes. The policy
+has no root alias: a historical release rebuild keeps that release's root scripts.
 There is no product-specific Pages verifier or installer hash manifest.
 
 To refresh this distribution for an already published stable release without
 publishing a new package, dispatch `docs.yml` on `main` with `release-tag` set to
 the existing tag. The documentation build uses that tag's source; distribution
 uses the dispatched workflow and the pinned Releaseway implementation. Dispatching without a tag
-only builds and checks documentation. Version artifacts are scoped to the run,
-replaced on retry, and retained only for the build/deploy handoff.
+only builds and checks documentation. The documentation handoff artifact is scoped
+to the run and attempt and retained only for the build/deploy handoff.
 
 Release numbering starts at `v1.2.0` after the historical `v11.0.4` release.
 `.github/releaseway.yml` declares the first version and ancestry boundary.
@@ -201,7 +207,7 @@ Replanning the same source and channel reuses its existing tag; ambiguous bindin
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
 
-Releaseway Actions v0.6.3, npm Actions v0.7.1 and Homebrew Actions v0.4.3 are
+Releaseway Actions v0.8.0, npm Actions v0.7.5 and Homebrew Actions v0.5.3 are
 pinned by immutable commit SHA. npm receives the exact `release-tag`, including
 when multiple stable/prerelease tags share a source. Preparation, tag creation,
 GitHub publication and npm retain their operation diagnostics as separate

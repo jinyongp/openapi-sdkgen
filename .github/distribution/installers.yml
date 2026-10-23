@@ -1,0 +1,8 @@
+releases:
+  tag-prefix: v
+  range: "*"
+  include-prereleases: true
+  on-empty: skip
+files:
+  - install.sh
+  - install.ps1
