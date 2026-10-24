@@ -166,7 +166,7 @@ jobs:
           fetch-depth: 0
       - name: Publish npm package through Releaseway
         id: npm
-        uses: releaseway/npm-actions@a663ac41be77d1345fd9f4023f11a02e341c62f9 # v0.7.5
+        uses: releaseway/npm-actions@c61fca168e342a622406ef7ee85a27c3a51e8de6 # v0.8.0
         with:
           release-tag: ${{ needs.prepare-release.outputs.tag }}
       - name: Preserve npm diagnostics

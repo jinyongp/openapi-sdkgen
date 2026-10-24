@@ -122,3 +122,40 @@ results remain applicable; live publication and native platform gaps remain open
 No confirmed compatibility defect remains from the reviewed upstream changes.
 No push, tag, publication or deployment was performed. A local commit was
 authorized after final review.
+
+## npm Actions v0.8.0 refresh (2026-10-24)
+
+Rechecked the latest published releases and dereferenced annotated tags for all
+three integrations. Actions v0.8.0 and Homebrew Actions v0.5.3 remain current.
+npm Actions advances from v0.7.5 to v0.8.0 at
+`c61fca168e342a622406ef7ee85a27c3a51e8de6`.
+
+The new `artifacts-manifest` input and `artifact-report-path` output are optional.
+This repository retains automatic packing and native distribution augmentation;
+prepacked mode does not support unpublished native distribution packages. Existing
+`release-tag`, report and diagnostics contracts and the Node 24 action runtime
+remain compatible. The release also fixes canonical workspace resolution before
+package-root selection. No package dependency, lockfile or publication policy
+changes are needed. Earlier validation above records the previous npm pin; checks
+for this refresh are reported separately.
+
+- Release dispatch fixtures and release CI reuse tests passed through
+  `devtools run test:release`.
+- `devtools run source-check:npm` passed, including source archive contents and
+  Releaseway-owned path checks.
+- The upstream `action.yml` diff adds only optional input/output declarations;
+  the existing caller's `release-tag` input and diagnostic outputs remain valid.
+- `git diff --check` passed. This refresh changes the npm action pin, the script
+  guide's version list and this record. The earlier local commit remains intact.
+- Live npm publication and GitHub-hosted execution were not run.
+
+### npm refresh review loop
+
+Reviewed the action's optional prepacked input against this repository's native
+distribution policy, exact-tag checkout and diagnostic artifact caller. Automatic
+packing remains selected, and the existing report outputs retain their meanings.
+Rechecked the changed workflow, version guide and this record after validation;
+no in-scope defects remain. Release dispatch/CI reuse tests and npm source packing
+passed again for the final npm pin. Actionlint v1.7.12 passed for the release,
+documentation and Homebrew workflows. GitHub-hosted execution and publication
+remain pending; these local checks do not establish native installation success.

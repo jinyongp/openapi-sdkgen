@@ -207,7 +207,7 @@ Replanning the same source and channel reuses its existing tag; ambiguous bindin
 pushed by the dispatch command. Bump policy is configured in
 `.github/releaseway.yml`; release notes use Releaseway standard.
 
-Releaseway Actions v0.8.0, npm Actions v0.7.5 and Homebrew Actions v0.5.3 are
+Releaseway Actions v0.8.0, npm Actions v0.8.0 and Homebrew Actions v0.5.3 are
 pinned by immutable commit SHA. npm receives the exact `release-tag`, including
 when multiple stable/prerelease tags share a source. Preparation, tag creation,
 GitHub publication and npm retain their operation diagnostics as separate
