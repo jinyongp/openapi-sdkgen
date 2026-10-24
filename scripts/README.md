@@ -171,9 +171,14 @@ Releaseway selects versions within that series while retaining historical tags.
 After the maintainer-selected v1.3.1 patch release, `bump: auto` resumes
 Conventional Commit inference for subsequent versions.
 Homebrew keeps `version_scheme: 1` in its product spec so existing installations
-recognize the new series as an upgrade. Stable npm releases explicitly publish
-to `latest`, prereleases publish to `next`, and GitHub uses `current-series` latest
-selection. npm channels live in `.github/npm/packages.yml`.
+recognize the new series as an upgrade. Its source Formula declares macOS arm64
+and x86_64 and Linux arm64 and x86_64. Releaseway derives the native publication
+matrix from this declaration and requires audit, source installation, Formula
+tests and a complete matching receipt set before updating the tap. Pull-request
+checks render and audit the Formula; they do not install it. The existing
+post-publication Go consumer check remains on macOS arm64. Stable npm releases
+explicitly publish to `latest`, prereleases publish to `next`, and GitHub uses
+`current-series` latest selection. npm channels live in `.github/npm/packages.yml`.
 
 `devtools run publish:release` requests a version plan for remote `main`
 without running product checks.

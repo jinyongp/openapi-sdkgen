@@ -108,10 +108,10 @@ results remain applicable; live publication and native platform gaps remain open
 - Actual GitHub Pages deployment, npm publication and native Homebrew installation
   have not been executed for this patch. Those require the normal release/CI
   environment; local checks do not establish their success.
-- Existing Homebrew source publication validates only macOS arm64. Linux and Intel
-  installation evidence remains absent. If those platforms become part of the
-  Homebrew support contract, declare `platforms` in the spec and use Releaseway's
-  native matrix; do not implement another local matrix or receipt verifier.
+- The initial refresh retained macOS arm64-only Homebrew validation. The subsequent
+  [four-platform change](homebrew-platform-validation.md) now declares native
+  publication targets in the product spec. Native installation evidence for the
+  expanded targets remains pending; Releaseway owns the matrix and receipts.
 - Release-set range selection excludes noncanonical version tags and build metadata.
   All currently published installer releases use canonical `v` SemVer tags.
   Changing the tag convention would require a policy decision.
